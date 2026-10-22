@@ -2188,3 +2188,51 @@ test('Paste a link with 5s connected (a fake connector): the page\'s own facts, 
     assert.deepEqual(page.errors(), []);
   } finally { await ctx.close(); }
 });
+
+// ================================================================ The artist's bookmarks (CONCEPT.md, 22 Oct 2026)
+//
+// "Work in the Architectural Authority bookmarks as objects to like and dislike along with the artworks":
+// a building judged like any card; its reveal, its detail (Architect, View on The Architectural Authority)
+// and Where it lives (its page there first, no Artsy search for an architect); Sources counts it apart.
+// The real deck has them; a fixture build has none, so this is skipped there.
+
+const BUILDING = DECK.cards.find((c) => c.source === 'Architectural Authority' && c.kind === 'space');
+for (const cfg of CONFIGS) {
+  test('A building from the artist\'s bookmarks at ' + cfg.w + 'x' + cfg.h + ' ' + cfg.scheme + ': the reveal, the detail and Where it lives', { timeout: 90000, skip: !BUILDING && 'the deck has no bookmarks' }, async () => {
+    const { ctx, page } = await newPage(cfg);
+    const shot = shooter(page, cfg);
+    try {
+      // today's five, with the building in the Space's place, first
+      const st = FiveS.startFive(FiveS.newState(), DECK, Date.now());
+      st.five.ids = [BUILDING.id].concat(st.five.ids.filter((id) => DECK.cards.find((c) => c.id === id).kind !== 'space'));
+      st.seen = Object.assign({}, st.seen, { intro: 1 });
+      await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+      await page.goto(BASE + '#sort');
+      await page.waitForSelector('#stack .card.is-top');
+      assert.equal(await topId(page), BUILDING.id);
+      await page.click('#btn-keep');
+      await page.waitForSelector('#strip [data-act="where"]');
+      const strip = await page.textContent('#strip');
+      assert.ok(strip.indexOf('Kept:') >= 0 && strip.indexOf(BUILDING.title.slice(0, 20)) >= 0 && !/Artsy/.test(strip), 'the reveal: ' + strip);
+      await shot('b0-building-reveal');
+      await page.click('#strip [data-act="where"]');
+      await page.waitForSelector('#sheet[open] #where-h');
+      const links = await whereChecks(page, BUILDING, 'a building');
+      assert.deepEqual(links[0], { label: 'On The Architectural Authority', url: BUILDING.url, kind: 'source' }, 'its own page first');
+      assert.ok(!links.some((l) => l.kind === 'maker'), 'no Artsy search for an architect');
+      const facts = await page.$$eval('#sheet .facts dt', (ds) => ds.map((d) => d.textContent));
+      assert.ok(!facts.includes('Artist') && (facts.includes('Architect') || !BUILDING.artist), 'Architect: ' + facts);
+      assert.equal(await page.textContent('#sheet .actions a.btn'), 'View on The Architectural Authority');
+      assert.equal(await page.getAttribute('#sheet .actions a.btn', 'href'), BUILDING.url);
+      await sheetChecks(page, 'a building');
+      await shot('b1-building-detail');
+      await page.keyboard.press('Escape');
+      await sheetGone(page);
+      // Split's Sources counts it apart from the Artsy saves
+      await tab(page, 'split');
+      assert.ok((await sourcesOf(page)).some((s) => /^The artist’s bookmarks \(Architectural Authority\) ?1$/.test(s)), 'Sources: ' + await sourcesOf(page));
+      await noHScroll(page, 'split with a building');
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
+  });
+}

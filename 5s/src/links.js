@@ -136,6 +136,7 @@
     ['Smithsonian', host('si\\.edu'), 'image'],
     ['ArchDaily', host('archdaily\\.' + TLD_CC + '|archdaily\\.cl|archdaily\\.mx'), 'space'],
     ['Dezeen', host('dezeen\\.com'), 'space'],
+    ['The Architectural Authority', host('thearchitecturalauthority\\.com'), 'space'],
     ['Etsy', host('etsy\\.com|etsy\\.me|etsystatic\\.com'), 'object'],
     ['eBay', host('ebay\\.' + TLD_CC + '|ebay\\.(?:us|to)|ebayimg\\.com'), 'object'],
     ['Amazon', host('amazon\\.' + TLD_CC + '|amzn\\.(?:to|eu|asia)|a\\.co'), 'object'],
@@ -658,7 +659,7 @@
   /** whereItLives(card, deck) -> [{label, url, kind}]: where an object lives on the web, its own place first.
    *  card: a deck card, or a brought thing (FiveS.card(state, deck, id), or the state.own[] record).
    *  Deck card: its Artsy page (kind "artsy"; a card whose page is elsewhere gets that page, "source"); each of its genes as Artsy's page for that style ("gene",
-   *  labelled with the deck's name for it); its maker on Artsy ("maker", a search address); then
+   *  labelled with the deck's name for it); its maker on Artsy ("maker", a search address; not for a card whose source is not Artsy); then
    *  "Look it up elsewhere": Wikipedia and Google Arts & Culture searches for maker + title ("elsewhere").
    *  Brought thing: where it came from ("source", its link cleaned) and its picture ("image"); then, once
    *  it is defined, its genes, maker and the searches. A thing of the person's own (a photo with no link
@@ -686,7 +687,8 @@
       if (pic && pic !== link) out.push({ label: 'Its picture', url: pic, kind: 'image' });
     }
     out.push(...geneLinks(card.genes, deck));
-    if (maker && maker !== 'You') out.push({ label: 'More by ' + maker + ' on Artsy', url: ARTSY + '/search?term=' + enc(maker), kind: 'maker' });
+    // Artsy's search is for artists: not offered for a deck card from elsewhere (an architect of the artist's bookmarks).
+    if (maker && maker !== 'You' && (own || (card.source || 'Artsy') === 'Artsy')) out.push({ label: 'More by ' + maker + ' on Artsy', url: ARTSY + '/search?term=' + enc(maker), kind: 'maker' });
     const defined = !own || !!card.definedBy || !!cleanUrl(card.link) || !!maker;
     if (defined) out.push(...elsewhere(maker === 'You' ? '' : maker, title === 'Untitled' ? '' : title));
     const seen = new Set();

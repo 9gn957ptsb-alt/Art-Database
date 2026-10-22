@@ -4,8 +4,8 @@
 for a few minutes a day. That month had five moves: gather saved things into one database, catalog
 them into their parts, make new things from the parts, name and reflect on each one, and keep at
 it. In 5s they become five tabs and a habit: **Sort** five cards a day (an Image, an Object, a Space,
-a Surface and a Colour, all from the artist's database of Artsy saves, plus things you bring in from
-your own photos and pins), **Split** what you kept into its parts, **Set** the parts into a room,
+a Surface and a Colour, all from the artist's database of Artsy saves and the artist's Architectural
+Authority bookmarks of buildings, plus things you bring in from your own photos and pins), **Split** what you kept into its parts, **Set** the parts into a room,
 **See** the positive and negative space of your taste, and grow it into a **Seed**: a ground drawn
 from your judgments and a file you can take with you. Its job, in the system's one line: *how a
 person brings their own information in: quick judgments of what they like become their aesthetic
@@ -18,7 +18,8 @@ build contract) before changing anything.
 
 | Path | What it is |
 | --- | --- |
-| `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp` |
+| `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp`; then the bookmarks from `buildings.json` + `data/aa/` |
+| `buildings.json` | the artist's Architectural Authority bookmarks as chosen for the deck: each building's hero photo, surface crop, materials and genes (cards b001…, m001…) |
 | `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined), the seven scripts in the order the page loads them (`hub.js`, `hubpage.js` and `connect.js` before `app.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
 | `src/app.css`, `src/app.js` | styles and UI (including Your hub: Seed's last section and the Hub sheet, through GitHub's own pages) |
@@ -29,6 +30,7 @@ build contract) before changing anything.
 | `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
 | `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
 | `test/` | engine, bring, ground and UI tests; `test/fixture/` is a synthetic 50-card deck (no real data) |
+| `test/deck.test.py` | checks a built deck: the Artsy cards and the bookmarks' b and m cards (source, url, kinds, images) |
 | `dist/` | built output; gitignored |
 
 ## Build
@@ -37,6 +39,7 @@ Requires Python 3 with Pillow and numpy.
 
 ```sh
 python3 5s/build_deck.py      # the deck (slow the first time; cached under data/5s/ after that)
+python3 5s/test/deck.test.py  # the deck's check: builds it again into a temporary folder (about two minutes) and compares
 python3 5s/build_page.py      # the page, into 5s/dist next to the deck
 ```
 
@@ -79,9 +82,10 @@ Your hub's four steps in links mode (with GitHub's pages answered by a stand-in,
 Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing and is never
 published. The supporting files go with it at the same relative paths:
 
-- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `app.js`
+- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `links.js`, `app.js`
 - `deck.json`, `logo.webp`, `img/atlas.webp`
-- the 320 card images `img/{i,o,s,u}NNN.webp` (Colour cards have no image)
+- the 451 card images `img/{i,o,s,u,b,m}NNN.webp` (Colour cards have no image; `b` and `m` are the
+  artist's Architectural Authority bookmarks, a building's Space or Object and its Surface)
 
 Declare these capabilities: `{db: {}, user: {}, sample: {}, downloads: true}`.
 
@@ -102,18 +106,18 @@ and the data file door works without it. Paste a link itself works without it to
 words, Define through `sample`, or a pasted picture); the connector adds the page's own picture and
 facts, and whole boards and channels (SPEC.md, "As built, 22 Oct 2026").
 
-**Two publishes, because of the file count.** The page plus 330 supporting files is 331 files (about
-13 MB). One publish sends at most 255 files; a version holds up to 511.
+**Two publishes, because of the file count.** The page plus 462 supporting files is 463 files (about
+18 MB). One publish sends at most 255 files; a version holds up to 511.
 
-1. Publish the page with the seven scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
-   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 251 files.
-2. Publish again to the same URL with the 80 Surface crops (`img/u*.webp`). Files left out of a
-   publish are kept.
+1. Publish the page with the eight scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
+   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 252 files.
+2. Publish again to the same URL with the 80 Surface crops (`img/u*.webp`) and the bookmarks' 131
+   images (`img/b*.webp`, `img/m*.webp`): 211 files. Files left out of a publish are kept.
 
-Between the two publishes, Surface cards have no image. Publish the second batch right away.
+Between the two publishes, Surface cards and the bookmarks have no image. Publish the second batch right away.
 
 Size limits are not a concern: the page is about 50 KB, the largest file is the atlas at about
-1 MB, and the whole set is about 13 MB.
+1 MB, and the whole set is about 18 MB.
 
 ## Not committed
 

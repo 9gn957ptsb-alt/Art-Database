@@ -1,8 +1,9 @@
 // Every tool, against an in-memory store and a fake GitHub whose requests are recorded and asserted.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ctxFor, call, playFives, putState, LOGIN, UID, TOKEN, AppEngine as F, at, DAY } from './helpers.mjs';
+import { ctxFor, call, playFives, putState, LOGIN, UID, TOKEN, AppEngine as F, at, DAY, fullFixture } from './helpers.mjs';
 import { TOOL_NAMES, TOOLS } from '../src/tools.js';
+import { trimDeck } from '../src/deck.js';
 import { readRepos } from '../src/store.js';
 
 const SPEC_TOOLS = ['get_taste', 'aesthetic_brief', 'next_five', 'judge', 'get_seed', 'hub_status', 'make_hub', 'save_hub', 'get_state', 'put_state',
@@ -105,6 +106,54 @@ test('judge records with the engine, advances the five, and reveals the names af
   assert.equal(st.j.length, 1);
   assert.deepEqual(st.j[0].slice(0, 3), [id, 1, 1840]);
   assert.ok(!j.summary.includes(card.title), 'the summary leaves names to the data');
+});
+
+// The fixture with its Spaces and Surfaces swapped for made-up bookmarked buildings, shaped like the
+// deck's b and m cards (a b card and its m crop share a work; no date, year or era; one has no architect).
+function buildingDeck() {
+  const full = fullFixture();
+  const aa = (slug) => 'https://www.thearchitecturalauthority.com/article/' + slug;
+  const keep = full.cards.filter((c) => c.kind !== 'space' && c.kind !== 'surface').map((c) => Object.assign({ source: 'Artsy' }, c));
+  const was = full.cards.filter((c) => c.kind === 'space' || c.kind === 'surface');
+  const built = was.map((c, k) => {
+    const n = String((k % 10) + 1).padStart(3, '0'), work = 'fixture-building-' + n;
+    return Object.assign({}, c, {
+      id: (c.kind === 'space' ? 'b' : 'm') + n, work, url: aa(work), cdn: 'https://images.example.org/fixture/' + work + '.jpg',
+      title: 'Fixture building ' + n, artist: n === '003' ? null : 'Fixture Studio ' + n, date: null, year: null, era: null,
+      category: 'Architecture', source: 'Architectural Authority',
+    });
+  });
+  return trimDeck(Object.assign({}, full, { cards: keep.concat(built) }), {});
+}
+
+test('buildings: next_five deals the bookmarks, and their reveal names The Architectural Authority and its page', async () => {
+  const { ctx, deck } = ctxFor({ deck: buildingDeck() });
+  const f = await call(ctx, 'next_five');
+  const byKind = Object.fromEntries(f.data.cards.map((c) => [c.kind, c]));
+  assert.match(byKind.space.card, /^b\d{3}$/);
+  assert.match(byKind.surface.card, /^m\d{3}$/);
+  assert.equal(byKind.space.image, deck.cards.find((x) => x.id === byKind.space.card).cdn);
+  for (const c of f.data.cards) for (const k of ['title', 'artist', 'url', 'source']) assert.equal(c[k], undefined, 'still no names before judging');
+  for (const c of f.data.cards) {
+    const card = deck.cards.find((x) => x.id === c.card);
+    const r = (await call(ctx, 'judge', { card: c.card, keep: true })).data.reveal;
+    assert.equal(r.url, card.url);
+    if (/^[bm]/.test(c.card)) {
+      assert.equal(r.source, 'Architectural Authority');
+      assert.match(r.url, /^https:\/\/www\.thearchitecturalauthority\.com\/article\/fixture-building-/);
+      assert.equal(r.artsy_url, undefined, 'no Artsy link for a building');
+      assert.equal(r.date, null);
+    } else {
+      assert.equal(r.source, 'Artsy');
+      assert.equal(r.artsy_url, card.url, 'Artsy cards keep artsy_url');
+    }
+  }
+  await playFives(ctx, 3);
+  const b = await call(ctx, 'aesthetic_brief', { for: 'a living room' });
+  const room = b.data.references[0];
+  assert.equal(room.kind, 'space');
+  assert.equal(room.source, 'Architectural Authority');
+  assert.ok(b.data.brief.includes(room.url), 'the brief links the building\'s own page');
 });
 
 test('judge without ms records no timing (a chat cannot measure it), and get_taste then claims no speed', async () => {

@@ -13,6 +13,8 @@ sys.path.insert(0, str(FIVE))
 from build_deck import KEPT_FAMILIES, era_of  # noqa: E402
 
 old = json.loads((FIVE / "dist" / "deck.json").read_text())
+# dist may already hold the buildings: compare against its Artsy cards only (no source is Artsy)
+old["cards"] = [c for c in old["cards"] if c.get("source", "Artsy") == "Artsy"]
 blds = json.loads((FIVE / "buildings.json").read_text())
 assert [b["slug"] for b in blds] == sorted({b["slug"] for b in blds}), "buildings.json: sorted, one entry per slug"
 

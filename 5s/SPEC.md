@@ -17,6 +17,9 @@ already use (GitHub, Pinterest, Spotify…) is fine. The "standalone 5s app" mea
 **Artsy proposes; the person's 5s account keeps.** Nobody needs an Artsy account. Artsy is where 5s
 finds art objects to propose; every object a person judges is catalogued in their own 5s account (its
 title, artist, date, image address and Artsy link, with their judgment), and it is theirs from then on.
+The artist's Architectural Authority bookmarks propose alongside (the artist, 22 Oct 2026: "work in the
+Architectural Authority bookmarks as objects to like and dislike along with the artworks"): buildings,
+judged like any card, each linking to its article on The Architectural Authority and naming its architect.
 
 **Its job, in the system's one line** (see the site's CLAUDE.md, "What we are making"):
 *5s — how a person brings their own information in: quick judgments of what they like become their
@@ -61,7 +64,9 @@ brings in is theirs, private to them.
 | **Colour** | a work's three dominant colours, as a chord | three bands, no picture | the Wall (wall, trim, accent) |
 
 Surface and Colour cards strip subject matter away, so a person judges an element alone. Every card
-comes from a real saved work, so nothing is made up; after judging, the work behind it is revealed.
+comes from a real saved work (an Artsy save, or a building the artist bookmarked on The Architectural
+Authority: its Space and a Surface crop of its materials), so nothing is made up; after judging, the
+work behind it is revealed.
 
 **Judge first, names after.** Before a judgment a card shows no title, artist, price or place, so the
 judgment is aesthetic and uninfluenced. The reveal (title, artist, date, medium) comes right after.
@@ -105,14 +110,16 @@ material words (never the title or artist).
   Colours (kept colours as swatches, sorted by hue, hex in mono on press), Surfaces (crop tiles),
   Materials, Qualities (Visual Qualities + Design Concepts genes), Movements (Styles and Movements),
   Subjects (Subject Matter), Eras, Places, Kinds, and Things (all kept works as thumbnails, each
-  opening its detail sheet with a link out to Artsy).
+  opening its detail sheet with a link out to Artsy, or for a bookmark "View on The Architectural
+  Authority", its maker labelled Architect).
 - Empty state: a designed placeholder per section naming what will fill it.
 - **Bring in your own** (a prominent button at the top of Split; also offered from the intro and the
   Five sorted summary): see "Bring in your own" below. Brought things appear in a **Brought in** section
   (thumbnail, name, source), are kept by definition (they are the person's saves), and feed every
   part section like kept cards (their colours, their surface crop, their kind).
 - **Sources**: where the things in the database come from, as a short list with counts ("The artist's
-  database (Artsy) · 31", "Your photos · 4", "Pinterest · 2"). This is the database connected to other
+  database (Artsy) · 31", "The artist's bookmarks (Architectural Authority) · 3", "Your photos · 4",
+  "Pinterest · 2"; deck cards counted by their `source`, none meaning Artsy). This is the database connected to other
   websites and apps, said plainly.
 - **Let go**: the things the person let go of on a "Still yours?" card (thumbnail, when), quiet.
 
@@ -206,8 +213,8 @@ material words (never the title or artist).
 - No personal information about the artist: no name, no biography, no account details (the artist,
   21 Oct 2026: "Don't worry about my info for About"). Just what 5s is, in a sentence or two: five
   quick judgments a day build your own aesthetic database, which you split, set into rooms, see, and
-  grow into a world; the cards come from an artist's database of saved works, and what you bring in is
-  yours. Then the how-to lines, the privacy line, and the "Five-second ring" switch.
+  grow into a world; the cards come from an artist's database of saved works and bookmarked
+  architecture, and what you bring in is yours. Then the how-to lines, the privacy line, and the "Five-second ring" switch.
 
 ### Your hub: the person's own GitHub repository and site, made from inside 5s (Path milestones 9–12)
 
@@ -252,8 +259,12 @@ Later: **Save to my hub again** whenever the seed has changed (the card says whe
 **The hub page** (`src/hubpage.js`, global `FiveSHubPage.build(...)`): a complete standalone HTML
 document (its own doctype and head: it lives on github.io, not in an artifact, so it may show images
 from Artsy's CDN) built from the person's seed: the seed code, their philosophy lines, positive and
-negative space, their kept works as a grid (Artsy CDN images, each linking to its Artsy page, credited),
-their colours, their pinned sets as rooms, their ground (rendered in 5s and embedded as a PNG), and,
+negative space, their kept works as a grid (Artsy CDN images, each linking to its Artsy page, credited;
+a kept bookmark shows its photo, a kept Surface its crop, and links to its Architectural Authority page,
+the credits then naming both sites),
+their colours, their pinned sets as rooms (a set in the seed names a work by its slug, which a bookmark's
+Space and Surface share: each place in the room takes the card of its own kind, so a bookmark's crop is
+the floor), their ground (rendered in 5s and embedded as a PNG), and,
 only if they tick "Include my notes", their notes. Brought-in images are never included unless they
 tick "Include my own images". The seed itself rides in `<script type="application/json" id="seed">`.
 
@@ -285,7 +296,8 @@ summary):
   place, material and quality, keep rate, speed. "Use this whenever the person asks for anything with
   an aesthetic: a sofa, a website, a gift, a room, an outfit, a trip."
 - `aesthetic_brief({for})` → a short, paste-able brief of the person's taste aimed at one purpose
-  ("a living room", "my portfolio site"), with three reference works (Artsy links and images) and
+  ("a living room", "my portfolio site"), with three reference works (their pages on Artsy or The
+  Architectural Authority, and images) and
   what to avoid (their negative space).
 - `next_five` → the next five cards (one per kind, from the deck), each with an image address, kind,
   and no names (names come after judging), so Claude can run a five in the chat.
@@ -307,7 +319,7 @@ which is why hubs are public by default (aesthetics only). Private hubs come wit
 
 **Reuse.** The connector imports the same `src/engine.js` (judgments, profile, philosophy, seed),
 `src/hub.js` (the GitHub API driver) and `src/hubpage.js` (the hub page) as the app, and serves the
-artist's deck (`dist/deck.json`, with Artsy image addresses) bundled at deploy time; the deck is never
+artist's deck (`dist/deck.json`, with its image addresses: Artsy's CDN, a bookmark's own photo) bundled at deploy time; the deck is never
 committed.
 
 **One-time setup on the artist's side** (copy-and-paste steps in `5s/connector/README.md`): a free
@@ -368,7 +380,7 @@ Never: a password typed into 5s, a scraped login, or a browser extension.
   `parseDefinition` (the deck's words only; an unrecognised thing keeps the address's name and facts).
   **Add to my database** → `FiveS.bring` with the defined fields; refused, with what to do, when the
   state would pass 200 KiB. Every detail sheet has **Where it lives** (`FiveSLinks.whereItLives`: its own
-  page, its styles, its maker, searches elsewhere), each with Open and Copy, and Copy all.
+  page, its styles, its maker on Artsy (not for a bookmark's architect), searches elsewhere), each with Open and Copy, and Copy all.
 - **Sign in to the app**: not built; its row says what opens it (the connector, and each app's approval).
 - **Your data file** (works now, no connector): one reader for every app instead of one per format.
   It reads JSON (also X's script-wrapped archive files), web pages, spreadsheets, plain text, and a
@@ -438,17 +450,18 @@ Never: a password typed into 5s, a scraped login, or a browser extension.
 {
   "version": 1,
   "built": "2026-10-21",
-  "source": "The art database: Artsy saves",
+  "source": "The art database: Artsy saves and Architectural Authority bookmarks",
   "atlas": {"src": "img/atlas.webp", "cell": 128, "cols": 20},   // thumbnails of every card's work
   "genes": {                                     // only genes some card uses
     "biomorphic": {"name": "Biomorphic", "family": "Visual Qualities"}
   },
   "cards": [{
-    "id": "o017",                // kind letter (i o s u c) + number; stable within a build
+    "id": "o017",                // kind letter (i o s u c) + number; stable within a build. A bookmark: b + number
+                                 // (its Space, or Object where buildings.json says "kind": "object") and m + number (its Surface)
     "kind": "object",            // image | object | space | surface | colour
-    "work": "joris-laarman-bone-armchair-1",   // Artsy artwork slug
+    "work": "joris-laarman-bone-armchair-1",   // Artsy artwork slug; a bookmark: its Architectural Authority slug, the same on its b and m cards
     "url": "https://www.artsy.net/artwork/joris-laarman-bone-armchair-1",
-    "cdn": "https://d32dm0rphc51dk.cloudfront.net/WA3Bfn0gtjXKvX_E_iVdTQ/large.jpg",   // the work's image on Artsy's CDN as artworks.db stores it ('large'), on every card whose work has one; the hub page shows it
+    "cdn": "https://d32dm0rphc51dk.cloudfront.net/WA3Bfn0gtjXKvX_E_iVdTQ/large.jpg",   // the work's image on Artsy's CDN as artworks.db stores it ('large'), on every card whose work has one; the hub page shows it. A bookmark: its original photo's address
     "title": "\"Bone\" Armchair",
     "artist": "Joris Laarman",
     "date": "2007",
@@ -456,13 +469,14 @@ Never: a password typed into 5s, a scraped login, or a browser extension.
     "era": "2000s",              // one of the ERA buckets below, or null
     "category": "Design/Decorative Art",
     "medium": "Carrara marble powder and casting resin",
-    "materials": ["marble", "resin"],          // MATERIAL families below
+    "materials": ["marble", "resin"],          // MATERIAL families below (a bookmark's, from buildings.json, may be other words)
     "place": "Netherlands",      // country from nationality, or null
-    "colours": ["#c0c2c1", "#a7a6a1", "#bbbbbb"],   // Artsy dominant colours, in Artsy's order
+    "colours": ["#c0c2c1", "#a7a6a1", "#bbbbbb"],   // Artsy dominant colours, in Artsy's order; a bookmark: the app's own k-means (src/bring.js)
     "genes": ["biomorphic", "irregular-curvilinear-forms", "furniture"], // artist genes, aesthetic families only
     "img": "img/o017.webp",      // image/object/space: the work; surface: the crop; colour: null
     "w": 720, "h": 698,          // pixel size of img (null for colour)
     "thumb": 17,                 // index of this work's cell in the atlas
+    "source": "Artsy",           // "Artsy" | "Architectural Authority"; a card without one is from Artsy (older decks, the fixture)
     "crop": [0.41, 0.22, 0.25, 0.25],   // surface only: x, y, w, h as fractions of the source image
     "texture": 0.58              // surface only: 0..1 edge density of the crop (fine..coarse)
   }]
@@ -478,6 +492,14 @@ Never: a password typed into 5s, a scraped login, or a browser extension.
   "Styles and Movements" (Movements), "Subject Matter" (Subjects). Others are dropped.
 - Targets: 80 per kind (Space may come in lower; report the number). At most 2 cards per artist across
   the deck, 1 per kind. Spread across colour chords, eras and places.
+- The artist's Architectural Authority bookmarks (`buildings.json` + `data/aa/`) come after the Artsy
+  cards: b001… and m001…, `source` "Architectural Authority", `url` the article on
+  thearchitecturalauthority.com, `artist` the architect (null for a few), `category` "Architecture"
+  (one is "Design/Decorative Art"); most have no date, year or era, and none has a Colour card.
+  The app takes its words from `source` in one place per file: engine.js `DECK_SOURCES` and
+  `deckSource(card)` (the site, "View on …"; the maker's label, Artist or Architect; the Sources line),
+  links.js (The Architectural Authority is a known site; Artsy's search for a maker is not offered for
+  a card from elsewhere), hubpage.js `SITES` (the credits; a kept work is found by its work and kind).
 
 ## engine.js — the API (pure; `window.FiveS` in the browser, `module.exports` in Node)
 
@@ -594,7 +616,7 @@ FiveS.path(state, deck, now) -> [{key, step, label, why, done, next}]   // the e
   "format": "5s-seed", "version": 1, "code": "5S-4F2A-9C1E", "made": "2026-10-21",
   "counts": {"judged": 75, "kept": 38, "passed": 37, "turns": 3},
   "kept":   [{"work": "joris-laarman-bone-armchair-1", "kind": "object", "ms": 1840}],
-            // each kept work also carries "image" (its deck "cdn", or null) and "url" (its Artsy page): public addresses for the hub page
+            // each kept work also carries "image" (its deck "cdn", or null) and "url" (its Artsy page, or a bookmark's Architectural Authority page): public addresses for the hub page
   "passed": [{"work": "…", "kind": "colour"}],
   "palette": {"kept": ["#…"], "passed": ["#…"]},
   "surfaces": [{"work": "…", "crop": [0.41, 0.22, 0.25, 0.25]}],
@@ -606,7 +628,8 @@ FiveS.path(state, deck, now) -> [{key, step, label, why, done, next}]   // the e
   "speed": {"medianMs": 1800}
 }
 ```
-Works are named by their Artsy slug, the id the art database and the game already use; brought things
+Works are named by their Artsy slug, the id the art database and the game already use (a bookmark by its
+Architectural Authority slug, with its kind telling its Space from its Surface); brought things
 by the name the person gave them (no images). No account name, email or id ever goes in.
 
 ## Persistence (app.js)

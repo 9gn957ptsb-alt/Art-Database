@@ -666,3 +666,42 @@ test('hubpage.files and readme: the hub\'s files, with the seed as published', (
   assert.equal(files[3].text, '');
   assert.equal(Page.readme({ site: 'javascript:alert(1)' }).includes('javascript'), false);
 });
+
+// The artist's Architectural Authority bookmarks (synthetic here, as the fixture is): a building's
+// Space and Surface share their work, and their pages are on The Architectural Authority.
+test('hubpage: a kept building\'s Surface keeps its crop, and the credits name both sites', () => {
+  const page = 'https://www.thearchitecturalauthority.com/article/fixture-building';
+  const bld = (cid, from, extra) => ({ ...deck.cards.find((c) => c.id === from), id: cid, work: 'fixture-building', title: 'Fixture Building',
+    artist: 'Fixture Studio', source: 'Architectural Authority', url: page, cdn: 'https://images.example.org/fixture/building/photo.jpg', ...extra });
+  const d = { ...deck, cards: deck.cards.concat([bld('b001', 's001', { crop: undefined }), bld('m001', 'u001', { crop: [0.5, 0.1, 0.2, 0.25] })]) };
+  const keep = (ids) => ids.reduce((st, cid, i) => F.judge(st, d, cid, true, 1500, NOW - 60000 + i * 4000).state, F.newState());
+  const seed = F.exportSeed(keep(['i001', 'b001', 'm001']), d, NOW);
+  const html = Page.build({ seed, deck: d, generatedAt: NOW });
+  const surface = html.slice(html.indexOf('<li class="work k-surface">'));
+  assert.ok(surface.startsWith('<li class="work k-surface"><a href="' + page + '"><span class="pic crop"'), 'the Surface is its crop, linked to its page');
+  assert.ok(surface.includes('style="width:500%;height:400%;left:-250%;top:-40%"'), 'at its own scale');
+  assert.equal(count(html, 'href="' + page + '"'), 2);
+  assert.ok(html.includes('<p class="credit">Images and pages on Artsy and The Architectural Authority</p>'));
+  assert.ok(html.includes('Images and pages on Artsy and The Architectural Authority.</p>'), 'the footer too');
+  assert.ok(Page.files({ seed, deck: d })[2].text.includes('Images and pages of the works are on Artsy and The Architectural Authority.'));
+  // only bookmarks kept: that site alone; nothing kept, or no seed: Artsy, as before
+  const only = Page.build({ seed: F.exportSeed(keep(['b001']), d, NOW), deck: d });
+  assert.ok(only.includes('<p class="credit">Images and pages on The Architectural Authority</p>') && !only.includes('on Artsy'));
+  assert.ok(Page.build({ seed: F.exportSeed(F.newState(), d, NOW), deck: d }).includes('Images and pages on Artsy.</p>'));
+  assert.ok(Page.readme({}).includes('Images and pages of the works are on Artsy.'));
+});
+
+test('hubpage: a room from the seed\'s own sets (as the connector draws it) puts a building\'s crop on the floor, not its Space', () => {
+  const bld = (cid, from, extra) => ({ ...deck.cards.find((c) => c.id === from), id: cid, work: 'fixture-building', source: 'Architectural Authority',
+    url: 'https://www.thearchitecturalauthority.com/article/fixture-building', ...extra });
+  const d = { ...deck, cards: deck.cards.concat([bld('b001', 's001', { cdn: 'https://images.example.org/fixture/building/space.jpg' }),
+    bld('m001', 'u001', { cdn: 'https://images.example.org/fixture/building/detail.jpg', crop: [0.5, 0.1, 0.2, 0.25] })]) };
+  let st = ['c001', 'b001', 'i001', 'm001', 'o001'].reduce((s, cid, i) => F.judge(s, d, cid, true, 1500, NOW - 60000 + i * 4000).state, F.newState());
+  st = F.pinSet(st, { wall: 'c001', window: 'b001', picture: 'i001', floor: 'm001', object: 'o001', name: 'Bookmarks' }, NOW - 1000);
+  const seed = F.exportSeed(st, d, NOW);
+  assert.equal(seed.sets[0].window, seed.sets[0].floor, 'the seed names both by their one work');
+  const html = Page.build({ seed, deck: d, generatedAt: NOW });
+  const floor = html.slice(html.indexOf('<div class="floor">'), html.indexOf('<div class="floorshade">'));
+  assert.ok(floor.includes('detail.jpg" alt="" loading="lazy" decoding="async" style="width:500%;height:400%;left:-250%;top:-40%"'), floor);
+  assert.ok(html.includes('<span class="win"><img src="https://images.example.org/fixture/building/space.jpg"'), 'the window is its Space');
+});

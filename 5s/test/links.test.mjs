@@ -54,7 +54,7 @@ test('API: the functions and constants, frozen; no network, clock, randomness or
   assert.deepEqual(L.ERAS, F.ERAS);
   assert.deepEqual(L.DEFINED_BY, F.DEFINED_BY);
   for (const k of ['maker', 'date', 'year', 'medium', 'place', 'about', 'genes', 'materials', 'material']) assert.equal(L.LIMITS[k], F.OWN_LIMITS[k], k);
-  assert.equal(L.PLATFORMS.length, 30);
+  assert.equal(L.PLATFORMS.length, 31);
   const src = readFileSync(LINKS, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   for (const bad of [/Math\.random\s*\(/, /Date\.now\s*\(/, /new Date\(/, /performance\.now/, /\bdocument\./, /\bwindow\./, /\bfetch\s*\(/, /XMLHttpRequest/, /localStorage/]) {
     assert.ok(!bad.test(src), 'found ' + bad);
@@ -104,6 +104,7 @@ const SAMPLES = [
   ['https://collection.cooperhewitt.org/objects/18382391/', 'Cooper Hewitt', 'object', '18382391', ''],
   ['https://www.archdaily.com/84524/ad-classics-villa-savoye-le-corbusier', 'ArchDaily', 'space', '84524', 'Ad Classics Villa Savoye Le Corbusier'],
   ['https://www.dezeen.com/2024/05/01/stone-house-studio-mumbai/', 'Dezeen', 'space', 'stone-house-studio-mumbai', 'Stone House Studio Mumbai'],
+  ['https://www.thearchitecturalauthority.com/article/a-quiet-courtyard-casa-uno-by-estudio-dos', 'The Architectural Authority', 'space', 'a-quiet-courtyard-casa-uno-by-estudio-dos', 'A Quiet Courtyard Casa Uno By Estudio Dos', 'Estudio Dos'],
   ['https://www.etsy.com/listing/1234567890/handwoven-wool-rug-by-ana-li', 'Etsy', 'object', '1234567890', 'Handwoven Wool Rug By Ana Li', 'Ana Li'],
   ['https://www.ebay.com/itm/266123456789', 'eBay', 'object', '266123456789', ''],
   ['https://www.ebay.co.uk/itm/vintage-teak-sideboard/1234567890', 'eBay', 'object', '1234567890', 'Vintage Teak Sideboard'],
@@ -574,4 +575,18 @@ test('a defined thing teaches the taste model as a judged card does, and its see
     link: 'https://www.artsy.net/artwork/somebody-geometric-thing' });
   const text = JSON.stringify(seed);
   for (const no of ['ygeo', 'cdn.example.org', 'utm_', 'email', 'mail.com', '"image":', '"thumb":', '"definedBy":', '"id":']) assert.ok(!text.includes(no), no);
+});
+
+test('whereItLives: a building from the artist\'s bookmarks — its own page first, no Artsy search for its architect', () => {
+  const b = { id: 'b001', kind: 'space', source: 'Architectural Authority', work: 'casa-fixture-by-estudio-fixture',
+    url: 'https://www.thearchitecturalauthority.com/article/casa-fixture-by-estudio-fixture', title: 'Casa Fixture', artist: 'Estudio Fixture', genes: ['interiors'] };
+  const ls = L.whereItLives(b, deck);
+  assert.deepEqual(ls[0], { label: 'On The Architectural Authority', url: b.url, kind: 'source' });
+  assert.deepEqual(ls.map((l) => l.kind), ['source', 'gene', 'elsewhere', 'elsewhere']);
+  assert.ok(!ls.some((l) => /artsy\.net\/search/.test(l.url)), 'no Artsy search for an architect');
+  // from Artsy, or with no source (older decks): its maker on Artsy, as before
+  for (const source of ['Artsy', undefined]) assert.equal(L.whereItLives({ ...b, source }, deck).filter((l) => l.kind === 'maker').length, 1, String(source));
+  assert.equal(L.copyText(b), 'Casa Fixture — Estudio Fixture\n' + b.url);
+  // its page pasted back is the card
+  assert.equal(L.recognise(b.url + '?utm_source=x', { ...deck, cards: deck.cards.concat([b]) }).deckCard, b);
 });

@@ -1390,7 +1390,7 @@
     };
     const notes = st.notes.map((n) => ({ question: NOTE_Q[n.q] || NOTE_Q.free, answer: n.text }));
     return 'Write a short piece, 5 to 7 sentences, to one person about how they go about things, from their own aesthetic judgments in an app called 5s. ' +
-      'They sorted cards from an artist\'s database of saved works (keep or pass, a few seconds each) and brought in some saved things of their own.\n\n' +
+      'They sorted cards from an artist\'s database of saved works and bookmarked architecture (keep or pass, a few seconds each) and brought in some saved things of their own.\n\n' +
       'Rules: second person ("you"). Plain, specific sentences that a friend who looked closely would say. It is a map of how they decide, not a horoscope: ' +
       'no flattery, no mysticism, no predictions, no advice lists, no headings, no bullet points. Name their turns (the works where they went against their own pattern) by title. ' +
       'Use their own words from the notes where they fit. Say only what the data supports.\n\n' +
@@ -1748,7 +1748,7 @@
       const on = S.opts.ring !== false;
       return '<div class="about" style="display:grid;gap:14px">' +
         '<p>5s is five quick judgments a day. They build your own aesthetic database, which you split into parts, set into rooms, see as a whole and grow into a world.</p>' +
-        '<p>The cards come from an artist’s database of saved works. What you bring in is yours.</p>' +
+        '<p>The cards come from an artist’s database of saved works and bookmarked architecture. What you bring in is yours.</p>' +
         '<ul><li>Drag right or press Keep (→) for what you like; drag left or press Pass (←) for the rest.</li>' +
         '<li>Names come after you decide. Enter or Space looks closer; U undoes.</li>' +
         '<li>Five cards a round, one of each kind: Image, Object, Space, Surface, Colour.</li></ul>' +
@@ -1877,7 +1877,7 @@
       if (c.let != null) facts.push(['Let go', fmtDate(c.let)]);
     } else {
       if (String(c.title || '').length > 60) facts.push(['Title', c.title]);
-      facts.push(['Artist', c.artist], ['Date', dateText(c.date)], ['Medium', mediumText(c.medium)], ['Category', c.category], ['Place', c.place], ['Era', c.era], ['Card', KIND_LABEL[c.kind] + (c.kind === 'surface' ? ' (a detail)' : c.kind === 'colour' ? ' (its three colours)' : '')]);
+      facts.push([F.deckSource(c).maker, c.artist], ['Date', dateText(c.date)], ['Medium', mediumText(c.medium)], ['Category', c.category], ['Place', c.place], ['Era', c.era], ['Card', KIND_LABEL[c.kind] + (c.kind === 'surface' ? ' (a detail)' : c.kind === 'colour' ? ' (its three colours)' : '')]);
     }
     const notes = st.notes.filter((n) => n.ref === id);
     const b = ui.detailBack;
@@ -1890,7 +1890,7 @@
     if (c.coloursEstimated && (c.colours || []).length) html += '<p class="small">These colours are estimated until its picture is read.</p>';
     if (c.own) html += fromAppsHTML(ownRec(id, st));
     if (notes.length) html += '<div class="notes">' + notes.map((n) => '<div class="note"><p class="q">' + esc(NOTE_Q[n.q] || NOTE_Q.free) + '</p><p class="a">' + esc(n.text) + '</p></div>').join('') + '</div>';
-    if (!c.own && c.url && /^https:\/\//.test(c.url)) html += '<div class="actions"><a class="btn" href="' + esc(c.url) + '" target="_blank" rel="noopener">View on Artsy' + icon('out') + '</a></div>';
+    if (!c.own && c.url && /^https:\/\//.test(c.url)) html += '<div class="actions"><a class="btn" href="' + esc(c.url) + '" target="_blank" rel="noopener">View on ' + esc(F.deckSource(c).site) + icon('out') + '</a></div>';
     html += whereHTML(c);
     if (c.own && !readOnly()) {
       html += ui.removeAsk

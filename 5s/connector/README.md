@@ -28,9 +28,9 @@ about itself: a refusal names a file's type only when it is a type 5s knows (`sr
 | Tool | Input | Returns | Claude uses it |
 | --- | --- | --- | --- |
 | `get_taste` | none | judged, kept, keep rate, speed; positive and negative space; philosophy lines; turns (with their works); leanings by era, place, material, quality, movement, subject, colour; palette; streak; seed code | whenever the person asks for anything with an aesthetic: a sofa, a website, a gift, a room, an outfit, a trip |
-| `aesthetic_brief` | `for` (what it is for, ≤ 200 characters) | `brief` (paste-able text), what it leans toward, materials, palette, what to avoid (negative space), three reference works they kept (Artsy links and images) | to hand their taste to a designer, a shop, an image tool, a search |
-| `next_five` | none | the five in progress (or a new one): five cards, one per kind, each with an image address on Artsy's CDN (a Surface with its crop; a Colour as three bands, 3:2:1), colours and materials in words, and **no names** | to play 5s in the chat |
-| `judge` | `card`, `keep` (true/false), `ms` (only if measured) | the reveal (title, artist, date, medium, Artsy link, image), whether it was a turn (with the app's sentence: "You kept this though you pass most Geometric works (kept 1 of 6)."), the five's progress, and "Five sorted" at the end | after each Keep or Pass |
+| `aesthetic_brief` | `for` (what it is for, ≤ 200 characters) | `brief` (paste-able text), what it leans toward, materials, palette, what to avoid (negative space), three reference works they kept (their pages on Artsy or The Architectural Authority, and images) | to hand their taste to a designer, a shop, an image tool, a search |
+| `next_five` | none | the five in progress (or a new one): five cards, one per kind, each with an image address (Artsy's CDN, or a bookmarked building's own photo; a Surface with its crop; a Colour as three bands, 3:2:1), colours and materials in words, and **no names** | to play 5s in the chat |
+| `judge` | `card`, `keep` (true/false), `ms` (only if measured) | the reveal (title, artist (a building's architect), date, medium, `source` (`Artsy` or `Architectural Authority`), `url` (its page there; Artsy cards also keep `artsy_url`), image), whether it was a turn (with the app's sentence: "You kept this though you pass most Geometric works (kept 1 of 6)."), the five's progress, and "Five sorted" at the end | after each Keep or Pass |
 | `get_seed` | none | the 5s seed (`format: "5s-seed"`), aesthetics only: notes left out | to take their taste elsewhere |
 | `hub_status` | none | whether they have a hub, its name, address, when it was last saved, and whether the seed changed since | before making or saving a hub |
 | `make_hub` | `name` (optional; default `<login>.github.io`), `include_notes`, `private` | makes a public repository on their account with `index.html` (the hub page), `seed.json`, `README.md` and `.nojekyll`, turns its address on, and returns the address | when they ask for their hub (Claude asks first: it publishes) |
@@ -259,7 +259,8 @@ judgments, 120 brought-in things, 80 notes, 20 sets and a hub, an 84 KB state, t
 | `save_hub` | 133 | 120 | 165 |
 | `make_hub` | 190 | 122 | 196 |
 
-(Measured 22 Oct 2026; the times move by a few milliseconds from run to run.)
+(Measured 22 Oct 2026; the times move by a few milliseconds from run to run. Measured again with the
+531-card deck, the artist's Architectural Authority buildings in: every tool within that noise.)
 
 Every Worker-side path stays well under 10 ms. The tools run in the Durable Object, whose limit is
 30 seconds of CPU per request on Cloudflare's Durable Objects limits page; the five whose usual
@@ -526,10 +527,11 @@ watched with `watchTool`.
 ## The deck
 
 `npm run deck` copies the artist's deck from `5s/dist/deck.json` into `src/deck.generated.json`,
-keeping only what the tools need (each card's reveal, the fields the engine reads, and its image
-address on Artsy's CDN, the deck's `cdn`; a deck built before `cdn` existed gets it from
+keeping only what the tools need (each card's reveal, its `source`, the fields the engine reads,
+and its image address, the deck's `cdn`: Artsy's CDN for the Artsy cards, the original photo for the
+artist's Architectural Authority bookmarks; a deck built before `cdn` existed gets it from
 `data/5s/artworks.db`). The Worker bundles that file. It is gitignored, like `5s/dist/`: it holds
-Artsy-derived data, and the repository is public.
+data derived from Artsy and The Architectural Authority, and the repository is public.
 
 `5s/dist/deck.json` exists only where the deck was built (see `5s/README.md`, "Build"), so deploy
 from a session that has it, or build it there first. For a local trial without the real deck:

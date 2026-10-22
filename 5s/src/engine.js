@@ -21,6 +21,14 @@
   const OWN_KINDS = Object.freeze(['image', 'object', 'space']);
   const SOURCES = Object.freeze(['Your photos', 'Pinterest', 'Instagram', 'Artsy', 'Are.na', 'The web', 'Somewhere else']);
   const DECK_SOURCE = "The artist's database (Artsy)";
+  // Where a deck card comes from, by its "source": the site that holds its page, what its maker is
+  // called, and its line in Sources. A card with no source is from Artsy (older decks, the fixture).
+  const DECK_SOURCES = Object.freeze({
+    Artsy: Object.freeze({ site: 'Artsy', maker: 'Artist', sources: DECK_SOURCE }),
+    'Architectural Authority': Object.freeze({ site: 'The Architectural Authority', maker: 'Architect', sources: "The artist's bookmarks (Architectural Authority)" }),
+  });
+  /** deckSource(card) -> its DECK_SOURCES entry ({site, maker, sources}). */
+  const deckSource = (c) => DECK_SOURCES[c && hasOwn(DECK_SOURCES, c.source) ? c.source : 'Artsy'];
   const NOTE_QS = Object.freeze(['turn', 'five', 'set', 'bring', 'free']);
   const GROUPS = Object.freeze(['Qualities', 'Movements', 'Subjects', 'Materials', 'Eras', 'Places', 'Kinds', 'Colours', 'Textures']);
   // The twelve hue names used as features (degrees: upper bound of each band).
@@ -1245,8 +1253,10 @@
     const bySource = {};
     for (const o of st.own) if (o && o.let == null) bySource[o.source || 'Somewhere else'] = (bySource[o.source || 'Somewhere else'] || 0) + 1;
     const sources = [];
-    const deckKept = things.filter((x) => !x.own).length;
-    if (deckKept) sources.push({ source: DECK_SOURCE, n: deckKept });
+    for (const k of Object.keys(DECK_SOURCES)) {
+      const n = things.filter((x) => !x.own && deckSource(x.card) === DECK_SOURCES[k]).length;
+      if (n) sources.push({ source: DECK_SOURCES[k].sources, n });
+    }
     Object.keys(bySource).sort((a, b) => bySource[b] - bySource[a] || cmpStr(a, b)).forEach((s) => sources.push({ source: s, n: bySource[s] }));
 
     return {
@@ -1427,9 +1437,10 @@
     return e;
   }
 
-  /** exportSeed(state, deck, now) -> the 5s-seed JSON: works by Artsy slug, brought things by name;
-   *  no card ids, no images, no account details (state.hub never goes in). Kept works also carry
-   *  their public Artsy addresses: `image` (the deck's "cdn") and `url` (the work's Artsy page). */
+  /** exportSeed(state, deck, now) -> the 5s-seed JSON: works by their slug (Artsy's, or a bookmark's on
+   *  The Architectural Authority), brought things by name; no card ids, no images, no account details
+   *  (state.hub never goes in). Kept works also carry their public addresses: `image` (the deck's "cdn")
+   *  and `url` (the work's own page). */
   function exportSeed(state, deck, now) {
     const st = norm(state);
     const idx = indexOf(deck);
@@ -1446,7 +1457,7 @@
     for (const e of latestJudgments(st, deck)) {
       const c = idx.get(e[0]);
       if (e[1] === 1 || e[1] === true) {
-        // image: the work's own image on Artsy's CDN (deck "cdn"); url: its Artsy page. Both public.
+        // image: the work's own image (deck "cdn": Artsy's CDN, or a bookmark's photo); url: its page. Both public.
         kept.push({ work: c.work, kind: c.kind, ms: e[2], image: c.cdn || null, url: c.url || null });
         if (c.kind === 'surface' && Array.isArray(c.crop)) surfaces.push({ work: c.work, crop: c.crop.slice() });
       } else passed.push({ work: c.work, kind: c.kind });
@@ -1663,7 +1674,7 @@
 
   const FiveS = Object.freeze({
     version: 1,
-    ERAS, KINDS, SLOTS, SLOT_NAMES, OWN_KINDS, SOURCES, DECK_SOURCE, NOTE_QS, GROUPS, HUES, MILESTONES,
+    ERAS, KINDS, SLOTS, SLOT_NAMES, OWN_KINDS, SOURCES, DECK_SOURCE, DECK_SOURCES, deckSource, NOTE_QS, GROUPS, HUES, MILESTONES,
     HUB_MILESTONES, HUB_MODES, setHub,
     DEFINED_BY, OWN_LIMITS, checkOwnFields,
     hexToHsl, colourName, chord, features, featureLabel, featureGroup,

@@ -1115,3 +1115,21 @@ test('exportSeed: a defined thing says what it is and where it lives, and nothin
   const ex = F.exportSeed(F.exampleState(deck, NOW), deck, NOW);
   assert.ok(ex.own.every((o) => Object.keys(o).join() === 'name,kind,source,colours,let'));
 });
+
+// The artist's Architectural Authority bookmarks: deck cards that say their source (synthetic here, as the fixture is).
+test('Sources: deck cards counted by their source; a card with no source counts as Artsy', () => {
+  const bld = (cid, from) => ({ ...byId.get(from), id: cid, work: 'fixture-building', source: 'Architectural Authority',
+    url: 'https://www.thearchitecturalauthority.com/article/fixture-building' });
+  const d = { ...deck, cards: deck.cards.concat([bld('b001', 's001'), bld('m001', 'u001')]) };
+  const st = judgeAll(F.newState(), [['i001', true], ['b001', true], ['m001', true], ['o001', false]], NOW - 3600000, d).state;
+  assert.deepEqual(F.profile(st, d, NOW).sources, [
+    { source: "The artist's database (Artsy)", n: 1 }, { source: "The artist's bookmarks (Architectural Authority)", n: 2 }]);
+  assert.equal(F.deckSource(byId.get('i001')), F.DECK_SOURCES.Artsy, 'the fixture says no source: Artsy');
+  assert.deepEqual({ ...F.deckSource(d.cards.at(-1)) }, { site: 'The Architectural Authority', maker: 'Architect', sources: "The artist's bookmarks (Architectural Authority)" });
+  assert.deepEqual({ ...F.deckSource({ source: 'Artsy' }) }, { site: 'Artsy', maker: 'Artist', sources: F.DECK_SOURCE });
+  for (const odd of [null, {}, { source: 'constructor' }, { source: 'Elsewhere' }]) assert.equal(F.deckSource(odd), F.DECK_SOURCES.Artsy);
+  // the seed names a bookmark by its slug and carries its own page
+  const seed = F.exportSeed(st, d, NOW);
+  assert.deepEqual(seed.kept.filter((k) => k.work === 'fixture-building').map((k) => k.kind + ' ' + k.url).sort(),
+    ['space', 'surface'].map((k) => k + ' https://www.thearchitecturalauthority.com/article/fixture-building'));
+});

@@ -1,7 +1,7 @@
 /* 5s hub page: the person's hub as one standalone HTML document (SPEC.md "Your hub", "The hub page").
  *
  * The page lives on github.io, not in an artifact, so it has its own doctype and head and may show the
- * works' images from Artsy's CDN (the deck's "cdn", carried in the seed as kept[].image). It needs no
+ * works' images from Artsy's CDN or a bookmark's photo (the deck's "cdn", carried in the seed as kept[].image). It needs no
  * script: everything is HTML and one inline style, and it works offline except for images and fonts.
  * The seed rides along in <script type="application/json" id="seed">, so the page is also the data.
  *
@@ -20,6 +20,7 @@
   const KIND_LABEL = { image: 'Image', object: 'Object', space: 'Space', surface: 'Surface', colour: 'Colour' };
   const SLOTS = ['wall', 'window', 'picture', 'floor', 'object'];
   const SLOT_LABEL = { wall: 'Wall', window: 'Window', picture: 'Picture', floor: 'Floor', object: 'Object' };
+  const SLOT_KIND = { wall: 'colour', window: 'space', picture: 'image', floor: 'surface', object: 'object' };
   const NOTE_Q = {
     turn: 'A turn: what changed?', five: 'One word for a five', set: 'What a set is for',
     bring: 'Why it was saved', free: 'A note',
@@ -28,6 +29,11 @@
   const FONTS = 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Martian+Mono:wght@400;500&family=Unbounded:wght@500;700&display=swap';
   const MAX_SWATCHES = 160;
   const MAX_OWN = 48;
+  // The site that holds a deck card's page, by its "source" (none: Artsy, as in older decks).
+  const SITES = { Artsy: 'Artsy', 'Architectural Authority': 'The Architectural Authority' };
+  const siteOf = (w) => (w && Object.prototype.hasOwnProperty.call(SITES, w.source) ? SITES[w.source] : SITES.Artsy);
+  // The sites of these works, as words ("Artsy and The Architectural Authority"); Artsy when there are none.
+  const sitesOf = (works) => Object.values(SITES).filter((x) => works.some((w) => siteOf(w) === x)).join(' and ') || SITES.Artsy;
 
   // ---------------------------------------------------------------- safety
 
@@ -109,13 +115,15 @@
   // ---------------------------------------------------------------- resolving works
 
   function indexDeck(deck) {
-    const byWork = new Map(), byId = new Map();
+    const byWork = new Map(), byId = new Map(), byWorkKind = new Map();
     for (const c of (deck && Array.isArray(deck.cards) ? deck.cards : [])) {
       if (!c || typeof c !== 'object') continue;
       if (c.id) byId.set(c.id, c);
       if (c.work && !byWork.has(c.work)) byWork.set(c.work, c);
+      // a bookmark's Surface shares its work with its Space: a kept work is found by its kind too
+      if (c.work && !byWorkKind.has(c.work + ' ' + c.kind)) byWorkKind.set(c.work + ' ' + c.kind, c);
     }
-    return { byWork, byId };
+    return { byWork, byId, byWorkKind };
   }
 
   // A thumbnail for a brought-in thing, by its name (or its place in seed.own).
@@ -138,28 +146,44 @@
       title: text(c.title), artist: text(c.artist), date: text(c.date),
       colours: hexes(c.colours), image: https(c.cdn || c.image), url: https(c.url),
       crop: Array.isArray(c.crop) && c.crop.length === 4 && c.crop.every((x) => typeof x === 'number' && isFinite(x)) ? c.crop : null,
-      w: c.w > 0 ? c.w : null, h: c.h > 0 ? c.h : null, own: false, ...extra,
+      w: c.w > 0 ? c.w : null, h: c.h > 0 ? c.h : null, own: false, source: text(c.source), ...extra,
     });
     const fromOwn = (x, i) => ({
       kind: KINDS.indexOf(x.kind) >= 0 ? x.kind : 'image', title: text(x.name) || 'Untitled', artist: '', date: '',
       colours: hexes(x.colours), image: o.includeOwnImages ? ownThumbOf(o.ownThumbs, x.name, i) : null, url: null,
       crop: null, w: null, h: null, own: true, source: text(x.source),
     });
-    return function resolve(ref) {
+    // kind: the room slot's kind, for a seed's set that names a work by its slug (a bookmark's Space and
+    // Surface share theirs); a slug of another kind, a card id or a brought thing resolve as before.
+    return function resolve(ref, kind) {
       if (!ref) return null;
       if (typeof ref === 'object') {
         if (ref.own) return fromOwn({ kind: ref.kind, name: ref.title || ref.name, colours: ref.colours, source: ref.source }, -1);
-        const c = (ref.work && ix.byWork.get(ref.work)) || null;
+        const c = (ref.work && (ix.byWorkKind.get(ref.work + ' ' + ref.kind) || ix.byWork.get(ref.work))) || null;
         return fromCard(c ? Object.assign({}, c, ref) : ref);
       }
       if (typeof ref !== 'string') return null;
-      const c = ix.byWork.get(ref) || ix.byId.get(ref);
+      const c = (kind && ix.byWorkKind.get(ref + ' ' + kind)) || ix.byWork.get(ref) || ix.byId.get(ref);
       if (c) return fromCard(c);
       const i = own.findIndex((x) => x && x.name === ref);
       if (i >= 0) return fromOwn(own[i], i);
       if (/^y[0-9a-z]+$/.test(ref)) return null; // an internal id of a brought thing: never shown
       return { kind: null, title: text(ref), artist: '', date: '', colours: [], image: null, url: null, crop: null, w: null, h: null, own: false };
     };
+  }
+
+  // The seed's kept works, resolved: the seed's addresses win; a missing one falls back to the deck's.
+  function keptWorks(seed, resolve) {
+    return (Array.isArray(seed.kept) ? seed.kept : []).filter((k) => k && typeof k === 'object').map((k) => {
+      const ref = { work: k.work, kind: k.kind };
+      if (https(k.image)) ref.cdn = k.image;
+      if (https(k.url)) ref.url = k.url;
+      const w = resolve(ref);
+      if (!w.url && typeof k.work === 'string' && k.work && siteOf(w) === SITES.Artsy) w.url = 'https://www.artsy.net/artwork/' + encodeURIComponent(k.work);
+      if (!w.title && typeof k.work === 'string') w.title = 'A work on ' + siteOf(w);
+      w.kind = KINDS.indexOf(k.kind) >= 0 ? k.kind : w.kind || 'image';
+      return w;
+    });
   }
 
   // What a note is about, in words: a work's title (not its slug), a set's or a thing's name.
@@ -217,7 +241,7 @@
 
   function room(set, resolve, nameOf) {
     const get = {};
-    for (const s of SLOTS) get[s] = resolve(set ? set[s] : null);
+    for (const s of SLOTS) get[s] = resolve(set ? set[s] : null, SLOT_KIND[s]);
     const wall = get.wall, win = get.window, pic = get.picture, floor = get.floor, obj = get.object;
     const wc = wall ? wall.colours : [];
     let style = '';
@@ -445,23 +469,13 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
     }
 
     // kept works
-    const kept = (Array.isArray(seed.kept) ? seed.kept : []).filter((k) => k && typeof k === 'object').map((k) => {
-      // the seed's addresses win; a missing one falls back to the deck's
-      const ref = { work: k.work, kind: k.kind };
-      if (https(k.image)) ref.cdn = k.image;
-      if (https(k.url)) ref.url = k.url;
-      const w = resolve(ref);
-      if (!w.url && typeof k.work === 'string' && k.work) w.url = 'https://www.artsy.net/artwork/' + encodeURIComponent(k.work);
-      if (!w.title && typeof k.work === 'string') w.title = 'A work on Artsy';
-      w.kind = KINDS.indexOf(k.kind) >= 0 ? k.kind : w.kind || 'image';
-      return w;
-    });
+    const kept = keptWorks(seed, resolve);
     kept.sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind));
     const ownKept = (Array.isArray(seed.own) ? seed.own : []).filter((x) => x && !x.let).length;
     put('<section id="kept" aria-labelledby="kept-h">\n<h2 id="kept-h">Kept works</h2>\n');
     put('<p class="lede">' + (kept.length ? kept.length + (kept.length === 1 ? ' work' : ' works') + ' kept from an artist’s database of saved works.' : 'Nothing kept yet.') +
       (ownKept ? ' And ' + ownKept + (ownKept === 1 ? ' thing' : ' things') + ' brought in from elsewhere' + (o.includeOwnImages ? ', below.' : ', kept private.') : '') + '</p>\n');
-    if (kept.length) put('<p class="credit">Images and pages on Artsy</p>\n<ul class="works">' + kept.map(workTile).join('') + '</ul>\n');
+    if (kept.length) put('<p class="credit">Images and pages on ' + esc(sitesOf(kept)) + '</p>\n<ul class="works">' + kept.map(workTile).join('') + '</ul>\n');
     put('</section>\n');
 
     // colours
@@ -514,7 +528,7 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
 
     put('</main>\n<footer class="wrap">\n');
     put('<p>' + (made ? 'Made in 5s on ' + esc(made) + '. ' : 'Made in 5s. ') + 'Five quick judgments a day build an aesthetic database; this page grew from one.</p>\n');
-    put('<p>The works come from an artist’s database of saved works. Images and pages on Artsy.</p>\n');
+    put('<p>The works come from an artist’s database of saved works. Images and pages on ' + esc(sitesOf(kept)) + '.</p>\n');
     put('<p>This page holds no name, no email and no account details: only what was kept, passed and set. The seed is in its source (format 5s-seed).</p>\n');
     put('</footer>\n');
     put('<script type="application/json" id="seed">' + scriptJson(publicSeed(seed, o)) + '</script>\n');
@@ -522,9 +536,10 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
     return out.join('');
   }
 
-  /** readme({title, site}) -> a short README.md for the hub. */
+  /** readme({title, site, seed?, deck?}) -> a short README.md for the hub. */
   function readme(opts) {
     const o = opts || {};
+    const kept = o.seed && typeof o.seed === 'object' ? keptWorks(o.seed, resolver(o.seed, o.deck || null, o)) : [];
     const title = text(o.title) || 'A 5s hub';
     const site = https(o.site);
     return '# ' + title.replace(/[\r\n]+/g, ' ') + '\n\n' +
@@ -532,7 +547,7 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
       (site ? 'Open it at ' + site + '\n\n' : '') +
       '- `index.html` is the hub page.\n' +
       '- `seed.json` is the 5s seed (format `5s-seed`): what was kept, passed and set. It holds no name, no email and no account details.\n\n' +
-      'Images and pages of the works are on Artsy.\n';
+      'Images and pages of the works are on ' + sitesOf(kept) + '.\n';
   }
 
   /** files(opts) -> [{path, text}] for a hub: index.html (build(opts)), seed.json (the seed as

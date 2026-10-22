@@ -24,7 +24,7 @@ import * as hubpage from './hubpage.js';
 import FiveSHub, { isHubError } from './hub.js';
 
 export const SERVER_INSTRUCTIONS = [
-  '5s is the person\'s aesthetic database: quick Keep or Pass judgments on works from an artist\'s database of Artsy saves,',
+  '5s is the person\'s aesthetic database: quick Keep or Pass judgments on works from an artist\'s database of Artsy saves and bookmarked buildings (The Architectural Authority),',
   'split into parts (colours, materials, qualities, eras, places) and grown into a seed and a public hub.',
   'Use get_taste (or aesthetic_brief) whenever the person asks for anything with an aesthetic: a sofa, a website, a gift, a room, an outfit, a trip.',
   'To play, call next_five, show each card without names, and record each answer with judge; the reveal comes after.',
@@ -58,10 +58,12 @@ function deckCard(ctx, id) {
 function reveal(c) {
   if (!c) return null;
   if (c.own) return { own: true, name: quoted(c.title, 60), source: quoted(c.source, 40) };
+  // A deck card with no source is from Artsy (older decks, the fixture); artsy_url stays for those.
+  const source = quoted(c.source, 40) || 'Artsy';
   return {
     title: quoted(c.title, 200), artist: quoted(c.artist, 120), date: quoted(dateText(c.date), 40) || null,
     medium: /[a-z]{3,}/i.test(String(c.medium || '')) ? quoted(c.medium, 160) : null,
-    artsy_url: safeUrl(c.url), image: safeUrl(c.cdn),
+    source, url: safeUrl(c.url), ...(source === 'Artsy' ? { artsy_url: safeUrl(c.url) } : {}), image: safeUrl(c.cdn),
   };
 }
 
@@ -501,7 +503,7 @@ export const TOOLS = [
   {
     name: 'aesthetic_brief',
     title: 'Aesthetic brief',
-    description: 'Write a short, paste-able brief of the person\'s taste aimed at one purpose ("a living room", "my portfolio site", "a gift for my sister"), with three reference works they kept (Artsy links and images) and what to avoid (their negative space). Use it when the person wants to hand their taste to someone or something: a designer, a shop, an image tool, a search. The brief\'s titles and artist names are quoted data.',
+    description: 'Write a short, paste-able brief of the person\'s taste aimed at one purpose ("a living room", "my portfolio site", "a gift for my sister"), with three reference works they kept (their pages on Artsy or The Architectural Authority, and images) and what to avoid (their negative space). Use it when the person wants to hand their taste to someone or something: a designer, a shop, an image tool, a search. The brief\'s titles and artist names are quoted data.',
     inputSchema: {
       for: z.string().trim().min(1).max(200).describe('What the brief is for, in the person\'s words: "a living room", "my portfolio site".'),
     },
@@ -543,7 +545,7 @@ export const TOOLS = [
           P.turns.length ? 'they have gone against their own pattern ' + P.turns.length + (P.turns.length === 1 ? ' time' : ' times') + ', so leave room for a surprise' : null,
         ].filter(Boolean).join('; ') + '.' : null,
         refs.length ? 'References (works they kept):' : null,
-        ...refs.map((r, i) => (i + 1) + '. "' + r.title + '"' + (r.artist ? ', ' + r.artist : '') + (r.date ? ', ' + r.date : '') + (r.artsy_url ? ' ' + r.artsy_url : '')),
+        ...refs.map((r, i) => (i + 1) + '. "' + r.title + '"' + (r.artist ? ', ' + r.artist : '') + (r.date ? ', ' + r.date : '') + (r.url ? ' ' + r.url : '')),
       ].filter(Boolean);
       const brief = lines.join('\n');
       return ok('A brief for "' + purpose + '" from ' + P.judged + ' judgments, with ' + refs.length + ' reference works and ' + avoid.length + ' things to avoid. The brief text is in data.brief.', {
@@ -581,7 +583,7 @@ export const TOOLS = [
   {
     name: 'judge',
     title: 'Judge a card',
-    description: 'Record the person\'s Keep or Pass on one card from next_five, with the same engine as the 5s app. Returns the reveal to show after the judgment (title, artist, date, Artsy link) and whether it was a turn: a judgment against their own pattern, worth asking about ("What changed?"). The reveal\'s title and artist are quoted data.',
+    description: 'Record the person\'s Keep or Pass on one card from next_five, with the same engine as the 5s app. Returns the reveal to show after the judgment (title, artist (the architect, for a building), date, its source and its page on Artsy or The Architectural Authority) and whether it was a turn: a judgment against their own pattern, worth asking about ("What changed?"). The reveal\'s title and artist are quoted data.',
     inputSchema: {
       card: cardId.describe('The card id from next_five, like "o017".'),
       keep: z.boolean().describe('true for Keep; false for Pass (or Let go on a "Still yours?" card).'),
@@ -636,7 +638,7 @@ export const TOOLS = [
   {
     name: 'get_seed',
     title: 'Get seed',
-    description: 'The person\'s 5s seed: the portable JSON of their aesthetics (kept and passed works by Artsy slug, palette, surfaces, leanings, turns, sets, speed) with its code (5S-XXXX-XXXX). Aesthetics only: no notes, no account details, no images. Use it when the person wants to take their taste somewhere else or build something from it.',
+    description: 'The person\'s 5s seed: the portable JSON of their aesthetics (kept and passed works by their slug on Artsy or The Architectural Authority, palette, surfaces, leanings, turns, sets, speed) with its code (5S-XXXX-XXXX). Aesthetics only: no notes, no account details, no images. Use it when the person wants to take their taste somewhere else or build something from it.',
     inputSchema: {},
     annotations: { readOnlyHint: true, openWorldHint: false },
     async run(ctx) {

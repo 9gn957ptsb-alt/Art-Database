@@ -1,22 +1,24 @@
 /* The connector's copy of the artist's deck: only the fields the tools need.
  *
  * The engine reads id, kind, category, era, place, genes, materials, colours, texture (features),
- * work (the seed names works by their Artsy slug), and cdn and url (the seed's kept works carry them
- * for the hub page). The tools add the reveal (title, artist, date, medium). Everything else (the
- * local img path, the atlas cell) belongs to the app's build and is dropped.
+ * work (the seed names works by their slug on Artsy, or on The Architectural Authority for the
+ * artist's bookmarked buildings), source (where the card is from) and cdn and url (the seed's kept
+ * works carry them for the hub page). The tools add the reveal (title, artist, date, medium).
+ * Everything else (the local img path, the atlas cell) belongs to the app's build and is dropped.
  */
 
 export const CARD_FIELDS = Object.freeze([
   'id', 'kind', 'work', 'url', 'cdn', 'title', 'artist', 'date', 'year', 'era', 'category', 'medium',
-  'materials', 'place', 'colours', 'genes', 'w', 'h', 'crop', 'texture',
+  'materials', 'place', 'colours', 'genes', 'w', 'h', 'crop', 'texture', 'source',
 ]);
 
 const httpsOnly = (u) => (typeof u === 'string' && /^https:\/\/[^\s"<>]+$/.test(u) ? u : null);
 
 /**
  * trimDeck(deck, images, meta) -> the connector deck. Each card keeps the deck's own "cdn" (the
- * work's image on Artsy's CDN, SPEC "deck.json"); a deck built before build_deck.py wrote "cdn" gets
- * it from images: {[work slug]: address}, read from the art database by `npm run deck`.
+ * work's image on Artsy's CDN, or a building's own photo, SPEC "deck.json"); a deck built before
+ * build_deck.py wrote "cdn" gets it from images: {[work slug]: address}, read from the art database
+ * by `npm run deck`.
  */
 export function trimDeck(deck, images, meta) {
   if (!deck || !Array.isArray(deck.cards)) throw new Error('not a 5s deck: no cards');

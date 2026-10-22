@@ -22,7 +22,7 @@ export function quoted(s, max) {
   return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t;
 }
 
-/** Only https addresses go out (Artsy pages, Artsy's CDN, GitHub). */
+/** Only https addresses go out (Artsy pages, Artsy's CDN, The Architectural Authority's pages and photos, GitHub). */
 export function safeUrl(u) {
   return typeof u === 'string' && /^https:\/\/[^\s"<>]+$/.test(u) ? u : null;
 }

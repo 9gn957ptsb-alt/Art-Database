@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /* npm run deck: the artist's deck, trimmed for the connector, into src/deck.generated.json
- * (gitignored: it holds Artsy-derived data, like 5s/dist/).
+ * (gitignored: it holds data derived from Artsy and The Architectural Authority, like 5s/dist/).
  *
  *   node scripts/build-deck.mjs [--deck PATH] [--db PATH] [--out PATH] [--fixture]
  *
  * --deck     the app's built deck (default 5s/dist/deck.json, written by build_deck.py)
- * --db       the art database, for each work's image address on Artsy's CDN
+ * --db       the art database, for each Artsy work's image address on Artsy's CDN
  *            (default data/5s/artworks.db; without it the cards carry no image address)
  * --out      default src/deck.generated.json
  * --fixture  use 5s/test/fixture/deck.json (synthetic; for local runs without the real deck)
@@ -72,5 +72,5 @@ mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, JSON.stringify(out));
 const im = out.images;
 console.log(`deck: ${out.cards.length} cards from ${deckPath}`);
-console.log(`image addresses (Artsy CDN): ${im.from_deck} from the deck, ${im.from_db} from ${dbPath}, ${im.none} without`);
+console.log(`image addresses (Artsy's CDN, the buildings' photos): ${im.from_deck} from the deck, ${im.from_db} from ${dbPath}, ${im.none} without`);
 console.log(`wrote ${outPath} (${Math.round(JSON.stringify(out).length / 1024)} KB)`);

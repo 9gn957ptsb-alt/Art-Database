@@ -21,7 +21,7 @@ import { createFakeGitHub } from "./fake-github.js";
 import { createWeb } from "./web.js";
 import { createFakeWeb } from "./fake-web.js";
 import { serveBound, scheduleEnd, endSession } from "./session";
-// The artist's deck, trimmed for the connector by `npm run deck` (gitignored: Artsy-derived data).
+// The artist's deck, trimmed for the connector by `npm run deck` (gitignored: data derived from Artsy and The Architectural Authority).
 import deck from "./deck.generated.json";
 
 const VERSION = "0.1.0";

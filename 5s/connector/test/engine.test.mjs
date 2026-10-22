@@ -85,7 +85,9 @@ test('the real deck (when built here) gives the same answers trimmed as in the a
   compareDecks(full, trimmed);
   const withImage = trimmed.cards.filter((c) => c.cdn).length;
   assert.ok(withImage >= trimmed.cards.length * 0.95, 'nearly every card has an image address (' + withImage + ')');
-  for (const c of trimmed.cards) if (c.cdn) assert.match(c.cdn, /^https:\/\/[a-z0-9.-]+\.cloudfront\.net\/[^/]+\/[a-z_]+\.jpg$/);
+  // Artsy cards: Artsy's CDN; the artist's Architectural Authority bookmarks: the building's own photo.
+  for (const c of trimmed.cards) if (c.cdn) assert.match(c.cdn, c.source === 'Architectural Authority' ? /^https:\/\/[^\s"<>]+$/ : /^https:\/\/[a-z0-9.-]+\.cloudfront\.net\/[^/]+\/[a-z_]+\.jpg$/);
+  assert.ok(trimmed.cards.every((c) => c.source === full.cards.find((x) => x.id === c.id).source), 'each card keeps its source');
 });
 
 test('judgments made through the tools are the judgments the app would have stored', async () => {
