@@ -1438,7 +1438,8 @@
   }
   /* The swoosh: the guitar's path over the last half SWING, a band from its middle to its far end in the far end's
      gold, fading back and to its middle, where the far end goes faster than he walks: the smear of animation (one arc
-     for the frames a blow is too fast for) and the weapon trail of fighting games. None under reduced motion. */
+     for the frames a blow is too fast for) and the weapon trail of fighting games. None under reduced motion. Drawn
+     with the pearls' trails, after everything opaque. */
   function swooshAt(M, now) {
     if (!swing || !GUITAR_MID || stillMotion.matches) { swoosh.length = 0; return; }
     var m = window.PearlBody.place(M.guitar, P.x, P.y, P.z, P.face);
@@ -1457,7 +1458,7 @@
     gl.useProgram(trailProg);
     gl.uniformMatrix4fv(TU.uVP, false, vp); gl.uniform3f(TU.uC, SWOOSH_C[0], SWOOSH_C[1], SWOOSH_C[2]);
     gl.bindVertexArray(trailVao); gl.bindBuffer(gl.ARRAY_BUFFER, trailBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pts), gl.DYNAMIC_DRAW);
-    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+    gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE); gl.depthMask(false);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, pts.length / 4);
     gl.disable(gl.BLEND); gl.depthMask(true);
     gl.bindVertexArray(null);
@@ -2511,7 +2512,7 @@
       rocketLift = lift;
     }
     drawPearl(now); drawPearls(now);
-    drawShards(); drawSwoosh(now);
+    drawShards();
     if (skyFig) {
       gl.useProgram(figProg);
       gl.uniformMatrix4fv(FU.uVP, false, vp);
@@ -2573,7 +2574,7 @@
       });
       gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.depthMask(true);
     }
-    drawTrails();
+    drawTrails(); drawSwoosh(now);
     gl.bindVertexArray(null);
     if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); homageCheck(); }
     overlay(now, open);
