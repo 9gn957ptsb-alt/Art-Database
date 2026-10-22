@@ -11,17 +11,19 @@
   <link rel="stylesheet" href="rocket.css">
 </head>
 <body>
-  <canvas id="view" aria-label="The place in blocks. Move with the stick or W A S D, drag to look, tap a work to read its label, tap a block to break it or place one."></canvas>
+  <canvas id="view" aria-label="The place in blocks. Move with the stick or W A S D, drag to look, tap a work to read its label, tap a block to break it or place one; raise the sight (Sight, or R) and a tap throws a pearl where its mark is."></canvas>
   <canvas id="hud" aria-hidden="true"></canvas>
   <header class="top">
     <p class="where" id="where"></p>
     <p class="alarms" id="alarms" hidden></p>
+    <p class="pearls" id="pearls" hidden aria-live="polite"></p>
     <ul class="pieces" id="pieces" aria-label="The pieces of your rocket"></ul>
   </header>
   <button class="pill corner" id="notes-btn">Notes</button>
   <aside class="notes" id="notes" hidden><p class="eyebrow">What you know</p><div id="notes-list"></div></aside>
   <p class="near" id="near" hidden></p>
   <p class="tag" id="tag" hidden></p>
+  <p class="sight-tag" id="sight-tag" hidden aria-live="polite"></p>
   <section class="label" id="label" hidden aria-label="The work's label">
     <img class="l-pic" id="l-pic" alt="" referrerpolicy="no-referrer">
     <div class="l-text">
@@ -38,6 +40,7 @@
     <div class="bar"><button class="pill" id="mode" aria-pressed="false">Break</button><div class="hotbar" id="hotbar" role="group" aria-label="Blocks to place"></div></div>
   </div>
   <div class="views" id="views">
+    <button class="vw" id="v-sight" aria-pressed="false" title="The sight: your head is the glass, and a tap or a click then throws a pearl where its mark is (R)"><span>Sight</span></button>
     <button class="vw" id="v-holo" aria-pressed="false" title="Holographic: the head leaves the body; pressed again, the body follows it and the view is third person (H)"><span>Holo</span></button>
   </div>
   <button class="jump" id="jump" aria-label="Jump">↑</button>
@@ -62,7 +65,7 @@
       <p class="preview" id="preview"></p>
       <div class="go"><button class="pill solid big" id="begin" disabled>Begin</button><button class="pill" id="surprise">Surprise me</button></div>
       <p class="status" id="status">Loading the places</p>
-      <p class="keys">Tap a work to read its label and look behind it; three wrong looks and the guards put you out. On a phone: the stick on the left, drag to look, tap. On a computer: W A S D, drag to look, click; space jumps, 1–5 picks a block, E switches break and place, N opens the notes. Holo (or H) sends your head out as the hologram; pressed again, your body follows it.</p>
+      <p class="keys">Tap a work to read its label and look behind it; three wrong looks and the guards put you out. On a phone: the stick on the left, drag to look, tap. On a computer: W A S D, drag to look, click; space jumps, 1–5 picks a block, E switches break and place, N opens the notes. Holo (or H) sends your head out as the hologram; pressed again, your body follows it. Sight (or R, or the right button) raises the sight, your head the glass; then a tap, a click, T or Enter throws a pearl where its mark is.</p>
     </div>
   </section>
   <section class="start" id="end" hidden>

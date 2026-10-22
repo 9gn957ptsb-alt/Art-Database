@@ -6,7 +6,9 @@
      opts.skip = palette ids the game's block shader reads as no block (water, a note), which his cells never take.
    PearlBody.pose(body, phase, amount, act) -> { part: mat4 }: each part's cells -> his own frame (metres, y up, he
      faces -z, the origin the ground under his head), the walk at that phase; column-major as rocket.js's. act
-     (optional) is what his arms and upper body do over the walk: { arms, twist } in radians (the smash).
+     (optional) is what his arms and upper body do over the walk: { arms, twist, right, fling }, arms and twist in
+     radians (the smash); right, 0 to 1, the right arm raised to throw (the sight); fling, in radians, that arm turned
+     about the shoulder line after a throw.
    PearlBody.place(m, x, y, z, yaw) -> mat4: his frame -> the world, stood at (x, y, z), facing the yaw.
    PearlBody.phaseStep(body, phase, metres): the walk's phase after walking that far (a stride is two legs).
    PearlBody.HEAD_VS, HEAD_FS: his head's own program, the true sphere solved per pixel.
@@ -327,7 +329,24 @@
     var hat = parts.filter(function (p) { return p.name === "hat" && !p.empty; })[0], reach = 0;
     if (hat) { hat.blocks.forEach(function (b) { var q = [hat.org[0] + (b[0] + 0.5) * h - hc[0], hat.org[1] + (b[1] + 0.5) * h - hc[1], hat.org[2] + (b[2] + 0.5) * h - hc[2]]; reach = max(reach, len(q) + h * sqrt(3) / 2); }); }
     var HM = spec.holographic_mode || {}, drop = HM.option_B && HM.option_B.hat_drop ? HM.option_B.hat_drop.drop_m : 0;
-    return { hatReach: reach, hatDrop: drop, top: spec.scale.height_to_hat_top_m, cell: h, level: spec.unit.level, parts: parts, palette: PAL.pal, paletteIds: PAL.ids, tints: PAL.tints, lean: PAL.lean,
+    // The right arm raised to throw (the sight; the artist, 20 Oct 2026: "And when I click with the reflex sight up, I
+    // am able to throw something"): turned about the right shoulder, first about his forward line until the upper arm
+    // is level, out to his right (a1), then about the upper arm's own line until the forearm stands as upright as its
+    // bend lets it (a2: the elbow is bent 81 deg, so it leans 9 deg out). The palm's centre and the forearm's way are
+    // kept for the pearl the glove holds. From the form: the upper arm's ends and the forearm's.
+    var Pm = {}, throwArm = null;
+    prims.forEach(function (pr) { Pm[pr.part] = pr; });
+    if (Pm.upper_arm_right && Pm.forearm_right && Pm.glove_right_palm && joints.shoulder_right) {
+      var sh = joints.shoulder_right.at, el = toGame(Pm.upper_arm_right.b), wr = toGame(Pm.forearm_right.b), turn = function (v, ax, a) {
+        var m = RA(ax, a); return [m[0] * v[0] + m[4] * v[1] + m[8] * v[2], m[1] * v[0] + m[5] * v[1] + m[9] * v[2], m[2] * v[0] + m[6] * v[1] + m[10] * v[2]]; };
+      var u0 = sub(el, sh), a1 = -Math.atan2(u0[1], u0[0]), u1 = turn(u0, [0, 0, 1], a1), f1 = turn(sub(wr, el), [0, 0, 1], a1), ul = len(u1), fo = sub(wr, el), fl = len(fo);
+      u1 = [u1[0] / ul, u1[1] / ul, u1[2] / ul];
+      // a2 in closed form: the forearm's height after the turn about u1 is A cos a + B sin a + C, with A = f1.y - u1.y (u1 . f1)
+      // and B = (u1 x f1).y; highest at atan2(B, A)
+      var a2 = Math.atan2(u1[2] * f1[0] - u1[0] * f1[2], f1[1] - u1[1] * dot(u1, f1));
+      throwArm = { a1: a1, a2: a2, u0: u0, palm: toGame(Pm.glove_right_palm.c), fore: [fo[0] / fl, fo[1] / fl, fo[2] / fl] };
+    }
+    return { throwArm: throwArm, hatReach: reach, hatDrop: drop, top: spec.scale.height_to_hat_top_m, cell: h, level: spec.unit.level, parts: parts, palette: PAL.pal, paletteIds: PAL.ids, tints: PAL.tints, lean: PAL.lean,
              head: head, joints: joints, walk: spec.walk, camera: spec.camera, cells: cells.length, rimCells: rimCount, tintCounts: counts };
   }
 
@@ -366,7 +385,10 @@
   // the line through his shoulder centres (his hands hold it; + lifts the front, as RX swings a leg forward);
   // act.twist, the upper body about the spine, the walk's own turn made large (+ to his right): the torso, the arms,
   // the guitar, the hat and the head's centre turn with it, as with the walk's (the head's eyes are drawn on his
-  // facing, so they stay on what he faces).
+  // facing, so they stay on what he faces). act.right, 0 to 1, his right arm raised to throw (the artist, 20 Oct 2026:
+  // "And when I click with the reflex sight up, I am able to throw something"; build's throwArm): it lets go of the
+  // guitar, which stays with his left glove and his torso; act.fling, that raised arm about the shoulder line after a
+  // throw (- brings the forearm down to the fore). With act.arms (a swing let go, coming back) it turns with both arms.
   function pose(body, phase, amount, act) {
     var W = body.walk, th = W.thigh_swing_deg * Math.PI / 180 * (amount == null ? 1 : amount), J = body.joints;
     var kn = W.knee_bend_deg / W.thigh_swing_deg, tw = W.shoulder_twist_deg / W.thigh_swing_deg;
@@ -378,6 +400,15 @@
       var sR = J.shoulder_right.at, sL = J.shoulder_left.at;
       arms = about(RA([sR[0] - sL[0], sR[1] - sL[1], sR[2] - sL[2]], act.arms), sR);
     }
+    // act.right, 0 to 1: the right arm raised to throw (body.throwArm), both its turns taken that far; act.fling, the
+    // raised arm about the shoulder line after it (+ lifts the front, as act.arms; the follow-through is -).
+    var right = null, TA = body.throwArm;
+    if (act && TA && (act.right || act.fling)) {
+      var sR2 = J.shoulder_right.at, sL2 = J.shoulder_left.at, k = act.right || 0, R1 = RA([0, 0, 1], TA.a1 * k);
+      var u1 = [R1[0] * TA.u0[0] + R1[4] * TA.u0[1] + R1[8] * TA.u0[2], R1[1] * TA.u0[0] + R1[5] * TA.u0[1] + R1[9] * TA.u0[2], R1[2] * TA.u0[0] + R1[6] * TA.u0[1] + R1[10] * TA.u0[2]];
+      right = about(mmul(RA(u1, TA.a2 * k), R1), sR2);
+      if (act.fling) { right = mmul(about(RA([sR2[0] - sL2[0], sR2[1] - sL2[1], sR2[2] - sL2[2]], act.fling), sR2), right); }
+    }
     var M = {};
     var rest = function (p) { return mmul(T(p.org[0], p.org[1], p.org[2]), S(body.cell)); };   // cells -> his frame at rest
     body.parts.forEach(function (p) {
@@ -387,6 +418,7 @@
       else if (p.name === "shin_right") { m = mmul(about(RX(aR), J.hip_right.at), mmul(about(RX(-kR), J.knee_right.at), m)); }
       else if (p.name === "thigh_left") { m = mmul(about(RX(aL), J.hip_left.at), m); }
       else if (p.name === "shin_left") { m = mmul(about(RX(aL), J.hip_left.at), mmul(about(RX(-kL), J.knee_left.at), m)); }
+      else if (right && p.name === "arm_right") { m = mmul(twist, arms ? mmul(arms, mmul(right, m)) : mmul(right, m)); }
       else if (arms && (p.name === "arm_right" || p.name === "arm_left" || p.name === "guitar")) { m = mmul(twist, mmul(arms, m)); }
       else if (p.name !== "pelvis") { m = mmul(twist, m); }
       M[p.name] = mmul(bob, m);
