@@ -83,6 +83,9 @@
 
   function strands(ctx, t, p, env, I, ease) {
     const pal = env.palette, pick = chosen(p, env);
+    // at rest the three strands are the stroke: the whole mark (with its ribbon behind the letters) lies under
+    // them until they part, so the seams between strands never show and t = 0 is the still mark
+    const under = 1 - M.smoothstep(0.04, 0.12, t);
     // anticipation: the mark draws itself in a fraction before it splits
     const gather = 1 - 0.03 * bump(t / 0.1);
     const order = [1, 0, 2];                                  // the middle strand leaves first
@@ -125,16 +128,13 @@
       return {
         j, z: isPick ? (choose > 0 ? 3 : 1) : 0,
         o: {
-          pos, sc, rot, off, wk, alpha: 1 - fade,
-          ribbon: isPick ? M.lerp(1 - 0.6 * M.smoothstep(0.03, 0.2, t), 1, choose) : 0.5 * a * (1 - fade),
+          pos, sc, rot, off, wk, alpha: (1 - fade) * M.smoothstep(0, 0.04, t),   // the strands appear over the still mark before they part
+          ribbon: isPick ? M.lerp(1 - 0.6 * M.smoothstep(0.03, 0.2, t), 1, choose) * (1 - under) : 0.5 * a * (1 - fade),
           ribbonT: 0.15 * I * a * (1 - choose)
         }
       };
     });
-    // at rest the three strands are the stroke: the whole mark lies under them until they part, so the
-    // seams between strands never show
-    const under = 1 - M.smoothstep(0.04, 0.12, t);
-    if (under > 0.002) M.mark(ctx, { palette: pal, weight: p.weight, ribbon: false, alpha: under });
+    if (under > 0.002) M.mark(ctx, { palette: pal, weight: p.weight, ribbon: p.ribbon, alpha: under });
     // draw: the two that fade under, the chosen one on top once it is chosen
     items.sort((x, y) => x.z - y.z || x.j - y.j);
     for (const it of items) if (it.o.alpha > 0.002) copy(ctx, pal, p, it.o);

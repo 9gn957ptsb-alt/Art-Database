@@ -173,7 +173,8 @@
         k: 1 - 0.1 * lift + 0.03 * antic(x)
       };
     };
-    const P5 = pose(t), PS = pose(t + lead), PR = pose(t - drag);
+    // the s's lead grows in over the first instant, so t = 0 is exactly the still mark (no pop as it starts)
+    const P5 = pose(t), PS = pose(t + lead * M.smoothstep(0, 0.1, t)), PR = pose(t - drag);
     const tc = trailColours(p, pal, dir);
 
     // the trail: one streak per letter, from where it started to where it is now; it fades and pulls away
@@ -298,7 +299,7 @@
         M.stroke(cc, PTS.s, { width: M.widths.s * p.weight, colours: tc.s });
       }));
     }
-    const ps = pose(t + 0.03, 1), pr = pose(t - 0.06, 1);
+    const ps = pose(t + 0.03 * M.smoothstep(0, 0.1, t), 1), pr = pose(t - 0.06, 1);   // the lead grows in: t = 0 is the still mark
     mark(ctx, p, pal,
       { x: now.x, y: now.y, r: now.r, k: now.k },
       { x: ps.x, y: ps.y, r: ps.r * 1.15, k: ps.k },
