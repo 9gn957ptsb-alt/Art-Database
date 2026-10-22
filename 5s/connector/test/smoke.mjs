@@ -1,17 +1,24 @@
 #!/usr/bin/env node
 // Live smoke (npm run smoke): the Worker itself under `wrangler dev`, twice.
 //
-//  1. Dev bypass (DEV_FAKE_USER, port 8800): an MCP client (@modelcontextprotocol/sdk, streamable
+//  1. Dev bypass (DEV_FAKE_USER, port 8800 or SMOKE_PORT): an MCP client (@modelcontextprotocol/sdk, streamable
 //     HTTP) lists the tools and plays a five (next_five, judge ×5, get_taste), makes a hub against the
 //     fake GitHub, and the bypass is refused for any host but localhost. A second dev person can't
 //     use, strip or end the first one's session id, and the local storage never holds the token.
-//  2. Real sign-in (no DEV_FAKE_USER, port 8802): /mcp without a token is 401 with the OAuth
+//     Connect your apps: read_link reads a Pinterest board and a web page from the fake web
+//     (src/fake-web.js, which the dev bypass reads instead of the internet, behind the real guard of
+//     src/web.js), bring_in adds two of its pictures with their colours read inside workerd,
+//     item_image hands one back as an image, a link that redirects into a private network is
+//     refused, and the local storage keeps the pictures' addresses, never the pictures.
+//  2. Real sign-in (no DEV_FAKE_USER, port 8802 or SMOKE_PORT + 2): /mcp without a token is 401 with the OAuth
 //     discovery Claude follows, dynamic client registration works, /authorize shows "Connect 5s",
 //     and approving it sends the browser to GitHub's own sign-in page with the right scopes and PKCE.
 //     Approving from another site, or to an unregistered redirect address, is refused; a burst of
 //     registrations gets 429; and the local storage never holds the client secret or cookie key.
 //
-// Env: SMOKE_DIR (scratch for env files, local KV and logs; default a temp dir).
+// Env: SMOKE_DIR (scratch for env files, local KV and logs; default a temp dir); SMOKE_PORT (the first
+// of the four ports it uses, default 8800: the Workers on SMOKE_PORT and SMOKE_PORT + 2, each with its
+// inspector on the next port).
 // Needs src/deck.generated.json (npm run deck, or npm run deck -- --fixture).
 import { spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -25,6 +32,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const CONNECTOR = join(dirname(fileURLToPath(import.meta.url)), '..');
+const PORT = Number(process.env.SMOKE_PORT) || 8800;
 const DIR = process.env.SMOKE_DIR || mkdtempSync(join(tmpdir(), '5s-connector-smoke-'));
 mkdirSync(DIR, { recursive: true });
 if (!existsSync(join(CONNECTOR, 'src', 'deck.generated.json'))) {
@@ -88,10 +96,12 @@ const MCP_HEADERS = { 'content-type': 'application/json', accept: 'application/j
 const toolsList = JSON.stringify({ jsonrpc: '2.0', id: 9, method: 'tools/list', params: {} });
 
 async function devBypass() {
-  console.log('1. dev bypass (DEV_FAKE_USER) on :8800');
-  const w = startWorker('bypass', 8800, {
+  console.log('1. dev bypass (DEV_FAKE_USER) on :' + PORT);
+  const w = startWorker('bypass', PORT, {
     GITHUB_CLIENT_ID: 'dev-placeholder', GITHUB_CLIENT_SECRET: 'dev-placeholder',
     COOKIE_ENCRYPTION_KEY: 'dev-placeholder-dev-placeholder-dev-placeholder', DEV_FAKE_USER: '1001:artist-dev,1002:other-dev',
+    // wrangler.jsonc sets 0 for Workers Free; here the pictures are measured inside workerd, as on Paid.
+    COLOUR_BUDGET_PX: '4000000',
   });
   try {
     await w.ready;
@@ -99,8 +109,9 @@ async function devBypass() {
     const transport = new StreamableHTTPClientTransport(new URL(w.base + '/mcp'));
     await client.connect(transport);
     const { tools } = await client.listTools();
-    check('tools/list gives the ten tools', () => assert.deepEqual(tools.map((t) => t.name),
-      ['get_taste', 'aesthetic_brief', 'next_five', 'judge', 'get_seed', 'hub_status', 'make_hub', 'save_hub', 'get_state', 'put_state']));
+    check('tools/list gives the ten tools, and Connect your apps\' three', () => assert.deepEqual(tools.map((t) => t.name),
+      ['get_taste', 'aesthetic_brief', 'next_five', 'judge', 'get_seed', 'hub_status', 'make_hub', 'save_hub', 'get_state', 'put_state',
+        'read_link', 'bring_in', 'item_image']));
 
     const five = await client.callTool({ name: 'next_five', arguments: {} });
     const cards = five.structuredContent.cards;
@@ -166,12 +177,66 @@ async function devBypass() {
     check('and the session still works for its own person', () => assert.equal(still.structuredContent.judged, 5));
     const stranger = await fetch(w.base + '/mcp', { method: 'POST', headers: Object.assign({ 'x-5s-dev-user': 'not-listed' }, MCP_HEADERS), body: toolsList });
     check('the dev bypass only plays people listed in DEV_FAKE_USER', () => assert.equal(stranger.status, 403));
+
+    // Connect your apps (SPEC): the fake web stands in for the internet under the dev bypass. (After the
+    // checks above that count judgments: a thing brought in is a kept judgment.)
+    const board = await client.callTool({ name: 'read_link', arguments: { url: 'https://www.pinterest.com/ada/slow-mornings/' } });
+    console.log('      ' + board.content[0].text);
+    check('read_link: a public Pinterest board, read through the guard: its pictures, nothing added yet', () => {
+      assert.equal(board.isError, undefined, board.content[0].text);
+      assert.equal(board.structuredContent.source, 'Pinterest');
+      assert.ok(board.structuredContent.items.length >= 2);
+      for (const it of board.structuredContent.items) assert.match(it.image, /^https:\/\/i\.pinimg\.com\//);
+    });
+    const page = await client.callTool({ name: 'read_link', arguments: { url: 'studio.example.com/work/bowl' } });
+    check('read_link: a web page gives its preview picture (an address without https:// is read as https)', () => {
+      assert.equal(page.isError, undefined, page.content[0].text);
+      assert.equal(page.structuredContent.source, 'The web');
+      assert.equal(page.structuredContent.items[0].image, 'https://img.example.com/bowl.jpg');
+    });
+    const brought = await client.callTool({ name: 'bring_in', arguments: { items: board.structuredContent.items.slice(0, 2) } });
+    console.log('      ' + brought.content[0].text);
+    const added = (brought.structuredContent && brought.structuredContent.added) || [];
+    check('bring_in: two of them added, from Pinterest, with colours, surface and texture read inside workerd', () => {
+      assert.equal(brought.isError, undefined, brought.content[0].text);
+      assert.equal(added.length, 2);
+      for (const a of added) {
+        assert.match(a.id, /^y[a-z0-9]{5}$/);
+        assert.equal(a.source, 'Pinterest');
+        assert.equal(a.colours_pending, false);
+        assert.equal(a.colours.length, 3);
+        assert.equal(a.crop.length, 4);
+        assert.equal(typeof a.texture, 'number');
+      }
+    });
+    const after = (await client.callTool({ name: 'get_state', arguments: {} })).structuredContent.state;
+    check('the state keeps them as their own saves, by address: no picture in it', () => {
+      const own = after.own.filter((o) => added.some((a) => a.id === o.id));
+      assert.equal(own.length, 2);
+      for (const o of own) assert.match(o.image, /^https:\/\/i\.pinimg\.com\/736x\//);
+      assert.ok(!JSON.stringify(after).includes('base64'));
+    });
+    const pic = await client.callTool({ name: 'item_image', arguments: { id: added[0].id } });
+    check('item_image: the picture as an image block, and as a data: URL only in structuredContent', () => {
+      assert.equal(pic.isError, undefined, pic.content[0].text);
+      const img = pic.content.find((c) => c.type === 'image');
+      assert.equal(img.mimeType, 'image/jpeg');
+      assert.equal(pic.structuredContent.image, 'data:image/jpeg;base64,' + img.data);
+      assert.ok(!pic.content.filter((c) => c.type === 'text').some((c) => c.text.includes('base64,')));
+    });
+    const inside = await client.callTool({ name: 'read_link', arguments: { url: 'https://short.example.com/to-metadata' } });
+    check('read_link: a link that redirects to a private address (cloud metadata) is refused, with what to do instead', () => {
+      assert.equal(inside.isError, true);
+      assert.equal(inside.structuredContent.code, 'private');
+      assert.ok(inside.structuredContent.resolution);
+    });
+    pictureSample = Buffer.from(pic.structuredContent.image.split(',')[1], 'base64').subarray(600, 680).toString('base64');
     await other.close();
     await client.close();
 
     // fetch() drops a Host header, so this goes through node:http, which sends it as given.
     const foreign = await new Promise((res, rej) => {
-      const r = request({ host: '127.0.0.1', port: 8800, path: '/mcp', method: 'POST',
+      const r = request({ host: '127.0.0.1', port: PORT, path: '/mcp', method: 'POST',
         headers: { Host: 'fives-connector.example.workers.dev', 'content-type': 'application/json', accept: 'application/json, text/event-stream' } }, (x) => {
         let body = ''; x.on('data', (d) => { body += d; }); x.on('end', () => res({ status: x.statusCode, body }));
       });
@@ -190,13 +255,21 @@ async function devBypass() {
     assert.ok(filesHolding(state, 'artist-dev').length > 0, 'the scan reads the stored data');
     assert.deepEqual(filesHolding(state, 'dev-fake-token'), []);
   });
+  check('local storage keeps the brought pictures\' addresses, never the pictures', () => {
+    assert.ok(filesHolding(state, 'https://i.pinimg.com/736x/ab/cd/ef/bowl.jpg').length > 0, 'the scan reads the stored state');
+    assert.ok(pictureSample && pictureSample.length > 80);
+    assert.deepEqual(filesHolding(state, pictureSample), [], 'no picture, as base64');
+    assert.deepEqual(filesHolding(state, Buffer.from(pictureSample, 'base64')), [], 'no picture, as bytes');
+  });
 }
+
+let pictureSample = null;
 
 const COOKIE_KEY = randomBytes(32).toString('hex');
 
 async function realSignIn() {
-  console.log('2. real sign-in (no DEV_FAKE_USER) on :8802');
-  const w = startWorker('oauth', 8802, {
+  console.log('2. real sign-in (no DEV_FAKE_USER) on :' + (PORT + 2));
+  const w = startWorker('oauth', PORT + 2, {
     GITHUB_CLIENT_ID: 'Iv1.smoke-client-id', GITHUB_CLIENT_SECRET: 'not-a-real-secret',
     COOKIE_ENCRYPTION_KEY: COOKIE_KEY,
   });

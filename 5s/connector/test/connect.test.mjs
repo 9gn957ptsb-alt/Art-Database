@@ -11,7 +11,7 @@ import FiveSBring from '../src/bring.js';
 import { checkAddress, privateIp, createWeb, WebError, WEB_LIMITS, USER_AGENT } from '../src/web.js';
 import { createFakeWeb, FAKE_PICTURES, pictureBytes, paint } from '../src/fake-web.js';
 import { sniff, dimensions, decodePng, decodeJpeg, analyse, shrink, resample } from '../src/pixels.js';
-import { registerTools, SERVER_INSTRUCTIONS, TOOLS, CONNECT, sourceName } from '../src/tools.js';
+import { registerTools, SERVER_INSTRUCTIONS, TOOLS, CONNECT, sourceName, toMcpResult } from '../src/tools.js';
 import { checkState, LIMITS } from '../src/validate.js';
 import { DAILY_BRING, DAILY_WRITES } from '../src/store.js';
 import { PICTURES } from './pictures.mjs';
@@ -47,7 +47,8 @@ test('addresses: https names only; every spelling of a private, local or metadat
     'https://[fd00:ec2::254]/': 'private', 'https://[fe80::1]/': 'private',
     'https://localhost/': 'private', 'https://LOCALHOST./': 'private', 'https://app.localhost/': 'private', 'https://printer.local/': 'private',
     'https://metadata.google.internal/computeMetadata/v1/': 'private', 'https://router.home.arpa/': 'private', 'https://x.onion/': 'private',
-    'https://93.184.216.34/': 'ip', 'https://[2606:4700::1111]/': 'ip', 'https://metadata/': 'host', 'https://intranet/': 'host',
+    'https://93.184.216.34/': 'ip', 'https://[2606:4700::1111]/': 'ip', 'https://metadata/': 'host', 'https://fileserver/': 'host',
+    'https://intranet/': 'private', // a single label, but a known private name too: the more specific reason wins (as for localhost)
     ['https://example.com/' + 'a'.repeat(3000)]: 'too long',
   };
   for (const [addr, code] of Object.entries(refused)) {
@@ -91,7 +92,7 @@ test('size caps: a body is never read past the cap (refused whole, or cut when a
   await assert.rejects(web.get('https://huge.example.com/page'), (e) => e.code === 'too large');
   assert.ok(fake.stats['https://huge.example.com/page'].sent <= WEB_LIMITS.pageBytes + 65536, 'stopped reading at the cap');
   await assert.rejects(web.get('https://huge.example.com/declared'), (e) => e.code === 'too large');
-  assert.equal(fake.stats['https://huge.example.com/declared'], undefined, 'a declared size over the cap: the body is not read at all');
+  assert.ok(!(fake.stats['https://huge.example.com/declared'] || {}).sent, 'a declared size over the cap: the body is not read at all');
   const part = await web.get('https://img.example.com/huge.jpg', { maxBytes: WEB_LIMITS.headBytes, partial: true });
   assert.equal(part.truncated, true);
   assert.equal(part.bytes.length, WEB_LIMITS.headBytes);
@@ -305,9 +306,17 @@ test('analyse: the app\'s own colours, surface and texture (FiveSBring\'s measur
   }
   const chair = analyse(await decodePng(pictureBytes('chair').bytes, 1e6));
   assert.ok(near(chair.colours, FAKE_PICTURES.chair.bands), 'transparent margins are not a colour: ' + chair.colours.join(' '));
+  // Texture, against the app itself: FiveSBring.process in Chromium reads linen (600 x 800, woven) as
+  // 0.54 with the window [0.6094, 0.2982, 0.25, 0.1871], and the flat bowl and the small stool as 0 (a
+  // 120 px picture's 30 px window is enlarged 17 times for the 512 px measure, and its 2 px weave
+  // melts in the app's canvas as it does here). Enlarging is the app's Mitchell cubic, not bilinear.
+  const linen = analyse(decodeJpeg(pictureBytes('linen').bytes, 1e6));
   const stool = analyse(decodeJpeg(pictureBytes('stool').bytes, 1e6));
   const bowl = analyse(decodeJpeg(pictureBytes('bowl').bytes, 1e6));
-  assert.ok(stool.texture > bowl.texture && stool.texture > 0.2, 'a woven surface reads as textured: ' + stool.texture + ' vs ' + bowl.texture);
+  assert.ok(Math.abs(linen.texture - 0.54) <= 0.05, 'a woven surface reads as textured, as the app reads it: ' + linen.texture);
+  assert.deepEqual(linen.crop, [0.6094, 0.2982, 0.25, 0.1871], 'the woven window the app picks');
+  assert.equal(bowl.texture, 0, 'a flat picture reads as smooth');
+  assert.equal(stool.texture, 0, 'as in the app, a weave too small to survive the enlargement reads as smooth');
   // The 96 px copy the colours come from is what the app's dominantColours is given.
   const img = decodeJpeg(pictureBytes('meadow').bytes, 1e6);
   const small = resample(img.data, img.w, img.h, null, 96, 60);
@@ -550,7 +559,34 @@ test('item_image: the picture as a data: URL (as it is when small, made smaller 
   assert.equal(big.data.colours_pending, true, 'the app knows to measure it');
   assert.match((await call(ctx, 'item_image', { id: id('anim.gif') })).data.image, /^data:image\/gif;base64,/);
   assert.match((await call(ctx, 'item_image', { id: id('chair.png') })).data.image, /^data:image\/png;base64,/);
-  for (const x of [small, big]) assert.doesNotMatch(x.summary, /data:|base64/);
+  for (const x of [small, big]) {
+    assert.doesNotMatch(x.summary, /data:|base64/, 'the summary names the picture, never carries it');
+    // As MCP sends it: the picture as an image block Claude can see, the data: URL only in structuredContent.
+    const m = toMcpResult(x);
+    const texts = m.content.filter((c) => c.type === 'text').map((c) => c.text).join('\n');
+    assert.ok(!texts.includes('base64,') && texts.length < 2000, 'no picture in the text Claude reads');
+    const img = m.content.find((c) => c.type === 'image');
+    assert.equal(img.mimeType, x.data.type);
+    assert.equal('data:' + img.mimeType + ';base64,' + img.data, x.data.image);
+    assert.equal(m.structuredContent.image, x.data.image);
+  }
+});
+
+test('item_image at a colour budget of 0 (COLOUR_BUDGET_PX, Workers Free): nothing is decoded; a smaller copy stands in, else too large', async () => {
+  const { ctx } = ctxFor();
+  ctx.colourBudgetPx = 0;
+  const r = await call(ctx, 'bring_in', { items: [
+    { image: 'https://img.example.com/big.jpg', thumb: 'https://img.example.com/window.jpg', source: 'The web' },
+    { image: 'https://img.example.com/big.jpg?no-thumb', source: 'The web' },
+  ] });
+  assert.equal(r.data.added.length, 2, r.summary);
+  assert.equal(r.data.colours.pending, 2, 'nothing measured here');
+  const withThumb = await call(ctx, 'item_image', { id: r.data.added[0].id });
+  assert.equal(withThumb.isError, undefined, withThumb.summary);
+  assert.equal(withThumb.data.resized, false);
+  assert.equal(withThumb.data.from, 'https://img.example.com/window.jpg', 'the smaller copy, as it is');
+  const without = await call(ctx, 'item_image', { id: r.data.added[1].id });
+  assert.equal(without.data.code, 'too large');
 });
 
 test('item_image: refusals: too large, gone, not a thing of theirs, brought in from their files, a private address put there by hand', async () => {

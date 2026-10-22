@@ -14,6 +14,8 @@ import { registerTools, SERVER_INSTRUCTIONS } from "./tools.js";
 import { kvStore } from "./store.js";
 import { api } from "./hub.js";
 import { createFakeGitHub } from "./fake-github.js";
+import { createWeb } from "./web.js";
+import { createFakeWeb } from "./fake-web.js";
 import { serveBound } from "./session";
 // The artist's deck, trimmed for the connector by `npm run deck` (gitignored: Artsy-derived data).
 import deck from "./deck.generated.json";
@@ -47,7 +49,19 @@ export class FiveSMCP extends McpAgent<Env, Record<string, never>, Props> {
 		let github = null;
 		if (p.dev && this.env.DEV_FAKE_USER) github = await devGitHub(this.env, p);
 		else if (p.accessToken) github = api(p.accessToken, githubFetch);
-		return { store: kvStore(this.env.FIVES_KV), deck, github, user: { id: p.id, login: p.login } };
+		// Connect your apps (read_link, bring_in, item_image): the public web, read through web.js's
+		// guard (addresses, DNS, redirects, byte caps, timeouts, a request budget per call). Under the dev
+		// bypass the web is a fake too (fake-web.js, behind the same guard), so local tests read nothing real.
+		const devWeb = p.dev && this.env.DEV_FAKE_USER ? createFakeWeb() : null;
+		const webFetch = devWeb ? devWeb.fetch : (input: RequestInfo, init?: RequestInit) => fetch(input, init);
+		const web = (o: { budget?: number }) => createWeb({ fetch: webFetch, budget: o && o.budget });
+		const limiter = this.env.RATE_LIMIT_WEB;
+		const limitWeb = limiter ? async () => (await limiter.limit({ key: "web:" + p.id })).success : undefined;
+		// COLOUR_BUDGET_PX (wrangler.jsonc vars): pixels one call may decode here. "0" on Workers Free,
+		// whose 10 ms of CPU a request can't decode a picture: colours are then read by the 5s app.
+		const budget = String(this.env.COLOUR_BUDGET_PX ?? "").trim();
+		const colourBudgetPx = /^\d{1,9}$/.test(budget) ? Number(budget) : undefined;
+		return { store: kvStore(this.env.FIVES_KV), deck, github, user: { id: p.id, login: p.login }, web, limitWeb, colourBudgetPx };
 	}
 }
 

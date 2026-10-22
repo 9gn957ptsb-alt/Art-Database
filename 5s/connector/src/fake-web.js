@@ -27,6 +27,10 @@ export const FAKE_PICTURES = Object.freeze({
   window: { w: 200, h: 200, type: 'jpeg', bands: ['#2f5d8a', '#e8e4dc', '#8a5a2b'] },
   meadow: { w: 320, h: 200, type: 'jpeg', bands: ['#7aa35a', '#f2d16b', '#3b5f8f'] },
   stool: { w: 120, h: 160, type: 'jpeg', bands: ['#c9b79c', '#5a3e2b', '#e9e2d5'], weave: true },
+  // Woven at a size where the weave survives the app's texture measure (a window a quarter of the
+  // shorter edge, measured at 512 px): FiveSBring.process in Chromium reads its texture as 0.54.
+  // The stool's 2 px weave on a 120 px picture is enlarged too far for that, and reads 0 in the app too.
+  linen: { w: 600, h: 800, type: 'jpeg', bands: ['#c9b79c', '#5a3e2b', '#e9e2d5'], weave: 4 },
   big: { w: 1400, h: 1000, type: 'jpeg', bands: ['#a33b3b', '#f0e9df', '#264653'] },
 });
 
@@ -49,12 +53,13 @@ export function paint(spec) {
   const rnd = mulberry32(w * 7919 + h);
   const cols = spec.bands.map(rgbOf);
   const cut1 = Math.round(h * 3 / 6), cut2 = Math.round(h * 5 / 6);
+  const blk = spec.weave ? (spec.weave === true ? 2 : spec.weave) : 0;
   for (let y = 0; y < h; y++) {
     const c = y < cut1 ? cols[0] : y < cut2 ? cols[1] : cols[2];
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
-      // a little grain everywhere; a woven surface (a fine check) in the first band when asked
-      const g = Math.round((rnd() - 0.5) * 16) + (spec.weave && y < cut1 ? (((x >> 1) + (y >> 1)) & 1 ? 26 : -26) : 0);
+      // a little grain everywhere; a woven surface (a fine check, 2 px or `weave` px) in the first band when asked
+      const g = Math.round((rnd() - 0.5) * 16) + (blk && y < cut1 ? ((Math.floor(x / blk) + Math.floor(y / blk)) & 1 ? 26 : -26) : 0);
       data[i] = Math.max(0, Math.min(255, c[0] + g));
       data[i + 1] = Math.max(0, Math.min(255, c[1] + g));
       data[i + 2] = Math.max(0, Math.min(255, c[2] + g));
@@ -164,7 +169,7 @@ function endless(total, head, stats, type, declare) {
       stats.sent = sent;
       c.enqueue(chunk);
     },
-  });
+  }, { highWaterMark: 0 }); // made only when read: the default (1) would make a chunk ahead of the reader and count it as read
   const headers = { 'content-type': type };
   if (declare) headers['content-length'] = String(total);
   return new Response(stream, { headers });
@@ -262,7 +267,7 @@ const PICTURE_HOSTS = ['img.example.com', 'i.pinimg.com', 'd2w9rnfcy7mm78.cloudf
 /** Which fake picture an address asks for: the first known name in its last path segment. */
 function pictureFor(pathname) {
   const last = pathname.split('/').pop() || '';
-  for (const name of ['bowl', 'chair', 'window', 'meadow', 'stool', 'big', 'anim', 'photo']) if (last.indexOf(name) >= 0) return name;
+  for (const name of ['bowl', 'chair', 'window', 'meadow', 'stool', 'linen', 'big', 'anim', 'photo']) if (last.indexOf(name) >= 0) return name;
   return null;
 }
 

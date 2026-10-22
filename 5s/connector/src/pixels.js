@@ -273,8 +273,18 @@ export async function decode(bytes, type, maxPx) {
 // ------------------------------------------------------------------ resampling
 
 // One axis of a resample: for each output position, the source positions and weights. Shrinking
-// averages every source pixel the output pixel covers (fractional at the edges); enlarging blends
-// the two nearest (bilinear). Close to a canvas's smoothed drawImage, and the same in every run.
+// averages every source pixel the output pixel covers (fractional at the edges); enlarging uses the
+// Mitchell-Netravali cubic (B = C = 1/3), which is what Chromium draws with at the app's
+// imageSmoothingQuality 'high' (bilinear made the texture of an enlarged window read lower than
+// the app's: measured against FiveSBring.process in Chromium, see test/connect.test.mjs "analyse").
+// The same in every run.
+function mitchell(x) {
+  const t = Math.abs(x);
+  if (t < 1) return (7 * t * t * t - 12 * t * t + 16 / 3) / 6;
+  if (t < 2) return (-7 / 3 * t * t * t + 12 * t * t - 20 * t + 32 / 3) / 6;
+  return 0;
+}
+
 function weights(srcStart, srcLen, srcMax, outLen) {
   const scale = srcLen / outLen;
   const idx = [], wts = [];
@@ -288,9 +298,13 @@ function weights(srcStart, srcLen, srcMax, outLen) {
       }
     } else {
       const c = srcStart + (o + 0.5) * scale - 0.5;
-      const s0 = Math.floor(c), t = c - s0;
-      i.push(clamp(s0, 0, srcMax - 1), clamp(s0 + 1, 0, srcMax - 1));
-      w.push(1 - t, t);
+      const s0 = Math.floor(c);
+      let sum = 0;
+      for (let s = s0 - 1; s <= s0 + 2; s++) {
+        const v = mitchell(c - s);
+        if (v !== 0) { i.push(clamp(s, 0, srcMax - 1)); w.push(v); sum += v; }
+      }
+      for (let k = 0; k < w.length; k++) w[k] /= sum;
     }
     idx.push(i); wts.push(w);
   }

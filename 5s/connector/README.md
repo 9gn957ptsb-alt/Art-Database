@@ -35,6 +35,9 @@ instructions tell Claude they are data, not instructions.
 | `save_hub` | `include_notes`, `include_own_images` | saves the current hub page and seed (only what changed) | after more judgments, sets or notes |
 | `get_state` | none | the whole 5s state and its `rev` | the 5s app only |
 | `put_state` | `state`, `base` (the `rev` it was based on) | `{ok, rev}`; or, if `base` is stale, `{ok: false, conflict: true, rev, state}` with the newer state to merge (nothing written) | the 5s app only |
+| `read_link` | `url` (a board, channel, blog, feed, page or picture address, ≤ 2048 characters; `https://` is added when missing, `http://` upgraded) | the pictures that public link offers (at most 60), each `{image, thumb, title, link, source}`, and where they come from; **nothing is added** | "add my Are.na channel", "add my Pinterest board", "add this page": Claude shows the person what is there and asks which to add |
+| `bring_in` | `items` (1–60, each `{image, source, title?, link?, thumb?, kind?}`, as `read_link` gave them or any https picture address), `kind` (`image`, `object` or `space`; default `image`) | `added` (each with its id, name, source, addresses, its three colours in words, its surface `crop` and `texture`, or `colours_pending` and why), `skipped` (each with why), `remaining` (not read this time: call again with them), today's count | after the person confirms which pictures to add |
+| `item_image` | `id` (a brought-in thing's id, like `yk2q7a`) | `image`: the picture as a `data:` URL (as it is when small; a JPEG at most 720 px and about 130 KB when it had to be made smaller), its type, size and pixel size; also attached as an image Claude can see | the 5s app, to show a brought picture and read its colours when they are pending; Claude, to look at one |
 
 Refusals come back as tool errors with `why` and `resolution`: a name GitHub won't take (with a
 fixed one, e.g. `"my hub"` → `"my-hub"`), a private hub (see below), a repository 5s didn't make, a
@@ -52,12 +55,67 @@ for the chat: a judgment made in chat records no time (it can't be measured), so
 philosophy line leaves out "you usually decide in … seconds" until timed judgments exist; and
 `judge` accepts the five's cards in any order (the app always shows them in order).
 
+### Connect your apps (`read_link`, `bring_in`, `item_image`)
+
+The doors of [`../SPEC.md`](../SPEC.md) "Connect your apps" that need a server: **Paste a link** (the
+app has no way to read other sites; the connector does) and **Ask Claude** ("add my Are.na channel",
+"add these"). Nothing to install, nothing to sign in to: only public links.
+
+- **What a link gives** (`src/links.js`): an **Are.na** channel (its public API), a **Pinterest** board
+  or profile (its public RSS feed), **Flickr** photos or favourites (the public feeds), a **Tumblr**
+  blog (its RSS feed), any **RSS or Atom** feed, a **picture's own address**, or **any web page** (its
+  `og:image` / `twitter:image`, else its first large picture). A private or secret board, a page that
+  needs a sign-in, a missing page: each comes back as a refusal with `why` and `resolution` (make it
+  public, or save the pictures and use **Bring in your own** in the app), never "something went wrong".
+- **Claude asks first.** `read_link` adds nothing; its answer tells Claude to show the person what is
+  there and ask which to add. `bring_in` adds only what it is given, kept (a thing brought in is
+  kept by definition) with where it came from, and it comes back later as "Still yours?" in the app.
+  A picture already in their 5s is skipped.
+- **Colours, surface and texture** of each picture are the app's own measures (`FiveSBring` from
+  [`../src/bring.js`](../src/bring.js), imported unchanged: three dominant colours, the surface
+  window and its texture), taken on pixels the connector decodes (`src/pixels.js`: JPEG with jpeg-js,
+  PNG with the platform's `DecompressionStream`) and resampled as the app's canvas does (enlarging with
+  the Mitchell cubic Chromium uses). Checked against the app itself in Chromium: the same colours
+  to within about a dozen RGB units, and the same texture for the same window. A GIF, WebP or AVIF, a picture over
+  1.2 megapixels, or one past the call's budget is added with `colours_pending: true` (and why): the
+  app reads it from `item_image` when it next opens.
+
+**Caps** (`src/web.js` `WEB_LIMITS`, `src/tools.js` `CONNECT`, `src/store.js`), so no link and no
+chat can make the connector read without end:
+
+| What | Cap |
+| --- | --- |
+| an address | `https` only, the default port, no `user:password@`, a public name (never a bare IP, a single-label name like `fileserver`, or `.local`, `.internal`, `.localhost` …); at most 2048 characters |
+| where a name points | asked of Cloudflare's DNS over HTTPS first: every answer must be a public address (no loopback, private, link-local, cloud metadata, carrier-grade NAT, multicast or reserved range, IPv4 or IPv6, nor IPv4 hidden in IPv6); a name DNS can't answer is refused |
+| redirects | at most 3, each checked again as a new address before it is read |
+| one request | 8 seconds (headers and body); only `GET`, an `Accept` header and a User-Agent saying what 5s is |
+| a page, feed or API answer | 1.5 MB, read chunk by chunk and stopped at the cap (a declared size over it is not read at all) |
+| a picture | 3 MB read whole; when it isn't measured, only its first 64 KB (enough to tell what it is and its size) |
+| one `read_link` | 12 requests (DNS lookups and redirects counted), 60 pictures offered |
+| one `bring_in` | 60 items, 40 requests, 4 pictures read at a time, 4 megapixels decoded and 16 pictures measured (`COLOUR_BUDGET_PX`, see the setup), 25 seconds; the rest come back in `remaining` |
+| one `item_image` | 10 requests; a picture of at most 4 megapixels decoded to make the smaller copy |
+| a person | 30 calls that read other sites a minute (`RATE_LIMIT_WEB`), 300 pictures brought in a day (UTC), 1000 brought-in things in all |
+
 ## Privacy
 
 - **Who you are:** GitHub's numeric user id and login, nothing else (no name, no email).
 - **Your 5s** (judgments, the five, sets, notes, brought-in things' details) lives privately in the
   connector's own Workers KV namespace (`FIVES_KV`), keyed by your GitHub user id. Brought-in images
-  never reach the connector: they stay in the 5s app.
+  never reach the connector: they stay in the 5s app. (That is the pictures brought in from your own
+  files. Pictures from a link pass through the connector to be measured, and are never kept: see the
+  next point.)
+- **Links and pictures from other sites** (`read_link`, `bring_in`, `item_image`): the connector
+  fetches only the public link you (or Claude, asked by you) give it and the pictures that link
+  offers, from those sites themselves, plus a DNS lookup of each site's name at Cloudflare's DNS
+  over HTTPS (`cloudflare-dns.com`), so it never reads an address inside a private network. What is
+  **stored** is the thing as the app keeps it: its addresses (the picture, a smaller copy, the page
+  it came from), its name, source, kind, colours, surface and texture, in your state. **Never the
+  picture**: it is read, measured and dropped, and `item_image` hands it to the app or the chat
+  without keeping it. **Nothing of yours is sent to other sites**: no cookies, no sign-in, no token,
+  no GitHub id or login, no Referer; only `GET`, `Accept` and a User-Agent naming 5s (checked in
+  `test/connect.test.mjs`). 5s never signs in to another
+  site and never asks for a password: a private board is refused with what to do instead. Brought
+  pictures' addresses never go on your hub.
 - **Your GitHub token** lives only inside the OAuth provider's encrypted props (in `OAUTH_KV`,
   encrypted with a key only Claude's bearer token unwraps). The MCP session (`McpAgent`, a Durable
   Object) keeps it in memory only: its props are stored without the token (`FiveSMCP.updateProps`).
@@ -197,6 +255,18 @@ If `npx wrangler deploy` says the rate limit bindings aren't available on the ac
 `ratelimits` block from `wrangler.jsonc` and deploy again: the Worker runs without them (only the
 per-request limits go; the daily caps stay).
 
+**Reading links and pictures** (Connect your apps) needs nothing more to set up: no API key and no
+registration with Are.na, Pinterest, Flickr or Tumblr (their public feeds and API need none). Two
+settings in `wrangler.jsonc` matter:
+- `compatibility_flags` keeps `global_fetch_strictly_public` (already there): on Cloudflare, the
+  Worker's `fetch` then reaches only the public internet, a second wall behind the connector's own
+  address and DNS checks (`src/web.js`).
+- `vars` `COLOUR_BUDGET_PX` is `"0"`: on the **free** plan a request may use 10 ms of CPU, and
+  decoding a picture takes far longer, so the connector decodes nothing and every brought picture's
+  colours are read by the 5s app when it next opens (`colours_pending`). On **Workers Paid**, delete
+  that line (the default, 4000000, measures pictures in the connector, about a second of CPU at most
+  per call) and deploy again.
+
 If `npx wrangler whoami` reports an authentication error, the environment's credential isn't reaching
 wrangler: put the Cloudflare token in the environment instead, as the variable
 `CLOUDFLARE_API_TOKEN` (step 3, Environment variables), drop the `export CLOUDFLARE_API_TOKEN` line,
@@ -242,6 +312,20 @@ if (mcp) {
 written), so the app's first sync must merge with `get_state`'s state rather than put its own local
 copy over judgments made in a chat.
 
+The **Paste a link** door in the app goes through the connector too (add `"read_link", "bring_in",
+"item_image"` to the capability's `tools`):
+
+```js
+const found = await mcp.callTool("5s", "read_link", { url });              // payload.items: nothing added yet
+// show found.payload.items and let the person choose (all, some or none) as `chosen`
+const added = await mcp.callTool("5s", "bring_in", { items: chosen });      // payload.added, payload.skipped, payload.remaining
+const pic = await mcp.callTool("5s", "item_image", { id: added.payload.added[0].id }); // payload.image: a data: URL
+```
+
+`bring_in` writes the state in the connector, so the app takes `get_state` after it (or merges on its
+next `put_state` conflict). For a thing with `coloursPending: true`, the app reads its colours,
+surface and texture from `item_image`'s picture on its canvas, as it does for its own images.
+
 `payload` is the tool's JSON. A refusal (a private hub, a name GitHub won't take) rejects with
 `tool_error`, and its `why` and `resolution` ride on `error.result.structuredContent`. A `put_state`
 conflict is an answer, not an error. Read-only tools (`get_state`, `hub_status`, `get_taste`) can be
@@ -275,7 +359,13 @@ from a session that has it, or build it there first. For a local trial without t
 | `src/words.js` | the app's sentences (turns, card descriptions) and `quoted()`, which makes other people's text one plain line |
 | `src/deck.js`, `scripts/build-deck.mjs` | `npm run deck` |
 | `src/fake-github.js` | a fake api.github.com for tests and the dev bypass; records every request |
-| `test/*.test.mjs` | `npm test`: every tool, the engine against the app, the protocol, the hub, the sign-in helpers, session binding (`session.test.mjs`), and the adversarial review's findings (`review.test.mjs`) |
+| `src/web.js` | reading the public web for Connect your apps: address checks, DNS over HTTPS, redirects checked hop by hop, byte caps, timeouts, a request budget per call |
+| `src/links.js` | what a link offers: Are.na, Pinterest, Flickr, Tumblr, feeds, pictures, pages |
+| `src/pixels.js` | JPEG and PNG decoding, the app's resampling, `analyse` (the app's colours, surface and texture), the smaller copy `item_image` hands over |
+| `src/bring.js` | the app's own [`../src/bring.js`](../src/bring.js) (`FiveSBring`: `newId` and its measures), imported unchanged |
+| `src/fake-web.js` | a fake public web (Are.na, Pinterest, Flickr, Tumblr, pages, pictures, redirects into private networks, huge and slow sites, its own DNS) for tests and the dev bypass |
+| `scripts/make-pictures.py`, `test/pictures.mjs` | PNG and JPEG files made by Pillow, with Pillow's decoding of each, for the decoders' tests |
+| `test/*.test.mjs` | `npm test`: every tool, the engine against the app, the protocol, the hub, the sign-in helpers, session binding (`session.test.mjs`), the adversarial review's findings (`review.test.mjs`), and Connect your apps (`connect.test.mjs`: every source, every way an address can point somewhere private, the caps, what is stored) |
 | `test/smoke.mjs` | `npm run smoke`: the Worker itself under `wrangler dev` (see below) |
 | `wrangler.jsonc` | the Worker: name `fives-connector`, the Durable Object, the two KV namespaces, the two rate limits |
 | `.dev.vars.example` | placeholders for `wrangler dev`; copy to `.dev.vars` (gitignored) |
@@ -287,7 +377,7 @@ cd 5s/connector
 npm ci
 npm run deck            # or: npm run deck -- --fixture
 npm test                # node --test test/*.test.mjs (offline; an in-memory store and a fake GitHub)
-npm run smoke           # wrangler dev on ports 8800–8803; SMOKE_DIR=<dir> keeps its logs
+npm run smoke           # wrangler dev on ports 8800–8803 (SMOKE_PORT=<first port> to move them); SMOKE_DIR=<dir> keeps its logs
 npm run type-check
 ```
 
@@ -299,19 +389,24 @@ It also tries to break in: a second person using the first one's session id (to 
 the tag stripped, or to end it) gets "Session not found"; approving "Connect 5s" from another site,
 or with a redirect address the client didn't register, is refused; a burst of client registrations
 gets 429; and after each run it reads every file of wrangler's local storage to check that neither
-the GitHub token nor the client secret nor the cookie key was ever stored.
+the GitHub token nor the client secret nor the cookie key was ever stored. Connect your apps, inside
+workerd: `read_link` reads a Pinterest board and a web page, `bring_in` adds two pictures with their
+colours read there, `item_image` hands one back as an image, a link that redirects to the cloud
+metadata address is refused, and the local storage holds the pictures' addresses, never the pictures.
 
 **The dev bypass** is for local tests only: when `.dev.vars` sets `DEV_FAKE_USER` (`login` or
 `id:login`, or a comma-separated list of them; a request picks a listed person with the header
 `X-5s-Dev-User`), every `/mcp` request is that person and GitHub is a fake kept in local KV (look inside at
-`/dev/fake-github`). The Worker refuses the bypass, with a 403, for any host but `localhost`,
+`/dev/fake-github`). The web that `read_link`, `bring_in` and `item_image` read is a fake too
+(`src/fake-web.js`, behind the real `src/web.js` guard), so a local test reads nothing real.
+The Worker refuses the bypass, with a 403, for any host but `localhost`,
 `127.0.0.1` or `[::1]`, so a stray `DEV_FAKE_USER` can never open a deployed connector. `.dev.vars` is
 never deployed.
 
 ## Versions
 
 Pinned exactly in `package.json`: `@cloudflare/workers-oauth-provider` 1.2.3, `agents` 0.28.1,
-`@modelcontextprotocol/sdk` 1.32.1 (the version `agents` asks for), `hono` 4.13.13, `zod` 4.6.7,
+`@modelcontextprotocol/sdk` 1.32.1 (the version `agents` asks for), `hono` 4.13.13, `zod` 4.6.7, `jpeg-js` 0.4.4,
 `wrangler` 4.150.0. Cloudflare's demo still pins the provider at 0.8; 1.x builds in the consent and
 state helpers the demo wrote by hand (`workers-oauth-utils.ts`), so `github-handler.ts` uses those
 (`beginConsent`, `approveConsent`, `beginUpstream`, `finishUpstream`) for the same flow.

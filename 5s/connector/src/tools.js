@@ -1057,6 +1057,9 @@ export const TOOLS = [
       if (limited) return limited;
       const web = webFor(ctx, CONNECT.imageBudget);
       if (!web) return NO_WEB();
+      // The pixels this connector may decode to make a smaller copy: none when its colour budget is 0
+      // (COLOUR_BUDGET_PX, for Workers Free's CPU limit); then a smaller copy (thumb) is used when there is one.
+      const decodePx = Math.min(CONNECT.itemImagePx, Number.isFinite(ctx.colourBudgetPx) ? ctx.colourBudgetPx : Infinity);
       let last = null;
       for (const src of [o.image, o.thumb].filter(Boolean)) {
         let r;
@@ -1070,9 +1073,9 @@ export const TOOLS = [
         const dim = dimensions(r.bytes, type);
         let out = null;
         if (!r.truncated && r.bytes.length <= CONNECT.itemImageBytes) out = { bytes: r.bytes, mime: mimeOf(type), w: dim && dim.w, h: dim && dim.h, resized: false };
-        else if (!r.truncated && (type === 'jpeg' || type === 'png') && dim && dim.w * dim.h <= CONNECT.itemImagePx) {
+        else if (!r.truncated && (type === 'jpeg' || type === 'png') && dim && dim.w * dim.h <= decodePx) {
           try {
-            const img = await decode(r.bytes, type, CONNECT.itemImagePx);
+            const img = await decode(r.bytes, type, decodePx);
             const small = img && shrink(img, CONNECT.itemImageBytes);
             if (small) out = { bytes: small.bytes, mime: 'image/jpeg', w: small.w, h: small.h, resized: true };
           } catch { out = null; }
@@ -1080,7 +1083,7 @@ export const TOOLS = [
         if (!out) { last = new WebError('too large', 'That picture is too large for 5s to bring over' + (dim ? ' (' + dim.w + ' × ' + dim.h + ')' : '') + '.', 'Save the picture and bring it in from your photos in the 5s app (Split → Bring in your own).'); continue; }
         const url = dataUrl(out.bytes, out.mime);
         const data = { id: o.id, image: url, type: out.mime, bytes: out.bytes.length, w: out.w || null, h: out.h || null, resized: out.resized, from: r.url, colours_pending: !!o.coloursPending };
-        const res = ok('The picture of ' + o.id + ' (' + out.mime.slice(6).toUpperCase() + (out.w ? ', ' + out.w + ' × ' + out.h : '') + ', ' + Math.round(out.bytes.length / 1024) + ' KB' + (out.resized ? ', made smaller' : '') + ') is in data.image as a data: URL, and attached as an image.', data);
+        const res = ok('The picture of ' + o.id + ' (' + out.mime.slice(6).toUpperCase() + (out.w ? ', ' + out.w + ' × ' + out.h : '') + ', ' + Math.round(out.bytes.length / 1024) + ' KB' + (out.resized ? ', made smaller' : '') + ') is in data.image for the 5s app, and attached here as an image.', data);
         // Claude sees the picture as an image; the data: URL stays out of the text it reads.
         res.textData = Object.assign({}, res.data, { image: '(a data: URL: structuredContent.image)' });
         res.images = [{ type: 'image', data: url.slice(url.indexOf(',') + 1), mimeType: out.mime }];

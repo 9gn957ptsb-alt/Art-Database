@@ -15,4 +15,8 @@ interface Env {
 	/** Workers Rate Limiting bindings (wrangler.jsonc "ratelimits"); optional: without them nothing is limited here. */
 	RATE_LIMIT_PERSON?: RateLimit;
 	RATE_LIMIT_SIGNIN?: RateLimit;
+	/** Pixels one bring_in or item_image call may decode here (wrangler.jsonc vars): "0" on Workers Free, unset (4,000,000) on Paid. */
+	COLOUR_BUDGET_PX?: string;
+	/** Reads of other sites (read_link, bring_in, item_image) a minute per person. */
+	RATE_LIMIT_WEB?: RateLimit;
 }

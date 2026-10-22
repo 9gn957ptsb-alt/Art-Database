@@ -6,7 +6,7 @@
  *
  *   - https only (an http:// link a person pastes is upgraded by read_link before it gets here);
  *   - no sign-in inside the address (user:password@), and the default port only;
- *   - a public name: never an IP literal, never a single-label name (`metadata`, `intranet`), never a
+ *   - a public name: never an IP literal, never a single-label name (`metadata`, `fileserver`), never a
  *     private or reserved suffix (.localhost, .local, .internal, .home.arpa, .test, .onion …);
  *   - what the name resolves to, asked of Cloudflare's DNS over HTTPS: every answer must be a
  *     public address (not loopback, private, carrier-grade NAT, link-local, metadata, multicast,
@@ -188,6 +188,7 @@ export function readableAddress(text) {
 // ------------------------------------------------------------------ DNS
 
 export const DOH = 'https://cloudflare-dns.com/dns-query';
+const DNS_BYTES = 64 * 1024; // a DNS answer is a few hundred bytes; capped like every other read
 
 /**
  * dohResolver(fetch) -> async (host) => [address]: the A and AAAA answers for a name, asked of
@@ -199,8 +200,8 @@ export function dohResolver(doFetch, timeoutMs) {
     const r = await doFetch(DOH + '?name=' + encodeURIComponent(host) + '&type=' + type, {
       method: 'GET', headers: { accept: 'application/dns-json' }, redirect: 'manual', signal,
     });
-    if (!r.ok) throw new Error('DNS answered ' + r.status);
-    const j = JSON.parse(await r.text());
+    if (!r.ok) { await cancel(r); throw new Error('DNS answered ' + r.status); }
+    const j = JSON.parse(textOf((await readBody(r, DNS_BYTES, false)).bytes));
     if (j.Status === 3) return [];
     if (j.Status !== 0) throw new Error('DNS status ' + j.Status);
     const want = type === 'A' ? 1 : 28;
@@ -223,6 +224,42 @@ export async function withTimeout(ms, fn) {
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(new DOMException('The request timed out', 'TimeoutError')), ms);
   try { return await fn(ac.signal); } finally { clearTimeout(timer); }
+}
+
+/**
+ * readBody(res, maxBytes, partial) -> {bytes, truncated}: a body read chunk by chunk and never past
+ * maxBytes (a declared length over it is refused before anything is read; a body that turns out to
+ * be over it is cancelled at the chunk that crosses it). partial: cut there instead of refusing.
+ */
+export async function readBody(res, maxBytes, partial) {
+  const declared = Number(res.headers.get('content-length'));
+  if (!partial && Number.isFinite(declared) && declared > maxBytes) {
+    await cancel(res);
+    throw tooLarge(maxBytes);
+  }
+  if (!res.body) return { bytes: new Uint8Array(0), truncated: false };
+  const reader = res.body.getReader();
+  const chunks = [];
+  let n = 0, truncated = false;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+    if (n + chunk.length > maxBytes) {
+      try { await reader.cancel(); } catch { /* closed */ }
+      if (!partial) throw tooLarge(maxBytes);
+      chunks.push(chunk.subarray(0, maxBytes - n));
+      n = maxBytes;
+      truncated = true;
+      break;
+    }
+    chunks.push(chunk);
+    n += chunk.length;
+  }
+  const bytes = new Uint8Array(n);
+  let at = 0;
+  for (const c of chunks) { bytes.set(c, at); at += c.length; }
+  return { bytes, truncated };
 }
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
@@ -274,37 +311,6 @@ export function createWeb(opts) {
     if (r.error) throw new WebError('dns', 'Couldn\'t look up that site\'s address just now.', 'Try again in a moment.');
     if (!r.ips.length) throw new WebError('no site', 'There is no website at that name.', 'Check the spelling of the address.');
     if (r.ips.some(privateIp)) throw refusal('private');
-  }
-
-  async function readBody(res, maxBytes, partial) {
-    const declared = Number(res.headers.get('content-length'));
-    if (!partial && Number.isFinite(declared) && declared > maxBytes) {
-      await cancel(res);
-      throw tooLarge(maxBytes);
-    }
-    if (!res.body) return { bytes: new Uint8Array(0), truncated: false };
-    const reader = res.body.getReader();
-    const chunks = [];
-    let n = 0, truncated = false;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
-      if (n + chunk.length > maxBytes) {
-        try { await reader.cancel(); } catch { /* closed */ }
-        if (!partial) throw tooLarge(maxBytes);
-        chunks.push(chunk.subarray(0, maxBytes - n));
-        n = maxBytes;
-        truncated = true;
-        break;
-      }
-      chunks.push(chunk);
-      n += chunk.length;
-    }
-    const bytes = new Uint8Array(n);
-    let at = 0;
-    for (const c of chunks) { bytes.set(c, at); at += c.length; }
-    return { bytes, truncated };
   }
 
   web.get = async function get(address, g) {

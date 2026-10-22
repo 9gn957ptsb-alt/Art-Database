@@ -10,6 +10,8 @@
   "compatibility_date": "2026-10-01",
   // nodejs_compat: the agents package needs it. global_fetch_strictly_public: required by the OAuth
   // provider for Client ID Metadata Documents (its SSRF protection); every fetch 5s makes is public.
+  // It also keeps read_link, bring_in and item_image (src/web.js) on the public internet, under the
+  // connector's own address, DNS and redirect checks.
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["FiveSMCP"] }
@@ -28,10 +30,17 @@
   // Workers Rate Limiting (index.ts): /mcp per signed-in person, and the sign-in endpoints anyone can
   // reach (/register, /authorize, /token, /callback) per address. namespace_id is any number unique
   // in the Cloudflare account. Without these two bindings the Worker still runs, unlimited.
+  // RATE_LIMIT_WEB: calls that read other sites (read_link, bring_in, item_image) per person.
   "ratelimits": [
     { "name": "RATE_LIMIT_PERSON", "namespace_id": "5001", "simple": { "limit": 120, "period": 60 } },
-    { "name": "RATE_LIMIT_SIGNIN", "namespace_id": "5002", "simple": { "limit": 30, "period": 60 } }
+    { "name": "RATE_LIMIT_SIGNIN", "namespace_id": "5002", "simple": { "limit": 30, "period": 60 } },
+    { "name": "RATE_LIMIT_WEB", "namespace_id": "5003", "simple": { "limit": 30, "period": 60 } }
   ],
+  // COLOUR_BUDGET_PX: pixels one bring_in (or item_image) call may decode to read a picture's colours,
+  // surface and texture in the connector. Decoding takes about 0.2 s of CPU a megapixel, and Workers
+  // Free allows 10 ms of CPU a request, so on Free it is "0": every brought picture's colours are then
+  // read by the 5s app when it next opens. On Workers Paid delete this line (the default is 4000000).
+  "vars": { "COLOUR_BUDGET_PX": "0" },
   "observability": { "enabled": true },
   "dev": { "port": 8800, "inspector_port": 8801 }
 }
