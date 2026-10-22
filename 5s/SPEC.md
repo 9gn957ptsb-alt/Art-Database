@@ -9,6 +9,15 @@ person builds for themselves, the motion of the mark) arrives alongside what is 
 beside the artist's deck, a new milestone after the eight, a new view or sheet, never a replacement.
 A change that would remove or rewrite something already built is asked about first.
 
+**Standing rule: nothing to download** (the artist, 22 Oct 2026: "We can't ask anyone to download any
+additional apps or else it's going to seem gimmicky"). 5s lives on the web and inside Claude. No step
+ever asks a person to install an app, an extension or a desktop program; signing in to a service they
+already use (GitHub, Pinterest, Spotify…) is fine. The "standalone 5s app" means a web app.
+
+**Artsy proposes; the person's 5s account keeps.** Nobody needs an Artsy account. Artsy is where 5s
+finds art objects to propose; every object a person judges is catalogued in their own 5s account (its
+title, artist, date, image address and Artsy link, with their judgment), and it is theirs from then on.
+
 **Its job, in the system's one line** (see the site's CLAUDE.md, "What we are making"):
 *5s — how a person brings their own information in: quick judgments of what they like become their
 aesthetic database, the seed of their world.* With the information it **manipulates: sorts**, and
@@ -304,6 +313,23 @@ Cloudflare account; a GitHub OAuth App (homepage and callback URLs given); `wran
 from a session once a Cloudflare API token is stored as an environment credential, the way the Artsy
 token was); then **Add custom connector** in Claude with the Worker's `/mcp` URL. People using 5s never
 see any of it.
+
+### Connect your apps (the taste people already have, brought into 5s)
+
+People's aesthetic preferences already live in other apps: pins, saves, likes, favourites, album
+covers. 5s brings them in to form the person's database, without any download, through five doors,
+simplest first. Whatever comes in becomes 5s things (kind, colours, surface, source), kept by
+definition, and comes back as "Still yours?" (the existing mechanic).
+
+| Door | How | Works for | Obstacle → resolution |
+| --- | --- | --- | --- |
+| **Paste a link** | A public board, channel or page: 5s reads its pictures | Pinterest boards (their public RSS feed), Are.na channels (public API), Flickr favourites, Tumblr, any web page (its preview image) | The artifact can't fetch other sites → the 5s connector fetches them server-side; in the artifact without the connector, this door waits |
+| **Sign in to the app** | OAuth, read-only, saves only | Pinterest (boards and pins, once its developer access is approved), Are.na, Spotify (saved albums: their covers are a strong aesthetic signal), Flickr | Each app needs a developer registration on the artist's side, once → registrations are listed in the connector's README; apps that refuse use another door |
+| **Your data file** | The app's own "download your data" file, dropped into 5s and read on the device; nothing uploaded | Instagram (saved posts), Pinterest, Google Takeout, TikTok favourites, X bookmarks | Instagram and others offer no API for saves → their export does; 5s knows each format and shows what it found before adding |
+| **Bring in images** | Photos, screenshots, pins as images (built) | Everything | Already built: colours, surface and kind read on the device |
+| **Ask Claude** | In any chat with the 5s connector: "add my Are.na channel" or "add these" | Anything Claude can reach: web pages, other connectors | → a connector tool `bring_in({items: [{image, title, link, source}]})` that Claude calls; 5s splits each item as usual |
+
+Never: a password typed into 5s, a scraped login, or a browser extension.
 
 ### Example mode
 - Every tab except Sort can show **an example taste** (built by `engine.exampleState(deck)`), behind a

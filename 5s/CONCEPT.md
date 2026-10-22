@@ -26,6 +26,16 @@ That month, as this repository records it (the site branch's CLAUDE.md, the impo
 
 5s puts a newcomer through the same five, small enough to do in a few minutes a day.
 
+## Who it is for, and what it never asks (22 Oct 2026)
+
+- "Not everyone has an Artsy account, so it's not about having people do specifically like that.
+  Nonetheless we can still use Artsy to send art objects as potential aesthetics for someone to judge,
+  and the art object itself gets catalogued in that person's 5s account, while we are merely using
+  Artsy to propose that."
+- "We can't ask anyone to download any additional apps or else it's going to seem gimmicky.
+  Nonetheless, I do want to be able to connect other apps to 5s, that way people's aesthetic
+  preferences that already exist in other apps can be used to form their database on 5s."
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
