@@ -40,6 +40,7 @@
   const MARK_PAINT = '#7350EE';  // what the mark paints when it leaves
   const THREAD_GROUPS = ['Materials', 'Qualities', 'Movements', 'Textures'];
   const SPECIAL_POINTS = { row: 60, col: 60, burst: 100, mark: 200 };
+  const MOVE_LEFT = 1000;   // the finale, a move left (the playtest: finishing early must outscore farming cascades)
   const BOOSTS = ['pass', 'turn', 'more'];
 
   const EPISODES = Object.freeze([
@@ -71,38 +72,38 @@
     return Object.assign({ n, size: Array.isArray(board) ? board : null, mask: typeof board === 'string' ? board : null,
       suits, moves, goals, paint: null, coats2: null, passes: [], held: null, stars, coach: null }, x);
   }
-  // The initial 30 (SPEC.md "Levels 1–30"); the playtest tunes them.
+  // The 30, as tuned by the playtest (SPEC.md "Levels 1–30": budgets and stars from test/sim.mjs).
   const LEVELS = [
-    L(1, [7, 7], 4, 15, [sc(3000)], [3000, 6000, 9000], { coach: 'swap' }),
-    L(2, [7, 7], 4, 15, [col(0, 20)], [0, 5000, 8000]),
-    L(3, [7, 7], 4, 18, [sc(5000)], [5000, 8000, 11000], { coach: 'stripe' }),
-    L(4, [7, 7], 5, 20, [col(0, 12), col(1, 12)], [0, 4500, 6500]),
-    L(5, [8, 8], 5, 20, [sc(3000)], [3000, 4500, 6500], { coach: 'burst' }),
-    L(6, [7, 7], 4, 14, [PAINT], [0, 6000, 9000], { paint: 'centre:5', coach: 'paint' }),
-    L(7, [7, 7], 4, 24, [PAINT], [0, 9000, 13000], { paint: 'all' }),
-    L(8, [8, 8], 5, 22, [kd('image', 12)], [0, 5500, 7500], { coach: 'mark' }),
-    L(9, [8, 8], 5, 22, [PAINT], [0, 6000, 8500], { paint: 'centre:6' }),
-    L(10, [8, 8], 4, 30, [PAINT], [0, 12000, 16000], { paint: 'all', coats2: 'centre:4' }),
-    L(11, [8, 8], 5, 20, [CLEAR], [0, 5000, 7000], { passes: [bottom(8)], coach: 'pass' }),
-    L(12, [8, 8], 5, 24, [CLEAR, sc(4000)], [4000, 6000, 8000], { passes: [bottom(12)] }),
-    L(13, [8, 8], 4, 26, [PAINT, CLEAR], [0, 11000, 15000], { paint: 'all', passes: [bottom(12)] }),
-    L(14, [8, 8], 5, 26, [CLEAR], [0, 6500, 9000], { passes: [bottom(8, 2), bottom(8)] }),
-    L(15, [9, 9], 4, 28, [PAINT, CLEAR], [0, 12000, 17000], { paint: 'all', passes: [{ n: 12, layers: 2, at: 'scatter' }] }),
-    L(16, [8, 8], 5, 22, [col(0, 15)], [0, 5500, 7500], { held: { n: 8, at: 'scatter' }, coach: 'held' }),
-    L(17, [9, 9], 4, 28, [PAINT], [0, 12000, 16000], { paint: 'all', held: { n: 10, at: 'scatter' } }),
-    L(18, [9, 9], 5, 25, [sc(5000)], [5000, 7500, 10000], { held: { n: 9, at: 'centre:3' } }),
-    L(19, [9, 9], 5, 28, [CLEAR], [0, 7500, 10500], { passes: [bottom(18)], held: { n: 9, at: 'scatter' } }),
-    L(20, [9, 9], 4, 32, [PAINT], [0, 14000, 19000], { paint: 'all', coats2: 'centre:3', held: { n: 8, at: 'scatter' } }),
-    L(21, 'diamond', 4, 24, [PAINT], [0, 7000, 10000], { paint: 'all' }),
-    L(22, 'ring', 6, 30, [col(0, 12), col(1, 12), col(2, 12)], [0, 5000, 7000]),
-    L(23, 'island', 5, 28, [PAINT, CLEAR], [0, 8000, 11000], { paint: 'centre:5', passes: [{ n: 10, layers: 1, at: 'sides' }] }),
-    L(24, 'halves', 4, 32, [PAINT], [0, 12000, 16000], { paint: 'all' }),
-    L(25, 'house', 4, 30, [PAINT], [0, 12000, 16000], { paint: 'all', coats2: 'rows:5-8' }),
-    L(26, [9, 9], 6, 32, [kd('space', 10), kd('object', 10)], [0, 6000, 8500]),
-    L(27, [9, 9], 4, 34, [PAINT], [0, 15000, 20000], { paint: 'all', coats2: 'centre:5' }),
-    L(28, 'cross', 4, 28, [CLEAR], [0, 7000, 10000], { passes: [bottom(12, 2)], held: { n: 6, at: 'scatter' } }),
-    L(29, [9, 9], 5, 32, [PAINT, CLEAR], [0, 10000, 14000], { paint: 'centre:5', passes: [bottom(18)], held: { n: 6, at: 'scatter' } }),
-    L(30, 'five', 4, 30, [PAINT], [0, 10000, 14000], { paint: 'all' }),
+    L(1, [7, 7], 4, 15, [sc(3500)], [3500, 19000, 35000], { coach: 'swap' }),
+    L(2, [7, 7], 4, 14, [col(0, 30)], [0, 21000, 31000]),
+    L(3, [7, 7], 4, 18, [sc(8500)], [8500, 24000, 40000], { coach: 'stripe' }),
+    L(4, [7, 7], 5, 17, [col(0, 12), col(1, 12)], [0, 13000, 17000]),
+    L(5, [8, 8], 5, 20, [sc(4000)], [4000, 12000, 19000], { coach: 'burst' }),
+    L(6, [7, 7], 4, 15, [PAINT], [0, 24000, 33000], { paint: 'centre:5', coach: 'paint' }),
+    L(7, [7, 7], 4, 23, [PAINT], [0, 35000, 44000], { paint: 'all' }),
+    L(8, [8, 8], 5, 19, [kd('image', 40)], [0, 17000, 24000], { coach: 'mark' }),
+    L(9, [8, 8], 4, 14, [PAINT], [0, 35000, 56000], { paint: 'centre:6' }),
+    L(10, [8, 8], 4, 18, [PAINT], [0, 50000, 71000], { paint: 'all', coats2: 'centre:4' }),
+    L(11, [8, 8], 5, 22, [CLEAR], [0, 21000, 26000], { passes: [{ n: 8, layers: 1, at: 'scatter' }], coach: 'pass' }),
+    L(12, [8, 8], 5, 32, [CLEAR, sc(4000)], [0, 27000, 34000], { passes: [bottom(8)] }),
+    L(13, [8, 8], 4, 19, [PAINT, CLEAR], [0, 48000, 75000], { paint: 'all', passes: [bottom(12)] }),
+    L(14, [8, 8], 5, 29, [CLEAR], [0, 24000, 30000], { passes: [{ n: 8, layers: 2, at: 'scatter' }] }),
+    L(15, [9, 9], 4, 16, [PAINT, CLEAR], [0, 77000, 109000], { paint: 'all', passes: [{ n: 12, layers: 2, at: 'scatter' }] }),
+    L(16, [8, 8], 5, 20, [col(0, 25)], [0, 16000, 22000], { held: { n: 8, at: 'scatter' }, coach: 'held' }),
+    L(17, [9, 9], 4, 14, [PAINT], [0, 75000, 113000], { paint: 'all', held: { n: 10, at: 'scatter' } }),
+    L(18, [9, 9], 5, 25, [sc(8000)], [8000, 17000, 25000], { held: { n: 9, at: 'centre:3' } }),
+    L(19, [9, 9], 5, 31, [CLEAR], [0, 30000, 36000], { passes: [{ n: 10, layers: 1, at: 'scatter' }], held: { n: 9, at: 'scatter' } }),
+    L(20, [9, 9], 4, 13, [PAINT], [0, 78000, 109000], { paint: 'all', coats2: 'centre:3', held: { n: 8, at: 'scatter' } }),
+    L(21, 'diamond', 4, 17, [PAINT], [0, 23000, 29000], { paint: 'all' }),
+    L(22, 'ring', 5, 20, [col(0, 20), col(1, 20), col(2, 20)], [0, 12000, 16000]),
+    L(23, 'island', 5, 33, [PAINT, CLEAR], [0, 31000, 36000], { paint: 'centre:5', passes: [{ n: 10, layers: 1, at: 'sides' }] }),
+    L(24, 'halves', 4, 28, [PAINT], [0, 35000, 42000], { paint: 'all' }),
+    L(25, 'house', 4, 19, [PAINT], [0, 38000, 46000], { paint: 'all', coats2: 'rows:5-8' }),
+    L(26, [9, 9], 5, 22, [kd('space', 60), kd('object', 60)], [0, 24000, 31000]),
+    L(27, [9, 9], 4, 12, [PAINT], [0, 73000, 106000], { paint: 'all', coats2: 'centre:5' }),
+    L(28, 'cross', 4, 29, [CLEAR], [0, 25000, 29000], { passes: [bottom(12, 2)], held: { n: 6, at: 'scatter' } }),
+    L(29, [9, 9], 5, 36, [PAINT, CLEAR], [0, 35000, 38000], { paint: 'centre:5', passes: [bottom(18)], held: { n: 6, at: 'scatter' } }),
+    L(30, 'five', 4, 50, [PAINT], [0, 36000, 37000], { paint: 'all' }),
   ];
 
   // ---------------------------------------------------------------- small helpers
@@ -399,10 +400,11 @@
       at = run.cells[L % 2 ? (L - 1) / 2 : run.h ? L / 2 - 1 : L / 2];   // the left / lower middle
     }
     const t = g.cells[at].t;
-    return t && t.held ? grp.cells.find((c) => !g.cells[c].t.held) : at;
+    return t && t.held ? grp.cells.find((c) => !g.cells[c].t.held) ?? at : at;
   }
 
   const movable = (t) => !!t && !t.held;
+  const tiles = (g, pred) => g.cells.reduce((out, c, i) => (c.t && pred(c.t, i) ? out.concat(i) : out), []);
   function adjacent(g, a, b) {
     const N = g.cells.length;
     if (!(a >= 0 && b >= 0 && a < N && b < N)) return false;
@@ -554,7 +556,7 @@
     const { cols, cells } = g, N = cells.length, fin = by === 'finale';
     let deep = 0;
     for (let w = 1; w <= 200; w++) {
-      const mult = fin ? 1 : Math.min(w, 5);
+      const mult = Math.min(w, 5);
       const inClear = new Uint8Array(N), blast = new Uint8Array(N), matched = new Int16Array(N).fill(-1);
       const protect = new Uint8Array(N), stay = new Uint8Array(N), fired = new Uint8Array(N), src = new Int16Array(N).fill(-1);
       const queue = [], sources = [], makes = [], ws = [{ e: 'wave', n: w }];
@@ -675,20 +677,13 @@
           const mc = x.sp === 'mark' ? b : a, oc = mc === b ? a : b, o = cells[oc].t;
           fired[mc] = 1;
           add(mc, si, true);
-          if (!o.sp) {
-            const hit = [];
-            cells.forEach((c, i) => { if (c.t && c.t.s === o.s) hit.push(i); });
-            blastAll('mark+tile', mc, hit);
-            return;
-          }
-          const conv = [];
-          cells.forEach((c, i) => {
-            if (i === oc || !c.t || c.t.s !== o.s || c.t.sp || c.t.held) return;
-            c.t.sp = o.sp === 'burst' ? 'burst' : rand(g2) < 0.5 ? 'row' : 'col';
-            ws.push({ e: 'make', cell: i, tile: Object.assign({}, c.t) });
-            conv.push(i);
-          });
+          if (!o.sp) { blastAll('mark+tile', mc, tiles(g2, (t) => t.s === o.s)); return; }
+          const conv = tiles(g2, (t, i) => i !== oc && t.s === o.s && !t.sp && !t.held);
           ws.push({ e: 'fire', cell: mc, sp: o.sp === 'burst' ? 'mark+burst' : 'mark+stripe', cells: [oc].concat(conv).sort((p, q) => p - q) });
+          for (const i of conv) {   // the ribbon reaches each, which becomes the special, then all fire
+            cells[i].t.sp = o.sp === 'burst' ? 'burst' : rand(g2) < 0.5 ? 'row' : 'col';
+            ws.push({ e: 'make', cell: i, tile: Object.assign({}, cells[i].t) });
+          }
           add(oc, si, true);
           for (const i of conv) add(i, si, true);
           return;
@@ -710,8 +705,7 @@
   // draw their suits afresh. No move is spent.
   function reshuffle(g, steps) {
     if (listMoves(g, 3).length >= 3) return;
-    const mov = [];
-    g.cells.forEach((c, i) => { if (movable(c.t)) mov.push(i); });
+    const mov = tiles(g, (t) => !t.held);
     if (mov.length < 2) return;
     const orig = mov.map((i) => g.cells[i].t);
     const ok = () => !findGroups(suitArr(g), g.cols, g.rows).length && listMoves(g, 3).length >= 3;
@@ -810,14 +804,13 @@
     return no;
   }
 
-  /** finale(game) -> {game, steps}: "All set." Each move left stripes a random plain tile (+100), then
+  /** finale(game) -> {game, steps}: "All set." Each move left stripes a random plain tile (+1,000), then
    *  every special fires, in waves; nothing is recorded and nothing repainted. Once, from 'won'; then 'done'. */
   function finale(game) {
     if (!game || game.state !== 'won') return { game, steps: [] };
     const g = clone(game), steps = [{ e: 'word', text: WORDS.finale }];
     for (; g.moves > 0; g.moves--) {
-      const plain = [];
-      g.cells.forEach((c, i) => { if (c.t && !c.t.sp && !c.t.held && c.t.s >= 0) plain.push(i); });
+      const plain = tiles(g, (t) => !t.sp && !t.held && t.s >= 0);
       let cell = null;
       if (plain.length) {
         cell = plain[Math.floor(rand(g) * plain.length)];
@@ -825,8 +818,8 @@
         t.sp = rand(g) < 0.5 ? 'row' : 'col';
         steps.push({ e: 'make', cell, tile: Object.assign({}, t) });
       }
-      g.score += 100;
-      steps.push({ e: 'score', add: 100, total: g.score, cell });
+      g.score += MOVE_LEFT;
+      steps.push({ e: 'score', add: MOVE_LEFT, total: g.score, cell });
     }
     resolve(g, steps, null, 'finale');
     g.goals.forEach((x) => { if (x.type === 'score') x.have = Math.min(x.n, g.score); });

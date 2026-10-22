@@ -21,11 +21,14 @@
 
   // One stylesheet for the game and the board: play.css, next to this script, unless the page already has it.
   const here = (typeof document !== 'undefined' && document.currentScript && document.currentScript.src) || '';
-  function ensureCss() {
-    if (document.querySelector('[data-fives="play"]')) return;
+  function ensureCss() { // -> a promise, settled once the styles apply
+    const had = document.querySelector('[data-fives="play"]');
+    if (had) return had.sheet || had.tagName === 'STYLE' ? Promise.resolve() : new Promise((r) => { had.addEventListener('load', r); had.addEventListener('error', r); });
     const l = document.createElement('link');
     l.rel = 'stylesheet'; l.href = here.replace(/[^/]*$/, 'play.css'); l.setAttribute('data-fives', 'play');
+    const p = new Promise((r) => { l.onload = l.onerror = r; });
     document.head.appendChild(l);
+    return p;
   }
 
   // columns = clamp(floor((width + 8) / 176), 2, 5); each tile into the shortest column so far (ties: the leftmost).
@@ -49,22 +52,30 @@
     return d.getDate() + ' ' + MONTHS[d.getMonth()];
   }
 
-  /** drawPainting(canvas, painting): a kept painting's cells ("6 hex per cell, '------' outside") into a canvas. */
+  /** drawPainting(canvas, painting, cellPx): a kept painting ("6 hex per cell, '------' outside") into a
+   *  canvas, cropped to the cells that were painted (a centre square is its own picture). */
   function drawPainting(cv, p, cell) {
-    const s = cell || 8;
-    cv.width = p.cols * s; cv.height = p.rows * s;
+    const s = cell || 8, hex = (i) => { const x = String(p.c || '').substr(i * 6, 6); return /^[0-9a-f]{6}$/i.test(x) ? '#' + x : null; };
+    let c0 = p.cols, r0 = p.rows, c1 = -1, r1 = -1;
+    for (let i = 0; i < p.cols * p.rows; i++) {
+      if (!hex(i)) continue;
+      const c = i % p.cols, r = Math.floor(i / p.cols);
+      c0 = Math.min(c0, c); r0 = Math.min(r0, r); c1 = Math.max(c1, c); r1 = Math.max(r1, r);
+    }
+    if (c1 < 0) { c0 = r0 = 0; c1 = p.cols - 1; r1 = p.rows - 1; }
+    cv.width = (c1 - c0 + 1) * s; cv.height = (r1 - r0 + 1) * s;
     const g = cv.getContext('2d');
     for (let i = 0; i < p.cols * p.rows; i++) {
-      const hex = String(p.c || '').substr(i * 6, 6);
-      if (!/^[0-9a-f]{6}$/i.test(hex)) continue;
-      g.fillStyle = '#' + hex;
-      g.fillRect((i % p.cols) * s, Math.floor(i / p.cols) * s, s, s);
+      const h = hex(i);
+      if (!h) continue;
+      g.fillStyle = h;
+      g.fillRect((i % p.cols - c0) * s, (Math.floor(i / p.cols) - r0) * s, s, s);
     }
     return cv;
   }
 
   function mount(el, opts) {
-    ensureCss();
+    const css = ensureCss();
     const F = root.FiveS, M = root.FiveSMatch;
     let o = Object.assign({}, opts);
     const shown = new Set();   // tiles fade in once, the first time they are shown
@@ -107,9 +118,9 @@
       b.className = 'fb-tile fb-painting';
       b.setAttribute('aria-haspopup', 'dialog');
       b.setAttribute('aria-label', 'Painting: Level ' + p.n + ', ' + dayText(p.at));
-      b.appendChild(drawPainting(document.createElement('canvas'), p));
+      const cv = b.appendChild(drawPainting(document.createElement('canvas'), p));
       b.addEventListener('click', () => o.onPainting && o.onPainting(i, b));
-      return { el: b, ratio: p.rows / p.cols, key: 'p' + p.at + ':' + i };
+      return { el: b, ratio: cv.height / cv.width, key: 'p' + p.at + ':' + i };
     }
 
     function section(head, meta, items) {
@@ -168,6 +179,7 @@
     const ro = new ResizeObserver(() => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; layout(); }); });
     ro.observe(box);
     render();
+    css.then(() => { lastW = -1; layout(); });
 
     return {
       update(next) { o = Object.assign(o, next); render(); },

@@ -7,8 +7,9 @@
 <!-- A harness for src/play.js and src/board.js: the deck, an example taste (~37 kept things, brought
      things among them), and the app's part played by the callbacks below. Served from 5s/:
      /test/play.html#map | #level=7 | #board, with ?assoc=1 (sample pairings and a painting),
-     ?theme=dark|light, ?reduce=1, ?plays=N (the board's seed), ?deck=fixture. -->
+     ?theme=dark|light, ?reduce=1, ?plays=N (the board's seed), ?stars=3,2,1 (levels won), ?empty=1 (nothing kept), ?deck=fixture. -->
 <link rel="stylesheet" href="../src/app.css">
+<link rel="stylesheet" href="../src/play.css" data-fives="play">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Martian+Mono:wght@400;500&amp;family=Unbounded:wght@500;700&amp;display=swap">
 <style>
   html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
@@ -36,8 +37,9 @@
   catch (e) { base = 'fixture/'; deck = await (await fetch(base + 'deck.json')).json(); }
   const byId = new Map(deck.cards.map((c) => [c.id, c]));
 
-  let state = F.exampleState(deck, NOW);
-  state = Object.assign({}, state, { assoc: [], paintings: [], saga: { stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: +(q.get('plays') || 0), day: null } });
+  let state = q.get('empty') ? F.newState() : F.exampleState(deck, NOW);
+  const won = q.get('stars') ? q.get('stars').split(',').map(Number) : [];
+  state = Object.assign({}, state, { assoc: [], paintings: [], saga: { stars: won, best: won.map((s) => s * 3000), boost: { pass: 1, turn: 1, more: 1 }, plays: +(q.get('plays') || 0), day: null } });
   if (q.get('assoc')) {
     // Pairings as if three levels had been played: groups of kept things that share a thread.
     const pcs = M.pieces(state, deck, 5);

@@ -36,11 +36,14 @@
 
   // One stylesheet for the game and the board: play.css, next to this script, unless the page already has it.
   const here = (document.currentScript && document.currentScript.src) || '';
-  function ensureCss() {
-    if (document.querySelector('[data-fives="play"]')) return;
+  function ensureCss() { // -> a promise, settled once the styles apply
+    const had = document.querySelector('[data-fives="play"]');
+    if (had) return had.sheet || had.tagName === 'STYLE' ? Promise.resolve() : new Promise((r) => { had.addEventListener('load', r); had.addEventListener('error', r); });
     const l = document.createElement('link');
     l.rel = 'stylesheet'; l.href = here.replace(/[^/]*$/, 'play.css'); l.setAttribute('data-fives', 'play');
+    const p = new Promise((r) => { l.onload = l.onerror = r; });
     document.head.appendChild(l);
+    return p;
   }
 
   // ================================================================ sound and touch
@@ -134,6 +137,7 @@
   function makeLoop(drawFx) {
     const items = [];
     let id = 0, paused = false;
+    const api = { scale: 1 }; // the finale plays faster
     function frame(now) {
       id = 0;
       for (const a of items.slice()) {
@@ -147,13 +151,13 @@
       if ((items.length || more) && !paused) id = requestAnimationFrame(frame);
     }
     function kick() { if (!id && !paused) id = requestAnimationFrame(frame); }
-    return {
-      run(dur, fn, delay) { return new Promise((res) => { items.push({ dur, fn, delay: delay || 0, t0: null, res }); kick(); }); },
+    return Object.assign(api, {
+      run(dur, fn, delay) { return new Promise((res) => { items.push({ dur: dur * api.scale, fn, delay: (delay || 0) * api.scale, t0: null, res }); kick(); }); },
       kick,
       pause() { paused = true; if (id) cancelAnimationFrame(id); id = 0; },
       resume() { paused = false; kick(); },
       stop() { paused = true; if (id) cancelAnimationFrame(id); items.length = 0; },
-    };
+    });
   }
 
   const ease = {
@@ -208,7 +212,7 @@
   // ================================================================ the saga map
 
   function mountMap(el, opts) {
-    ensureCss();
+    const css = ensureCss();
     const M_ = M();
     let o = Object.assign({}, opts);
     const box = h('div', 'fp fp-mapview');
@@ -264,7 +268,7 @@
       }
       list.innerHTML = html;
       const nb = list.querySelector('[data-n="' + next + '"]');
-      requestAnimationFrame(() => { if (nb) scroller.scrollTop = nb.parentNode.offsetTop - scroller.clientHeight / 2 + 28; });
+      css.then(() => requestAnimationFrame(() => { if (nb) scroller.scrollTop = nb.parentNode.offsetTop - scroller.clientHeight / 2 + 28; }));
     }
     render();
     return {
@@ -425,6 +429,7 @@
         e.innerHTML = '<i class="fp-fr"></i><b>5s</b>';
         return;
       }
+      e._hex = suit ? suit.hex : IRIS;
       e.className = 'fp-t fp-s-' + shapeOf(suit) + (t.held ? ' fp-held' : '') + (t.sp ? ' fp-sp-' + t.sp : '');
       const pic = t.o ? picStyle(thumb(t.o)) : t.sw != null && suit && suit.swatches ? bandsBg(suit.swatches[t.sw % suit.swatches.length]) : '';
       e.innerHTML = '<i class="fp-fr" style="background:' + (suit ? suit.hex : IRIS) + '"></i><i class="fp-pic" style=\'' + pic + '\'></i>' +
@@ -547,7 +552,7 @@
       if (g.type === 'score') return fmt(Math.min(game.score, g.n)) + ' of ' + fmt(g.n);
       if (g.type === 'paint') return 'Paint ' + have + ' of ' + g.n;
       if (g.type === 'clear') return 'Cleared ' + have + ' of ' + g.n;
-      return have + ' of ' + g.n + (g.kind ? ' ' + KIND_PL[g.kind] : ' · ' + ((game.suits[g.suit] || {}).label || ''));
+      return have + ' of ' + g.n;
     }
     function goalLeft(g) {
       const left = Math.max(0, g.n - (g.type === 'score' ? game.score : g.have || 0));
@@ -595,7 +600,7 @@
     function boosts() {
       const wrap = $('.fp-boosts');
       if (!wrap.firstChild) {
-        wrap.innerHTML = BOOSTS.map((b) => '<button type="button" class="fp-boost" data-b="' + b.kind + '">' + b.glyph + '<span>' + b.word + '</span><b></b></button>').join('');
+        wrap.innerHTML = BOOSTS.map((b) => '<button type="button" class="fp-boost" data-b="' + b.kind + '">' + b.glyph + '<span>' + b.word + '</span><b class="fp-n"></b></button>').join('');
         wrap.addEventListener('click', (e) => { const b = e.target.closest('[data-b]'); if (b && !b.disabled) useBoost(b.dataset.b); });
       }
       for (const b of BOOSTS) {
@@ -603,7 +608,7 @@
         const n = held[b.kind];
         const off = !n || !started || busy || game.state !== 'play' || (b.kind === 'more' && game.more);
         e.disabled = off;
-        e.querySelector('b').textContent = n;
+        e.querySelector('.fp-n').textContent = n;
         e.setAttribute('aria-label', b.word + ', ' + n + ' held' + (b.kind === 'more' && game.more ? ', used this level' : ''));
         e.setAttribute('aria-pressed', armed === b.kind ? 'true' : 'false');
       }
@@ -693,7 +698,7 @@
             break;
           }
           case 'wave':
-            wave = s.n;
+            wave = s.n; fires = 0;
             if (s.n > 1) { await flush(); await wait(reduce ? 150 : 40); }
             break;
           case 'match':
@@ -713,7 +718,7 @@
           }
           case 'fire': {
             const sp = s.sp, c0 = s.cell, cells = s.cells || [];
-            const base = quiet && !reduce ? 120 * fires++ : 0;
+            const base = quiet && !reduce ? Math.min(600, 120 * fires++) : 0;
             const mark = sp.indexOf('mark') === 0 && sp !== 'mark+mark', burst = /burst/.test(sp) && !/stripe/.test(sp);
             snd.play(sp.indexOf('mark') === 0 ? 'mark' : burst ? 'burst' : sp === 'stripe+burst' ? 'burst' : 'row');
             if (sp === 'row' || sp === 'col') beam(c0, sp, base);
@@ -733,12 +738,10 @@
           }
           case 'clear': {
             const e = byK.get(s.k) || at[s.cell];
-            const t = game.cells[s.cell] && game.cells[s.cell].t;
-            const suit = t && game.suits[t.s];
             const d = reduce ? 0 : delays[s.cell] || 0;
             delete delays[s.cell];
             if (at[s.cell] === e) at[s.cell] = null;
-            if (e) { pend.push(leave(e, d)); particles(s.cell, (suit && suit.hex) || IRIS, d); }
+            if (e) { pend.push(leave(e, d)); particles(s.cell, e._hex || IRIS, d); }
             break;
           }
           case 'paint':
@@ -783,11 +786,7 @@
             if (s.cell != null && s.add) scorePop(s.cell, s.add);
             $('.fp-score b').textContent = fmt(s.total);
             break;
-          case 'goal':
-            if (game.goals[s.i]) { game.goals[s.i] = Object.assign({}, game.goals[s.i], { have: s.have }); }
-            break;
           case 'shuffle': {
-            word(M().WORDS.shuffle);
             const ps = [];
             for (const mv of s.moves || []) { const e = byK.get(mv[0]); if (e) ps.push(moveTo(e, cx(mv[1]), cy(mv[1]), 300, ease.out)); }
             await Promise.all(ps);
@@ -1133,13 +1132,14 @@
         e.currentTarget.setAttribute('aria-checked', set.hints);
         if (o.onOpts) o.onOpts({ sound: set.sound, hints: set.hints });
       });
-      d.querySelector('[data-play]').addEventListener('click', async () => {
+      d.querySelector('[data-play]').addEventListener('click', async (e) => {
+        const byKey = !e.detail; // a key press: the board takes the focus; a tap leaves it unringed
         snd.wake();
         await ready;
         d.done();
         started = true;
         status();
-        focusCell(firstCell());
+        focusCell(firstCell(), !byKey);
         coachOn();
         idle();
       });
@@ -1177,7 +1177,9 @@
       ended = true; busy = true; clearHint(); coachOff(); boosts();
       await wait(reduce ? 150 : 300);
       const f = MX.finale(game);
+      loop.scale = 0.6;
       await playSteps(f.steps, true);
+      loop.scale = 1;
       game = f.game;
       sync();
       const result = MX.result(game);
