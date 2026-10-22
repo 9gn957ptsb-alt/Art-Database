@@ -9,7 +9,8 @@ export const meta = {
 }
 
 // args: {repo: absolute path of the checkout, work: a scratch directory, projects: [{slug, name, url, where}]}
-// (the projects are what tools/sync_bookmarks.py prints)
+// (the projects are what tools/sync_bookmarks.py prints; a project with a "research" summary of its
+// existing project file skips the research stage and goes straight to verify and fix)
 const REPO = args.repo
 const SP = args.work
 const projects = args.projects
@@ -99,7 +100,7 @@ Return the same structured summary as the researcher (updated).`
 
 const results = await pipeline(
   projects,
-  (p) => agent(researchPrompt(p), { label: `research:${p.name}`, phase: 'Research', schema: RESEARCH_SCHEMA }),
+  (p) => p.research || agent(researchPrompt(p), { label: `research:${p.name}`, phase: 'Research', schema: RESEARCH_SCHEMA }),
   (r, p) => r ? agent(verifyPrompt(p, r), { label: `verify:${p.name}`, phase: 'Verify', schema: VERIFY_SCHEMA }).then(v => ({ r, v })) : null,
   (rv, p) => {
     if (!rv) return null
