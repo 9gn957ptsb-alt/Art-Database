@@ -1818,8 +1818,10 @@
     ui.sheetMsg = '';
     openSheet('detail', c.own ? (c.title || 'Untitled') : (c.title || 'Untitled'), () => detailHTML(id), opener, { wide: true });
     const h = where && $('#where-h');
-    if (h) { h.focus(); h.scrollIntoView({ block: 'start' }); }
+    if (h) { scrollSheetTo(h); h.focus({ preventScroll: true }); }
   }
+  // Only the sheet's body scrolls, so its title and Close stay in view.
+  function scrollSheetTo(el) { const body = $('#sheet-body'); if (el && body) body.scrollTop += el.getBoundingClientRect().top - body.getBoundingClientRect().top - 12; }
 
   // -- Where it lives (links out: the artist, 22 Oct 2026, "copy something that I find in the 5s app that
   // I want to learn more about through another platform that hosts that actual object")
@@ -1839,7 +1841,7 @@
     ui.whereLinks = links;
     if (!links.length) return '';
     // Its own place first, then its styles, its maker, and the searches elsewhere.
-    const groups = [['', []], ['Its styles', []], ['', []], ['Look it up elsewhere', []]];
+    const groups = [['', []], ['Its styles', []], ['Its maker', []], ['Look it up elsewhere', []]];
     links.forEach((l, i) => {
       groups[l.kind === 'gene' ? 1 : l.kind === 'maker' ? 2 : l.kind === 'elsewhere' ? 3 : 0][1].push(
         '<li class="wl"><span class="wl-t"><span class="t">' + esc(l.label) + '</span><span class="u" id="wl-u' + i + '">' + esc(l.url) + '</span></span>' +
@@ -2208,7 +2210,7 @@
   }
   function waitTag(rec) {
     if (!fromApps(rec)) return '';
-    if (!rec.image) return ' · Link only';
+    if (!rec.image) return rec.w ? '' : ' · Link only';  // a pasted link with the person's own picture has one
     if (rec.noPicture) return ' · No picture';
     return rec.coloursPending || ownImgs.get(rec.id) === null ? ' · Picture to come' : '';
   }
@@ -2368,8 +2370,9 @@
     let h = backHTML(false) + '<p class="lede">Paste a link to something you found, or its picture. 5s works out what it is; you check it and add it to your database.</p>';
     h += '<form class="linkform" data-form="connect-link" novalidate><label class="field" for="cx-url"><span>A link</span></label>' +
       '<div class="row"><input type="text" id="cx-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…" value="' + esc(L.url) + '" data-autofocus>' +
-      '<button type="submit" class="btn btn-ink" id="cx-read"' + (L.busy ? ' disabled' : '') + '>' + (L.busy === 'read' ? 'Looking…' : 'Look it up') + '</button></div></form>';
-    if (!L.def) h += pasteDropHTML();
+      '<button type="submit" class="btn btn-ink" id="cx-read"' + (L.busy ? ' disabled' : '') + '>' + (L.busy === 'read' ? 'Looking…' : 'Look it up') + '</button></div></form>' +
+      '<p class="small">Public links only: 5s never signs in to other sites.</p>';
+    if (!L.def && !L.deckId && !L.found && !L.done) h += pasteDropHTML();
     if (cx.status === 'connected' && cx.conn) h += '<p class="small">' + esc(PASTE_MORE) + '</p>';
     if (L.err) h += errHTML(L.err);
     if (L.done) h += linkDoneHTML(L.done);
@@ -2393,13 +2396,14 @@
     const id = cx.link.deckId, c = cardOf(id, S), e = lastJudgment(id);
     if (!c) return '';
     return '<div class="cx-done" role="status"><h3 class="found-h" id="def-h" tabindex="-1">Already in 5s</h3>' +
-      '<p>' + esc(nameLine(c)) + ' is one of 5s’s own cards.</p>' +
+      '<p><b>' + esc(nameLine(c)) + '</b></p><p>' + (e && e[1] ? 'It’s one of 5s’s own cards, and it’s in your database.' : 'It’s one of 5s’s own cards, so it has everything already: keep it, and it’s in your database.') + '</p>' +
       (e ? '<p>' + esc((e[1] ? 'You kept it' : 'You passed it') + ' · ' + fmtDate(e[3]) + '.') + '</p>' : '') + '</div>' +
       '<div class="actions">' + (e && e[1] ? '' : '<button type="button" class="btn btn-keep btn-big" data-act="def-keep-card" data-id="' + esc(id) + '" id="def-keep">Keep this card</button>') +
       '<button type="button" class="btn' + (e && e[1] ? ' btn-big' : '') + '" data-act="detail" data-id="' + esc(id) + '" aria-haspopup="dialog" id="def-open">Open it</button></div>';
   }
 
   const defFields = () => Object.assign({}, cx.link.def.fields, cx.link.edits);
+  const canDefine = () => !!(ui.sample && !ui.sampleNo && cx.link.rec && LK);
   function defChips(f) {
     const out = [];
     if (f.category) out.push(['category', f.category, f.category]);
@@ -2416,7 +2420,7 @@
       return w + (d.dropped.length ? ' Some of what came back didn’t fit 5s’s words and was left out.' : '');
     }
     if (d.by === 'page') return 'What its page says about itself. Check it before you add it.';
-    return 'Only what the address says, so check the name.' + (ui.sample && cx.link.rec ? ' Define fills in more.' : '');
+    return (d.fields.name ? 'Only what the address says, so check the name.' : 'The address doesn’t say what this is, so give it a name.') + (canDefine() ? ' Define fills in more.' : '');
   }
 
   function defineHTML() {
@@ -2441,7 +2445,9 @@
     }
     h += '<fieldset class="fieldset-seg"><legend>Kind</legend><div class="seg">' + OWN_KINDS.map((kd) =>
       '<label' + (kind === kd ? ' class="on"' : '') + '><input type="radio" name="def-kind" value="' + kd + '"' + (kind === kd ? ' checked' : '') + '>' + KIND_LABEL[kd] + '</label>').join('') + '</div></fieldset>';
-    if (f.medium || f.place || f.about) h += '<dl class="facts">' + [['Medium', f.medium], ['Place', f.place], ['About', f.about]].filter((x) => x[1]).map((x) => '<dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd>').join('') + '</dl>';
+    // Each fact can be removed, as the chips below can: the person checks it all before adding.
+    if (f.medium || f.place || f.about) h += '<dl class="facts">' + [['Medium', 'medium'], ['Place', 'place'], ['About', 'about']].filter((x) => f[x[1]]).map(([label, k]) => '<dt>' + label + '</dt><dd>' + esc(f[k]) +
+      ' <button type="button" class="chip-x" data-act="def-drop" data-k="' + k + '" data-v="' + esc(f[k]) + '" aria-label="Remove ' + label + '">' + icon('close') + '</button></dd>').join('') + '</dl>';
     if (chips.length) {
       h += '<div class="def-words"><p class="small" id="def-words-h">What it is, in 5s’s words. Remove any that are wrong.</p><ul class="chips" aria-labelledby="def-words-h">' + chips.map(([k, v, label]) =>
         '<li class="chip def-chip">' + esc(label) + '<button type="button" class="chip-x" data-act="def-drop" data-k="' + k + '" data-v="' + esc(v) + '" aria-label="' + esc('Remove ' + label) + '">' + icon('close') + '</button></li>').join('') + '</ul></div>';
@@ -2452,10 +2458,10 @@
     }
     h += '<div class="actions">' +
       '<button type="button" class="btn btn-keep btn-big" data-act="def-add" id="def-add"' + (L.busy ? ' disabled' : '') + '>' + (L.busy === 'add' ? 'Adding…' : 'Add to my database') + '</button>' +
-      (ui.sample && L.rec && d.by !== 'claude' ? (L.busy === 'define'
+      (canDefine() && d.by !== 'claude' ? (L.busy === 'define'
         ? '<button type="button" class="btn btn-iris" disabled id="def-define">Defining…</button><button type="button" class="btn" data-act="def-stop" id="def-stop">Stop</button>'
         : '<button type="button" class="btn btn-iris" data-act="def-define" id="def-define"' + (L.busy ? ' disabled' : '') + '>Define</button>') : '') +
-      '</div>' + (ui.sample && L.rec && d.by !== 'claude' ? '<p class="small">Define fills in its maker, date and styles, as far as they are known.</p>' : '') + '</section>';
+      '</div>' + (canDefine() && d.by !== 'claude' ? '<p class="small">Define fills in its maker, date and styles, as far as they are known.</p>' : '') + '</section>';
     return h;
   }
 
@@ -2503,7 +2509,8 @@
     const r = LK.fromAddress(L.rec, deck, pg ? { title: pg.name || pg.title } : null);
     const f = Object.assign({}, r.fields);
     if (pg) {
-      for (const k of ['maker', 'date', 'medium']) if (!f[k] && typeof pg[k] === 'string' && pg[k].trim()) f[k] = pg[k].trim();
+      // Cut to what 5s keeps (a page's facts run to 300 characters), so what is shown is what is stored.
+      for (const k of ['maker', 'date', 'medium']) if (!f[k] && typeof pg[k] === 'string' && pg[k].trim()) f[k] = pg[k].trim().slice(0, LK.LIMITS[k]).trim();
       if (f.maker || f.date || f.medium) f.definedBy = 'page';
     }
     return { fields: f, confidence: r.confidence, recognised: r.recognised, dropped: [], by: f.definedBy || 'address' };
@@ -2593,7 +2600,7 @@
 
   async function pasteDefine() {
     const L = cx.link;
-    if (!ui.sample || !L.rec || !L.def || L.busy || !LK) return;
+    if (!canDefine() || !L.def || L.busy) return;
     L.busy = 'define'; L.defNote = ''; L.ctl = new AbortController();
     refreshSheet();
     say('Defining…');
@@ -2605,9 +2612,12 @@
       const p = LK.parseDefinition(ans, deck, { recognised: L.rec, page });
       if (!p.ok) throw { code: 'invalid_json' };
       const base = addressDef().fields;
+      // Not recognised: its name stays the address's (or page's) own words, as its other facts do.
+      if (!p.recognised && base.name) delete p.fields.name;
       L.def = { fields: Object.assign({}, base, p.fields), confidence: p.confidence, recognised: p.recognised, dropped: p.dropped, by: 'claude' };
     } catch (e) {
       L.defNote = defineCopy(e && e.code);
+      if (e && e.code === 'not_granted') ui.sampleNo = true;   // a decline holds for the rest of the visit
     }
     L.busy = false; L.ctl = null;
     if (ui.sheet !== 'connect' || cx.door !== 'link') return;
@@ -2628,20 +2638,19 @@
     else if (L.pageImage && cx.status === 'connected') item.image = L.pageImage;
     L.busy = 'add';
     refreshSheet();
+    const refuse = (err) => { L.busy = false; L.err = err; refreshSheet(); scrollSheetTo($('#sheet .cx-err')); say(err.why + ' ' + err.resolution); };
+    const added = () => { const st = F.bring(S, item, t, deck); return item.image && !item.colours.length ? withOwn(st, id, { coloursPending: true }) : st; };
     try {
+      // Over the store's document limit nothing would be saved beyond this browser.
+      if (stateBytes(added()) > STATE_MAX) { refuse({ why: 'Your 5s has no room for more things.', resolution: 'Let some go on a “Still yours?” card, or remove some in Split, then add again.' }); return; }
       if (L.pic) {
         const at = Math.floor(t / 1000);
         await imgStore.put(id, { img: L.pic.img, thumb: L.pic.thumb, at });
         ownImgs.set(id, { img: L.pic.img, thumb: L.pic.thumb, at });
       }
-      let st = F.bring(S, item, t, deck);
-      if (item.image && !item.colours.length) st = withOwn(st, id, { coloursPending: true });
-      commit(st, { noRender: true });
+      commit(added(), { noRender: true });
     } catch (e) {
-      L.busy = false;
-      L.err = { why: 'Couldn’t add it just now.', resolution: 'Try again in a moment.' };
-      refreshSheet();
-      say(L.err.why + ' ' + L.err.resolution);
+      refuse({ why: 'Couldn’t add it just now.', resolution: 'Try again in a moment.' });
       return;
     }
     L.busy = false;

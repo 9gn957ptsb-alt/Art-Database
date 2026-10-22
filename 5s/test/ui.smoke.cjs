@@ -1956,7 +1956,7 @@ for (const cfg of CONFIGS) {
       await page.waitForSelector('#def-h');
       assert.equal(await page.textContent('#def-h'), 'Is this it?');
       assert.equal(await page.inputValue('#def-name'), '');
-      assert.match(await page.textContent('#def-sure'), /^Only what the address says, so check the name\. Define fills in more\.$/);
+      assert.match(await page.textContent('#def-sure'), /^The address doesn’t say what this is, so give it a name\. Define fills in more\.$/);
       assert.equal(await page.evaluate(() => window.__prompts.length), 0, 'nothing is asked before Define is pressed');
       await shot('84-paste-museum');
       await page.click('#def-define');
@@ -1975,6 +1975,8 @@ for (const cfg of CONFIGS) {
       await shot('85-paste-defined');
       await page.click('#sheet .def-chip [aria-label="Remove ' + styleNames[0] + '"]');
       assert.ok(!(await page.$$eval('#sheet .def-chip', (cs) => cs.map((c) => c.textContent.trim()))).includes(styleNames[0]), 'a chip removed');
+      await page.click('#sheet .facts [aria-label="Remove About"]');
+      assert.ok(!/About/.test(await page.textContent('#sheet .facts')), 'a fact removed, as a chip is');
       await page.fill('#def-name', 'The Harvesters, 1565');
       await page.check('#sheet input[name="def-kind"][value="space"]', { force: true });
       await page.click('#def-add');
@@ -1986,6 +1988,7 @@ for (const cfg of CONFIGS) {
       assert.ok(h, 'kept with its cleaned link');
       assert.deepEqual([h.name, h.kind, h.source, h.maker, h.date, h.category, h.era, h.genes, h.materials, h.colours, h.coloursEstimated, h.definedBy],
         ['The Harvesters, 1565', 'space', 'The Met', 'Pieter Bruegel the Elder', '1565', 'Painting', 'Before 1800', STYLE.slice(1), ['oil', 'wood'], ANSWERS.metmuseum.colours, true, 'claude']);
+      assert.deepEqual([h.medium, h.about], ['Oil on wood', undefined], 'the removed fact is not kept');
       const P = FiveS.profile(st, DECK, Date.now());
       const feats = Object.values(P.groups).flat().filter((e) => e.kept > 0).map((e) => e.key);
       for (const k of ['era:Before 1800', 'mat:oil', 'gene:' + STYLE[1]]) assert.ok(feats.indexOf(k) >= 0, 'its features are in the profile: ' + k);
@@ -2096,6 +2099,27 @@ test('Paste a link without Define: no sample (the address\'s words), a declined 
     assert.deepEqual(page.errors(), []);
   } finally { await ctx.close(); }
 
+  // a 5s at the store's limit: Add says there is no room (in view), and nothing is added
+  ({ ctx, page } = await newPage(cfg));
+  try {
+    let full = Object.assign(FiveS.newState(), { seen: { path: [], intro: 1 } });
+    for (let i = 0; Buffer.byteLength(JSON.stringify(full)) < 200 * 1024 - 200; i++) {
+      full = FiveS.bring(full, { kind: 'object', name: 'Thing ' + i, source: 'hay.dk', link: 'https://hay.dk/x/' + i + '/' + 'a'.repeat(1800) }, Date.now() - i * 1000);
+    }
+    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(full));
+    await page.goto(BASE + '#split');
+    await page.click('#split-paste');
+    await page.fill('#cx-url', 'https://www.vitra.com/en-us/product/eames-lounge-chair');
+    await page.click('#cx-read');
+    await page.waitForSelector('#def-add');
+    await page.click('#def-add');
+    await page.waitForSelector('#sheet .cx-err');
+    assert.match(await page.textContent('#sheet .cx-err'), /^Your 5s has no room for more things\.Let some go/);
+    assert.ok(await page.evaluate(() => { const e = document.querySelector('#sheet .cx-err').getBoundingClientRect(), b = document.getElementById('sheet-body').getBoundingClientRect(); return e.top >= b.top && e.top < b.bottom; }), 'the refusal is scrolled into view');
+    assert.equal((await stored(page)).own.length, full.own.length, 'nothing added');
+    assert.deepEqual(page.errors(), []);
+  } finally { await ctx.close(); }
+
   // declined, then a hostile answer
   for (const opts of [{ decline: true }, {}]) {
     ({ ctx, page } = await newPage(cfg));
@@ -2111,13 +2135,14 @@ test('Paste a link without Define: no sample (the address\'s words), a declined 
       if (opts.decline) {
         await page.waitForFunction(() => /Define wasn’t allowed/.test(document.getElementById('sheet-body').textContent));
         assert.equal(await page.inputValue('#def-name'), 'Blue Chair', 'the address\'s words');
+        assert.equal(await page.locator('#def-define').count(), 0, 'a decline holds for the visit: no Define to press again');
         await shot('93-define-declined');
       } else {
         await page.waitForFunction(() => !document.getElementById('def-define'));
         assert.match(await page.textContent('#def-sure'), /^A best guess: .* Some of what came back didn’t fit 5s’s words and was left out\.$/);
         assert.equal(await page.inputValue('#def-maker'), '', 'a maker the address doesn\'t say is dropped');
         assert.equal(await page.inputValue('#def-date'), '');
-        assert.ok(!/evil|https?:/.test(await page.inputValue('#def-name')), 'no address in the name');
+        assert.equal(await page.inputValue('#def-name'), 'Blue Chair', 'not recognised: the address\'s own name, not the answer\'s');
         const chips = await page.$$eval('#sheet .def-chip', (cs) => cs.map((c) => c.textContent.trim()));
         // the address's own word stays (a chair: Design/Decorative Art); the answer's "Weapons" does not
         assert.deepEqual(chips.sort(), ['Abstract Art', 'Design/Decorative Art', 'Oil'], 'only 5s\'s own words: ' + chips);

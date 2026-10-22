@@ -39,7 +39,7 @@ own information is the seed of their world … how others bring theirs comes lat
 5s puts a newcomer in the situation the artist was in for a month of organizing a digital
 aesthetics, small enough for a few minutes a day. Every feature below is one of the five moves of that month:
 
-| His month | In 5s |
+| The artist's month | In 5s |
 | --- | --- |
 | **Gather**: saves from other websites and apps brought home into one database | **Sort** the deck (exposure to the forefront: every card is from the artist's database) and **Bring in your own** (your saved things from your photos, Pinterest, Instagram, Artsy…), which then come back as **Still yours?** |
 | **Catalog**: every record split into colours, kind, medium, date, place; categories with names | **Split**: your database, by part and by source |
@@ -354,6 +354,19 @@ Never: a password typed into 5s, a scraped login, or a browser extension.
   `remaining` sent again until done), each added thing kept here under the connector's id (`cid`),
   then its picture fetched with `item_image`, measured on the canvas (`FiveSBring.process`, so colours
   pending in the connector are read here) and kept like a person's own image.
+- **As built, 22 Oct 2026 (CONCEPT.md: copy a link out, paste one in to define and catalogue it).** Paste
+  a link no longer waits for the connector; it is also a button at the top of Split. The box takes a
+  link (or text with one in it) and a picture (pasted, dropped or chosen; its colours read on the
+  device). `FiveSLinks.recognise` cleans the address (tracking, referral and affiliate tags, and
+  anything of the person's: emails, tokens, sessions, subscriber ids), then: a deck card → **Already in
+  5s** (Keep this card); a link already brought in → its detail; else **Is this it?** with the
+  address's own words (with the connector, the page's own facts and picture): name, maker and date
+  editable, its other facts and words removable, colours marked *estimated* until a picture is read. **Define** (only with `sample`, only
+  when pressed) sends `definePrompt` (the address and page fenced as data) and reads the answer with
+  `parseDefinition` (the deck's words only; an unrecognised thing keeps the address's name and facts).
+  **Add to my database** → `FiveS.bring` with the defined fields; refused, with what to do, when the
+  state would pass 200 KiB. Every detail sheet has **Where it lives** (`FiveSLinks.whereItLives`: its own
+  page, its styles, its maker, searches elsewhere), each with Open and Copy, and Copy all.
 - **Sign in to the app**: not built; its row says what opens it (the connector, and each app's approval).
 - **Your data file** (works now, no connector): one reader for every app instead of one per format.
   It reads JSON (also X's script-wrapped archive files), web pages, spreadsheets, plain text, and a
