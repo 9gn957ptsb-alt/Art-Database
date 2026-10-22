@@ -36,6 +36,18 @@ That month, as this repository records it (the site branch's CLAUDE.md, the impo
   Nonetheless, I do want to be able to connect other apps to 5s, that way people's aesthetic
   preferences that already exist in other apps can be used to form their database on 5s."
 
+## The mark in motion (21 and 22 Oct 2026)
+
+- "There needs to be a potent animation that's just as relevant to how people feel about the app as
+  how relevant a logo is to the app. Using the 5 and s characters generate me a tool that allows me to
+  explore all the different ways in which the animation of those characters could fill transition
+  moments a user experiences when using the app."
+- "I want the animations that I favorite in the motions lab to be the ones used in the app. It's not
+  necessarily about particular form, so I don't mind a diverse range of animations that are
+  interchangeable in any place. The animation is necessary, nonetheless, I want you to pay attention
+  to trends in my favorite animations so you can further refine those types, as well as, explore new
+  ones that are very different, but just as potent and exciting."
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
