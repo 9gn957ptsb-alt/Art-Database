@@ -102,6 +102,8 @@ body[data-holo] .bar { display: none; }
 body[data-holo] #v-sight { display: none; }
 body[data-sight] .bar { display: none; }
 /* What the mark is on, under the glass: page text on its own ground (4.7 : 1 over the brightest ground measured). */
+/* ...and said to a screen reader when the target changes, not each metre (the words above change as you walk) */
+.say { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .sight-tag { position: fixed; left: 50%; transform: translateX(-50%); width: max-content; max-width: min(92vw, 420px); margin: 0; padding: 7px 11px;
   background: rgba(14, 12, 10, 0.72); color: #f3e9d8; border-radius: 10px; font: 400 12px/1.35 var(--mono); text-align: center; z-index: 5; pointer-events: none; }
 .sight-tag b { display: block; font: italic 400 16px/1.25 var(--serif); }
@@ -115,8 +117,9 @@ body[data-holo] .jump { border-color: var(--glow); }
   body[data-touch] .notes { max-height: calc(100% - 54px - 340px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
   body[data-touch] .label { right: calc(88px + env(safe-area-inset-right, 0px)); }
 }
-/* on its side the column runs down from the top: Sight, then Holo */
-@media (max-height: 520px) { .views { bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(90px + env(safe-area-inset-right, 0px)); } }
+/* on its side the two stand side by side along the top, Sight then Holo (a column had put Holo over the open notes) */
+@media (max-height: 520px) { .views { bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(90px + env(safe-area-inset-right, 0px)); grid-auto-flow: column; }
+  .notes { top: calc(62px + env(safe-area-inset-top, 0px)); } }
 
 /* Black until the place is built, when the eyes open on it. */
 .veil { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: #050302; color: var(--muted); font: italic 400 16px/1.5 var(--serif); text-align: center; }
