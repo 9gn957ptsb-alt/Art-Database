@@ -1,0 +1,79 @@
+{
+ "holes / the drawing's eye": {
+  "colours": [
+   "#000000 x 10564 px",
+   "#404040 x 2063 px",
+   "#808080 x 12668 px",
+   "#C0C0C0 x 2044 px",
+   "#FFFFFF x 10549 px"
+  ],
+  "max_layers": 3
+ },
+ "holes / turned az 15 el 30": {
+  "colours": [
+   "#000000 x 1479 px",
+   "#404040 x 478 px",
+   "#606060 x 99 px",
+   "#808080 x 8049 px",
+   "#A0A0A0 x 233 px",
+   "#C0C0C0 x 1234 px",
+   "#FFFFFF x 3828 px"
+  ],
+  "max_layers": 6
+ },
+ "holes / turned az 80 el 20": {
+  "colours": [
+   "#000000 x 11039 px",
+   "#131313 x 89 px",
+   "#404040 x 572 px",
+   "#454545 x 127 px",
+   "#808080 x 1944 px",
+   "#FFFFFF x 3980 px"
+  ],
+  "max_layers": 4
+ },
+ "laid / the drawing's eye": {
+  "colours": [
+   "#000000 x 7733 px",
+   "#202020 x 178 px",
+   "#303030 x 80 px",
+   "#404040 x 3740 px",
+   "#505050 x 179 px",
+   "#606060 x 1257 px",
+   "#808080 x 12099 px",
+   "#909090 x 162 px",
+   "#A0A0A0 x 842 px",
+   "#B0B0B0 x 115 px",
+   "#C0C0C0 x 3206 px",
+   "#D0D0D0 x 157 px",
+   "#E0E0E0 x 653 px",
+   "#FFFFFF x 7615 px"
+  ],
+  "max_layers": 6
+ },
+ "laid / turned az 15 el 30": {
+  "colours": [
+   "#000000 x 1446 px",
+   "#404040 x 1015 px",
+   "#606060 x 301 px",
+   "#808080 x 8456 px",
+   "#A0A0A0 x 745 px",
+   "#C0C0C0 x 2793 px",
+   "#E0E0E0 x 107 px",
+   "#FFFFFF x 2755 px"
+  ],
+  "max_layers": 5
+ },
+ "laid / turned az 80 el 20": {
+  "colours": [
+   "#000000 x 12868 px",
+   "#202020 x 82 px",
+   "#404040 x 1200 px",
+   "#808080 x 2632 px",
+   "#A0A0A0 x 75 px",
+   "#C0C0C0 x 260 px",
+   "#FFFFFF x 4508 px"
+  ],
+  "max_layers": 5
+ }
+}

@@ -1,0 +1,102 @@
+{
+ "webgl2": true,
+ "compiled": true,
+ "linked": true,
+ "renderer": "WebKit WebGL",
+ "log": "",
+ "views": {
+  "drawing's eye, holo 0": {
+   "mean": 0.0,
+   "p99": 0.0,
+   "max": 0.0,
+   "share_le2": 1.0,
+   "colours": 5
+  },
+  "drawing's eye, holo 1": {
+   "mean": 0.0,
+   "p99": 0.0,
+   "max": 0.0,
+   "share_le2": 1.0,
+   "colours": 5
+  },
+  "drawing's eye, Cezanne pair": {
+   "mean": 0.0,
+   "p99": 0.0,
+   "max": 0.0,
+   "share_le2": 1.0,
+   "colours": 5
+  },
+  "az 15 el 35, holo 0": {
+   "mean": 0.012150668286755772,
+   "p99": 1.0,
+   "max": 1.0,
+   "share_le2": 1.0,
+   "colours": 9
+  },
+  "az 15 el 35, holo 1": {
+   "mean": 0.022681247468610773,
+   "p99": 1.0,
+   "max": 1.0,
+   "share_le2": 1.0,
+   "colours": 13
+  },
+  "az 75 el 35, holo 1": {
+   "mean": 0.0,
+   "p99": 0.0,
+   "max": 0.0,
+   "share_le2": 1.0,
+   "colours": 6
+  },
+  "az 45 el 70, holo 1": {
+   "mean": 0.02240630092341119,
+   "p99": 1.0,
+   "max": 1.0,
+   "share_le2": 1.0,
+   "colours": 8
+  },
+  "az 200 el -25, holo 1": {
+   "mean": 0.003142183817753339,
+   "p99": 0.0,
+   "max": 1.0,
+   "share_le2": 1.0,
+   "colours": 9
+  },
+  "bulk grey": {
+   "rgb": [
+    128,
+    128,
+    128
+   ]
+  },
+  "bulk pair": {
+   "rgb": [
+    128,
+    128,
+    128
+   ]
+  },
+  "bulk holo": {
+   "rgb": [
+    128,
+    128,
+    128
+   ]
+  }
+ },
+ "drawing_eye_holo1_vs_holo0_maxdiff": 0.0,
+ "drawing_eye_holo1_vs_holo0_px_differ": 0,
+ "drawing_eye_colours": {
+  "#000000": 3316,
+  "#404040": 627,
+  "#808080": 4022,
+  "#C0C0C0": 646,
+  "#FFFFFF": 3393
+ },
+ "drawing_eye_pair_colours": {
+  "#031A51": 3316,
+  "#424D69": 627,
+  "#808080": 4022,
+  "#BEB397": 646,
+  "#FCE5AE": 3393
+ }
+}

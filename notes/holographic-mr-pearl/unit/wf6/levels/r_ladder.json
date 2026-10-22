@@ -1,0 +1,30 @@
+{
+ "2": {
+  "leaves": 1,
+  "openings": 0,
+  "cast_s": 0.3,
+  "outline_u": 8,
+  "scale_of_leaf": 1.0
+ },
+ "3": {
+  "leaves": 3,
+  "openings": 1,
+  "cast_s": 0.4,
+  "outline_u": 13,
+  "scale_of_leaf": 1.0
+ },
+ "4": {
+  "leaves": 9,
+  "openings": 4,
+  "cast_s": 1.0,
+  "outline_u": 21,
+  "scale_of_leaf": 1.0
+ },
+ "5": {
+  "leaves": 27,
+  "openings": 13,
+  "cast_s": 2.4,
+  "outline_u": 34,
+  "scale_of_leaf": 1.0
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "straight": {
+  "wrong": 13270,
+  "figure_px": 130462,
+  "pct": 10.172,
+  "px_differing_from_vector_reading": 11101,
+  "wrong_holes_as_paper": 13582,
+  "pct_holes_as_paper": 11.071
+ },
+ "cut": {
+  "wrong": 2744,
+  "figure_px": 130462,
+  "pct": 2.103,
+  "px_differing_from_vector_reading": 0,
+  "wrong_holes_as_paper": 3056,
+  "pct_holes_as_paper": 2.491
+ },
+ "V3": {
+  "wrong": 2744,
+  "figure_px": 130462,
+  "pct": 2.103,
+  "px_differing_from_vector_reading": 0,
+  "wrong_holes_as_paper": 3056,
+  "pct_holes_as_paper": 2.491
+ },
+ "V1": {
+  "wrong": 2744,
+  "figure_px": 130462,
+  "pct": 2.103,
+  "px_differing_from_vector_reading": 0,
+  "wrong_holes_as_paper": 3056,
+  "pct_holes_as_paper": 2.491
+ }
+}

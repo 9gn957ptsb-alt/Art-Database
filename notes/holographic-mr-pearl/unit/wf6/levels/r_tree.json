@@ -1,0 +1,19 @@
+{
+ "works": {
+  "leaves": 27,
+  "gaps_used": 0,
+  "joins": 13,
+  "sizes": [
+   3.0
+  ]
+ },
+ "details": {
+  "leaves": 108,
+  "gaps_used": 27,
+  "joins": 40,
+  "sizes": [
+   4.0,
+   7.0
+  ]
+ }
+}

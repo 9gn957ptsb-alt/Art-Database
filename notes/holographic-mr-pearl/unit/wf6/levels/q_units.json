@@ -1,0 +1,26 @@
+{
+ "thirds straight": {
+  "wrong": 13268,
+  "pct": 10.17
+ },
+ "thirds curved tail D=2/phi": {
+  "wrong": 36375,
+  "pct": 27.882
+ },
+ "thirds woven": {
+  "wrong": 3044,
+  "pct": 2.333
+ },
+ "golden straight": {
+  "wrong": 17254,
+  "pct": 13.225
+ },
+ "golden curved tail D=2/phi": {
+  "wrong": 40058,
+  "pct": 30.705
+ },
+ "golden woven": {
+  "wrong": 8101,
+  "pct": 6.209
+ }
+}

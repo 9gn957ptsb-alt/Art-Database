@@ -1,0 +1,170 @@
+{
+ "IN nest: drawing view": {
+  "0": {
+   "n": 1,
+   "max": 0.0,
+   "mean": 0.0
+  },
+  "1": {
+   "n": 4,
+   "max": 0.0,
+   "mean": 0.0
+  },
+  "2": {
+   "n": 16,
+   "max": 0.0,
+   "mean": 0.0
+  }
+ },
+ "IN nest: turned 5 deg": {
+  "0": {
+   "n": 1,
+   "max": 0.15101,
+   "mean": 0.15101
+  },
+  "1": {
+   "n": 4,
+   "max": 0.15101,
+   "mean": 0.15101
+  },
+  "2": {
+   "n": 16,
+   "max": 0.15101,
+   "mean": 0.15101
+  }
+ },
+ "IN nest: turned 20 deg": {
+  "0": {
+   "n": 1,
+   "max": 0.59546,
+   "mean": 0.59546
+  },
+  "1": {
+   "n": 4,
+   "max": 0.59546,
+   "mean": 0.59546
+  },
+  "2": {
+   "n": 16,
+   "max": 0.59546,
+   "mean": 0.59546
+  }
+ },
+ "IN nest: turned 45 deg": {
+  "0": {
+   "n": 1,
+   "max": 1.25928,
+   "mean": 1.25928
+  },
+  "1": {
+   "n": 4,
+   "max": 1.25928,
+   "mean": 1.25928
+  },
+  "2": {
+   "n": 16,
+   "max": 1.25928,
+   "mean": 1.25928
+  }
+ },
+ "IN nest: perspective from the eye (not drawn in)": {
+  "0": {
+   "n": 1,
+   "max": 0.2725,
+   "mean": 0.2725
+  },
+  "1": {
+   "n": 4,
+   "max": 0.16351,
+   "mean": 0.12431
+  },
+  "2": {
+   "n": 16,
+   "max": 0.14913,
+   "mean": 0.10163
+  }
+ },
+ "IN nest: perspective, the whole nest drawn in": {
+  "0": {
+   "n": 1,
+   "max": 0.0,
+   "mean": 0.0
+  },
+  "1": {
+   "n": 4,
+   "max": 0.0,
+   "mean": 0.0
+  },
+  "2": {
+   "n": 16,
+   "max": 0.0,
+   "mean": 0.0
+  }
+ },
+ "IN nest: drawn in, eye moved 5 deg": {
+  "0": {
+   "n": 1,
+   "max": 0.15295,
+   "mean": 0.15295
+  },
+  "1": {
+   "n": 4,
+   "max": 0.15251,
+   "mean": 0.15145
+  },
+  "2": {
+   "n": 16,
+   "max": 0.15249,
+   "mean": 0.15124
+  }
+ },
+ "OF tree leaves: drawing view": {
+  "3": {
+   "n": 27,
+   "max": 0.0,
+   "mean": 0.0
+  }
+ },
+ "OF tree leaves: turned 5 deg": {
+  "3": {
+   "n": 27,
+   "max": 0.15101,
+   "mean": 0.15101
+  }
+ },
+ "OF tree leaves: turned 20 deg": {
+  "3": {
+   "n": 27,
+   "max": 0.59546,
+   "mean": 0.59546
+  }
+ },
+ "OF tree leaves: turned 45 deg": {
+  "3": {
+   "n": 27,
+   "max": 1.25928,
+   "mean": 1.25928
+  }
+ },
+ "OF tree leaves: perspective from the eye (not drawn in)": {
+  "3": {
+   "n": 27,
+   "max": 0.31674,
+   "mean": 0.18888
+  }
+ },
+ "OF tree leaves: perspective, the whole nest drawn in": {
+  "3": {
+   "n": 27,
+   "max": 0.0,
+   "mean": 0.0
+  }
+ },
+ "OF tree leaves: drawn in, eye moved 5 deg": {
+  "3": {
+   "n": 27,
+   "max": 0.15445,
+   "mean": 0.15187
+  }
+ }
+}

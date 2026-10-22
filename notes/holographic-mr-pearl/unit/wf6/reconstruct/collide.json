@@ -1,0 +1,46 @@
+{
+ "V3_smootherstep": {
+  "hits": {
+   "Ay": {},
+   "By": {},
+   "Bx": {},
+   "Cx": {},
+   "Cz": {},
+   "Az": {},
+   "Ax": {},
+   "Cy": {},
+   "Bz": {}
+  },
+  "deepest": 0
+ },
+ "V3_smoothstep": {
+  "hits": {
+   "Ay": {},
+   "By": {},
+   "Bx": {},
+   "Cx": {},
+   "Cz": {},
+   "Az": {},
+   "Ax": {},
+   "Cy": {},
+   "Bz": {}
+  },
+  "deepest": 0
+ },
+ "V1_smootherstep": {
+  "hits": {
+   "By": {},
+   "Az": {},
+   "Cy": {}
+  },
+  "deepest": 0
+ },
+ "V1_smoothstep": {
+  "hits": {
+   "By": {},
+   "Az": {},
+   "Cy": {}
+  },
+  "deepest": 0
+ }
+}

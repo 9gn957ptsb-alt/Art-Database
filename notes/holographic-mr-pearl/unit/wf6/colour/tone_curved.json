@@ -1,0 +1,32 @@
+{
+ "golden unit, tails curved back (unit.py)": {
+  "mae_identity": 48.64307179987004,
+  "mae_VS": 62.78410131192129,
+  "px_turned": 24555,
+  "px_VS_differs": 24555,
+  "cos_range": [
+   0.28342925785141593,
+   0.8161331028178096
+  ]
+ },
+ "the drawing's bar, tails curved back": {
+  "mae_identity": 44.24526667691983,
+  "mae_VS": 57.79200139281839,
+  "px_turned": 24722,
+  "px_VS_differs": 24722,
+  "cos_range": [
+   0.2834273838084471,
+   0.6476598594755377
+  ]
+ },
+ "the drawing's bar, tails curved towards the eye": {
+  "mae_identity": 17.02638033333603,
+  "mae_VS": 17.02638033333603,
+  "px_turned": 50801,
+  "px_VS_differs": 0,
+  "cos_range": [
+   0.16986164978572826,
+   0.5773502691896258
+  ]
+ }
+}

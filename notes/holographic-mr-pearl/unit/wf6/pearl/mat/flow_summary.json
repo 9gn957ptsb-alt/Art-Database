@@ -1,0 +1,21 @@
+{
+ "relation": "thickness d = d0 (1 + 0.209 fbm(3 n)): F = 3 cells per unit of normal, set so the chroma residual decorrelates over the angle it does on the covers (mat/scale.py)",
+ "covers": {
+  "1": {
+   "half_angle_chroma_deg": 2.97,
+   "coherence": 0.386
+  },
+  "2": {
+   "half_angle_chroma_deg": 3.83,
+   "coherence": 0.484
+  }
+ },
+ "shipped": {
+  "F": 3.0,
+  "warp": 0.0,
+  "half_angle_chroma_deg": 3.64,
+  "coherence": 0.494
+ },
+ "warp_test": "domain warp W (0.5..3, at F 2..4; mat/flow.py, flow.json): coherence never nearer the covers, scale below them -> no warp",
+ "reads": "statistics match; the arrangement still reads as mottle where the covers read as soft swirls under one broad highlight"
+}

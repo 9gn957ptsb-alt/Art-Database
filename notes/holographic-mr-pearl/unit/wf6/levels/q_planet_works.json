@@ -1,0 +1,215 @@
+{
+ "K": 19,
+ "planet_outline_u": 28657,
+ "planet_outline_blocks": 3582.1,
+ "cities": 31,
+ "places": 71,
+ "works": 602,
+ "leaves": 602,
+ "joins": 281,
+ "openings_used": 39,
+ "levels_by_kind": {
+  "planet": {
+   "19": 1
+  },
+  "city": {
+   "18": 1,
+   "17": 3,
+   "16": 5,
+   "15": 9,
+   "14": 7,
+   "13": 6
+  },
+  "place": {
+   "17": 4,
+   "16": 7,
+   "15": 16,
+   "14": 22,
+   "13": 12,
+   "12": 3,
+   "11": 3,
+   "10": 2,
+   "7": 1,
+   "6": 1
+  },
+  "work": {
+   "17": 1,
+   "15": 2,
+   "14": 116,
+   "13": 224,
+   "12": 192,
+   "11": 16,
+   "10": 38,
+   "9": 4,
+   "8": 1,
+   "7": 4,
+   "6": 2,
+   "3": 1,
+   "2": 1
+  },
+  "opening": {
+   "11": 3,
+   "10": 2,
+   "7": 1,
+   "6": 1
+  }
+ },
+ "seconds": 0.0,
+ "cities_by_level": [
+  [
+   "Washington",
+   18,
+   "B"
+  ],
+  [
+   "New York",
+   17,
+   "AB"
+  ],
+  [
+   "Paris",
+   17,
+   "CA"
+  ],
+  [
+   "San Francisco",
+   17,
+   "CB"
+  ],
+  [
+   "London",
+   16,
+   "AAA"
+  ],
+  [
+   "Los Angeles",
+   16,
+   "AAC"
+  ],
+  [
+   "Amsterdam",
+   16,
+   "ACB"
+  ],
+  [
+   "Seattle",
+   16,
+   "CCA"
+  ],
+  [
+   "Chicago",
+   16,
+   "CCC"
+  ],
+  [
+   "Madrid",
+   15,
+   "AABB"
+  ],
+  [
+   "New Haven",
+   15,
+   "AABC"
+  ],
+  [
+   "Berlin",
+   15,
+   "ACAA"
+  ],
+  [
+   "Philadelphia",
+   15,
+   "ACAB"
+  ],
+  [
+   "Boston",
+   15,
+   "ACCA"
+  ],
+  [
+   "Dallas",
+   15,
+   "ACCC"
+  ],
+  [
+   "Milan",
+   15,
+   "CCBA"
+  ],
+  [
+   "Antwerp",
+   15,
+   "CCBB"
+  ],
+  [
+   "Munich",
+   15,
+   "CCBC"
+  ],
+  [
+   "Houston",
+   14,
+   "AABAA"
+  ],
+  [
+   "Copenhagen",
+   14,
+   "AABAB"
+  ],
+  [
+   "Vienna",
+   14,
+   "ACACA"
+  ],
+  [
+   "Seoul",
+   14,
+   "ACACB"
+  ],
+  [
+   "Brussels",
+   14,
+   "ACCBA"
+  ],
+  [
+   "Toronto",
+   14,
+   "ACCBB"
+  ],
+  [
+   "Shanghai",
+   14,
+   "ACCBC"
+  ],
+  [
+   "Cologne",
+   13,
+   "AABACA"
+  ],
+  [
+   "Stockholm",
+   13,
+   "AABACB"
+  ],
+  [
+   "Venice",
+   13,
+   "AABACC"
+  ],
+  [
+   "Rome",
+   13,
+   "ACACCA"
+  ],
+  [
+   "Tokyo",
+   13,
+   "ACACCB"
+  ],
+  [
+   "Basel",
+   13,
+   "ACACCC"
+  ]
+ ]
+}

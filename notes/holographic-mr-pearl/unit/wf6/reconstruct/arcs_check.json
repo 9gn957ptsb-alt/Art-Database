@@ -1,0 +1,16 @@
+{
+ "mismatch_V3_arcs": {
+  "wrong": 2744,
+  "figure_px": 130462,
+  "pct": 2.103,
+  "px_differing_from_vector_reading": 0,
+  "wrong_holes_as_paper": 3056,
+  "pct_holes_as_paper": 2.491
+ },
+ "px_differing_from_V3_quintic": 0,
+ "R3_max_corner_error": 8.881784197001252e-16,
+ "collision_samples_inside_other_beams": 0,
+ "deepest_penetration": 0,
+ "supersampled_3x3_vs_cut_differing": 0,
+ "samples": 6804000
+}

@@ -1,0 +1,313 @@
+{
+ "slab": {
+  "the drawing's eye": [
+   {
+    "m": 1,
+    "through": 0.36909722222222224,
+    "films_mean": 0.77125,
+    "films_p10": 0.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 2,
+    "through": 0.3636111111111111,
+    "films_mean": 1.5866666666666667,
+    "films_p10": 0.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 3,
+    "through": 0.36909722222222224,
+    "films_mean": 2.297638888888889,
+    "films_p10": 0.0,
+    "ge8": 0.0038888888888888888
+   },
+   {
+    "m": 4,
+    "through": 0.3636111111111111,
+    "films_mean": 3.162916666666667,
+    "films_p10": 0.0,
+    "ge8": 0.14652777777777778
+   },
+   {
+    "m": 6,
+    "through": 0.3636111111111111,
+    "films_mean": 4.739166666666667,
+    "films_p10": 0.0,
+    "ge8": 0.14652777777777778
+   },
+   {
+    "m": 8,
+    "through": 0.3636111111111111,
+    "films_mean": 6.315416666666667,
+    "films_p10": 0.0,
+    "ge8": 0.6363888888888889
+   }
+  ],
+  "az 30 el 35": [
+   {
+    "m": 1,
+    "through": 0.40625,
+    "films_mean": 0.7809722222222222,
+    "films_p10": 0.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 2,
+    "through": 0.08888888888888889,
+    "films_mean": 1.5561805555555555,
+    "films_p10": 1.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 3,
+    "through": 0.008958333333333334,
+    "films_mean": 2.3247916666666666,
+    "films_p10": 1.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 4,
+    "through": 0.00020833333333333335,
+    "films_mean": 3.0985416666666667,
+    "films_p10": 2.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 6,
+    "through": 0.0,
+    "films_mean": 4.645625,
+    "films_p10": 3.0,
+    "ge8": 0.0004166666666666667
+   },
+   {
+    "m": 8,
+    "through": 0.0,
+    "films_mean": 6.186597222222222,
+    "films_p10": 5.0,
+    "ge8": 0.13881944444444444
+   }
+  ],
+  "az 60 el 60": [
+   {
+    "m": 1,
+    "through": 0.5865277777777778,
+    "films_mean": 0.48215277777777776,
+    "films_p10": 0.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 2,
+    "through": 0.27729166666666666,
+    "films_mean": 0.9544444444444444,
+    "films_p10": 0.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 3,
+    "through": 0.16909722222222223,
+    "films_mean": 1.426111111111111,
+    "films_p10": 0.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 4,
+    "through": 0.08229166666666667,
+    "films_mean": 1.8963194444444444,
+    "films_p10": 1.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 6,
+    "through": 0.016944444444444446,
+    "films_mean": 2.8394444444444447,
+    "films_p10": 1.0,
+    "ge8": 0.0
+   },
+   {
+    "m": 8,
+    "through": 0.0044444444444444444,
+    "films_mean": 3.7847916666666666,
+    "films_p10": 2.0,
+    "ge8": 0.014166666666666666
+   }
+  ]
+ },
+ "scenes": {
+  "the drawing's eye / one unit (a film)": {
+   "films_mean": 1.2267041461700632,
+   "films_max": 2,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.0,
+   "greys": 5
+  },
+  "the drawing's eye / a wall 1 block deep": {
+   "films_mean": 1.243807763401109,
+   "films_max": 4,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.5780961182994455,
+   "greys": 6
+  },
+  "the drawing's eye / land 6x6x4 blocks": {
+   "films_mean": 2.5523821639844795,
+   "films_max": 12,
+   "ge8": 0.02976909865784619,
+   "weight_beyond_first_block": 0.7316805546720947,
+   "greys": 38
+  },
+  "the drawing's eye / land 6x6x8 blocks": {
+   "films_mean": 3.267190403784423,
+   "films_max": 17,
+   "ge8": 0.06191924311539111,
+   "weight_beyond_first_block": 0.7256610069268458,
+   "greys": 40
+  },
+  "az 30 el 35 / one unit (a film)": {
+   "films_mean": 1.2342173537042376,
+   "films_max": 3,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.0,
+   "greys": 7
+  },
+  "az 30 el 35 / a wall 1 block deep": {
+   "films_mean": 1.3613236814891416,
+   "films_max": 4,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.7057135470527405,
+   "greys": 9
+  },
+  "az 30 el 35 / land 6x6x4 blocks": {
+   "films_mean": 1.941503901396551,
+   "films_max": 6,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.7865724864569356,
+   "greys": 29
+  },
+  "az 30 el 35 / land 6x6x8 blocks": {
+   "films_mean": 2.3589596481162745,
+   "films_max": 7,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.801507617772678,
+   "greys": 51
+  },
+  "az 60 el 60 / one unit (a film)": {
+   "films_mean": 1.1485206238157704,
+   "films_max": 3,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.0,
+   "greys": 5
+  },
+  "az 60 el 60 / a wall 1 block deep": {
+   "films_mean": 1.2564209647107956,
+   "films_max": 3,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.6215285028189601,
+   "greys": 5
+  },
+  "az 60 el 60 / land 6x6x4 blocks": {
+   "films_mean": 1.7550328979672003,
+   "films_max": 6,
+   "ge8": 0.0,
+   "weight_beyond_first_block": 0.751227536089561,
+   "greys": 19
+  },
+  "az 60 el 60 / land 6x6x8 blocks": {
+   "films_mean": 2.411090257635216,
+   "films_max": 9,
+   "ge8": 0.0016379457430472615,
+   "weight_beyond_first_block": 0.7858983108684525,
+   "greys": 60
+  }
+ },
+ "deeper_land_changes": {
+  "the drawing's eye": {
+   "px": 15721,
+   "changed": 0.059792634056357735,
+   "changed_gt1": 0.05063291139240506,
+   "max": 128.0,
+   "mean": 0.9480312957191018
+  },
+  "az 30 el 35": {
+   "px": 20121,
+   "changed": 0.2257840067591074,
+   "changed_gt1": 0.2257840067591074,
+   "max": 128.0,
+   "mean": 9.703493862134088
+  },
+  "az 60 el 60": {
+   "px": 20366,
+   "changed": 0.33511735245016205,
+   "changed_gt1": 0.33487184523224983,
+   "max": 128.0,
+   "mean": 17.774427968182266
+  }
+ },
+ "depth": [
+  {
+   "k": 1,
+   "behind_weight": 0.5,
+   "max_change_8bit_rounded": 128,
+   "change_float": 127.5
+  },
+  {
+   "k": 2,
+   "behind_weight": 0.25,
+   "max_change_8bit_rounded": 64,
+   "change_float": 63.75
+  },
+  {
+   "k": 3,
+   "behind_weight": 0.125,
+   "max_change_8bit_rounded": 32,
+   "change_float": 31.875
+  },
+  {
+   "k": 4,
+   "behind_weight": 0.0625,
+   "max_change_8bit_rounded": 16,
+   "change_float": 15.9375
+  },
+  {
+   "k": 5,
+   "behind_weight": 0.03125,
+   "max_change_8bit_rounded": 8,
+   "change_float": 7.96875
+  },
+  {
+   "k": 6,
+   "behind_weight": 0.015625,
+   "max_change_8bit_rounded": 4,
+   "change_float": 3.984375
+  },
+  {
+   "k": 7,
+   "behind_weight": 0.0078125,
+   "max_change_8bit_rounded": 2,
+   "change_float": 1.9921875
+  },
+  {
+   "k": 8,
+   "behind_weight": 0.00390625,
+   "max_change_8bit_rounded": 1,
+   "change_float": 0.99609375
+  },
+  {
+   "k": 9,
+   "behind_weight": 0.001953125,
+   "max_change_8bit_rounded": 1,
+   "change_float": 0.498046875
+  },
+  {
+   "k": 10,
+   "behind_weight": 0.0009765625,
+   "max_change_8bit_rounded": 1,
+   "change_float": 0.2490234375
+  },
+  {
+   "k": 11,
+   "behind_weight": 0.00048828125,
+   "max_change_8bit_rounded": 1,
+   "change_float": 0.12451171875
+  }
+ ]
+}

@@ -1,0 +1,29 @@
+PURPOSE (above every rule; see PURPOSE.txt): "The goal of this game is to show people what they can do with their own information" / "THIS IS ABOUT DETERMINED RELATIONS"
+
+Holographic mode — the artist, 15 Oct 2026 (verbatim, then the rules as understood)
+
+"I want a Holographic mode where you leave Mr Pearls body and can freeroam anywhere and this mode will be how you
+introduce portals into the game. The catch is when you go into holographic mode Mr Pearl's body is completely
+vulnerable to getting destroyed. We can also introduce a time limit to Holographic mode. When you go into holographic
+mode, you can stop at any given point and choose to move Mr Pearl's body exactly there. There is no fall damage,
+however, you cannot complete the missions like going to space by merely going into holographic mode and venturing
+outside of the planet. perhaps the first planet is more so an exercise of everything you are capable of in the game."
+
+Rules:
+1. Holographic mode: Mr Pearl's hologram leaves his body and free-roams anywhere (no collision limits as a body has).
+2. Portals come into the game through this mode.
+3. While he is out, his body stays where it was and is completely vulnerable: it can be destroyed.
+4. The mode has a time limit.
+5. At any point while out, he can stop and move his body to exactly where the hologram is.
+6. No fall damage (a body moved into the air, or falling, is not hurt by the fall).
+7. Missions cannot be completed by holographic mode alone: leaving the planet as a hologram does not count (going
+   to space needs the rocket, the body).
+8. The first planet is the exercise of everything he can do in the game: a training world.
+To settle later: what threatens the body (the giants? falling craters?), how long the limit is, what portals are and do,
+what the hologram can and cannot touch.
+
+Added 15 Oct 2026 (the artist): "Holographic mode disengages the head of Mr Pearl. His head/Holographic mode will be the
+only perfect Sphere in the game, everything else will receive the consequential texture of the base unit we are
+figuring out"
+-> The hologram is his head: it lifts off and free-roams; the headless body stays behind, vulnerable. The head is the
+   only perfect sphere in the game; everything else, his body included, is built from the base unit (design-rules.txt).

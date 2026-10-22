@@ -1,0 +1,161 @@
+{
+ "name": "levels: the Fibonacci ladder of the figure of figures (wf6/levels, run 2)",
+ "geometry_path": "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/levels.json",
+ "rules": [
+  {
+   "relation": "The unit's leaf (the smallest piece of any world) is the original drawing itself, with bar half-width H = 1/9 of a block. In thirds of a block's drawn edge (u = L/3) its lengths are hole 1, growth 2, side 3, tribar 5, outline 8.",
+   "value": "level 2 = Fibonacci lengths (1,2,3,5,8); one game block",
+   "verified": "Checked on vector.json's polygons: the holes are 1.000 u, the tribar centres are 3.000 u apart, and the outline envelope is 8 u (its corners are cut, so it spans 7.333 u across). Against cls: 2.098% wrong, the floor. The woven render unit is 2.333%."
+  },
+  {
+   "relation": "A frame at level m has lengths hole F(m), growth F(m+1), side F(m+2), tribar F(m+3), outline F(m+4) in u, so each length is the sum of the two before it.",
+   "value": "level 3 = 2,3,5,8,13; level 4 = 3,5,8,13,21; level 12 = 144,233,377,610,987",
+   "verified": "ladder.py __main__ checks the sums for levels 0 to 11"
+  },
+  {
+   "relation": "Corners: a level-m frame holds three level-(m-1) frames centred at ab + (F(m+2)/3)\u00b7TRI_k. Their outlines are its tribar outlines. Each pair of them overlaps in a triangle of side F(m+1), and the opening they leave between them is its hole, F(m).",
+   "value": "child/parent length F(m+3)/F(m+4): 5/8, 8/13, 13/21 ... -> 1/phi (1.127%, -0.429%, 0.164%, -0.063% off)",
+   "verified": "Pixels of a level-5 nest at 44 px/u: no corner outline goes outside the parent outline (0 px). The uncovered area is 75794 px against 74325 analytic (the cut corners)."
+  },
+  {
+   "relation": "Opening: a level-m frame's hole (side F(m)) is exactly the outline of a level-(m-4) frame, point-reflected (M = -I). On the lattice this keeps the rule that tone is set by axis. This is the golden fact 'at phi^-4 the figure is the size of its own holes', made exact in integers.",
+   "value": "hole/outline F(m)/F(m+4): 1/8, 2/13, 3/21, 5/34 ... -> phi^-4",
+   "verified": "13 opening copies: 0 px outside their holes, 0 px over any corner leaf's faces. Each hole is covered except its 3 corners (2.1%, the copy's own cut corners)."
+  },
+  {
+   "relation": "A leaf in a level-m frame is the drawing scaled by F(m+4)/8 about CENTRE: p -> s M (p-CENTRE) + CENTRE + a r + b u + depth (1,1,1), with M = I, or -I in an opening.",
+   "value": "scale F(m+4)/8 blocks",
+   "verified": "ladder_drawing.png renders levels 2 to 5"
+  },
+  {
+   "relation": "Depth: each corner step tilts the child along (1,1,1) by kappa((a,b) - parent centre)\u00b7v_k, with kappa = 1/(3L). The child rises toward the joint where it lies over the next sibling (A over B, B over C, C over A: the drawing's own cyclic order). The tilt moves points only along the line of sight, so it never changes the drawing and never folds.",
+   "value": "kappa = 0.4082 steps of (1,1,1) per drawing unit; the same at every level",
+   "verified": "ladder_joints.png: all three level-3 joints are clean and in the stated order"
+  },
+  {
+   "relation": "Every level closes from one eye, because every placement keeps the line of sight (a scale, a lattice M, a centre in the drawing, a depth along (1,1,1)).",
+   "value": "Closure gap / own size: 0 in the drawing; 0.151 at 5 deg, 0.595 at 20 deg, 1.259 at 45 deg, identical at every level and in openings",
+   "verified": "q_ladder_closure.json, 40 copies. Drawing the whole nest in toward one eye (one projective map) closes it exactly at every level, and every level opens together when the eye moves (ladder_views.png)."
+  },
+  {
+   "relation": "Weight is how many details a thing holds (a leaf or record weighs 1). This sets size: a part holding share q sits about log_phi(1/q)/2 levels below its node.",
+   "value": "Mean size error 0.51 levels on the artist's planet, max 3.6",
+   "verified": "q_rules3.json"
+  },
+  {
+   "relation": "Rule D, how n items become n figures: one part fills the frame. With an odd count, the node's own record goes into its frame's opening. With an even count, the record becomes one more part. The parts (now always odd) are joined three at a time, the three lightest first (ties broken by the files' order), heaviest at A (top), then B (bottom-right), then C (bottom-left). The last join fills the frame.",
+   "value": "Openings hold only records, with at most one opening on any path. A city of 12 equal places gives levels -3 and -4 (mean error 0.50). A place of 40 equal works gives 21 at -3 and 20 at -4 (0.48).",
+   "verified": "Compared with the Huffman of run 1 (planet 39,726 drawings across, max error 10.6), a top-down split (worse everywhere), and pair+record (523 across)"
+  },
+  {
+   "relation": "The root's level K is the least level that makes the smallest leaf level 2, so every leaf is at least one block.",
+   "value": "Toy 3x3x3x4: K = 8 (18 drawings across). The artist's planet: K = 12 (outline 987 u = 123 drawings across).",
+   "verified": "r_tree3.json, levels.json answers.d"
+  },
+  {
+   "relation": "What each level's unit is: the same figure at every level. A leaf is the drawing; a node is a figure of three (its parts' figures) round its opening (its own record). Size comes from weight, not from kind.",
+   "value": "Toy: planet 8, city 7, place 6, work 5, details 3-4, records 2-4. Artist's planet: cities 6-11 (Washington 11; New York, Paris, San Francisco 10), places 6-10, works 5-9, details 3-8.",
+   "verified": "tree3_details_levels.png, planet_lattice.png"
+  },
+  {
+   "relation": "How many levels show at once: the game closes a facade into its mean between bars of 8 px and 4 px, a factor of 2 = phi^1.44. So about 1.4 levels are in transition at any distance, and coming phi nearer reveals one more level.",
+   "value": "1.44 levels per halving of distance",
+   "verified": "analytic only (not rendered in the game)"
+  }
+ ],
+ "numbers": {
+  "a_wrong_vs_cls_pct": {
+   "thirds_H_1_9": 2.098,
+   "golden_6H_1_over_phi": 6.019
+  },
+  "a_wrong_vs_cls_clean_pct": {
+   "thirds": 1.758,
+   "golden": 6.428
+  },
+  "a_lines_moved_px": {
+   "mean": 3.29,
+   "max": 7.13,
+   "lines": 33
+  },
+  "a_hole_area_px": {
+   "original": 1944.5,
+   "thirds_pred": 1990,
+   "golden_pred": 2651
+  },
+  "a_sweep_min_H": "0.111-0.1125 (2.10%)",
+  "a_thirds_plus_exact_phi": {
+   "phi^-4_copy_overflows_hole_pct": 16.7,
+   "phi^-1_corner_copy_short_pct": 1.1
+  },
+  "ladder_ratio_error_pct": {
+   "5/8": 1.127,
+   "8/13": -0.429,
+   "13/21": 0.164,
+   "21/34": -0.063
+  },
+  "opening_fit_px": {
+   "outside_hole": 0,
+   "over_corner_faces": 0,
+   "hole_corners_left_open_pct": 2.1
+  },
+  "closure_rel_gap": {
+   "drawing": 0,
+   "turned5": 0.151,
+   "turned20": 0.595,
+   "turned45": 1.259,
+   "same_at_every_level": true
+  },
+  "nest_depth_spread_over_drawn_outline": "4.76 / 9.25 (level 5)",
+  "rule_comparison_planet_with_details": {
+   "A_huffman": {
+    "K": 24,
+    "drawings_across": 39726,
+    "mean_err": 0.932,
+    "max_err": 10.56
+   },
+   "B_split": {
+    "K": 23,
+    "mean_err": 1.232
+   },
+   "C_pair_record": {
+    "K": 15,
+    "drawings_across": 523,
+    "mean_err": 0.862,
+    "max_err": 4.58
+   },
+   "D_records_adopted": {
+    "K": 12,
+    "drawings_across": 123,
+    "mean_err": 0.513,
+    "max_err": 3.58
+   }
+  },
+  "artist_planet": {
+   "cities": 31,
+   "places": 71,
+   "works": 602,
+   "details": 2408,
+   "records": 668,
+   "leaves": 3076,
+   "K": 12
+  },
+  "toy_tree": {
+   "K": 8,
+   "leaves": 148,
+   "openings_used": 13
+  },
+  "ON_ratio_of_run1": "0.452 was an artefact (the silhouette merges faces that abut); by similarity the ratio is r"
+ },
+ "renders": [
+  "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/ladder_drawing.png",
+  "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/ladder_joints.png",
+  "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/ladder_views.png",
+  "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/tree3_details_levels.png",
+  "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/tree3_works_levels.png",
+  "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/planet_lattice.png",
+  "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/r_in.png",
+  "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/levels/tree_views.png"
+ ],
+ "summary": "Settled. (a) Yes: the original's H = 1/9 is the Fibonacci step 1:2:3:5:8 of the golden figure 6H = 1/phi. Its 6H = 2/3 is the 3rd convergent of 1/phi. Against cls the golden bar is 6.02% wrong and the drawing's thirds 2.10%: 33 lines move a mean of 3.3 px (max 7.1), and the holes are 15% wider in side. The original's own holes (1944 px) match thirds (1990), not golden (2651). Mixing thirds with exact phi between scales fails: phi^-4 copies overflow the holes by 16.7%, and phi^-1 corner copies fall 1.1% short. So the unit uses the FIBONACCI LADDER. Level m has lengths F(m)..F(m+4) in thirds of a block; level 2 is the drawing exactly, as one block. Each level's tribar is the figure one level down, and its hole is exactly the outline of the figure four levels down. This is the phi^-4 fact made exact in integers. The ratios converge to phi (5/8, 8/13, 13/21: 1.1%, 0.4%, 0.16% off) and every length stays on the block grid. (b) Copies go at the corners (three at m-1) and in the opening (one inverted at m-4), never along the bars. Opening copies use 0 px outside their hole and lie over no corner face. Joints are layered cyclically (A over B over C over A) by a tilt along the line of sight, kappa = 1/(3L), which never changes the drawing. Every level closes from the one eye: the relative gap is 0 in the drawing and the same at every level when turned. Drawn in toward one eye, all levels close exactly and open together. (c) Rule D, fixed and deterministic. Every node has its own record. An odd count puts the record in the frame's opening (the figure's centre is the thing itself). An even count adds the record as one more part. The odd parts are then joined three at a time, lightest first, heaviest at A. The root's level is the least that keeps the smallest leaf at one block. On the artist's planet (31 cities, 71 places, 602 works, 2408 details) rule D gives a level-12 figure 123 drawings across with a mean size error of 0.51 levels. Run 1's Huffman gave 39,726 across, because of nested pair openings. (d) The unit is the same figure at every level: a leaf is the drawing; a node is a figure of its parts round its own record. Size follows weight, not kind. Toy: planet 8, city 7, place 6, work 5, details 3-4. Artist's planet: cities 6-11, places 6-10, works 5-9, details 3-8. levels.json holds the relations, the level table, the 3D placement transforms, the rule, the toy tree's frames and the planet's levels.",
+ "weak": "Where it does not hold yet:\n- A join of three gives equal-sized corners whatever their weights. On the planet, Washington's two 1-work places are drawn as big as the National Gallery's frame (planet_lattice.png). The maximum size error is still 3.6 levels.\n- The opening is always 4 levels down, so a record can be too small or too big for its share.\n- One deep record sets the planet's whole size, because the smallest leaf must be one block.\n- Places are museums only, and only the 602 works in museums.json. Studios (1,454) and buildings (46) are not read in yet, so the planet's real numbers will change.\n- Records are excluded from the size-error measure.\n- The ladder is Fibonacci, not exact phi. Each level's proportions differ slightly: hole/outline is 0.125, 0.154, 0.143 ... converging to 0.146, so the leaf has the smallest relative hole.\n- Opening copies leave their hole's three corners open (2.1%), because the drawing's own corners are cut.\n- Everything is drawn with the woven (flat) unit; the real curved unit has not been delivered (wf6/reconstruct is empty).\n- In 3D a level is a thin triangular slab. The cyclic tilt spreads depth to about half the drawn width, so the turned views fan out into blades (ladder_views.png). The levels read as one figure only from the one eye; they are not yet solid, and modulating them toward a cube, sphere or pyramid is not addressed here.\n- The cyclic layering needs a unit that is thin along the line of sight. The lattice unit's joints at kappa = 1/(3L) were partly wrong in run 1.\n- The 1.44 levels-per-halving figure is analytic, not tested in the game.\n- The planet render's apex is slightly clipped at the top edge.\n- Nothing here has been tried in rocket.js, or on phones."
+}

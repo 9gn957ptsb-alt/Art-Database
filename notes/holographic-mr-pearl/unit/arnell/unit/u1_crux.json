@@ -1,0 +1,95 @@
+{
+ "drawing": {
+  "outline_side_u": 8.0,
+  "outer_edge_slope_deg": 59.99999999999999,
+  "envelope_apex_b": 1.2570787221094175,
+  "circumradius_8u_over_sqrt3": 1.257078722109418,
+  "centroid_b": -1.1102230246251565e-16,
+  "drawn_tip_b": 1.0999438818457403,
+  "apex_above_tip_block": 0.1571348402636772,
+  "apex_above_tip_in_u": 0.5773502691896256,
+  "top_cut_width_u": 0.6665061590113028
+ },
+ "apex_3d": {
+  "left_outer_edge_point": [
+   1.111111,
+   0.888889,
+   1.333333
+  ],
+  "right_outer_edge_point": [
+   -0.111111,
+   -0.333333,
+   0.111111
+  ],
+  "drawn_line_misfit": [
+   1.17371774346113e-16,
+   5.709851920215717e-17
+  ],
+  "separation": [
+   1.222222,
+   1.222222,
+   1.222222
+  ],
+  "separation_len": 2.116950987028628,
+  "parallel_to_sight": true
+ },
+ "A_chain": [
+  {
+   "level": 6,
+   "centre_b": 0.0,
+   "R": 8.642416214502248,
+   "apex": 8.642416214502248,
+   "outline_u": 55
+  },
+  {
+   "level": 5,
+   "centre_b": 3.299831645537222,
+   "R": 5.342584568965026,
+   "apex": 8.642416214502248,
+   "outline_u": 34,
+   "tangency_err": 0.0,
+   "R_ratio_parent": 1.6176470588235294
+  },
+  {
+   "level": 4,
+   "centre_b": 5.342584568965027,
+   "R": 3.2998316455372216,
+   "apex": 8.642416214502248,
+   "outline_u": 21,
+   "tangency_err": 4.440892098500626e-16,
+   "R_ratio_parent": 1.619047619047619
+  },
+  {
+   "level": 3,
+   "centre_b": 6.599663291074444,
+   "R": 2.042752923427804,
+   "apex": 8.642416214502248,
+   "outline_u": 13,
+   "tangency_err": 0.0,
+   "R_ratio_parent": 1.6153846153846152
+  },
+  {
+   "level": 2,
+   "centre_b": 7.38533749239283,
+   "R": 1.257078722109418,
+   "apex": 8.642416214502248,
+   "outline_u": 8,
+   "tangency_err": 0.0,
+   "R_ratio_parent": 1.625
+  },
+  {
+   "level": 1,
+   "centre_b": 7.856742013183862,
+   "R": 0.7856742013183862,
+   "apex": 8.642416214502248,
+   "outline_u": 5,
+   "tangency_err": 4.440892098500626e-16,
+   "R_ratio_parent": 1.6
+  }
+ ],
+ "A_chain_max_apex_spread": 0.0,
+ "corner_B_tangency_err": 0.0,
+ "corner_C_tangency_err": 0.0,
+ "opening": "the level m-4 copy is concentric with its parent (same centre): R ratio F(m)/F(m+4) -> phi^-4; concentric circles never touch",
+ "head": "a circle of the same pencil on the other side of the common tangent (centre above the apex) touches every level's circle at the apex from outside; the pencil fixes the point and the tangent, not the radius"
+}

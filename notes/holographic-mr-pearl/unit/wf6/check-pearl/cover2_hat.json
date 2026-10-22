@@ -1,0 +1,14 @@
+{
+ "pearl-2": {
+  "iou_hat_head": 0.9279,
+  "scale_px_per_m": 567.5,
+  "model_px": 87591,
+  "cover_px": 82637
+ },
+ "pearl-1": {
+  "iou_hat_head": 0.9026,
+  "scale_px_per_m": 490.7,
+  "model_px": 64224,
+  "cover_px": 70541
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "all": {
+  "chroma_dE_mean": 0.0096,
+  "chroma_dE_p95": 0.0233,
+  "relY_mean": 0.0506
+ },
+ "d 270-415 nm (d0 +-21%)": {
+  "chroma_dE_mean": 0.0063,
+  "chroma_dE_p95": 0.0141,
+  "relY_mean": 0.0316
+ },
+ "same, cos > 0.5": {
+  "chroma_dE_mean": 0.0077,
+  "chroma_dE_p95": 0.0159,
+  "relY_mean": 0.0329
+ },
+ "same, cos < 0.3": {
+  "chroma_dE_mean": 0.0041,
+  "chroma_dE_p95": 0.0087,
+  "relY_mean": 0.0229
+ },
+ "d0 at normal: glsl": [
+  0.0117,
+  0.0,
+  0.0121
+ ],
+ "d0 at normal: exact": [
+  0.0117,
+  -0.0,
+  0.0121
+ ]
+}

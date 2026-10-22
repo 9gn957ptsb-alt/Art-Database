@@ -1,0 +1,2952 @@
+{
+ "works": {
+  "K": 8,
+  "leaves": 40,
+  "openings_used": 13,
+  "joins": 13,
+  "levels_by_kind": {
+   "planet": [
+    8
+   ],
+   "city": [
+    7
+   ],
+   "place": [
+    6
+   ],
+   "work": [
+    5
+   ],
+   "record": [
+    4,
+    3,
+    2
+   ]
+  },
+  "frames": [
+   {
+    "key": "the planet",
+    "kind": "planet",
+    "level": 8,
+    "path": "",
+    "inverted": false,
+    "ab": [
+     0.0,
+     0.0
+    ],
+    "scale_of_drawing": 18.0
+   },
+   {
+    "key": "New York",
+    "kind": "city",
+    "level": 7,
+    "path": "A",
+    "inverted": false,
+    "ab": [
+     0.0,
+     8.64242
+    ],
+    "scale_of_drawing": 11.125
+   },
+   {
+    "key": "The Metropolitan Museum of Art",
+    "kind": "place",
+    "level": 6,
+    "path": "AA",
+    "inverted": false,
+    "ab": [
+     0.0,
+     13.985
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Celia Thaxter's Garden, Isles of Shoals, Maine",
+    "kind": "work",
+    "level": 5,
+    "path": "AAA",
+    "inverted": false,
+    "ab": [
+     0.0,
+     17.28483
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "The Lake of Zug",
+    "kind": "work",
+    "level": 5,
+    "path": "AAB",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     12.33508
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Improvisation 27 (Garden of Love II)",
+    "kind": "work",
+    "level": 5,
+    "path": "AAC",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     12.33508
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "The Metropolitan Museum of Art (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "AAG",
+    "inverted": true,
+    "ab": [
+     0.0,
+     13.985
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "The Museum of Modern Art",
+    "kind": "place",
+    "level": 6,
+    "path": "AB",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     5.97112
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Ritmo de ciudad (City rhythm)",
+    "kind": "work",
+    "level": 5,
+    "path": "ABA",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     9.27096
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Starry Night",
+    "kind": "work",
+    "level": 5,
+    "path": "ABB",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975",
+    "kind": "work",
+    "level": 5,
+    "path": "ABC",
+    "inverted": false,
+    "ab": [
+     1.76908,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "The Museum of Modern Art (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "ABG",
+    "inverted": true,
+    "ab": [
+     4.62681,
+     5.97112
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Guggenheim Museum",
+    "kind": "place",
+    "level": 6,
+    "path": "AC",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     5.97112
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Alchemy",
+    "kind": "work",
+    "level": 5,
+    "path": "ACA",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     9.27096
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Rendering for Aten Reign",
+    "kind": "work",
+    "level": 5,
+    "path": "ACB",
+    "inverted": false,
+    "ab": [
+     -1.76908,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Enemy's Enemy: Monument to a Monument (detail)",
+    "kind": "work",
+    "level": 5,
+    "path": "ACC",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Guggenheim Museum (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "ACG",
+    "inverted": true,
+    "ab": [
+     -4.62681,
+     5.97112
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "New York (itself)",
+    "kind": "record",
+    "level": 3,
+    "path": "AG",
+    "inverted": true,
+    "ab": [
+     0.0,
+     8.64242
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "Paris",
+    "kind": "city",
+    "level": 7,
+    "path": "B",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     -4.32121
+    ],
+    "scale_of_drawing": 11.125
+   },
+   {
+    "key": "Centre Pompidou",
+    "kind": "place",
+    "level": 6,
+    "path": "BA",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     1.02138
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Untitled",
+    "kind": "work",
+    "level": 5,
+    "path": "BAA",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Le Poisson",
+    "kind": "work",
+    "level": 5,
+    "path": "BAB",
+    "inverted": false,
+    "ab": [
+     10.34229,
+     -0.62854
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Animal n\u00b0 6",
+    "kind": "work",
+    "level": 5,
+    "path": "BAC",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     -0.62854
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Centre Pompidou (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "BAG",
+    "inverted": true,
+    "ab": [
+     7.48455,
+     1.02138
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Mus\u00e9e d'Orsay",
+    "kind": "place",
+    "level": 6,
+    "path": "BB",
+    "inverted": false,
+    "ab": [
+     12.11137,
+     -6.9925
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Le d\u00e9fil\u00e9",
+    "kind": "work",
+    "level": 5,
+    "path": "BBA",
+    "inverted": false,
+    "ab": [
+     12.11137,
+     -3.69267
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "The Floor Scrapers",
+    "kind": "work",
+    "level": 5,
+    "path": "BBB",
+    "inverted": false,
+    "ab": [
+     14.9691,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Self-Portrait",
+    "kind": "work",
+    "level": 5,
+    "path": "BBC",
+    "inverted": false,
+    "ab": [
+     9.25363,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Mus\u00e9e d'Orsay (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "BBG",
+    "inverted": true,
+    "ab": [
+     12.11137,
+     -6.9925
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Mus\u00e9e Picasso Paris",
+    "kind": "place",
+    "level": 6,
+    "path": "BC",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     -6.9925
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Violin with sheet of music",
+    "kind": "work",
+    "level": 5,
+    "path": "BCA",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     -3.69267
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Autoportrait (Self-portrait)",
+    "kind": "work",
+    "level": 5,
+    "path": "BCB",
+    "inverted": false,
+    "ab": [
+     5.71548,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair)",
+    "kind": "work",
+    "level": 5,
+    "path": "BCC",
+    "inverted": false,
+    "ab": [
+     -0.0,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Mus\u00e9e Picasso Paris (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "BCG",
+    "inverted": true,
+    "ab": [
+     2.85774,
+     -6.9925
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Paris (itself)",
+    "kind": "record",
+    "level": 3,
+    "path": "BG",
+    "inverted": true,
+    "ab": [
+     7.48455,
+     -4.32121
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "Amsterdam",
+    "kind": "city",
+    "level": 7,
+    "path": "C",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     -4.32121
+    ],
+    "scale_of_drawing": 11.125
+   },
+   {
+    "key": "Van Gogh Museum",
+    "kind": "place",
+    "level": 6,
+    "path": "CA",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     1.02138
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "The Harvest",
+    "kind": "work",
+    "level": 5,
+    "path": "CAA",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Wheatfield under Thunderclouds",
+    "kind": "work",
+    "level": 5,
+    "path": "CAB",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     -0.62854
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "The Invader",
+    "kind": "work",
+    "level": 5,
+    "path": "CAC",
+    "inverted": false,
+    "ab": [
+     -10.34229,
+     -0.62854
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Van Gogh Museum (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "CAG",
+    "inverted": true,
+    "ab": [
+     -7.48455,
+     1.02138
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Rijksmuseum",
+    "kind": "place",
+    "level": 6,
+    "path": "CB",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     -6.9925
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "The Milkmaid",
+    "kind": "work",
+    "level": 5,
+    "path": "CBA",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     -3.69267
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "The Sower",
+    "kind": "work",
+    "level": 5,
+    "path": "CBB",
+    "inverted": false,
+    "ab": [
+     0.0,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "River Landscape with Riders",
+    "kind": "work",
+    "level": 5,
+    "path": "CBC",
+    "inverted": false,
+    "ab": [
+     -5.71548,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Rijksmuseum (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "CBG",
+    "inverted": true,
+    "ab": [
+     -2.85774,
+     -6.9925
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Stedelijk Museum Amsterdam",
+    "kind": "place",
+    "level": 6,
+    "path": "CC",
+    "inverted": false,
+    "ab": [
+     -12.11137,
+     -6.9925
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Superficie bianca",
+    "kind": "work",
+    "level": 5,
+    "path": "CCA",
+    "inverted": false,
+    "ab": [
+     -12.11137,
+     -3.69267
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "The North Atlantic Light",
+    "kind": "work",
+    "level": 5,
+    "path": "CCB",
+    "inverted": false,
+    "ab": [
+     -9.25363,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Mach dich h\u00fcbsch!",
+    "kind": "work",
+    "level": 5,
+    "path": "CCC",
+    "inverted": false,
+    "ab": [
+     -14.9691,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "Stedelijk Museum Amsterdam (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "CCG",
+    "inverted": true,
+    "ab": [
+     -12.11137,
+     -6.9925
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Amsterdam (itself)",
+    "kind": "record",
+    "level": 3,
+    "path": "CG",
+    "inverted": true,
+    "ab": [
+     -7.48455,
+     -4.32121
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "the planet (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "G",
+    "inverted": true,
+    "ab": [
+     0.0,
+     0.0
+    ],
+    "scale_of_drawing": 2.625
+   }
+  ]
+ },
+ "details": {
+  "K": 8,
+  "leaves": 148,
+  "openings_used": 13,
+  "joins": 67,
+  "levels_by_kind": {
+   "planet": [
+    8
+   ],
+   "city": [
+    7
+   ],
+   "place": [
+    6
+   ],
+   "work": [
+    5
+   ],
+   "detail": [
+    4,
+    3
+   ],
+   "record": [
+    4,
+    3,
+    2
+   ]
+  },
+  "frames": [
+   {
+    "key": "the planet",
+    "kind": "planet",
+    "level": 8,
+    "path": "",
+    "inverted": false,
+    "ab": [
+     0.0,
+     0.0
+    ],
+    "scale_of_drawing": 18.0
+   },
+   {
+    "key": "New York",
+    "kind": "city",
+    "level": 7,
+    "path": "A",
+    "inverted": false,
+    "ab": [
+     0.0,
+     8.64242
+    ],
+    "scale_of_drawing": 11.125
+   },
+   {
+    "key": "The Metropolitan Museum of Art",
+    "kind": "place",
+    "level": 6,
+    "path": "AA",
+    "inverted": false,
+    "ab": [
+     0.0,
+     13.985
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Celia Thaxter's Garden, Isles of Shoals, Maine",
+    "kind": "work",
+    "level": 5,
+    "path": "AAA",
+    "inverted": false,
+    "ab": [
+     0.0,
+     17.28483
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Celia Thaxter's Garden, Isles of Shoals, Maine",
+    "kind": "detail",
+    "level": 3,
+    "path": "AAAAA",
+    "inverted": false,
+    "ab": [
+     0.0,
+     20.58466
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Childe Hassam",
+    "kind": "detail",
+    "level": 3,
+    "path": "AAAAB",
+    "inverted": false,
+    "ab": [
+     1.08866,
+     18.69905
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1890",
+    "kind": "detail",
+    "level": 3,
+    "path": "AAAAC",
+    "inverted": false,
+    "ab": [
+     -1.08866,
+     18.69905
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "AAAB",
+    "inverted": false,
+    "ab": [
+     1.76908,
+     16.26346
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Celia Thaxter's Garden, Isles of Shoals, Maine (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "AAAC",
+    "inverted": false,
+    "ab": [
+     -1.76908,
+     16.26346
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Lake of Zug",
+    "kind": "work",
+    "level": 5,
+    "path": "AAB",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     12.33508
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: The Lake of Zug",
+    "kind": "detail",
+    "level": 3,
+    "path": "AABAA",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     15.63492
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: J. M. W. Turner",
+    "kind": "detail",
+    "level": 3,
+    "path": "AABAB",
+    "inverted": false,
+    "ab": [
+     3.9464,
+     13.7493
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1843",
+    "kind": "detail",
+    "level": 3,
+    "path": "AABAC",
+    "inverted": false,
+    "ab": [
+     1.76908,
+     13.7493
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Watercolor over graphite",
+    "kind": "detail",
+    "level": 4,
+    "path": "AABB",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     11.31371
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Lake of Zug (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "AABC",
+    "inverted": false,
+    "ab": [
+     1.08866,
+     11.31371
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Improvisation 27 (Garden of Love II)",
+    "kind": "work",
+    "level": 5,
+    "path": "AAC",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     12.33508
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Improvisation 27 (Garden of Love II)",
+    "kind": "detail",
+    "level": 3,
+    "path": "AACAA",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     15.63492
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Wassily Kandinsky",
+    "kind": "detail",
+    "level": 3,
+    "path": "AACAB",
+    "inverted": false,
+    "ab": [
+     -1.76908,
+     13.7493
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1912",
+    "kind": "detail",
+    "level": 3,
+    "path": "AACAC",
+    "inverted": false,
+    "ab": [
+     -3.9464,
+     13.7493
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "AACB",
+    "inverted": false,
+    "ab": [
+     -1.08866,
+     11.31371
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Improvisation 27 (Garden of Love II) (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "AACC",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     11.31371
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Metropolitan Museum of Art (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "AAG",
+    "inverted": true,
+    "ab": [
+     0.0,
+     13.985
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "The Museum of Modern Art",
+    "kind": "place",
+    "level": 6,
+    "path": "AB",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     5.97112
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Ritmo de ciudad (City rhythm)",
+    "kind": "work",
+    "level": 5,
+    "path": "ABA",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     9.27096
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Ritmo de ciudad (City rhythm)",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABAAA",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     12.57079
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Joaqu\u00edn Torres-Garc\u00eda",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABAAB",
+    "inverted": false,
+    "ab": [
+     5.71548,
+     10.68517
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1918",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABAAC",
+    "inverted": false,
+    "ab": [
+     3.53815,
+     10.68517
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on board",
+    "kind": "detail",
+    "level": 4,
+    "path": "ABAB",
+    "inverted": false,
+    "ab": [
+     6.39589,
+     8.24958
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Ritmo de ciudad (City rhythm) (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "ABAC",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     8.24958
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Starry Night",
+    "kind": "work",
+    "level": 5,
+    "path": "ABB",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Starry Night",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABBAA",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     7.62104
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Vincent van Gogh",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABBAB",
+    "inverted": false,
+    "ab": [
+     8.57321,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1889",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABBAC",
+    "inverted": false,
+    "ab": [
+     6.39589,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "ABBB",
+    "inverted": false,
+    "ab": [
+     9.25363,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Starry Night (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "ABBC",
+    "inverted": false,
+    "ab": [
+     5.71548,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975",
+    "kind": "work",
+    "level": 5,
+    "path": "ABC",
+    "inverted": false,
+    "ab": [
+     1.76908,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABCAA",
+    "inverted": false,
+    "ab": [
+     1.76908,
+     7.62104
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Stephen Shore",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABCAB",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1975",
+    "kind": "detail",
+    "level": 3,
+    "path": "ABCAC",
+    "inverted": false,
+    "ab": [
+     0.68041,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Chromogenic color print",
+    "kind": "detail",
+    "level": 4,
+    "path": "ABCB",
+    "inverted": false,
+    "ab": [
+     3.53815,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975 (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "ABCC",
+    "inverted": false,
+    "ab": [
+     0.0,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Museum of Modern Art (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "ABG",
+    "inverted": true,
+    "ab": [
+     4.62681,
+     5.97112
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Guggenheim Museum",
+    "kind": "place",
+    "level": 6,
+    "path": "AC",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     5.97112
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Alchemy",
+    "kind": "work",
+    "level": 5,
+    "path": "ACA",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     9.27096
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Alchemy",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACAAA",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     12.57079
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Jackson Pollock",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACAAB",
+    "inverted": false,
+    "ab": [
+     -3.53815,
+     10.68517
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1947",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACAAC",
+    "inverted": false,
+    "ab": [
+     -5.71548,
+     10.68517
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil, aluminum, alkyd enamel paint with sand, pebbles, fibers, and broken wooden sticks on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "ACAB",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     8.24958
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Alchemy (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "ACAC",
+    "inverted": false,
+    "ab": [
+     -6.39589,
+     8.24958
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Rendering for Aten Reign",
+    "kind": "work",
+    "level": 5,
+    "path": "ACB",
+    "inverted": false,
+    "ab": [
+     -1.76908,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Rendering for Aten Reign",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACBAA",
+    "inverted": false,
+    "ab": [
+     -1.76908,
+     7.62104
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: James Turrell",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACBAB",
+    "inverted": false,
+    "ab": [
+     -0.68041,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 2013",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACBAC",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Daylight and LED light",
+    "kind": "detail",
+    "level": 4,
+    "path": "ACBB",
+    "inverted": false,
+    "ab": [
+     -0.0,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Rendering for Aten Reign (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "ACBC",
+    "inverted": false,
+    "ab": [
+     -3.53815,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Enemy's Enemy: Monument to a Monument (detail)",
+    "kind": "work",
+    "level": 5,
+    "path": "ACC",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Enemy's Enemy: Monument to a Monument (detail)",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACCAA",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     7.62104
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Tuan Andrew Nguyen",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACCAB",
+    "inverted": false,
+    "ab": [
+     -6.39589,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 2012",
+    "kind": "detail",
+    "level": 3,
+    "path": "ACCAC",
+    "inverted": false,
+    "ab": [
+     -8.57321,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Wood",
+    "kind": "detail",
+    "level": 4,
+    "path": "ACCB",
+    "inverted": false,
+    "ab": [
+     -5.71548,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Enemy's Enemy: Monument to a Monument (detail) (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "ACCC",
+    "inverted": false,
+    "ab": [
+     -9.25363,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Guggenheim Museum (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "ACG",
+    "inverted": true,
+    "ab": [
+     -4.62681,
+     5.97112
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "New York (itself)",
+    "kind": "record",
+    "level": 3,
+    "path": "AG",
+    "inverted": true,
+    "ab": [
+     0.0,
+     8.64242
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "Paris",
+    "kind": "city",
+    "level": 7,
+    "path": "B",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     -4.32121
+    ],
+    "scale_of_drawing": 11.125
+   },
+   {
+    "key": "Centre Pompidou",
+    "kind": "place",
+    "level": 6,
+    "path": "BA",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     1.02138
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Untitled",
+    "kind": "work",
+    "level": 5,
+    "path": "BAA",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Untitled",
+    "kind": "detail",
+    "level": 3,
+    "path": "BAAAA",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     7.62104
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Karel Appel",
+    "kind": "detail",
+    "level": 3,
+    "path": "BAAAB",
+    "inverted": false,
+    "ab": [
+     8.57321,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 2006",
+    "kind": "detail",
+    "level": 3,
+    "path": "BAAAC",
+    "inverted": false,
+    "ab": [
+     6.39589,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Acrylic and oil stick on paper",
+    "kind": "detail",
+    "level": 4,
+    "path": "BAAB",
+    "inverted": false,
+    "ab": [
+     9.25363,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Untitled (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BAAC",
+    "inverted": false,
+    "ab": [
+     5.71548,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Le Poisson",
+    "kind": "work",
+    "level": 5,
+    "path": "BAB",
+    "inverted": false,
+    "ab": [
+     10.34229,
+     -0.62854
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Le Poisson",
+    "kind": "detail",
+    "level": 3,
+    "path": "BABAA",
+    "inverted": false,
+    "ab": [
+     10.34229,
+     2.67129
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Karel Appel",
+    "kind": "detail",
+    "level": 3,
+    "path": "BABAB",
+    "inverted": false,
+    "ab": [
+     11.43095,
+     0.78567
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1947",
+    "kind": "detail",
+    "level": 3,
+    "path": "BABAC",
+    "inverted": false,
+    "ab": [
+     9.25363,
+     0.78567
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Gouache on paper",
+    "kind": "detail",
+    "level": 4,
+    "path": "BABB",
+    "inverted": false,
+    "ab": [
+     12.11137,
+     -1.64992
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Le Poisson (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BABC",
+    "inverted": false,
+    "ab": [
+     8.57321,
+     -1.64992
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Animal n\u00b0 6",
+    "kind": "work",
+    "level": 5,
+    "path": "BAC",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     -0.62854
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Animal n\u00b0 6",
+    "kind": "detail",
+    "level": 3,
+    "path": "BACAA",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     2.67129
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Karel Appel",
+    "kind": "detail",
+    "level": 3,
+    "path": "BACAB",
+    "inverted": false,
+    "ab": [
+     5.71548,
+     0.78567
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1951",
+    "kind": "detail",
+    "level": 3,
+    "path": "BACAC",
+    "inverted": false,
+    "ab": [
+     3.53815,
+     0.78567
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Gouache and pencil on paper",
+    "kind": "detail",
+    "level": 4,
+    "path": "BACB",
+    "inverted": false,
+    "ab": [
+     6.39589,
+     -1.64992
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Animal n\u00b0 6 (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BACC",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     -1.64992
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Centre Pompidou (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "BAG",
+    "inverted": true,
+    "ab": [
+     7.48455,
+     1.02138
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Mus\u00e9e d'Orsay",
+    "kind": "place",
+    "level": 6,
+    "path": "BB",
+    "inverted": false,
+    "ab": [
+     12.11137,
+     -6.9925
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Le d\u00e9fil\u00e9",
+    "kind": "work",
+    "level": 5,
+    "path": "BBA",
+    "inverted": false,
+    "ab": [
+     12.11137,
+     -3.69267
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Le d\u00e9fil\u00e9",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBAAA",
+    "inverted": false,
+    "ab": [
+     12.11137,
+     -0.39284
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Edgar Degas",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBAAB",
+    "inverted": false,
+    "ab": [
+     13.20003,
+     -2.27846
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1866-1888",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBAAC",
+    "inverted": false,
+    "ab": [
+     11.0227,
+     -2.27846
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on paper mounted on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "BBAB",
+    "inverted": false,
+    "ab": [
+     13.88044,
+     -4.71405
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Le d\u00e9fil\u00e9 (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BBAC",
+    "inverted": false,
+    "ab": [
+     10.34229,
+     -4.71405
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Floor Scrapers",
+    "kind": "work",
+    "level": 5,
+    "path": "BBB",
+    "inverted": false,
+    "ab": [
+     14.9691,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: The Floor Scrapers",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBBAA",
+    "inverted": false,
+    "ab": [
+     14.9691,
+     -5.34258
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Gustave Caillebotte",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBBAB",
+    "inverted": false,
+    "ab": [
+     16.05777,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1875",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBBAC",
+    "inverted": false,
+    "ab": [
+     13.88044,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on Canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "BBBB",
+    "inverted": false,
+    "ab": [
+     16.73818,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Floor Scrapers (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BBBC",
+    "inverted": false,
+    "ab": [
+     13.20003,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Self-Portrait",
+    "kind": "work",
+    "level": 5,
+    "path": "BBC",
+    "inverted": false,
+    "ab": [
+     9.25363,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Self-Portrait",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBCAA",
+    "inverted": false,
+    "ab": [
+     9.25363,
+     -5.34258
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Vincent van Gogh",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBCAB",
+    "inverted": false,
+    "ab": [
+     10.34229,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1889",
+    "kind": "detail",
+    "level": 3,
+    "path": "BBCAC",
+    "inverted": false,
+    "ab": [
+     8.16497,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "BBCB",
+    "inverted": false,
+    "ab": [
+     11.0227,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Self-Portrait (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BBCC",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Mus\u00e9e d'Orsay (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "BBG",
+    "inverted": true,
+    "ab": [
+     12.11137,
+     -6.9925
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Mus\u00e9e Picasso Paris",
+    "kind": "place",
+    "level": 6,
+    "path": "BC",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     -6.9925
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Violin with sheet of music",
+    "kind": "work",
+    "level": 5,
+    "path": "BCA",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     -3.69267
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Violin with sheet of music",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCAAA",
+    "inverted": false,
+    "ab": [
+     2.85774,
+     -0.39284
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Pablo Picasso",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCAAB",
+    "inverted": false,
+    "ab": [
+     3.9464,
+     -2.27846
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: Autumn-1912",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCAAC",
+    "inverted": false,
+    "ab": [
+     1.76908,
+     -2.27846
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Paper Collage",
+    "kind": "detail",
+    "level": 4,
+    "path": "BCAB",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     -4.71405
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Violin with sheet of music (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BCAC",
+    "inverted": false,
+    "ab": [
+     1.08866,
+     -4.71405
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Autoportrait (Self-portrait)",
+    "kind": "work",
+    "level": 5,
+    "path": "BCB",
+    "inverted": false,
+    "ab": [
+     5.71548,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Autoportrait (Self-portrait)",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCBAA",
+    "inverted": false,
+    "ab": [
+     5.71548,
+     -5.34258
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Alberto Giacometti",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCBAB",
+    "inverted": false,
+    "ab": [
+     6.80414,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1921",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCBAC",
+    "inverted": false,
+    "ab": [
+     4.62681,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "BCBB",
+    "inverted": false,
+    "ab": [
+     7.48455,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Autoportrait (Self-portrait) (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BCBC",
+    "inverted": false,
+    "ab": [
+     3.9464,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair)",
+    "kind": "work",
+    "level": 5,
+    "path": "BCC",
+    "inverted": false,
+    "ab": [
+     -0.0,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair)",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCCAA",
+    "inverted": false,
+    "ab": [
+     -0.0,
+     -5.34258
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Pablo Picasso",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCCAB",
+    "inverted": false,
+    "ab": [
+     1.08866,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1918",
+    "kind": "detail",
+    "level": 3,
+    "path": "BCCAC",
+    "inverted": false,
+    "ab": [
+     -1.08866,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "BCCB",
+    "inverted": false,
+    "ab": [
+     1.76908,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair) (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "BCCC",
+    "inverted": false,
+    "ab": [
+     -1.76908,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Mus\u00e9e Picasso Paris (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "BCG",
+    "inverted": true,
+    "ab": [
+     2.85774,
+     -6.9925
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Paris (itself)",
+    "kind": "record",
+    "level": 3,
+    "path": "BG",
+    "inverted": true,
+    "ab": [
+     7.48455,
+     -4.32121
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "Amsterdam",
+    "kind": "city",
+    "level": 7,
+    "path": "C",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     -4.32121
+    ],
+    "scale_of_drawing": 11.125
+   },
+   {
+    "key": "Van Gogh Museum",
+    "kind": "place",
+    "level": 6,
+    "path": "CA",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     1.02138
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "The Harvest",
+    "kind": "work",
+    "level": 5,
+    "path": "CAA",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     4.32121
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: The Harvest",
+    "kind": "detail",
+    "level": 3,
+    "path": "CAAAA",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     7.62104
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Vincent van Gogh",
+    "kind": "detail",
+    "level": 3,
+    "path": "CAAAB",
+    "inverted": false,
+    "ab": [
+     -6.39589,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1888",
+    "kind": "detail",
+    "level": 3,
+    "path": "CAAAC",
+    "inverted": false,
+    "ab": [
+     -8.57321,
+     5.73542
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "CAAB",
+    "inverted": false,
+    "ab": [
+     -5.71548,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Harvest (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CAAC",
+    "inverted": false,
+    "ab": [
+     -9.25363,
+     3.29983
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Wheatfield under Thunderclouds",
+    "kind": "work",
+    "level": 5,
+    "path": "CAB",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     -0.62854
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Wheatfield under Thunderclouds",
+    "kind": "detail",
+    "level": 3,
+    "path": "CABAA",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     2.67129
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Vincent van Gogh",
+    "kind": "detail",
+    "level": 3,
+    "path": "CABAB",
+    "inverted": false,
+    "ab": [
+     -3.53815,
+     0.78567
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1890",
+    "kind": "detail",
+    "level": 3,
+    "path": "CABAC",
+    "inverted": false,
+    "ab": [
+     -5.71548,
+     0.78567
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "CABB",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     -1.64992
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Wheatfield under Thunderclouds (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CABC",
+    "inverted": false,
+    "ab": [
+     -6.39589,
+     -1.64992
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Invader",
+    "kind": "work",
+    "level": 5,
+    "path": "CAC",
+    "inverted": false,
+    "ab": [
+     -10.34229,
+     -0.62854
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: The Invader",
+    "kind": "detail",
+    "level": 3,
+    "path": "CACAA",
+    "inverted": false,
+    "ab": [
+     -10.34229,
+     2.67129
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Micha\u00ebl Borremans",
+    "kind": "detail",
+    "level": 3,
+    "path": "CACAB",
+    "inverted": false,
+    "ab": [
+     -9.25363,
+     0.78567
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 2010",
+    "kind": "detail",
+    "level": 3,
+    "path": "CACAC",
+    "inverted": false,
+    "ab": [
+     -11.43095,
+     0.78567
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "CACB",
+    "inverted": false,
+    "ab": [
+     -8.57321,
+     -1.64992
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Invader (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CACC",
+    "inverted": false,
+    "ab": [
+     -12.11137,
+     -1.64992
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Van Gogh Museum (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "CAG",
+    "inverted": true,
+    "ab": [
+     -7.48455,
+     1.02138
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Rijksmuseum",
+    "kind": "place",
+    "level": 6,
+    "path": "CB",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     -6.9925
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "The Milkmaid",
+    "kind": "work",
+    "level": 5,
+    "path": "CBA",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     -3.69267
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: The Milkmaid",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBAAA",
+    "inverted": false,
+    "ab": [
+     -2.85774,
+     -0.39284
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Johannes Vermeer",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBAAB",
+    "inverted": false,
+    "ab": [
+     -1.76908,
+     -2.27846
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1658-1660",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBAAC",
+    "inverted": false,
+    "ab": [
+     -3.9464,
+     -2.27846
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "CBAB",
+    "inverted": false,
+    "ab": [
+     -1.08866,
+     -4.71405
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Milkmaid (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CBAC",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     -4.71405
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Sower",
+    "kind": "work",
+    "level": 5,
+    "path": "CBB",
+    "inverted": false,
+    "ab": [
+     0.0,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: The Sower",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBBAA",
+    "inverted": false,
+    "ab": [
+     0.0,
+     -5.34258
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Vincent van Gogh",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBBAB",
+    "inverted": false,
+    "ab": [
+     1.08866,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1888",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBBAC",
+    "inverted": false,
+    "ab": [
+     -1.08866,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "CBBB",
+    "inverted": false,
+    "ab": [
+     1.76908,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The Sower (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CBBC",
+    "inverted": false,
+    "ab": [
+     -1.76908,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "River Landscape with Riders",
+    "kind": "work",
+    "level": 5,
+    "path": "CBC",
+    "inverted": false,
+    "ab": [
+     -5.71548,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: River Landscape with Riders",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBCAA",
+    "inverted": false,
+    "ab": [
+     -5.71548,
+     -5.34258
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Aelbert Cuyp",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBCAB",
+    "inverted": false,
+    "ab": [
+     -4.62681,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1653 -1657",
+    "kind": "detail",
+    "level": 3,
+    "path": "CBCAC",
+    "inverted": false,
+    "ab": [
+     -6.80414,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "CBCB",
+    "inverted": false,
+    "ab": [
+     -3.9464,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "River Landscape with Riders (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CBCC",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Rijksmuseum (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "CBG",
+    "inverted": true,
+    "ab": [
+     -2.85774,
+     -6.9925
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Stedelijk Museum Amsterdam",
+    "kind": "place",
+    "level": 6,
+    "path": "CC",
+    "inverted": false,
+    "ab": [
+     -12.11137,
+     -6.9925
+    ],
+    "scale_of_drawing": 6.875
+   },
+   {
+    "key": "Superficie bianca",
+    "kind": "work",
+    "level": 5,
+    "path": "CCA",
+    "inverted": false,
+    "ab": [
+     -12.11137,
+     -3.69267
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Superficie bianca",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCAAA",
+    "inverted": false,
+    "ab": [
+     -12.11137,
+     -0.39284
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Enrico Castellani",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCAAB",
+    "inverted": false,
+    "ab": [
+     -11.0227,
+     -2.27846
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1963",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCAAC",
+    "inverted": false,
+    "ab": [
+     -13.20003,
+     -2.27846
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: ",
+    "kind": "detail",
+    "level": 4,
+    "path": "CCAB",
+    "inverted": false,
+    "ab": [
+     -10.34229,
+     -4.71405
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Superficie bianca (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CCAC",
+    "inverted": false,
+    "ab": [
+     -13.88044,
+     -4.71405
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The North Atlantic Light",
+    "kind": "work",
+    "level": 5,
+    "path": "CCB",
+    "inverted": false,
+    "ab": [
+     -9.25363,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: The North Atlantic Light",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCBAA",
+    "inverted": false,
+    "ab": [
+     -9.25363,
+     -5.34258
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Willem de Kooning",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCBAB",
+    "inverted": false,
+    "ab": [
+     -8.16497,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 1977",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCBAC",
+    "inverted": false,
+    "ab": [
+     -10.34229,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Oil on canvas",
+    "kind": "detail",
+    "level": 4,
+    "path": "CCBB",
+    "inverted": false,
+    "ab": [
+     -7.48455,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "The North Atlantic Light (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CCBC",
+    "inverted": false,
+    "ab": [
+     -11.0227,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Mach dich h\u00fcbsch!",
+    "kind": "work",
+    "level": 5,
+    "path": "CCC",
+    "inverted": false,
+    "ab": [
+     -14.9691,
+     -8.64242
+    ],
+    "scale_of_drawing": 4.25
+   },
+   {
+    "key": "title: Mach dich h\u00fcbsch!",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCCAA",
+    "inverted": false,
+    "ab": [
+     -14.9691,
+     -5.34258
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "artist: Isa Genzken",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCCAB",
+    "inverted": false,
+    "ab": [
+     -13.88044,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "year: 2000",
+    "kind": "detail",
+    "level": 3,
+    "path": "CCCAC",
+    "inverted": false,
+    "ab": [
+     -16.05777,
+     -7.2282
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "medium: Cardboard, printed paper, newsprint, photographs, transparent foil, stamps, stickers, adhesive tape, fabric tape, felt pen, and ball point pen",
+    "kind": "detail",
+    "level": 4,
+    "path": "CCCB",
+    "inverted": false,
+    "ab": [
+     -13.20003,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Mach dich h\u00fcbsch! (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "CCCC",
+    "inverted": false,
+    "ab": [
+     -16.73818,
+     -9.66379
+    ],
+    "scale_of_drawing": 2.625
+   },
+   {
+    "key": "Stedelijk Museum Amsterdam (itself)",
+    "kind": "record",
+    "level": 2,
+    "path": "CCG",
+    "inverted": true,
+    "ab": [
+     -12.11137,
+     -6.9925
+    ],
+    "scale_of_drawing": 1.0
+   },
+   {
+    "key": "Amsterdam (itself)",
+    "kind": "record",
+    "level": 3,
+    "path": "CG",
+    "inverted": true,
+    "ab": [
+     -7.48455,
+     -4.32121
+    ],
+    "scale_of_drawing": 1.625
+   },
+   {
+    "key": "the planet (itself)",
+    "kind": "record",
+    "level": 4,
+    "path": "G",
+    "inverted": true,
+    "ab": [
+     0.0,
+     0.0
+    ],
+    "scale_of_drawing": 2.625
+   }
+  ]
+ }
+}

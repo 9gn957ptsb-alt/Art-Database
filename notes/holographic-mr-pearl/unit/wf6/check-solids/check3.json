@@ -1,0 +1,12 @@
+{
+ "mismatch_vs_cls": 0.01599847280074027,
+ "fit": {
+  "s": 555.6866025372925,
+  "cx": 599.125,
+  "cy": 313.625,
+  "k": 1.0393
+ },
+ "floor_lattice_model": 0.02103,
+ "unit_bar_over_block": 0.1,
+ "note": "game unit = rocket.js FIGURE; mismatch counts every pixel class (ground/grey/black/white) differing, -2 ignored, holes as paper"
+}

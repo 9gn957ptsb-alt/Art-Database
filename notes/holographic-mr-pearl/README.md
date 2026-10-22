@@ -40,3 +40,13 @@ virtual clock of 25 ms a frame; `frames(P, n)`, `state(P)`); the others use it.
   Artifact (served on 8805) plays through; `smoke.js` — loads without errors; `sight/` — the sight's own tests.
 - Software GL is slow: run desk and phone at once in the background, with long timeouts. A raw Artifact bundle has no
   viewport tag of its own, so the emulated phone lays it out 980 px wide; the published page has the viewport.
+
+## unit/
+
+The base unit's studies (tasks of 15–16 Oct 2026, the unit the artist has still to approve), their notes, numbers and
+scripts only: `unit/` (the purpose and the rules as given), `arnell/unit/UNIT.md` (BREATHTAKING's constructions applied
+to the unit: the crux, the arcs, the sphere), `wf6/` (the levels' Fibonacci ladder, the closed curved form V3, the
+solids, colour, Mr Pearl; each with NOTES.md and an independent CHECK.md). Their images and the artist's own references
+(the drawing, the two Cézanne-like paintings, the theme song) stayed in the old container and are not in the repo; a
+script run again redraws its images. The artist asked (21 Oct) for these studies to stand in a row beside the tree where
+you wake, in the game.

@@ -1,0 +1,173 @@
+{
+ "meridian": {
+  "rule": "N copies of the figure on planes through its vertical median, turned by 180/N deg each (p24: 180 deg suffices)",
+  "limit": "the swept outline is a CONE: apex at the holding sphere's pole (b = R), base circle radius R*sqrt3/2 at b = -R/2 (latitude -30)",
+  "holding_sphere_R_block": 1.257078722109418,
+  "cone_apex_angle_deg": 60.0,
+  "N2": "hull of 2 copies at 90 deg = a square pyramid: base diagonal = side S, base side S/sqrt2, height S*sqrt3/2; face slant/half-base = sqrt7 = 2.646 (not phi)",
+  "sphere_touch": "the cone meets the holding sphere only at the pole and along the latitude -30 circle",
+  "cone_volume_fraction_of_sphere": 0.28124999999999994,
+  "closure": "from an eye on the equator at a copy's azimuth only that copy closes; a copy turned by t opens by 0.151 (5 deg), 0.596 (20), 1.259 (45) of its own size (wf6/levels q_ladder_closure)"
+ },
+ "bands": {
+  "rule": "B = F(k) latitude bands of equal height 2R/B (Archimedes: equal area); each band a ring of figures alternating upright and point-reflected (the ladder's opening rule), each figure as tall as its band's arc; 2*round(2 pi R cos(lat)/S) per band",
+  "B": 13,
+  "bands": [
+   {
+    "band": 0,
+    "lat_deg": -73.89788624801398,
+    "arc_height": 0.5620698030056273,
+    "figures": 6
+   },
+   {
+    "band": 1,
+    "lat_deg": -50.804416978215556,
+    "arc_height": 0.24404434592659918,
+    "figures": 28
+   },
+   {
+    "band": 2,
+    "lat_deg": -38.196015926603636,
+    "arc_height": 0.19607187759848788,
+    "figures": 44
+   },
+   {
+    "band": 3,
+    "lat_deg": -27.599417670422277,
+    "arc_height": 0.17381918056442075,
+    "figures": 56
+   },
+   {
+    "band": 4,
+    "lat_deg": -17.98111437256433,
+    "arc_height": 0.16192294144167918,
+    "figures": 64
+   },
+   {
+    "band": 5,
+    "lat_deg": -8.877044791429205,
+    "arc_height": 0.15586903760125878,
+    "figures": 68
+   },
+   {
+    "band": 6,
+    "lat_deg": 6.3611093629270335e-15,
+    "arc_height": 0.1539982813136473,
+    "figures": 70
+   },
+   {
+    "band": 7,
+    "lat_deg": 8.877044791429213,
+    "arc_height": 0.15586903760125867,
+    "figures": 68
+   },
+   {
+    "band": 8,
+    "lat_deg": 17.981114372564335,
+    "arc_height": 0.16192294144167907,
+    "figures": 64
+   },
+   {
+    "band": 9,
+    "lat_deg": 27.599417670422277,
+    "arc_height": 0.17381918056442086,
+    "figures": 56
+   },
+   {
+    "band": 10,
+    "lat_deg": 38.19601592660365,
+    "arc_height": 0.1960718775984881,
+    "figures": 44
+   },
+   {
+    "band": 11,
+    "lat_deg": 50.80441697821557,
+    "arc_height": 0.24404434592659907,
+    "figures": 28
+   },
+   {
+    "band": 12,
+    "lat_deg": 73.89788624801399,
+    "arc_height": 0.562069803005627,
+    "figures": 6
+   }
+  ],
+  "total_figures": 602,
+  "silhouette": {
+   "mean_r_px": 201.76997554124551,
+   "rel_range": 0.054532484838316075,
+   "rel_std": 0.014140950233548298,
+   "fill_of_disc": 0.9156688545133974
+  },
+  "count_rule": "B = the largest Fibonacci number with 2R/B >= the leaf's height (1.886 blocks): bands never finer than the leaf, so the facets never vanish at any size",
+  "facet_sagitta": {
+   "pole": 0.03923107716947716,
+   "equator": 0.002962969475713839
+  }
+ },
+ "golden_spiral": {
+  "N": 144,
+  "golden_angle_deg": 137.50776405003785,
+  "side": 0.44892456236286615,
+  "scale": 0.20618177077336272,
+  "rule": "N = F(k) figures at z_i = 1-(2i+1)/N, longitude i * golden angle: equal area each; its visible spirals run in consecutive Fibonacci counts",
+  "silhouette": {
+   "mean_r_px": 202.5178443775091,
+   "rel_range": 0.02860106599558465,
+   "rel_std": 0.006245451793514496,
+   "fill_of_disc": 0.9588689478559446
+  }
+ },
+ "head": {
+  "rule": "the circle turned about a diameter (p24): ray-cast, exactly round",
+  "silhouette": {
+   "mean_r_px": 199.39769090709564,
+   "rel_range": 0.004406579049628206,
+   "rel_std": 0.0009858052043775942,
+   "fill_of_disc": 1.002241955480884
+  }
+ },
+ "band_count_table": [
+  {
+   "R_blocks": 2,
+   "max_bands": 2.12,
+   "B": 2
+  },
+  {
+   "R_blocks": 5,
+   "max_bands": 5.3,
+   "B": 5
+  },
+  {
+   "R_blocks": 10,
+   "max_bands": 10.61,
+   "B": 8
+  },
+  {
+   "R_blocks": 20,
+   "max_bands": 21.21,
+   "B": 21
+  },
+  {
+   "R_blocks": 50,
+   "max_bands": 53.03,
+   "B": 34
+  },
+  {
+   "R_blocks": 100,
+   "max_bands": 106.07,
+   "B": 89
+  },
+  {
+   "R_blocks": 500,
+   "max_bands": 530.33,
+   "B": 377
+  }
+ ],
+ "cube": {
+  "A_tribar": "Ay (0,0,0)->(0,1,0), Ax ->(1,1,0), Az ->(1,1,1): three edges of the unit cube, ends a cube diagonal apart = the line of sight",
+  "B_tribar": "Bx (-1,1,-1)->(0,1,-1), Bz ->(0,1,0), By ->(0,2,0): ends differ by (1,1,1)",
+  "C_tribar": "Cx (0,1,-1)->(1,1,-1), Cz ->(1,1,0), Cy ->(1,2,0): ends differ by (1,1,1)",
+  "reading": "the impossible joint is the cube's main diagonal seen end on; the cube is each tribar's hidden solid; a cube is 6 such paths (the 6 orders of x, y, z), which use all 12 edges"
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "arcs": {
+  "n_prims": 882,
+  "cast_seconds": 4.88,
+  "nearest_axis_pct": 20.48,
+  "mix_pct": 22.14
+ },
+ "smootherstep": {
+  "n_prims": 882,
+  "cast_seconds": 4.88,
+  "nearest_axis_pct": 25.58,
+  "mix_pct": 26.43
+ },
+ "straight": {
+  "n_prims": 9,
+  "cast_seconds": 0.88
+ },
+ "cut": {
+  "n_prims": 9,
+  "cast_seconds": 1.2
+ }
+}

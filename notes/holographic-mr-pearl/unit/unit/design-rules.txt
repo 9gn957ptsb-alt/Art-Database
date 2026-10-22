@@ -1,0 +1,71 @@
+PURPOSE (above every rule; see PURPOSE.txt): "The goal of this game is to show people what they can do with their own information" / "THIS IS ABOUT DETERMINED RELATIONS"
+
+Holographic Mr Pearl — the artist's rules for the form (verbatim, newest last), then how they are applied
+
+1. "Use curves to satisfy the original photo to become a three-dimensional form. I want it to look as close as
+   possible to the original."
+2. "Use the shape at different scales to establish a modularity with itself at those different scales. Implement the
+   golden ratio as well into this shape. Figuring out this basic unit will unlock everything. I still want the
+   landscape and forms your building to appear solid, so understand how this base unit can approach the form of a
+   cube or sphere or pyramid when modulating it at different scales."
+3. "We do not move forward until we figure out the basic unit. Think about color theory when your considering this
+   shape, think about transparency between colors to form other colors in relation to the shading of the shape in
+   the image I provided you."
+4. (with the two album covers) "Use this as the aesthetics of Holographic Mr Pearl. Once we figure out the basic unit,
+   we can start building the environment, use the center character as the form to experiment on for now when
+   applying the basic units instead of applying it to everything."
+5. (15 Oct 2026) "Holographic mode disengages the head of Mr Pearl. His head/Holographic mode will be the only perfect
+   Sphere in the game, everything else will receive the consequential texture of the base unit we are figuring out"
+
+Applied:
+- His head is the one perfect sphere in the game: drawn as a true sphere (ray-cast per pixel, so it stays exactly round
+  at any distance and size), never built from units, never tessellated. Its eyes are painted on it, so it stays whole.
+- Everything else is built from the base unit and wears the texture that follows from it ("consequential"): his body,
+  hat, gloves and guitar, the pearls/eggs on the ground, the planets, the giants, the land. A form that approaches a
+  sphere (a pearl, a planet) is built from the unit at its scales and must read as built, never as perfect: the
+  unit's texture is how it can be told from his head.
+- Holographic mode = his head disengages from the body and is the hologram you fly; the headless body stays where it
+  was, built and vulnerable; "move the body there" brings the body back under the head.
+- So the perfect sphere and holographic mode are one thing: the only pure form in a world of the figure's
+  impossible, built forms.
+
+6. (15 Oct 2026, with two images, cezanne-1.jpg — a watercolour of trunks and foliage before a brick building, in
+   overlapping translucent diamond washes — and cezanne-2.png — an oil of a shed under trees in short rectangular
+   dabs, warm lights, blue-violet shades) "These are examples of cezanne like paintings generated from a photograph.
+   I want you to incorporate this aesthetic into the rendering aesthetic of Holographic Mr Pearl"
+   Applied: the world and his body are painted (strokes, warm and cool modulation, translucent washes that mix into
+   new colours where they overlap — the artist's transparency); the strokes are candidates for the unit's
+   consequential texture; his head, the one perfect sphere, is the one thing left unpainted. Strokes anchored to
+   the surfaces so they do not swim. Cezanne's "treat nature by the cylinder, the sphere, the cone" is the unit's
+   own task (the cube, the sphere, the pyramid). Measured: the paintings' diagonals run near 50 degrees and
+   vertical; the drawing's lattice runs 0/60/120. Workflow painterly-render (scratchpad wf7/).
+
+7. (16 Oct 2026, with the Arnell Group's "BREATHTAKING Design Strategy", 2008, the Pepsi identity document, 27 pages)
+   "This should fit in perfectly with how you are developing your shapes, use it wherever you find it applicable"
+   Applied (adopted 16 Oct 2026; checked in arnell/read/ARNELL.md, list in arnell/ADOPT.md): take its constructions, not its claims.
+   - Its method is the game's own: a form built from circles of stated size, centre and angle, each one a determined
+     relation. Its claims that phi governs things fail, the "Pepsi Ratio" included: the page's own construction gives
+     2:3 (circles a/2 and a/3), not 0.618. So everything built is Fibonacci (2:3, 3:5, ...), as the drawing already is
+     (1:2:3:5:8 thirds), and exact phi belongs only to the head's family of circles, as the exact sphere belongs only
+     to the head.
+   - The unit's levels: each level's holding circle has radius F(m+4)u/sqrt3. The main line of levels (the A corners)
+     has every circle touching at one point, the outline's undrawn apex, where the figure closes only from the one eye:
+     the crux. A square of side F(k)2u/sqrt3 holds a level k-4 frame exactly. Frames of falling level stand on one
+     ground line when their incircles touch it.
+   - The curves: each bend is arc, straight, arc. The arcs have radius sqrt2/24 and turn arccos(-1/3); the straight
+     piece is 1/3 long. The drawing is unchanged and the bend is 2.3x gentler than the free quintic.
+   - The sphere: his head is a circle turned about a diameter, the one outline that is the same from every point of
+     view (the position of freedom). A built sphere is F(k) equal-height bands of figures, the count set so a band is
+     never finer than the leaf. It reads as built (5.5% silhouette against the head's 0.4%). The unit turned about its
+     median gives the pyramid and the cone, never the sphere.
+   - His proportions: brim : head = phi, head top : shoulders = phi. The rest is not forced (he is about 3 heads tall).
+     Any ring seen at elevation t is an ellipse with minor/major = sin t.
+   - Proposed, for the artist: the smile as the viewer's ring, the sphere's circle at asin(1/phi) from the line of
+     sight, shown under his eyes, so the angle you meet him from sets his expression (off by default).
+   - For the world, later: items placed by time with circles touching at now; other people's shared worlds on orbits
+     (great circles of one sphere carrying copies), placed by a stated relation; the escape path bent by masses by
+     real gravity (a conic; mass = how much a thing relates); the artist's modelled buildings overlaid into one icon on
+     one axis and ground as films of 1/N, as the bottles are.
+   - Dropped: phi in the Parthenon, the Mona Lisa, book pages and the nautilus; phi as the law of beauty; "energy
+     fields" and "gravitational pull" as metaphors; colour-to-emotion as convention; the light year and e^x universe
+     (wrong); the page's ellipses (drawn wrong); and every hand-drawn angle or size that no rule sets.

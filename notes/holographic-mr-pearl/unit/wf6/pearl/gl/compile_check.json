@@ -1,0 +1,23 @@
+{
+ "webgl2": true,
+ "vertex_compiled": true,
+ "fragment_compiled": true,
+ "fragment_log": "",
+ "linked": true,
+ "link_log": "",
+ "draw_ms": 190.19999999995343,
+ "sphere_mean_srgb": [
+  179,
+  166,
+  161
+ ],
+ "sphere_px": 110000,
+ "near_black_px": 0,
+ "gl_error": 0,
+ "renderer": "WebKit WebGL",
+ "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+ "fragment_highp_float_bits": 23,
+ "page_errors": [],
+ "browser": "Chromium 141.0.7390.37 (Playwright, headless, SwiftShader WebGL2)",
+ "screenshot": "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf6/pearl/gl/compile_check.png"
+}

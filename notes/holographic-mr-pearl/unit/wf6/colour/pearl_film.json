@@ -1,0 +1,94 @@
+{
+ "P-A (Mr Pearl film n 1.164 on 1.354, body = tone) / z white": {
+  "at_crux": "#FFFFFF",
+  "chroma_max": 0.022670811446339013,
+  "chroma_mean": 0.003909388274016464,
+  "at_0deg": "#FFFFFF",
+  "at_30": "#FFFFFF",
+  "at_70": "#FAF3FB",
+  "at_85": "#E1E0DF"
+ },
+ "P-A (Mr Pearl film n 1.164 on 1.354, body = tone) / x grey": {
+  "at_crux": "#808080",
+  "chroma_max": 0.036243969088582524,
+  "chroma_mean": 0.008117601612663028,
+  "at_0deg": "#7E7F7F",
+  "at_30": "#807E7E",
+  "at_70": "#869185",
+  "at_85": "#B7BDC8"
+ },
+ "P-A (Mr Pearl film n 1.164 on 1.354, body = tone) / y black": {
+  "at_crux": "#000000",
+  "chroma_max": 0.11586768191209136,
+  "chroma_mean": 0.034370359601304024,
+  "at_0deg": "#000000",
+  "at_30": "#000000",
+  "at_70": "#395E34",
+  "at_85": "#A9B2C1"
+ },
+ "P-A (soap film n 1.33 in air, body = tone) / z white": {
+  "at_crux": "#FFFFFF",
+  "chroma_max": 0.03481578289833684,
+  "chroma_mean": 0.008033456900276183,
+  "at_0deg": "#FFFFFF",
+  "at_30": "#FFFFFF",
+  "at_70": "#FFE8F9",
+  "at_85": "#E4DBE6"
+ },
+ "P-A (soap film n 1.33 in air, body = tone) / x grey": {
+  "at_crux": "#808080",
+  "chroma_max": 0.07558773768122004,
+  "chroma_mean": 0.021423298399510866,
+  "at_0deg": "#757979",
+  "at_30": "#747877",
+  "at_70": "#719B87",
+  "at_85": "#E0B7E3"
+ },
+ "P-A (soap film n 1.33 in air, body = tone) / y black": {
+  "at_crux": "#010000",
+  "chroma_max": 0.1639691539169988,
+  "chroma_mean": 0.046691695406965106,
+  "at_0deg": "#000000",
+  "at_30": "#000000",
+  "at_70": "#007A3E",
+  "at_85": "#E0ACE2"
+ },
+ "P-B (film alone, index per family) / z white": {
+  "at_crux": "#FFFEFE",
+  "chroma_max": 0.11586129510941282,
+  "chroma_mean": 0.05256008026906092,
+  "at_0deg": "#FFB7F7",
+  "at_30": "#FFCBFF",
+  "at_70": "#F4FFFF",
+  "at_85": "#FFFFFF"
+ },
+ "P-B (film alone, index per family) / x grey": {
+  "at_crux": "#81807F",
+  "chroma_max": 0.17202216612491664,
+  "chroma_mean": 0.05911775536494206,
+  "at_0deg": "#525354",
+  "at_30": "#275C4D",
+  "at_70": "#3BCAAC",
+  "at_85": "#FFFFFF"
+ },
+ "P-B (film alone, index per family) / y black": {
+  "at_crux": "#000000",
+  "chroma_max": 0.0,
+  "chroma_mean": 0.0,
+  "at_0deg": "#000000",
+  "at_30": "#000000",
+  "at_70": "#000000",
+  "at_85": "#000000"
+ },
+ "P-B indices": {
+  "n_x": 1.2851782603382889,
+  "n_z": 2.4,
+  "R_D_white": 0.38521798294014076,
+  "d_x": 992.9671410245605,
+  "d_z": 436.6722348705105
+ },
+ "P-A thickness": {
+  "mr_pearl_film_d": 1188.3297787638905,
+  "soap_film_d": 938.6849574270944
+ }
+}

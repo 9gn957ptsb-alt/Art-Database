@@ -1,0 +1,146 @@
+{
+ "R3": {
+  "R": 3,
+  "B": 3,
+  "band_units": 30,
+  "bands": {
+   "sil_rel_range": 0.24177127681214863,
+   "sil_rel_std": 0.05726851235729102,
+   "fill_of_disc": 0.9998768998608139,
+   "cover_of_head_disc": 0.7823938992042441,
+   "outside_head_disc": 0.0,
+   "value_std": 33.69627018316676,
+   "tests_mean_on_cover": 24.031444675170572
+  },
+  "spiral_N": 55,
+  "spiral_side": 1.0895935615250958,
+  "shells_units": 84,
+  "voxel_blocks": 136,
+  "voxel": {
+   "sil_rel_range": 0.12744136612149679,
+   "sil_rel_std": 0.03129718509969904,
+   "fill_of_disc": 0.9989554302432563,
+   "cover_of_head_disc": 1.0,
+   "outside_head_disc": 0.4088638373121132,
+   "value_std": 58.72719747027567,
+   "tests_mean_on_cover": 6.0
+  },
+  "spiral": {
+   "sil_rel_range": 0.1760671462101939,
+   "sil_rel_std": 0.03889320340068842,
+   "fill_of_disc": 0.9978787693109755,
+   "cover_of_head_disc": 0.8468003978779841,
+   "outside_head_disc": 0.0,
+   "value_std": 31.986077673111474,
+   "tests_mean_on_cover": 28.384130464574483
+  },
+  "shells3": {
+   "sil_rel_range": 0.1760671462101939,
+   "sil_rel_std": 0.03889320340068842,
+   "fill_of_disc": 0.9978787693109755,
+   "cover_of_head_disc": 0.8468003978779841,
+   "outside_head_disc": 0.0,
+   "value_std": 31.986077673111474,
+   "tests_mean_on_cover": 43.3934036818784
+  },
+  "head": {
+   "sil_rel_range": 0.002557490290005125,
+   "sil_rel_std": 0.0006057970584113182,
+   "fill_of_disc": 1.0016398045042696,
+   "cover_of_head_disc": 1.0,
+   "outside_head_disc": 0.0,
+   "value_std": 61.999163208969726,
+   "tests_mean_on_cover": 1.0
+  }
+ },
+ "R8": {
+  "R": 8,
+  "B": 8,
+  "band_units": 228,
+  "bands": {
+   "sil_rel_range": 0.11162535990917609,
+   "sil_rel_std": 0.023903129209699062,
+   "fill_of_disc": 0.9799269388611824,
+   "cover_of_head_disc": 0.9047800618921309,
+   "outside_head_disc": 0.0,
+   "value_std": 31.170796262342577,
+   "tests_mean_on_cover": 18.570955664543238
+  },
+  "spiral_N": 377,
+  "spiral_side": 1.1097979805695657,
+  "shells_units": 576,
+  "voxel_blocks": 2176,
+  "voxel": {
+   "sil_rel_range": 0.06841625792476749,
+   "sil_rel_std": 0.019630846894789535,
+   "fill_of_disc": 0.9984770423202538,
+   "cover_of_head_disc": 1.0,
+   "outside_head_disc": 0.10282935455349249,
+   "value_std": 58.80325689639241,
+   "tests_mean_on_cover": 6.0
+  },
+  "spiral": {
+   "sil_rel_range": 0.06416125012925891,
+   "sil_rel_std": 0.015228449114371522,
+   "fill_of_disc": 0.9949260981189473,
+   "cover_of_head_disc": 0.9449767904509284,
+   "outside_head_disc": 0.0,
+   "value_std": 30.386062567100783,
+   "tests_mean_on_cover": 25.61435179499775
+  },
+  "head": {
+   "sil_rel_range": 0.002557490290005125,
+   "sil_rel_std": 0.0006057970584113182,
+   "fill_of_disc": 1.0016398045042696,
+   "cover_of_head_disc": 1.0,
+   "outside_head_disc": 0.0,
+   "value_std": 61.999163209126884,
+   "tests_mean_on_cover": 1.0
+  }
+ },
+ "R21": {
+  "R": 21,
+  "B": 21,
+  "band_units": 1608,
+  "bands": {
+   "sil_rel_range": 0.033773020021214746,
+   "sil_rel_std": 0.0066576560445113986,
+   "fill_of_disc": 0.9550071646972953,
+   "cover_of_head_disc": 0.9358145446507515,
+   "outside_head_disc": 0.0,
+   "value_std": 30.259409711521837,
+   "tests_mean_on_cover": 17.627252059405357
+  },
+  "spiral_N": 2584,
+  "spiral_side": 1.1127501420714427,
+  "shells_units": 3948,
+  "voxel_blocks": 39024,
+  "voxel": {
+   "sil_rel_range": 0.028971610059587496,
+   "sil_rel_std": 0.00787185367694551,
+   "fill_of_disc": 0.9991633634276209,
+   "cover_of_head_disc": 1.0,
+   "outside_head_disc": 0.03941202475685234,
+   "value_std": 58.779224748282004,
+   "tests_mean_on_cover": 6.0
+  },
+  "spiral": {
+   "sil_rel_range": 0.02376818217618067,
+   "sil_rel_std": 0.004698838801962754,
+   "fill_of_disc": 0.9955586664404869,
+   "cover_of_head_disc": 0.9814544650751548,
+   "outside_head_disc": 0.0,
+   "value_std": 29.705386015703365,
+   "tests_mean_on_cover": 24.704201481948605
+  },
+  "head": {
+   "sil_rel_range": 0.002557490290005125,
+   "sil_rel_std": 0.0006057970584113182,
+   "fill_of_disc": 1.0016398045042696,
+   "cover_of_head_disc": 1.0,
+   "outside_head_disc": 0.0,
+   "value_std": 61.99916320914894,
+   "tests_mean_on_cover": 1.0
+  }
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "holes": [
+  {
+   "area_px": 2021,
+   "side_from_area_px": 67.01,
+   "widest_row_px": 66,
+   "centre": [
+    599.5,
+    252.4
+   ]
+  },
+  {
+   "area_px": 1967,
+   "side_from_area_px": 66.11,
+   "widest_row_px": 66,
+   "centre": [
+    599.5,
+    375.4
+   ]
+  },
+  {
+   "area_px": 1892,
+   "side_from_area_px": 64.84,
+   "widest_row_px": 65,
+   "centre": [
+    497.1,
+    436.0
+   ]
+  },
+  {
+   "area_px": 1898,
+   "side_from_area_px": 64.94,
+   "widest_row_px": 65,
+   "centre": [
+    702.3,
+    436.2
+   ]
+  }
+ ],
+ "thirds": {
+  "model_hole_areas": [
+   2074,
+   2129,
+   2129,
+   2108
+  ],
+  "model_hole_side_px": 68.23,
+  "predicted_area_with_half_px_stroke": 1990.0
+ },
+ "golden": {
+  "model_hole_areas": [
+   2738,
+   2745,
+   2746,
+   2738
+  ],
+  "model_hole_side_px": 78.48,
+  "predicted_area_with_half_px_stroke": 2650.8
+ },
+ "measured_mean_area": 1944.5
+}

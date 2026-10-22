@@ -1,0 +1,47 @@
+{
+ "frame": "drawing axes, z up; game y up -> pass vectors as v.xzy",
+ "tones_sRGB8": {
+  "x": 128,
+  "y": 0,
+  "z": 255
+ },
+ "tone_light_dir": [
+  1,
+  0,
+  2
+ ],
+ "tone_rule": {
+  "swept_surface": "tone of the section edge it is swept from (face family); exact on V3, 0 px",
+  "unit_surface_VS": "sum_i max(0,n_i v_i) tone_i / sum_i max(0,n_i v_i); back-facing: |n_i v_i|"
+ },
+ "mix_rule": "Colour Middling Average film by film, front to back, each film 8-bit first: two films C = round((c_0 + c_1)/2) per 8-bit channel exactly; for n films the shader rounds once: C = round(sum_k c_k 2^-(k+1) + c_last 2^-(n-1)) (per-film rounding round((c_k + C_{k+1})/2) differs from it by at most 1 level; checked wf6/check-colour)",
+ "crossings_sRGB": {
+  "grey+white": "#C0C0C0",
+  "grey+black": "#404040",
+  "black+white": "#808080"
+ },
+ "crossings_cezanne_pair": {
+  "grey+white": "#BEB397",
+  "grey+black": "#424D69",
+  "black+white": "#808080",
+  "dark": "#031A51",
+  "light": "#FCE5AE"
+ },
+ "solidity": {
+  "behind_weight": "2^-k after k films",
+  "mu_per_film": "ln 2",
+  "solid_at_films": 8,
+  "block_film": "at each filled->filled block crossing, colour m(v)=sum|v_i| tone_i/sum|v_i| (#808080 from the crux); none on faces open to air"
+ },
+ "film": {
+  "n_f": 1.1638,
+  "n_s": 1.3539,
+  "d_nm": 253.2,
+  "OPD_crux_nm": 420.0,
+  "crux_cos": 0.57735026919,
+  "facet": "F_i(c)=tone_i_lin*[R(c)/Y(R(c))]/[R_D/Y(R_D)] + max(R(c)-R_D,0), c=|v_i|, R Belcour-Barla 2 orders",
+  "universal_achromatic_OPD_nm": 1971
+ },
+ "close": "k = smoothstep(0.125, 0.275, 1/barPx): 8 px -> 3.64 px, = rocket.js lod",
+ "glsl": "unit.glsl: vec4 unitColour(n, v, l, layers, holo, barPx, closeMean); unitColourPair; unitBulk; unitSweptNormal; UnitStack"
+}

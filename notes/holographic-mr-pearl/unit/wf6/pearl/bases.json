@@ -1,0 +1,194 @@
+{
+ "bases": {
+  "dark": [
+   0.0768,
+   0.0646,
+   0.0612
+  ],
+  "fretboard": [
+   0.1181,
+   0.0611,
+   0.0414
+  ],
+  "glove": [
+   0.8264,
+   0.9249,
+   0.7617
+  ],
+  "guitar": [
+   0.5863,
+   0.5204,
+   0.5697
+  ],
+  "jacket": [
+   0.5553,
+   0.5985,
+   0.6415
+  ],
+  "neck": [
+   0.0185,
+   0.0085,
+   0.0067
+  ],
+  "trousers": [
+   0.6061,
+   0.5593,
+   0.6549
+  ],
+  "tuner": [
+   0.9007,
+   0.7162,
+   0.5903
+  ],
+  "hat": [
+   0.5553,
+   0.5985,
+   0.6415
+  ],
+  "shoe": [
+   0.5553,
+   0.5985,
+   0.6415
+  ]
+ },
+ "report": {
+  "dark": {
+   "pixels": 642,
+   "measured": "#473d38",
+   "where": "cover 2 sound hole (cover 1 hides it under the right glove)",
+   "base_linear": [
+    0.0768,
+    0.0646,
+    0.0612
+   ],
+   "base_srgb": "#4e4846",
+   "rendered_median": "#473d38",
+   "dE": 0.0
+  },
+  "fretboard": {
+   "pixels": 5722,
+   "measured": "#553c2e",
+   "where": "cover 1, the model's own front-view pixels of this part",
+   "base_linear": [
+    0.1181,
+    0.0611,
+    0.0414
+   ],
+   "base_srgb": "#604639",
+   "rendered_median": "#553c2e",
+   "dE": 0.0
+  },
+  "glove": {
+   "pixels": 4144,
+   "measured": "#dbd2b7",
+   "where": "cover 1, the model's own front-view pixels of this part",
+   "base_linear": [
+    0.8264,
+    0.9249,
+    0.7617
+   ],
+   "base_srgb": "#eaf6e2",
+   "rendered_median": "#dbd2b7",
+   "dE": 0.0
+  },
+  "guitar": {
+   "pixels": 23494,
+   "measured": "#a08c8a",
+   "where": "cover 1, the model's own front-view pixels of this part",
+   "base_linear": [
+    0.5863,
+    0.5204,
+    0.5697
+   ],
+   "base_srgb": "#c9bfc7",
+   "rendered_median": "#a08c8a",
+   "dE": 0.0
+  },
+  "jacket": {
+   "pixels": 35154,
+   "measured": "#b7a8a0",
+   "where": "cover 1, the model's own front-view pixels of this part",
+   "base_linear": [
+    0.5553,
+    0.5985,
+    0.6415
+   ],
+   "base_srgb": "#c5cbd2",
+   "rendered_median": "#b7a8a0",
+   "dE": 0.0
+  },
+  "neck": {
+   "pixels": 0,
+   "measured": "#251713",
+   "where": "cover 1, the dark inside of the collar under the head (darkest quarter)",
+   "base_linear": [
+    0.0185,
+    0.0085,
+    0.0067
+   ],
+   "base_srgb": "#251713"
+  },
+  "trousers": {
+   "pixels": 49255,
+   "measured": "#c0b2b1",
+   "where": "cover 1, the model's own front-view pixels of this part",
+   "base_linear": [
+    0.6061,
+    0.5593,
+    0.6549
+   ],
+   "base_srgb": "#ccc5d4",
+   "rendered_median": "#c0b2b1",
+   "dE": 0.0
+  },
+  "tuner": {
+   "pixels": 92,
+   "measured": "#c8b3a4",
+   "where": "cover 1, the model's own front-view pixels of this part",
+   "base_linear": [
+    0.9007,
+    0.7162,
+    0.5903
+   ],
+   "base_srgb": "#f4dcca",
+   "rendered_median": "#c8b3a4",
+   "dE": 0.0
+  },
+  "hat": {
+   "pixels": 24392,
+   "measured": "#b29d8a",
+   "where": "the jacket base (one pearl cloth, cover 2); cover-1 measure kept for the record",
+   "base_linear": [
+    0.5553,
+    0.5985,
+    0.6415
+   ],
+   "base_srgb": "#c5cbd2",
+   "rendered_median": "#ecd8a8",
+   "dE": 0.1803
+  },
+  "shoe": {
+   "pixels": 2527,
+   "measured": "#ada9b1",
+   "where": "the jacket base (one pearl cloth, cover 2); cover-1 measure kept for the record",
+   "base_linear": [
+    0.5553,
+    0.5985,
+    0.6415
+   ],
+   "base_srgb": "#c5cbd2",
+   "rendered_median": "#b7b6ab",
+   "dE": 0.0448
+  },
+  "pearl": {
+   "pixels": 38043,
+   "measured": "#b9aca9",
+   "base_linear": [
+    0.3426,
+    0.4473,
+    0.59
+   ],
+   "base_srgb": "#9eb2ca"
+  }
+ }
+}

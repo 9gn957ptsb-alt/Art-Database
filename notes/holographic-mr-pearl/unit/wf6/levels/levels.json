@@ -1,0 +1,4737 @@
+{
+ "name": "levels: the Fibonacci ladder of the figure of figures (wf6/levels, run 2, 16 Oct 2026)",
+ "conventions": {
+  "view": "orthographic along d = -(1,1,1)/sqrt3, up u = (0,-1,1)/sqrt2, right r = (-2,1,1)/sqrt6",
+  "CENTRE": [
+   0.3333333333333333,
+   1,
+   -0.3333333333333333
+  ],
+  "drawing_coords": "a = (p-CENTRE).r, b = (p-CENTRE).u (block units)",
+  "L": 0.816496580927726,
+  "u": "L/3 (a third of a block edge as drawn) = 0.272166",
+  "tones": "a face is toned by the axis its normal is along: x grey #808080, y black, z white",
+  "fibonacci": "F(1)=F(2)=1, F(n)=F(n-1)+F(n-2)"
+ },
+ "leaf": {
+  "what": "the original drawing exactly: H = 1/9 (bar half-width, blocks), lengths hole 1, growth 2, side 3, tribar 5, outline 8 (in u)",
+  "is_level": 2,
+  "size": "one block (the game block, 1 m); the smallest leaf of a world is level 2",
+  "verified": {
+   "holes_side_u": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "tribar_centre_separation_u": 3.0,
+   "outline_envelope_u": 8,
+   "outline_horizontal_extent_u": 7.333333,
+   "note": "the outline triangle (8 u) has its corners cut by the bar ends; horizontal extent 22/3 u"
+  },
+  "render_unit": "woven unit at H=1/9 (wf1/design-nesting/weave_test.woven(1/9, slices)); 2.333% wrong vs cls (lattice floor 2.098%)"
+ },
+ "ladder": {
+  "level_m_lengths_u": "hole F(m), growth F(m+1), side F(m+2), tribar F(m+3), outline F(m+4)",
+  "levels": [
+   {
+    "hole": 1,
+    "growth": 0,
+    "side": 1,
+    "tribar": 1,
+    "outline": 2,
+    "level": -1,
+    "corner_ratio": 0.5,
+    "corner_ratio_minus_inv_phi_pct": -19.0983,
+    "hole_over_outline": 0.5,
+    "leaf_scale_of_drawing": 0.25,
+    "outline_blocks_drawn": 0.25
+   },
+   {
+    "hole": 0,
+    "growth": 1,
+    "side": 1,
+    "tribar": 2,
+    "outline": 3,
+    "level": 0,
+    "corner_ratio": 0.6666666666666666,
+    "corner_ratio_minus_inv_phi_pct": 7.8689,
+    "hole_over_outline": 0.0,
+    "leaf_scale_of_drawing": 0.375,
+    "outline_blocks_drawn": 0.375
+   },
+   {
+    "hole": 1,
+    "growth": 1,
+    "side": 2,
+    "tribar": 3,
+    "outline": 5,
+    "level": 1,
+    "corner_ratio": 0.6,
+    "corner_ratio_minus_inv_phi_pct": -2.918,
+    "hole_over_outline": 0.2,
+    "leaf_scale_of_drawing": 0.625,
+    "outline_blocks_drawn": 0.625
+   },
+   {
+    "hole": 1,
+    "growth": 2,
+    "side": 3,
+    "tribar": 5,
+    "outline": 8,
+    "level": 2,
+    "corner_ratio": 0.625,
+    "corner_ratio_minus_inv_phi_pct": 1.1271,
+    "hole_over_outline": 0.125,
+    "leaf_scale_of_drawing": 1.0,
+    "outline_blocks_drawn": 1.0
+   },
+   {
+    "hole": 2,
+    "growth": 3,
+    "side": 5,
+    "tribar": 8,
+    "outline": 13,
+    "level": 3,
+    "corner_ratio": 0.6153846153846154,
+    "corner_ratio_minus_inv_phi_pct": -0.4287,
+    "hole_over_outline": 0.15384615384615385,
+    "leaf_scale_of_drawing": 1.625,
+    "outline_blocks_drawn": 1.625
+   },
+   {
+    "hole": 3,
+    "growth": 5,
+    "side": 8,
+    "tribar": 13,
+    "outline": 21,
+    "level": 4,
+    "corner_ratio": 0.6190476190476191,
+    "corner_ratio_minus_inv_phi_pct": 0.164,
+    "hole_over_outline": 0.14285714285714285,
+    "leaf_scale_of_drawing": 2.625,
+    "outline_blocks_drawn": 2.625
+   },
+   {
+    "hole": 5,
+    "growth": 8,
+    "side": 13,
+    "tribar": 21,
+    "outline": 34,
+    "level": 5,
+    "corner_ratio": 0.6176470588235294,
+    "corner_ratio_minus_inv_phi_pct": -0.0626,
+    "hole_over_outline": 0.14705882352941177,
+    "leaf_scale_of_drawing": 4.25,
+    "outline_blocks_drawn": 4.25
+   },
+   {
+    "hole": 8,
+    "growth": 13,
+    "side": 21,
+    "tribar": 34,
+    "outline": 55,
+    "level": 6,
+    "corner_ratio": 0.6181818181818182,
+    "corner_ratio_minus_inv_phi_pct": 0.0239,
+    "hole_over_outline": 0.14545454545454545,
+    "leaf_scale_of_drawing": 6.875,
+    "outline_blocks_drawn": 6.875
+   },
+   {
+    "hole": 13,
+    "growth": 21,
+    "side": 34,
+    "tribar": 55,
+    "outline": 89,
+    "level": 7,
+    "corner_ratio": 0.6179775280898876,
+    "corner_ratio_minus_inv_phi_pct": -0.0091,
+    "hole_over_outline": 0.14606741573033707,
+    "leaf_scale_of_drawing": 11.125,
+    "outline_blocks_drawn": 11.125
+   },
+   {
+    "hole": 21,
+    "growth": 34,
+    "side": 55,
+    "tribar": 89,
+    "outline": 144,
+    "level": 8,
+    "corner_ratio": 0.6180555555555556,
+    "corner_ratio_minus_inv_phi_pct": 0.0035,
+    "hole_over_outline": 0.14583333333333334,
+    "leaf_scale_of_drawing": 18.0,
+    "outline_blocks_drawn": 18.0
+   },
+   {
+    "hole": 34,
+    "growth": 55,
+    "side": 89,
+    "tribar": 144,
+    "outline": 233,
+    "level": 9,
+    "corner_ratio": 0.6180257510729614,
+    "corner_ratio_minus_inv_phi_pct": -0.0013,
+    "hole_over_outline": 0.1459227467811159,
+    "leaf_scale_of_drawing": 29.125,
+    "outline_blocks_drawn": 29.125
+   },
+   {
+    "hole": 55,
+    "growth": 89,
+    "side": 144,
+    "tribar": 233,
+    "outline": 377,
+    "level": 10,
+    "corner_ratio": 0.6180371352785146,
+    "corner_ratio_minus_inv_phi_pct": 0.0005,
+    "hole_over_outline": 0.14588859416445624,
+    "leaf_scale_of_drawing": 47.125,
+    "outline_blocks_drawn": 47.125
+   },
+   {
+    "hole": 89,
+    "growth": 144,
+    "side": 233,
+    "tribar": 377,
+    "outline": 610,
+    "level": 11,
+    "corner_ratio": 0.6180327868852459,
+    "corner_ratio_minus_inv_phi_pct": -0.0002,
+    "hole_over_outline": 0.14590163934426228,
+    "leaf_scale_of_drawing": 76.25,
+    "outline_blocks_drawn": 76.25
+   },
+   {
+    "hole": 144,
+    "growth": 233,
+    "side": 377,
+    "tribar": 610,
+    "outline": 987,
+    "level": 12,
+    "corner_ratio": 0.6180344478216818,
+    "corner_ratio_minus_inv_phi_pct": 0.0001,
+    "hole_over_outline": 0.1458966565349544,
+    "leaf_scale_of_drawing": 123.375,
+    "outline_blocks_drawn": 123.375
+   },
+   {
+    "hole": 233,
+    "growth": 377,
+    "side": 610,
+    "tribar": 987,
+    "outline": 1597,
+    "level": 13,
+    "corner_ratio": 0.6180338134001252,
+    "corner_ratio_minus_inv_phi_pct": -0.0,
+    "hole_over_outline": 0.1458985597996243,
+    "leaf_scale_of_drawing": 199.625,
+    "outline_blocks_drawn": 199.625
+   },
+   {
+    "hole": 377,
+    "growth": 610,
+    "side": 987,
+    "tribar": 1597,
+    "outline": 2584,
+    "level": 14,
+    "corner_ratio": 0.6180340557275542,
+    "corner_ratio_minus_inv_phi_pct": 0.0,
+    "hole_over_outline": 0.14589783281733745,
+    "leaf_scale_of_drawing": 323.0,
+    "outline_blocks_drawn": 323.0
+   },
+   {
+    "hole": 610,
+    "growth": 987,
+    "side": 1597,
+    "tribar": 2584,
+    "outline": 4181,
+    "level": 15,
+    "corner_ratio": 0.6180339631667066,
+    "corner_ratio_minus_inv_phi_pct": -0.0,
+    "hole_over_outline": 0.1458981104998804,
+    "leaf_scale_of_drawing": 522.625,
+    "outline_blocks_drawn": 522.625
+   },
+   {
+    "hole": 987,
+    "growth": 1597,
+    "side": 2584,
+    "tribar": 4181,
+    "outline": 6765,
+    "level": 16,
+    "corner_ratio": 0.6180339985218034,
+    "corner_ratio_minus_inv_phi_pct": 0.0,
+    "hole_over_outline": 0.1458980044345898,
+    "leaf_scale_of_drawing": 845.625,
+    "outline_blocks_drawn": 845.625
+   }
+  ],
+  "corner_relation": "a level-m frame holds three level-(m-1) frames centred at ab + sigma*(F(m+2)/3)*TRI_k, k = A, B, C (sigma = -1 in an inverted frame); their outlines are its tribar outlines, they overlap pairwise in triangles of side F(m+1) (less their cut corners, 9-10% short in area), their common opening is its hole F(m)",
+  "opening_relation": "a level-m frame hole (side F(m)) is exactly the outline of a level-(m-4) frame, point-reflected (M = -I: on the lattice, tones by axis kept)",
+  "TRI": {
+   "A": [
+    0.0,
+    0.47140452079103173
+   ],
+   "B": [
+    0.40824829046386296,
+    -0.23570226039551587
+   ],
+   "C": [
+    -0.40824829046386296,
+    -0.23570226039551587
+   ]
+  },
+  "TRI_note": "in block units for a level-2 frame (centroids of the corner tribars; |TRI_A - TRI_B| = L)",
+  "JOINTS": {
+   "AB": [
+    0.408248290463863,
+    0.23570226039551587
+   ],
+   "BC": [
+    0.0,
+    -0.47140452079103173
+   ],
+   "CA": [
+    -0.408248290463863,
+    0.23570226039551587
+   ]
+  },
+  "leaf_in_frame": "a leaf in a level-m frame is the drawing scaled by s = F(m+4)/8, about CENTRE: p -> s M (p - CENTRE) + c + depth(1,1,1), c = CENTRE + a r + b u",
+  "depth_tilt": {
+   "kappa": 0.4082482904638631,
+   "rule": "each corner step adds a tilt about the parent centre c_j: depth += kappa * ((a,b) - ab(c_j)) . v_k along (1,1,1) (never changes the drawing); v_k = unit vector from the joint where sibling k lies under to the joint where it lies over (A over B at AB, B over C at BC, C over A at CA: the drawing's own cyclic order)",
+   "v": {
+    "A": [
+     1.0,
+     0.0
+    ],
+    "B": [
+     -0.5,
+     -0.8660254037844387
+    ],
+    "C": [
+     -0.5,
+     0.8660254037844387
+    ]
+   },
+   "inverted_frames": "v unchanged (the true point reflection of the order)"
+  },
+  "limit": "F(m+3)/F(m+4) -> 1/phi (5/8, 8/13, 13/21, 21/34: 1.127%, -0.429%, 0.164%, -0.063% off); hole/outline -> phi^-4"
+ },
+ "rule_D": {
+  "weight": "how many details a thing holds (a leaf weighs 1; a record weighs 1)",
+  "record": "every node with two or more parts has its own record, a leaf standing for the thing itself (its name, its picture)",
+  "steps": [
+   "1. One part: it fills its parent's frame (one frame answers for both).",
+   "2. Odd count of parts: the node's record goes into its frame's opening (level m-4, inverted): the figure's centre is the thing itself.",
+   "3. Even count: the record is one more part, so the corners always take an odd count.",
+   "4. The (odd) parts are joined three at a time, the three lightest first (ties: the node's own order); each join is a figure of three, heaviest at A (top), then B (bottom-right), C (bottom-left); the last join fills the frame. A join's own opening stays open.",
+   "5. Corner = one level down (F(m+3)/F(m+4) ~ 1/phi in length); opening = four levels down.",
+   "6. The root's level K is the least that makes the smallest leaf level 2 (every leaf at least one block, drawn as the drawing).",
+   "7. Same information -> same world: the result depends only on the parts, their weights and their order in the files."
+  ],
+  "code": "ladder.py: layout(root) with RECORDS = True; Fr.corner, Fr.opening, Fr.copy (3D placement)"
+ },
+ "answers": {
+  "a_thirds_vs_golden": {
+   "fibonacci_check": "lengths hole 1-6H, growth 6H, side 1, tribar 1+6H, figure 2+6H (L): each the sum of the two before for any H; geometric in phi iff 36H^2+6H-1=0 iff 6H=1/phi; at H=1/9 = 1,2,3,5,8 thirds. 6H=2/3 is the 3rd convergent of 1/phi.",
+   "wrong_vs_cls_pct": {
+    "thirds": 2.098,
+    "golden": 6.019
+   },
+   "wrong_vs_cls_clean_pct": {
+    "thirds": 1.758,
+    "golden": 6.428
+   },
+   "lines_moved_px": {
+    "max": 7.13,
+    "mean": 3.29,
+    "lines": 33
+   },
+   "hole_area_px": {
+    "original_mean": 1944.5,
+    "thirds_predicted": 1990.0,
+    "golden_predicted": 2650.8
+   },
+   "sweep_pct": {
+    "0.098": 9.749,
+    "0.1": 7.808,
+    "0.103": 6.019,
+    "0.106": 4.053,
+    "0.108": 2.767,
+    "0.11": 2.266,
+    "0.1111": 2.098,
+    "0.1125": 2.096,
+    "0.115": 2.862,
+    "0.118": 4.469
+   },
+   "choice": "the drawing's own thirds at the leaf, Fibonacci between levels (the golden ratio in integers, exact in every relation; converging to phi). Rejected: the golden bar 6H=1/phi (3.9 points further from the original, holes 15% wider in side, irrational lengths off the block grid); the drawing with exactly phi between scales (phi^-4 copies overflow its holes by 16.7%, phi^-1 corner copies fall 1.1% short of its tribar outlines)."
+  },
+  "b_holding_copies": {
+   "corners": "three level-(m-1) copies at the corners: outlines = the tribars; joints layered cyclically (A over B over C over A) by the tilt kappa = 1/(3L)",
+   "openings": [
+    {
+     "level": 1,
+     "side_u": 5,
+     "opening_outline_px": 20730,
+     "hole_px": 21172,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 442,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": 0,
+     "side_u": 3,
+     "opening_outline_px": 7468,
+     "hole_px": 7636,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 168,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3310,
+     "hole_px": 3382,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 72,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3308,
+     "hole_px": 3380,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 72,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3308,
+     "hole_px": 3380,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 72,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": 0,
+     "side_u": 3,
+     "opening_outline_px": 7500,
+     "hole_px": 7667,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 167,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3323,
+     "hole_px": 3401,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 78,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3323,
+     "hole_px": 3399,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 76,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3323,
+     "hole_px": 3399,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 76,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": 0,
+     "side_u": 3,
+     "opening_outline_px": 7500,
+     "hole_px": 7667,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 167,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3323,
+     "hole_px": 3401,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 78,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3323,
+     "hole_px": 3399,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 76,
+     "overlap_with_corner_leaves_faces_px": 0
+    },
+    {
+     "level": -1,
+     "side_u": 2,
+     "opening_outline_px": 3323,
+     "hole_px": 3399,
+     "outline_outside_hole_px": 0,
+     "hole_not_covered_px": 76,
+     "overlap_with_corner_leaves_faces_px": 0
+    }
+   ],
+   "openings_summary": "opening copies: 0 px outside the hole, 0 px over any corner leaf, the hole covered but its three corners (2.1%: the copy's own cut corners)",
+   "composite": {
+    "level5_outline_px": 975648,
+    "corner_outlines_outside_it_px": 0,
+    "inside_it_not_covered_px": 75794,
+    "analytic_uncovered_px": 74325.1
+   },
+   "along_bars": "no copy fits a bar: a copy's height over the bar width is 2.43, 1.5, 0.93 at phi^-2..-4 (q_b ALONG): copies go at corners and in openings, not along bars",
+   "closure": {
+    "ortho turned 0 deg": {
+     "level 1 (opening)": {
+      "n": 1,
+      "max": 0.0,
+      "min": 0.0
+     },
+     "level 0 (opening)": {
+      "n": 3,
+      "max": 0.0,
+      "min": 0.0
+     },
+     "level -1 (opening)": {
+      "n": 9,
+      "max": 0.0,
+      "min": 0.0
+     },
+     "level 2 (leaf)": {
+      "n": 27,
+      "max": 0.0,
+      "min": 0.0
+     }
+    },
+    "ortho turned 5 deg": {
+     "level 1 (opening)": {
+      "n": 1,
+      "max": 0.15101,
+      "min": 0.15101
+     },
+     "level 0 (opening)": {
+      "n": 3,
+      "max": 0.15101,
+      "min": 0.15101
+     },
+     "level -1 (opening)": {
+      "n": 9,
+      "max": 0.15101,
+      "min": 0.15101
+     },
+     "level 2 (leaf)": {
+      "n": 27,
+      "max": 0.15101,
+      "min": 0.15101
+     }
+    },
+    "ortho turned 20 deg": {
+     "level 1 (opening)": {
+      "n": 1,
+      "max": 0.59546,
+      "min": 0.59546
+     },
+     "level 0 (opening)": {
+      "n": 3,
+      "max": 0.59546,
+      "min": 0.59546
+     },
+     "level -1 (opening)": {
+      "n": 9,
+      "max": 0.59546,
+      "min": 0.59546
+     },
+     "level 2 (leaf)": {
+      "n": 27,
+      "max": 0.59546,
+      "min": 0.59546
+     }
+    },
+    "ortho turned 45 deg": {
+     "level 1 (opening)": {
+      "n": 1,
+      "max": 1.25928,
+      "min": 1.25928
+     },
+     "level 0 (opening)": {
+      "n": 3,
+      "max": 1.25928,
+      "min": 1.25928
+     },
+     "level -1 (opening)": {
+      "n": 9,
+      "max": 1.25928,
+      "min": 1.25928
+     },
+     "level 2 (leaf)": {
+      "n": 27,
+      "max": 1.25928,
+      "min": 1.25928
+     }
+    }
+   },
+   "closure_summary": "drawing view 0 at every level; turned ortho gap/own size identical at every level (0.151 at 5 deg, 0.595 at 20, 1.259 at 45); the whole nest drawn in toward one eye (one projective map) closes exactly at every level, and opens together when the eye moves"
+  },
+  "c_how_many": {
+   "per_frame": "3 corners + 1 opening (the record); by joins any count: n odd parts take (n-1)/2 joins, depth ~ log3 n",
+   "comparison_of_rules": {
+    "toy 3x3x3 works": {
+     "A huffman (pair = fill + opening)": {
+      "K": 5,
+      "planet_outline_over_leaf": 4.25,
+      "leaves": 27,
+      "openings_used": 0,
+      "leaf_levels": {
+       "2": 27
+      },
+      "mean_abs_err_levels": 0.142,
+      "weighted_mean_abs_err": 0.142,
+      "max_abs_err": 0.142
+     },
+     "C huffman (pair + its own record)": {
+      "K": 5,
+      "planet_outline_over_leaf": 4.25,
+      "leaves": 27,
+      "openings_used": 0,
+      "leaf_levels": {
+       "2": 27
+      },
+      "mean_abs_err_levels": 0.142,
+      "weighted_mean_abs_err": 0.142,
+      "max_abs_err": 0.142
+     },
+     "D records (odd: record in the opening; even: record as a part)": {
+      "K": 8,
+      "planet_outline_over_leaf": 18.0,
+      "leaves": 40,
+      "openings_used": 13,
+      "leaf_levels": {
+       "2": 9,
+       "3": 3,
+       "4": 1,
+       "5": 27
+      },
+      "mean_abs_err_levels": 0.142,
+      "weighted_mean_abs_err": 0.142,
+      "max_abs_err": 0.142,
+      "openings_hold": [
+       "record"
+      ],
+      "max_openings_in_a_path": 1
+     }
+    },
+    "toy 3x3x3x4 details": {
+     "A huffman (pair = fill + opening)": {
+      "K": 9,
+      "planet_outline_over_leaf": 29.12,
+      "leaves": 108,
+      "openings_used": 27,
+      "leaf_levels": {
+       "2": 27,
+       "5": 81
+      },
+      "mean_abs_err_levels": 0.75,
+      "weighted_mean_abs_err": 0.349,
+      "max_abs_err": 2.56
+     },
+     "C huffman (pair + its own record)": {
+      "K": 9,
+      "planet_outline_over_leaf": 29.12,
+      "leaves": 108,
+      "openings_used": 27,
+      "leaf_levels": {
+       "2": 27,
+       "5": 81
+      },
+      "mean_abs_err_levels": 0.75,
+      "weighted_mean_abs_err": 0.349,
+      "max_abs_err": 2.56
+     },
+     "D records (odd: record in the opening; even: record as a part)": {
+      "K": 8,
+      "planet_outline_over_leaf": 18.0,
+      "leaves": 148,
+      "openings_used": 13,
+      "leaf_levels": {
+       "2": 9,
+       "3": 84,
+       "4": 55
+      },
+      "mean_abs_err_levels": 0.427,
+      "weighted_mean_abs_err": 0.239,
+      "max_abs_err": 0.56,
+      "openings_hold": [
+       "record"
+      ],
+      "max_openings_in_a_path": 1
+     }
+    },
+    "a city of 12 equal places": {
+     "A huffman (pair = fill + opening)": {
+      "K": 6,
+      "planet_outline_over_leaf": 6.88,
+      "leaves": 12,
+      "openings_used": 1,
+      "leaf_levels": {
+       "2": 1,
+       "3": 3,
+       "4": 8
+      },
+      "mean_abs_err_levels": 0.611,
+      "weighted_mean_abs_err": 0.611,
+      "max_abs_err": 1.418
+     },
+     "C huffman (pair + its own record)": {
+      "K": 6,
+      "planet_outline_over_leaf": 6.88,
+      "leaves": 12,
+      "openings_used": 1,
+      "leaf_levels": {
+       "2": 1,
+       "3": 3,
+       "4": 8
+      },
+      "mean_abs_err_levels": 0.611,
+      "weighted_mean_abs_err": 0.611,
+      "max_abs_err": 1.418
+     },
+     "D records (odd: record in the opening; even: record as a part)": {
+      "K": 5,
+      "planet_outline_over_leaf": 4.25,
+      "leaves": 13,
+      "openings_used": 0,
+      "leaf_levels": {
+       "2": 6,
+       "3": 7
+      },
+      "mean_abs_err_levels": 0.5,
+      "weighted_mean_abs_err": 0.5,
+      "max_abs_err": 0.582,
+      "openings_hold": [],
+      "max_openings_in_a_path": 0
+     }
+    },
+    "a place of 40 equal works": {
+     "A huffman (pair = fill + opening)": {
+      "K": 6,
+      "planet_outline_over_leaf": 6.88,
+      "leaves": 40,
+      "openings_used": 1,
+      "leaf_levels": {
+       "2": 19,
+       "3": 21
+      },
+      "mean_abs_err_levels": 0.517,
+      "weighted_mean_abs_err": 0.517,
+      "max_abs_err": 0.833
+     },
+     "C huffman (pair + its own record)": {
+      "K": 6,
+      "planet_outline_over_leaf": 6.88,
+      "leaves": 40,
+      "openings_used": 1,
+      "leaf_levels": {
+       "2": 19,
+       "3": 21
+      },
+      "mean_abs_err_levels": 0.517,
+      "weighted_mean_abs_err": 0.517,
+      "max_abs_err": 0.833
+     },
+     "D records (odd: record in the opening; even: record as a part)": {
+      "K": 6,
+      "planet_outline_over_leaf": 6.88,
+      "leaves": 41,
+      "openings_used": 0,
+      "leaf_levels": {
+       "2": 21,
+       "3": 20
+      },
+      "mean_abs_err_levels": 0.483,
+      "weighted_mean_abs_err": 0.483,
+      "max_abs_err": 0.833,
+      "openings_hold": [],
+      "max_openings_in_a_path": 0
+     }
+    },
+    "London: museums by works": {
+     "A huffman (pair = fill + opening)": {
+      "K": 8,
+      "planet_outline_over_leaf": 18.0,
+      "leaves": 36,
+      "openings_used": 3,
+      "leaf_levels": {
+       "2": 2,
+       "3": 1,
+       "4": 24,
+       "5": 4,
+       "6": 5
+      },
+      "mean_abs_err_levels": 0.65,
+      "weighted_mean_abs_err": 0.664,
+      "max_abs_err": 3.28
+     },
+     "C huffman (pair + its own record)": {
+      "K": 7,
+      "planet_outline_over_leaf": 11.12,
+      "leaves": 38,
+      "openings_used": 1,
+      "leaf_levels": {
+       "2": 1,
+       "3": 24,
+       "4": 10,
+       "5": 3
+      },
+      "mean_abs_err_levels": 0.497,
+      "weighted_mean_abs_err": 0.568,
+      "max_abs_err": 1.723
+     },
+     "D records (odd: record in the opening; even: record as a part)": {
+      "K": 6,
+      "planet_outline_over_leaf": 6.88,
+      "leaves": 40,
+      "openings_used": 1,
+      "leaf_levels": {
+       "2": 28,
+       "3": 9,
+       "4": 3
+      },
+      "mean_abs_err_levels": 0.47,
+      "weighted_mean_abs_err": 0.551,
+      "max_abs_err": 1.723,
+      "openings_hold": [
+       "record"
+      ],
+      "max_openings_in_a_path": 1
+     }
+    },
+    "planet: works": {
+     "A huffman (pair = fill + opening)": {
+      "K": 19,
+      "planet_outline_over_leaf": 3582.12,
+      "leaves": 602,
+      "openings_used": 39,
+      "leaf_levels": {
+       "2": 1,
+       "3": 1,
+       "6": 2,
+       "7": 4,
+       "8": 1,
+       "9": 4,
+       "10": 38,
+       "11": 16,
+       "12": 192,
+       "13": 224,
+       "14": 116,
+       "15": 2,
+       "17": 1
+      },
+      "mean_abs_err_levels": 0.654,
+      "weighted_mean_abs_err": 0.563,
+      "max_abs_err": 11.28
+     },
+     "C huffman (pair + its own record)": {
+      "K": 11,
+      "planet_outline_over_leaf": 76.25,
+      "leaves": 624,
+      "openings_used": 17,
+      "leaf_levels": {
+       "2": 4,
+       "3": 7,
+       "4": 249,
+       "5": 283,
+       "6": 75,
+       "7": 4,
+       "8": 1,
+       "9": 1
+      },
+      "mean_abs_err_levels": 0.493,
+      "weighted_mean_abs_err": 0.448,
+      "max_abs_err": 4.575
+     },
+     "D records (odd: record in the opening; even: record as a part)": {
+      "K": 12,
+      "planet_outline_over_leaf": 123.38,
+      "leaves": 668,
+      "openings_used": 27,
+      "leaf_levels": {
+       "2": 1,
+       "3": 7,
+       "4": 11,
+       "5": 275,
+       "6": 296,
+       "7": 70,
+       "8": 4,
+       "9": 4
+      },
+      "mean_abs_err_levels": 0.451,
+      "weighted_mean_abs_err": 0.432,
+      "max_abs_err": 3.575,
+      "openings_hold": [
+       "record"
+      ],
+      "max_openings_in_a_path": 1
+     }
+    },
+    "planet: works with 4 details": {
+     "A huffman (pair = fill + opening)": {
+      "K": 24,
+      "planet_outline_over_leaf": 39726.38,
+      "leaves": 2408,
+      "openings_used": 635,
+      "leaf_levels": {
+       "2": 1,
+       "4": 2,
+       "5": 1,
+       "6": 1,
+       "7": 7,
+       "8": 3,
+       "9": 4,
+       "10": 13,
+       "11": 46,
+       "12": 16,
+       "13": 215,
+       "14": 334,
+       "15": 157,
+       "16": 578,
+       "17": 672,
+       "18": 349,
+       "19": 6,
+       "21": 3
+      },
+      "mean_abs_err_levels": 0.932,
+      "weighted_mean_abs_err": 0.666,
+      "max_abs_err": 10.56
+     },
+     "C huffman (pair + its own record)": {
+      "K": 15,
+      "planet_outline_over_leaf": 522.62,
+      "leaves": 2430,
+      "openings_used": 619,
+      "leaf_levels": {
+       "2": 4,
+       "3": 7,
+       "4": 246,
+       "5": 285,
+       "6": 91,
+       "7": 739,
+       "8": 822,
+       "9": 221,
+       "10": 8,
+       "11": 3,
+       "12": 4
+      },
+      "mean_abs_err_levels": 0.862,
+      "weighted_mean_abs_err": 0.579,
+      "max_abs_err": 4.575
+     },
+     "D records (odd: record in the opening; even: record as a part)": {
+      "K": 12,
+      "planet_outline_over_leaf": 123.38,
+      "leaves": 3076,
+      "openings_used": 27,
+      "leaf_levels": {
+       "2": 1,
+       "3": 784,
+       "4": 1360,
+       "5": 762,
+       "6": 147,
+       "7": 12,
+       "8": 8,
+       "9": 2
+      },
+      "mean_abs_err_levels": 0.513,
+      "weighted_mean_abs_err": 0.458,
+      "max_abs_err": 3.575,
+      "openings_hold": [
+       "record"
+      ],
+      "max_openings_in_a_path": 1
+     }
+    },
+    "B split (top-down)": {
+     "toy 3x3x3 works": {
+      "K": 5,
+      "planet_outline_over_leaf": 4.25,
+      "leaves": 27,
+      "openings_used": 0,
+      "leaf_levels": {
+       "2": 27
+      },
+      "mean_abs_err_levels": 0.142,
+      "weighted_mean_abs_err": 0.142,
+      "max_abs_err": 0.142
+     },
+     "toy 3x3x3x4 details": {
+      "K": 10,
+      "planet_outline_over_leaf": 47.12,
+      "leaves": 108,
+      "openings_used": 27,
+      "leaf_levels": {
+       "2": 27,
+       "6": 81
+      },
+      "mean_abs_err_levels": 0.934,
+      "weighted_mean_abs_err": 0.411,
+      "max_abs_err": 3.56
+     },
+     "a city of 12 equal places": {
+      "K": 8,
+      "planet_outline_over_leaf": 18.0,
+      "leaves": 12,
+      "openings_used": 3,
+      "leaf_levels": {
+       "2": 3,
+       "6": 9
+      },
+      "mean_abs_err_levels": 1.291,
+      "weighted_mean_abs_err": 1.291,
+      "max_abs_err": 3.418
+     },
+     "a place of 40 equal works": {
+      "K": 9,
+      "planet_outline_over_leaf": 29.12,
+      "leaves": 40,
+      "openings_used": 13,
+      "leaf_levels": {
+       "2": 13,
+       "6": 27
+      },
+      "mean_abs_err_levels": 1.592,
+      "weighted_mean_abs_err": 1.592,
+      "max_abs_err": 3.167
+     },
+     "London: museums by works": {
+      "K": 9,
+      "planet_outline_over_leaf": 29.12,
+      "leaves": 36,
+      "openings_used": 5,
+      "leaf_levels": {
+       "2": 1,
+       "3": 4,
+       "5": 24,
+       "6": 1,
+       "7": 6
+      },
+      "mean_abs_err_levels": 0.786,
+      "weighted_mean_abs_err": 0.749,
+      "max_abs_err": 3.28
+     },
+     "planet: works": {
+      "K": 18,
+      "planet_outline_over_leaf": 2213.88,
+      "leaves": 602,
+      "openings_used": 185,
+      "leaf_levels": {
+       "2": 2,
+       "3": 1,
+       "5": 12,
+       "6": 17,
+       "7": 4,
+       "8": 23,
+       "9": 152,
+       "10": 49,
+       "11": 27,
+       "12": 130,
+       "13": 179,
+       "14": 6
+      },
+      "mean_abs_err_levels": 1.27,
+      "weighted_mean_abs_err": 0.818,
+      "max_abs_err": 11.28
+     },
+     "planet: works with 4 details": {
+      "K": 23,
+      "planet_outline_over_leaf": 24552.25,
+      "leaves": 2408,
+      "openings_used": 787,
+      "leaf_levels": {
+       "2": 2,
+       "3": 1,
+       "5": 12,
+       "6": 23,
+       "7": 7,
+       "8": 23,
+       "9": 188,
+       "10": 100,
+       "11": 39,
+       "12": 199,
+       "13": 635,
+       "14": 153,
+       "15": 81,
+       "16": 390,
+       "17": 537,
+       "18": 18
+      },
+      "mean_abs_err_levels": 1.232,
+      "weighted_mean_abs_err": 0.918,
+      "max_abs_err": 11.28
+     }
+    }
+   },
+   "closing": "the game closes a facade into its mean between bar 8 px and 4 px (a factor 2 = phi^1.44): about 1.44 levels are in transition at any distance; moving phi nearer reveals one level"
+  },
+  "d_level_units": {
+   "every_level_unit": "the same figure: a leaf is the drawing; a node is a figure of three (its parts' figures) round its opening (its own record)",
+   "scale": "set by weight, not by kind: a thing holding w of its parent's W details sits ~log_phi(W/w)/2 levels below it",
+   "toy_uniform": "planet 8 (outline F12=144 u = 18 blocks), city 7, place 6, work 5, details 3-4, records 2-4",
+   "artist_planet": {
+    "works_only": {
+     "K": 12,
+     "outline_u": 987,
+     "outline_blocks": 123.38,
+     "leaves": 668,
+     "joins": 320,
+     "openings_used": 27,
+     "levels_by_kind": {
+      "planet": {
+       "12": 1
+      },
+      "city": {
+       "11": 1,
+       "10": 3,
+       "9": 5,
+       "8": 9,
+       "7": 7,
+       "6": 6
+      },
+      "place": {
+       "10": 2,
+       "9": 8,
+       "8": 17,
+       "7": 26,
+       "6": 18
+      },
+      "work": {
+       "9": 2,
+       "7": 59,
+       "6": 276,
+       "5": 265
+      },
+      "record": {
+       "9": 2,
+       "8": 4,
+       "7": 11,
+       "6": 20,
+       "5": 10,
+       "4": 11,
+       "3": 7,
+       "2": 1
+      }
+     },
+     "cities": [
+      {
+       "key": "Washington",
+       "level": 11,
+       "path": "B",
+       "ab": [
+        51.3032,
+        -29.6199
+       ]
+      },
+      {
+       "key": "New York",
+       "level": 10,
+       "path": "AB",
+       "ab": [
+        31.7073,
+        40.9336
+       ]
+      },
+      {
+       "key": "Paris",
+       "level": 10,
+       "path": "CA",
+       "ab": [
+        -51.3032,
+        6.9925
+       ]
+      },
+      {
+       "key": "San Francisco",
+       "level": 10,
+       "path": "CB",
+       "ab": [
+        -19.5959,
+        -47.9261
+       ]
+      },
+      {
+       "key": "London",
+       "level": 9,
+       "path": "AAA",
+       "ab": [
+        0.0,
+        118.4797
+       ]
+      },
+      {
+       "key": "Los Angeles",
+       "level": 9,
+       "path": "AAC",
+       "ab": [
+        -19.5959,
+        84.5385
+       ]
+      },
+      {
+       "key": "Amsterdam",
+       "level": 9,
+       "path": "ACB",
+       "ab": [
+        -12.1114,
+        29.6199
+       ]
+      },
+      {
+       "key": "Seattle",
+       "level": 9,
+       "path": "CCA",
+       "ab": [
+        -83.0105,
+        -25.2987
+       ]
+      },
+      {
+       "key": "Chicago",
+       "level": 9,
+       "path": "CCC",
+       "ab": [
+        -102.6064,
+        -59.2398
+       ]
+      },
+      {
+       "key": "Madrid",
+       "level": 8,
+       "path": "AABB",
+       "ab": [
+        31.7073,
+        77.546
+       ]
+      },
+      {
+       "key": "New Haven",
+       "level": 8,
+       "path": "AABC",
+       "ab": [
+        7.4846,
+        77.546
+       ]
+      },
+      {
+       "key": "Berlin",
+       "level": 8,
+       "path": "ACAA",
+       "ab": [
+        -31.7073,
+        77.546
+       ]
+      },
+      {
+       "key": "Philadelphia",
+       "level": 8,
+       "path": "ACAB",
+       "ab": [
+        -19.5959,
+        56.5685
+       ]
+      },
+      {
+       "key": "Boston",
+       "level": 8,
+       "path": "ACCA",
+       "ab": [
+        -51.3032,
+        43.6049
+       ]
+      },
+      {
+       "key": "Dallas",
+       "level": 8,
+       "path": "ACCC",
+       "ab": [
+        -63.4146,
+        22.6274
+       ]
+      },
+      {
+       "key": "Milan",
+       "level": 8,
+       "path": "CCBA",
+       "ab": [
+        -63.4146,
+        -45.2548
+       ]
+      },
+      {
+       "key": "Antwerp",
+       "level": 8,
+       "path": "CCBB",
+       "ab": [
+        -51.3032,
+        -66.2323
+       ]
+      },
+      {
+       "key": "Munich",
+       "level": 8,
+       "path": "CCBC",
+       "ab": [
+        -75.5259,
+        -66.2323
+       ]
+      },
+      {
+       "key": "Houston",
+       "level": 7,
+       "path": "AABAA",
+       "ab": [
+        19.5959,
+        107.166
+       ]
+      },
+      {
+       "key": "Copenhagen",
+       "level": 7,
+       "path": "AABAB",
+       "ab": [
+        27.0805,
+        94.2023
+       ]
+      },
+      {
+       "key": "Vienna",
+       "level": 7,
+       "path": "ACACA",
+       "ab": [
+        -43.8186,
+        65.211
+       ]
+      },
+      {
+       "key": "Seoul",
+       "level": 7,
+       "path": "ACACB",
+       "ab": [
+        -36.3341,
+        52.2473
+       ]
+      },
+      {
+       "key": "Brussels",
+       "level": 7,
+       "path": "ACCBA",
+       "ab": [
+        -39.1918,
+        31.2698
+       ]
+      },
+      {
+       "key": "Toronto",
+       "level": 7,
+       "path": "ACCBB",
+       "ab": [
+        -31.7073,
+        18.3062
+       ]
+      },
+      {
+       "key": "Shanghai",
+       "level": 7,
+       "path": "ACCBC",
+       "ab": [
+        -46.6764,
+        18.3062
+       ]
+      },
+      {
+       "key": "Cologne",
+       "level": 6,
+       "path": "AABACA",
+       "ab": [
+        12.1114,
+        99.5449
+       ]
+      },
+      {
+       "key": "Stockholm",
+       "level": 6,
+       "path": "AABACB",
+       "ab": [
+        16.7382,
+        91.531
+       ]
+      },
+      {
+       "key": "Venice",
+       "level": 6,
+       "path": "AABACC",
+       "ab": [
+        7.4846,
+        91.531
+       ]
+      },
+      {
+       "key": "Rome",
+       "level": 6,
+       "path": "ACACCA",
+       "ab": [
+        -51.3032,
+        57.5899
+       ]
+      },
+      {
+       "key": "Tokyo",
+       "level": 6,
+       "path": "ACACCB",
+       "ab": [
+        -46.6764,
+        49.576
+       ]
+      },
+      {
+       "key": "Basel",
+       "level": 6,
+       "path": "ACACCC",
+       "ab": [
+        -55.93,
+        49.576
+       ]
+      }
+     ]
+    },
+    "with_details": {
+     "K": 12,
+     "outline_u": 987,
+     "outline_blocks": 123.38,
+     "leaves": 3076,
+     "joins": 1524,
+     "openings_used": 27,
+     "levels_by_kind": {
+      "planet": {
+       "12": 1
+      },
+      "city": {
+       "11": 1,
+       "10": 3,
+       "9": 5,
+       "8": 9,
+       "7": 7,
+       "6": 6
+      },
+      "place": {
+       "10": 2,
+       "9": 8,
+       "8": 17,
+       "7": 27,
+       "6": 17
+      },
+      "work": {
+       "9": 2,
+       "7": 64,
+       "6": 277,
+       "5": 259
+      },
+      "detail": {
+       "8": 2,
+       "7": 6,
+       "6": 64,
+       "5": 469,
+       "4": 1090,
+       "3": 777
+      },
+      "record": {
+       "9": 2,
+       "8": 6,
+       "7": 6,
+       "6": 83,
+       "5": 293,
+       "4": 270,
+       "3": 7,
+       "2": 1
+      }
+     },
+     "cities": [
+      {
+       "key": "Washington",
+       "level": 11,
+       "path": "B",
+       "ab": [
+        51.3032,
+        -29.6199
+       ]
+      },
+      {
+       "key": "New York",
+       "level": 10,
+       "path": "AB",
+       "ab": [
+        31.7073,
+        40.9336
+       ]
+      },
+      {
+       "key": "Paris",
+       "level": 10,
+       "path": "CA",
+       "ab": [
+        -51.3032,
+        6.9925
+       ]
+      },
+      {
+       "key": "San Francisco",
+       "level": 10,
+       "path": "CB",
+       "ab": [
+        -19.5959,
+        -47.9261
+       ]
+      },
+      {
+       "key": "London",
+       "level": 9,
+       "path": "AAA",
+       "ab": [
+        0.0,
+        118.4797
+       ]
+      },
+      {
+       "key": "Los Angeles",
+       "level": 9,
+       "path": "AAC",
+       "ab": [
+        -19.5959,
+        84.5385
+       ]
+      },
+      {
+       "key": "Amsterdam",
+       "level": 9,
+       "path": "ACB",
+       "ab": [
+        -12.1114,
+        29.6199
+       ]
+      },
+      {
+       "key": "Seattle",
+       "level": 9,
+       "path": "CCA",
+       "ab": [
+        -83.0105,
+        -25.2987
+       ]
+      },
+      {
+       "key": "Chicago",
+       "level": 9,
+       "path": "CCC",
+       "ab": [
+        -102.6064,
+        -59.2398
+       ]
+      },
+      {
+       "key": "Madrid",
+       "level": 8,
+       "path": "AABB",
+       "ab": [
+        31.7073,
+        77.546
+       ]
+      },
+      {
+       "key": "New Haven",
+       "level": 8,
+       "path": "AABC",
+       "ab": [
+        7.4846,
+        77.546
+       ]
+      },
+      {
+       "key": "Berlin",
+       "level": 8,
+       "path": "ACAA",
+       "ab": [
+        -31.7073,
+        77.546
+       ]
+      },
+      {
+       "key": "Philadelphia",
+       "level": 8,
+       "path": "ACAB",
+       "ab": [
+        -19.5959,
+        56.5685
+       ]
+      },
+      {
+       "key": "Boston",
+       "level": 8,
+       "path": "ACCA",
+       "ab": [
+        -51.3032,
+        43.6049
+       ]
+      },
+      {
+       "key": "Dallas",
+       "level": 8,
+       "path": "ACCC",
+       "ab": [
+        -63.4146,
+        22.6274
+       ]
+      },
+      {
+       "key": "Milan",
+       "level": 8,
+       "path": "CCBA",
+       "ab": [
+        -63.4146,
+        -45.2548
+       ]
+      },
+      {
+       "key": "Antwerp",
+       "level": 8,
+       "path": "CCBB",
+       "ab": [
+        -51.3032,
+        -66.2323
+       ]
+      },
+      {
+       "key": "Munich",
+       "level": 8,
+       "path": "CCBC",
+       "ab": [
+        -75.5259,
+        -66.2323
+       ]
+      },
+      {
+       "key": "Houston",
+       "level": 7,
+       "path": "AABAA",
+       "ab": [
+        19.5959,
+        107.166
+       ]
+      },
+      {
+       "key": "Copenhagen",
+       "level": 7,
+       "path": "AABAB",
+       "ab": [
+        27.0805,
+        94.2023
+       ]
+      },
+      {
+       "key": "Vienna",
+       "level": 7,
+       "path": "ACACA",
+       "ab": [
+        -43.8186,
+        65.211
+       ]
+      },
+      {
+       "key": "Seoul",
+       "level": 7,
+       "path": "ACACB",
+       "ab": [
+        -36.3341,
+        52.2473
+       ]
+      },
+      {
+       "key": "Brussels",
+       "level": 7,
+       "path": "ACCBA",
+       "ab": [
+        -39.1918,
+        31.2698
+       ]
+      },
+      {
+       "key": "Toronto",
+       "level": 7,
+       "path": "ACCBB",
+       "ab": [
+        -31.7073,
+        18.3062
+       ]
+      },
+      {
+       "key": "Shanghai",
+       "level": 7,
+       "path": "ACCBC",
+       "ab": [
+        -46.6764,
+        18.3062
+       ]
+      },
+      {
+       "key": "Cologne",
+       "level": 6,
+       "path": "AABACA",
+       "ab": [
+        12.1114,
+        99.5449
+       ]
+      },
+      {
+       "key": "Stockholm",
+       "level": 6,
+       "path": "AABACB",
+       "ab": [
+        16.7382,
+        91.531
+       ]
+      },
+      {
+       "key": "Venice",
+       "level": 6,
+       "path": "AABACC",
+       "ab": [
+        7.4846,
+        91.531
+       ]
+      },
+      {
+       "key": "Rome",
+       "level": 6,
+       "path": "ACACCA",
+       "ab": [
+        -51.3032,
+        57.5899
+       ]
+      },
+      {
+       "key": "Tokyo",
+       "level": 6,
+       "path": "ACACCB",
+       "ab": [
+        -46.6764,
+        49.576
+       ]
+      },
+      {
+       "key": "Basel",
+       "level": 6,
+       "path": "ACACCC",
+       "ab": [
+        -55.93,
+        49.576
+       ]
+      }
+     ]
+    }
+   }
+  }
+ },
+ "toy_tree_frames": {
+  "works": {
+   "K": 8,
+   "leaves": 40,
+   "openings_used": 13,
+   "joins": 13,
+   "levels_by_kind": {
+    "planet": [
+     8
+    ],
+    "city": [
+     7
+    ],
+    "place": [
+     6
+    ],
+    "work": [
+     5
+    ],
+    "record": [
+     4,
+     3,
+     2
+    ]
+   },
+   "frames": [
+    {
+     "key": "the planet",
+     "kind": "planet",
+     "level": 8,
+     "path": "",
+     "inverted": false,
+     "ab": [
+      0.0,
+      0.0
+     ],
+     "scale_of_drawing": 18.0
+    },
+    {
+     "key": "New York",
+     "kind": "city",
+     "level": 7,
+     "path": "A",
+     "inverted": false,
+     "ab": [
+      0.0,
+      8.64242
+     ],
+     "scale_of_drawing": 11.125
+    },
+    {
+     "key": "The Metropolitan Museum of Art",
+     "kind": "place",
+     "level": 6,
+     "path": "AA",
+     "inverted": false,
+     "ab": [
+      0.0,
+      13.985
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Celia Thaxter's Garden, Isles of Shoals, Maine",
+     "kind": "work",
+     "level": 5,
+     "path": "AAA",
+     "inverted": false,
+     "ab": [
+      0.0,
+      17.28483
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "The Lake of Zug",
+     "kind": "work",
+     "level": 5,
+     "path": "AAB",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      12.33508
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Improvisation 27 (Garden of Love II)",
+     "kind": "work",
+     "level": 5,
+     "path": "AAC",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      12.33508
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "The Metropolitan Museum of Art (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "AAG",
+     "inverted": true,
+     "ab": [
+      0.0,
+      13.985
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "The Museum of Modern Art",
+     "kind": "place",
+     "level": 6,
+     "path": "AB",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      5.97112
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Ritmo de ciudad (City rhythm)",
+     "kind": "work",
+     "level": 5,
+     "path": "ABA",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      9.27096
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Starry Night",
+     "kind": "work",
+     "level": 5,
+     "path": "ABB",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975",
+     "kind": "work",
+     "level": 5,
+     "path": "ABC",
+     "inverted": false,
+     "ab": [
+      1.76908,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "The Museum of Modern Art (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "ABG",
+     "inverted": true,
+     "ab": [
+      4.62681,
+      5.97112
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Guggenheim Museum",
+     "kind": "place",
+     "level": 6,
+     "path": "AC",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      5.97112
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Alchemy",
+     "kind": "work",
+     "level": 5,
+     "path": "ACA",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      9.27096
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Rendering for Aten Reign",
+     "kind": "work",
+     "level": 5,
+     "path": "ACB",
+     "inverted": false,
+     "ab": [
+      -1.76908,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Enemy's Enemy: Monument to a Monument (detail)",
+     "kind": "work",
+     "level": 5,
+     "path": "ACC",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Guggenheim Museum (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "ACG",
+     "inverted": true,
+     "ab": [
+      -4.62681,
+      5.97112
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "New York (itself)",
+     "kind": "record",
+     "level": 3,
+     "path": "AG",
+     "inverted": true,
+     "ab": [
+      0.0,
+      8.64242
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "Paris",
+     "kind": "city",
+     "level": 7,
+     "path": "B",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      -4.32121
+     ],
+     "scale_of_drawing": 11.125
+    },
+    {
+     "key": "Centre Pompidou",
+     "kind": "place",
+     "level": 6,
+     "path": "BA",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      1.02138
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Untitled",
+     "kind": "work",
+     "level": 5,
+     "path": "BAA",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Le Poisson",
+     "kind": "work",
+     "level": 5,
+     "path": "BAB",
+     "inverted": false,
+     "ab": [
+      10.34229,
+      -0.62854
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Animal n\u00b0 6",
+     "kind": "work",
+     "level": 5,
+     "path": "BAC",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      -0.62854
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Centre Pompidou (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "BAG",
+     "inverted": true,
+     "ab": [
+      7.48455,
+      1.02138
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Mus\u00e9e d'Orsay",
+     "kind": "place",
+     "level": 6,
+     "path": "BB",
+     "inverted": false,
+     "ab": [
+      12.11137,
+      -6.9925
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Le d\u00e9fil\u00e9",
+     "kind": "work",
+     "level": 5,
+     "path": "BBA",
+     "inverted": false,
+     "ab": [
+      12.11137,
+      -3.69267
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "The Floor Scrapers",
+     "kind": "work",
+     "level": 5,
+     "path": "BBB",
+     "inverted": false,
+     "ab": [
+      14.9691,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Self-Portrait",
+     "kind": "work",
+     "level": 5,
+     "path": "BBC",
+     "inverted": false,
+     "ab": [
+      9.25363,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Mus\u00e9e d'Orsay (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "BBG",
+     "inverted": true,
+     "ab": [
+      12.11137,
+      -6.9925
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Mus\u00e9e Picasso Paris",
+     "kind": "place",
+     "level": 6,
+     "path": "BC",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      -6.9925
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Violin with sheet of music",
+     "kind": "work",
+     "level": 5,
+     "path": "BCA",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      -3.69267
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Autoportrait (Self-portrait)",
+     "kind": "work",
+     "level": 5,
+     "path": "BCB",
+     "inverted": false,
+     "ab": [
+      5.71548,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair)",
+     "kind": "work",
+     "level": 5,
+     "path": "BCC",
+     "inverted": false,
+     "ab": [
+      -0.0,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Mus\u00e9e Picasso Paris (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "BCG",
+     "inverted": true,
+     "ab": [
+      2.85774,
+      -6.9925
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Paris (itself)",
+     "kind": "record",
+     "level": 3,
+     "path": "BG",
+     "inverted": true,
+     "ab": [
+      7.48455,
+      -4.32121
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "Amsterdam",
+     "kind": "city",
+     "level": 7,
+     "path": "C",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      -4.32121
+     ],
+     "scale_of_drawing": 11.125
+    },
+    {
+     "key": "Van Gogh Museum",
+     "kind": "place",
+     "level": 6,
+     "path": "CA",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      1.02138
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "The Harvest",
+     "kind": "work",
+     "level": 5,
+     "path": "CAA",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Wheatfield under Thunderclouds",
+     "kind": "work",
+     "level": 5,
+     "path": "CAB",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      -0.62854
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "The Invader",
+     "kind": "work",
+     "level": 5,
+     "path": "CAC",
+     "inverted": false,
+     "ab": [
+      -10.34229,
+      -0.62854
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Van Gogh Museum (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "CAG",
+     "inverted": true,
+     "ab": [
+      -7.48455,
+      1.02138
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Rijksmuseum",
+     "kind": "place",
+     "level": 6,
+     "path": "CB",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      -6.9925
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "The Milkmaid",
+     "kind": "work",
+     "level": 5,
+     "path": "CBA",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      -3.69267
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "The Sower",
+     "kind": "work",
+     "level": 5,
+     "path": "CBB",
+     "inverted": false,
+     "ab": [
+      0.0,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "River Landscape with Riders",
+     "kind": "work",
+     "level": 5,
+     "path": "CBC",
+     "inverted": false,
+     "ab": [
+      -5.71548,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Rijksmuseum (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "CBG",
+     "inverted": true,
+     "ab": [
+      -2.85774,
+      -6.9925
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Stedelijk Museum Amsterdam",
+     "kind": "place",
+     "level": 6,
+     "path": "CC",
+     "inverted": false,
+     "ab": [
+      -12.11137,
+      -6.9925
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Superficie bianca",
+     "kind": "work",
+     "level": 5,
+     "path": "CCA",
+     "inverted": false,
+     "ab": [
+      -12.11137,
+      -3.69267
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "The North Atlantic Light",
+     "kind": "work",
+     "level": 5,
+     "path": "CCB",
+     "inverted": false,
+     "ab": [
+      -9.25363,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Mach dich h\u00fcbsch!",
+     "kind": "work",
+     "level": 5,
+     "path": "CCC",
+     "inverted": false,
+     "ab": [
+      -14.9691,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "Stedelijk Museum Amsterdam (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "CCG",
+     "inverted": true,
+     "ab": [
+      -12.11137,
+      -6.9925
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Amsterdam (itself)",
+     "kind": "record",
+     "level": 3,
+     "path": "CG",
+     "inverted": true,
+     "ab": [
+      -7.48455,
+      -4.32121
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "the planet (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "G",
+     "inverted": true,
+     "ab": [
+      0.0,
+      0.0
+     ],
+     "scale_of_drawing": 2.625
+    }
+   ]
+  },
+  "details": {
+   "K": 8,
+   "leaves": 148,
+   "openings_used": 13,
+   "joins": 67,
+   "levels_by_kind": {
+    "planet": [
+     8
+    ],
+    "city": [
+     7
+    ],
+    "place": [
+     6
+    ],
+    "work": [
+     5
+    ],
+    "detail": [
+     4,
+     3
+    ],
+    "record": [
+     4,
+     3,
+     2
+    ]
+   },
+   "frames": [
+    {
+     "key": "the planet",
+     "kind": "planet",
+     "level": 8,
+     "path": "",
+     "inverted": false,
+     "ab": [
+      0.0,
+      0.0
+     ],
+     "scale_of_drawing": 18.0
+    },
+    {
+     "key": "New York",
+     "kind": "city",
+     "level": 7,
+     "path": "A",
+     "inverted": false,
+     "ab": [
+      0.0,
+      8.64242
+     ],
+     "scale_of_drawing": 11.125
+    },
+    {
+     "key": "The Metropolitan Museum of Art",
+     "kind": "place",
+     "level": 6,
+     "path": "AA",
+     "inverted": false,
+     "ab": [
+      0.0,
+      13.985
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Celia Thaxter's Garden, Isles of Shoals, Maine",
+     "kind": "work",
+     "level": 5,
+     "path": "AAA",
+     "inverted": false,
+     "ab": [
+      0.0,
+      17.28483
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Celia Thaxter's Garden, Isles of Shoals, Maine",
+     "kind": "detail",
+     "level": 3,
+     "path": "AAAAA",
+     "inverted": false,
+     "ab": [
+      0.0,
+      20.58466
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Childe Hassam",
+     "kind": "detail",
+     "level": 3,
+     "path": "AAAAB",
+     "inverted": false,
+     "ab": [
+      1.08866,
+      18.69905
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1890",
+     "kind": "detail",
+     "level": 3,
+     "path": "AAAAC",
+     "inverted": false,
+     "ab": [
+      -1.08866,
+      18.69905
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "AAAB",
+     "inverted": false,
+     "ab": [
+      1.76908,
+      16.26346
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Celia Thaxter's Garden, Isles of Shoals, Maine (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "AAAC",
+     "inverted": false,
+     "ab": [
+      -1.76908,
+      16.26346
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Lake of Zug",
+     "kind": "work",
+     "level": 5,
+     "path": "AAB",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      12.33508
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: The Lake of Zug",
+     "kind": "detail",
+     "level": 3,
+     "path": "AABAA",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      15.63492
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: J. M. W. Turner",
+     "kind": "detail",
+     "level": 3,
+     "path": "AABAB",
+     "inverted": false,
+     "ab": [
+      3.9464,
+      13.7493
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1843",
+     "kind": "detail",
+     "level": 3,
+     "path": "AABAC",
+     "inverted": false,
+     "ab": [
+      1.76908,
+      13.7493
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Watercolor over graphite",
+     "kind": "detail",
+     "level": 4,
+     "path": "AABB",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      11.31371
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Lake of Zug (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "AABC",
+     "inverted": false,
+     "ab": [
+      1.08866,
+      11.31371
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Improvisation 27 (Garden of Love II)",
+     "kind": "work",
+     "level": 5,
+     "path": "AAC",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      12.33508
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Improvisation 27 (Garden of Love II)",
+     "kind": "detail",
+     "level": 3,
+     "path": "AACAA",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      15.63492
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Wassily Kandinsky",
+     "kind": "detail",
+     "level": 3,
+     "path": "AACAB",
+     "inverted": false,
+     "ab": [
+      -1.76908,
+      13.7493
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1912",
+     "kind": "detail",
+     "level": 3,
+     "path": "AACAC",
+     "inverted": false,
+     "ab": [
+      -3.9464,
+      13.7493
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "AACB",
+     "inverted": false,
+     "ab": [
+      -1.08866,
+      11.31371
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Improvisation 27 (Garden of Love II) (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "AACC",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      11.31371
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Metropolitan Museum of Art (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "AAG",
+     "inverted": true,
+     "ab": [
+      0.0,
+      13.985
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "The Museum of Modern Art",
+     "kind": "place",
+     "level": 6,
+     "path": "AB",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      5.97112
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Ritmo de ciudad (City rhythm)",
+     "kind": "work",
+     "level": 5,
+     "path": "ABA",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      9.27096
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Ritmo de ciudad (City rhythm)",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABAAA",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      12.57079
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Joaqu\u00edn Torres-Garc\u00eda",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABAAB",
+     "inverted": false,
+     "ab": [
+      5.71548,
+      10.68517
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1918",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABAAC",
+     "inverted": false,
+     "ab": [
+      3.53815,
+      10.68517
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on board",
+     "kind": "detail",
+     "level": 4,
+     "path": "ABAB",
+     "inverted": false,
+     "ab": [
+      6.39589,
+      8.24958
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Ritmo de ciudad (City rhythm) (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "ABAC",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      8.24958
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Starry Night",
+     "kind": "work",
+     "level": 5,
+     "path": "ABB",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Starry Night",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABBAA",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      7.62104
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Vincent van Gogh",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABBAB",
+     "inverted": false,
+     "ab": [
+      8.57321,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1889",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABBAC",
+     "inverted": false,
+     "ab": [
+      6.39589,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "ABBB",
+     "inverted": false,
+     "ab": [
+      9.25363,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Starry Night (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "ABBC",
+     "inverted": false,
+     "ab": [
+      5.71548,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975",
+     "kind": "work",
+     "level": 5,
+     "path": "ABC",
+     "inverted": false,
+     "ab": [
+      1.76908,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABCAA",
+     "inverted": false,
+     "ab": [
+      1.76908,
+      7.62104
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Stephen Shore",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABCAB",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1975",
+     "kind": "detail",
+     "level": 3,
+     "path": "ABCAC",
+     "inverted": false,
+     "ab": [
+      0.68041,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Chromogenic color print",
+     "kind": "detail",
+     "level": 4,
+     "path": "ABCB",
+     "inverted": false,
+     "ab": [
+      3.53815,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975 (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "ABCC",
+     "inverted": false,
+     "ab": [
+      0.0,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Museum of Modern Art (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "ABG",
+     "inverted": true,
+     "ab": [
+      4.62681,
+      5.97112
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Guggenheim Museum",
+     "kind": "place",
+     "level": 6,
+     "path": "AC",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      5.97112
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Alchemy",
+     "kind": "work",
+     "level": 5,
+     "path": "ACA",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      9.27096
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Alchemy",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACAAA",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      12.57079
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Jackson Pollock",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACAAB",
+     "inverted": false,
+     "ab": [
+      -3.53815,
+      10.68517
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1947",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACAAC",
+     "inverted": false,
+     "ab": [
+      -5.71548,
+      10.68517
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil, aluminum, alkyd enamel paint with sand, pebbles, fibers, and broken wooden sticks on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "ACAB",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      8.24958
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Alchemy (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "ACAC",
+     "inverted": false,
+     "ab": [
+      -6.39589,
+      8.24958
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Rendering for Aten Reign",
+     "kind": "work",
+     "level": 5,
+     "path": "ACB",
+     "inverted": false,
+     "ab": [
+      -1.76908,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Rendering for Aten Reign",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACBAA",
+     "inverted": false,
+     "ab": [
+      -1.76908,
+      7.62104
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: James Turrell",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACBAB",
+     "inverted": false,
+     "ab": [
+      -0.68041,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 2013",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACBAC",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Daylight and LED light",
+     "kind": "detail",
+     "level": 4,
+     "path": "ACBB",
+     "inverted": false,
+     "ab": [
+      -0.0,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Rendering for Aten Reign (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "ACBC",
+     "inverted": false,
+     "ab": [
+      -3.53815,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Enemy's Enemy: Monument to a Monument (detail)",
+     "kind": "work",
+     "level": 5,
+     "path": "ACC",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Enemy's Enemy: Monument to a Monument (detail)",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACCAA",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      7.62104
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Tuan Andrew Nguyen",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACCAB",
+     "inverted": false,
+     "ab": [
+      -6.39589,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 2012",
+     "kind": "detail",
+     "level": 3,
+     "path": "ACCAC",
+     "inverted": false,
+     "ab": [
+      -8.57321,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Wood",
+     "kind": "detail",
+     "level": 4,
+     "path": "ACCB",
+     "inverted": false,
+     "ab": [
+      -5.71548,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Enemy's Enemy: Monument to a Monument (detail) (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "ACCC",
+     "inverted": false,
+     "ab": [
+      -9.25363,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Guggenheim Museum (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "ACG",
+     "inverted": true,
+     "ab": [
+      -4.62681,
+      5.97112
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "New York (itself)",
+     "kind": "record",
+     "level": 3,
+     "path": "AG",
+     "inverted": true,
+     "ab": [
+      0.0,
+      8.64242
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "Paris",
+     "kind": "city",
+     "level": 7,
+     "path": "B",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      -4.32121
+     ],
+     "scale_of_drawing": 11.125
+    },
+    {
+     "key": "Centre Pompidou",
+     "kind": "place",
+     "level": 6,
+     "path": "BA",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      1.02138
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Untitled",
+     "kind": "work",
+     "level": 5,
+     "path": "BAA",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Untitled",
+     "kind": "detail",
+     "level": 3,
+     "path": "BAAAA",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      7.62104
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Karel Appel",
+     "kind": "detail",
+     "level": 3,
+     "path": "BAAAB",
+     "inverted": false,
+     "ab": [
+      8.57321,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 2006",
+     "kind": "detail",
+     "level": 3,
+     "path": "BAAAC",
+     "inverted": false,
+     "ab": [
+      6.39589,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Acrylic and oil stick on paper",
+     "kind": "detail",
+     "level": 4,
+     "path": "BAAB",
+     "inverted": false,
+     "ab": [
+      9.25363,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Untitled (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BAAC",
+     "inverted": false,
+     "ab": [
+      5.71548,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Le Poisson",
+     "kind": "work",
+     "level": 5,
+     "path": "BAB",
+     "inverted": false,
+     "ab": [
+      10.34229,
+      -0.62854
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Le Poisson",
+     "kind": "detail",
+     "level": 3,
+     "path": "BABAA",
+     "inverted": false,
+     "ab": [
+      10.34229,
+      2.67129
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Karel Appel",
+     "kind": "detail",
+     "level": 3,
+     "path": "BABAB",
+     "inverted": false,
+     "ab": [
+      11.43095,
+      0.78567
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1947",
+     "kind": "detail",
+     "level": 3,
+     "path": "BABAC",
+     "inverted": false,
+     "ab": [
+      9.25363,
+      0.78567
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Gouache on paper",
+     "kind": "detail",
+     "level": 4,
+     "path": "BABB",
+     "inverted": false,
+     "ab": [
+      12.11137,
+      -1.64992
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Le Poisson (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BABC",
+     "inverted": false,
+     "ab": [
+      8.57321,
+      -1.64992
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Animal n\u00b0 6",
+     "kind": "work",
+     "level": 5,
+     "path": "BAC",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      -0.62854
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Animal n\u00b0 6",
+     "kind": "detail",
+     "level": 3,
+     "path": "BACAA",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      2.67129
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Karel Appel",
+     "kind": "detail",
+     "level": 3,
+     "path": "BACAB",
+     "inverted": false,
+     "ab": [
+      5.71548,
+      0.78567
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1951",
+     "kind": "detail",
+     "level": 3,
+     "path": "BACAC",
+     "inverted": false,
+     "ab": [
+      3.53815,
+      0.78567
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Gouache and pencil on paper",
+     "kind": "detail",
+     "level": 4,
+     "path": "BACB",
+     "inverted": false,
+     "ab": [
+      6.39589,
+      -1.64992
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Animal n\u00b0 6 (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BACC",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      -1.64992
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Centre Pompidou (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "BAG",
+     "inverted": true,
+     "ab": [
+      7.48455,
+      1.02138
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Mus\u00e9e d'Orsay",
+     "kind": "place",
+     "level": 6,
+     "path": "BB",
+     "inverted": false,
+     "ab": [
+      12.11137,
+      -6.9925
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Le d\u00e9fil\u00e9",
+     "kind": "work",
+     "level": 5,
+     "path": "BBA",
+     "inverted": false,
+     "ab": [
+      12.11137,
+      -3.69267
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Le d\u00e9fil\u00e9",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBAAA",
+     "inverted": false,
+     "ab": [
+      12.11137,
+      -0.39284
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Edgar Degas",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBAAB",
+     "inverted": false,
+     "ab": [
+      13.20003,
+      -2.27846
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1866-1888",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBAAC",
+     "inverted": false,
+     "ab": [
+      11.0227,
+      -2.27846
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on paper mounted on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "BBAB",
+     "inverted": false,
+     "ab": [
+      13.88044,
+      -4.71405
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Le d\u00e9fil\u00e9 (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BBAC",
+     "inverted": false,
+     "ab": [
+      10.34229,
+      -4.71405
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Floor Scrapers",
+     "kind": "work",
+     "level": 5,
+     "path": "BBB",
+     "inverted": false,
+     "ab": [
+      14.9691,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: The Floor Scrapers",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBBAA",
+     "inverted": false,
+     "ab": [
+      14.9691,
+      -5.34258
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Gustave Caillebotte",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBBAB",
+     "inverted": false,
+     "ab": [
+      16.05777,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1875",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBBAC",
+     "inverted": false,
+     "ab": [
+      13.88044,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on Canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "BBBB",
+     "inverted": false,
+     "ab": [
+      16.73818,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Floor Scrapers (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BBBC",
+     "inverted": false,
+     "ab": [
+      13.20003,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Self-Portrait",
+     "kind": "work",
+     "level": 5,
+     "path": "BBC",
+     "inverted": false,
+     "ab": [
+      9.25363,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Self-Portrait",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBCAA",
+     "inverted": false,
+     "ab": [
+      9.25363,
+      -5.34258
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Vincent van Gogh",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBCAB",
+     "inverted": false,
+     "ab": [
+      10.34229,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1889",
+     "kind": "detail",
+     "level": 3,
+     "path": "BBCAC",
+     "inverted": false,
+     "ab": [
+      8.16497,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "BBCB",
+     "inverted": false,
+     "ab": [
+      11.0227,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Self-Portrait (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BBCC",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Mus\u00e9e d'Orsay (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "BBG",
+     "inverted": true,
+     "ab": [
+      12.11137,
+      -6.9925
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Mus\u00e9e Picasso Paris",
+     "kind": "place",
+     "level": 6,
+     "path": "BC",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      -6.9925
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Violin with sheet of music",
+     "kind": "work",
+     "level": 5,
+     "path": "BCA",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      -3.69267
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Violin with sheet of music",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCAAA",
+     "inverted": false,
+     "ab": [
+      2.85774,
+      -0.39284
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Pablo Picasso",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCAAB",
+     "inverted": false,
+     "ab": [
+      3.9464,
+      -2.27846
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: Autumn-1912",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCAAC",
+     "inverted": false,
+     "ab": [
+      1.76908,
+      -2.27846
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Paper Collage",
+     "kind": "detail",
+     "level": 4,
+     "path": "BCAB",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      -4.71405
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Violin with sheet of music (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BCAC",
+     "inverted": false,
+     "ab": [
+      1.08866,
+      -4.71405
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Autoportrait (Self-portrait)",
+     "kind": "work",
+     "level": 5,
+     "path": "BCB",
+     "inverted": false,
+     "ab": [
+      5.71548,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Autoportrait (Self-portrait)",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCBAA",
+     "inverted": false,
+     "ab": [
+      5.71548,
+      -5.34258
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Alberto Giacometti",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCBAB",
+     "inverted": false,
+     "ab": [
+      6.80414,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1921",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCBAC",
+     "inverted": false,
+     "ab": [
+      4.62681,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "BCBB",
+     "inverted": false,
+     "ab": [
+      7.48455,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Autoportrait (Self-portrait) (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BCBC",
+     "inverted": false,
+     "ab": [
+      3.9464,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair)",
+     "kind": "work",
+     "level": 5,
+     "path": "BCC",
+     "inverted": false,
+     "ab": [
+      -0.0,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair)",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCCAA",
+     "inverted": false,
+     "ab": [
+      -0.0,
+      -5.34258
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Pablo Picasso",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCCAB",
+     "inverted": false,
+     "ab": [
+      1.08866,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1918",
+     "kind": "detail",
+     "level": 3,
+     "path": "BCCAC",
+     "inverted": false,
+     "ab": [
+      -1.08866,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "BCCB",
+     "inverted": false,
+     "ab": [
+      1.76908,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair) (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "BCCC",
+     "inverted": false,
+     "ab": [
+      -1.76908,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Mus\u00e9e Picasso Paris (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "BCG",
+     "inverted": true,
+     "ab": [
+      2.85774,
+      -6.9925
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Paris (itself)",
+     "kind": "record",
+     "level": 3,
+     "path": "BG",
+     "inverted": true,
+     "ab": [
+      7.48455,
+      -4.32121
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "Amsterdam",
+     "kind": "city",
+     "level": 7,
+     "path": "C",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      -4.32121
+     ],
+     "scale_of_drawing": 11.125
+    },
+    {
+     "key": "Van Gogh Museum",
+     "kind": "place",
+     "level": 6,
+     "path": "CA",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      1.02138
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "The Harvest",
+     "kind": "work",
+     "level": 5,
+     "path": "CAA",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      4.32121
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: The Harvest",
+     "kind": "detail",
+     "level": 3,
+     "path": "CAAAA",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      7.62104
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Vincent van Gogh",
+     "kind": "detail",
+     "level": 3,
+     "path": "CAAAB",
+     "inverted": false,
+     "ab": [
+      -6.39589,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1888",
+     "kind": "detail",
+     "level": 3,
+     "path": "CAAAC",
+     "inverted": false,
+     "ab": [
+      -8.57321,
+      5.73542
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "CAAB",
+     "inverted": false,
+     "ab": [
+      -5.71548,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Harvest (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CAAC",
+     "inverted": false,
+     "ab": [
+      -9.25363,
+      3.29983
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Wheatfield under Thunderclouds",
+     "kind": "work",
+     "level": 5,
+     "path": "CAB",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      -0.62854
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Wheatfield under Thunderclouds",
+     "kind": "detail",
+     "level": 3,
+     "path": "CABAA",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      2.67129
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Vincent van Gogh",
+     "kind": "detail",
+     "level": 3,
+     "path": "CABAB",
+     "inverted": false,
+     "ab": [
+      -3.53815,
+      0.78567
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1890",
+     "kind": "detail",
+     "level": 3,
+     "path": "CABAC",
+     "inverted": false,
+     "ab": [
+      -5.71548,
+      0.78567
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "CABB",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      -1.64992
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Wheatfield under Thunderclouds (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CABC",
+     "inverted": false,
+     "ab": [
+      -6.39589,
+      -1.64992
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Invader",
+     "kind": "work",
+     "level": 5,
+     "path": "CAC",
+     "inverted": false,
+     "ab": [
+      -10.34229,
+      -0.62854
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: The Invader",
+     "kind": "detail",
+     "level": 3,
+     "path": "CACAA",
+     "inverted": false,
+     "ab": [
+      -10.34229,
+      2.67129
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Micha\u00ebl Borremans",
+     "kind": "detail",
+     "level": 3,
+     "path": "CACAB",
+     "inverted": false,
+     "ab": [
+      -9.25363,
+      0.78567
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 2010",
+     "kind": "detail",
+     "level": 3,
+     "path": "CACAC",
+     "inverted": false,
+     "ab": [
+      -11.43095,
+      0.78567
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "CACB",
+     "inverted": false,
+     "ab": [
+      -8.57321,
+      -1.64992
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Invader (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CACC",
+     "inverted": false,
+     "ab": [
+      -12.11137,
+      -1.64992
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Van Gogh Museum (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "CAG",
+     "inverted": true,
+     "ab": [
+      -7.48455,
+      1.02138
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Rijksmuseum",
+     "kind": "place",
+     "level": 6,
+     "path": "CB",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      -6.9925
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "The Milkmaid",
+     "kind": "work",
+     "level": 5,
+     "path": "CBA",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      -3.69267
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: The Milkmaid",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBAAA",
+     "inverted": false,
+     "ab": [
+      -2.85774,
+      -0.39284
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Johannes Vermeer",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBAAB",
+     "inverted": false,
+     "ab": [
+      -1.76908,
+      -2.27846
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1658-1660",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBAAC",
+     "inverted": false,
+     "ab": [
+      -3.9464,
+      -2.27846
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "CBAB",
+     "inverted": false,
+     "ab": [
+      -1.08866,
+      -4.71405
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Milkmaid (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CBAC",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      -4.71405
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Sower",
+     "kind": "work",
+     "level": 5,
+     "path": "CBB",
+     "inverted": false,
+     "ab": [
+      0.0,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: The Sower",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBBAA",
+     "inverted": false,
+     "ab": [
+      0.0,
+      -5.34258
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Vincent van Gogh",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBBAB",
+     "inverted": false,
+     "ab": [
+      1.08866,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1888",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBBAC",
+     "inverted": false,
+     "ab": [
+      -1.08866,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "CBBB",
+     "inverted": false,
+     "ab": [
+      1.76908,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The Sower (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CBBC",
+     "inverted": false,
+     "ab": [
+      -1.76908,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "River Landscape with Riders",
+     "kind": "work",
+     "level": 5,
+     "path": "CBC",
+     "inverted": false,
+     "ab": [
+      -5.71548,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: River Landscape with Riders",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBCAA",
+     "inverted": false,
+     "ab": [
+      -5.71548,
+      -5.34258
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Aelbert Cuyp",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBCAB",
+     "inverted": false,
+     "ab": [
+      -4.62681,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1653 -1657",
+     "kind": "detail",
+     "level": 3,
+     "path": "CBCAC",
+     "inverted": false,
+     "ab": [
+      -6.80414,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "CBCB",
+     "inverted": false,
+     "ab": [
+      -3.9464,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "River Landscape with Riders (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CBCC",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Rijksmuseum (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "CBG",
+     "inverted": true,
+     "ab": [
+      -2.85774,
+      -6.9925
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Stedelijk Museum Amsterdam",
+     "kind": "place",
+     "level": 6,
+     "path": "CC",
+     "inverted": false,
+     "ab": [
+      -12.11137,
+      -6.9925
+     ],
+     "scale_of_drawing": 6.875
+    },
+    {
+     "key": "Superficie bianca",
+     "kind": "work",
+     "level": 5,
+     "path": "CCA",
+     "inverted": false,
+     "ab": [
+      -12.11137,
+      -3.69267
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Superficie bianca",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCAAA",
+     "inverted": false,
+     "ab": [
+      -12.11137,
+      -0.39284
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Enrico Castellani",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCAAB",
+     "inverted": false,
+     "ab": [
+      -11.0227,
+      -2.27846
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1963",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCAAC",
+     "inverted": false,
+     "ab": [
+      -13.20003,
+      -2.27846
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: ",
+     "kind": "detail",
+     "level": 4,
+     "path": "CCAB",
+     "inverted": false,
+     "ab": [
+      -10.34229,
+      -4.71405
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Superficie bianca (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CCAC",
+     "inverted": false,
+     "ab": [
+      -13.88044,
+      -4.71405
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The North Atlantic Light",
+     "kind": "work",
+     "level": 5,
+     "path": "CCB",
+     "inverted": false,
+     "ab": [
+      -9.25363,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: The North Atlantic Light",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCBAA",
+     "inverted": false,
+     "ab": [
+      -9.25363,
+      -5.34258
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Willem de Kooning",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCBAB",
+     "inverted": false,
+     "ab": [
+      -8.16497,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 1977",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCBAC",
+     "inverted": false,
+     "ab": [
+      -10.34229,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Oil on canvas",
+     "kind": "detail",
+     "level": 4,
+     "path": "CCBB",
+     "inverted": false,
+     "ab": [
+      -7.48455,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "The North Atlantic Light (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CCBC",
+     "inverted": false,
+     "ab": [
+      -11.0227,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Mach dich h\u00fcbsch!",
+     "kind": "work",
+     "level": 5,
+     "path": "CCC",
+     "inverted": false,
+     "ab": [
+      -14.9691,
+      -8.64242
+     ],
+     "scale_of_drawing": 4.25
+    },
+    {
+     "key": "title: Mach dich h\u00fcbsch!",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCCAA",
+     "inverted": false,
+     "ab": [
+      -14.9691,
+      -5.34258
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "artist: Isa Genzken",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCCAB",
+     "inverted": false,
+     "ab": [
+      -13.88044,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "year: 2000",
+     "kind": "detail",
+     "level": 3,
+     "path": "CCCAC",
+     "inverted": false,
+     "ab": [
+      -16.05777,
+      -7.2282
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "medium: Cardboard, printed paper, newsprint, photographs, transparent foil, stamps, stickers, adhesive tape, fabric tape, felt pen, and ball point pen",
+     "kind": "detail",
+     "level": 4,
+     "path": "CCCB",
+     "inverted": false,
+     "ab": [
+      -13.20003,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Mach dich h\u00fcbsch! (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "CCCC",
+     "inverted": false,
+     "ab": [
+      -16.73818,
+      -9.66379
+     ],
+     "scale_of_drawing": 2.625
+    },
+    {
+     "key": "Stedelijk Museum Amsterdam (itself)",
+     "kind": "record",
+     "level": 2,
+     "path": "CCG",
+     "inverted": true,
+     "ab": [
+      -12.11137,
+      -6.9925
+     ],
+     "scale_of_drawing": 1.0
+    },
+    {
+     "key": "Amsterdam (itself)",
+     "kind": "record",
+     "level": 3,
+     "path": "CG",
+     "inverted": true,
+     "ab": [
+      -7.48455,
+      -4.32121
+     ],
+     "scale_of_drawing": 1.625
+    },
+    {
+     "key": "the planet (itself)",
+     "kind": "record",
+     "level": 4,
+     "path": "G",
+     "inverted": true,
+     "ab": [
+      0.0,
+      0.0
+     ],
+     "scale_of_drawing": 2.625
+    }
+   ]
+  }
+ },
+ "files": {
+  "code": [
+   "ladder.py",
+   "nest.py",
+   "lv.py",
+   "drawing2d.py",
+   "info.py"
+  ],
+  "checks": [
+   "q_ladder.json",
+   "q_ladder_closure.json",
+   "q_rules3.json",
+   "q_a3.json",
+   "q_holes.json",
+   "q_on.json"
+  ],
+  "renders": [
+   "ladder_drawing.png",
+   "ladder_joints.png",
+   "ladder_views.png",
+   "tree3_details_levels.png",
+   "tree3_works_levels.png",
+   "planet_lattice.png"
+  ]
+ }
+}

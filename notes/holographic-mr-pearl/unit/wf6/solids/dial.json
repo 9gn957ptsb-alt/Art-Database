@@ -1,0 +1,267 @@
+{
+ "figure": [
+  {
+   "H": 0.1111111111111111,
+   "sixH": 0.6666666666666666,
+   "tone_iou_vs_hexagon": 0.27900744416873446,
+   "silhouette_iou": 0.6177667493796526,
+   "hex_edge": 0.8899999999999999,
+   "convex": true,
+   "drawn_area": 1.887,
+   "tone_fractions": [
+    0.3478537360890302,
+    0.33555908850026495,
+    0.3165871754107048
+   ],
+   "volume": 0.4800204332418839,
+   "bbox_volume": 10.973936899862828,
+   "volume_fill_of_bbox": 0.043741861979166664
+  },
+  {
+   "H": 0.125,
+   "sixH": 0.75,
+   "tone_iou_vs_hexagon": 0.2967901927755942,
+   "silhouette_iou": 0.650945161894067,
+   "hex_edge": 0.9199999999999999,
+   "convex": true,
+   "drawn_area": 2.0632,
+   "tone_fractions": [
+    0.3501357115160915,
+    0.3355951919348585,
+    0.31426909654905
+   ],
+   "volume": 0.523223876953125,
+   "bbox_volume": 11.390625,
+   "volume_fill_of_bbox": 0.04593460648148148
+  },
+  {
+   "H": 0.14,
+   "sixH": 0.8400000000000001,
+   "tone_iou_vs_hexagon": 0.3118820621468927,
+   "silhouette_iou": 0.6743467514124294,
+   "hex_edge": 0.95,
+   "convex": true,
+   "drawn_area": 2.233,
+   "tone_fractions": [
+    0.35391849529780567,
+    0.33452754142409313,
+    0.3115539632781012
+   ],
+   "volume": 0.7291974375000002,
+   "bbox_volume": 11.852352000000003,
+   "volume_fill_of_bbox": 0.0615234375
+  },
+  {
+   "H": 0.155,
+   "sixH": 0.9299999999999999,
+   "tone_iou_vs_hexagon": 0.3239759739718028,
+   "silhouette_iou": 0.6878284808542587,
+   "hex_edge": 0.98,
+   "convex": true,
+   "drawn_area": 2.3876,
+   "tone_fractions": [
+    0.3577232367230692,
+    0.33359859272910036,
+    0.3086781705478305
+   ],
+   "volume": 0.7892916112060546,
+   "bbox_volume": 12.326391,
+   "volume_fill_of_bbox": 0.06403266059027778
+  },
+  {
+   "H": 0.16666666666666666,
+   "sixH": 1.0,
+   "tone_iou_vs_hexagon": 0.3333333333333333,
+   "silhouette_iou": 0.69339059890241,
+   "hex_edge": 1.005,
+   "convex": true,
+   "drawn_area": 2.5098000000000003,
+   "tone_fractions": [
+    0.35795680930751456,
+    0.33560443063192286,
+    0.3064387600605626
+   ],
+   "volume": 1.038482289255401,
+   "bbox_volume": 12.703703703703702,
+   "volume_fill_of_bbox": 0.08174641927083333
+  },
+  {
+   "H": 0.2,
+   "sixH": 1.2000000000000002,
+   "tone_iou_vs_hexagon": 0.35583993212669685,
+   "silhouette_iou": 0.7007211538461539,
+   "hex_edge": 1.0699999999999998,
+   "convex": true,
+   "drawn_area": 2.8222,
+   "tone_fractions": [
+    0.3679753383884912,
+    0.3306640209765431,
+    0.30136064063496565
+   ],
+   "volume": 1.4400000000000002,
+   "bbox_volume": 13.824000000000002,
+   "volume_fill_of_bbox": 0.10416666666666667
+  },
+  {
+   "H": 0.25,
+   "sixH": 1.5,
+   "tone_iou_vs_hexagon": 0.3578593308907442,
+   "silhouette_iou": 0.7113340140548982,
+   "hex_edge": 1.17,
+   "convex": true,
+   "drawn_area": 3.3224000000000005,
+   "tone_fractions": [
+    0.39101252106910667,
+    0.3064652058752709,
+    0.30252227305562246
+   ],
+   "volume": 2.4159749348958335,
+   "bbox_volume": 15.625,
+   "volume_fill_of_bbox": 0.15462239583333334
+  },
+  {
+   "H": 0.3333333333333333,
+   "sixH": 2.0,
+   "tone_iou_vs_hexagon": 0.37614538790470375,
+   "silhouette_iou": 0.7348372458329697,
+   "hex_edge": 1.4649999999999999,
+   "convex": true,
+   "drawn_area": 4.224600000000001,
+   "tone_fractions": [
+    0.39483027978980256,
+    0.29422903943568623,
+    0.3109406807745112
+   ],
+   "volume": 4.0,
+   "bbox_volume": 18.962962962962962,
+   "volume_fill_of_bbox": 0.2109375
+  },
+  {
+   "H": 0.5,
+   "sixH": 3.0,
+   "tone_iou_vs_hexagon": 0.4706106646330733,
+   "silhouette_iou": 0.7642107115621517,
+   "hex_edge": 1.8099999999999998,
+   "convex": true,
+   "drawn_area": 6.3554,
+   "tone_fractions": [
+    0.36337602668596786,
+    0.3180444975925984,
+    0.31857947572143375
+   ],
+   "volume": 9.0,
+   "bbox_volume": 27.0,
+   "volume_fill_of_bbox": 0.3333333333333333
+  }
+ ],
+ "frame": [
+  {
+   "H": 0.1111111111111111,
+   "bar_over_side": 0.2222222222222222,
+   "tone_iou_vs_hexagon": 0.591127656274236,
+   "silhouette_iou": 0.9239956568946797,
+   "hex_edge": 1.22,
+   "convex": true,
+   "tone_iou_vs_own_cube": 0.5936094307429812,
+   "volume": 0.551098730180986,
+   "cube_volume": 1.825788751714678,
+   "volume_fill": 0.30184145326967593
+  },
+  {
+   "H": 0.125,
+   "bar_over_side": 0.25,
+   "tone_iou_vs_hexagon": 0.6391194782093093,
+   "silhouette_iou": 0.9608656981915209,
+   "hex_edge": 1.25,
+   "convex": true,
+   "tone_iou_vs_own_cube": 0.6391194782093093,
+   "volume": 0.7346824363425926,
+   "cube_volume": 1.953125,
+   "volume_fill": 0.3761574074074074
+  },
+  {
+   "H": 0.14,
+   "bar_over_side": 0.28,
+   "tone_iou_vs_hexagon": 0.6842955471274055,
+   "silhouette_iou": 0.9846888607950555,
+   "hex_edge": 1.2799999999999998,
+   "convex": true,
+   "tone_iou_vs_own_cube": 0.6842955471274055,
+   "volume": 0.8208260740740745,
+   "cube_volume": 2.0971520000000003,
+   "volume_fill": 0.3914003725405094
+  },
+  {
+   "H": 0.155,
+   "bar_over_side": 0.31,
+   "tone_iou_vs_hexagon": 0.7224533619648369,
+   "silhouette_iou": 0.9970473761911153,
+   "hex_edge": 1.3099999999999998,
+   "convex": true,
+   "tone_iou_vs_own_cube": 0.7224533619648369,
+   "volume": 1.0188034469604494,
+   "cube_volume": 2.248091,
+   "volume_fill": 0.4531860351562501
+  },
+  {
+   "H": 0.16666666666666666,
+   "bar_over_side": 0.3333333333333333,
+   "tone_iou_vs_hexagon": 0.7487006237006237,
+   "silhouette_iou": 0.9983108108108109,
+   "hex_edge": 1.335,
+   "convex": true,
+   "tone_iou_vs_own_cube": 0.7499674606273591,
+   "volume": 1.1481535065157755,
+   "cube_volume": 2.37037037037037,
+   "volume_fill": 0.4843772605613429
+  },
+  {
+   "H": 0.2,
+   "bar_over_side": 0.4,
+   "tone_iou_vs_hexagon": 0.8147166254271239,
+   "silhouette_iou": 1.0,
+   "hex_edge": 1.4,
+   "convex": true,
+   "tone_iou_vs_own_cube": 0.8147166254271239,
+   "volume": 1.7118209725839115,
+   "cube_volume": 2.7439999999999993,
+   "volume_fill": 0.6238414623119213
+  },
+  {
+   "H": 0.25,
+   "bar_over_side": 0.5,
+   "tone_iou_vs_hexagon": 0.8875141184926584,
+   "silhouette_iou": 1.0,
+   "hex_edge": 1.5,
+   "convex": true,
+   "tone_iou_vs_own_cube": 0.8875141184926584,
+   "volume": 2.5,
+   "cube_volume": 3.375,
+   "volume_fill": 0.7407407407407407
+  },
+  {
+   "H": 0.3333333333333333,
+   "bar_over_side": 0.6666666666666666,
+   "tone_iou_vs_hexagon": 0.9582987207177271,
+   "silhouette_iou": 0.9987539458381791,
+   "hex_edge": 1.665,
+   "convex": true,
+   "tone_iou_vs_own_cube": 0.9595447748795481,
+   "volume": 4.202378303098743,
+   "cube_volume": 4.629629629629628,
+   "volume_fill": 0.9077137134693288
+  },
+  {
+   "H": 0.5,
+   "bar_over_side": 1.0,
+   "tone_iou_vs_hexagon": 1.0,
+   "silhouette_iou": 1.0,
+   "hex_edge": 2.0,
+   "convex": true,
+   "tone_iou_vs_own_cube": 1.0,
+   "volume": 8.0,
+   "cube_volume": 8.0,
+   "volume_fill": 1.0
+  }
+ ]
+}

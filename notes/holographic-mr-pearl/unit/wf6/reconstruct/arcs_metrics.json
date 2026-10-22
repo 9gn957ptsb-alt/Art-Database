@@ -1,0 +1,24 @@
+{
+ "profile": "arc-straight-arc",
+ "rho": 0.05892556509887897,
+ "turn_deg": 109.47122063449069,
+ "straight": 0.3333333333333333,
+ "max_bend_deg": 109.47122063452504,
+ "min_radius": 0.05892556509887897,
+ "bend_arc": 0.5585036195330477,
+ "curved_length_per_beam": 0.2251702862853467,
+ "beam_centreline_node_to_node": 1.2251702861997145,
+ "curved_fraction_of_centreline": 0.1837869305366436,
+ "bend_fraction_of_centreline": 0.4558579536444996,
+ "drawn_fraction_of_beam_in_bend": 0.33333333333333337,
+ "sigma_per_piece": [
+  0.11111666694445835,
+  0.1111093095711653,
+  0.11110735681770972
+ ],
+ "depth_peak_above_nodes": 0.20326313236228452,
+ "depth_min": -0.20326313236228463,
+ "straight_angle_to_sight_deg": 15.793169048263943,
+ "in_plane_width_ratio_on_straight": 0.3333333333333329,
+ "curvature_continuity": "G1 (curvature jumps 0 -> 1/rho at 4 joins)"
+}

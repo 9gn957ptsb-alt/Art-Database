@@ -1,0 +1,44 @@
+{
+ "opaque": {
+  "mae": 15.18,
+  "share_exact_le2": 0.8991,
+  "share_off_gt32": 0.1009,
+  "rmse": 50.26
+ },
+ "recursive": {
+  "mae": 14.13,
+  "share_exact_le2": 0.8393,
+  "share_off_gt32": 0.1607,
+  "rmse": 38.25
+ },
+ "average": {
+  "mae": 14.13,
+  "share_exact_le2": 0.8393,
+  "share_off_gt32": 0.1607,
+  "rmse": 38.25
+ },
+ "multiply": {
+  "mae": 15.15,
+  "share_exact_le2": 0.8918,
+  "share_off_gt32": 0.1082,
+  "rmse": 49.61
+ },
+ "add": {
+  "mae": 14.78,
+  "share_exact_le2": 0.9073,
+  "share_off_gt32": 0.0927,
+  "rmse": 53.73
+ },
+ "screen": {
+  "mae": 15.01,
+  "share_exact_le2": 0.9073,
+  "share_off_gt32": 0.0927,
+  "rmse": 53.98
+ },
+ "golden": {
+  "mae": 14.38,
+  "share_exact_le2": 0.8393,
+  "share_off_gt32": 0.1607,
+  "rmse": 38.78
+ }
+}

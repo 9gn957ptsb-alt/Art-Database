@@ -1,0 +1,120 @@
+{
+ "the drawing's eye / none": {
+  "films_mean": 3.760707372866444,
+  "ge8": 0.09253915185641387,
+  "deeper_changed": 0.050378321309167695,
+  "deeper_changed_gt1": 0.029297906035544607,
+  "deeper_mean_change": 0.20556044342776703,
+  "deeper_max": 42.0,
+  "through_holes": 0.3685555555555556
+ },
+ "the drawing's eye / mean": {
+  "films_mean": 10.167515746056518,
+  "ge8": 0.733894431748509,
+  "deeper_changed": 0.03726659606487933,
+  "deeper_changed_gt1": 0.021893985842483695,
+  "deeper_mean_change": 0.19953179867342957,
+  "deeper_max": 60.0,
+  "through_holes": 0.003277777777777778
+ },
+ "the drawing's eye / axis": {
+  "films_mean": 10.167515746056518,
+  "ge8": 0.733894431748509,
+  "deeper_changed": 0.19561897330137673,
+  "deeper_changed_gt1": 0.0856362521598573,
+  "deeper_mean_change": 0.865202608550248,
+  "deeper_max": 92.0,
+  "through_holes": 0.003277777777777778
+ },
+ "az 30 el 35 / none": {
+  "films_mean": 2.4204255823602634,
+  "ge8": 0.0,
+  "deeper_changed": 0.3707901132120206,
+  "deeper_changed_gt1": 0.3703159267381898,
+  "deeper_mean_change": 10.290154703337087,
+  "deeper_max": 128.0,
+  "through_holes": 0.06272222222222222
+ },
+ "az 30 el 35 / mean": {
+  "films_mean": 9.623710707953748,
+  "ge8": 0.7015421326702423,
+  "deeper_changed": 0.07948171853569876,
+  "deeper_changed_gt1": 0.034042885338031466,
+  "deeper_mean_change": 0.3392691874533067,
+  "deeper_max": 85.0,
+  "through_holes": 0.0035444444444444442
+ },
+ "az 30 el 35 / axis": {
+  "films_mean": 9.623710707953748,
+  "ge8": 0.7015421326702423,
+  "deeper_changed": 0.1753102663886442,
+  "deeper_changed_gt1": 0.09219344119713206,
+  "deeper_mean_change": 1.0585185267782473,
+  "deeper_max": 108.0,
+  "through_holes": 0.0035444444444444442
+ },
+ "az 60 el 60 / none": {
+  "films_mean": 1.9855678780077235,
+  "ge8": 0.0,
+  "deeper_changed": 0.4787107634419249,
+  "deeper_changed_gt1": 0.47816615506485793,
+  "deeper_mean_change": 22.97565353005248,
+  "deeper_max": 128.0,
+  "through_holes": 0.10231111111111112
+ },
+ "az 60 el 60 / mean": {
+  "films_mean": 7.2775345570914265,
+  "ge8": 0.45952042312991687,
+  "deeper_changed": 0.27195653140139564,
+  "deeper_changed_gt1": 0.035523801057824794,
+  "deeper_mean_change": 0.43635272678785725,
+  "deeper_max": 78.0,
+  "through_holes": 4.4444444444444447e-05
+ },
+ "az 60 el 60 / axis": {
+  "films_mean": 7.2775345570914265,
+  "ge8": 0.45952042312991687,
+  "deeper_changed": 0.524901106715854,
+  "deeper_changed_gt1": 0.2089870660918263,
+  "deeper_mean_change": 1.1636628294590872,
+  "deeper_max": 78.0,
+  "through_holes": 4.4444444444444447e-05
+ },
+ "az 10 el 12 (low, along the ground) / none": {
+  "films_mean": 2.483022415039769,
+  "ge8": 0.0,
+  "deeper_changed": 0.09479392624728851,
+  "deeper_changed_gt1": 0.09479392624728851,
+  "deeper_mean_change": 3.245177151120752,
+  "deeper_max": 128.0,
+  "through_holes": 0.23166666666666666
+ },
+ "az 10 el 12 (low, along the ground) / mean": {
+  "films_mean": 9.233473694891178,
+  "ge8": 0.6780224240271929,
+  "deeper_changed": 0.052483384911978084,
+  "deeper_changed_gt1": 0.030693521383998782,
+  "deeper_mean_change": 0.5828471411901983,
+  "deeper_max": 74.0,
+  "through_holes": 0.12395555555555555
+ },
+ "az 10 el 12 (low, along the ground) / axis": {
+  "films_mean": 9.233473694891178,
+  "ge8": 0.6780224240271929,
+  "deeper_changed": 0.17269544924154026,
+  "deeper_changed_gt1": 0.12624930241996854,
+  "deeper_mean_change": 1.9638907209172543,
+  "deeper_max": 100.0,
+  "through_holes": 0.12395555555555555
+ },
+ "cube_mean_drawing_eye_grey": [
+  127.66666666666666,
+  127.66666666666666,
+  127.66666666666666
+ ],
+ "cube_mean_drawing_eye_pair": [
+  127.66666666666667,
+  127.66666666666666,
+  127.66666666666666
+ ]
+}

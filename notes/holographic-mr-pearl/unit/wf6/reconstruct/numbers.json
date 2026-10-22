@@ -1,0 +1,177 @@
+{
+ "V3_each_of_9_beams": {
+  "max_bend_deg": 108.26,
+  "max_fprime": 1.875,
+  "min_radius": 0.026,
+  "bend_arc": 0.5523,
+  "beam_centreline_node_to_node": 1.219,
+  "curved_fraction_of_centreline": 0.4531,
+  "curved_fraction_of_drawn_length": 0.3333,
+  "chord": 0.4714,
+  "chord_angle_to_axis_deg": 90.0,
+  "depth_peak_above_nodes": 0.2073,
+  "depth_min": -0.2073
+ },
+ "V1_each_of_Az_By_Cy": {
+  "max_bend_deg": 120.17,
+  "max_fprime": 5.625,
+  "min_radius": 0.0129,
+  "bend_arc": 1.6316,
+  "beam_centreline_node_to_node": 2.2982,
+  "curved_fraction_of_centreline": 0.7099,
+  "curved_fraction_of_drawn_length": 0.3333,
+  "chord": 1.5635,
+  "chord_angle_to_axis_deg": 115.24,
+  "depth_peak_above_nodes": 0.2007,
+  "depth_min": -1.3554
+ },
+ "V3_curved_fraction_of_all_centreline": 0.4531,
+ "V1_curved_fraction_of_all_centreline": 0.3796,
+ "gaps": {
+  "V3": {
+   "top corner": 3.885780586188048e-16,
+   "bottom-right corner": 0.0,
+   "bottom-middle": 3.188872858294072e-16,
+   "bottom-left corner": 0.0,
+   "left-middle": 2.482534153247273e-16,
+   "right-middle": 2.2887833992611187e-16
+  },
+  "V1": {
+   "top corner": 0.0,
+   "bottom-right corner": 0.0,
+   "bottom-middle": 0.0,
+   "bottom-left corner": 0.0,
+   "left-middle": 0.0,
+   "right-middle": 0.0
+  },
+  "cut": {
+   "Az": 1.6139821162593277,
+   "By": 1.6139821162593277,
+   "Cy": 1.6139821162593277
+  },
+  "cut_note": "centreline end of the cut beam (where the cut plane crosses its centreline) to the start of the bar it should meet; the straight ends themselves are sqrt3 = 1.732 apart along the line of sight"
+ },
+ "max_gap_V3": 3.885780586188048e-16,
+ "max_gap_V1": 0.0,
+ "max_gap_cut": 1.6139821162593277,
+ "tone_rules_drawing_view": {
+  "identity_px_changed": 0,
+  "nearest_axis_px_changed": 31364,
+  "nearest_axis_pct_of_figure": 25.58,
+  "middle_mix_mean_abs_change_on_figure": 39.95,
+  "middle_mix_px_whose_nearest_tone_changes": 32399,
+  "middle_mix_pct": 26.42
+ },
+ "V3_depth_extent_along_sight": [
+  -0.977,
+  -0.1777
+ ],
+ "straight_depth_extent_along_sight": [
+  -1.3472,
+  1.3472
+ ],
+ "V3_bbox": [
+  [
+   -0.7778,
+   -0.1111,
+   -1.4444
+  ],
+  [
+   0.7778,
+   1.4444,
+   0.1111
+  ]
+ ],
+ "mismatch_straight": {
+  "wrong": 13270,
+  "figure_px": 130462,
+  "pct": 10.172,
+  "px_differing_from_vector_reading": 11101,
+  "wrong_holes_as_paper": 13582,
+  "pct_holes_as_paper": 11.071
+ },
+ "mismatch_cut": {
+  "wrong": 2744,
+  "figure_px": 130462,
+  "pct": 2.103,
+  "px_differing_from_vector_reading": 0,
+  "wrong_holes_as_paper": 3056,
+  "pct_holes_as_paper": 2.491
+ },
+ "mismatch_V3": {
+  "wrong": 2744,
+  "figure_px": 130462,
+  "pct": 2.103,
+  "px_differing_from_vector_reading": 0,
+  "wrong_holes_as_paper": 3056,
+  "pct_holes_as_paper": 2.491
+ },
+ "mismatch_V1": {
+  "wrong": 2744,
+  "figure_px": 130462,
+  "pct": 2.103,
+  "px_differing_from_vector_reading": 0,
+  "wrong_holes_as_paper": 3056,
+  "pct_holes_as_paper": 2.491
+ },
+ "supersampled_3x3": {
+  "V3_vs_cut_samples_differing": 0,
+  "V1_vs_cut_samples_differing": 0,
+  "samples": 6804000
+ },
+ "symmetry": {
+  "R3_max_corner_error": 8.881784197001252e-16,
+  "max_node_gap": 3.885780586188048e-16,
+  "node_depths": [
+   -0.5773502691896257,
+   -0.5773502691896257,
+   -0.5773502691896257,
+   -0.5773502691896257,
+   -0.5773502691896256,
+   -0.5773502691896255
+  ],
+  "nodes": {
+   "Q0": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "J0": [
+    -0.3333333333333333,
+    0.6666666666666667,
+    -0.3333333333333333
+   ],
+   "Q1": [
+    -0.6666666666666666,
+    1.3333333333333335,
+    -0.6666666666666666
+   ],
+   "J1": [
+    5.551115123125783e-17,
+    1.0000000000000002,
+    -1.0
+   ],
+   "Q2": [
+    0.6666666666666667,
+    0.666666666666667,
+    -1.3333333333333333
+   ],
+   "J2": [
+    0.3333333333333334,
+    0.33333333333333365,
+    -0.6666666666666665
+   ]
+  },
+  "R3_beam_map": {
+   "Ay": "Bx",
+   "By": "Cx",
+   "Bx": "Cz",
+   "Cx": "Az",
+   "Cz": "Ay",
+   "Az": "By",
+   "Ax": "Bz",
+   "Bz": "Cy",
+   "Cy": "Ax"
+  }
+ }
+}

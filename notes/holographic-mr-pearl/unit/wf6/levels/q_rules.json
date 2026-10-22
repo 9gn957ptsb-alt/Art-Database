@@ -1,0 +1,254 @@
+{
+ "toy 3x3x3 works": {
+  "A huffman": {
+   "K": 5,
+   "planet_outline_over_leaf": 4.25,
+   "leaves": 27,
+   "openings_used": 0,
+   "leaf_levels": {
+    "2": 27
+   },
+   "mean_abs_err_levels": 0.142,
+   "weighted_mean_abs_err": 0.142,
+   "max_abs_err": 0.142
+  },
+  "B split": {
+   "K": 5,
+   "planet_outline_over_leaf": 4.25,
+   "leaves": 27,
+   "openings_used": 0,
+   "leaf_levels": {
+    "2": 27
+   },
+   "mean_abs_err_levels": 0.142,
+   "weighted_mean_abs_err": 0.142,
+   "max_abs_err": 0.142
+  }
+ },
+ "toy 3x3x3x4 details": {
+  "A huffman": {
+   "K": 9,
+   "planet_outline_over_leaf": 29.12,
+   "leaves": 108,
+   "openings_used": 27,
+   "leaf_levels": {
+    "2": 27,
+    "5": 81
+   },
+   "mean_abs_err_levels": 0.75,
+   "weighted_mean_abs_err": 0.349,
+   "max_abs_err": 2.56
+  },
+  "B split": {
+   "K": 10,
+   "planet_outline_over_leaf": 47.12,
+   "leaves": 108,
+   "openings_used": 27,
+   "leaf_levels": {
+    "2": 27,
+    "6": 81
+   },
+   "mean_abs_err_levels": 0.934,
+   "weighted_mean_abs_err": 0.411,
+   "max_abs_err": 3.56
+  }
+ },
+ "a city of 12 equal places": {
+  "A huffman": {
+   "K": 6,
+   "planet_outline_over_leaf": 6.88,
+   "leaves": 12,
+   "openings_used": 1,
+   "leaf_levels": {
+    "2": 1,
+    "3": 3,
+    "4": 8
+   },
+   "mean_abs_err_levels": 0.611,
+   "weighted_mean_abs_err": 0.611,
+   "max_abs_err": 1.418
+  },
+  "B split": {
+   "K": 8,
+   "planet_outline_over_leaf": 18.0,
+   "leaves": 12,
+   "openings_used": 3,
+   "leaf_levels": {
+    "2": 3,
+    "6": 9
+   },
+   "mean_abs_err_levels": 1.291,
+   "weighted_mean_abs_err": 1.291,
+   "max_abs_err": 3.418
+  }
+ },
+ "a place of 40 equal works": {
+  "A huffman": {
+   "K": 6,
+   "planet_outline_over_leaf": 6.88,
+   "leaves": 40,
+   "openings_used": 1,
+   "leaf_levels": {
+    "2": 19,
+    "3": 21
+   },
+   "mean_abs_err_levels": 0.517,
+   "weighted_mean_abs_err": 0.517,
+   "max_abs_err": 0.833
+  },
+  "B split": {
+   "K": 9,
+   "planet_outline_over_leaf": 29.12,
+   "leaves": 40,
+   "openings_used": 13,
+   "leaf_levels": {
+    "2": 13,
+    "6": 27
+   },
+   "mean_abs_err_levels": 1.592,
+   "weighted_mean_abs_err": 1.592,
+   "max_abs_err": 3.167
+  }
+ },
+ "London: museums by works": {
+  "A huffman": {
+   "K": 8,
+   "planet_outline_over_leaf": 18.0,
+   "leaves": 36,
+   "openings_used": 3,
+   "leaf_levels": {
+    "2": 2,
+    "3": 1,
+    "4": 24,
+    "5": 4,
+    "6": 5
+   },
+   "mean_abs_err_levels": 0.65,
+   "weighted_mean_abs_err": 0.664,
+   "max_abs_err": 3.28
+  },
+  "B split": {
+   "K": 9,
+   "planet_outline_over_leaf": 29.12,
+   "leaves": 36,
+   "openings_used": 5,
+   "leaf_levels": {
+    "2": 1,
+    "3": 4,
+    "5": 24,
+    "6": 1,
+    "7": 6
+   },
+   "mean_abs_err_levels": 0.786,
+   "weighted_mean_abs_err": 0.749,
+   "max_abs_err": 3.28
+  }
+ },
+ "planet: works": {
+  "A huffman": {
+   "K": 19,
+   "planet_outline_over_leaf": 3582.12,
+   "leaves": 602,
+   "openings_used": 39,
+   "leaf_levels": {
+    "2": 1,
+    "3": 1,
+    "6": 2,
+    "7": 4,
+    "8": 1,
+    "9": 4,
+    "10": 38,
+    "11": 16,
+    "12": 192,
+    "13": 224,
+    "14": 116,
+    "15": 2,
+    "17": 1
+   },
+   "mean_abs_err_levels": 0.654,
+   "weighted_mean_abs_err": 0.563,
+   "max_abs_err": 11.28
+  },
+  "B split": {
+   "K": 18,
+   "planet_outline_over_leaf": 2213.88,
+   "leaves": 602,
+   "openings_used": 185,
+   "leaf_levels": {
+    "2": 2,
+    "3": 1,
+    "5": 12,
+    "6": 17,
+    "7": 4,
+    "8": 23,
+    "9": 152,
+    "10": 49,
+    "11": 27,
+    "12": 130,
+    "13": 179,
+    "14": 6
+   },
+   "mean_abs_err_levels": 1.27,
+   "weighted_mean_abs_err": 0.818,
+   "max_abs_err": 11.28
+  }
+ },
+ "planet: works with 4 details": {
+  "A huffman": {
+   "K": 24,
+   "planet_outline_over_leaf": 39726.38,
+   "leaves": 2408,
+   "openings_used": 635,
+   "leaf_levels": {
+    "2": 1,
+    "4": 2,
+    "5": 1,
+    "6": 1,
+    "7": 7,
+    "8": 3,
+    "9": 4,
+    "10": 13,
+    "11": 46,
+    "12": 16,
+    "13": 215,
+    "14": 334,
+    "15": 157,
+    "16": 578,
+    "17": 672,
+    "18": 349,
+    "19": 6,
+    "21": 3
+   },
+   "mean_abs_err_levels": 0.932,
+   "weighted_mean_abs_err": 0.666,
+   "max_abs_err": 10.56
+  },
+  "B split": {
+   "K": 23,
+   "planet_outline_over_leaf": 24552.25,
+   "leaves": 2408,
+   "openings_used": 787,
+   "leaf_levels": {
+    "2": 2,
+    "3": 1,
+    "5": 12,
+    "6": 23,
+    "7": 7,
+    "8": 23,
+    "9": 188,
+    "10": 100,
+    "11": 39,
+    "12": 199,
+    "13": 635,
+    "14": 153,
+    "15": 81,
+    "16": 390,
+    "17": 537,
+    "18": 18
+   },
+   "mean_abs_err_levels": 1.232,
+   "weighted_mean_abs_err": 0.918,
+   "max_abs_err": 11.28
+  }
+ }
+}

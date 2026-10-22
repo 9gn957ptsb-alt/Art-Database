@@ -1,0 +1,91 @@
+HOLOGRAPHIC MR PEARL — THE PURPOSE (above every other rule): their own information, determined relations, and sharing their worlds
+
+The artist, 15 Oct 2026: "The goal of this game is to show people what they can do with their own information
+MAKE THAT SALIENT"
+
+So:
+- A player's own information is the seed of their world. Not a random number: what they bring.
+- The game says so first, before anything else, and keeps showing it: anything in the world can be asked where it came
+  from, and answers with the piece of information it was made from.
+- The example is the artist's own: the site's world is made from the Art Database (the artworks, and the buildings
+  the site has modelled, from the Architectural Authority). That is what one person's information became.
+- Every player's planet is generated from their information, so every world is different; the mission is the same.
+- Proposal (to put to the artist): the first planet, the training world, is the artist's (the example); the planet
+  Mr Pearl must get to next is made from the player's own information. His predicament (he must always get off the
+  planet to another one) then carries the purpose: he leaves someone's world for yours.
+- How an Artifact can take a player's information: files they drop in (read in their own browser); with their
+  permission, their own claude.ai connectors (read as them, tokens never exposed: the `mcp` capability); Claude called
+  from the page turns it into their planet (`sample`); what they bring stays private to them (`db`, data/users/<id>/,
+  private even from the owner). Never shared with other players, never stored in shared state.
+- The unit carries it in its form: the figure of figures is already the shape of information (a collection made of
+  items made of details); the unit's golden scales can be those levels, so a person's information becomes a world by
+  the unit, scale by scale.
+
+The artist, 15 Oct 2026 (next message): "THIS IS ABOUT DETERMINED RELATIONS
+MAKE THAT SALIENT"
+
+So: nothing in the game is arbitrary or random; everything follows from a relation, and the game shows the relation.
+- In a person's information: how their things relate (who made what, where it is, when, what it is part of, what
+  else it touches). Those relations place and shape their world: related things stand together or join; a thing
+  made of others is a form made of theirs; the more a thing relates, the more it holds.
+- In the unit: its scales are related by phi; each face's tone is set by the direction it faces (the drawing's
+  rule: x grey, y black, z white); a new colour is set by which films overlap; the cube, sphere and pyramid follow
+  from the scale relation, and the texture follows from the unit (consequential texture). Each is stated as a rule.
+- In the rules of play: reach = speed x time limit; the body can only go where the head has been; the only perfect
+  sphere is the head.
+- Claude's part is to find the relations in a person's information, not to invent; once found, the world follows
+  from them by fixed rules: the same information always gives the same world; other information, another world by
+  the same rules. Fixed rules for everyone is what makes it a game.
+- Salient in play: anything you tap says what it came from AND the relation that put it there ("here because...",
+  "this size because..."). Salient on the unit page: each property shown with the relation that determines it.
+
+The artist, 15 Oct 2026 (next message): "By playing this game in which everyone's world is different, and yet, they
+have the same mission of escaping the planet, you are enticing people to share their worlds, what their mission was
+like... MAKE THAT SALIENT"
+
+So: different worlds + the same mission = stories worth comparing, and people share them (as a puzzle everyone plays
+the same day gets shared: the same task makes them comparable, the difference makes them worth comparing).
+- Every escape ends in a record made to be shared: the planet seen from the rocket as you leave it, your route over
+  it, your numbers (how long, how many holographic trips, how near the body came to being destroyed, where the last
+  piece of the way off was), and the relations your world was made of. It reveals of your information only what you
+  choose; the record is yours to keep or post.
+- Before you start, other people's worlds and how they escaped (only what they chose to share): the reason to make
+  yours.
+- In the Artifact: a shared gallery in db where each person writes only their own entry and everyone reads
+  (rules: missions read view, missions/{self} write interact); the record also saved as a file (downloads) to share
+  anywhere; the information itself stays private (data/users/<id>/). Note: writing to the gallery needs the viewer
+  to have at least Contributor ("interact") access; a public-link viewer may only read it and keep their record as
+  a file.
+- The three, in one line: your information becomes your world, by determined relations; everyone has the same
+  mission, to escape it; so everyone has a different story of the same escape to share.
+
+The artist, 15 Oct 2026: "Tell me Claude, what is the salience of this game? MAKE THAT SALIENT"
+Claude's answer, now first in the site's CLAUDE.md (commit fa9f13d0): YOUR INFORMATION IS A WORLD. FIND YOUR WAY OUT.
+- The figure says it: every joint of the impossible triangle is a true relation; the whole closes only from one point
+  of view. Information likewise: every relation determined, whole only from where its owner stands. The head, the
+  one perfect sphere, is that point of view: where a world closes from.
+- Proposed connection: holographic mode brings portals, and the hologram is the point of view, so portals lead into
+  other people's shared worlds. Only the head can go (the body stays home, exposed): sharing as a point of view
+  visiting someone else's relations. The song: "So now I am here and I'm taking you there."
+- Weak point to design round: Claude is not deterministic, so it reads the relations out once into a fixed list,
+  and code builds the world from that list (same information, same world).
+
+The artist, 15 Oct 2026: "For now let's make mine and figure out how to make it for others later"
+-> One planet for now: the artist's, from the site's information (CLAUDE.md, commit 4574e6dd). Bringing other
+   people's information (files, connectors, the gallery, portals to shared worlds) waits.
+   What is his: 7 collages (works.json, with their terms), 5,018 saved works (land.json), 893 artists' lives, each a
+   sequence of places in time from birth to death (lives.json, lifeplaces.json), 123 museums (museums.json), 46
+   buildings (36 modelled; architecture.json, sections.json), 28 cities (cityplaces.json), 41 movements (three saved
+   artists or more in one city in the same years; movements.json), 1,674 voices (voices.json), 1,454 studios,
+   6,490 shows at 2,351 venues (kinds.json), 216 philosophers, 70 styles.
+   Levels for the unit's scales: the planet (all of it) -> the 28 cities -> places (museums, buildings, studios)
+   -> works -> details (terms, medium, size, colour).
+   Proposed: the giants are the artists, each roaming the places of its own life in order, its crater where it fell
+   (died): determined paths, so the danger to the body is learnable. The centre of the planet is what is only his:
+   the choosing (the saves, the collages, the buildings he modelled); the rest is what those choices pull in.
+
+The artist, 15 Oct 2026: "And Holographic Mr Pearl is about the position of freedom at the crux of your digital setting
+MAKE THAT SALIENT"
+-> The game's one line in the table of pieces (CLAUDE.md, commit 673a1d1b). The head is that position: the one perfect
+   sphere, the one thing not determined by the information, standing where all its relations cross (the crux, the one
+   point the figure closes from). Holographic mode is that freedom used; the mission is won only by bringing the body.

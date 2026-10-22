@@ -1,0 +1,236 @@
+{
+ "works": {
+  "K": 5,
+  "leaves": 27,
+  "joins": 13,
+  "openings_used": 0,
+  "leaf_levels": [
+   2
+  ],
+  "planet_outline_u": 34,
+  "planet_blocks": 4.25,
+  "by_kind": {
+   "planet": [
+    5
+   ],
+   "city": [
+    4
+   ],
+   "place": [
+    3
+   ],
+   "work": [
+    2
+   ],
+   "detail": []
+  },
+  "names": [
+   [
+    "New York",
+    [
+     [
+      "The Metropolitan Museum of Art",
+      [
+       "Celia Thaxter's Garden, Isles of Shoals, Maine",
+       "The Lake of Zug",
+       "Improvisation 27 (Garden of Love II)"
+      ]
+     ],
+     [
+      "The Museum of Modern Art",
+      [
+       "Ritmo de ciudad (City rhythm)",
+       "Starry Night",
+       "Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975"
+      ]
+     ],
+     [
+      "Guggenheim Museum",
+      [
+       "Alchemy",
+       "Rendering for Aten Reign",
+       "Enemy's Enemy: Monument to a Monument (detail)"
+      ]
+     ]
+    ]
+   ],
+   [
+    "Paris",
+    [
+     [
+      "Centre Pompidou",
+      [
+       "Untitled",
+       "Le Poisson",
+       "Animal n\u00b0 6"
+      ]
+     ],
+     [
+      "Mus\u00e9e d'Orsay",
+      [
+       "Le d\u00e9fil\u00e9",
+       "The Floor Scrapers",
+       "Self-Portrait"
+      ]
+     ],
+     [
+      "Mus\u00e9e Picasso Paris",
+      [
+       "Violin with sheet of music",
+       "Autoportrait (Self-portrait)",
+       "Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair)"
+      ]
+     ]
+    ]
+   ],
+   [
+    "Amsterdam",
+    [
+     [
+      "Van Gogh Museum",
+      [
+       "The Harvest",
+       "Wheatfield under Thunderclouds",
+       "The Invader"
+      ]
+     ],
+     [
+      "Rijksmuseum",
+      [
+       "The Milkmaid",
+       "The Sower",
+       "River Landscape with Riders"
+      ]
+     ],
+     [
+      "Stedelijk Museum Amsterdam",
+      [
+       "Superficie bianca",
+       "The North Atlantic Light",
+       "Mach dich h\u00fcbsch!"
+      ]
+     ]
+    ]
+   ]
+  ]
+ },
+ "details": {
+  "K": 9,
+  "leaves": 108,
+  "joins": 40,
+  "openings_used": 27,
+  "leaf_levels": [
+   2,
+   5
+  ],
+  "planet_outline_u": 233,
+  "planet_blocks": 29.125,
+  "by_kind": {
+   "planet": [
+    9
+   ],
+   "city": [
+    8
+   ],
+   "place": [
+    7
+   ],
+   "work": [
+    6
+   ],
+   "detail": [
+    2,
+    5
+   ]
+  },
+  "names": [
+   [
+    "New York",
+    [
+     [
+      "The Metropolitan Museum of Art",
+      [
+       "Celia Thaxter's Garden, Isles of Shoals, Maine",
+       "The Lake of Zug",
+       "Improvisation 27 (Garden of Love II)"
+      ]
+     ],
+     [
+      "The Museum of Modern Art",
+      [
+       "Ritmo de ciudad (City rhythm)",
+       "Starry Night",
+       "Beverly Boulevard and La Brea Avenue, Los Angeles, California, June 21, 1975"
+      ]
+     ],
+     [
+      "Guggenheim Museum",
+      [
+       "Alchemy",
+       "Rendering for Aten Reign",
+       "Enemy's Enemy: Monument to a Monument (detail)"
+      ]
+     ]
+    ]
+   ],
+   [
+    "Paris",
+    [
+     [
+      "Centre Pompidou",
+      [
+       "Untitled",
+       "Le Poisson",
+       "Animal n\u00b0 6"
+      ]
+     ],
+     [
+      "Mus\u00e9e d'Orsay",
+      [
+       "Le d\u00e9fil\u00e9",
+       "The Floor Scrapers",
+       "Self-Portrait"
+      ]
+     ],
+     [
+      "Mus\u00e9e Picasso Paris",
+      [
+       "Violin with sheet of music",
+       "Autoportrait (Self-portrait)",
+       "Portrait d'Olga dans un fauteuil (Portrait of Olga in an Armchair)"
+      ]
+     ]
+    ]
+   ],
+   [
+    "Amsterdam",
+    [
+     [
+      "Van Gogh Museum",
+      [
+       "The Harvest",
+       "Wheatfield under Thunderclouds",
+       "The Invader"
+      ]
+     ],
+     [
+      "Rijksmuseum",
+      [
+       "The Milkmaid",
+       "The Sower",
+       "River Landscape with Riders"
+      ]
+     ],
+     [
+      "Stedelijk Museum Amsterdam",
+      [
+       "Superficie bianca",
+       "The North Atlantic Light",
+       "Mach dich h\u00fcbsch!"
+      ]
+     ]
+    ]
+   ]
+  ]
+ }
+}

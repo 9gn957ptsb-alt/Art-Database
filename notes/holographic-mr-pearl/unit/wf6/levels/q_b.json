@@ -1,0 +1,88 @@
+{
+ "px_per_cell": 800.0,
+ "IN": {
+  "scale": 0.1458980337503155,
+  "scale_is": "phi^-4",
+  "overlap_with_parent_faces_px": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "holes": [
+   {
+    "hole": 26980,
+    "covered_by_copy": 24170,
+    "copy_outside_hole": 0
+   },
+   {
+    "hole": 27058,
+    "covered_by_copy": 24204,
+    "copy_outside_hole": 0
+   },
+   {
+    "hole": 27058,
+    "covered_by_copy": 24204,
+    "copy_outside_hole": 0
+   },
+   {
+    "hole": 26948,
+    "covered_by_copy": 24154,
+    "copy_outside_hole": 0
+   }
+  ],
+  "hole_area_px": [
+   26980,
+   27058,
+   27058,
+   26948
+  ],
+  "hole_left_open_at_its_corners_px": [
+   506,
+   527,
+   527,
+   500
+  ],
+  "analytic": {
+   "hole_side": 0.31187394221631226,
+   "copy_corner_cut": 0.0245411502579637,
+   "corner_cut_over_hole_side": 0.07868932583326321,
+   "open_fraction": 0.0185760300002804
+  }
+ },
+ "OF": {
+  "scale": 0.6180339887498949,
+  "scale_is": "phi^-1",
+  "sibling_overlap_px": {
+   "AB": 60241,
+   "BC": 60234,
+   "CA": 60241
+  },
+  "sibling_outline_overlap_px": {
+   "AB": 64619,
+   "BC": 64660,
+   "CA": 64619
+  },
+  "analytic_outline_overlap_px": 70569.01741329144,
+  "composite_gap_side_L": 0.38191665142069164,
+  "analytic_gap_side_L": 0.3819660112501051,
+  "figure_gap_side_L": 0.3819660112501052
+ },
+ "ON": {
+  "parent_bar_across": 0.397125,
+  "copy_outer_bar_across": 0.1795,
+  "ratio": 0.4519987409505823,
+  "analytic": 0.6180339887498948,
+  "outer_edges_offset": 0.0
+ },
+ "ALONG": {
+  "bar_across_L": 0.3568220897730899,
+  "copy_height_over_bar": {
+   "phi^-2": 2.4271,
+   "phi^-3": 1.5,
+   "phi^-4": 0.9271,
+   "phi^-5": 0.5729,
+   "phi^-6": 0.3541
+  }
+ }
+}

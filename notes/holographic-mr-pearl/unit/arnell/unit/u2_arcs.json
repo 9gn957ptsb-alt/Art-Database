@@ -1,0 +1,137 @@
+{
+ "fibonacci_squares": [
+  {
+   "square_F": 1,
+   "level": -2,
+   "circle_R_block": 0.15713484026367724,
+   "frame_outline_u": 1,
+   "ratio_to_next_smaller": null,
+   "golden_square_side_block": 0.3679290266636191,
+   "pct_off_golden": -14.584156793185798
+  },
+  {
+   "square_F": 2,
+   "level": -1,
+   "circle_R_block": 0.3142696805273545,
+   "frame_outline_u": 2,
+   "ratio_to_next_smaller": 2.0,
+   "golden_square_side_block": 0.595321670589402,
+   "pct_off_golden": 5.579788559085985
+  },
+  {
+   "square_F": 3,
+   "level": 0,
+   "circle_R_block": 0.47140452079103173,
+   "frame_outline_u": 3,
+   "ratio_to_next_smaller": 1.5,
+   "golden_square_side_block": 0.9632506972530211,
+   "pct_off_golden": -2.1221532181863734
+  },
+  {
+   "square_F": 5,
+   "level": 1,
+   "circle_R_block": 0.7856742013183862,
+   "frame_outline_u": 5,
+   "ratio_to_next_smaller": 1.6666666666666667,
+   "golden_square_side_block": 1.5585723678424233,
+   "pct_off_golden": 0.8197267613588854
+  },
+  {
+   "square_F": 8,
+   "level": 2,
+   "circle_R_block": 1.257078722109418,
+   "frame_outline_u": 8,
+   "ratio_to_next_smaller": 1.6,
+   "golden_square_side_block": 2.5218230650954445,
+   "pct_off_golden": -0.3039714000045657
+  },
+  {
+   "square_F": 13,
+   "level": 3,
+   "circle_R_block": 2.042752923427804,
+   "frame_outline_u": 13,
+   "ratio_to_next_smaller": 1.625,
+   "golden_square_side_block": 4.080395432937868,
+   "pct_off_golden": 0.1252431045404956
+  },
+  {
+   "square_F": 21,
+   "level": 4,
+   "circle_R_block": 3.299831645537222,
+   "frame_outline_u": 21,
+   "ratio_to_next_smaller": 1.6153846153846154,
+   "golden_square_side_block": 6.602218498033314,
+   "pct_off_golden": -0.0387022477312815
+  },
+  {
+   "square_F": 34,
+   "level": 5,
+   "circle_R_block": 5.342584568965027,
+   "frame_outline_u": 34,
+   "ratio_to_next_smaller": 1.619047619047619,
+   "golden_square_side_block": 10.682613930971181,
+   "pct_off_golden": 0.023919304538977393
+  },
+  {
+   "square_F": 55,
+   "level": 6,
+   "circle_R_block": 8.642416214502248,
+   "frame_outline_u": 55,
+   "ratio_to_next_smaller": 1.6176470588235294,
+   "golden_square_side_block": 17.284832429004496,
+   "pct_off_golden": 0.0
+  }
+ ],
+ "fibonacci_squares_note": "square side F(k)*(2u/sqrt3): its inscribed circle is exactly the holding circle of a level k-4 frame (R = F(k)u/sqrt3) and the frame is inscribed in it (vertices on the circle). Against true golden squares (side falling by phi) the Fibonacci squares are off by the ladder's own error.",
+ "row_rule": "frames of falling level stand on one ground line: base on the line <=> incircle (r = R/2) tangent to it",
+ "bend_arcs": {
+  "theta_deg": 109.47122063449069,
+  "theta_rule": "cos theta = -1/3 (the tetrahedral angle 109.47)",
+  "rho": 0.058925565098878974,
+  "rho_rule": "rho = chord/8 = sqrt2/24",
+  "straight": 0.33333333333333337,
+  "straight_rule": "1/3 = the free span = the hole side (1-6H)",
+  "straight_direction_3d": "-(e_k + 2 e_i + 2 e_j)/3 (a unit lattice vector of the H-grid: displacement (1,2,2)/9)",
+  "arc1_end_3d": "(e_k - e_i - e_j)/18 = (H/2)(1,-1,-1) in the beam's frame",
+  "arc_centres_3d": "-(e_i+e_j)/24 and -(7/24)(e_i+e_j) from the span start",
+  "check_axial_advance": 0.0,
+  "check_lateral": 0.4714045207910318,
+  "chord": 0.47140452079103173,
+  "arcs": {
+   "max_fprime_t": 2.000000000003638,
+   "max_bend_deg": 109.47122063454803,
+   "min_radius": 0.058925565098878974,
+   "min_angle_to_sight_deg": 15.793169048206588,
+   "centreline_length": 0.5585035529590148,
+   "min_radius_check_from_arclength": 0.0589255513066347,
+   "min_radius_note": "analytic rho; the interp-based finite difference gives a spurious 0.0115 at the joins"
+  },
+  "quintic": {
+   "max_fprime_t": 1.8749999874980858,
+   "max_bend_deg": 108.2620199368707,
+   "min_radius": 0.025982283161403347,
+   "min_angle_to_sight_deg": 17.00236974588393,
+   "centreline_length": 0.5523470469928734
+  },
+  "continuity": "arcs: G1 (tangent continuous), curvature jumps 0 -> 1/rho at the four joins; quintic: C2",
+  "per_level": "in a level-m frame every bend is the leaf's scaled by F(m+4)/8: rho_m = (sqrt2/24) F(m+4)/8, a Fibonacci ladder of circles like p20's"
+ },
+ "drawing_mismatch": {
+  "smootherstep": {
+   "wrong": 2744,
+   "figure_px": 130462,
+   "pct": 2.103,
+   "px_differing_from_vector_reading": 0,
+   "wrong_holes_as_paper": 3056,
+   "pct_holes_as_paper": 2.491
+  },
+  "arc": {
+   "wrong": 2744,
+   "figure_px": 130462,
+   "pct": 2.103,
+   "px_differing_from_vector_reading": 0,
+   "wrong_holes_as_paper": 3056,
+   "pct_holes_as_paper": 2.491
+  }
+ }
+}
