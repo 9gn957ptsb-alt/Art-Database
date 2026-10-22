@@ -777,7 +777,9 @@
         var rg = el.firstChild.getBoundingClientRect();
         pulse(rg.left + rg.width / 2, rg.top + rg.height / 2, [LIGHT, LILAC], 0.6, 144);
       }
-      if (city.open) { city.open(); } else if (place) { hopTo(city); } else { goDown(city); }
+      // A building standing in a city's skyline square goes in as its museums do, at its city's height (openMuseum).
+      if (city.open) { city.open(); } else if (city.building && city.townKey) { downToMuseum(city.slug, {}); }
+      else if (place) { hopTo(city); } else { goDown(city); }
     });
     el.addEventListener("pointerdown", function (event) {
       city.touched = event.pointerType === "touch";
@@ -864,7 +866,7 @@
       if (typeof b.lat !== "number" || typeof b.lon !== "number") { return; }
       raiseCity({
         work: null, slug: "building-" + b.slug, title: b.name || b.title, where: b.where,
-        lat: b.lat * RAD, lon: wrap(b.lon * RAD), building: b, real: true,
+        lat: b.lat * RAD, lon: wrap(b.lon * RAD), building: b, real: true, townKey: townOfBuilding[b.slug],
         layer: "architecture", hue: hues[nearWork(b)] || 0.09
       }, true);
     });
@@ -1769,7 +1771,7 @@
     // A work's history is framed on no one place: a way from it starts unnamed.
     // Nor is a museum named again on the way up to its own city, where its
     // mark stands named already.
-    var home = city.art && city.art.kind === "town" && (place.museum || place.stage) && place.townKey === city.townKey;
+    var home = city.art && city.art.kind === "town" && (place.museum || place.stage || place.building) && place.townKey === city.townKey;
     var was = { lat: focus.lat, lon: focus.lon, key: place.townKey || place.slug, town: place.townKey || null,
                 name: (place.art && place.art.kind !== "town") || home ? "" : place.title };
     place = city;
@@ -2167,13 +2169,14 @@
   }
 
   /* One level up from where you are: from a collage's site pressed on a
-     reading's grown globe, the reading; from a museum (or the theatre), its
-     city, unless the city is only that museum; from a work's history opened
-     in a museum or a city, that museum or city; else nothing, the world. */
+     reading's grown globe, the reading; from a museum (or the theatre, or a
+     building gone into from its city's skyline), its city, unless the city is
+     only that museum; from a work's history opened in a museum or a city, that
+     museum or city; else nothing, the world. */
   function levelUp() {
     if (!place) { return null; }
     if (readingBack && readingBack.to === place) { return { name: readingBack.name, go: readingBack.go }; }
-    var home = (place.museum || place.stage) && towns && townBy[place.townKey];
+    var home = (place.museum || place.stage || place.building) && towns && townBy[place.townKey];
     if (home) {
       return home.pass ? null : { name: home.name, go: function () { openTown(home.key, { museum: place.slug }); } };
     }
@@ -12732,6 +12735,11 @@
     if (b.url) { buildingLink.href = b.url; }
     if (buildingLinkAt) { buildingLinkAt.textContent = "Read it at " + (b.source || "The Architectural Authority"); }
     if (city.museum) { showHeld(city.museum, city.via, visit, city.townKey); } else { delete buildingEl.dataset.museum; }
+    // A building standing in a city's skyline square has that city as its way up (buildingTowns), whichever
+    // way it was come to: the cities read now if they are not yet, and the banner says so.
+    if (!city.museum && !towns) {
+      readTowns().then(function () { if (place === city && bannerBackTo && !flying) { bannerBackTo.textContent = backName(levelUp()); } });
+    }
     var walkVia = city.via;
     delete city.via;
     // Come in from the skyline by the fingers: on the heading the city had, already standing (the skyline
@@ -15958,8 +15966,24 @@
   var townAt = {};
   var venueLabel = null;                // the one label a pressed gallery's tile shows
 
+  // An Architecture building with its own spot in a city's skyline square (cityplaces.json) stands in that
+  // city, as its museums do (skyline.js sets it in): no journey between the two, and up from it is the city.
+  var townOfBuilding = {};
+  function buildingTowns(squares) {
+    ((architecture && architecture.buildings) || []).forEach(function (b) {
+      if (b.precision !== "exact" || typeof b.lat !== "number") { return; }
+      (squares || []).forEach(function (p) {
+        var h = (p.side || 0) / 2, kx = 111320 * Math.cos(p.lat * Math.PI / 180);
+        if (!townOfBuilding[b.slug] && Math.abs((b.lon - p.lon) * kx) < h && Math.abs((b.lat - p.lat) * 111320) < h) {
+          townOfBuilding[b.slug] = p.key;
+        }
+      });
+    });
+    cities.forEach(function (c) { if (c.building && !c.museum && townOfBuilding[c.building.slug]) { c.townKey = townOfBuilding[c.building.slug]; } });
+  }
+
   function readTowns() {
-    return Promise.all([readPlaces(), readArt("cities.json")]).then(function (both) {
+    return Promise.all([readPlaces(), readArt("cities.json"), readArt("cityplaces.json")]).then(function (both) {
       var d = both[1];
       if (towns || !d || !d.towns) { return towns; }
       towns = d.towns.map(function (row, i) {
@@ -15974,6 +15998,7 @@
         return t;
       });
       cities.forEach(function (c) { if (c.museum && townOfSlug[c.slug]) { c.townKey = townOfSlug[c.slug]; } });
+      buildingTowns(both[2] && both[2].places);
       return towns;
     });
   }
@@ -16725,7 +16750,7 @@
     open: function (slug) {
       var c = cityOf(slug);
       if (!c || flying) { return false; }
-      if (c.museum) { openMuseum(slug, {}); return true; }
+      if (c.museum || (c.building && c.townKey)) { openMuseum(slug, {}); return true; }
       closeFinder();
       settleSwing();
       if (place === c) { return true; }
@@ -18612,6 +18637,10 @@
                                                        rest: a.when >= 0.999 && !a.byHand && !a.auto } : null };
     },
     museum: function (slug, via) { downToMuseum(slug, via || {}); },
+    // An Architecture building the skyline sets in (skyline.js: one with its own spot in the city's square),
+    // gone into as a museum is: its place stands in the city (buildingTowns), so no journey between the two,
+    // and up from it is the city (levelUp).
+    building: function (file, via) { downToMuseum("building-" + file, via || {}); },
     // Going into a museum from the skyline (skyline.js, in): the city's column, dial and banner let go of
     // over the way, s from 0 to 1, as the rise's are; 0 gives them back.
     entering: function (s) { enteringShow(s); },

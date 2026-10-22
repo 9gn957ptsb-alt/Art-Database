@@ -140,16 +140,28 @@
 
   /* ---- the ground, its buildings, its art -------------------------------- */
 
-  var places = null, artistsAll = null, museumsAll = null;
+  var places = null, artistsAll = null, museumsAll = null, buildingsAll = [];
   function lists() {
-    return Promise.all([once("cityplaces.json"), once("cityartists.json"), once("museums.json")]).then(function (r) {
+    return Promise.all([once("cityplaces.json"), once("cityartists.json"), once("museums.json"), once("architecture.json")]).then(function (r) {
       places = {};
       ((r[0] && r[0].places) || []).forEach(function (p) { places[p.key] = p; });
       artistsAll = (r[1] && r[1].towns) || {};
       museumsAll = {};
       ((r[2] && r[2].museums) || []).forEach(function (m) { museumsAll[m.slug] = m; });
+      // The Architecture layer's buildings with their own spot (a home is only ever at its town).
+      buildingsAll = ((r[3] && r[3].buildings) || []).filter(function (b) { return b.precision === "exact" && typeof b.lat === "number"; });
     });
   }
+  // A city's Architecture buildings: those standing in its square, set in as its museums are (the artist,
+  // 22 Oct 2026, of the Shanghai Grand Opera House in Shanghai's: "Yes to the Shanghai skyline").
+  function buildingsIn(P) {
+    var h = (P.side || 0) / 2, kx = 111320 * Math.cos(P.lat * Math.PI / 180);
+    return buildingsAll.filter(function (b) {
+      return Math.abs((b.lon - P.lon) * kx) < h && Math.abs((b.lat - P.lat) * 111320) < h;
+    });
+  }
+  // What stands in the city in its own model, to be gone into: a museum, or an Architecture building.
+  function stands(a) { return a.kind === "museum" || a.kind === "building"; }
 
   var city = null;                    // what is drawn, for one visit
   var building = null;                // a visit being made ready
@@ -193,15 +205,24 @@
     var owner = new Int16Array(N), room = new Uint8Array(N);
     var arts = [];
 
-    // The museums: their models set in at their points (as a museum's area view sets its own).
-    st.museums.forEach(function (slug) {
+    // The museums, and the Architecture buildings in the square: their models set in at their points (as a
+    // museum's area view sets its own). A building's slug is its place's on the globe ("building-…"), its file
+    // its model's; its year the one its entry gives (it rises then, whatever its plot's cells say).
+    var standing = st.museums.map(function (slug) {
       var m = museumsAll[slug];
+      return m && { kind: "museum", slug: slug, file: slug, m: m, name: shortName(m), full: m.name };
+    }).concat(buildingsIn(P).map(function (b) {
+      return { kind: "building", slug: "building-" + b.slug, file: b.slug, m: b, name: b.name || b.title, full: b.name || b.title,
+               year: parseInt(b.year, 10) || 0 };
+    }));
+    standing.forEach(function (a) {
+      var m = a && a.m;
       if (!m || typeof m.lat !== "number") { return; }
       var at = toCell(m.lat, m.lon);
       if (Math.abs(at.x) > n / 2 - 0.5 || Math.abs(at.y) > n / 2 - 0.5) { return; }
-      var a = { kind: "museum", slug: slug, m: m, name: shortName(m), full: m.name, at: at, cells: [], dots: null, top: 0, k: arts.length };
+      a.at = at; a.cells = []; a.dots = null; a.top = 0; a.k = arts.length;
       arts.push(a);
-      var model = models[slug], ins = null;
+      var model = models[a.file], ins = null;
       if (model && model.parts && window.Models && Models.inset) {
         try { ins = Models.inset(model, function (vi, vj) { return soil(vj, vi, false); }); } catch (e) { ins = null; }
       }
@@ -266,7 +287,7 @@
         }
       }
       // Within a museum: the museum's (a gallery listed at a museum's door is the museum's).
-      if (hit >= 0 && owner[hit] && arts[owner[hit] - 1].kind === "museum") { return; }
+      if (hit >= 0 && owner[hit] && stands(arts[owner[hit] - 1])) { return; }
       var a = { kind: "gallery", vi: gp.vi, name: v[0], full: v[0], at: at, cells: [], n: works[gp.vi] || 1, y0: v[2] || 0, k: arts.length };
       arts.push(a);
       if (hit >= 0) {
@@ -313,7 +334,7 @@
           if (layers) {
             var tint = grain > 1 ? soil(i - i % grain, j - j % grain, false) : s;
             var r0 = years && yr > 0 ? rev(yr, 0) : null;
-            if (o && o.kind === "museum") { E.column(x, y, z, layers, mixTo(s, PALE, 0.86), RAMPS.museum, r0, rise); }
+            if (o && stands(o)) { E.column(x, y, z, layers, mixTo(s, PALE, 0.86), RAMPS.museum, r0, rise); }
             else if (o) { E.column(x, y, z, layers, mixTo(mixTo(s, PALE, 0.62), LIL, 0.42), RAMPS.gallery, r0, rise); }
             else { E.column(x, y, z, layers, mixTo(mixTo(tint, PALE, 0.3), COOL, 0.26), RAMPS.plain, r0, rise); }
             if (o && z + layers * 0.5 > artTop[o.k]) { artTop[o.k] = z + layers * 0.5; }
@@ -346,13 +367,16 @@
     }
     // The museums' models, in their materials, at their real size, raised as the plot is.
     arts.forEach(function (a) {
-      a.z0 = artN[a.k] ? artZ0[a.k] / artN[a.k] : 0;
+      // Its ground: its plot's buildings', else (a building newer than the city's ground, set in a clearing)
+      // the ground at its point.
+      var ci = Math.max(0, Math.min(n - 1, Math.floor(a.at.y + n / 2))), cj = Math.max(0, Math.min(n - 1, Math.floor(a.at.x + n / 2)));
+      a.z0 = artN[a.k] ? artZ0[a.k] / artN[a.k] : stands(a) ? zAt(ci * n + cj) : 0;
       a.top = Math.max(artTop[a.k], a.z0);
-      if (a.kind !== "museum" || !a.ins) { return; }
-      // Its year: the earliest a fifth of its dated cells agree on, if most are dated.
-      var dated = [], tally = {}, all = 0, year = 0;
+      if (!a.ins) { return; }
+      // Its year: its entry's (a building's), else the earliest a fifth of its dated cells agree on, if most are dated.
+      var dated = [], tally = {}, all = 0, year = a.year || 0;
       a.cells.forEach(function (c) { if (g.kind[c] === "b") { all += 1; if (built[c]) { dated.push(built[c]); tally[built[c]] = (tally[built[c]] || 0) + 1; } } });
-      if (all && dated.length * 2 >= all) {
+      if (!year && all && dated.length * 2 >= all) {
         dated.sort(function (p, r) { return p - r; });
         for (var u = 0; u < dated.length && !year; u += 1) { if (tally[dated[u]] * 5 >= dated.length) { year = dated[u]; } }
       }
@@ -755,7 +779,7 @@
       var b = el("button", "skyline-name skyline-" + a.kind);
       b.type = "button";
       b.appendChild(el("span", "skyline-name-text", a.name));
-      b.setAttribute("aria-label", a.kind === "museum" ? "Into " + a.full : a.full + " — its works, in the column");
+      b.setAttribute("aria-label", stands(a) ? "Into " + a.full : a.full + " — its works, in the column");
       b.dataset.k = a.k;
       b.addEventListener("click", function (event) {
         event.stopPropagation();
@@ -780,8 +804,12 @@
                            zoom: base ? base.zoom : view.zoom, px: base ? base.px : view.px, py: base ? base.py : view.py,
                            w: band ? band.w : 0, h: band ? band.h : 0, at: performance.now() };
   }
+  // Into a museum, or a building's own view (land.js: its city its way back up, as a museum's is).
+  function goInto(a, via) {
+    if (a.kind === "building") { Land.city.building(a.file, via); } else { Land.city.museum(a.slug, via); }
+  }
   function pressArt(a, x, y) {
-    if (a.kind === "museum") { rememberView(a.slug); Land.city.museum(a.slug); }
+    if (stands(a)) { rememberView(a.slug); goInto(a); }
     else { Land.city.venue(a.vi, x, y); if (Land.city.pulse) { Land.city.pulse(x, y, 55); } }
   }
   function lightArt(k, on) {
@@ -824,14 +852,17 @@
     var W = window.innerWidth, H = window.innerHeight;
     var budget = Math.max(5, Math.min(21, Math.round(W * H / 46000)));
     var avoid = avoidRects(), boxes = [], count = 0;
-    // Most first: the museums (most saved first), then the galleries (busiest first).
+    // Most first: the museums (most saved first), the buildings, then the galleries (busiest first).
+    var RANK = { museum: 0, building: 1, gallery: 2 };
     var order = marks.slice().sort(function (p, q) {
       var a = p.a, b = q.a;
-      if (a.kind !== b.kind) { return a.kind === "museum" ? -1 : 1; }
-      return a.kind === "museum" ? (b.m.held || 0) - (a.m.held || 0) : b.n - a.n;
+      if (a.kind !== b.kind) { return RANK[a.kind] - RANK[b.kind]; }
+      return a.kind === "museum" ? (b.m.held || 0) - (a.m.held || 0) : a.kind === "gallery" ? b.n - a.n : 0;
     });
-    // No name over a museum's diamond (the way in), its own aside.
-    var diamonds = marks.filter(function (mk) { return mk.a.kind === "museum"; }).map(function (mk) {
+    // On Architecture the museums give way only where a building of the layer stands in the square.
+    var builds = city.arts.some(function (x) { return x.kind === "building"; });
+    // No name over a museum's diamond or a building's square (the way in), its own aside.
+    var diamonds = marks.filter(function (mk) { return stands(mk.a); }).map(function (mk) {
       var q = toScreen(project(f, mk.a.at.x, mk.a.at.y, mk.a.top));
       return { k: mk.a.k, x0: q.x - 5, y0: q.y - 5, x1: q.x + 5, y1: q.y + 5 };
     });
@@ -843,15 +874,17 @@
       mk.btn.hidden = !inside;
       if (!inside) { mk.named = false; return; }
       if (!mk.w) { mk.btn.dataset.named = "true"; mk.w = mk.btn.offsetWidth; mk.h = mk.btn.offsetHeight; }
-      // Another category chosen (the philosophers, the artists, the animal): the museums and galleries give
-      // way, named only when pointed at or tapped; their rings and diamonds stay.
-      var quiet = cat === "philosophers" || cat === "studios" || cat === "characters";
-      var want = !quiet && (a.kind === "museum" || count < budget) && !later || litArt === a.k || namedTap === a;
+      // Another category chosen (the philosophers, the artists, the animal, the buildings): the museums and
+      // galleries give way, named only when pointed at or tapped; their rings and diamonds stay. On
+      // Architecture the buildings are what is named.
+      var quiet = (cat === "philosophers" || cat === "studios" || cat === "characters" || cat === "architecture" && builds) &&
+        !(cat === "architecture" && a.kind === "building");
+      var want = !quiet && (stands(a) || count < budget) && !later || litArt === a.k || namedTap === a;
       var spot = null;
       if (want && (count < budget || litArt === a.k || namedTap === a)) {
-        // Right of it, else left; a museum may be lifted or dropped a line.
+        // Right of it, else left; a museum or a building may be lifted or dropped a line.
         var tries = [[p.x + 7, p.y - mk.h / 2], [p.x - 7 - mk.w, p.y - mk.h / 2]];
-        if (a.kind === "museum") { tries.push([p.x - 6, p.y - mk.h - 8], [p.x - mk.w + 6, p.y - mk.h - 8], [p.x - 6, p.y + 8], [p.x - mk.w + 6, p.y + 8]); }
+        if (stands(a)) { tries.push([p.x - 6, p.y - mk.h - 8], [p.x - mk.w + 6, p.y - mk.h - 8], [p.x - 6, p.y + 8], [p.x - mk.w + 6, p.y + 8]); }
         tries.some(function (xy) {
           var b = { x0: xy[0], y0: xy[1], x1: xy[0] + mk.w, y1: xy[1] + mk.h };
           if (b.x0 < band.x + 4 || b.x1 > band.x + band.w - 4 || b.y0 < band.y + 2 || b.y1 > band.y + band.h - 2) { return false; }
@@ -894,13 +927,13 @@
     if (into && f.scale * 1.42 > T * 0.9) { return; }
     city.arts.forEach(function (a) {
       if (!a.cells.length) { return; }
-      var risen = !city.years || a.kind !== "museum" || shownNow >= 0;
+      var risen = !city.years || !stands(a) || shownNow >= 0;
       var on = {}, ring = {};
       a.cells.forEach(function (c) {
         var p = toScreen(project(f, c % n - half + 0.5, Math.floor(c / n) - half + 0.5, a.z0));
         on[Math.floor(p.x / T) + "," + Math.floor(p.y / T)] = 1;
       });
-      if (a.kind !== "museum" && litArt !== a.k) { return; }
+      if (!stands(a) && litArt !== a.k) { return; }
       Object.keys(on).forEach(function (kk) {
         var ij = kk.split(",").map(Number);
         for (var di = -1; di <= 1; di += 1) {
@@ -910,8 +943,8 @@
           }
         }
       });
-      var lv = litArt === a.k ? 3 : a.kind === "museum" ? 2 : 1;
-      if ((pulseArt === a.k || (pulseArt === -2 && a.kind === "museum")) && age >= 0 && age < 1100 && !still) {
+      var lv = litArt === a.k ? 3 : stands(a) ? 2 : 1;
+      if ((pulseArt === a.k || (pulseArt === -2 && stands(a))) && age >= 0 && age < 1100 && !still) {
         [0, 330, 640].forEach(function (at, e) {
           var t = age - at;
           if (t >= 0 && t < 360) { lv = Math.max(lv, Math.ceil((1 - t / 360) * 4 * Math.pow(1 / PHI, e))); }
@@ -927,12 +960,17 @@
         g.fillRect(x + 1, y + 1, T - 2, T - 2);
       });
     });
-    // A museum's mark is the city's diamond, at the top of its building; a gallery's a lilac point.
+    // A museum's mark is the city's diamond, at the top of its building; a building's a square in
+    // Architecture's tone, as it is on the globe (KINDS.md); a gallery's a lilac point.
     g.globalAlpha = 1;
     marks.forEach(function (mk) {
       if (mk.btn.hidden) { return; }
       var a = mk.a;
-      if (a.kind === "museum") {
+      if (a.kind === "building") {
+        var sq = litArt === a.k ? 4.5 : 3.5;
+        g.fillStyle = "#b8a48a";
+        g.fillRect(Math.round(mk.x - sq), Math.round(mk.y - sq), sq * 2, sq * 2);
+      } else if (a.kind === "museum") {
         var s = litArt === a.k ? 5 : 4;
         g.fillStyle = "#eadfcd";
         g.beginPath();
@@ -1012,6 +1050,10 @@
       var own = ground.hand && ground.hand.line ? ground.hand.line.split(" · ")[0] + " · its own animal, the dial's hand" : "";
       var here = bitsHere().map(function (b) { return b.title + " at " + b.place.split(",")[0]; });
       return [own].concat(here).filter(Boolean).join(" · ");
+    }
+    var builds = city.arts.filter(function (a) { return a.kind === "building"; });
+    if (cat === "architecture" && builds.length) {
+      return builds.map(function (a) { return a.full + (a.year ? " · " + a.year : ""); }).join(" · ");
     }
     return y ? y + " · " + plural(eligible(y).length, "artist here", "artists here") : "";
   }
@@ -1888,8 +1930,8 @@
   var IN_ON = 1.25, IN_ALL = PHI, IN_WHEEL_ON = 1.15, IN_WAIT = 650, IN_BACK = 420, LEAVE_MS = 900;
   var into = null, leaving = null;
   function backOut(t) { var c1 = 1.1, c3 = c1 + 1, u = t - 1; return 1 + c3 * u * u * u + c1 * u * u; }
-  // The museum nearest a point of the screen (its top or its foot) within a hand's reach, else a gallery
-  // under the finger; a gallery right under it, much nearer than any museum, is the gallery.
+  // The museum (or building) nearest a point of the screen (its top or its foot) within a hand's reach, else a
+  // gallery under the finger; a gallery right under it, much nearer than any museum, is the gallery.
   function nearestArt(x, y) {
     var f = frameNow;
     if (!f || !city || !band) { return null; }
@@ -1898,7 +1940,7 @@
     city.arts.forEach(function (a) {
       var top = toScreen(project(f, a.at.x, a.at.y, a.top)), foot = toScreen(project(f, a.at.x, a.at.y, a.z0 || 0));
       var d = Math.min(Math.hypot(top.x - x, top.y - y), Math.hypot(foot.x - x, foot.y - y));
-      if (a.kind === "museum") { if (d < dm) { dm = d; mus = a; } }
+      if (stands(a)) { if (d < dm) { dm = d; mus = a; } }
       else if (d < dg) { dg = d; gal = a; }
     });
     if (gal && dg < 36 && dg * 2.5 < dm) { return gal; }
@@ -1921,7 +1963,7 @@
     // The heading eases onto its diagonal as it is gone into, so the building comes on the very one.
     var h0 = view.heading, h1 = nearestDiagonal(view.swingAt ? view.to : view.heading);
     into = { a: a, k: 1, fingers: !!fingers, base: { zoom: view.zoom, px: view.px, py: view.py }, from: from,
-             h0: h0, h1: a && a.kind === "museum" ? h1 : h0, tween: null, done: false, wheelT: 0, g: g || null };
+             h0: h0, h1: a && stands(a) ? h1 : h0, tween: null, done: false, wheelT: 0, g: g || null };
     view.held = true;                  // the heading holds while it is gone into
     view.swingAt = 0;
     root.dataset.into = a ? a.kind : "ground";
@@ -1956,14 +1998,14 @@
       var c = toScreen(project(f, p.x, p.y, p.z));
       var rc = Math.sqrt(Math.max(1, a.cells.length) / Math.PI) * 1.42 * f.scale;
       var r1 = Math.max(26, rc * 1.15, (a.top - (a.z0 || 0)) * f.ct * f.scale * 0.62), r2 = r1 * 1.8 + 40;
-      var alpha = (a.kind === "museum" ? 0.92 : 0.6) * s;
+      var alpha = (stands(a) ? 0.92 : 0.6) * s;
       veil.hidden = false;
       veil.style.background = "radial-gradient(circle at " + Math.round(c.x) + "px " + Math.round(c.y) + "px, rgba(15,10,7,0) " +
         Math.round(r1) + "px, rgba(15,10,7," + alpha.toFixed(3) + ") " + Math.round(r2) + "px)";
     } else { veil.hidden = true; }
     root.style.setProperty("--in-other", (1 - s).toFixed(3));
     // (Once gone, the museum's own banner is up: the city's are put away already.)
-    if (Land.city.entering && !(leaving && leaving.went)) { Land.city.entering(a && a.kind === "museum" ? s : 0); }
+    if (Land.city.entering && !(leaving && leaving.went)) { Land.city.entering(a && stands(a) ? s : 0); }
   }
   function intoTo(k, x, y, fingers, g) {
     if (!into) {
@@ -1972,7 +2014,7 @@
     var w = into;
     if (w.done || w.tween) { return; }
     w.k = Math.max(1, k);
-    if (w.a && w.a.kind === "museum" && w.k >= IN_ALL) { intoIn(); return; }
+    if (w.a && stands(w.a) && w.k >= IN_ALL) { intoIn(); return; }
     if (w.a && w.a.kind === "gallery" && w.k >= IN_ALL) { intoLetGo(); return; }
     intoView();
   }
@@ -1982,7 +2024,7 @@
     if (!w || w.tween || w.done) { return; }
     window.clearTimeout(w.wheelT);
     var on = w.fingers ? IN_ON : IN_WHEEL_ON;
-    if (w.a && w.a.kind === "museum" && w.k >= on) { intoIn(); return; }
+    if (w.a && stands(w.a) && w.k >= on) { intoIn(); return; }
     if (w.a && w.a.kind === "gallery" && w.k >= on && !w.pressed) {
       var mk = marks[w.a.k];
       w.pressed = true;
@@ -1994,7 +2036,7 @@
   // In: the museum's own view, its building on this heading, faded in over the skyline still coming nearer.
   function intoIn() {
     var w = into;
-    if (!w || w.done || !w.a || w.a.kind !== "museum") { return; }
+    if (!w || w.done || !w.a || !stands(w.a)) { return; }
     w.done = true;
     w.tween = null;
     window.clearTimeout(w.wheelT);
@@ -2004,7 +2046,7 @@
     root.dataset.leaving = "true";
     rememberView(w.a.slug, w.base);
     view.heading = w.h1;
-    Land.city.museum(w.a.slug, { zoom: true, heading: w.h1 });
+    goInto(w.a, { zoom: true, heading: w.h1 });
   }
   function intoEnd(gone) {
     var w = into;
@@ -2057,7 +2099,7 @@
   function keyIn() {
     if (!band || !intoBegin(band.x + band.w / 2, band.y + frameH() / 2, false)) { return; }
     var w = into;
-    if (!w.a || w.a.kind !== "museum") {
+    if (!w.a || !stands(w.a)) {
       if (w.a && marks[w.a.k]) { pressArt(w.a, marks[w.a.k].x, marks[w.a.k].y); }
       w.k = 1.08;
       w.tween = { from: 1.08, to: 1, at: performance.now(), dur: still ? 1 : IN_BACK, back: true };
@@ -2205,7 +2247,7 @@
       // Its animal read while its ground is (the ground dial's hand), so the city is laid out for it at once.
       if (GROUND) { handFor(st.key); }
       var myVisit = visit;
-      var slugs = P.museums || [];
+      var slugs = (P.museums || []).concat(buildingsIn(P).map(function (b) { return b.slug; }));
       building = Promise.all([once("grounds/city-" + st.key + ".json")].concat(slugs.map(function (s) { return once("models/" + s + ".json"); }))
                             .concat([livesRows ? null : once("lives.json")]))
         .then(function (r) {
@@ -2231,7 +2273,9 @@
       root.hidden = false;
       document.documentElement.dataset.skyline = "on";
       canvas.setAttribute("aria-label", st.name + "'s skyline in dots of its ground, seen from above: " +
-        plural(city.arts.filter(function (a) { return a.kind === "museum"; }).length, "museum", "museums") + " and " +
+        plural(city.arts.filter(function (a) { return a.kind === "museum"; }).length, "museum", "museums") +
+        (city.arts.some(function (a) { return a.kind === "building"; }) ?
+          ", " + plural(city.arts.filter(function (a) { return a.kind === "building"; }).length, "building", "buildings") : "") + " and " +
         plural(city.arts.filter(function (a) { return a.kind === "gallery"; }).length, "gallery", "galleries") +
         " named; ← → turn it, + − nearer and farther");
       view.heading = nearestDiagonal(TAU / 8 + Math.floor(Math.random() * 4) * TAU / 4);
@@ -2422,7 +2466,7 @@
         var P = places && places[key];
         if (!P) { return; }
         once("grounds/city-" + key + ".json");
-        (P.museums || []).forEach(function (s) { once("models/" + s + ".json"); });
+        (P.museums || []).concat(buildingsIn(P).map(function (b) { return b.slug; })).forEach(function (s) { once("models/" + s + ".json"); });
         if (!livesRows) { once("lives.json"); }
       });
     },

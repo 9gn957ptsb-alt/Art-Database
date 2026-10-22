@@ -11,7 +11,9 @@
      time: turned to the dial's first years, less of it stands (the share risen goes down), and back;
      ground: the dial lies on the city's ground, its ring wholly in the city's band, its animal (the hand) at
        the dial's year;
-     pressed: a named museum, pressed, goes into the museum, and up again brings the skyline back;
+     pressed: a named museum, pressed, goes into the museum, and up again brings the skyline back; and each
+       Architecture building set into the city (one with its own spot in its square), pressed, opens its
+       own view, and up again brings the skyline back;
      quiet: no page error and no console error but the blocked hosts' (NASA, Artsy's images, Commons,
        Google Fonts are not reached from the sandbox).
 
@@ -164,6 +166,29 @@ function check(tag, ok, what, detail) {
           await P.evaluate(() => Land.up());
           const back = await P.waitForFunction((k) => Skyline.on() && Skyline.state().key === k, key, { timeout: 30000 }).then(() => true, () => false);
           check(tag, back, "up from the museum, the skyline is back");
+        }
+      }
+      // Each Architecture building set into the city, pressed (named or not: its 24 px target), opens its own
+      // view; up again, the skyline is back.
+      const blds = (await P.evaluate(() => Skyline.state())).marks.filter((m) => m.kind === "building");
+      for (const bl of blds) {
+        await P.waitForFunction((k) => Skyline.on() && Skyline.state().key === k && !Land.where().flying, key, { timeout: 30000 }).catch(() => {});
+        await P.waitForTimeout(1500);
+        const pressed = await P.evaluate((name) => {
+          const b = [...document.querySelectorAll(".skyline-building")].find((e) => e.textContent === name && !e.hidden);
+          if (!b) { return false; }
+          b.click(); if (matchMedia("(pointer: coarse)").matches) { b.click(); }
+          return true;
+        }, bl.name);
+        check(tag, pressed, "the building " + bl.name + " is set into the city, pressable");
+        if (!pressed) { continue; }
+        const open = await P.waitForFunction(() => Land.where().at === "building" && !Land.where().flying, null, { timeout: 30000 }).then(() => true, () => false);
+        check(tag, open, "pressed, " + bl.name + " opens its own view", JSON.stringify(await P.evaluate(() => Land.where())));
+        if (open) {
+          await P.waitForTimeout(2000);
+          await P.evaluate(() => Land.up());
+          const back = await P.waitForFunction((k) => Skyline.on() && Skyline.state().key === k, key, { timeout: 30000 }).then(() => true, () => false);
+          check(tag, back, "up from " + bl.name + ", the skyline is back");
         }
       }
       check(tag, !errors.length, "no page errors", errors.slice(0, 3).join(" | "));
