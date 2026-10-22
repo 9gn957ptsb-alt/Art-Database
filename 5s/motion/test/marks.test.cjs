@@ -148,7 +148,8 @@ function suite() {
 
   // --- drawing --------------------------------------------------------------------------------
   const S = 400;
-  const fresh = () => { const c = document.createElement('canvas'); c.width = S; c.height = S; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, S, S); M.fit(x, S, S, 0); return { c, x }; };
+  // software canvases (willReadFrequently): Chromium's first GPU canvases rasterize slightly differently
+  const fresh = () => { const c = document.createElement('canvas'); c.width = S; c.height = S; const x = c.getContext('2d', { willReadFrequently: true }); x.fillStyle = '#fff'; x.fillRect(0, 0, S, S); M.fit(x, S, S, 0); return { c, x }; };
   const px = (c, mx, my) => { const d = c.getContext('2d').getImageData(Math.round(mx * S / 1000), Math.round(my * S / 1000), 1, 1).data; return [d[0], d[1], d[2]]; };
   const dark = (c) => { const d = c.getContext('2d').getImageData(0, 0, S, S).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 128) n++; return n; };
   check('stroke(): draws partial strokes from `from` to `to`', () => {
@@ -179,7 +180,10 @@ function suite() {
     if (!(ce[2] > 200 && ce[0] < 60)) return 'end colour ' + ce;
     const s = fresh(); M.stroke(s.x, bar, { width: w, colours: [[0, '#ff0000'], [0.2, '#00ff00'], [1, '#00ff00']] });
     const c3 = px(s.c, m.x, m.y);
-    return c3[1] > 200 && c3[0] < 40 ? true : 'positioned stops ' + c3;
+    if (!(c3[1] > 200 && c3[0] < 40)) return 'positioned stops ' + c3;
+    const sh = fresh(); M.stroke(sh.x, bar, { width: w, colours: cols, shift: 0.5 });
+    const c4 = px(sh.c, m.x, m.y), c5 = px(sh.c, b.x, b.y), c6 = px(sh.c, a.x, a.y);
+    return c4[0] > 200 && c4[2] < 60 && c5[0] > 110 && c5[0] < 165 && c5[2] > 90 && c5[2] < 140 && c6[0] > 230 ? true : 'shift 0.5 should slide red halfway along: ' + [c6, c4, c5].join(' / ');
   });
   check('stroke(): translucent gradient strokes are even (no darker joints or self-overlaps)', () => {
     const body = M.points('body', 160);
@@ -340,7 +344,7 @@ function suite() {
   });
   const shot = (t, p, env) => {
     const c = document.createElement('canvas'); c.width = 200; c.height = 200;
-    const x = c.getContext('2d');
+    const x = c.getContext('2d', { willReadFrequently: true });
     Motion.render(x, 'zz-test', t, p, Object.assign({ w: 200, h: 200, seed: 7 }, env || {}));
     return { c, x, d: x.getImageData(0, 0, 200, 200).data };
   };
@@ -355,7 +359,7 @@ function suite() {
     const m = s.x.getTransform();
     if (m.a !== 1 || m.e !== 0 || m.f !== 0 || s.x.globalAlpha !== 1) return 'context not restored';
     const tr = document.createElement('canvas'); tr.width = 200; tr.height = 200;
-    Motion.render(tr.getContext('2d'), 'zz-test', 0.5, {}, { w: 200, h: 200, transparent: true });
+    Motion.render(tr.getContext('2d', { willReadFrequently: true }), 'zz-test', 0.5, {}, { w: 200, h: 200, transparent: true });
     return tr.getContext('2d').getImageData(1, 1, 1, 1).data[3] === 0 ? true : 'transparent still filled';
   });
   check('Motion.render(): env.reduced plays the reduced version (still: the end frame)', () => {

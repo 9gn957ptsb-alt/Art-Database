@@ -18,7 +18,9 @@
  *   Marks.morph(a, b, t)            pointwise lerp (unequal lists are resampled to the longer n)
  *   Marks.stroke(ctx, pts, {width, from, to, colours, cap, alpha, shift})
  *                                   thick stroke from fraction `from` to `to` of its length, coloured by
- *                                   a gradient ALONG the whole stroke, so a partial stroke keeps its colours
+ *                                   a gradient ALONG the whole stroke, so a partial stroke keeps its colours;
+ *                                   colours: '#hex' | ['#a', '#b', ...] | [[u, '#a'], ...]; cap: round | butt | square;
+ *                                   shift slides the gradient toward the end by that fraction (end colours extend)
  *   Marks.ribbon(ctx, t, {phase, width, alpha, colours, along, strands, twist, pts})
  *                                   the logo's glassy ribbon: a twisting band of thin translucent strands;
  *                                   t in [0,1] turns it once (seamless loop); along = end fraction or [from, to]
@@ -31,7 +33,8 @@
  *   Marks.rng(seed)                 () => [0,1), mulberry32 from a string or number
  *   Marks.mix(hexA, hexB, t)        '#rrggbb'
  *   Marks.fit(ctx, w, h, pad=0)     applies (and returns) the transform placing mark space centred in a w x h box
- *   helpers: Marks.layer, Marks.at, Marks.transform, Marks.bbox, Marks.colourAt, Marks.rgba, Marks.clamp,
+ *   Marks.layer(ctx, {alpha, composite, filter, blur, resolution}, c => ...)   a group composited once
+ *   helpers: Marks.at, Marks.transform, Marks.bbox, Marks.colourAt, Marks.rgba, Marks.clamp,
  *            Marks.lerp, Marks.smoothstep, Marks.anchors, Marks.PALETTES, Marks.EASES
  *
  *   Motion.register(def)            validates and adds a family (see SPEC.md "Families")
@@ -53,11 +56,11 @@
     // the 5's top bar, left (where it meets the stem) to its bright tip on the right
     bar: 'M 326 231 C 422 231 520 230 616 229',
     // the 5's body: down the leaning stem to the foot, a turn, then round the bowl to its lower-left terminal
-    body: 'M 311 231 C 262 318 211 404 160 491 C 226 452 312 422 404 421 C 484 420 536 476 540 548 ' +
+    body: 'M 311 231 C 262 318 211 404 160 491 C 226 452 312 422 404 421 C 484 420 541.4 476 540 548 ' +
           'C 538 650 448 754 300 759 C 245 761 196 756 154 749',
     // the s, from its top terminal (right) round the upper curve, down the spine, round and out to the left
-    s: 'M 870 514 C 840 503 802 501 770 507 C 738 513 721 547 720 583 C 720 624 764 646 804 667 ' +
-       'C 846 690 862 718 858 752 C 854 802 800 830 740 831 C 690 831 650 826 610 824',
+    s: 'M 870 514 C 840 503 802 501 770 507 C 738 513 721 547 720 583 C 718.9 624 764 646 804 667 ' +
+       'C 846 689.05 862 718 858 752 C 852.1 802 800 830 740 831 C 690 831.8 650 826 610 824',
     // the ribbon's spine: out from under the bowl's terminal on the left, under the bowl, up between the
     // bowl and the s (behind the s), and over the top of the bowl to the foot of the bar
     ribbon: 'M 112 750 C 180 840 310 892 480 878 C 620 866 676 770 680 624 C 684 476 632 368 534 330 ' +
@@ -94,7 +97,6 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const smoothstep = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
   const num = (v, d) => (typeof v === 'number' && isFinite(v) ? v : d);
-  const pingpong = (x) => { const m = ((x % 2) + 2) % 2; return m <= 1 ? m : 2 - m; };
 
   /* ------------------------------------------------------------------------------------------
    * paths: parse SVG path data (M L H V C S Q T Z, absolute and relative) into cubic segments,
@@ -519,30 +521,50 @@
   }
   const getT = (ctx) => (ctx.getTransform ? ctx.getTransform() : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 });
 
-  // draw(c) into a scratch layer of the same canvas, then composite it once with {alpha, composite, filter}:
-  // a translucent group without darker overlaps where its own strokes cross
+  // draw(c) into a scratch layer of the same canvas, then composite it once with
+  // {alpha, composite, filter, blur, resolution}: a translucent group without darker overlaps where its own
+  // strokes cross. blur (device px) is done cheaply: the layer is drawn at reduced resolution (0.5 from a
+  // 6 px blur, 0.25 from 20 px; or `resolution`), blurred there and scaled up, where the blur hides it.
+  let blurCanvas = null;
   function layer(ctx, o, draw) {
     if (typeof o === 'function') { draw = o; o = {}; }
     o = o || {};
     const alpha = clamp01(num(o.alpha, 1));
+    const blur = Math.max(0, num(o.blur, 0));
     if (alpha <= 0) return;
-    if (alpha >= 0.999 && !o.composite && !o.filter) { draw(ctx); return; }
+    if (alpha >= 0.999 && !o.composite && !o.filter && !blur) { draw(ctx); return; }
     const cw = ctx.canvas.width, ch = ctx.canvas.height;
-    const sc = scratch(cw, ch);
+    const r = clamp(num(o.resolution, blur >= 20 ? 0.25 : blur >= 6 ? 0.5 : 1), 0.05, 1);
+    const lw = Math.max(1, Math.ceil(cw * r)), lh = Math.max(1, Math.ceil(ch * r));
+    const sc = scratch(lw, lh);
     if (!sc) { ctx.save(); ctx.globalAlpha *= alpha; draw(ctx); ctx.restore(); return; }
     const s = sc.getContext('2d');
     s.setTransform(1, 0, 0, 1, 0, 0); s.globalAlpha = 1; s.globalCompositeOperation = 'source-over'; s.filter = 'none';
-    s.clearRect(0, 0, cw, ch);
+    s.clearRect(0, 0, lw, lh);
     const m = getT(ctx);
-    s.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
+    s.setTransform(m.a * r, m.b * r, m.c * r, m.d * r, m.e * r, m.f * r);
     depth++;
     try { s.save(); draw(s); s.restore(); } finally { depth--; }
+    let src = sc;
+    if (blur > 0) {
+      if (!blurCanvas) blurCanvas = makeCanvas(lw, lh);
+      if (blurCanvas) {
+        if (blurCanvas.width < lw || blurCanvas.height < lh) { blurCanvas.width = Math.max(blurCanvas.width, lw); blurCanvas.height = Math.max(blurCanvas.height, lh); }
+        const b = blurCanvas.getContext('2d');
+        b.setTransform(1, 0, 0, 1, 0, 0); b.globalAlpha = 1; b.globalCompositeOperation = 'source-over';
+        b.clearRect(0, 0, lw, lh);
+        b.filter = 'blur(' + (blur * r).toFixed(2) + 'px)';
+        b.drawImage(sc, 0, 0, lw, lh, 0, 0, lw, lh);
+        b.filter = 'none';
+        src = blurCanvas;
+      }
+    }
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = ctx.globalAlpha * alpha;
     if (o.composite) ctx.globalCompositeOperation = o.composite;
     if (o.filter) ctx.filter = o.filter;
-    ctx.drawImage(sc, 0, 0, cw, ch, 0, 0, cw, ch);
+    ctx.drawImage(src, 0, 0, lw, lh, 0, 0, cw, ch);
     ctx.restore();
   }
 
@@ -550,9 +572,11 @@
    * strokes
    * ---------------------------------------------------------------------------------------- */
   // paint a polyline X/Y (u = fraction of the full stroke at each point). One colour: a single stroked path.
-  // A gradient: each piece is a butt slab (overlapping the next by a device pixel so no seams show), the
-  // outside of every bend is filled with a wedge, and the ends get caps; so every point of the stroke takes
-  // the colour of the nearest place on its centerline (round caps per piece would smear colours forward).
+  // A gradient: consecutive pieces whose colour (within 2 levels) and width agree are stroked as one round-
+  // jointed path with butt ends; each such run overlaps the next by a device pixel (no seams), the outside
+  // of the bend between runs is filled with a wedge, and the ends get caps. So every point of the stroke takes
+  // the colour of the nearest place on its centerline (round caps per piece would smear colours forward), in
+  // a few dozen draw calls per stroke. colourAt(u) returns [r, g, b].
   function paint(c, X, Y, U, widthAt, colourAt, cap, solid, px) {
     const m = X.length;
     c.lineJoin = 'round';
@@ -563,58 +587,63 @@
       c.stroke();
       return;
     }
-    // directions of the non-degenerate pieces
-    const D = [];
+    const ext = px || 0.5;
+    // the non-degenerate pieces: [i, dx, dy] (unit direction), with their colour and width
+    const P = [];
     for (let i = 0; i < m - 1; i++) {
       const dx = X[i + 1] - X[i], dy = Y[i + 1] - Y[i], d = Math.hypot(dx, dy);
-      D.push(d > 1e-9 ? [dx / d, dy / d, d] : null);
+      if (d > 1e-9) { const um = (U[i] + U[i + 1]) / 2; P.push({ i, dx: dx / d, dy: dy / d, col: colourAt(um), w: widthAt(um) }); }
     }
-    let first = D.findIndex((d) => d), last = -1;
-    for (let i = D.length - 1; i >= 0; i--) if (D[i]) { last = i; break; }
-    if (first < 0) return;
-    const ext = px || 0.5;
+    if (!P.length) return;
+    X = X.slice(); Y = Y.slice();
+    const f0 = P[0], f1 = P[P.length - 1];
     if (cap === 'square') {   // square caps: extend the ends, then paint as butt
-      const w0 = widthAt(U[first]) / 2, w1 = widthAt(U[last + 1]) / 2;
-      X = X.slice(); Y = Y.slice();
-      X[first] -= D[first][0] * w0; Y[first] -= D[first][1] * w0;
-      X[last + 1] += D[last][0] * w1; Y[last + 1] += D[last][1] * w1;
-      D[first][2] += w0; D[last][2] += w1;
+      X[f0.i] -= f0.dx * f0.w / 2; Y[f0.i] -= f0.dy * f0.w / 2;
+      X[f1.i + 1] += f1.dx * f1.w / 2; Y[f1.i + 1] += f1.dy * f1.w / 2;
     }
-    const capAt = (i, d, sign) => {   // a half disc beyond point i, facing sign * d
-      const a = Math.atan2(sign * d[1], sign * d[0]);
-      c.fillStyle = colourAt(U[i]);
-      c.beginPath(); c.moveTo(X[i] - sign * d[0] * ext, Y[i] - sign * d[1] * ext);
+    const tolW = Math.max(ext * 0.4, 0);
+    const near = (a, b) => Math.abs(a[0] - b[0]) <= 2 && Math.abs(a[1] - b[1]) <= 2 && Math.abs(a[2] - b[2]) <= 2;
+    const capAt = (i, dx, dy, sign) => {   // a half disc beyond point i, facing sign * (dx, dy)
+      const a = Math.atan2(sign * dy, sign * dx);
+      c.fillStyle = css(colourAt(U[i]));
+      c.beginPath(); c.moveTo(X[i] - sign * dx * ext, Y[i] - sign * dy * ext);
       c.arc(X[i], Y[i], widthAt(U[i]) / 2, a - Math.PI / 2 - 0.02, a + Math.PI / 2 + 0.02);
       c.closePath(); c.fill();
     };
-    if (cap === 'round') capAt(first, D[first], -1);
+    const wedge = (i, a, b) => {   // fill the outside of the bend at point i between pieces a and b
+      const cr = a.dx * b.dy - a.dy * b.dx, dot = a.dx * b.dx + a.dy * b.dy;
+      if (Math.abs(cr) <= 1e-6 && dot > 0) return;
+      const side = cr > 0 ? -1 : 1;
+      const a0 = Math.atan2(side * a.dx, -side * a.dy), a1 = Math.atan2(side * b.dx, -side * b.dy);
+      let sweep = a1 - a0;
+      while (sweep > Math.PI) sweep -= TAU;
+      while (sweep < -Math.PI) sweep += TAU;
+      const pad = 0.03 * Math.sign(sweep || 1);
+      c.fillStyle = css(colourAt(U[i]));
+      c.beginPath(); c.moveTo(X[i], Y[i]);
+      c.arc(X[i], Y[i], widthAt(U[i]) / 2, a0 - pad, a0 + sweep + pad, sweep < 0);
+      c.closePath(); c.fill();
+    };
+    if (cap === 'round') capAt(f0.i, f0.dx, f0.dy, -1);
     c.lineCap = 'butt';
-    let prev = null;
-    for (let i = first; i <= last; i++) {
-      const d = D[i];
-      if (!d) continue;
-      if (prev) {   // the wedge on the outside of the bend at point i
-        const cr = prev[0] * d[1] - prev[1] * d[0], dot = prev[0] * d[0] + prev[1] * d[1];
-        if (Math.abs(cr) > 1e-6 || dot < 0) {
-          const side = cr > 0 ? -1 : 1;
-          const a0 = Math.atan2(side * prev[0], -side * prev[1]), a1 = Math.atan2(side * d[0], -side * d[1]);
-          let sweep = a1 - a0;
-          while (sweep > Math.PI) sweep -= TAU;
-          while (sweep < -Math.PI) sweep += TAU;
-          const pad = 0.03 * Math.sign(sweep || 1);
-          c.fillStyle = colourAt(U[i]);
-          c.beginPath(); c.moveTo(X[i], Y[i]);
-          c.arc(X[i], Y[i], widthAt(U[i]) / 2 + ext * 0.5, a0 - pad, a0 + sweep + pad, sweep < 0);
-          c.closePath(); c.fill();
-        }
-      }
-      const um = (U[i] + U[i + 1]) / 2, e = i < last ? ext : 0;
-      c.strokeStyle = colourAt(um);
-      c.lineWidth = widthAt(um);
-      c.beginPath(); c.moveTo(X[i], Y[i]); c.lineTo(X[i + 1] + d[0] * e, Y[i + 1] + d[1] * e); c.stroke();
-      prev = d;
+    let g = 0;
+    while (g < P.length) {
+      // grow a run of pieces that look alike
+      let h = g + 1;
+      while (h < P.length && P[h].i === P[h - 1].i + 1 && near(P[h].col, P[g].col) && Math.abs(P[h].w - P[g].w) <= Math.max(tolW, P[g].w * 0.015)) h++;
+      const first = P[g], last = P[h - 1];
+      if (g > 0) wedge(first.i, P[g - 1], first);
+      const mid = (U[first.i] + U[last.i + 1]) / 2;
+      const e = h < P.length ? ext : 0;
+      c.strokeStyle = css(colourAt(mid));
+      c.lineWidth = widthAt(mid);
+      c.beginPath(); c.moveTo(X[first.i], Y[first.i]);
+      for (let k = g; k < h - 1; k++) c.lineTo(X[P[k].i + 1], Y[P[k].i + 1]);
+      c.lineTo(X[last.i + 1] + last.dx * e, Y[last.i + 1] + last.dy * e);
+      c.stroke();
+      g = h;
     }
-    if (cap === 'round') capAt(last + 1, D[last], 1);
+    if (cap === 'round') capAt(f1.i + 1, f1.dx, f1.dy, 1);
   }
 
   // draw a prepared band (X/Y/U arrays) at alpha, through a scratch layer clipped to its bounds when translucent
@@ -699,12 +728,12 @@
     const stops = parseStops(o.colours != null ? o.colours : o.colors);
     const shift = num(o.shift, 0);
     const solid = isSolid(stops) ? css(stops[0][1]) : null;
-    const colourAt = solid ? () => solid : (u) => css(stopsAt(stops, pingpong(u + shift)));
+    const colourAt = (u) => stopsAt(stops, u - shift);   // stopsAt clamps: end colours extend
     const widthAt = () => width;
     const cum = cumulative(pts), L = cum[cum.length - 1];
     if (pts.length < 2 || L < 1e-9) {   // a collapsed stroke is a dot
       if (cap !== 'round') return;
-      ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = solid || colourAt((from + to) / 2);
+      ctx.save(); ctx.globalAlpha *= alpha; ctx.fillStyle = solid || css(colourAt((from + to) / 2));
       ctx.beginPath(); ctx.arc(pts[0][0], pts[0][1], width / 2, 0, TAU); ctx.fill(); ctx.restore();
       return;
     }
@@ -800,7 +829,7 @@
       const colourAt = (u) => {
         const c = stopsAt(stops, clamp01(0.12 + 0.78 * ck + 0.2 * (u - 0.5)));
         const away = 0.5 - 0.5 * Math.cos(angle(u) + lane(k) * 1.2);   // paler where the band turns away
-        return css(tint(c, edge ? 0.5 + 0.3 * away : 0.06 + 0.3 * away));
+        return tint(c, edge ? 0.5 + 0.3 * away : 0.06 + 0.3 * away);
       };
       drawBand(ctx, X, Y, CU.slice(), widthAt, colourAt, 'round', null, alpha * (edge ? 0.85 : 0.72 - 0.3 * ck), sw);
     }

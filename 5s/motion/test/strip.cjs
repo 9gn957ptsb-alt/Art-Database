@@ -225,7 +225,13 @@ function drawStrip({ rows, frames, size, theme, params, seed, dpr }) {
 
 function runChecks({ ids, size }) {
   const S = size;
-  const canvas = () => { const c = document.createElement('canvas'); c.width = S; c.height = S; return c; };
+  // Software canvases throughout, and one warm-up render of every family first: Chromium rasterizes a GPU
+  // canvas (here Marks' scratch layers) slightly differently until a readback moves it to software, which
+  // would look like non-determinism in whichever frame happens to come first.
+  const canvas = () => { const c = document.createElement('canvas'); c.width = S; c.height = S; c.getContext('2d', { willReadFrequently: true }); return c; };
+  for (const id of ids) for (const theme of ['light', 'dark']) for (const style of Motion.get(id).styles) {
+    try { const c = canvas(); Motion.render(c.getContext('2d'), id, 0.5, { style }, { w: S, h: S, theme, seed: 'warm' }); c.getContext('2d').getImageData(0, 0, 1, 1); } catch (e) { /* reported below */ }
+  }
   const frame = (id, t, p, theme, c) => {
     c = c || canvas();
     const ctx = c.getContext('2d');
@@ -251,7 +257,7 @@ function runChecks({ ids, size }) {
           if (!same(a, b)) problems.push(`${tag}: t=0.37 differs between two renders (not deterministic, or state leaks between frames)`);
           const c1 = frame(id, 1, p, theme);
           const bg = Marks.palette(Motion.resolve(id, p).palette, theme).bg;
-          const bgc = document.createElement('canvas'); bgc.width = S; bgc.height = S;
+          const bgc = canvas();
           const bx = bgc.getContext('2d'); bx.fillStyle = bg; bx.fillRect(0, 0, S, S);
           const share = diffShare(pixels(c1), pixels(bgc), 24);
           ink = Math.min(ink, share);
