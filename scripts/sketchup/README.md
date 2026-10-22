@@ -31,9 +31,14 @@ redirects to Trimble's S3 bucket; fetch it with redirects followed:
 
 (`api.sketchup.com` is allowed under the environment's Network access.)
 
-Built so far: Walt Disney Concert Hall (the whole building) and Guggenheim
+Built so far: Walt Disney Concert Hall (the whole building), Guggenheim
 Bilbao (the titanium only — `to_model.py … --keep-except blob` keeps the
-model's straight parts and replaces its blobs with the meshes).
+model's straight parts and replaces its blobs with the meshes) and UNPUENTE's
+S-curved bridge (`unpuente_bridge.py`, `sketchup/unpuente-bridge.skp`: the
+deck and parapets as meshes added to the ordinary parts of the house with
+`to_model.py … --keep-except mesh`, which keeps every part). A mesh wall
+thinner than a voxel falls between the voxel columns (`fillMesh` samples one
+vertical line through each column's centre), so draw thin walls a voxel thick.
 
 Not a building: the artist's impossible triangle (three tribars round a gap),
 Rocket's block (`impossible_triangle.py`, `sketchup/impossible-triangle.skp`).

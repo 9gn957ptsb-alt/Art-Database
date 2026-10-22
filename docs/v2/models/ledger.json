@@ -65,13 +65,14 @@
   },
   "the-diaphanous-cave-casa-cosmo-by-cristian-nanzer": {
     "name": "Casa Cosmo",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-22",
+    "passes": 4,
     "sketchup": true,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: roof-slab edge, slab chimney, uphill paved terrace with stone-edged planter and tree, white stone piles"
+      "2026-09-24 refined: roof-slab edge, slab chimney, uphill paved terrace with stone-edged planter and tree, white stone piles",
+      "2026-10-22 refined (3 rounds, photos 00-15): chimney 1.8 m wide and set behind the skylight, 2.4 m above the roof; the uphill ground lowered 2.4 to 1.9 m so the plinth shows under the deck, with the concrete walk, its steps and the 3.9 m corten fin on its base; the east face solid with one small high window (the slot and shutter removed); warm tan soffits in the galleries, the steel edge beam and three roof beams; stays a SketchUp candidate (squared plan)"
     ]
   },
   "embracing-nature-naman-pure-spa-by-mia-design-studio": {
@@ -89,24 +90,26 @@
   },
   "balance-and-permanence-unpuente-by-paolini-arquitectos": {
     "name": "UNPUENTE",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-22",
+    "passes": 4,
     "sketchup": true,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: standing-seam roofs now mid-grey and ribbed (mesh sheet over the dark gables), as in the drone view"
+      "2026-09-24 refined: standing-seam roofs now mid-grey and ribbed (mesh sheet over the dark gables), as in the drone view",
+      "2026-10-22 refined in SketchUp (3 rounds, photos 00-23): the bridge, a stepped zigzag, is now a smooth S built in SketchUp (scripts/sketchup/unpuente_bridge.py, sketchup/unpuente-bridge.skp), a steel-grating deck and timber parapets read back as two meshes, after the overhead photograph; the roofs solid slate (dark charcoal as photographed, the open mesh's white streaks gone); a feather-grass bed at the bridge"
     ]
   },
   "honouring-memory-centro-cultural-los-lavaderos-by-modulo-arquitectos-and-amd-arquitectos": {
     "name": "Centro Cultural Los Lavaderos",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-22",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: perforated brick now shows as staggered dark voxels in patches and bands, stair tower raised clear of the roofs, bigger copper beech, shallower neighbour roofs"
+      "2026-09-24 refined: perforated brick now shows as staggered dark voxels in patches and bands, stair tower raised clear of the roofs, bigger copper beech, shallower neighbour roofs",
+      "2026-10-22 refined (3 rounds, photos 00-15): north front's east part windows moved to where the dusk view puts them (x 4.2-6.2 second floor, 7.2-9.2 and 10.4-12.2 first); the neighbours raised (east house 10.2 m, west 8.6 m); the stair tower 14.5 m, 2.1 m above the roof (16 m was too high); the south cantilever 1.0 m deep; five more trees, eight shrubs and four lavender tussocks in the garden"
     ]
   },
   "a-dialogue-of-textures-simon-hamui-space-by-simon-hamui-studio": {
@@ -123,24 +126,26 @@
   },
   "tree-as-origin-residence-204-by-estudio-bearzotti": {
     "name": "Residence 204",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-22",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: bedroom-wing glass band brought forward under a shorter eave so it reads, tree moved out of the pool, carport tree growing through its roof"
+      "2026-09-24 refined: bedroom-wing glass band brought forward under a shorter eave so it reads, tree moved out of the pool, carport tree growing through its roof",
+      "2026-10-22 refined (3 rounds, photos 00-22): the pool dark slate-teal as in every photograph; three wide lawn steps with concrete nosings in front of the gallery; the chimney box moved from the wing's far end to just west of the entrance hall, 1.8 m wide; pale grey-brown trunks on the native trees (the carob keeps its dark wood) and an espinillo at the pool's west end"
     ]
   },
   "escala-humana-wines-winery-by-estudio-monte-arquitectura-estudio-rare-and-unamuno-arquitectura": {
     "name": "Escala Humana Wines Winery",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-22",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: removed the unphotographed basin (vines in its place), vine stems lowered to their photographed height"
+      "2026-09-24 refined: removed the unphotographed basin (vines in its place), vine stems lowered to their photographed height",
+      "2026-10-22 refined (3 rounds, aerial 06 and photos 00-05): roof slate (grey-blue, not near-black); the vines cleared 4 m off the walls (136 stems) into the bare gravel yard of the aerial, with a pale dirt track beside the pergola and a forecourt before the entrance; slatted canopy over the entrance strip; four dry shrubs and a heap of white boulders"
     ]
   },
   "the-da-vinci-of-architecture-frank-gehry-19292025": {
