@@ -200,6 +200,8 @@ export function reflect(s, meta = {}) {
     start: meta.created_at || s.turns[0]?.at || '',
     stage: stage?.stage || null,
     turns: s.turns.length,
+    // read from its middle: the first event read came well after the session began
+    partial: Boolean(meta.created_at && s.turns[0] && new Date(s.turns[0].at) - new Date(meta.created_at) > 15 * 60e3),
     tools: s.turns.reduce((n, t) => n + t.tools.length, 0),
     errors: errors.length,
     traps,
@@ -239,8 +241,9 @@ export function report(rows) {
   }
   out.push('', '| Date | Session | Stage | Turns | Errors | Replies still | Lines + / − | Tested | Cost |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of rows) {
-    out.push(`| ${day(r.start)} | ${r.title} | ${r.stage || '—'} | ${r.turns || '—'} | ${r.turns ? r.errors : '—'} | ${pct(r.still)} | ${r.turns ? `${r.added} / ${r.removed}` : '—'} | ${pct(r.tested)} | $${(r.cost || 0).toFixed(2)} |`);
+    out.push(`| ${day(r.start)} | ${r.title} | ${r.stage || '—'} | ${r.turns ? r.turns + (r.partial ? '+' : '') : '—'} | ${r.turns ? r.errors : '—'} | ${pct(r.still)} | ${r.turns ? `${r.added} / ${r.removed}` : '—'} | ${pct(r.tested)} | $${(r.cost || 0).toFixed(2)} |`);
   }
+  if (rows.some(r => r.partial)) out.push('', 'A + after the turns: the transcript was read from its middle, so only its later turns are counted.');
   return out.join('\n');
 }
 
