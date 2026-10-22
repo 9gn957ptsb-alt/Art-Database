@@ -19,7 +19,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, 'src')
 # In the order src/index.html loads them: the hub's drivers (hub.js, hubpage.js) before app.js.
-SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'app.js']
+# Connect your apps adds connect.js (FiveSConnect: data files read on the device, the 5s connector), also before app.js.
+SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'app.js']
 SCRIPT_RE = re.compile(r'<script\s+src="([^"]+)"')
 
 SKELETON_HEAD = (

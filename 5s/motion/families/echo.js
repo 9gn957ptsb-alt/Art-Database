@@ -66,16 +66,86 @@
   // the ribbon's colours, from violet to blue: the colour of the echoes (the turn's colour is the past here)
   const echoTone = (pal, i, n) => M.colourAt(pal.ribbon, 0.12 + (0.62 * i) / Math.max(1, n - 1));
 
+  /* ---------------------------------------------------------------------------------------------------------
+   * The refinements (22 Oct): extrude, strata, riso. They push Depth and Ripple (both starred) further: the
+   * mark seen through time as solid, flat, layered copies, landing in five counted beats. Each starts and ends
+   * on the still mark (riso starts on its plates out of register), and each holds up in one flat colour.
+   * ------------------------------------------------------------------------------------------------------- */
+  const flatPal = (pal) => pal.name === 'paper' || pal.name === 'ink';
+  const VIOLET = (pal) => (pal.name === 'logo' || pal.name === 'inverse' || pal.name === 'turn' ? M.colourAt(pal.ribbon, 0.3) : pal.iris);
+
+  // extrude: Depth's die-cut copies pushed into one solid block, like 1970s poster type. The side thickens on
+  // beats one to four (5, 10, 20, 30 copies), swings from lower-left to upper-right on beat four as if the light
+  // moved (reaching 40 copies), and retracts into the front face on beat five, which lands with Depth's pop.
+  const XBEAT = [0.05, 0.15, 0.25, 0.35, 0.64];
+  const XCOPIES = [0, 5, 10, 20, 30];
+  const XA0 = Math.atan2(0.72, -1), XA1 = Math.atan2(-0.72, 1) ;   // lower-left, upper-right
+  function extrude(ctx, t, p, env, pal) {
+    const I = p.intensity, k = p.weight, ease = M.easing(p.easing);
+    const flat = flatPal(pal);
+    const L = 60 + 140 * p.spread, gap = L / 40;
+    let n = 0;
+    for (let i = 0; i < 4; i++) n += (XCOPIES[i + 1] - XCOPIES[i]) * ease(span(t, XBEAT[i], XBEAT[i] + 0.07));
+    const sw = span(t, XBEAT[3], XBEAT[3] + 0.22);
+    n += 10 * M.ease.inOutCubic(sw);
+    const retract = M.ease.inCubic(span(t, XBEAT[4], XBEAT[4] + 0.1));
+    n *= 1 - retract;
+    const ang = M.lerp(XA0, XA1 - 2 * Math.PI * 0, M.ease.outBack(0.6 + 2.2 * I)(sw));
+    const dir = [Math.cos(ang), Math.sin(ang)];
+    // the block is kept centred on the view: the face sits half the extrusion away from home
+    const sh = -0.5 * gap * n;
+    const fx = dir[0] * sh, fy = dir[1] * sh;
+    // the face: squeezed a touch as the side retracts into it, then Depth's pop
+    const land = span(t, XBEAT[4] + 0.1, XBEAT[4] + 0.28);
+    const pop = M.ease.outBack(1.4 + 1.2 * I)(land);
+    const S = land > 0 ? (1 - (0.04 + 0.05 * I)) + (0.04 + 0.05 * I) * pop : 1 - (0.04 + 0.05 * I) * retract;
+    const rim = 1.6, faceRim = 5 * k;
+    const N = Math.ceil(n - 1e-6);
+    // the ribbon stays in the face's plane but behind the block, so the side reads solid over it
+    if (p.ribbon) {
+      ctx.save(); ctx.translate(fx, fy);
+      about(ctx, A.letters, S, (c) => M.ribbon(c, 0.1 * I * Math.sin(Math.PI * sw), { colours: pal.ribbon }));
+      ctx.restore();
+    }
+    if (N > 0) {
+      const back = flat ? M.mix(pal.bg, pal.ink, 0.25) : VIOLET(pal);
+      const front = flat ? M.mix(pal.bg, pal.ink, 0.45) : pal.cobalt;
+      group(ctx, 1, (c) => {
+        about(c, A.letters, S, (cc) => {
+          // copies in bands of five, one flat tone a band (cobalt at the front to violet at the back); the back
+          // copy of each band is cut out by a hairline rim, so the bands read as ridges
+          const bands = Math.ceil(N / 5);
+          for (let j = N; j >= 1; j--) {
+            const d = gap * Math.min(j, n), b = Math.ceil(j / 5);
+            cc.save();
+            cc.translate(fx + dir[0] * d, fy + dir[1] * d);
+            if (j % 5 === 0 || j === N) erase(cc, pal, k, rim, 1);
+            letters(cc, pal, k, 0, M.mix(front, back, bands > 1 ? (b - 1) / (bands - 1) : 0));
+            cc.restore();
+          }
+          cc.save(); cc.translate(fx, fy); erase(cc, pal, k, faceRim, 1); cc.restore();
+        });
+      });
+    }
+    ctx.save();
+    ctx.translate(fx, fy);
+    about(ctx, A.letters, S, (c) => letters(c, pal, k, 0));
+    ctx.restore();
+  }
+
+  function strata(ctx, t, p, env, pal) { if (p.ribbon) M.ribbon(ctx, 0, { colours: pal.ribbon }); letters(ctx, pal, p.weight, 0); }
+  function riso(ctx, t, p, env, pal) { if (p.ribbon) M.ribbon(ctx, 0, { colours: pal.ribbon }); letters(ctx, pal, p.weight, 0); }
+
   Motion.register({
     id: 'echo',
     name: 'Echo',
     idea: 'Five echoes of the mark, one a beat: four leave it and ripple away, the fifth is the mark itself, solid.',
     why: 'Five in a row: five cards sorted, five days kept, the same small gesture repeated until it becomes a habit.',
     moments: ['five-done', 'streak', 'path'],
-    styles: ['ripple', 'trail', 'depth'],
+    styles: ['ripple', 'trail', 'depth', 'extrude', 'strata', 'riso'],
     params: {
       duration: { default: 1000, min: 500, max: 3000, step: 50 },
-      style: { default: 'ripple', options: ['ripple', 'trail', 'depth'] },
+      style: { default: 'ripple', options: ['ripple', 'trail', 'depth', 'extrude', 'strata', 'riso'] },
       spread: { default: 0.5, min: 0, max: 1, step: 0.05 },      // how far the echoes travel from the mark
       easing: { default: 'outCubic', options: M.EASES.slice() }
     },
@@ -87,6 +157,10 @@
       const ease = M.easing(p.easing);
       const I = p.intensity, k = p.weight;
       const dark = isDark(pal.bg);
+
+      if (p.style === 'extrude') { extrude(ctx, t, p, env, pal); return; }
+      if (p.style === 'strata') { strata(ctx, t, p, env, pal); return; }
+      if (p.style === 'riso') { riso(ctx, t, p, env, pal); return; }
 
       if (p.style === 'trail') {
         // the mark slides in from the left (decelerating), leaning into the move and righting itself at the end

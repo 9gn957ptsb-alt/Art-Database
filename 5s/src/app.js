@@ -13,6 +13,7 @@
   const G = window.FiveSGround || null;
   const HUB = window.FiveSHub || null;          // Your hub: GitHub's naming rules and filled-in links
   const HUBPAGE = window.FiveSHubPage || null;  // Your hub: the hub page built from the seed
+  const CX = window.FiveSConnect || null;       // Connect your apps: data files read here, the 5s connector
   const doc = document;
   const $ = (sel, root) => (root || doc).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || doc).querySelectorAll(sel));
@@ -348,6 +349,12 @@
     const bg = (c.colours && isHex(c.colours[0])) ? c.colours[0] : '';
     const bgs = bg ? 'background-color:' + bg + ';' : '';
     if (c.own) {
+      // Brought in from another app (a link, a file): its picture, or its source's letter until one comes.
+      if (mode !== 'crop' && fromApps(ownRec(c.id))) {
+        const src = ownSrc(c, 'thumb');
+        if (src) return '<span class="' + k + '" style="' + bgs + '"><img src="' + esc(src) + '" alt=""></span>';
+        return '<span class="' + k + ' ph" style="' + phStyle(c) + '">' + phMark(c) + (src === undefined ? '<img data-own="' + esc(c.id) + '" data-what="thumb" alt="">' : '') + '</span>';
+      }
       if (mode === 'crop') {
         const src = ownSrc(c, 'img');
         const crop = c.crop || [0.375, 0.375, 0.25, 0.25];
@@ -687,6 +694,7 @@
       '<div class="actions">' +
         '<button type="button" class="btn btn-keep btn-big" data-act="start" id="btn-start">Start</button>' +
         '<button type="button" class="btn btn-big" data-act="bring" aria-haspopup="dialog">Bring in your own</button>' +
+        '<button type="button" class="btn btn-big" data-act="connect" aria-haspopup="dialog">Connect your apps</button>' +
       '</div>';
   }
 
@@ -701,7 +709,15 @@
     let art = '';
     if (!c) art = '';
     else if (c.kind === 'colour') art = bandsHTML(c.colours);
-    else if (c.own) {
+    else if (c.own && fromApps(ownRec(c.id, S))) {
+      // From another app: its picture once it has one; until then its source's letter, and why.
+      const src = ownSrc(c, 'img');
+      if (!isHex(c.colours[0])) n.classList.add('paper');
+      art = '<span class="ph-art" style="' + phStyle(c) + '" aria-hidden="true">' + phMark(c) + '</span>' +
+        (src ? '<img class="art" src="' + esc(src) + '" alt="" draggable="false">' : src === undefined ? '<img class="art" data-own="' + esc(c.id) + '" data-what="img" alt="" draggable="false">' : '') +
+        '<p class="ownmissing"' + (src === null ? '' : ' hidden') + '><span>' + esc(waitWords(ownRec(c.id, S))) + '</span></p>';
+      if (src === null) n.setAttribute('aria-label', describeBefore(c) + ' ' + waitWords(ownRec(c.id, S)));
+    } else if (c.own) {
       const src = ownSrc(c, 'img');
       art = (src ? '<img class="art" src="' + esc(src) + '" alt="" draggable="false">' : src === null ? bandsHTML(c.colours) : '<img class="art" data-own="' + esc(c.id) + '" data-what="img" alt="" draggable="false">') +
         '<p class="ownmissing"' + (src === null ? '' : ' hidden') + '><span>This image isn’t on this device. Its colours stand in.</span></p>';
@@ -1030,6 +1046,7 @@
         '<button type="button" class="btn btn-keep btn-big wide" data-act="another">Another five</button>' +
         '<button type="button" class="btn btn-big" data-act="goto" data-view="set">Set what you kept</button>' +
         (S.own.length ? '' : '<button type="button" class="btn btn-big" data-act="bring" aria-haspopup="dialog">Bring in your own</button>') +
+        (S.own.length ? '' : '<button type="button" class="btn btn-big" data-act="connect" aria-haspopup="dialog">Connect your apps</button>') +
       '</div>';
     hydrate(el);
   }
@@ -1069,7 +1086,8 @@
     const ro = readOnly();
     let html = '<div class="wrap"><div class="view-head"><h1 class="h1" tabindex="-1">Split</h1>' +
       '<p class="lede">Everything you kept, broken into its parts.</p>' +
-      '<div class="actions">' + (ro ? '' : '<button type="button" class="btn btn-keep btn-big" data-act="bring" aria-haspopup="dialog">' + icon('plus') + 'Bring in your own</button>') + exampleButton(st) + '</div></div>';
+      '<div class="actions">' + (ro ? '' : '<button type="button" class="btn btn-keep btn-big" data-act="bring" aria-haspopup="dialog">' + icon('plus') + 'Bring in your own</button>') +
+      (ro ? '' : '<button type="button" class="btn btn-big" data-act="connect" aria-haspopup="dialog">' + icon('link') + 'Connect your apps</button>') + exampleButton(st) + '</div></div>';
     html += '<div class="split-grid">';
     // Colours: the hues first, so the first rows show the spectrum of what you keep; neutrals after.
     const cols = huesFirst(P.keptColours);
@@ -1100,9 +1118,12 @@
     }
     // Brought in, Sources, Let go
     const brought = st.own.filter((o) => o.let == null).map((o) => cardOf(o.id, st)).filter(Boolean).reverse();
+    // A data file can bring in a couple of hundred things: folded, the newest 24 show (Connect your apps).
+    const broughtAll = !!ui.splitAll.brought || brought.length <= 24;
     html += sec('Brought in', brought.length || null, brought.length
-      ? '<ul class="rows">' + brought.map((c) => '<li><button type="button" class="rowbtn" data-act="detail" data-id="' + esc(c.id) + '" aria-haspopup="dialog">' + thumbHTML(c, 'work') +
-        '<span><span class="t">' + esc(c.title || 'Untitled') + '</span><br><span class="s">' + esc(KIND_LABEL[c.kind] + ' · ' + c.source) + '</span></span><span class="r">' + esc(fmtDate(c.at)) + '</span></button></li>').join('') + '</ul>'
+      ? '<ul class="rows">' + (broughtAll ? brought : brought.slice(0, 24)).map((c) => '<li><button type="button" class="rowbtn" data-act="detail" data-id="' + esc(c.id) + '" aria-haspopup="dialog">' + thumbHTML(c, 'work') +
+        '<span><span class="t">' + esc(c.title || 'Untitled') + '</span><br><span class="s">' + esc(KIND_LABEL[c.kind] + ' · ' + c.source + waitTag(ownRec(c.id, st))) + '</span></span><span class="r">' + esc(fmtDate(c.at)) + '</span></button></li>').join('') + '</ul>' +
+        (brought.length > 24 ? '<button type="button" class="linkbtn more" data-act="split-all" data-key="brought">' + (ui.splitAll.brought ? 'Show fewer' : 'Show all ' + brought.length) + '</button>' : '')
       : emptyBox('Photos, pins and saves you bring in appear here. They count as kept, and their colours and textures join your parts.'));
     html += sec('Sources', null, P.sources.length
       ? '<ul class="sources">' + P.sources.map((s) => '<li><span>' + esc(String(s.source).replace(/'/g, '’')) + '</span><span class="n">' + s.n + '</span></li>').join('') + '</ul>' +
@@ -1138,6 +1159,11 @@
 
   function slotImg(c, cls) {
     if (!c) return '';
+    if (c.own && fromApps(ownRec(c.id))) {
+      const src = ownSrc(c, 'img');
+      if (src) return '<img class="' + (cls || '') + '" src="' + esc(src) + '" alt="">';
+      return '<span class="ph ph-slot" style="' + phStyle(c) + '">' + phMark(c) + (src === undefined ? '<img class="' + (cls || '') + '" data-own="' + esc(c.id) + '" data-what="img" alt="">' : '') + '</span>';
+    }
     if (c.own) {
       const src = ownSrc(c, 'img');
       if (src) return '<img class="' + (cls || '') + '" src="' + esc(src) + '" alt="">';
@@ -1766,6 +1792,7 @@
     if (c.own) html += '<p class="verdict-line ' + (c.let == null ? 'kept' : 'passed') + '">' + icon(c.let == null ? 'keep' : 'letgo') + (c.let == null ? 'In your database' : 'Let go') + '</p>';
     html += '<dl class="facts">' + facts.filter((f) => f[1]).map((f) => '<dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd>').join('') + '</dl>';
     html += '<ul class="colours-list" aria-label="Colours">' + (c.colours || []).filter(isHex).map((h) => '<li><span class="sw" style="background:' + h + '"></span>' + esc(F.colourName(h)) + ' <span class="mono">' + h.toUpperCase() + '</span></li>').join('') + '</ul>';
+    if (c.own) html += fromAppsHTML(ownRec(id, st));
     if (notes.length) html += '<div class="notes">' + notes.map((n) => '<div class="note"><p class="q">' + esc(NOTE_Q[n.q] || NOTE_Q.free) + '</p><p class="a">' + esc(n.text) + '</p></div>').join('') + '</div>';
     if (!c.own && c.url && /^https:\/\//.test(c.url)) html += '<div class="actions"><a class="btn" href="' + esc(c.url) + '" target="_blank" rel="noopener">View on Artsy' + icon('out') + '</a></div>';
     if (c.own && !readOnly()) {
@@ -1982,6 +2009,795 @@
     closeSheet();
     renderView();
     say('Removed ' + (c ? '“' + (c.title || 'Untitled') + '”' : 'it') + ' from your database.');
+  }
+
+  // ================================================================ CONNECT YOUR APPS (SPEC "Connect your apps")
+  //
+  // Five doors for the taste people already keep in other apps, simplest first. Two work in the page
+  // itself: Your data file (an app's "download your data" file, read on this device by FiveSConnect)
+  // and Bring in images (the sheet above, unchanged). Paste a link and Ask Claude go through the 5s
+  // connector, reached with the artifact's mcp capability (FiveSConnect.connector, server "5s"); Sign
+  // in to the app waits for each app's approval. The page works without the connector: until
+  // claude.use("mcp") resolves to a namespace that lists the "5s" server, those doors say what opens
+  // them. Whatever comes in becomes a brought thing (FiveS.bring), kept by definition, carrying its
+  // addresses (image, link) and, until its picture arrives through the connector's item_image,
+  // coloursPending. A picture that arrives is kept like a person's own image (imgStore) and measured
+  // on the canvas (FiveSBring.process). `cid` is the thing's id in the connector, when it has one.
+
+  const PER_FILE = 200;              // things one file adds at a time
+  const STATE_MAX = 200 * 1024;      // the state stays well under the db's document limit (256 KiB)
+  const PICS_PER_VISIT = 24;         // pictures fetched without asking, a visit (the connector reads 30 a minute)
+  const FILE_SOURCES = ['Instagram', 'Pinterest', 'Google Takeout', 'X', 'TikTok', 'Are.na', 'Flickr', 'Tumblr', 'Your file'];
+  const FILE_ACCEPT = '.json,.js,.html,.htm,.csv,.tsv,.txt,.zip,application/json,text/html,text/csv,text/plain,application/zip';
+  const CX_LINE = CX ? CX.CONNECT_LINE : 'Connect 5s to Claude (Settings → Connectors → Add custom connector) to open this door.';
+
+  const DOORS = [
+    { key: 'link', icon: 'link', name: 'Paste a link', needs: true,
+      does: 'A public board, channel or page: 5s reads its pictures.',
+      works: 'Pinterest boards, Are.na channels, Flickr, Tumblr, any web page' },
+    { key: 'signin', icon: 'signin', name: 'Sign in to the app', needs: true,
+      does: 'Sign in once, read-only, and 5s brings in your saves.',
+      works: 'Pinterest, Are.na, Spotify (album covers), Flickr' },
+    { key: 'file', icon: 'file', name: 'Your data file',
+      does: 'The “download your data” file an app gives you, read on this device. Nothing is uploaded.',
+      works: 'Instagram saved posts, Pinterest, Google Takeout, TikTok favourites, X bookmarks and likes' },
+    { key: 'images', icon: 'image', name: 'Bring in images',
+      does: 'Photos, screenshots and pins as pictures. Their colours are read on this device.',
+      works: 'Everything' },
+    { key: 'ask', icon: 'chat', name: 'Ask Claude', needs: true,
+      does: 'In any chat with 5s connected, ask in your own words.',
+      works: 'Anything Claude can reach: web pages, other connectors' },
+  ];
+  const DOOR_BY = {};
+  DOORS.forEach((d) => { DOOR_BY[d.key] = d; });
+
+  const cx = {
+    conn: null, status: 'checking',      // "checking" until use("mcp") answers; then "connected", "reauth" or "none"
+    door: null,                          // null: the five doors; "link", "file" or "ask"
+    link: { url: '', busy: false, found: null, sel: new Set(), kind: 'image', err: null, done: null },
+    file: { busy: false, name: '', found: null, sel: new Set(), have: new Set(), room: PER_FILE, kind: 'image', source: 'Your file', err: null, shown: 50 },
+    ask: { link: '' },
+    over: { busy: false, err: null },
+    pics: { running: false, tried: new Set(), got: 0, paused: false, err: null },
+  };
+
+  // -- the person's own record of a brought thing (the engine's card() leaves addresses out)
+
+  function ownRec(id, st) {
+    const list = (st || active()).own || [];
+    return list.find((o) => o && o.id === id) || (st ? null : S.own.find((o) => o && o.id === id)) || null;
+  }
+  // Brought in from another app (a link or a data file): it has addresses, and its picture may not be here.
+  const fromApps = (o) => !!(o && (typeof o.link === 'string' || typeof o.image === 'string'));
+
+  function withOwn(st, id, patch) {
+    return Object.assign({}, st, { own: st.own.map((o) => {
+      if (!o || o.id !== id) return o;
+      const x = Object.assign({}, o);
+      for (const k of Object.keys(patch)) { if (patch[k] === undefined) delete x[k]; else x[k] = patch[k]; }
+      return x;
+    }) });
+  }
+
+  function freshOwnId(st) {
+    for (let i = 0; i < 1000; i++) {
+      const id = B ? B.newId() : 'y' + Math.floor(Math.random() * 60466176).toString(36).padStart(5, '0');
+      if (!st.own.some((o) => o && o.id === id)) return id;
+    }
+    return 'y' + Date.now().toString(36);
+  }
+
+  // -- the designed placeholder: the source's letter, on the thing's colour or on paper
+
+  function phStyle(c) {
+    const h = c && isHex((c.colours || [])[0]) ? c.colours[0] : null;
+    if (!h) return '';
+    const L = lum(h);
+    const ink = (L + 0.05) / 0.0578 >= 1.05 / (L + 0.05) ? '#16131F' : '#FFFFFF';
+    return '--phc:' + h + ';--phi:' + ink + ';';
+  }
+  function phMark(c) {
+    const ch = CX ? CX.sourceInitial(c && c.source) : String((c && c.source) || '•').charAt(0).toUpperCase();
+    return '<b class="ph-i" aria-hidden="true">' + esc(ch) + '</b>';
+  }
+
+  function waitWords(rec) {
+    if (!rec) return '';
+    if (!rec.image) return 'A link you saved, with no picture.';
+    if (rec.noPicture) return 'Its picture couldn’t be brought over.';
+    if (cx.status === 'connected') return rec.cid ? 'Its picture is on its way through 5s.' : 'Its picture comes through 5s: open Connect your apps to bring it over.';
+    return 'Its picture comes when 5s is connected in Claude.';
+  }
+  function waitTag(rec) {
+    if (!fromApps(rec)) return '';
+    if (!rec.image) return ' · Link only';
+    if (rec.noPicture) return ' · No picture';
+    return rec.coloursPending || ownImgs.get(rec.id) === null ? ' · Picture to come' : '';
+  }
+  function fromAppsHTML(rec) {
+    if (!fromApps(rec)) return '';
+    let h = '';
+    if (!ownImgs.get(rec.id)) h += '<p class="small">' + esc(waitWords(rec)) + '</p>';
+    const href = rec.link || rec.image;
+    if (typeof href === 'string' && /^https:\/\//.test(href)) {
+      h += '<div class="actions"><a class="btn" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">Open where it came from' + icon('out') +
+        '<span class="visually-hidden"> (opens in a new tab)</span></a></div>';
+    }
+    return h;
+  }
+
+  const hostOf = (href) => { try { return new URL(href).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+  function shortAddr(href) {
+    try {
+      const u = new URL(href);
+      const s = u.hostname.replace(/^www\./, '') + decodeURI(u.pathname).replace(/\/$/, '');
+      return s.length > 48 ? s.slice(0, 47) + '…' : s;
+    } catch (e) { return String(href || '').slice(0, 48); }
+  }
+  // A name for a thing whose file gave none: what it is, where it lives.
+  function linkName(href) {
+    let u;
+    try { u = new URL(href); } catch (e) { return ''; }
+    const h = u.hostname, p = u.pathname;
+    if (/instagram\.com$/.test(h) && /^\/(p|reel|tv)\//.test(p)) return 'Instagram post';
+    if (/pinterest\./.test(h) && /^\/pin\//.test(p)) return 'Pinterest pin';
+    if (/(^|\.)(twitter|x)\.com$/.test(h) && /\/status(es)?\//.test(p)) return 'X post';
+    if (/tiktok/.test(h)) return 'TikTok video';
+    if (/are\.na$/.test(h) && /\/block\//.test(p)) return 'Are.na block';
+    return h.replace(/^www\./, '');
+  }
+
+  // -- the sheet
+
+  function openConnect(opener) {
+    if (readOnly()) setExample(false);
+    cx.door = null;
+    openSheet('connect', 'Connect your apps', connectHTML, opener, { wide: true });
+  }
+
+  function openDoor(key) {
+    const prev = cx.door;
+    cx.door = key && DOOR_BY[key] ? key : null;
+    ui.sheetTitle = cx.door ? DOOR_BY[cx.door].name : 'Connect your apps';
+    refreshSheet();
+    $('#sheet-body').scrollTop = 0;
+    if (!cx.door && prev) { const b = $('[data-act="door"][data-door="' + prev + '"]', dlg) || $('#door-' + prev + ' .door-name', dlg); if (b) b.focus(); }
+  }
+
+  function updateConnectSheet() { if (ui.sheet === 'connect') refreshSheet(); }
+
+  function connectHTML() {
+    if (cx.door === 'link') return linkDoorHTML();
+    if (cx.door === 'file') return fileDoorHTML();
+    if (cx.door === 'ask') return askDoorHTML();
+    return doorsHTML();
+  }
+
+  function doorState(d) {
+    if (d.key === 'signin') return ['later', 'Not yet'];
+    if (!d.needs || cx.status === 'connected') return ['open', 'Open'];
+    if (cx.status === 'checking') return ['wait', 'Checking'];
+    return ['wait', 'Needs 5s in Claude'];
+  }
+  function opensLine(d) {
+    if (!d.needs) return '';
+    if (cx.status === 'reauth') return 'Reconnect 5s in Claude (Settings → Connectors) to open this door.';
+    if (d.key === 'signin') return cx.status === 'connected' ? 'Each app has to approve 5s first. Until then, use your data file or a link.' : CX_LINE + ' Each app also has to approve 5s.';
+    return cx.status === 'connected' ? '' : CX_LINE;
+  }
+
+  function doorRow(d) {
+    const [cls, word] = doorState(d);
+    const opens = opensLine(d);
+    let btn = '';
+    if (d.key === 'link' && cls === 'open') btn = '<button type="button" class="btn" data-act="door" data-door="link">Paste a link</button>';
+    else if (d.key === 'file') btn = '<button type="button" class="btn btn-ink" data-act="door" data-door="file">Choose your data file</button>';
+    else if (d.key === 'images') btn = '<button type="button" class="btn" data-act="bring" aria-haspopup="dialog">Bring in images</button>';
+    else if (d.key === 'ask') btn = '<button type="button" class="btn" data-act="door" data-door="ask">' + (cls === 'open' ? 'Ask Claude' : 'See what to say') + '</button>';
+    return '<li class="door is-' + cls + '" id="door-' + d.key + '">' +
+      '<span class="door-ic" aria-hidden="true">' + icon(d.icon) + '</span>' +
+      '<div class="door-body">' +
+        '<div class="door-top"><h3 class="door-name" tabindex="-1">' + esc(d.name) + '</h3><span class="state">' + esc(word) + '</span></div>' +
+        '<p class="door-does">' + esc(d.does) + '</p>' +
+        '<p class="door-for"><b>Works for</b> ' + esc(d.works) + '</p>' +
+        (opens ? '<p class="door-opens">' + esc(opens) + '</p>' : '') +
+        btn +
+      '</div></li>';
+  }
+
+  function doorsHTML() {
+    let h = '<p class="lede">Bring in what you’ve already saved in other apps. Nothing to install, and 5s never asks for a password.</p>';
+    if (cx.status === 'connected') h += '<p class="cx-on">' + icon('keep') + '<span>5s is connected in Claude.</span></p>';
+    h += overHTML();
+    h += '<ol class="doors">' + DOORS.map(doorRow).join('') + '</ol>';
+    return h;
+  }
+
+  // Things from files that wait for their pictures, and pictures on their way (only with the connector).
+  function overHTML() {
+    if (cx.status !== 'connected') return '';
+    const waiting = S.own.filter((o) => o && o.image && !o.cid && !o.noPicture).length;
+    let h = '';
+    if (cx.over.busy) h += '<p class="progress">Bringing pictures over…</p>';
+    else if (waiting) {
+      h += '<div class="cx-over"><p>' + esc(plural(waiting, 'thing') + ' from your files ' + (waiting === 1 ? 'is' : 'are') + ' waiting for ' + (waiting === 1 ? 'its picture' : 'their pictures') + '.') + '</p>' +
+        '<button type="button" class="btn btn-iris" data-act="cx-over" id="cx-over">Bring the pictures over</button></div>';
+    }
+    if (cx.over.err) h += errHTML(cx.over.err);
+    if (cx.pics.running) h += '<p class="progress">Pictures are coming in.</p>';
+    else if (cx.pics.paused) h += '<div class="cx-over"><p>More pictures are waiting.</p><button type="button" class="btn btn-iris" data-act="cx-pictures" id="cx-pictures">Bring the rest of the pictures</button></div>';
+    if (cx.pics.err && !cx.pics.running) h += errHTML(cx.pics.err);
+    return h;
+  }
+
+  function errHTML(e) {
+    return '<div class="cx-err" role="alert"><p class="err">' + esc(e.why || 'That didn’t work.') + '</p>' + (e.resolution ? '<p>' + esc(e.resolution) + '</p>' : '') + '</div>';
+  }
+
+  function backHTML(focus) {
+    return '<button type="button" class="linkbtn back" data-act="doors"' + (focus ? ' data-autofocus' : '') + '>' + icon('left') + 'All five doors</button>';
+  }
+
+  function kindSeg(which, kind) {
+    return '<fieldset class="fieldset-seg"><legend>Kind, for all of them</legend><div class="seg">' + OWN_KINDS.map((kd) =>
+      '<label' + (kind === kd ? ' class="on"' : '') + '><input type="radio" name="cx-kind-' + which + '" value="' + kd + '"' + (kind === kd ? ' checked' : '') + '>' + KIND_LABEL[kd] + '</label>').join('') + '</div></fieldset>';
+  }
+
+  function selbar(which, k, n) {
+    return '<div class="selbar"><span class="small" id="cx-count-' + which + '">' + k + ' of ' + n + ' chosen</span>' +
+      '<button type="button" class="linkbtn" data-act="cx-all" data-which="' + which + '">Choose all</button>' +
+      '<button type="button" class="linkbtn" data-act="cx-none" data-which="' + which + '">Choose none</button></div>';
+  }
+
+  function pickRow(which, key, it, on, source, note) {
+    const title = it.title || linkName(it.link || it.image) || shortAddr(it.link || it.image);
+    const what = note || ((it.image ? 'With a picture' : 'Link only') + ' · ' + hostOf(it.link || it.image));
+    return '<li><label class="pick"><input type="checkbox" data-pick="' + which + '" value="' + esc(key) + '"' + (on ? ' checked' : '') + (note ? ' disabled' : '') + '>' +
+      '<span class="th ph">' + phMark({ source }) + '</span>' +
+      '<span class="pick-t"><span class="t">' + esc(title) + '</span><span class="s">' + esc(what) + '</span></span></label></li>';
+  }
+
+  // -- Paste a link
+
+  function linkDoorHTML() {
+    const L = cx.link, on = cx.status === 'connected' && !!cx.conn;
+    let h = backHTML(!on) + '<p class="lede">Paste the address of a public board, channel or page. 5s shows you its pictures first; nothing is added until you choose.</p>';
+    if (!on) h += '<p class="door-opens">' + esc(opensLine(DOOR_BY.link)) + '</p>';
+    h += '<form class="linkform" data-form="connect-link"><label class="field" for="cx-url"><span>A public board, channel or page</span></label>' +
+      '<div class="row"><input type="url" id="cx-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://www.are.na/…" value="' + esc(L.url) + '"' + (on ? ' data-autofocus' : ' disabled') + '>' +
+      '<button type="submit" class="btn btn-ink" id="cx-read"' + (on && !L.busy ? '' : ' disabled') + '>' + (L.busy === 'read' ? 'Reading…' : 'Read link') + '</button></div></form>' +
+      '<p class="small">Works for ' + esc(DOOR_BY.link.works) + '. Public links only: 5s never signs in to other sites.</p>';
+    if (L.err) h += errHTML(L.err);
+    if (L.done) h += linkDoneHTML(L.done);
+    else if (L.found) h += linkFoundHTML();
+    return h;
+  }
+
+  function linkFoundHTML() {
+    const L = cx.link, f = L.found, n = f.items.length;
+    if (!n) {
+      return '<div class="cx-err" role="alert"><p class="err">' + esc(f.why || 'Nothing at that link offers a picture 5s can read.') + '</p>' + (f.resolution ? '<p>' + esc(f.resolution) + '</p>' : '') + '</div>';
+    }
+    const k = L.sel.size;
+    return '<h3 class="found-h" id="cx-found-h" tabindex="-1">' + esc(plural(n, 'picture') + ' from ' + f.source) + '</h3>' +
+      (f.title || f.more ? '<p class="small">' + esc((f.title ? '“' + f.title + '”' : '') + (f.title && f.more ? ' · ' : '') + (f.more ? 'the first ' + n + '; there are more' : '')) + '</p>' : '') +
+      kindSeg('link', L.kind) + selbar('link', k, n) +
+      '<ul class="found">' + f.items.map((it, i) => pickRow('link', String(i), it, L.sel.has(String(i)), f.source)).join('') + '</ul>' +
+      '<p class="small">Their pictures come over through 5s after you add them, and their colours are read here.</p>' +
+      '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-act="cx-link-add" id="cx-link-add"' + (k && !L.busy ? '' : ' disabled') + '>' +
+        (L.busy === 'add' ? 'Adding…' : 'Add to my database (' + k + ')') + '</button></div>';
+  }
+
+  function linkDoneHTML(d) {
+    const whys = uniq(d.skipped.map((s) => s.why).filter(Boolean)).slice(0, 3);
+    return '<div class="cx-done" role="status"><p><b>' + esc(d.added ? 'Added ' + plural(d.added, 'thing') + ' to your database.' : 'Nothing was added.') + '</b>' +
+      (d.added ? ' ' + esc('Their pictures are on their way.') : '') + '</p>' +
+      (d.skipped.length ? '<p>' + esc(plural(d.skipped.length, 'picture') + ' left out: ' + whys.join(' ')) + '</p>' : '') +
+      (d.err ? '<p>' + esc(d.err.why + ' ' + (d.err.resolution || '')) + '</p>' : '') + '</div>' +
+      '<div class="actions">' + (d.added ? '<button type="button" class="btn btn-keep" data-act="cx-split" data-autofocus>See them in Split</button>' : '') +
+      '<button type="button" class="btn" data-act="cx-again"' + (d.added ? '' : ' data-autofocus') + '>Read another link</button></div>';
+  }
+
+  function cxErr(e) {
+    if (CX && e instanceof CX.ConnectError) {
+      if (e.connect && cx.status === 'connected') { cx.status = 'none'; }
+      return e;
+    }
+    return { why: 'Something didn’t work just now.', resolution: 'Try again in a moment.' };
+  }
+
+  async function cxReadLink() {
+    const L = cx.link;
+    const input = $('#cx-url');
+    if (input) L.url = input.value;
+    const url = String(L.url || '').trim();
+    if (!url) { if (input) input.focus(); return; }
+    if (L.busy || !cx.conn) return;
+    L.busy = 'read'; L.err = null; L.found = null; L.done = null;
+    refreshSheet();
+    say('Reading the link…');
+    try {
+      const r = await cx.conn.readLink(url);
+      const items = (Array.isArray(r.items) ? r.items : []).filter((it) => it && typeof it.image === 'string');
+      L.found = { source: r.source || 'The web', title: r.title || null, more: !!r.more, items, why: r.why || '', resolution: r.resolution || '' };
+      L.sel = new Set(items.map((_, i) => String(i)));
+      say(items.length ? plural(items.length, 'picture') + ' found on ' + L.found.source + '. All are chosen.' : (r.why || 'No pictures there.') + ' ' + (r.resolution || ''));
+    } catch (e) {
+      L.err = cxErr(e);
+      say(L.err.why + ' ' + (L.err.resolution || ''));
+    }
+    L.busy = false;
+    if (ui.sheet === 'connect' && cx.door === 'link') {
+      refreshSheet();
+      const h = $('#cx-found-h');
+      if (h) h.focus();
+    }
+  }
+
+  // The things bring_in added, kept here too: same id (unless this device already uses it), cid the connector's.
+  function mirrorAdded(added, given) {
+    const thumbs = new Map();
+    for (const g of given || []) if (g && g.image && g.thumb) { try { thumbs.set(new URL(g.image).href, g.thumb); } catch (e) { /* not an address */ } }
+    let st = S;
+    const t = now();
+    const ids = [];
+    for (const a of added) {
+      if (!a || typeof a.id !== 'string' || typeof a.image !== 'string') continue;
+      const same = st.own.find((o) => o && (o.cid === a.id || (o.image && o.image === a.image)));
+      if (same) { st = withOwn(st, same.id, { cid: a.id }); ids.push(same.id); continue; }
+      const id = st.own.some((o) => o && o.id === a.id) ? freshOwnId(st) : a.id;
+      const hexes = (Array.isArray(a.colours) ? a.colours : []).map((c) => (c && typeof c === 'object' ? c.hex : c)).filter(isHex);
+      st = F.bring(st, { id, kind: a.kind, name: a.name || '', source: a.source || 'The web', colours: hexes, crop: a.crop || null, texture: a.texture == null ? null : a.texture, w: null, h: null }, t);
+      const extra = { image: a.image, cid: a.id };
+      if (typeof a.link === 'string' && a.link) extra.link = a.link;
+      const th = thumbs.get(a.image);
+      if (th) extra.thumb = th;
+      if (a.colours_pending || !hexes.length) extra.coloursPending = true;
+      st = withOwn(st, id, extra);
+      ids.push(id);
+    }
+    if (st !== S) commit(st, { noRender: true });
+    return ids;
+  }
+
+  async function cxAddLink() {
+    const L = cx.link;
+    if (L.busy || !L.found || !cx.conn) return;
+    const chosen = L.found.items.filter((_, i) => L.sel.has(String(i)));
+    if (!chosen.length) return;
+    L.busy = 'add'; L.err = null;
+    updateLinkButtons();
+    say('Adding ' + plural(chosen.length, 'picture') + '…');
+    const added = [], skipped = [];
+    let err = null;
+    try {
+      let queue = chosen.slice();
+      for (let round = 0; queue.length && round < 8; round++) {
+        const batch = queue.slice(0, 60);
+        const r = await cx.conn.bringIn(batch, L.kind);
+        const got = Array.isArray(r.added) ? r.added : [];
+        added.push(...got);
+        (Array.isArray(r.skipped) ? r.skipped : []).forEach((s) => skipped.push(s));
+        const rest = Array.isArray(r.remaining) ? r.remaining : [];
+        if (!got.length && rest.length >= batch.length) break; // no progress this round: leave the rest
+        queue = rest.concat(queue.slice(60));
+      }
+    } catch (e) { err = cxErr(e); }
+    L.busy = false;
+    const ids = added.length ? mirrorAdded(added, chosen) : [];
+    if (!ids.length && err) { L.err = err; refreshSheet(); say(err.why + ' ' + (err.resolution || '')); return; }
+    const src = L.found.source;
+    L.found = null; L.sel = new Set(); L.url = '';
+    if (ids.length) fetchPictures();
+    if (ids.length && !skipped.length && !err) {
+      closeSheet();
+      showView('split', { focus: true });
+      const h = $('#sec-brought-in');
+      if (h) h.scrollIntoView({ block: 'start' });
+      say('Added ' + plural(ids.length, 'thing') + ' from ' + src + '. They’re in Split under Brought in. Their pictures are on their way.');
+      return;
+    }
+    L.done = { added: ids.length, skipped, err };
+    refreshSheet();
+    say((ids.length ? 'Added ' + plural(ids.length, 'thing') + '.' : 'Nothing was added.') + (skipped.length ? ' ' + plural(skipped.length, 'picture') + ' left out.' : ''));
+  }
+
+  function updateLinkButtons() {
+    const L = cx.link;
+    const add = $('#cx-link-add');
+    if (add) { add.disabled = !L.sel.size || !!L.busy; add.textContent = L.busy === 'add' ? 'Adding…' : 'Add to my database (' + L.sel.size + ')'; }
+    const c = $('#cx-count-link');
+    if (c && L.found) c.textContent = L.sel.size + ' of ' + L.found.items.length + ' chosen';
+  }
+
+  // -- Your data file
+
+  function foundWords(f) {
+    return plural(f.links, 'link') + ' found, ' + (f.pictures === 0 ? 'none with pictures' : f.pictures === 1 ? '1 with a picture' : f.pictures + ' with pictures') + '.';
+  }
+
+  function stateBytes(st) {
+    const s = JSON.stringify(st);
+    try { return new TextEncoder().encode(s).length; } catch (e) { return s.length * 2; }
+  }
+  // About what one thing from a file adds to the saved state (its record, its addresses, its name).
+  const itemBytes = (it, source) => 210 + (it.image ? it.image.length + 40 : 0) + (it.link ? it.link.length + 10 : 0) + Math.min(180, (it.title || '').length * 3) + String(source || '').length;
+  function roomLeft(items, source) {
+    let left = STATE_MAX - stateBytes(S);
+    let n = 0;
+    for (const it of items) {
+      if (n >= PER_FILE) break;
+      const b = itemBytes(it, source);
+      if (left < b) break;
+      left -= b;
+      n++;
+    }
+    return n;
+  }
+
+  function fileDoorHTML() {
+    const D = cx.file;
+    let h = backHTML(!D.found) + '<p class="lede">Most apps let you download your data. Drop the file they give you here, as it is: 5s reads it on this device and shows you what it found before adding anything.</p>' +
+      '<div class="drop" id="cx-drop"><p>Drop the file here, or</p>' +
+        '<input type="file" id="cx-file" class="visually-hidden" accept="' + FILE_ACCEPT + '">' +
+        '<label class="btn btn-ink" for="cx-file" id="cx-pick">' + icon('file') + 'Choose a file</label>' +
+        '<p class="where">Nothing leaves this device.</p></div>' +
+      '<p class="small">Where to find it: in the app’s settings, look for “Download your data” or “Download your information”. Apps can take a day to send it.</p>';
+    if (D.busy) h += '<p class="progress">Reading ' + esc(D.name) + '…</p>';
+    if (D.err) h += errHTML(D.err);
+    if (D.found) h += fileFoundHTML();
+    return h;
+  }
+
+  function fileFoundHTML() {
+    const D = cx.file, f = D.found;
+    const fresh = f.items.filter((it) => !D.have.has(it.key));
+    let h = '<h3 class="found-h" id="cx-found-h" tabindex="-1">' + esc(f.name) + '</h3>' +
+      '<p class="found-sum" id="cx-found-sum">' + esc(foundWords(f)) + '</p>';
+    const notes = [];
+    if (D.have.size) notes.push(D.have.size === 1 ? 'One is already in your 5s.' : D.have.size + ' are already in your 5s.');
+    if (fresh.length > D.room) {
+      notes.push(D.room < PER_FILE
+        ? 'Your 5s has room for ' + D.room + ' more, so the first ' + D.room + ' are chosen.'
+        : 'One file adds up to ' + PER_FILE + ' at a time, so the first ' + PER_FILE + ' are chosen. Add the same file again for the next ones.');
+    }
+    notes.push(...(f.notes || []));
+    if (notes.length) h += '<p class="small" id="cx-file-notes">' + esc(notes.join(' ')) + '</p>';
+    if (!f.items.length) {
+      return h + '<p>Nothing in this file links to a post, a pin or a picture. Try another file from the same download.</p>';
+    }
+    if (!fresh.length) return h + '<p>Everything in it is already in your 5s.</p>';
+    const k = Math.min(D.sel.size, D.room);
+    const shown = f.items.slice(0, D.shown);
+    h += '<label class="field"><span>From</span><select id="cx-file-source">' + uniq(FILE_SOURCES.concat([D.source])).map((s) => '<option' + (s === D.source ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select></label>' +
+      kindSeg('file', D.kind) + selbar('file', D.sel.size, fresh.length) +
+      '<ul class="found">' + shown.map((it) => pickRow('file', it.key, it, D.sel.has(it.key), D.source, D.have.has(it.key) ? 'Already in your 5s' : '')).join('') + '</ul>' +
+      (f.items.length > D.shown ? '<button type="button" class="btn btn-quiet" data-act="cx-more" id="cx-more">Show ' + Math.min(50, f.items.length - D.shown) + ' more</button>' : '') +
+      '<p class="small">' + esc(f.pictures
+        ? (cx.status === 'connected' ? 'Pictures come over through 5s after you add them. ' : '5s can’t show pictures from other sites here: they come over once 5s is connected in Claude. ') + 'Links without pictures stay links.'
+        : 'These are links without pictures: they stay links, with the source’s letter where a picture would be.') + '</p>' +
+      '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-act="cx-file-add" id="cx-file-add"' + (k ? '' : ' disabled') + '>' + esc(fileAddLabel()) + '</button></div>';
+    return h;
+  }
+
+  function fileAddLabel() {
+    const D = cx.file, n = D.sel.size;
+    return n > D.room ? 'Add ' + D.room + ' of the ' + n + ' chosen' : 'Add to my database (' + n + ')';
+  }
+
+  function updateFileButtons() {
+    const D = cx.file;
+    if (!D.found) return;
+    const add = $('#cx-file-add');
+    if (add) { add.disabled = !Math.min(D.sel.size, D.room); add.textContent = fileAddLabel(); }
+    const c = $('#cx-count-file');
+    if (c) c.textContent = D.sel.size + ' of ' + D.found.items.filter((it) => !D.have.has(it.key)).length + ' chosen';
+  }
+
+  async function cxReadFile(file) {
+    if (!file || !CX) return;
+    const D = cx.file;
+    if (D.busy) return;
+    D.busy = true; D.err = null; D.found = null; D.name = file.name || 'Your file';
+    if (ui.sheet === 'connect' && cx.door === 'file') refreshSheet();
+    say('Reading ' + D.name + '…');
+    try {
+      const f = await CX.readFile(file);
+      const have = new Set();
+      for (const o of S.own) {
+        if (o && o.link) have.add('l' + CX.keyOf(o.link));
+        if (o && o.image) have.add('i' + CX.keyOf(o.image));
+      }
+      D.have = new Set(f.items.filter((it) => (it.link && have.has('l' + CX.keyOf(it.link))) || (it.image && have.has('i' + CX.keyOf(it.image)))).map((it) => it.key));
+      D.source = f.source;
+      const fresh = f.items.filter((it) => !D.have.has(it.key));
+      D.room = roomLeft(fresh, D.source);
+      D.sel = new Set(fresh.slice(0, D.room).map((it) => it.key));
+      D.shown = 50;
+      D.kind = 'image';
+      D.found = f;
+      say(foundWords(f) + (fresh.length ? ' ' + D.sel.size + ' chosen.' : ''));
+    } catch (e) {
+      D.err = { why: CX && e instanceof CX.FileError ? e.message : 'This file couldn’t be read.', resolution: CX && e instanceof CX.FileError ? '' : 'Drop the file the app gave you, as it is.' };
+      say(D.err.why);
+    }
+    D.busy = false;
+    if (ui.sheet === 'connect' && cx.door === 'file') {
+      refreshSheet();
+      const h = $('#cx-found-h');
+      if (h) h.focus();
+    }
+  }
+
+  function cxAddFile() {
+    const D = cx.file;
+    if (!D.found || D.busy) return;
+    const chosen = D.found.items.filter((it) => D.sel.has(it.key) && !D.have.has(it.key));
+    const room = roomLeft(chosen, D.source);
+    const take = chosen.slice(0, room);
+    if (!take.length) {
+      D.err = { why: 'Your 5s has no room for more things from files.', resolution: 'Let some go on a “Still yours?” card, or remove some in Split, then add again.' };
+      refreshSheet();
+      return;
+    }
+    let st = S;
+    const t = now();
+    const ids = [];
+    for (const it of take) {
+      const id = freshOwnId(st);
+      st = F.bring(st, { id, kind: D.kind, name: it.title || linkName(it.link || it.image), source: D.source, colours: [], crop: null, texture: null, w: null, h: null }, t);
+      const extra = {};
+      if (it.link) extra.link = it.link;
+      if (it.image) { extra.image = it.image; extra.coloursPending = true; }
+      st = withOwn(st, id, extra);
+      ids.push(id);
+    }
+    commit(st, { noRender: true });
+    const pics = take.filter((it) => it.image).length;
+    const left = chosen.length - take.length;
+    const src = D.source;
+    D.found = null; D.sel = new Set(); D.have = new Set();
+    closeSheet();
+    showView('split', { focus: true });
+    const h = $('#sec-brought-in');
+    if (h) h.scrollIntoView({ block: 'start' });
+    say('Added ' + plural(ids.length, 'thing') + ' from ' + src + '. They’re in Split under Brought in.' +
+      (pics ? (cx.status === 'connected' ? ' Their pictures are on their way.' : ' Their pictures come once 5s is connected in Claude.') : '') +
+      (left ? ' ' + left + ' more didn’t fit this time: add the same file again for them.' : ''));
+    if (pics && cx.status === 'connected') cxBringOver(ids);
+  }
+
+  // -- pictures: things from files go to the connector (bring_in), then every picture comes back (item_image)
+
+  async function cxBringOver(only) {
+    const O = cx.over;
+    if (O.busy || !cx.conn || cx.status !== 'connected') return;
+    const want = S.own.filter((o) => o && o.image && !o.cid && !o.noPicture && (!only || only.indexOf(o.id) >= 0));
+    if (!want.length) return;
+    O.busy = true; O.err = null;
+    updateConnectSheet();
+    let mapped = 0;
+    const already = [];
+    try {
+      let queue = want.slice();
+      for (let round = 0; queue.length && round < 12; round++) {
+        const batch = queue.slice(0, 60);
+        const r = await cx.conn.bringIn(batch.map((o) => ({ image: o.image, link: o.link, title: o.name, source: o.source, kind: o.kind })));
+        const byImage = new Map(batch.map((o) => [o.image, o]));
+        let st = S;
+        for (const a of Array.isArray(r.added) ? r.added : []) {
+          const o = byImage.get(a.image);
+          if (!o) continue;
+          const patch = { cid: a.id };
+          const hexes = (Array.isArray(a.colours) ? a.colours : []).map((c) => (c && typeof c === 'object' ? c.hex : c)).filter(isHex);
+          if (!a.colours_pending && hexes.length) Object.assign(patch, { colours: hexes, crop: a.crop || null, texture: a.texture == null ? null : a.texture, coloursPending: undefined });
+          st = withOwn(st, o.id, patch);
+          mapped++;
+        }
+        for (const s of Array.isArray(r.skipped) ? r.skipped : []) {
+          const o = batch[s.item];
+          if (!o) continue;
+          if (/already/i.test(s.why || '')) already.push(o);
+          else st = withOwn(st, o.id, { noPicture: true });
+        }
+        if (st !== S) commit(st, { noRender: true });
+        const rest = new Set((Array.isArray(r.remaining) ? r.remaining : []).map((x) => x && x.image));
+        const left = batch.filter((o) => rest.has(o.image));
+        if (!(r.added || []).length && left.length >= batch.length) break;
+        queue = left.concat(queue.slice(60));
+      }
+      // Already in the connector (brought over before, or from a chat): find their ids there.
+      if (already.length) {
+        try {
+          const g = await cx.conn.getState();
+          const there = g && g.state && Array.isArray(g.state.own) ? g.state.own : [];
+          let st = S;
+          for (const o of already) { const m = there.find((x) => x && x.image === o.image); if (m && typeof m.id === 'string') { st = withOwn(st, o.id, { cid: m.id }); mapped++; } }
+          if (st !== S) commit(st, { noRender: true });
+        } catch (e) { /* their pictures stay to come */ }
+      }
+    } catch (e) { O.err = cxErr(e); }
+    O.busy = false;
+    softRender();
+    updateConnectSheet();
+    if (mapped) fetchPictures();
+  }
+
+  async function havePicture(id) {
+    if (ownImgs.get(id)) return true;
+    if (!imgStore) return false;
+    try { const v = await imgStore.get(id); if (v && v.img) { ownImgs.set(id, v); return true; } } catch (e) { /* not there */ }
+    return false;
+  }
+
+  async function nextWithoutPicture() {
+    for (const o of S.own) {
+      if (!o || !o.cid || !o.image || o.noPicture || cx.pics.tried.has(o.id)) continue;
+      if (await havePicture(o.id)) continue;
+      return o;
+    }
+    return null;
+  }
+
+  // Fetch the pictures of things the connector knows, a few a visit unless asked for more.
+  async function fetchPictures(more) {
+    const Q = cx.pics;
+    if (Q.running || cx.status !== 'connected' || !cx.conn || !B || !imgStore || !CX) return;
+    Q.running = true; Q.paused = false; Q.err = null;
+    if (more) Q.got = 0;
+    updateConnectSheet();
+    try {
+      for (;;) {
+        const next = await nextWithoutPicture();
+        if (!next) break;
+        if (Q.got >= PICS_PER_VISIT) { Q.paused = true; break; }
+        Q.tried.add(next.id);
+        let p;
+        try { p = await cx.conn.itemImage(next.cid); } catch (e) {
+          const ce = cxErr(e);
+          // A picture that is gone, private or too large stays a link; a busy moment or a limit stops for now.
+          const lasting = ce.kind === 'refused' && ce.error !== 'limit' && ['busy', 'timeout', 'unreachable', 'dns', 'budget'].indexOf(ce.code) < 0;
+          if (lasting) { commit(withOwn(S, next.id, { noPicture: true }), { noRender: true }); continue; }
+          Q.err = ce;
+          break;
+        }
+        Q.got++;
+        let d = null;
+        try { d = await B.process(CX.dataUrlBlob(p.image)); } catch (e) { commit(withOwn(S, next.id, { noPicture: true }), { noRender: true }); continue; }
+        const at = Math.floor(now() / 1000);
+        try { await imgStore.put(next.id, { img: d.img, thumb: d.thumb, at }); } catch (e) { Q.err = { why: 'A picture couldn’t be kept just now.', resolution: 'Try again in a moment.' }; break; }
+        ownImgs.set(next.id, { img: d.img, thumb: d.thumb, at });
+        const rec = S.own.find((o) => o && o.id === next.id);
+        if (rec) {
+          const patch = { w: d.w, h: d.h };
+          if (rec.coloursPending || !(rec.colours || []).length) Object.assign(patch, { colours: d.colours, crop: d.crop, texture: d.texture, coloursPending: undefined });
+          commit(withOwn(S, next.id, patch), { noRender: true });
+        }
+        pictureArrived(next.id);
+      }
+    } finally { Q.running = false; }
+    softRender();
+    updateConnectSheet();
+    if (Q.got) say(Q.paused ? 'Pictures came in. More are waiting: open Connect your apps for the rest.' : 'The pictures came in.');
+  }
+
+  // Redraw the view only when nothing in it has the keyboard's focus (focus is never pulled away).
+  function softRender() {
+    if (!deck) return;
+    const v = $('#view-' + view);
+    if (view === 'sort') { if (!ui.drag) updateStack(); return; }
+    if (v && v.contains(doc.activeElement)) return;
+    renderView();
+  }
+
+  function pictureArrived(id) {
+    const c = cardOf(id, S);
+    if (!c) return;
+    $$('[data-id="' + CSS.escape(id) + '"] .th.ph').forEach((th) => {
+      const tmp = doc.createElement('span');
+      tmp.innerHTML = thumbHTML(c, 'work');
+      if (tmp.firstChild) th.replaceWith(tmp.firstChild);
+    });
+    if (view === 'sort' && !ui.drag) {
+      const n = $('#stack .card[data-id="' + CSS.escape(id) + '"]:not(.flying)');
+      if (n) { n.remove(); updateStack(); }
+    } else softRender();
+    if (ui.sheet === 'detail' && ui.detailId === id) refreshSheet();
+  }
+
+  // -- Ask Claude
+
+  function askDoorHTML() {
+    const on = cx.status === 'connected';
+    const s = CX ? CX.askSentence(cx.ask.link) : '';
+    return backHTML(false) +
+      '<p class="lede">' + (on ? 'In any chat with Claude, say:' : 'Once 5s is connected in Claude, say this in any chat:') + '</p>' +
+      '<p class="ask-line" id="cx-ask-line">' + esc(s) + '</p>' +
+      '<div class="actions"><button type="button" class="btn btn-ink" data-act="cx-copy" id="cx-copy" data-autofocus>Copy</button></div>' +
+      '<label class="field"><span>Your link (optional)</span><input type="text" id="cx-ask-link" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…" value="' + esc(cx.ask.link) + '"></label>' +
+      '<p class="small">Claude shows you the pictures first and adds only the ones you pick. It works with anything Claude can reach: web pages, other connectors.</p>' +
+      (on ? '' : '<p class="door-opens">' + esc(opensLine(DOOR_BY.ask)) + '</p>');
+  }
+
+  function cxCopyAsk(btn) {
+    if (!CX) return;
+    hubCopy(CX.askSentence(cx.ask.link), $('#cx-ask-line'), 'The sentence', btn);
+  }
+
+  // -- choosing
+
+  function cxSelect(which, all) {
+    const box = which === 'file' ? cx.file : cx.link;
+    if (!box.found) return;
+    if (!all) box.sel = new Set();
+    else if (which === 'file') box.sel = new Set(box.found.items.filter((it) => !box.have.has(it.key)).slice(0, box.room).map((it) => it.key));
+    else box.sel = new Set(box.found.items.map((_, i) => String(i)));
+    $$('input[data-pick="' + which + '"]', dlg).forEach((cb) => { if (!cb.disabled) cb.checked = box.sel.has(cb.value); });
+    if (which === 'file') updateFileButtons(); else updateLinkButtons();
+    say(box.sel.size + ' chosen.');
+  }
+
+  function cxMore() {
+    const D = cx.file;
+    if (!D.found) return;
+    const was = D.shown;
+    D.shown += 50;
+    refreshSheet();
+    const cbs = $$('input[data-pick="file"]', dlg);
+    if (cbs[was]) cbs[was].focus();
+  }
+
+  function lightConnect() {
+    if (!CX) { cx.status = 'none'; return; }
+    use('mcp').then(async (m) => {
+      cx.conn = CX.connector(m);
+      let st = 'none';
+      try { st = await cx.conn.status(); } catch (e) { st = 'none'; }
+      cx.status = st;
+      updateConnectSheet();
+      if (st === 'connected') fetchPictures();
+    });
+  }
+
+  function wireConnect() {
+    doc.addEventListener('change', (e) => {
+      const t = e.target;
+      if (!t || !t.getAttribute || ui.sheet !== 'connect') return;
+      if (t.id === 'cx-file') { const f = t.files && t.files[0]; t.value = ''; if (f) cxReadFile(f); return; }
+      const which = t.getAttribute('data-pick');
+      if (which === 'link' || which === 'file') {
+        const box = cx[which];
+        if (t.checked) box.sel.add(t.value); else box.sel.delete(t.value);
+        if (which === 'file') updateFileButtons(); else updateLinkButtons();
+        return;
+      }
+      if (t.name === 'cx-kind-link' || t.name === 'cx-kind-file') {
+        cx[t.name.slice(8)].kind = t.value;
+        $$('input[name="' + t.name + '"]', dlg).forEach((r) => r.parentElement.classList.toggle('on', r.checked));
+        return;
+      }
+      if (t.id === 'cx-file-source') cx.file.source = t.value;
+    });
+    doc.addEventListener('input', (e) => {
+      const t = e.target;
+      if (!t || ui.sheet !== 'connect') return;
+      if (t.id === 'cx-url') cx.link.url = t.value;
+      else if (t.id === 'cx-ask-link') {
+        cx.ask.link = t.value;
+        const l = $('#cx-ask-line');
+        if (l && CX) l.textContent = CX.askSentence(t.value);
+      }
+    });
+    const onFileDoor = () => ui.sheet === 'connect' && cx.door === 'file';
+    dlg.addEventListener('dragover', (e) => { if (!onFileDoor()) return; e.preventDefault(); const d = $('#cx-drop'); if (d) d.classList.add('over'); });
+    dlg.addEventListener('dragleave', (e) => { if (!onFileDoor() || dlg.contains(e.relatedTarget)) return; const d = $('#cx-drop'); if (d) d.classList.remove('over'); });
+    dlg.addEventListener('drop', (e) => {
+      if (!onFileDoor()) return;
+      e.preventDefault();
+      const d = $('#cx-drop'); if (d) d.classList.remove('over');
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) cxReadFile(f);
+    });
   }
 
   // ================================================================ YOUR HUB (SPEC "Your hub")
@@ -2520,6 +3336,7 @@
       const count = new Map();
       names.forEach((n) => count.set(n, (count.get(n) || 0) + 1));
       ownThumbs = await Promise.all(own.map(async (o, i) => {
+        if (fromApps(o)) return null; // a picture from another site is someone else's: never on the person's public hub
         let src = null;
         if (imgStore) { try { const v = await imgStore.get(o.id); src = v ? v.thumb || null : null; } catch (e) { src = null; } }
         if (!src) return null;
@@ -2552,6 +3369,7 @@
     if (includeOwn) {
       for (const o of st.own) {
         if (!o || o.let != null || !Array.isArray(o.crop)) continue;
+        if (fromApps(o)) continue; // someone else's picture (from a link or a data file): not on a public page
         let src = null;
         if (imgStore) { try { const v = await imgStore.get(o.id); src = v && v.img; } catch (e) { src = null; } }
         if (src) surfaces.push({ src, crop: o.crop });
@@ -2763,6 +3581,25 @@
       case 'hub-copy-file': hubCopyFile(); break;
       case 'hub-saved': hubSaved(); break;
       case 'hub-opened': hubOpened(); break;
+      // Connect your apps
+      case 'connect': openConnect(t); break;
+      case 'door': openDoor(t.getAttribute('data-door')); break;
+      case 'doors': openDoor(null); break;
+      case 'cx-all': cxSelect(t.getAttribute('data-which'), true); break;
+      case 'cx-none': cxSelect(t.getAttribute('data-which'), false); break;
+      case 'cx-more': cxMore(); break;
+      case 'cx-link-add': cxAddLink(); break;
+      case 'cx-file-add': cxAddFile(); break;
+      case 'cx-copy': cxCopyAsk(t); break;
+      case 'cx-over': cxBringOver(); break;
+      case 'cx-pictures': fetchPictures(true); break;
+      case 'cx-again': cx.link.done = null; refreshSheet(); { const u = $('#cx-url'); if (u) u.focus(); } break;
+      case 'cx-split':
+        cx.link.done = null;
+        closeSheet();
+        showView('split', { focus: true });
+        { const h = $('#sec-brought-in'); if (h) h.scrollIntoView({ block: 'start' }); }
+        break;
       default: break;
     }
     void e;
@@ -2795,6 +3632,8 @@
       say('Set pinned' + (name ? ': ' + name : '') + '.');
     } else if (kind === 'hub-user') {
       hubUseUser();
+    } else if (kind === 'connect-link') {
+      cxReadLink();
     }
   }
 
@@ -2806,6 +3645,7 @@
       if (t && !t.disabled) onAct(t, e);
     });
     doc.addEventListener('submit', (e) => { e.preventDefault(); onForm(e.target); });
+    wireConnect();
     doc.addEventListener('input', (e) => {
       const t = e.target;
       if (t && (t.id === 'hub-user' || t.id === 'hub-other')) { hubInput(t); return; }
@@ -2905,6 +3745,7 @@
   }
 
   async function lightUp() {
+    lightConnect();
     use('sample').then((s) => { if (typeof s === 'function') { ui.sample = s; if (view === 'see' && deck) renderSee(); } });
     use('downloads').then((d) => { if (d && typeof d.save === 'function') { ui.downloads = d; if (view === 'seed' && deck) renderSeed(); if (ui.sheet === 'hub') hubRefresh(); } });
     const pair = await Promise.all([use('db'), use('user')]);

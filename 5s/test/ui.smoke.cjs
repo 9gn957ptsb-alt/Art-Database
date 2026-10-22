@@ -184,7 +184,7 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'app.js'], 'the hub drivers load before app.js');
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js) load before app.js');
   const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
   assert.match(css, /:root\[data-theme="dark"\] \{/);
@@ -1299,5 +1299,470 @@ test('Your hub without downloads: the file\'s text to copy, and GitHub\'s editor
         assert.deepEqual(page.errors(), []);
       } finally { await ctx.close(); }
     }
+  }
+});
+
+// ================================================================ Connect your apps (SPEC "Connect your apps")
+//
+// The sheet of five doors at every size and theme, with and without the 5s connector; Your data file
+// with generated exports (JSON with nested picture addresses and post links, HTML with img and a tags,
+// a spreadsheet, a .zip holding JSON) found, chosen, added, in Sources and back as "Still yours?" with
+// the designed placeholder; Paste a link end to end against a fake connector in a fake mcp namespace
+// (read_link, bring_in, item_image), its pictures arriving and their colours read here.
+
+const zlib = require('node:zlib');
+function crc32(buf) {
+  let crc = 0xffffffff;
+  for (let n = 0; n < buf.length; n++) {
+    let c = (crc ^ buf[n]) & 0xff;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    crc = (crc >>> 8) ^ c;
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+function makeZip(files) {
+  const locals = [], centrals = [];
+  let off = 0;
+  for (const f of files) {
+    const data = Buffer.isBuffer(f.body) ? f.body : Buffer.from(f.body, 'utf8');
+    const comp = zlib.deflateRawSync(data);
+    const name = Buffer.from(f.name, 'utf8');
+    const lh = Buffer.alloc(30);
+    lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt16LE(0x800, 6); lh.writeUInt16LE(8, 8);
+    lh.writeUInt32LE(crc32(data), 14); lh.writeUInt32LE(comp.length, 18); lh.writeUInt32LE(data.length, 22); lh.writeUInt16LE(name.length, 26);
+    const ch = Buffer.alloc(46);
+    ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6); ch.writeUInt16LE(0x800, 8); ch.writeUInt16LE(8, 10);
+    ch.writeUInt32LE(crc32(data), 16); ch.writeUInt32LE(comp.length, 20); ch.writeUInt32LE(data.length, 24); ch.writeUInt16LE(name.length, 28); ch.writeUInt32LE(off, 42);
+    locals.push(lh, name, comp);
+    centrals.push(ch, name);
+    off += 30 + name.length + comp.length;
+  }
+  const cd = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(files.length, 8); end.writeUInt16LE(files.length, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(off, 16);
+  return Buffer.concat(locals.concat([cd, end]));
+}
+
+// Sample "download your data" files, as apps shape them.
+const SAMPLE = {
+  json: { name: 'pins.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({
+    profile: { username: 'me', url: 'https://www.pinterest.com/me/' },
+    boards: [
+      { name: 'Rooms', pins: [
+        { title: 'Ochre kitchen', link: 'https://www.pinterest.com/pin/1001/', media: { images: { orig: { url: 'https://i.pinimg.com/originals/a1/ochre-kitchen.jpg' } } } },
+        { title: 'Slate stair', link: 'https://www.pinterest.com/pin/1002/', media: { images: { orig: { url: 'https://i.pinimg.com/originals/a2/slate-stair.jpg' } } } },
+        { title: 'Linen curtains', link: 'https://www.pinterest.com/pin/1003/', media: { images: { orig: { url: 'https://i.pinimg.com/originals/a3/linen.jpg' } } } },
+      ] },
+      { name: 'Objects', pins: [
+        { title: 'Walnut stool', link: 'https://www.pinterest.com/pin/1004/', media: { images: { orig: { url: 'https://i.pinimg.com/originals/a4/stool.png' } } } },
+        { description: 'A glazed bowl', link: 'https://www.pinterest.com/pin/1005/' },
+        { description: 'Woven basket', link: 'https://www.pinterest.com/pin/1006/' },
+      ] },
+    ],
+  })) },
+  html: { name: 'saved.html', mimeType: 'text/html', buffer: Buffer.from('<!doctype html><title>Saved</title><body>' +
+    '<a href="https://www.flickr.com/photos/someone/5551/"><img src="https://live.staticflickr.com/65535/5551_b.jpg" alt="Concrete stair"></a>' +
+    '<p><a href="https://shop.example.com/rugs/wool-rug">Wool rug</a></p>' +
+    '<img src="https://images.example.com/bent-chair.png" alt="Bent chair">' +
+    '<a href="https://www.tumblr.com/someone/7777777/a-post">A post about tiles</a>' +
+    '<a href="https://help.example.com/faq">Help</a></body>') },
+  csv: { name: 'takeout-saved-places.csv', mimeType: 'text/csv', buffer: Buffer.from('Title,Note,URL\n"Café Lisboa, upstairs",the blue tiles,https://maps.google.com/?cid=111\nThe glass house,,https://maps.google.com/?cid=222\nStone garden,,https://maps.google.com/?cid=333\n') },
+  zip: { name: 'instagram-me-2026-10-22.zip', mimeType: 'application/zip', buffer: makeZip([
+    { name: 'your_instagram_activity/saved/saved_posts.json', body: JSON.stringify({ saved_saved_media: ['atelier_north', 'clay_and_kiln', 'slow_rooms', 'oak_and_lime', 'paper_lamps'].map((t, i) => ({ title: t, string_map_data: { 'Saved on': { href: 'https://www.instagram.com/p/POST' + i + 'x/', timestamp: 1729000000 + i } } })) }) },
+    { name: 'your_instagram_activity/messages/inbox/a_friend/message_1.json', body: JSON.stringify({ messages: [{ share: { link: 'https://example.com/a-private-chat-link' } }] }) },
+    { name: 'media/posts/202410/photo.jpg', body: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]) },
+  ]) },
+};
+
+// A fake 5s connector, inside a fake mcp namespace, as strict about its input as the real one.
+function fakeConnector(opts) {
+  return `(() => {
+    const opts = ${JSON.stringify(opts || {})};
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    window.__calls = [];
+    const own = [];
+    let n = 0;
+    const fail = (code, extra) => Object.assign({ code, message: code }, extra || {});
+    const refuse = (data) => fail('tool_error', { result: { isError: true, content: [{ type: 'text', text: data.why }], structuredContent: Object.assign({ ok: false }, data) } });
+    const ok = (data) => { const d = Object.assign({ ok: true }, data); return { content: [{ type: 'text', text: 'ok' }, { type: 'text', text: JSON.stringify(d) }], structuredContent: d, payload: d }; };
+    function picture(seed) {
+      const c = document.createElement('canvas'); c.width = 240; c.height = 180;
+      const g = c.getContext('2d'); const hue = (seed * 67) % 360;
+      g.fillStyle = 'hsl(' + hue + ' 55% 42%)'; g.fillRect(0, 0, 240, 180);
+      for (let x = 0; x < 240; x += 14) { g.fillStyle = 'hsl(' + ((hue + 30) % 360) + ' 60% 78%)'; g.fillRect(x, 0, 6, 180); }
+      return c.toDataURL('image/png');
+    }
+    const KEYS = ['image', 'title', 'link', 'source', 'thumb', 'kind'];
+    const tools = {
+      read_link(input) {
+        if (/secret/.test(input.url)) throw refuse({ error: 'web', code: 'forbidden', status: 403, why: 'That board is private, or needs a sign-in.', resolution: 'Make the board public, or save its pictures and use Bring in images.' });
+        if (/empty/.test(input.url)) return ok({ source: 'The web', title: null, url: input.url, count: 0, more: false, items: [], why: 'Nothing at that link offers a picture 5s can read.', resolution: 'Try the board, channel or page that shows the pictures.' });
+        return ok({ source: 'Are.na', title: 'Rooms', url: 'https://api.are.na/v2/channels/rooms', count: 3, more: false, next: 'ask first', items: [
+          { image: 'https://images.are.na/1/linen.jpg', thumb: 'https://images.are.na/1/linen_thumb.jpg', title: 'Linen weave', link: 'https://www.are.na/block/101', source: 'Are.na' },
+          { image: 'https://images.are.na/2/stair.jpg', thumb: null, title: null, link: null, source: 'Are.na' },
+          { image: 'https://images.are.na/3/lamp.jpg', thumb: null, title: 'Brass lamp', link: 'https://www.are.na/block/103', source: 'Are.na' },
+        ] });
+      },
+      bring_in(input) {
+        for (const it of input.items) for (const k of Object.keys(it)) if (it[k] === null || KEYS.indexOf(k) < 0) throw refuse({ error: 'bad input', why: 'items.' + k + ': not accepted' });
+        const added = [], skipped = [];
+        input.items.forEach((it, i) => {
+          if (own.some((o) => o.image === it.image)) { skipped.push({ item: i, image: it.image, why: 'Already in their 5s.' }); return; }
+          n++;
+          const id = 'yf' + n.toString(36).padStart(4, '0');
+          const measured = n % 2 === 1;
+          const kind = it.kind || input.kind || 'image';
+          own.push({ id, image: it.image, seed: n });
+          added.push(Object.assign({ id, name: it.title || null, kind, source: it.source, image: it.image, link: it.link || null,
+            colours: measured ? [{ hex: '#8a6a4f', name: 'mid brown' }, { hex: '#d9c7a8', name: 'pale beige' }, { hex: '#3b2f2a', name: 'dark brown' }] : [],
+            colours_pending: !measured }, measured ? { crop: [0.3, 0.3, 0.25, 0.25], texture: 0.4 } : { pending_because: 'a picture too large to measure here' }));
+        });
+        return ok({ added, skipped, remaining: [], colours: { read_here: added.filter((a) => !a.colours_pending).length, pending: added.filter((a) => a.colours_pending).length }, brought_today: n, daily_cap: 300, rev: n });
+      },
+      item_image(input) {
+        const o = own.find((x) => x.id === input.id);
+        if (!o) throw refuse({ error: 'unknown', id: input.id, why: 'There is no brought-in thing "' + input.id + '".' });
+        const url = picture(o.seed);
+        return ok({ id: o.id, image: url, type: 'image/png', bytes: url.length, w: 240, h: 180, resized: false, from: o.image, colours_pending: false });
+      },
+      get_state() { return ok({ rev: n, state: { own: own.map((o) => ({ id: o.id, image: o.image })) } }); },
+    };
+    const mcp = Object.freeze({
+      async listTools(server) {
+        await wait(20);
+        if (opts.unlisted) return { servers: [] };
+        const s = { server: '5s', authStatus: 'connected', tools: Object.keys(tools).map((name) => ({ name, description: '' })) };
+        return { servers: !server || server === '5s' ? [s] : [] };
+      },
+      async callTool(server, tool, input) {
+        await wait(40);
+        window.__calls.push([server, tool, JSON.parse(JSON.stringify(input || {}))]);
+        if (server !== '5s' || opts.notConnected) throw fail('server_not_connected', { server });
+        if (!tools[tool]) throw fail('not_in_manifest');
+        return tools[tool](input || {});
+      },
+    });
+    window.claude = { use: async (name) => { await wait(100); return name === 'mcp' && !opts.noMcp ? mcp : null; } };
+  })();`;
+}
+
+const DOOR_NAMES = ['Paste a link', 'Sign in to the app', 'Your data file', 'Bring in images', 'Ask Claude'];
+const OPENS = 'Connect 5s to Claude (Settings → Connectors → Add custom connector) to open this door.';
+const doorText = (page, key) => page.$eval('#door-' + key, (n) => n.textContent.replace(/\s+/g, ' ').trim());
+const doorState = (page, key) => page.$eval('#door-' + key + ' .state', (n) => n.textContent.trim());
+const sheetGone = (page) => page.waitForFunction(() => !document.getElementById('sheet').open, null, { timeout: 15000 });
+const sourcesOf = (page) => page.$$eval('#view-split .sources li', (ls) => ls.map((l) => l.textContent.replace(/\s+/g, ' ').trim()));
+
+async function sheetChecks(page, where) {
+  assert.deepEqual(await contrastIssues(page, '#sheet'), [], where + ': contrast');
+  assert.deepEqual(await smallTargets(page, '#sheet'), [], where + ': targets under 24 px');
+  const r = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, vw: innerWidth, body: document.getElementById('sheet-body').scrollWidth, bw: document.getElementById('sheet-body').clientWidth }));
+  assert.ok(r.doc <= r.vw, where + ': page scrolls sideways');
+  assert.ok(r.body <= r.bw + 1, where + ': the sheet scrolls sideways (' + r.body + ' > ' + r.bw + ')');
+  const words = await page.$eval('#sheet', (n) => n.textContent);
+  assert.ok(!/\b(json|csv|zip|html|api|oauth|mcp|github)\b/i.test(words), where + ': no file-format or platform words: ' + (words.match(/\b(json|csv|zip|html|api|oauth|mcp|github)\b/gi) || []));
+}
+
+for (const cfg of CONFIGS) {
+  test('Connect your apps at ' + cfg.w + 'x' + cfg.h + ' ' + cfg.scheme + ': five doors, what opens them, the data file, Ask Claude', { timeout: 120000 }, async () => {
+    const { ctx, page } = await newPage(cfg);
+    const shot = shooter(page, cfg);
+    try {
+      await page.goto(BASE + '#sort');
+      await page.waitForSelector('#intro:not([hidden]) [data-act="connect"]');
+      assert.equal((await page.textContent('#intro [data-act="connect"]')).trim(), 'Connect your apps');
+      await page.click('#intro [data-act="connect"]');
+      await page.waitForSelector('#sheet[open] .doors');
+      assert.equal(await page.textContent('#sheet-title'), 'Connect your apps');
+      assert.deepEqual(await page.$$eval('#sheet .door-name', (h) => h.map((x) => x.textContent)), DOOR_NAMES, 'the five doors, in the SPEC\'s order');
+      // no connector here: the doors that need it say what opens them, in words; the other two are open
+      await page.waitForFunction(() => !/Checking/.test(document.querySelector('#door-link .state').textContent));
+      for (const k of ['link', 'signin', 'ask']) assert.ok((await doorText(page, k)).indexOf(OPENS) >= 0, k + ' says what opens it');
+      assert.equal(await doorState(page, 'link'), 'Needs 5s in Claude');
+      assert.equal(await doorState(page, 'signin'), 'Not yet');
+      assert.equal(await doorState(page, 'ask'), 'Needs 5s in Claude');
+      assert.equal(await doorState(page, 'file'), 'Open');
+      assert.equal(await doorState(page, 'images'), 'Open');
+      for (const k of ['link', 'signin', 'file', 'images', 'ask']) assert.match(await doorText(page, k), /Works for \S/);
+      assert.equal(await page.locator('#door-link button').count(), 0, 'Paste a link has nothing to press without the connector');
+      assert.equal(await page.locator('#door-signin button').count(), 0);
+      await sheetChecks(page, 'doors');
+      await shot('60-connect-doors');
+      await page.evaluate(() => document.getElementById('sheet-body').scrollTo(0, 99999));
+      await shot('60-connect-doors-end');
+
+      // Ask Claude: the sentence, copied as it reads, with the person's link in it
+      await page.click('[data-act="door"][data-door="ask"]');
+      await page.waitForSelector('#cx-ask-line');
+      assert.equal(await page.textContent('#sheet-title'), 'Ask Claude');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'cx-copy', 'focus on Copy');
+      await page.fill('#cx-ask-link', 'https://www.are.na/me/rooms');
+      const sentence = (await page.textContent('#cx-ask-line')).trim();
+      assert.equal(sentence, 'Show me the pictures at this link, then add the ones I pick to my 5s: https://www.are.na/me/rooms');
+      await page.click('#cx-copy');
+      await liveSays(page, /The sentence copied/);
+      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), sentence);
+      assert.ok((await page.textContent('#sheet-body')).indexOf(OPENS) >= 0);
+      await sheetChecks(page, 'ask');
+      await shot('61-connect-ask');
+      await page.click('[data-act="doors"]');
+      await page.waitForSelector('#sheet .doors');
+      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('data-door')), 'ask', 'back to the door it came from');
+
+      // Paste a link without the connector: the field waits, and the door says what opens it
+      await page.evaluate(() => document.querySelector('#door-link .door-name').scrollIntoView());
+      await page.click('#door-link .door-name');
+      assert.equal(await page.locator('#door-link button').count(), 0);
+
+      // Your data file: a file with nested picture addresses and post links
+      await page.click('[data-act="door"][data-door="file"]');
+      await page.waitForSelector('#cx-file');
+      assert.equal(await page.textContent('#sheet-title'), 'Your data file');
+      await sheetChecks(page, 'file door');
+      await shot('62-connect-file');
+      await page.setInputFiles('#cx-file', SAMPLE.json);
+      await page.waitForSelector('#cx-found-sum');
+      assert.equal(await page.textContent('#cx-found-sum'), '6 links found, 4 with pictures.');
+      assert.equal(await page.inputValue('#cx-file-source'), 'Pinterest');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'cx-found-h', 'focus moves to what was found');
+      assert.equal(await page.locator('#sheet .found input[type="checkbox"]:checked').count(), 6);
+      assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (6)');
+      await page.locator('#sheet .found label', { hasText: 'Woven basket' }).click();
+      assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (5)');
+      assert.match(await page.textContent('#sheet-body'), /they come over once 5s is connected in Claude\. Links without pictures stay links\./);
+      await sheetChecks(page, 'file found');
+      await shot('63-connect-file-found');
+      await page.click('#cx-file-add');
+      await sheetGone(page);
+      await page.waitForFunction(() => !document.getElementById('view-split').hidden);
+      const split = await page.textContent('#view-split');
+      for (const n of ['Ochre kitchen', 'Walnut stool', 'A glazed bowl']) assert.ok(split.indexOf(n) >= 0, 'Brought in lists ' + n);
+      assert.ok(split.indexOf('Woven basket') < 0, 'not the one left out');
+      assert.ok((await sourcesOf(page)).some((s) => /^Pinterest ?5$/.test(s)), 'Pinterest 5: ' + await sourcesOf(page));
+      assert.ok(await page.locator('#view-split .rows .th.ph .ph-i').count() >= 5, 'placeholders: the source\'s letter');
+      assert.equal(await page.$eval('#view-split .rows .th.ph .ph-i', (b) => b.textContent), 'P');
+      assert.match(split, /Image · Pinterest · Picture to come/);
+      assert.match(split, /Image · Pinterest · Link only/);
+      assert.deepEqual(await contrastIssues(page, '#view-split'), [], 'split contrast');
+      await noHScroll(page, 'split with things from a file');
+      await shot('64-connect-split');
+      // its detail: where it came from, and why there is no picture
+      await page.click('#view-split .rowbtn:has-text("A glazed bowl")');
+      await page.waitForSelector('#sheet[open] .detail-art .ph-slot');
+      assert.match(await page.textContent('#sheet-body'), /A link you saved, with no picture\./);
+      assert.deepEqual(await page.$eval('#sheet a[href^="https://www.pinterest.com/pin/1005"]', (a) => [a.target, a.rel]), ['_blank', 'noopener noreferrer']);
+      await shot('65-connect-detail');
+      await page.keyboard.press('Escape');
+      await sheetGone(page);
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
+  });
+}
+
+test('Your data file: JSON, HTML, a spreadsheet and a zip; Sources; Still yours? with the placeholder; the Set chooser', { timeout: 180000 }, async () => {
+  const cfg = { w: 390, h: 844, scheme: 'light' };
+  const { ctx, page } = await newPage(cfg);
+  const shot = shooter(page, cfg);
+  const addFile = async (f, sum, source) => {
+    await page.click('#view-split [data-act="connect"]');
+    await page.click('[data-act="door"][data-door="file"]');
+    await page.setInputFiles('#cx-file', f);
+    await page.waitForSelector('#cx-found-sum');
+    assert.equal(await page.textContent('#cx-found-sum'), sum, f.name);
+    assert.equal(await page.inputValue('#cx-file-source'), source, f.name + ' is from ' + source);
+    await shot('66-file-' + f.name.replace(/\W+/g, '-'));
+    await page.click('#cx-file-add');
+    await sheetGone(page);
+    await page.waitForFunction(() => !document.getElementById('view-split').hidden);
+  };
+  try {
+    await page.goto(BASE + '#split');
+    await page.waitForSelector('#view-split [data-act="connect"]');
+    await addFile(SAMPLE.json, '6 links found, 4 with pictures.', 'Pinterest');
+    await addFile(SAMPLE.html, '4 links found, 2 with pictures.', 'Your file');
+    await addFile(SAMPLE.csv, '3 links found, none with pictures.', 'Google Takeout');
+    await addFile(SAMPLE.zip, '5 links found, none with pictures.', 'Instagram');
+    const st = await stored(page);
+    assert.equal(st.own.length, 18);
+    assert.ok(!st.own.some((o) => /private-chat-link/.test(o.link || '')), 'a .zip\'s messages are not read: only its saves');
+    const kitchen = st.own.find((o) => o.name === 'Ochre kitchen');
+    assert.deepEqual([kitchen.source, kitchen.kind, kitchen.image, kitchen.link, kitchen.coloursPending, kitchen.colours], ['Pinterest', 'image', 'https://i.pinimg.com/originals/a1/ochre-kitchen.jpg', 'https://www.pinterest.com/pin/1001/', true, []]);
+    const cafe = st.own.find((o) => o.source === 'Google Takeout' && /Café/.test(o.name));
+    assert.ok(cafe && !cafe.image && !cafe.coloursPending && cafe.link === 'https://maps.google.com/?cid=111', 'a link with no picture never waits for one');
+    assert.equal(st.own.find((o) => o.source === 'Instagram').name, 'atelier_north');
+    const sources = await sourcesOf(page);
+    for (const s of [/^Pinterest ?6$/, /^Your file ?4$/, /^Google Takeout ?3$/, /^Instagram ?5$/]) assert.ok(sources.some((x) => s.test(x)), s + ' in ' + sources);
+    // the same file again: what is in already is said, and not chosen
+    await page.click('#view-split [data-act="connect"]');
+    await page.click('[data-act="door"][data-door="file"]');
+    await page.setInputFiles('#cx-file', SAMPLE.json);
+    await page.waitForSelector('#cx-found-sum');
+    assert.match(await page.textContent('#cx-file-notes'), /6 are already in your 5s\./);
+    assert.match(await page.textContent('#sheet-body'), /Everything in it is already in your 5s\./);
+    await page.keyboard.press('Escape');
+    await sheetGone(page);
+    await shot('67-split-four-files');
+
+    // Still yours?: a thing from a file comes back, with its source's letter and why there's no picture
+    await sleep(1100);
+    await tab(page, 'sort');
+    await page.waitForSelector('#intro #btn-start');
+    await page.click('#btn-start');
+    let seen = null;
+    for (let five = 0; five < 3 && !seen; five++) {
+      if (five) { await page.click('#summary [data-act="another"]'); await page.waitForSelector('#stack .card.is-top'); }
+      for (let i = 0; i < 5; i++) {
+        if (await summaryShown(page)) break;
+        const id = await topId(page);
+        if (id && id.charAt(0) === 'y' && !seen) {
+          seen = id;
+          assert.ok(await page.$eval('#revisit', (n) => !n.hidden && /Still yours\?/.test(n.textContent)));
+          await page.waitForSelector('#stack .card.is-top .ph-art .ph-i');
+          await page.waitForSelector('#stack .card.is-top .ownmissing:not([hidden])');
+          const words = await page.$eval('#stack .card.is-top .ownmissing', (n) => n.textContent);
+          assert.match(words, /^(A link you saved, with no picture\.|Its picture comes when 5s is connected in Claude\.)$/);
+          assert.match(await page.getAttribute('#stack .card.is-top', 'aria-label'), /^Still yours\? /);
+          await shot('68-still-yours-placeholder');
+          await page.click('#btn-keep');
+          await page.waitForSelector('#strip .strip-in');
+          assert.match(await page.textContent('#strip'), /Kept/);
+        } else await page.click('#btn-keep');
+        await waitTopChange(page, id);
+      }
+    }
+    assert.ok(seen, 'a thing from a data file came back as Still yours?');
+    // the Set chooser offers things from files, with the placeholder
+    await tab(page, 'set');
+    await page.waitForSelector('#view-set .slot-picture');
+    await page.click('#view-set .slot-picture');
+    await page.waitForSelector('#sheet[open] .choices');
+    let found = false;
+    for (let p = 0; p < 12 && !found; p++) {
+      found = (await page.locator('#sheet .choices .th.ph .ph-i').count()) > 0;
+      if (!found) { const more = page.locator('#sheet [data-act="three-more"]'); if (!(await more.count())) break; await more.click(); await sleep(80); }
+    }
+    assert.ok(found, 'the chooser shows a thing from a file with its letter');
+    await shot('69-set-chooser-placeholder');
+    await page.click('#sheet .choices .choice:has(.ph)');
+    await page.keyboard.press('Escape');
+    await sheetGone(page);
+    await page.waitForSelector('#view-set .slot-picture .ph-slot .ph-i');
+    await shot('69-set-room-placeholder');
+    assert.deepEqual(page.errors(), []);
+  } finally { await ctx.close(); }
+});
+
+for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') || (c.w === 1280 && c.scheme === 'dark'))) {
+  test('Paste a link with 5s connected (a fake connector) at ' + cfg.w + ' ' + cfg.scheme + ': read, choose, add, pictures arrive', { timeout: 120000 }, async () => {
+    const { ctx, page } = await newPage(cfg);
+    const shot = shooter(page, cfg);
+    await page.addInitScript(fakeConnector({}));
+    try {
+      await page.goto(BASE + '#split');
+      await page.waitForSelector('#view-split [data-act="connect"]');
+      await page.click('#view-split [data-act="connect"]');
+      await page.waitForSelector('#sheet .cx-on');
+      assert.match(await page.textContent('#sheet .cx-on'), /5s is connected in Claude\./);
+      assert.equal(await doorState(page, 'link'), 'Open');
+      assert.equal(await doorState(page, 'ask'), 'Open');
+      assert.equal(await doorState(page, 'signin'), 'Not yet');
+      assert.match(await doorText(page, 'signin'), /Each app has to approve 5s first/);
+      assert.ok((await doorText(page, 'link')).indexOf(OPENS) < 0);
+      await shot('70-connected-doors');
+      await page.click('[data-act="door"][data-door="link"]');
+      await page.waitForSelector('#cx-url:not([disabled])');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'cx-url');
+      // a private board is refused with why and what to do
+      await page.fill('#cx-url', 'https://www.pinterest.com/someone/secret-board/');
+      await page.click('#cx-read');
+      await page.waitForSelector('#sheet .cx-err');
+      assert.match(await page.textContent('#sheet .cx-err'), /That board is private, or needs a sign-in\.\s*Make the board public/);
+      await shot('71-link-refused');
+      // a channel: three pictures, nothing added yet
+      await page.fill('#cx-url', 'are.na/me/rooms');
+      await page.press('#cx-url', 'Enter');
+      await page.waitForSelector('#cx-found-h');
+      assert.equal(await page.textContent('#cx-found-h'), '3 pictures from Are.na');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'cx-found-h');
+      assert.deepEqual(await page.evaluate(() => window.__calls.map((c) => c[1])), ['read_link', 'read_link']);
+      assert.deepEqual(await page.evaluate(() => window.__calls[1]), ['5s', 'read_link', { url: 'are.na/me/rooms' }]);
+      await page.locator('#sheet .found label', { hasText: 'Brass lamp' }).click();
+      await page.check('input[name="cx-kind-link"][value="space"]', { force: true });
+      assert.equal((await page.textContent('#cx-link-add')).trim(), 'Add to my database (2)');
+      await sheetChecks(page, 'link found');
+      await shot('72-link-found');
+      await page.click('#cx-link-add');
+      await sheetGone(page);
+      const bring = await page.evaluate(() => window.__calls.find((c) => c[1] === 'bring_in'));
+      assert.deepEqual(bring[2], { items: [
+        { image: 'https://images.are.na/1/linen.jpg', source: 'Are.na', title: 'Linen weave', link: 'https://www.are.na/block/101', thumb: 'https://images.are.na/1/linen_thumb.jpg' },
+        { image: 'https://images.are.na/2/stair.jpg', source: 'Are.na' },
+      ], kind: 'space' }, 'bring_in gets the chosen items, nulls left out');
+      // the pictures arrive through item_image, are kept on this device and their colours read here
+      await page.waitForFunction(() => document.querySelectorAll('#view-split .rows img[src^="data:image/"]').length === 2, null, { timeout: 30000 });
+      const st = await stored(page);
+      assert.equal(st.own.length, 2);
+      for (const o of st.own) {
+        assert.equal(o.kind, 'space');
+        assert.equal(o.cid, o.id, 'the connector\'s id is kept');
+        assert.ok(!o.coloursPending && o.colours.length === 3, 'colours read: ' + JSON.stringify(o));
+        assert.ok(o.w > 0 && o.h > 0);
+      }
+      assert.equal(st.own.find((o) => o.image === 'https://images.are.na/1/linen.jpg').thumb, 'https://images.are.na/1/linen_thumb.jpg');
+      assert.deepEqual(await page.evaluate(() => window.__calls.filter((c) => c[1] === 'item_image').map((c) => c[2].id).sort()), st.own.map((o) => o.id).sort());
+      assert.ok((await sourcesOf(page)).some((s) => /^Are\.na ?2$/.test(s)));
+      await noHScroll(page, 'split with pictures from a link');
+      await shot('73-link-pictures-arrived');
+
+      // a data file while connected: its pictures go over to 5s and come back
+      await page.click('#view-split [data-act="connect"]');
+      await page.click('[data-act="door"][data-door="file"]');
+      await page.setInputFiles('#cx-file', SAMPLE.json);
+      await page.waitForSelector('#cx-found-sum');
+      assert.match(await page.textContent('#sheet-body'), /Pictures come over through 5s after you add them\./);
+      await page.click('#cx-file-add');
+      await sheetGone(page);
+      await page.waitForFunction(() => { const s = JSON.parse(localStorage.getItem('5s.state.v1')); return s.own.filter((o) => o.source === 'Pinterest' && o.image && o.colours.length === 3 && !o.coloursPending).length === 4; }, null, { timeout: 40000 });
+      const st2 = await stored(page);
+      const pins = st2.own.filter((o) => o.source === 'Pinterest');
+      assert.equal(pins.length, 6);
+      assert.equal(pins.filter((o) => o.cid).length, 4, 'the four with pictures went over');
+      assert.ok(pins.filter((o) => !o.image).every((o) => !o.cid), 'links without pictures stay here');
+      const over = await page.evaluate(() => window.__calls.filter((c) => c[1] === 'bring_in')[1][2]);
+      assert.equal(over.items.length, 4);
+      assert.ok(over.items.every((i) => i.source === 'Pinterest' && /^https:\/\/i\.pinimg\.com\//.test(i.image)));
+      await page.waitForFunction(() => document.querySelectorAll('#view-split .rows img[src^="data:image/"]').length === 6, null, { timeout: 30000 });
+      await shot('74-file-pictures-arrived');
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
+  });
+}
+
+test('the connector absent in other ways: an mcp with no 5s, and a 5s that stops answering', { timeout: 60000 }, async () => {
+  const cfg = { w: 390, h: 844, scheme: 'light' };
+  for (const opts of [{ unlisted: true }, { notConnected: true }]) {
+    const { ctx, page } = await newPage(cfg);
+    await page.addInitScript(fakeConnector(opts));
+    try {
+      await page.goto(BASE + '#split');
+      await page.click('#view-split [data-act="connect"]');
+      if (opts.unlisted) {
+        await page.waitForFunction(() => /Needs 5s in Claude/.test(document.querySelector('#door-link .state').textContent));
+        assert.ok((await doorText(page, 'link')).indexOf(OPENS) >= 0);
+        assert.equal(await page.evaluate(() => window.__calls.length), 0, 'never probed with a call');
+      } else {
+        // listed, but the call finds no connector: the door says what opens it
+        await page.waitForSelector('#sheet .cx-on');
+        await page.click('[data-act="door"][data-door="link"]');
+        await page.fill('#cx-url', 'https://www.are.na/me/rooms');
+        await page.click('#cx-read');
+        await page.waitForSelector('#sheet .cx-err');
+        assert.equal((await page.textContent('#sheet .cx-err')).trim(), OPENS);
+        await page.click('[data-act="doors"]');
+        assert.equal(await doorState(page, 'link'), 'Needs 5s in Claude');
+        await shooter(page, cfg)('75-connector-stopped');
+      }
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
   }
 });
