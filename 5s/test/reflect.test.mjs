@@ -68,7 +68,7 @@ test('a turn\'s change: lines, tests, dependencies, the last line', () => {
 });
 
 test('the reflection keeps the law it measures', () => {
-  const rows = [reflect(session(local, 'a'), { title: 'Artsy door', created_at: T }), reflect(session(remote, 'b'))];
+  const rows = [reflect(session(local, 'a'), { title: 'Network access', created_at: T }), reflect(session(remote, 'b'))];
   assert.equal(rows[0].stage, 3);
   assert.deepEqual(rows[0].traps, [3]);
   const md = report(rows);
