@@ -11,13 +11,17 @@
  *
  * The sign has five tubes: the bar, the stem, the bowl, the s and the ribbon. A lit tube is three layers:
  *  - the stroke in its own colours;
- *  - a thin bright core, the stroke's colours mixed 60% toward white, stopping short of the electrodes;
- *  - a halo: the same stroke about 2.2 times as wide, in one blurred Marks.layer.
- * An unlit tube is cold glass: an outline of the stroke 6-10 units wide (never under about 1.3 px), in a
- * grey mixed from ink and background, with a faint glass fill and dark electrode caps at the free ends.
- * Halos and spill composite by the field they fall on:
- *  - 'lighter' on a dark field (dark theme, or the Paper palette's violet field);
+ *  - a thin bright core, the stroke's colours mixed about 60% toward white, stopping short of the electrodes;
+ *    while the sign holds, brighter and dimmer bands drift slowly along it (the hum);
+ *  - a halo: the same stroke about 2.2 times as wide, blurred.
+ * An unlit tube is cold glass: an outline of the stroke 6-10 units wide (never under about 1.3 px), in a grey
+ * mixed from ink and background, with a faint glass fill and blacked-out electrode tips at the free ends.
+ * The halos and the spill composite by the field they fall on:
+ *  - 'lighter' on a near-black field (the dark theme);
+ *  - 'screen' where the tubes are lighter than a coloured field (Paper's white tubes on violet);
  *  - 'multiply' where the tubes are darker than the field (the light theme), so there they are soft tints.
+ * White or black tubes (Ink, Paper) glow half in the turn's iris, as a white neon glows cool, and the halo
+ * never brightens the field more than 40% of the way to the tube: the letters keep their edges in their glow.
  *
  * Styles
  *   ignite  from cold glass to lit, in five catches. The bar sparks first: it stutters on and off on a seeded,
@@ -25,20 +29,22 @@
  *           last. Each catch blooms its halo (p.easing shapes the bloom; outBack makes it pop) and warms the
  *           field in its own colour. Ends on the still mark: the glow crossfades out over the last 10%.
  *   surge   there and back, a blink of power. From the still mark the glow rises and the sign takes a surge:
- *           the cores go white-hot and the halo swells for a couple of frames. Then it cuts out for a beat:
- *           the tubes go to cold glass, and a faint afterimage of the halo hangs in the complementary tint.
- *           It relights in one clean go, with a small flicker, and settles on the still mark.
+ *           the cores go white-hot and the halo swells for a few frames. Then it cuts out for a beat: the
+ *           tubes go to cold glass, and an afterimage of the halo hangs in the complementary tint (orange
+ *           leaves blue). It relights in one clean go, with a small flicker, and settles on the still mark.
  *   buzz    an idle loop, seamless at t = 0 and 1, which are the still mark. The halo breathes slowly in and
- *           out. Near the top of the breath one tube (seeded: the bar, the s or the bowl) stutters twice and
- *           recovers.
+ *           out (p.easing shapes the breath). Near the top of the breath one tube (seeded: the bar, the s or
+ *           the bowl) stutters twice and recovers.
+ * Ignite ends on the still mark; surge and buzz start and end on it (exactly Marks.mark).
  *
  * Params
  *   flicker  0-1: how many stutters (blinks before a catch in ignite, dips after the relight in surge, blinks
  *            per cycle in buzz). Flicker is held to WCAG 2.3.1 (three flashes) at every duration, see below.
  *   glow     0-1: the halo's width and strength, and how far the spill reaches.
- *   spill    the light tints the field.
- *   Shared options: palette, ribbon, weight (the tube width), intensity (how big the bloom, the surge and the
- *   spill are), easing (the bloom after each catch and the warm-up of surge), duration (250-4000 ms).
+ *   spill    the light tints the field: a soft glow filling the room, and a pool round each tube as it catches.
+ *   Shared options: palette, ribbon, weight (the tube width), intensity (how big the bloom, the surge, the
+ *   spill and the hum are), easing (the bloom after each catch, the warm-up of surge, the breath of buzz),
+ *   duration (250-4000 ms).
  *
  * Flash safety (WCAG 2.3.1: nothing flashes more than three times in any one second)
  *   A flash is a pair of opposing changes in brightness. The sign is counted as one region, whatever tube
@@ -49,8 +55,8 @@
  *     and two above it (they are then far enough apart): never more than six changes in a second.
  *   - buzz: the stutter gets two blinks a cycle only from 1200 ms, one from 1000 ms, none below that. The
  *     breath's depth shrinks below 700 ms, so a short loop cannot pulse the glow.
- *   - The spill never follows a blink. It rises and falls smoothly, and its strongest tint adds less than
- *     0.1 relative luminance to the field, so it can never become a full-frame flash.
+ *   - The spill never follows a blink: it only rises and falls smoothly, with the catches, the cut and the
+ *     fade. Each of its glows is capped so that on the bare field it adds at most 0.085 relative luminance.
  *
  * Every frame is a pure function of (t, p, env). The stutter's rhythm, the tube that buzzes and the dips come
  * from env.rng, drawn in the same order and the same number of times on every frame, so a seed always gives
@@ -151,6 +157,7 @@
    * spark}. lit 0 is cold glass, 1 the tube in its colours; halo and core scale the glow; hot (0-1) whitens.
    * ------------------------------------------------------------------------------------------------------- */
   const dark0 = () => ({ lit: 0, halo: 0, core: 0, hot: 0 });
+  const HUM = 0.9;   // the hum: bright striations drift along the cores, passes per second
 
   // ignite: where each of the five tubes catches, and its blinks before that ([start, end, brightness] in t)
   function igniteLayout(n, D, R, ribbon) {
@@ -212,7 +219,7 @@
     const bloomT = Math.max(0.06, Math.min(0.2, 160 / D));
     const neon = 1 - M.ease.inOutSine(span(t, 0.9, 1));        // the glow crossfades out over the last 10%
     const spillOut = 1 - M.ease.inOutSine(span(t, 0.8, 1));
-    const S = { tubes: {}, rib: dark0(), spill: {}, after: 0, spark: null };
+    const S = { tubes: {}, rib: dark0(), spill: {}, after: 0, spark: null, hum: (t * D) / 1000 * HUM };
     for (const id of ORDER) {
       const pl = plan[id];
       const st = dark0();
@@ -248,7 +255,7 @@
     const dipLen = Math.max(0.02, Math.min(0.07, 48 / D));
     const dipAt = [r0 + Math.max(0.035, 60 / D) + 0.03 * R[0], r0 + 0.15 + 0.05 * R[1]];
     const neonOut = 1 - M.ease.inOutSine(span(t, fadeA, 1));
-    const S = { tubes: {}, rib: null, spill: {}, after: 0, spark: null };
+    const S = { tubes: {}, rib: null, spill: {}, after: 0, spark: null, hum: (t * D) / 1000 * HUM };
     let st, spill;
     if (t < c0) {
       const w = ease(span(t, 0, warm));
@@ -256,8 +263,11 @@
       st = { lit: 1, halo: w * (1 + (0.4 + 0.8 * I) * hot), core: w, hot };
       spill = M.ease.outCubic(span(t, 0, warm + 0.04));
     } else if (t < r0) {
+      // the tubes go dark at once, but the glow in the air cools over a moment, so the field never drops
+      // from full glow to nothing in one frame; the afterimage, the halo's shape in the complementary tint,
+      // takes its place and fades through the dark beat
       st = dark0();
-      // the afterimage: the halo's shape in the complementary tint, fading through the dark beat
+      st.halo = 0.45 * Math.pow(1 - span(t, c0, c0 + Math.max(0.06, 90 / D)), 2);
       S.after = Math.pow(1 - span(t, c0, r0), 1.6) * (0.4 + 0.6 * I);
       spill = lerp(1, 0.45, M.ease.outCubic(span(t, c0, r0)));      // the room's light lingers; no full-frame flash
     } else {
@@ -278,11 +288,12 @@
   function buzz(t, p, D, R) {
     const I = p.intensity;
     const depth = Math.max(0.15, Math.min(1, (D - 250) / 450));       // a short loop must not pulse the glow
-    const breath = Math.pow(Math.sin(Math.PI * t), 2) * depth;
+    const breath = M.easing(p.easing)(Math.pow(Math.sin(Math.PI * t), 2)) * depth;   // p.easing shapes the breath
     const which = ['bar', 's', 'bowl'][Math.min(2, Math.floor(R[0] * 3))];
     const allowed = D >= 1200 ? 2 : D >= 1000 ? 1 : 0;
     const nb = Math.min(allowed, Math.round(4 * p.flicker));
-    const S = { tubes: {}, rib: null, spill: {}, after: 0, spark: null };
+    // the hum makes a whole number of passes per loop, so the seam holds
+    const S = { tubes: {}, rib: null, spill: {}, after: 0, spark: null, hum: t * Math.max(1, Math.round((D / 1000) * HUM)) };
     const base = { lit: 1, halo: breath * (0.85 + 0.25 * I), core: breath, hot: 0 };
     for (const tb of TUBES) { S.tubes[tb.id] = Object.assign({}, base); S.spill[tb.id] = breath; }
     S.rib = Object.assign({}, base);
@@ -363,13 +374,15 @@
     return Math.abs(a.lit - b.lit) < 1e-4 && Math.abs(a.hot - b.hot) < 1e-4 && Math.abs(a.core - b.core) < 1e-4;
   }
 
-  // the most of `colour` the field can take (alpha) before it gains or loses 0.085 relative luminance, in the
-  // field's blend mode: whatever the palette, the spill alone can never make a flash-sized change
+  // the most of `colour` (as alpha) the field can take, in the field's blend mode, before its relative luminance
+  // changes by more than a limit: 0.085 for the spill (whatever the palette, it alone never makes a flash-sized
+  // change), and 40% of the way to the colour itself for the halo (so the letters keep their edges)
   const caps = new Map();
-  function spillCap(colour, bg, mode) { return blendCap(colour, bg, mode, () => 0.085); }
-  function haloCap(colour, bg, mode) { return blendCap(colour, bg, mode, (l0, l1) => 0.4 * Math.abs(l1 - l0)); }
-  function blendCap(colour, bg, mode, limit) {
-    const key = colour + bg + mode + limit.length;
+  function spillCap(colour, bg, mode) { return blendCap('spill', colour, bg, mode, () => 0.085); }
+  function haloCap(colour, bg, mode) { return blendCap('halo', colour, bg, mode, (l0, l1) => 0.4 * Math.abs(l1 - l0)); }
+  // limit(field luminance, luminance of the colour fully blended) -> the largest change allowed
+  function blendCap(tag, colour, bg, mode, limit) {
+    const key = tag + colour + bg + mode;
     let a = caps.get(key);
     if (a != null) return a;
     const c = rgb(colour), f = rgb(bg);
@@ -460,16 +473,23 @@
     const blur = (12 + 44 * g) * (0.8 + 0.5 * I);
     const anyHalo = TUBES.some((tb) => T[tb.id].halo > 0.002) || (p.ribbon && S.rib.halo > 0.002);
     if (anyHalo && hA > 0.002) {
-      glowLayer(ctx, { composite: L.mode, blur: Math.max(0.5, blur * dpx) }, (h) => {
+      // when every tube glows alike (most frames), the strokes go in opaque and the layer carries the alpha: no
+      // per-stroke translucency, which costs a scratch canvas each
+      const levels = TUBES.map((tb) => T[tb.id].halo).concat(p.ribbon ? [S.rib.halo] : []).filter((x) => x > 0.002);
+      const alike = levels.every((x) => Math.abs(x - levels[0]) < 1e-3);
+      // a halo may bloom or run hot past its usual strength, but never past the field's cap (L.haloA)
+      const layerA = alike ? Math.min(L.haloA, levels[0] * hA) : 1;
+      const a = (level) => (alike ? 1 : Math.min(L.haloA, level * hA));
+      glowLayer(ctx, { composite: L.mode, blur: Math.max(0.5, blur * dpx), alpha: layerA }, (h) => {
         if (p.ribbon && S.rib.halo > 0.002) {
-          M.stroke(h, RIB, { width: 120 * (0.8 + 0.4 * g) * (1 + 0.4 * S.rib.hot), colours: L.light(pal.ribbon), alpha: c01(S.rib.halo * hA * 0.6) });
+          M.stroke(h, RIB, { width: 120 * (0.8 + 0.4 * g) * (1 + 0.4 * S.rib.hot), colours: L.light(pal.ribbon), alpha: 0.6 * a(S.rib.halo) });
         }
         for (const tb of TUBES) {
           const st = T[tb.id];
           if (st.halo <= 0.002) continue;
           M.stroke(h, PTS[tb.path], {
-            from: tb.from, to: tb.to, width: WID[tb.path] * k * hw * (1 + 0.5 * st.hot),
-            colours: toward(L.light(pal[tb.path]), '#FFFFFF', 0.3 * st.hot), alpha: c01(st.halo * hA)
+            from: tb.from, to: tb.to, width: WID[tb.path] * k * hw * (1 + 0.3 * st.hot),
+            colours: toward(L.light(pal[tb.path]), '#FFFFFF', 0.2 * st.hot), alpha: a(st.halo)
           });
         }
       });
@@ -513,7 +533,7 @@
     // 5. the lit tubes, in Marks.mark's order (body, bar, s); the body in one stroke when stem and bowl agree
     const lit = (pts, cols, w, st, from, to) => {
       if (st.lit <= 0.001) return;
-      M.stroke(ctx, pts, { width: w, colours: toward(cols, '#FFFFFF', 0.4 * st.hot), alpha: st.lit, from, to });
+      M.stroke(ctx, pts, { width: w, colours: toward(cols, '#FFFFFF', (0.25 + 0.2 * I) * st.hot), alpha: st.lit, from, to });
     };
     if (sameState(T.stem, T.bowl)) lit(PTS.body, pal.body, WID.body * k, T.stem, 0, 1);
     else { lit(PTS.body, pal.body, WID.body * k, T.stem, 0, FOOT); lit(PTS.body, pal.body, WID.body * k, T.bowl, FOOT, 1); }
@@ -525,9 +545,15 @@
       if (st.core <= 0.002 || st.lit <= 0.001) return;
       const inset = 30 / LEN[tb.path];
       const f = from + (from === 0 && tb.free.includes(0) ? inset : 0), e = to - (to === 1 && tb.free.includes(1) ? inset : 0);
+      // the hum: brighter and dimmer bands drift slowly along the core (2.5 to a stroke), more with intensity
+      const cols = pal[tb.path], stops = [];
+      for (let i = 0; i <= 16; i++) {
+        const u = i / 16, wave = 0.5 + 0.5 * Math.cos(TAU * (2.5 * u - S.hum));
+        stops.push([u, M.mix(M.colourAt(cols, u), '#FFFFFF', Math.min(1, 0.46 + 0.4 * st.hot + (0.18 + 0.14 * I) * wave))]);
+      }
       M.stroke(ctx, PTS[tb.path], {
-        from: f, to: e, width: Math.max(1.1 * px, WID[tb.path] * k * (0.2 + 0.3 * st.hot)),
-        colours: toward(pal[tb.path], '#FFFFFF', 0.6 + 0.4 * st.hot), alpha: c01(st.core * Math.min(1, st.lit * 1.25))
+        from: f, to: e, width: Math.max(1.1 * px, WID[tb.path] * k * (0.2 + 0.36 * st.hot)),
+        colours: stops, alpha: c01(st.core * Math.min(1, st.lit * 1.25))
       });
     };
     const TB = {};

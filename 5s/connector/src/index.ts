@@ -14,6 +14,8 @@ import { githubFetch, type Props } from "./utils";
 import { registerTools, SERVER_INSTRUCTIONS } from "./tools.js";
 import { guardedStore } from "./store.js";
 import { personStore, personRpcStore, personName } from "./person.js";
+// Token lifetimes for Workers KV's free 1,000 writes a day (costs.js, README "What it costs: nothing").
+import { TOKEN_LIFETIMES } from "./costs.js";
 import { api } from "./hub.js";
 import { createFakeGitHub } from "./fake-github.js";
 import { createWeb } from "./web.js";
@@ -37,8 +39,21 @@ export class FiveSMCP extends McpAgent<Env, Record<string, never>, Props> {
 	 */
 	async updateProps(props?: Props) {
 		const { accessToken: _token, ...withoutToken } = (props ?? {}) as Props;
-		await this.ctx.storage.put("props", withoutToken);
+		// Written only when they change: the object starts again after every pause in a chat, and on
+		// Workers Free each row written counts (costs.js). A read costs far less.
+		const stored = await this.ctx.storage.get("props");
+		if (JSON.stringify(stored) !== JSON.stringify(withoutToken)) await this.ctx.storage.put("props", withoutToken);
 		this.props = props as Props;
+	}
+
+	/**
+	 * No event store: the agents package would otherwise write every answer into this object's storage
+	 * and delete it again once sent (about 4 rows written a tool call), so a client could resume a
+	 * stream the edge cut. Every 5s tool answers within 30 seconds, so a cut stream is simply asked
+	 * again, and Workers Free's 100,000 rows written a day go to people's 5s instead (costs.js).
+	 */
+	protected getEventStore() {
+		return undefined;
 	}
 
 	async init() {
@@ -156,7 +171,17 @@ const boundMcp = {
 		if (env.RATE_LIMIT_PERSON && !(await env.RATE_LIMIT_PERSON.limit({ key: "person:" + person })).success) {
 			return plain(429, "5s is getting a lot of requests from you. Wait a minute and try again.", { "Retry-After": "60" });
 		}
-		return serveBound(mcpHandler, request, env, ctx, person);
+		try {
+			return await serveBound(mcpHandler, request, env, ctx, person);
+		} catch (error) {
+			// The session's Durable Object could not be reached: on Workers Free, most likely the day's
+			// 100,000 Durable Object requests used up (costs.js). Said in plain words, never a bare 500.
+			console.error("5s /mcp failed:", error instanceof Error ? error.message : error);
+			return Response.json(
+				{ jsonrpc: "2.0", error: { code: -32603, message: "5s couldn't answer just now. Try again in a minute; if it keeps happening, 5s has used today's free allowance, which comes back at midnight UTC. Nothing saved is lost, and the 5s app keeps working on its own meanwhile." }, id: null },
+				{ status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } },
+			);
+		}
 	},
 };
 
@@ -165,21 +190,6 @@ const boundMcp = {
 // routes this Worker's own hostnames here, and every token is bound to the origin it was issued on.
 const providers = new Map<string, OAuthProvider<Env>>();
 
-/**
- * Token lifetimes, set for Workers KV's free 1,000 writes a day (README "What it costs: nothing").
- * The OAuth provider writes to KV only when tokens are made: a sign-in writes 5 keys (plus 1 when
- * Claude registers itself), a refresh 2 (the grant and the new access token); using a token writes
- * nothing. With the provider's default one-hour access tokens, a person who opens 5s once a day
- * refreshes about once a day: 2 writes each, so 500 people a day would use all 1,000. With access
- * tokens that last 7 days, a person who comes back every day refreshes once a week: about 0.3
- * writes a day each, so 300 people a day use about 90 writes. The sign-in itself lasts while it is
- * used: it expires after 90 days without any use (refreshTokenIdleTTL), and each refresh moves that on.
- */
-export const TOKEN_LIFETIMES = Object.freeze({
-	accessTokenTTL: 7 * 24 * 3600,
-	refreshTokenTTL: 90 * 24 * 3600,
-	refreshTokenIdleTTL: 90 * 24 * 3600,
-});
 function providerFor(origin: string) {
 	let p = providers.get(origin);
 	if (!p) {

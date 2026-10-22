@@ -704,7 +704,10 @@ test('the store keeps addresses, never pictures; the hub never carries a brought
   assert.doesNotMatch(hub, /pinimg/, 'brought-in pictures stay off the public hub (as the app\'s own images do)');
   const seed = await call(ctx, 'get_seed');
   assert.deepEqual(seed.data.seed.own.map((o) => o.source), ['Pinterest', 'Pinterest', 'Pinterest']);
-  assert.doesNotMatch(JSON.stringify(seed.data.seed), /pinimg|https:\/\/www\.pinterest/);
+  assert.doesNotMatch(JSON.stringify(seed.data.seed), /pinimg/, 'never a brought picture\'s address');
+  // Since the engine's "Links out and in" (5s/src/engine.js seedOwn): a brought thing in the seed may
+  // carry the public page it came from (its pin), never its picture or thumbnail.
+  for (const o of seed.data.seed.own) if (o.link !== undefined) assert.match(o.link, /^https:\/\/www\.pinterest\.com\/pin\/\d+\/$/);
 });
 
 test('a new day: the day\'s count of pictures starts again', async () => {

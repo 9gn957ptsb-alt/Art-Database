@@ -37,9 +37,9 @@ about itself: a refusal names a file's type only when it is a type 5s knows (`sr
 | `save_hub` | `include_notes`, `include_own_images` | saves the current hub page and seed (only what changed) | after more judgments, sets or notes |
 | `get_state` | none | the whole 5s state and its `rev` | the 5s app only |
 | `put_state` | `state`, `base` (the `rev` it was based on) | `{ok, rev}`; or, if `base` is stale, `{ok: false, conflict: true, rev, state}` with the newer state to merge (nothing written) | the 5s app only |
-| `read_link` | `url` (a board, channel, blog, feed, page or picture address, ≤ 2048 characters; `https://` is added when missing, `http://` upgraded) | the pictures that public link offers (at most 60), each `{image, thumb, title, link, source}`, and where they come from; **nothing is added** | "add my Are.na channel", "add my Pinterest board", "add this page": Claude shows the person what is there and asks which to add |
-| `bring_in` | `items` (1–60, each `{image, source, title?, link?, thumb?, kind?}`, as `read_link` gave them or any https picture address), `kind` (`image`, `object` or `space`; default `image`) | `added` (each with its id, name, source, addresses, its three colours in words, its surface `crop` and `texture`, or `colours_pending` and why), `skipped` (each with why), `remaining` (not read this time: call again with them), today's count | after the person confirms which pictures to add |
-| `item_image` | `id` (a brought-in thing's id, like `yk2q7a`) | `image`: the picture as a `data:` URL (as it is when small; a JPEG at most 720 px and about 130 KB when it had to be made smaller), its type, size and pixel size; also attached as an image Claude can see | the 5s app, to show a brought picture and read its colours when they are pending; Claude, to look at one |
+| `read_link` | `url` (a board, channel, blog, feed, page or picture address, ≤ 2048 characters; `https://` is added when missing, `http://` upgraded) | the pictures that public link offers (at most 60), each `{image, thumb, title, link, source}`, and where they come from; for a single page, also `page`: what the page says the thing on it is (below); **nothing is added** | "add my Are.na channel", "add my Pinterest board", "add this page": Claude shows the person what is there and asks which to add |
+| `bring_in` | `items` (1–60, each `{image, source, title?, link?, thumb?, kind?}`, as `read_link` gave them or any https picture address; `image` may be `null` for a thing known by its `link` alone; and, per item, what the thing is: `maker`, `date`, `year`, `medium`, `place`, `about`, `category`, `era`, `genes`, `materials`, `colours` with `coloursEstimated`, `definedBy`), `kind` (`image`, `object` or `space`; default `image`) | `added` (each with its id, name, source, addresses, its three colours in words, its surface `crop` and `texture`, or `colours_pending` and why; `no_picture` for a thing kept by its link; `facts` it now keeps and `left_out` for any given that weren't the deck's words), `skipped` (each with why), `remaining` (not read this time: call again with them), today's count | after the person confirms which pictures (or things) to add |
+| `item_image` | `id` (a brought-in thing's id, like `yk2q7a`) | `image`: the picture as a `data:` URL (as it is when small; a JPEG at most 720 px and about 130 KB when it had to be made smaller; on Workers Free, the smaller copy the picture's own site keeps, with `smaller_copy_from`), its type, size and pixel size; also attached as an image Claude can see | the 5s app, to show a brought picture and read its colours when they are pending; Claude, to look at one |
 
 Refusals come back as tool errors with `why` and `resolution`: a name GitHub won't take (with a
 fixed one, e.g. `"my hub"` → `"my-hub"`), a private hub (see below), a repository 5s didn't make, a
@@ -69,6 +69,55 @@ app has no way to read other sites; the connector does) and **Ask Claude** ("add
   `og:image` / `twitter:image`, else its first large picture). A private or secret board, a page that
   needs a sign-in, a missing page: each comes back as a refusal with `why` and `resolution` (make it
   public, or save the pictures and use **Bring in your own** in the app), never "something went wrong".
+- **What a page says it is** (`read_link`'s `page`, for a single page, not a board, channel, blog or
+  feed; the artist, 22 Oct 2026: *"a paste section that is able to define a particular object or
+  thing in a pasted link and catalog it in someone's digital database"*):
+
+  ```jsonc
+  "page": {
+    "title": "Blue Hour",            // og:title, else <title>
+    "description": "Oil on linen…",  // og:description, else meta description (else twitter:description)
+    "site": "Gallery Example",       // og:site_name
+    "type": "website",               // og:type ("product", "article" …)
+    "image": "https://…/window.jpg", // og:image (an address web.js would read), or null
+    "author": "Gallery staff",       // meta author, article:author, else JSON-LD author
+    "maker": "Mara Lind",            // JSON-LD creator (or artist), else product:brand, JSON-LD brand or manufacturer
+    "name": "Blue Hour",             // JSON-LD name
+    "date": "1962",                  // JSON-LD dateCreated
+    "material": "oil paint, linen",  // JSON-LD material
+    "medium": "Oil on linen"         // JSON-LD artMedium (else artform)
+  }
+  ```
+
+  Each value is the page's own words, one line of at most 300 characters, or `null`: quoted data,
+  never instructions, and never in the summary. Schema.org JSON-LD is read from at most 6 blocks and
+  256 KB of a page, walking at most 2,000 objects (`src/links.js` `pageFacts`); an artwork or
+  product comes before the page itself. Claude passes what the page says (and only that) to
+  `bring_in` with `definedBy: "page"`; a page with no picture can still be kept, by its link alone
+  (`image: null`): nothing is read for it, and it is kept with `noPicture: true`.
+- **What a brought-in thing keeps** (`src/define.js`; the same fields in the app, the engine and
+  `src/validate.js`, all optional, old states stay valid): `maker` ≤ 120, `date` ≤ 40, `year` ≤ 10,
+  `medium` ≤ 200, `place` ≤ 60, `about` (one line) ≤ 200; `category` and `era` in the deck's own
+  words (`dist/deck.json` cards; matched in any case, and an era from the year when none is given);
+  up to 12 `genes` (the deck's gene slugs, by slug or name); up to 8 `materials` (≤ 40 each);
+  `coloursEstimated` (Claude's estimate of its colours, taken only with that flag, and only until the
+  app reads the picture); `definedBy` (`page`, `claude`, `address` or `person`). A value that isn't
+  the deck's word is left out and named in `left_out`, never guessed. The engine's features read
+  category, era, place, genes and materials from any card that carries them, so a defined thing
+  teaches the taste model as a judged card does. `put_state` checks the same fields, the deck's
+  words against the connector's own deck.
+- **A picture too big to hand over, on Workers Free** (`src/sizes.js`): the connector decodes
+  nothing on the free plan, so it can't make a picture smaller itself. Most picture sites keep
+  smaller copies at addresses that follow a pattern, and asking for one costs nothing: Pinterest
+  (`236x`/`474x`/`564x`/`736x`), Artsy's CDN (`large`, `larger`), Are.na (`thumb_`, `display_`),
+  Flickr (`_z`, `_c`, `_b`), Tumblr (`s540x810` …, `_540`), Wikimedia (`thumb/…/500px-`, `960px-`,
+  `1280px-`, its standard widths), Unsplash and imgix (`?w=`/`?h=`), Cloudinary (`c_limit,w_512,h_512`
+  added last) and Shopify (`_512x512`). `item_image` reads the picture only as far as its cap (its
+  first bytes still say what it is and its size), then asks for the smallest copy that should still
+  be at least 512 px on its long edge, within its request budget, and keeps the first that comes back
+  as a picture under the cap and 512 px or more; then the `thumb` it was given; only then it refuses,
+  saying which site it asked and what to do instead (save the picture and bring it in from the
+  person's photos; on a phone, copy the thumbnail Messages shows and paste it into the paste box).
 - **Claude asks first.** `read_link` adds nothing; its answer tells Claude to show the person what is
   there and ask which to add. `bring_in` adds only what it is given, kept (a thing brought in is
   kept by definition) with where it came from, and it comes back later as "Still yours?" in the app.
@@ -95,14 +144,17 @@ chat can make the connector read without end:
 | a picture | 3 MB read whole; when it isn't measured, only its first 64 KB (enough to tell what it is and its size) |
 | one `read_link` | 12 requests (DNS lookups and redirects counted), 60 pictures offered |
 | one `bring_in` | 60 items, 40 requests, 4 pictures read at a time, 4 megapixels decoded and 16 pictures measured (`COLOUR_BUDGET_PX`, see the setup), 25 seconds; the rest come back in `remaining`. The megapixels are counted as decoded, never as a header claims, and no decode goes past what is left of them; a PNG whose header is not its first chunk, or that has two, is left to the app (`colours_pending`) |
-| one `item_image` | 10 requests; a picture of at most 4 megapixels decoded to make the smaller copy |
+| one `item_image` | 10 requests; a picture of at most 4 megapixels decoded to make the smaller copy (on Workers Free, none: the picture is read only up to 135 KB, and its site's smaller copies are asked for, each read only up to 135 KB) |
 | a person | 30 calls that read other sites a minute (`RATE_LIMIT_WEB`), 300 pictures brought in a day (UTC), 1000 brought-in things in all |
 
 ## Privacy
 
 - **Who you are:** GitHub's numeric user id and login, nothing else (no name, no email).
-- **Your 5s** (judgments, the five, sets, notes, brought-in things' details) lives privately in the
-  connector's own Workers KV namespace (`FIVES_KV`), keyed by your GitHub user id. Brought-in images
+- **Your 5s** (judgments, the five, sets, notes, brought-in things' details) lives privately in your
+  own SQLite-backed Durable Object (`FiveSPerson`, named `person:<your GitHub user id>`;
+  `src/person.js`), which only the connector's own code can reach, and which answers only for you.
+  Until 22 Oct 2026 it lived in the connector's Workers KV namespace (`FIVES_KV`); a 5s still there
+  is moved into your object the first time you use 5s, and deleted from KV. Brought-in images
   never reach the connector: they stay in the 5s app. (That is the pictures brought in from your own
   files. Pictures from a link pass through the connector to be measured, and are never kept: see the
   next point.)
@@ -138,7 +190,7 @@ chat can make the connector read without end:
   (`src/session.ts`, keyed from `COOKIE_ENCRYPTION_KEY`), so a session id that leaks is useless to
   anyone else signed in to 5s: their requests get "Session not found" and never reach your session.
   Clients can't send the headers the `agents` package uses internally; the Worker drops them.
-- **Limits**, so no one person (or a chat gone round in circles) can use up the store's daily writes
+- **Limits**, so no one person (or a chat gone round in circles) can use up the free plan's daily allowances
   or fill their GitHub account: each day (UTC) at most 500 saves of a person's state, 30 saves to
   their hub and 3 new hubs; at most 120 requests a minute to `/mcp` per person and 30 a minute to the
   sign-in endpoints (`/register`, `/authorize`, `/token`, `/callback`) per address (Workers Rate

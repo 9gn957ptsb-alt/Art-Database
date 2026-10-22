@@ -990,3 +990,128 @@ test('exportSeed: kept works carry their Artsy image and page; passed works do n
   assert.deepEqual(s1, seed);
   assert.ok(!JSON.stringify(s1).includes('secret-handle'));
 });
+
+// --------------------------------------------------------------- a brought thing's definition (Links out and in)
+
+test('bring keeps a definition: the optional fields, tidied, only when given', () => {
+  const item = {
+    id: 'ydef', kind: 'object', name: 'Equivocal rug', source: 'Artsy', colours: ['#c8a24a'],
+    link: 'https://www.artsy.net/artwork/josef-albers-equivocal-rug', image: 'https://cdn.example.org/rug.jpg', thumb: 'https://cdn.example.org/rug-t.jpg',
+    maker: '  Josef\nAlbers ', date: 'c. 1960–65', year: '1960', medium: 'Wool, hand-knotted', place: 'Germany', about: 'A wool rug\twoven after a painting',
+    category: 'Design/Decorative Art', era: '1945–69', genes: ['geometric', 'geometric', 'Not A Slug', 'hard-edge'], materials: ['Wool', 'wool', ' Linen '],
+    coloursEstimated: true, definedBy: 'claude', confidence: 'high', recognised: true, polluted: 'x',
+  };
+  const st = F.bring(F.newState(), deepFreeze(JSON.parse(JSON.stringify(item))), NOW);
+  assert.deepEqual(st.own[0], {
+    id: 'ydef', kind: 'object', name: 'Equivocal rug', source: 'Artsy', colours: ['#c8a24a'], crop: null, texture: null, w: null, h: null,
+    at: S(NOW), let: null, seenAt: null,
+    link: 'https://www.artsy.net/artwork/josef-albers-equivocal-rug', image: 'https://cdn.example.org/rug.jpg', thumb: 'https://cdn.example.org/rug-t.jpg',
+    maker: 'Josef Albers', date: 'c. 1960–65', year: '1960', medium: 'Wool, hand-knotted', place: 'Germany', about: 'A wool rug woven after a painting',
+    category: 'Design/Decorative Art', era: '1945–69', genes: ['geometric', 'hard-edge'], materials: ['wool', 'linen'], coloursEstimated: true, definedBy: 'claude',
+  });
+  assert.equal(F.checkOwnFields(st.own[0]), '');
+  // limits: text cut to its length, lists to their count; wrong kinds ignored
+  const long = F.bring(F.newState(), {
+    id: 'ylong', kind: 'image', maker: 'm'.repeat(300), medium: 'x'.repeat(500), about: 'a'.repeat(500), place: 'p'.repeat(100), date: 'd'.repeat(50),
+    year: 'around nineteen sixty', era: '1960s', genes: Array.from({ length: 20 }, (_, i) => 'g' + i), materials: Array.from({ length: 12 }, (_, i) => 'm' + i + 'y'.repeat(60)),
+    link: 'http://example.com/x', image: 'javascript:alert(1)', thumb: 'https://user:pw@example.com/x', definedBy: 'robot', coloursEstimated: 'yes',
+  }, NOW).own[0];
+  assert.deepEqual([long.maker.length, long.medium.length, long.about.length, long.place.length, long.date.length], [120, 200, 200, 60, 40]);
+  assert.equal(long.genes.length, 12);
+  assert.ok(long.materials.length === 8 && long.materials.every((m) => m.length === 40));
+  for (const k of ['year', 'era', 'link', 'image', 'thumb', 'definedBy', 'coloursEstimated']) assert.ok(!(k in long), k);
+  assert.equal(F.checkOwnFields(long), '');
+  // with the deck: category, era and genes must be the deck's own words
+  const d = F.bring(F.newState(), { id: 'yd', kind: 'object', category: 'Textile Arts', era: '1945–69', genes: ['geometric', 'pop-art'] }, NOW, deck).own[0];
+  assert.ok(!('category' in d));
+  assert.equal(d.era, '1945–69');
+  assert.deepEqual(d.genes, ['geometric']);
+  assert.equal(F.bring(F.newState(), { id: 'ye', kind: 'object', category: 'Painting' }, NOW, deck).own[0].category, 'Painting');
+});
+
+test('bring updates a definition: the person edits it, clears a field, leaves the rest', () => {
+  let st = F.bring(F.newState(), { id: 'ydef', kind: 'object', name: 'Rug', maker: 'Josef Albers', date: '1960', genes: ['geometric'], materials: ['wool'],
+    coloursEstimated: true, colours: ['#aa5533'], definedBy: 'claude' }, NOW);
+  st = F.bring(st, { id: 'ydef', maker: 'Anni Albers', date: null, genes: [], coloursEstimated: false, definedBy: 'person' }, NOW + 1000);
+  const o = st.own[0];
+  assert.deepEqual([o.name, o.maker, o.materials, o.definedBy, o.at], ['Rug', 'Anni Albers', ['wool'], 'person', S(NOW)]);
+  for (const k of ['date', 'genes', 'coloursEstimated']) assert.ok(!(k in o), k + ' cleared');
+  // a value of the wrong kind changes nothing
+  const same = F.bring(st, { id: 'ydef', maker: { x: 1 }, genes: 'geometric', materials: 7, definedBy: 'robot' }, NOW + 2000).own[0];
+  assert.deepEqual([same.maker, same.materials, same.definedBy, same.genes], ['Anni Albers', ['wool'], 'person', undefined]);
+  // migrate keeps a defined thing as it is
+  assert.deepEqual(F.migrate(JSON.parse(JSON.stringify(st))).own[0], o);
+});
+
+test('a defined thing feeds the taste model as a judged deck card does; an undefined one as before', () => {
+  const plain = F.card(F.bring(F.newState(), { id: 'yp', kind: 'object', colours: ['#aa5533'] }, NOW), deck, 'yp');
+  assert.deepEqual([plain.materials, plain.genes, plain.era, plain.place, plain.category, plain.maker, plain.link, plain.definedBy, plain.coloursEstimated],
+    [[], [], null, null, null, null, null, null, false]);
+  const pf = Object.keys(F.features(plain));
+  assert.ok(pf.includes('kind:object') && pf.includes('hue:orange'));
+  assert.deepEqual(pf.filter((k) => /^(?:gene|cat|era|place|mat):/.test(k)), [], 'colour and kind only, as before');
+  // the same thing, defined like card o002 (geometric, hard-edge, minimalism)
+  const o2 = byId.get('o002');
+  let st = F.bring(F.newState(), { id: 'yg', kind: 'object', name: 'Like o002', colours: o2.colours, category: o2.category, era: o2.era, place: o2.place,
+    genes: o2.genes, materials: o2.materials, date: o2.date, maker: 'Someone', definedBy: 'claude' }, NOW, deck);
+  const c = F.card(st, deck, 'yg');
+  assert.deepEqual([c.title, c.artist, c.maker, c.year, c.date], ['Like o002', 'You', 'Someone', 2005, '2005']);
+  const fo = F.features(c), fd = F.features(o2);
+  for (const k of Object.keys(fd)) assert.equal(fo[k], fd[k], k);
+  const m = F.model(st, deck);
+  for (const g of o2.genes) assert.deepEqual(m.f['gene:' + g], { k: 1, n: 1 }, g);
+  assert.deepEqual(m.f['cat:' + o2.category], { k: 1, n: 1 });
+  // and it moves a prediction: a geometric deck card scores higher than it does without the thing
+  const base = judgeAll(F.newState(), warmCoolTwenty()).state;
+  const withThing = F.bring(base, { id: 'yg2', kind: 'object', colours: o2.colours, genes: o2.genes, materials: o2.materials, definedBy: 'claude' }, NOW, deck);
+  const plainThing = F.bring(base, { id: 'yg2', kind: 'object', colours: o2.colours }, NOW, deck);
+  assert.ok(F.predict(F.model(withThing, deck), byId.get('o004')).p > F.predict(F.model(plainThing, deck), byId.get('o004')).p);
+  assert.equal(F.profile(withThing, deck, NOW).defined, 1);
+  assert.equal(F.profile(plainThing, deck, NOW).defined, 0);
+  assert.equal(F.profile(F.newState(), deck, NOW).defined, 0);
+});
+
+test('checkOwnFields: refuses a definition of the wrong kind, plainly', () => {
+  assert.equal(F.checkOwnFields({}), '');
+  assert.equal(F.checkOwnFields({ id: 'y1', kind: 'image', name: 'x' }), '', 'an old brought thing');
+  const bad = [
+    [{ link: 'http://example.com' }, /link/], [{ image: 'x'.repeat(10) }, /image/], [{ maker: 'a\nb' }, /maker/], [{ maker: 'm'.repeat(121) }, /maker/],
+    [{ about: 5 }, /about/], [{ year: 'x'.repeat(11) }, /year/], [{ era: '1960s' }, /era/], [{ genes: ['Not A Slug'] }, /genes/],
+    [{ genes: Array(13).fill('a') }, /genes/], [{ materials: 'wool' }, /materials/], [{ materials: ['x'.repeat(41)] }, /materials/],
+    [{ coloursEstimated: 'yes' }, /coloursEstimated/], [{ definedBy: 'robot' }, /definedBy/], [{ category: 'c'.repeat(61) }, /category/],
+  ];
+  for (const [o, re] of bad) assert.match(F.checkOwnFields(o), re, JSON.stringify(o).slice(0, 40));
+  assert.equal(F.checkOwnFields(null), 'is not an object');
+  assert.deepEqual(F.DEFINED_BY, ['page', 'claude', 'address', 'person']);
+  assert.ok(Object.isFrozen(F.OWN_LIMITS));
+});
+
+test('exportSeed: a defined thing says what it is and where it lives, and nothing else of the person\'s', () => {
+  const base = judgeAll(F.newState(), warmCoolTwenty()).state;
+  let st = F.bring(base, { id: 'ydef', kind: 'object', name: 'Equivocal rug', source: 'Artsy', colours: ['#c8a24a', '#7a5a2a'],
+    link: 'https://www.artsy.net:8443/artwork/equivocal-rug?utm_source=ig&fbclid=x&email=me%40mail.com&session=abc&id=7#access_token=t',
+    image: 'https://cdn.example.org/rug.jpg', thumb: 'https://cdn.example.org/rug-t.jpg', maker: 'Josef Albers', date: '1960', year: '1960', medium: 'Wool',
+    place: 'Germany', about: 'A wool rug', category: 'Design/Decorative Art', era: '1945–69', genes: ['geometric'], materials: ['wool'],
+    coloursEstimated: true, definedBy: 'claude' }, NOW - 5000, deck);
+  assert.ok(!('link' in F.bring(st, { id: 'ycred', kind: 'image', link: 'https://me:pw@www.artsy.net/artwork/x' }, NOW).own.at(-1)), 'a user name and password are never kept');
+  st = F.bring(st, { id: 'ytok', kind: 'image', name: 'A video', source: 'TikTok', link: 'https://www.tiktok.com/@me/video/7300000000000000000' }, NOW - 4000);
+  st = F.bring(st, { id: 'ymine', kind: 'image', name: 'My window', source: 'Your photos', colours: ['#336699'] }, NOW - 3000);
+  const seed = F.exportSeed(st, deck, NOW);
+  assert.deepEqual(seed.own[0], { name: 'Equivocal rug', kind: 'object', source: 'Artsy', colours: ['#c8a24a', '#7a5a2a'], let: false,
+    maker: 'Josef Albers', date: '1960', medium: 'Wool', place: 'Germany', about: 'A wool rug', category: 'Design/Decorative Art', era: '1945–69',
+    genes: ['geometric'], materials: ['wool'], coloursEstimated: true, link: 'https://www.artsy.net/artwork/equivocal-rug?id=7' });
+  assert.deepEqual(seed.own[1], { name: 'A video', kind: 'image', source: 'TikTok', colours: [], let: false }, 'an address naming an @account stays out');
+  assert.deepEqual(seed.own[2], { name: 'My window', kind: 'image', source: 'Your photos', colours: ['#336699'], let: false }, 'as it always was');
+  const text = JSON.stringify(seed), ownText = JSON.stringify(seed.own);
+  for (const no of ['ydef', 'ytok', 'ymine', 'cdn.example.org', 'utm_', 'fbclid', 'mail.com', 'session', 'access_token', 'me:pw', '8443', '"definedBy":', '"cid":', '"id":']) {
+    assert.ok(!text.includes(no), no);
+  }
+  for (const no of ['"image":', '"thumb":', '"url":']) assert.ok(!ownText.includes(no), no);
+  // a definition never changes the seed code (the same judgments, the same code and ground)
+  const undefinedSt = F.bring(base, { id: 'ydef', kind: 'object', name: 'Equivocal rug', source: 'Artsy', colours: ['#c8a24a', '#7a5a2a'] }, NOW - 5000);
+  assert.equal(F.seedCode(F.bring(F.bring(undefinedSt, { id: 'ytok', kind: 'image', name: 'A video', source: 'TikTok' }, NOW - 4000),
+    { id: 'ymine', kind: 'image', name: 'My window', source: 'Your photos', colours: ['#336699'] }, NOW - 3000)), seed.code);
+  // the example taste's seed is unchanged in shape: brought things carry only their five fields
+  const ex = F.exportSeed(F.exampleState(deck, NOW), deck, NOW);
+  assert.ok(ex.own.every((o) => Object.keys(o).join() === 'name,kind,source,colours,let'));
+});

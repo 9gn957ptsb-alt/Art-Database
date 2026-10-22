@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Live smoke (npm run smoke): the Worker itself under `wrangler dev`, twice.
 //
-//  1. Dev bypass (DEV_FAKE_USER, port 8800 or SMOKE_PORT): an MCP client (@modelcontextprotocol/sdk, streamable
+//  1. Dev bypass (DEV_FAKE_USER, port 8800 or SMOKE_PORT): a 5s left in KV from before is moved into its
+//     person's own Durable Object on first use (and deleted from KV); an MCP client (@modelcontextprotocol/sdk, streamable
 //     HTTP) lists the tools and plays a five (next_five, judge ×5, get_taste), makes a hub against the
 //     fake GitHub, and the bypass is refused for any host but localhost. A second dev person can't
 //     use, strip or end the first one's session id, and the local storage never holds the token.
@@ -20,7 +21,7 @@
 // of the four ports it uses, default 8800: the Workers on SMOKE_PORT and SMOKE_PORT + 2, each with its
 // inspector on the next port).
 // Needs src/deck.generated.json (npm run deck, or npm run deck -- --fixture).
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -43,11 +44,20 @@ if (!existsSync(join(CONNECTOR, 'src', 'deck.generated.json'))) {
 const results = [];
 const check = (name, fn) => { fn(); results.push(name); console.log('  ok  ' + name); };
 
-function startWorker(name, port, vars) {
+/** wrangler kv against the local store of a smoke Worker (`args` after `kv key`). */
+function localKv(name, args) {
+  const r = spawnSync(join(CONNECTOR, 'node_modules', '.bin', 'wrangler'), ['kv', 'key', ...args, '--binding', 'FIVES_KV', '--local', '--persist-to', join(DIR, name + '-state')],
+    { cwd: CONNECTOR, env: Object.assign({}, process.env, { WRANGLER_SEND_METRICS: 'false' }), encoding: 'utf8' });
+  return (r.stdout || '') + (r.stderr || '');
+}
+
+function startWorker(name, port, vars, kvBefore) {
   const envFile = join(DIR, name + '.env');
   writeFileSync(envFile, Object.entries(vars).map(([k, v]) => k + '=' + v).join('\n') + '\n');
   const log = join(DIR, name + '.log');
   rmSync(join(DIR, name + '-state'), { recursive: true, force: true }); // every run starts with empty KV and sessions
+  // A 5s kept in KV before the move to each person's Durable Object (src/person.js), put there first.
+  for (const [k, v] of Object.entries(kvBefore || {})) localKv(name, ['put', k, v]);
   // Its own process group, so stopping it stops wrangler's children (node, workerd) too.
   const child = spawn(join(CONNECTOR, 'node_modules', '.bin', 'wrangler'), ['dev', '--port', String(port), '--inspector-port', String(port + 1), '--ip', '127.0.0.1',
     '--env-file', envFile, '--persist-to', join(DIR, name + '-state'), '--show-interactive-dev-session=false'], {
@@ -99,10 +109,10 @@ async function devBypass() {
   console.log('1. dev bypass (DEV_FAKE_USER) on :' + PORT);
   const w = startWorker('bypass', PORT, {
     GITHUB_CLIENT_ID: 'dev-placeholder', GITHUB_CLIENT_SECRET: 'dev-placeholder',
-    COOKIE_ENCRYPTION_KEY: 'dev-placeholder-dev-placeholder-dev-placeholder', DEV_FAKE_USER: '1001:artist-dev,1002:other-dev',
+    COOKIE_ENCRYPTION_KEY: 'dev-placeholder-dev-placeholder-dev-placeholder', DEV_FAKE_USER: '1001:artist-dev,1002:other-dev,1003:kv-dev',
     // wrangler.jsonc sets 0 for Workers Free; here the pictures are measured inside workerd, as on Paid.
     COLOUR_BUDGET_PX: '4000000',
-  });
+  }, { 'state:1003': KV_STATE });
   try {
     await w.ready;
     const client = new Client({ name: '5s-smoke', version: '1' });
@@ -175,6 +185,20 @@ async function devBypass() {
     });
     const still = await client.callTool({ name: 'get_taste', arguments: {} });
     check('and the session still works for its own person', () => assert.equal(still.structuredContent.judged, 5));
+    // A 5s kept in KV before the move: read once into the person's own Durable Object, then gone from KV.
+    const moved = new Client({ name: '5s-smoke-kv', version: '1' });
+    await moved.connect(new StreamableHTTPClientTransport(new URL(w.base + '/mcp'), { requestInit: { headers: { 'x-5s-dev-user': 'kv-dev' } } }));
+    const fromKv = (await moved.callTool({ name: 'get_state', arguments: {} })).structuredContent;
+    check('a 5s still in KV is moved to the person\'s Durable Object on first use, judgments and rev kept', () => {
+      assert.equal(fromKv.rev, 9);
+      assert.equal(fromKv.state.j.length, 2);
+      assert.equal(fromKv.state.notes[0].text, KV_MARK);
+    });
+    const afterMove = await moved.callTool({ name: 'next_five', arguments: {} });
+    check('and saved there from then on (next_five writes rev 10)', () => assert.equal((afterMove.structuredContent.five || {}).of, 5));
+    const rev10 = (await moved.callTool({ name: 'get_state', arguments: {} })).structuredContent.rev;
+    check('the moved 5s carries on from its rev', () => assert.equal(rev10, 10));
+    await moved.close();
     const stranger = await fetch(w.base + '/mcp', { method: 'POST', headers: Object.assign({ 'x-5s-dev-user': 'not-listed' }, MCP_HEADERS), body: toolsList });
     check('the dev bypass only plays people listed in DEV_FAKE_USER', () => assert.equal(stranger.status, 403));
 
@@ -224,6 +248,23 @@ async function devBypass() {
       assert.equal(pic.structuredContent.image, 'data:image/jpeg;base64,' + img.data);
       assert.ok(!pic.content.filter((c) => c.type === 'text').some((c) => c.text.includes('base64,')));
     });
+    const work = await client.callTool({ name: 'read_link', arguments: { url: 'https://studio.example.com/work/blue-hour' } });
+    check('read_link: a single page says what it is (Open Graph and schema.org JSON-LD, read inside workerd)', () => {
+      assert.equal(work.isError, undefined, work.content[0].text);
+      assert.equal(work.structuredContent.page.maker, 'Mara Lind');
+      assert.equal(work.structuredContent.page.medium, 'Oil on linen');
+      assert.doesNotMatch(work.content[0].text, /Mara Lind/);
+    });
+    const table = await client.callTool({ name: 'read_link', arguments: { url: 'https://studio.example.com/collection/long-table' } });
+    const kept = await client.callTool({ name: 'bring_in', arguments: { kind: 'object', items: [{ image: null, link: 'https://studio.example.com/collection/long-table', source: 'The web',
+      title: table.structuredContent.page.title, medium: table.structuredContent.page.material, year: '1890', category: 'Design/Decorative Art', definedBy: 'page' }] } });
+    check('bring_in: a thing with no picture is catalogued by its link and what its page says (era from its year)', () => {
+      assert.equal(kept.isError, undefined, kept.content[0].text);
+      const a = kept.structuredContent.added[0];
+      assert.equal(a.no_picture, true);
+      assert.equal(a.facts.era, '1800s');
+      assert.equal(a.facts.category, 'Design/Decorative Art');
+    });
     const inside = await client.callTool({ name: 'read_link', arguments: { url: 'https://short.example.com/to-metadata' } });
     check('read_link: a link that redirects to a private address (cloud metadata) is refused, with what to do instead', () => {
       assert.equal(inside.isError, true);
@@ -255,6 +296,12 @@ async function devBypass() {
     assert.ok(filesHolding(state, 'artist-dev').length > 0, 'the scan reads the stored data');
     assert.deepEqual(filesHolding(state, 'dev-fake-token'), []);
   });
+  check('each person\'s 5s is in their own Durable Object (FiveSPerson\'s SQLite), not in KV', () => {
+    const where = filesHolding(state, KV_MARK);
+    assert.ok(where.some((f) => /FiveSPerson/.test(f)), where.join(', '));
+    assert.match(localKv('bypass', ['get', 'state:1003']), /not found/i, 'deleted from KV once moved');
+    assert.ok(filesHolding(state, 'artist-dev.github.io').some((f) => /FiveSPerson/.test(f)), 'the hub 5s made, in the person\'s object');
+  });
   check('local storage keeps the brought pictures\' addresses, never the pictures', () => {
     assert.ok(filesHolding(state, 'https://i.pinimg.com/736x/ab/cd/ef/bowl.jpg').length > 0, 'the scan reads the stored state');
     assert.ok(pictureSample && pictureSample.length > 80);
@@ -264,6 +311,11 @@ async function devBypass() {
 }
 
 let pictureSample = null;
+
+// A person's 5s as the connector kept it in KV before the move (store.js record: rev, at, state, use).
+const KV_MARK = 'kept-in-kv-before-the-move';
+const KV_STATE = JSON.stringify({ rev: 9, at: '2026-10-20T09:00:00.000Z', use: null, state: { v: 1, j: [['o001', 1, 1500, 1760950000, 0], ['i002', 0, 2100, 1760950010, 0]],
+  five: null, sets: [], days: [], own: [], notes: [{ at: 1760950020, q: 'free', ref: null, text: KV_MARK }], seen: { path: [] }, opts: { ring: true } } });
 
 const COOKIE_KEY = randomBytes(32).toString('hex');
 

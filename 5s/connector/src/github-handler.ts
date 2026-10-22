@@ -180,4 +180,14 @@ app.get("/callback", async (c) => {
 	return new Response(null, { status: 302, headers });
 });
 
+// Anything else that fails while connecting (on Workers Free, most likely the day's 1,000 KV writes
+// used up: a sign-in writes 5, see costs.js): a page in plain words, never a bare error.
+app.onError((error) => {
+	console.log("5s sign-in failed:", error instanceof Error ? error.message : error);
+	return htmlError(
+		"5s couldn't finish connecting just now. Try again in a minute; if it keeps happening, 5s has used today's free allowance for sign-ins, which comes back at midnight UTC. Nothing in your 5s is affected, and the 5s app keeps working meanwhile.",
+		503,
+	);
+});
+
 export { app as GitHubHandler };

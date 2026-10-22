@@ -114,7 +114,7 @@
   const oneLine = (x) => (typeof x === 'string' || isNum(x)
     ? String(x).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁤﻿]/g, ' ').replace(/\s+/g, ' ').trim() : '');
   // An https address of at most OWN_LIMITS.url characters with no spaces, or ''.
-  const httpsAddr = (x) => (typeof x === 'string' && x.length <= OWN_LIMITS.url && /^https:\/\/[^\s/?#@]+[^\s]*$/i.test(x) ? x : '');
+  const httpsAddr = (x) => (typeof x === 'string' && x.length <= OWN_LIMITS.url && /^https:\/\/[^\s/?#@]+(?:[/?#]\S*)?$/i.test(x) ? x : '');
 
   // FNV-1a, then the murmur3 finaliser so near-identical strings spread over all 32 bits.
   function hash32(str) {
@@ -469,7 +469,9 @@
   function ownDefinition(o) {
     const str = (k) => (typeof o[k] === 'string' && o[k] ? o[k] : null);
     const list = (k) => (Array.isArray(o[k]) ? o[k].filter((x) => typeof x === 'string' && x) : []);
-    const y = typeof o.year === 'string' || isNum(o.year) ? /(-?\d{1,4})/.exec(String(o.year)) : null;
+    // The year as a number, as a deck card has it: from `year`, else the first year in `date`.
+    const y = typeof o.year === 'string' || isNum(o.year) ? /(-?\d{1,4})/.exec(String(o.year))
+      : typeof o.date === 'string' ? /\b(\d{3,4})\b/.exec(o.date) : null;
     return {
       materials: list('materials'), genes: list('genes').filter((g) => GENE_SLUG.test(g)),
       era: ERAS.indexOf(o.era) >= 0 ? o.era : null, place: str('place'),

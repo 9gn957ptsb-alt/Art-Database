@@ -7,6 +7,7 @@
 //
 //   node scripts/cpu-per-tool.mjs            # the deck in src/deck.generated.json (npm run deck)
 //   node scripts/cpu-per-tool.mjs --json     # the table as JSON
+//   node scripts/cpu-per-tool.mjs --fives 30 --brought 30   # a newer person (default 120 fives, 120 things)
 //
 // The web is the fake web (src/fake-web.js) and the store is in memory, so only CPU is measured:
 // time spent waiting on a site, on GitHub or on storage is not CPU, on Cloudflare or here.
@@ -22,7 +23,7 @@ import { memoryStore, writeState } from '../src/store.js';
 import { createFakeGitHub } from '../src/fake-github.js';
 import { api } from '../src/hub.js';
 import { createWeb } from '../src/web.js';
-import { createFakeWeb } from '../src/fake-web.js';
+import { createFakeWeb, pictureBytes, FAKE_PICTURES } from '../src/fake-web.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const deck = JSON.parse(readFileSync(join(HERE, '..', 'src', 'deck.generated.json'), 'utf8'));
@@ -30,11 +31,12 @@ const UID = '4242', LOGIN = 'ada-lovelace', TOKEN = 'gho_bench';
 const DAY = 86400000;
 
 /** A person after four months: 600 judgments (120 fives), 120 brought-in things, notes, sets, a hub. */
-export function realisticState(d, now) {
+export function realisticState(d, now, o) {
+  const fives = (o && o.fives) || 120, brought = o && o.brought != null ? o.brought : 120;
   let st = FiveS.newState();
-  let t = now - 120 * DAY;
+  let t = now - fives * DAY;
   const rnd = FiveS.prng ? FiveS.prng(7) : Math.random;
-  for (let k = 0; k < 120; k++) {
+  for (let k = 0; k < fives; k++) {
     st = FiveS.startFive(st, d, t);
     for (const id of st.five.ids.slice()) {
       const keep = rnd() < 0.55;
@@ -43,29 +45,34 @@ export function realisticState(d, now) {
     }
     t += DAY - 20000;
   }
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < brought; i++) {
     const id = 'y' + (100000 + i).toString(36);
     st = FiveS.bring(st, { id, kind: ['image', 'object', 'space'][i % 3], name: 'Saved thing ' + i, source: i % 2 ? 'Pinterest' : 'Are.na',
       colours: ['#b5532d', '#efe6d2', '#39424e'], crop: [0.4, 0.3, 0.25, 0.25], texture: 0.4, w: 720, h: 540 }, t - i * 1000);
     st.own[st.own.length - 1] = Object.assign({}, st.own[st.own.length - 1], {
-      image: 'https://img.example.com/bowl-' + i + '.jpg', link: 'https://www.pinterest.com/pin/' + (1000 + i) + '/',
+      image: i === 0 ? 'https://i.pinimg.com/originals/ab/cd/ef/big.jpg' : 'https://img.example.com/bowl-' + i + '.jpg', link: 'https://www.pinterest.com/pin/' + (1000 + i) + '/',
       maker: 'A maker', medium: 'stoneware', category: 'Design/Decorative Art', era: '2010s–now', genes: [], materials: ['ceramic'],
       about: 'A bowl', definedBy: 'page',
     });
   }
   const notes = [];
-  for (let i = 0; i < 80; i++) notes.push({ at: Math.floor((t - i * DAY) / 1000), q: 'turn', ref: st.j[i * 7][0], text: 'Why I kept this one, in a sentence or two of my own words.' });
+  for (let i = 0; i < Math.min(80, Math.floor(st.j.length / 7)); i++) notes.push({ at: Math.floor((t - i * DAY) / 1000), q: 'turn', ref: st.j[i * 7][0], text: 'Why I kept this one, in a sentence or two of my own words.' });
   const sets = [];
   for (let i = 0; i < 20; i++) sets.push({ at: Math.floor((t - i * DAY) / 1000), wall: 'c' + String(1 + i).padStart(3, '0'), name: 'A room ' + i });
   st = Object.assign({}, st, { notes, sets, hub: { user: LOGIN, name: LOGIN + '.github.io', private: false, mode: 'api', madeAt: Math.floor(t / 1000) - 86400, savedAt: Math.floor(t / 1000) - 3600, savedCode: 'x' } });
   return st;
 }
 
-async function main() {
-  const asJson = process.argv.includes('--json');
+const argOf = (name, dflt) => { const i = process.argv.indexOf('--' + name); return i > 0 ? Number(process.argv[i + 1]) : dflt; };
+
+export async function measureTools(o) {
   const now = Date.UTC(2026, 9, 22, 12);
   const store = memoryStore();
-  const state = realisticState(deck, now);
+  const state = realisticState(deck, now, o);
+  // The fake web makes its pictures on first use: made here, so their making is not counted.
+  for (const name of Object.keys(FAKE_PICTURES)) pictureBytes(name);
+  // ... and so is the smaller copy item_image will ask Pinterest for (564 px wide).
+  await createFakeWeb().fetch('https://i.pinimg.com/564x/ab/cd/ef/big.jpg', {});
   await writeState(store, UID, state, 1, now, {});
   const stateBytes = Buffer.byteLength(store.map.get('state:' + UID));
   const gh = createFakeGitHub({ users: [{ token: TOKEN, id: Number(UID), login: LOGIN }] });
@@ -90,7 +97,8 @@ async function main() {
   void made;
 
   const own = (await client.callTool({ name: 'get_state', arguments: {} })).structuredContent.state.own;
-  const ownId = own.find((o) => o.image).id;
+  const ownId = own.find((o) => o.image && /bowl/.test(o.image)).id;
+  const bigId = own.find((o) => o.image && /big/.test(o.image)).id;
   const five = (await client.callTool({ name: 'next_five', arguments: {} })).structuredContent.cards;
   const bigState = (await client.callTool({ name: 'get_state', arguments: {} })).structuredContent;
   const cases = [
@@ -107,6 +115,7 @@ async function main() {
     ['read_link', (i) => ({ url: i % 2 ? 'https://www.pinterest.com/ada/slow-mornings/' : 'https://studio.example.com/work/bowl' })],
     ['bring_in', (i) => ({ items: [{ image: 'https://img.example.com/meadow-' + i + '.jpg', source: 'The web', title: 'A meadow', maker: 'Someone', category: 'Photography' }] })],
     ['item_image', () => ({ id: ownId })],
+    ['item_image (copy)', () => ({ id: bigId })],
   ];
   const freshDay = () => {
     // Each call as if it were the first of its kind today: the daily caps are not what is measured.
@@ -119,7 +128,7 @@ async function main() {
     // put_state needs the current rev as its base.
     if (name === 'put_state') args = Object.assign({}, args, { base: (await client.callTool({ name: 'get_state', arguments: {} })).structuredContent.rev });
     const t0 = process.cpuUsage();
-    const r = await client.callTool({ name, arguments: args });
+    const r = await client.callTool({ name: name.split(' ')[0], arguments: args });
     const d = process.cpuUsage(t0);
     if (r.isError && !(name === 'bring_in' && r.structuredContent && r.structuredContent.error === 'limit')) throw new Error(name + ' failed: ' + r.content[0].text);
     return (d.user + d.system) / 1000;
@@ -132,9 +141,16 @@ async function main() {
     warm.sort((x, y) => x - y);
     rows.push({ tool: name, cold_ms: +cold.toFixed(2), warm_ms: +warm[7].toFixed(2), max_warm_ms: +warm[14].toFixed(2) });
   }
-  const meta = { judgments: state.j.length, brought: state.own.length, notes: state.notes.length, sets: state.sets.length, state_bytes: stateBytes, deck_cards: deck.cards.length, node: process.version };
-  if (asJson) { console.log(JSON.stringify({ meta, rows }, null, 2)); return; }
-  console.log('A person with ' + meta.judgments + ' judgments, ' + meta.brought + ' brought-in things, ' + meta.notes + ' notes, ' + meta.sets + ' sets and a hub (state ' + Math.round(stateBytes / 1024) + ' KB); deck of ' + meta.deck_cards + ' cards; Node ' + meta.node);
+  const meta = { judgments: state.j.length, turns: state.j.filter((e) => e[4]).length, brought: state.own.length, notes: state.notes.length, sets: state.sets.length, state_bytes: stateBytes, deck_cards: deck.cards.length, node: process.version };
+  await client.close();
+  return { meta, rows };
+}
+
+async function main() {
+  const { meta, rows } = await measureTools({ fives: argOf('fives', 120), brought: argOf('brought', 120) });
+  const stateBytes = meta.state_bytes;
+  if (process.argv.includes('--json')) { console.log(JSON.stringify({ meta, rows }, null, 2)); return; }
+  console.log('A person with ' + meta.judgments + ' judgments (' + meta.turns + ' turns), ' + meta.brought + ' brought-in things, ' + meta.notes + ' notes, ' + meta.sets + ' sets and a hub (state ' + Math.round(stateBytes / 1024) + ' KB); deck of ' + meta.deck_cards + ' cards; Node ' + meta.node);
   console.log('tool               cold ms   warm ms (median)   warm max');
   for (const r of rows) console.log(r.tool.padEnd(18) + String(r.cold_ms).padStart(8) + String(r.warm_ms).padStart(12) + String(r.max_warm_ms).padStart(16));
 }
