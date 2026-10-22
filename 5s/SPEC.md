@@ -256,6 +256,55 @@ github.com/login/device): no secret in the app.
 **State** (additive): `state.hub = {user, name, private, mode: "links" | "api", madeAt, savedAt,
 savedCode}` and `FiveS.setHub(state, patch, now)`; `path()` returns twelve milestones.
 
+### 5s as a Claude connector (and the one-button GitHub that comes with it)
+
+The artist, 22 Oct 2026: "I also need you to develop 5s in a way where it can be a connector for
+Claude. GitHub doesn't come up as an available connector."
+
+**What it is.** A remote MCP server, `5s/connector/` (a Cloudflare Worker), that anyone adds to Claude
+as a custom connector (Settings → Connectors → Add custom connector → its URL). Connecting it shows
+**GitHub's own sign-in and sign-up page**: the 5s connector signs people in with GitHub (OAuth, scopes
+`read:user` and `public_repo`), so the GitHub connector Claude lacks is folded into 5s itself. From then
+on, the 5s app (through the artifact's `mcp` capability) and any Claude chat can make and save the
+person's hub with one button, and Claude can read and apply their taste.
+
+**Tools** (names as Claude sees them; every input validated; every output plain JSON plus a short text
+summary):
+- `get_taste` → the profile: positive and negative space, philosophy lines, turns, leanings by era,
+  place, material and quality, keep rate, speed. "Use this whenever the person asks for anything with
+  an aesthetic: a sofa, a website, a gift, a room, an outfit, a trip."
+- `aesthetic_brief({for})` → a short, paste-able brief of the person's taste aimed at one purpose
+  ("a living room", "my portfolio site"), with three reference works (Artsy links and images) and
+  what to avoid (their negative space).
+- `next_five` → the next five cards (one per kind, from the deck), each with an image address, kind,
+  and no names (names come after judging), so Claude can run a five in the chat.
+- `judge({card, keep, ms?})` → records it with the same engine as the app; returns the reveal (title,
+  artist, date) and whether it was a turn.
+- `get_seed` → the 5s seed (aesthetics only).
+- `hub_status` → whether they have a hub, its name and address, when it was last saved.
+- `make_hub({name?, include_notes?})` → creates `<login>.github.io` (or the given name) on their GitHub
+  account with the hub page, the seed and a README, and returns the address. One call; no GitHub page.
+- `save_hub({include_notes?, include_own_images?})` → writes the current hub page and seed.
+- `get_state` / `put_state({state, base})` → for the 5s app itself, so the app and the connector share
+  one state (last writer wins unless `base` is stale, then it returns the newer state to merge).
+
+**Storage and privacy.** The person's full state (judgments, notes, sets) lives privately in the
+connector's own store (Workers KV, keyed by GitHub user id). Only what they choose reaches their
+public hub: the seed and the hub page, never notes or brought-in images unless they say so. The
+connector never reads any of their other repositories; with `public_repo` it can only write public ones,
+which is why hubs are public by default (aesthetics only). Private hubs come with a GitHub App later.
+
+**Reuse.** The connector imports the same `src/engine.js` (judgments, profile, philosophy, seed),
+`src/hub.js` (the GitHub API driver) and `src/hubpage.js` (the hub page) as the app, and serves the
+artist's deck (`dist/deck.json`, with Artsy image addresses) bundled at deploy time; the deck is never
+committed.
+
+**One-time setup on the artist's side** (copy-and-paste steps in `5s/connector/README.md`): a free
+Cloudflare account; a GitHub OAuth App (homepage and callback URLs given); `wrangler deploy` (runnable
+from a session once a Cloudflare API token is stored as an environment credential, the way the Artsy
+token was); then **Add custom connector** in Claude with the Worker's `/mcp` URL. People using 5s never
+see any of it.
+
 ### Example mode
 - Every tab except Sort can show **an example taste** (built by `engine.exampleState(deck)`), behind a
   clearly marked banner "Example taste. Not yours." with "Back to mine". It is never saved. On a first
