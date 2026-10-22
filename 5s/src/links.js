@@ -77,7 +77,7 @@
   }
 
   // "abc" → "Abc"; "McQueen" stays; "iPhone" stays.
-  const wordCase = (w) => (/^[a-z][a-z'’]*$/.test(w) ? capital(w) : w);
+  const wordCase = (w) => (/^[a-z][a-z0-9'’]*$/.test(w) ? capital(w) : w);
 
   function slugify(s) {
     return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -188,7 +188,7 @@
       if (/^www\./i.test(cand) || cand.indexOf('/') > 0 || BARE_TLD.test(h)) return { raw: 'https://' + cand };
     }
     if (scheme) return { why: 'Only web addresses can be added here, and that one starts with “' + scheme[1].toLowerCase() + ':”. A web address starts with https:// or www.' };
-    return { why: 'That isn’t a web address. A link starts with https:// or www., like https://www.artsy.net/artwork/…' };
+    return { why: 'That isn’t a web address. A link starts with https:// or www.' };
   }
 
   // A parsed address made clean, for platform `p`. Returns a URL object or null.
@@ -350,7 +350,7 @@
           const ix = deckIndex(deck);
           if (ix) {
             for (const [aslug, name] of ix.artists) {
-              if (b.indexOf(aslug + '-') === 0) { r.maker = name; r.tokens = tokensOf(b.slice(aslug.length + 1)); if (/^\d{1,2}$/.test(r.tokens[r.tokens.length - 1] || '')) r.tokens.pop(); break; }
+              if (b.indexOf(aslug + '-') === 0) { r.maker = name; r.titleTokens = r.tokens.slice(tokensOf(aslug).length); break; }
             }
           }
         } else if (a === 'artist') { r.page = 'artist'; r.maker = wordsOf(r.tokens); r.tokens = []; }
@@ -382,8 +382,10 @@
       case 'Wikimedia Commons': {
         let t = s[0] === 'wiki' ? s.slice(1).join('/') : last;
         if (t) {
-          r.id = t.replace(/ /g, '_');
-          t = t.replace(/^File:/i, '').replace(/^\d+px-/, '').replace(IMG_EXT, '');
+          // The file's page on Commons is named "File:<name>", whichever address the picture came by.
+          t = t.replace(/^File:/i, '').replace(/^\d+px-/, '');
+          r.id = 'File:' + t.replace(/ /g, '_');
+          t = t.replace(IMG_EXT, '');
           r.slug = t; r.tokens = [t.replace(/_/g, ' ')]; r.keepCase = true;
         }
         break;
@@ -405,7 +407,7 @@
           const m = /-([a-z]\d{4,6})$/i.exec(s[i + 1]);
           if (m) r.id = m[1];
           // Tate's addresses start with the artist's surname, then the title.
-          if (r.tokens.length >= 2) { r.maker = wordCase(r.tokens[0]); r.tokens = r.tokens.slice(1); }
+          if (r.tokens.length >= 2) { r.maker = wordCase(r.tokens[0]); r.titleTokens = r.tokens.slice(1); }
         } else if (at('artists') >= 0) { r.page = 'artist'; fromSlug(after('artists') || ''); r.maker = wordsOf(r.tokens.filter((t) => !/^\d+$/.test(t))); r.tokens = []; }
         break;
       }
@@ -541,12 +543,16 @@
   // "mid-century lounge chair by hans wegner" → title before "by", maker after (on any shop or page).
   function splitBy(tokens) {
     const i = tokens.findIndex((t, k) => k > 0 && k < tokens.length - 1 && t.toLowerCase() === 'by');
-    if (i < 0 || tokens.length - i - 1 > 6) return null;
-    return { title: tokens.slice(0, i), maker: tokens.slice(i + 1) };
+    if (i < 0) return null;
+    // A year after the name ("… by ana li c 1975") is the date, not part of the maker.
+    const maker = tokens.slice(i + 1);
+    while (maker.length && /^(?:\d{3,4}s?|c|ca|circa)$/i.test(maker[maker.length - 1])) maker.pop();
+    if (!maker.length || maker.length > 6) return null;
+    return { title: tokens.slice(0, i), maker };
   }
 
   function kindFromWords(tokens, firstNoun) {
-    const list = tokens.map((t) => t.toLowerCase());
+    const list = tokens.join(' ').toLowerCase().split(/[\s,;:()]+/).filter(Boolean);
     if (!firstNoun) list.reverse();
     for (const w of list) {
       if (OBJECT_WORDS.has(w)) return 'object';
@@ -590,7 +596,7 @@
     const r = readPath(plat.name, clean, deck);
     const isImage = IMG_EXT.test(clean.pathname) || /(?:^|\.)(?:pinimg|cdninstagram|staticflickr|twimg|ebayimg|etsystatic|1stdibscdn)\.com$|^upload\.wikimedia\.org$|^images\.unsplash\.com$/.test(clean.hostname);
     if (isImage && !r.tokens) { const seg = clean.pathname.split('/').filter(Boolean).pop(); if (seg) { r.slug = safeDecode(seg); r.tokens = tokensOf(seg); } }
-    let tokens = r.tokens || [];
+    let tokens = r.titleTokens || r.tokens || [];
     let maker = r.maker || null;
     if (!maker && !r.keepCase && plat.name !== 'Wikipedia') {
       const by = splitBy(tokens);
@@ -869,8 +875,8 @@
     const tries = [s];
     const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(s);
     if (fenced) tries.push(fenced[1]);
-    const a = s.indexOf('{'), b = s.lastIndexOf('}');
-    if (a >= 0 && b > a) tries.push(s.slice(a, b + 1));
+    const a = s.indexOf('{'), b = s.lastIndexOf('}'), list = s.indexOf('[');
+    if (a >= 0 && b > a && !(list >= 0 && list < a)) tries.push(s.slice(a, b + 1)); // an object, not one inside a list
     for (const t of tries) {
       try { const v = JSON.parse(t); if (isObj(v)) return v; } catch (e) { /* the next way */ }
     }

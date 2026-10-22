@@ -54,6 +54,11 @@ That month, as this repository records it (the site branch's CLAUDE.md, the impo
   to trends in my favorite animations so you can further refine those types, as well as, explore new
   ones that are very different, but just as potent and exciting."
 
+## Buildings beside the artworks (22 Oct 2026)
+
+- "I also want you to now work in the Architectural Authority bookmarks as objects to like and
+  dislike along with the artworks."
+
 ## Set as a game (22 Oct 2026)
 
 Said over a screenshot of Set's room (wall, window, picture, floor, object):

@@ -56,9 +56,9 @@
  * from env.rng, drawn in the same order and the same number of times on every frame, so a seed always gives
  * the same sign.
  *
- * The halo's blur goes through Marks.layer at full resolution (resolution: 1), and the layer wipes its whole
- * scratch canvas first. At reduced resolution the scaled-up copy can sample stale pixels left by an earlier
- * layer just past the edge of the region it used, so the same t could give different frames.
+ * The halo's blur goes through a glow layer of the family's own (see glowLayer): two canvases sized exactly to
+ * the layer and cleared whole each frame, so the reduced-resolution blur never samples another drawing's stale
+ * pixels, and the same t always gives the same frame, whatever was drawn before it.
  */
 (function () {
   'use strict';
@@ -305,9 +305,58 @@
   /* ---------------------------------------------------------------------------------------------------------
    * painting a state
    * ------------------------------------------------------------------------------------------------------- */
-  // clear the whole scratch canvas a layer hands us (not only the region it cleared): see the header
-  function wipe(c) {
-    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, c.canvas.width, c.canvas.height); c.restore();
+  // The glow layer: like Marks.layer({blur}), but on two canvases of this family's own, sized exactly to the
+  // reduced-resolution layer and cleared whole on every frame. Marks.layer's pooled scratch canvases can be
+  // larger than the region a layer clears, and its scaled-up copy then samples stale pixels left past that edge
+  // by whatever was drawn before (another family, another size), so the same t could give different frames.
+  // The blur (device px) sets the resolution as Marks.layer does: half from 6 px, a quarter from 20 px.
+  const glowCv = [null, null];
+  let filterOk = null;
+  function own(i, w, h) {
+    let c = glowCv[i];
+    if (!c) {
+      if (typeof document !== 'undefined' && document.createElement) c = document.createElement('canvas');
+      else if (typeof OffscreenCanvas !== 'undefined') c = new OffscreenCanvas(w, h);
+      else return null;
+      glowCv[i] = c;
+    }
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }   // resizing clears it too
+    const x = c.getContext('2d');
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none';
+    x.clearRect(0, 0, w, h);
+    return c;
+  }
+  function glowLayer(ctx, o, draw) {
+    const alpha = c01(o.alpha == null ? 1 : o.alpha);
+    if (alpha <= 0.002) return;
+    const cw = ctx.canvas.width, ch = ctx.canvas.height, blur = Math.max(0, o.blur);
+    const r = blur >= 20 ? 0.25 : blur >= 6 ? 0.5 : 1;
+    const lw = Math.max(1, Math.ceil(cw * r)), lh = Math.max(1, Math.ceil(ch * r));
+    const a = own(0, lw, lh), b = a && own(1, lw, lh);
+    if (!b) { M.layer(ctx, { alpha, composite: o.composite, blur }, draw); return; }
+    const ax = a.getContext('2d'), bx = b.getContext('2d');
+    const m = ctx.getTransform();
+    ax.setTransform(m.a * r, m.b * r, m.c * r, m.d * r, m.e * r, m.f * r);
+    draw(ax);
+    let sw = lw, sh = lh;
+    if (filterOk === null) { try { bx.filter = 'blur(1px)'; filterOk = bx.filter === 'blur(1px)'; bx.filter = 'none'; } catch (e) { filterOk = false; } }
+    if (filterOk) {
+      bx.filter = 'blur(' + (blur * r).toFixed(2) + 'px)';
+      bx.drawImage(a, 0, 0);
+      bx.filter = 'none';
+    } else {   // no canvas filters (Safari before 18): blur by resampling down, and the scale-up spreads it back out
+      const k = Math.min(32, Math.max(1, (blur * r) / 1.5));
+      sw = Math.max(1, Math.round(lw / k)); sh = Math.max(1, Math.round(lh / k));
+      bx.imageSmoothingEnabled = true; bx.imageSmoothingQuality = 'high';
+      bx.drawImage(a, 0, 0, lw, lh, 0, 0, sw, sh);
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha *= alpha;
+    if (o.composite) ctx.globalCompositeOperation = o.composite;
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(b, 0, 0, sw, sh, 0, 0, cw, ch);
+    ctx.restore();
   }
 
   function sameState(a, b) {
@@ -411,8 +460,7 @@
     const blur = (12 + 44 * g) * (0.8 + 0.5 * I);
     const anyHalo = TUBES.some((tb) => T[tb.id].halo > 0.002) || (p.ribbon && S.rib.halo > 0.002);
     if (anyHalo && hA > 0.002) {
-      M.layer(ctx, { composite: L.mode, blur: Math.max(0.5, blur * dpx) }, (h) => {
-        wipe(h);
+      glowLayer(ctx, { composite: L.mode, blur: Math.max(0.5, blur * dpx) }, (h) => {
         if (p.ribbon && S.rib.halo > 0.002) {
           M.stroke(h, RIB, { width: 120 * (0.8 + 0.4 * g) * (1 + 0.4 * S.rib.hot), colours: L.light(pal.ribbon), alpha: c01(S.rib.halo * hA * 0.6) });
         }
@@ -427,8 +475,7 @@
       });
     }
     if (S.after > 0.002) {
-      M.layer(ctx, { composite: L.mode, blur: Math.max(0.5, blur * 1.3 * dpx), alpha: c01(S.after * L.afterA) }, (h) => {
-        wipe(h);
+      glowLayer(ctx, { composite: L.mode, blur: Math.max(0.5, blur * 1.3 * dpx), alpha: c01(S.after * L.afterA) }, (h) => {
         for (const tb of TUBES) {
           M.stroke(h, PTS[tb.path], { from: tb.from, to: tb.to, width: WID[tb.path] * k * hw * 1.1, colours: complement(L.light(M.colourAt(pal[tb.path], 0.5))) });
         }

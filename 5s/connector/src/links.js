@@ -314,7 +314,93 @@ export function parseFlickrJson(text, base) {
 
 const ICONISH = /(^|[/_.-])(icon|logo|sprite|avatar|favicon|spacer|pixel|badge|emoji|1x1|blank|tracking|ads?)([/_.-]|$)/i;
 
-/** A page: its og:image / twitter:image (each one), else its first large <img>; and its title. */
+// ------------------------------------------------------------------ what a page says it is
+
+const LD_MAX_BLOCKS = 6;          // JSON-LD blocks read on one page
+const LD_MAX_CHARS = 256 * 1024;  // characters of JSON-LD read in all
+const LD_MAX_NODES = 2000;        // objects walked in them
+const FACT_CHARS = 300;           // each fact: one line of at most this many characters
+
+/** The JSON-LD blocks of a page (<script type="application/ld+json">), parsed; unreadable ones skipped. */
+function ldBlocks(s) {
+  const out = [];
+  let chars = 0;
+  for (const [a, b] of rawBlocks(s)) {
+    if (out.length >= LD_MAX_BLOCKS) break;
+    const open = s.slice(a, s.indexOf('>', a) + 1);
+    if (!/^<script\b/i.test(open) || !/application\/ld\+json/i.test(attrsOf(open).type || '')) continue;
+    const body = s.slice(a + open.length, s.lastIndexOf('<', b - 1));
+    if (chars + body.length > LD_MAX_CHARS) break;
+    chars += body.length;
+    try { out.push(JSON.parse(unCdata(body).trim())); } catch { /* not JSON: skipped */ }
+  }
+  return out;
+}
+
+const THING_TYPES = /^(VisualArtwork|Painting|Sculpture|Photograph|Drawing|CreativeWork|Product|IndividualProduct|ProductModel|Book|MusicAlbum|Movie|Place|LandmarksOrHistoricalBuildings|House|Accommodation|ImageObject|Article|NewsArticle|BlogPosting|WebPage|ItemPage|ProductGroup|ArchiveComponent|Collection)$/;
+
+/** The first schema.org thing in the JSON-LD (an artwork or product before a page or article). */
+function ldThing(blocks) {
+  const found = [];
+  let seen = 0;
+  const walk = (x, depth) => {
+    if (!x || typeof x !== 'object' || depth > 6 || seen > LD_MAX_NODES) return;
+    seen++;
+    if (Array.isArray(x)) { for (const y of x) walk(y, depth + 1); return; }
+    const types = [].concat(x['@type'] || []).map(String);
+    if (types.some((t) => THING_TYPES.test(t))) found.push({ x, types });
+    if (x['@graph']) walk(x['@graph'], depth + 1);
+    if (x.mainEntity) walk(x.mainEntity, depth + 1);
+  };
+  for (const b of blocks) walk(b, 0);
+  const rank = (t) => (t.types.some((y) => /Artwork|Painting|Sculpture|Photograph|Drawing/.test(y)) ? 0 : t.types.some((y) => /Product|Book|Album|Movie|Place|Landmark|House|Accommodation|Archive|Collection/.test(y)) ? 1 : t.types.some((y) => /CreativeWork/.test(y)) ? 2 : 3);
+  found.sort((p, q) => rank(p) - rank(q));
+  return found.length ? found[0].x : null;
+}
+
+/** A schema.org value as plain text: a string, a number, {name}, or a list of them (joined). */
+function ldText(v, depth) {
+  if (v == null || (depth || 0) > 3) return '';
+  if (typeof v === 'string' || typeof v === 'number') return plainText(String(v));
+  if (Array.isArray(v)) return v.slice(0, 6).map((y) => ldText(y, (depth || 0) + 1)).filter(Boolean).join(', ');
+  if (typeof v === 'object') return ldText(v.name || v['@value'] || v.value || '', (depth || 0) + 1);
+  return '';
+}
+
+const fact = (t) => {
+  const v = String(t == null ? '' : t).replace(/[\u0000-\u001f\u007f-\u009f]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!v) return null;
+  return v.length > FACT_CHARS ? v.slice(0, FACT_CHARS - 1).trimEnd() + '…' : v;
+};
+
+/**
+ * What a single page says the thing on it is: read_link's data.page. Every value is the page's own
+ * text, one line of at most 300 characters (or null): quoted data, never instructions, never in a summary.
+ *   title (og:title, else <title>) · description (og:description, else meta description) · site
+ *   (og:site_name) · type (og:type) · image (og:image) · author (meta author, article:author, JSON-LD
+ *   author) · maker (JSON-LD creator, else brand: product:brand, JSON-LD brand) · name, date
+ *   (dateCreated), material, medium (artMedium) from schema.org JSON-LD when the page has it.
+ */
+export function pageFacts(metas, s, ldSource, base, title) {
+  const metaOf = (...names) => { for (const a of metas) if (names.includes(String(a.property || a.name || a.itemprop || '').toLowerCase()) && a.content) return a.content; return null; };
+  const thing = ldThing(ldBlocks(ldSource)) || {};
+  const image = pictureAddress(metaOf('og:image:secure_url', 'og:image', 'og:image:url'), base);
+  return {
+    title: fact(plainText(metaOf('og:title') || '') || title || ''),
+    description: fact(plainText(metaOf('og:description') || metaOf('description') || metaOf('twitter:description') || '')),
+    site: fact(plainText(metaOf('og:site_name') || '')),
+    type: fact(plainText(metaOf('og:type') || '')),
+    image,
+    author: fact(plainText(metaOf('author', 'article:author') || '') || ldText(thing.author)),
+    maker: fact(ldText(thing.creator) || ldText(thing.artist) || plainText(metaOf('product:brand', 'og:brand') || '') || ldText(thing.brand) || ldText(thing.manufacturer)),
+    name: fact(ldText(thing.name)),
+    date: fact(ldText(thing.dateCreated)),
+    material: fact(ldText(thing.material)),
+    medium: fact(ldText(thing.artMedium) || ldText(thing.artform)),
+  };
+}
+
+/** A page: its og:image / twitter:image (each one), else its first large <img>; its title; and what it says it is (facts). */
 export function parsePage(html, base) {
   const noComments = cut(String(html), spans(String(html), '<!--', '-->'));
   const s = cut(noComments, rawBlocks(noComments));
@@ -346,7 +432,8 @@ export function parsePage(html, base) {
     }
   }
   const feed = tags(s, 'link').map(attrsOf).find((a) => /alternate/i.test(a.rel || '') && /(rss|atom)\+xml/i.test(a.type || '') && a.href);
-  return { title: title || null, items, feed: feed ? pictureAddress(feed.href, baseHref) : null };
+  const titleTag = plainText(inner(s, 'title') || '');
+  return { title: title || null, items, feed: feed ? pictureAddress(feed.href, baseHref) : null, facts: pageFacts(metas, s, noComments, baseHref, titleTag) };
 }
 
 // ------------------------------------------------------------------ reading
@@ -395,6 +482,8 @@ export async function readLink(web, url) {
   } else if (/html/.test(doc.type) || /<html\b|<head\b|<meta\b/i.test(text().slice(0, 4096))) {
     const page = parsePage(text(), doc.url);
     out = page;
+    // A single page (not a board, channel, blog or feed): what it says the thing on it is.
+    if (what.kind === 'page') out = Object.assign({}, page, { page: page.facts });
     // A Flickr or Tumblr page that names its public feed: read the feed for all of its pictures.
     if ((what.kind === 'flickr-page' || what.source === 'Tumblr') && page.feed) {
       const f = new URL(page.feed);
@@ -413,7 +502,9 @@ export async function readLink(web, url) {
   }
   if (what.source === 'Pinterest') out.items = out.items.map(pinterestSizes);
   const more = out.items.length > MAX_ITEMS;
-  return { source: what.source, title: out.title || null, url: doc.url, items: out.items.slice(0, MAX_ITEMS), more };
+  const read = { source: what.source, title: out.title || null, url: doc.url, items: out.items.slice(0, MAX_ITEMS), more };
+  if (out.page) read.page = out.page;
+  return read;
 }
 
 /** Pinterest's feed gives each pin at 236 px: offer the 736 px picture, and keep the 236 px one as
