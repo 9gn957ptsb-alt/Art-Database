@@ -33,7 +33,8 @@ const PHI = (1 + Math.sqrt(5)) / 2, WALK = 4.3;
     buttons: document.querySelectorAll(".views button").length, pressed: b && b.getAttribute("aria-pressed"), role: b && b.getAttribute("role"), title: b && b.title, text: b && b.textContent.trim(),
     kept: localStorage.getItem("rocket-view"), keys: document.querySelector(".keys").textContent }; });
   check(!page.ret && !page.bring, "no Return and no Bring the body here on the page");
-  check(page.pov === 0 && page.buttons === 1 && page.text === "Holo", "one button, Holo (" + page.buttons + " buttons, " + page.pov + " [data-pov])");
+  // (since 20 Oct 2026 the Sight button stands over Holo: two in the column, one of them the view's)
+  check(page.pov === 0 && page.buttons === 2 && page.text === "Holo", "one view button, Holo, with Sight over it (" + page.buttons + " buttons, " + page.pov + " [data-pov])");
   check(page.pressed === "false" && page.role === null, "the button is a toggle, not pressed (aria-pressed " + page.pressed + ")");
   check(/\(H\)$/.test(page.title || ""), "its title says what it does and its key (" + page.title + ")");
   check(!/\bV\b|\bG\b|first person/i.test(page.keys), "the start card's keys name no V, G or first person");

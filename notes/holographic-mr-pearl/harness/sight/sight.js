@@ -440,14 +440,14 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       check(said.some((t) => /^Your pearl struck /.test(t)) && first.b === 9, "a block: " + JSON.stringify(said));
       await L.setB(G, [c, c2], 0); await lowerNow(); await clear();
     }
-    // a note on the ground in a hole a block deep, 4 m off: the pearl falls on it and says so (the note is a sheet on
-    // the block under it; at its speed the pearl seldom stays there)
+    // a note lying on the ground 7 m off, as the place lays them (a sheet in the air cell over a block): the pearl
+    // falls on it and says so (at its speed it seldom stays there)
     {
-      const hole = cell(4, 0, -1), under = cell(4, 0, -2);
-      const wasHole = await ids([hole, under]);
-      await L.setB(G, [under], 3); await L.setB(G, [hole], 26);
-      await L.stand(G, Object.assign({}, home, { pitch: -0.4 })); await raiseNow();
-      const sl = await aimLand([hole[0] + 0.5, hole[1] + 0.2, hole[2] + 0.5], (q) => Math.floor(q.x) === hole[0] && Math.floor(q.z) === hole[2] && q.y < hole[1] + 0.5);
+      const nc = cell(7, 0, 0);
+      const wasN = await ids([nc]);
+      await L.setB(G, [nc], 26);
+      await L.stand(G, Object.assign({}, home, { pitch: -0.2 })); await raiseNow();
+      const sl = await aimLand([nc[0] + 0.5, nc[1] + 0.05, nc[2] + 0.5], (q) => Math.floor(q.x) === nc[0] && Math.floor(q.z) === nc[2]);
       say("note aim " + JSON.stringify(sl && sl.land));
       await toasts();
       await D(() => window.Rocket.debug().throwAt());
@@ -456,7 +456,7 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       const p = await D(() => window.Rocket.debug().pearls()[0]), said = await toasts();
       R.cases.lands.note = { first: p.first, said };
       check(p.first.note && said.some((t) => /^Your pearl fell on a note/.test(t)), "a note: the pearl falls on it and says so (" + JSON.stringify(said) + ")");
-      await putBack([hole, under], wasHole); await lowerNow(); await clear();
+      await putBack([nc], wasN); await lowerNow(); await clear();
     }
   }
   // ---- 11. back in the glove: walked into, tapped with the sight lowered, not through a wall
