@@ -35,6 +35,12 @@ That month, as this repository records it (the site branch's CLAUDE.md, the impo
 - "We can't ask anyone to download any additional apps or else it's going to seem gimmicky.
   Nonetheless, I do want to be able to connect other apps to 5s, that way people's aesthetic
   preferences that already exist in other apps can be used to form their database on 5s."
+- "There's gotta be a way to overcome that five dollar month paid plan for Cloudflare. We can't make
+  people pay any extra money for another app that isn't ours if we want them to use this app."
+- "There should be a copy and paste link section somewhere where I can copy something that I find in
+  the 5s app that I want to learn more about through another platform that hosts that actual object.
+  Likewise, there needs to be a paste section that is able to define a particular object or thing in a
+  pasted link and catalog it in someone's digital database."
 
 ## The mark in motion (21 and 22 Oct 2026)
 
