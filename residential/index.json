@@ -20,7 +20,7 @@
    "rooms": 21,
    "solids": 180,
    "warnings": 0,
-   "skp": null
+   "skp": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp"
   }
  ],
  "rooms": [
@@ -551,7 +551,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Courtyard (roofless atrium)",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -574,7 +574,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Loggia (covered outdoor dining)",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -597,7 +597,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Study / sitting room",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -620,7 +620,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Dining room",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -643,7 +643,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Kitchen",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -666,7 +666,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Living room",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -689,7 +689,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Entrance hall",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -712,7 +712,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Guest WC",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -735,7 +735,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Stair hall",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -758,7 +758,7 @@
    "group_path": "Neuendorf House/L0 Ground floor/Pool terrace",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -781,7 +781,7 @@
    "group_path": "Neuendorf House/L1 First floor/Bedroom 1",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -804,7 +804,7 @@
    "group_path": "Neuendorf House/L1 First floor/Bathroom 1",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -827,7 +827,7 @@
    "group_path": "Neuendorf House/L1 First floor/Bathroom 2",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -850,7 +850,7 @@
    "group_path": "Neuendorf House/L1 First floor/Bedroom 2",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -873,7 +873,7 @@
    "group_path": "Neuendorf House/L1 First floor/Master bedroom",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -896,7 +896,7 @@
    "group_path": "Neuendorf House/L1 First floor/Master bathroom",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -919,7 +919,7 @@
    "group_path": "Neuendorf House/L1 First floor/Upper corridor, gallery and landing",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -942,7 +942,7 @@
    "group_path": "Neuendorf House/L1 First floor/Bathroom 3",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -965,7 +965,7 @@
    "group_path": "Neuendorf House/L1 First floor/Bedroom 3",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -988,7 +988,7 @@
    "group_path": "Neuendorf House/L1 First floor/Bedroom 4",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   },
   {
    "project": "Neuendorf House",
@@ -1011,7 +1011,7 @@
    "group_path": "Neuendorf House/L2 Roof terrace/Roof terrace",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
-   "built": false
+   "built": true
   }
  ]
 }
