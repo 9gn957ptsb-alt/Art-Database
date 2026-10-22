@@ -1,0 +1,548 @@
+<title>Knuckle Carbon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one screen. The product fills the stage; a small dock at the bottom slides the arm, turns the grip, slides the ring and opens the inside view. */
+:root {
+  --bg: #e4e6e9;
+  --bg-2: #f6f7f8;
+  --surface: rgba(250, 251, 252, 0.84);
+  --ink: #15171a;
+  --muted: #59606a;
+  --line: rgba(20, 24, 30, 0.13);
+  --accent: #a9781f;
+  --accent-ink: #7f570f;
+  --f-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1012; --bg-2: #1d2125; --surface: rgba(24, 27, 31, 0.84); --ink: #e8eaed; --muted: #9ba3ac;
+    --line: rgba(255, 255, 255, 0.11); --accent: #d6a241; --accent-ink: #e3b65a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1012; --bg-2: #1d2125; --surface: rgba(24, 27, 31, 0.84); --ink: #e8eaed; --muted: #9ba3ac;
+  --line: rgba(255, 255, 255, 0.11); --accent: #d6a241; --accent-ink: #e3b65a; color-scheme: dark;
+}
+html { height: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  height: 100%; margin: 0; overflow: hidden;
+  background-color: var(--bg);
+  background-image: radial-gradient(120% 85% at 50% 38%, var(--bg-2), var(--bg) 72%);
+  color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45;
+}
+.app { position: relative; height: 100%; overflow: hidden; }
+.stage { position: absolute; inset: 0; touch-action: none; cursor: grab; outline: none; -webkit-user-select: none; user-select: none; }
+.stage.dragging { cursor: grabbing; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+
+.ui {
+  position: absolute; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px;
+}
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.brand { display: grid; gap: 2px; }
+.brand b { font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; line-height: 1; }
+.brand b span { color: var(--accent-ink); }
+.brand small { font-family: var(--f-data); font-size: 11px; color: var(--muted); letter-spacing: 0.02em; }
+.btn {
+  pointer-events: auto; white-space: nowrap; font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.btn:hover { border-color: var(--accent); }
+
+.bottom { display: grid; justify-items: center; gap: 10px; }
+.hint { font-size: 12px; color: var(--muted); transition: opacity .4s; text-align: center; }
+.hint.gone { opacity: 0; }
+.dock {
+  pointer-events: auto; width: min(100%, 760px);
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 10px 18px; align-items: end;
+  padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+@media (max-width: 640px) {
+  .dock { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; }
+}
+.ctl { display: grid; gap: 4px; min-width: 0; }
+.ctl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ctl label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.ctl output { font-family: var(--f-data); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+input[type="range"] { width: 100%; margin: 4px 0 0; accent-color: var(--accent); }
+.tgl {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 10px;
+  font: inherit; font-size: 13px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: transparent; color: var(--ink); cursor: pointer; white-space: nowrap;
+}
+.tgl i { width: 28px; height: 16px; border-radius: 99px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.tgl i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); opacity: .55; transition: transform .15s, opacity .15s; }
+.tgl[aria-pressed="true"] i { background: var(--accent); }
+.tgl[aria-pressed="true"] i::after { transform: translateX(12px); opacity: 1; background: #fff; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .hint, .tgl i, .tgl i::after { transition: none; } }
+</style>
+
+<div class="app">
+  <div class="stage" id="stage" tabindex="0" role="img" aria-label="Knuckle: a round carbon fiber MagSafe puck with a telescoping arm and a mirror-image silicone grip that turns down beside the phone. Two carbon rings for the index and ring fingers ride in a carbon track, and the ring finger's ring slides down in clicks. Drag to orbit, pinch or scroll to zoom, arrow keys also orbit.">
+    <canvas id="c2d" aria-hidden="true"></canvas>
+    <canvas id="cgl" aria-hidden="true" hidden></canvas>
+  </div>
+  <div class="ui">
+    <div class="top">
+      <div class="brand"><b>Knuckle</b><small id="sub">Carbon fiber · sliding-ring grip</small></div>
+      <button class="btn" id="reset" type="button">Reset view</button>
+    </div>
+    <div class="bottom">
+      <span class="hint" id="hint">Drag to orbit · pinch or scroll to zoom · two fingers to move</span>
+      <div class="dock" role="group" aria-label="Product controls">
+        <div class="ctl">
+          <div class="ctl-top"><label for="slide">Slide arm</label><output id="slideOut" for="slide">45 mm</output></div>
+          <input id="slide" type="range" min="0" max="50" step="1" value="45">
+        </div>
+        <div class="ctl">
+          <div class="ctl-top"><label for="fold">Grip</label><output id="foldOut" for="fold">90° hold</output></div>
+          <input id="fold" type="range" min="-180" max="90" step="1" value="90">
+        </div>
+        <div class="ctl">
+          <div class="ctl-top"><label for="ring">Ring slide</label><output id="ringOut" for="ring">0 mm</output></div>
+          <input id="ring" type="range" min="0" max="8" step="2" value="0">
+        </div>
+        <button class="tgl" id="inside" type="button" aria-pressed="false">Show inside <i></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  // ---------- mesh exported from the SketchUp model (mm, z = 0 is the MagSafe face) ----------
+  const META = /*META*/null;
+  const B64 = "/*DATA*/";
+  const bin = atob(B64), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const Q = new Int16Array(bytes.buffer);
+  const PARTS = META.parts.map(p => ({ ...p, q: Q.subarray(p.start, p.start + p.count) }));
+
+  // ---------- articulation (SketchUp pose: arm out 45 mm, grip turned 90° toward the phone, hinge axis at x 79.25, z 16.5) ----------
+  // grip angle: 0 = flat out, +90 = turned toward the phone (hold), −180 = folded back over the puck (stowed)
+  const POSE_E = 45, POSE_AX = 79.25, AXIS_Z = 16.5, POSE_GRIP = 90;
+  const LIFT = { rotor: 0, stator: 10, battery: 20, board: 30, shell: 44, stage1: 44, stage2: 44, knuckle: 44, ringT: 44, ringB: 44 };
+  const RING_OUT = 16;   // inside view: the rings lift out of the track by this much
+  const state = { E: 45, grip: 90, ring: 0, inside: 0, insideTarget: 0 };
+  // 3×4 row-major transform per group
+  function knuckleMatrix(dz) {
+    const d = (state.grip - POSE_GRIP) * Math.PI / 180, c = Math.cos(d), s = Math.sin(d);
+    const ax = 34.25 + state.E, az = AXIS_Z + dz;
+    // p' = R·(p − a0) + a1, rotation about +y; positive turns the grip toward the phone (−z)
+    return [c, 0, s, ax - (c * POSE_AX + s * AXIS_Z), 0, 1, 0, 0, -s, 0, c, az - (-s * POSE_AX + c * AXIS_Z)];
+  }
+  function modelMatrix(g) {
+    const dz = LIFT[g] * state.inside;
+    if (g === "stage1") return [1, 0, 0, (state.E - POSE_E) / 2, 0, 1, 0, 0, 0, 0, 1, dz];
+    if (g === "stage2") return [1, 0, 0, state.E - POSE_E, 0, 1, 0, 0, 0, 0, 1, dz];
+    if (g === "knuckle") return knuckleMatrix(dz);
+    if (g === "ringT" || g === "ringB") {
+      // the ring-finger ring slides along the hinge axis (−y); the inside view lifts both rings out of the track (+x in the SketchUp pose)
+      const m = knuckleMatrix(dz), ox = RING_OUT * state.inside, oy = g === "ringB" ? -state.ring : 0;
+      m[3] += m[0] * ox + m[1] * oy; m[7] += m[4] * ox + m[5] * oy; m[11] += m[8] * ox + m[9] * oy;
+      return m;
+    }
+    return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, dz];
+  }
+  // shown standing up, the way it is held: the phone's long axis (model y) points up, its screen side (model −z) toward +Y
+  function groupMatrix(g) {
+    const m = modelMatrix(g);
+    return [m[0], m[1], m[2], m[3], -m[8], -m[9], -m[10], -m[11], m[4], m[5], m[6], m[7]];
+  }
+
+  // ---------- orbit camera (z up), shared by both renderers ----------
+  const stage = document.getElementById("stage"), c2d = document.getElementById("c2d"), cgl = document.getElementById("cgl");
+  const FOV = 30 * Math.PI / 180;
+  const HOME = { theta: -0.5, phi: 1.3 };
+  const view = { theta: HOME.theta, phi: HOME.phi, dist: 300, target: [0, 0, 0], vTheta: 0, vPhi: 0 };
+  let home = null, fitDist = 300, anim = null;
+  function bounds() {
+    let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const p of PARTS) {
+      const m = groupMatrix(p.group), q = p.q;
+      for (let i = 0; i < q.length; i += 3) {
+        const x = q[i] / 100, y = q[i + 1] / 100, z = q[i + 2] / 100;
+        const X = m[0] * x + m[1] * y + m[2] * z + m[3], Y = m[4] * x + m[5] * y + m[6] * z + m[7], Z = m[8] * x + m[9] * y + m[10] * z + m[11];
+        if (X < lo[0]) lo[0] = X; if (Y < lo[1]) lo[1] = Y; if (Z < lo[2]) lo[2] = Z;
+        if (X > hi[0]) hi[0] = X; if (Y > hi[1]) hi[1] = Y; if (Z > hi[2]) hi[2] = Z;
+      }
+    }
+    const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], corners = [];
+    for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) corners.push([x, y, z]);
+    return { c, corners, lo, hi, r: Math.hypot(hi[0] - c[0], hi[1] - c[1], hi[2] - c[2]) };
+  }
+  const B0 = bounds();
+  // screen layout: the product is framed in the space between the top bar and the dock
+  const layout = { w: 1, h: 1, cx: 0.5, cy: 0.5, f: 1 };
+  function measure() {
+    const r = stage.getBoundingClientRect();
+    const topH = document.querySelector(".top").getBoundingClientRect().bottom - r.top;
+    const dockTop = document.querySelector(".bottom").getBoundingClientRect().top - r.top;
+    layout.w = Math.max(1, r.width); layout.h = Math.max(1, r.height);
+    const availH = Math.max(80, dockTop - topH - 8);
+    layout.cx = layout.w / 2; layout.cy = topH + 4 + availH / 2;
+    // focal length in px for the full frame; keep the whole product inside the free area
+    layout.f = (layout.h / 2) / Math.tan(FOV / 2);
+    // frame the product's box as seen from the home view, perspective included
+    const halfW = layout.w / 2 * 0.9, halfH = availH / 2 * 0.9;
+    let d = B0.r * layout.f / Math.min(halfW, halfH);
+    for (let it = 0; it < 8; it++) {
+      const b = basis({ theta: HOME.theta, phi: HOME.phi, dist: d, target: B0.c });
+      let sx = 0, sy = 0;
+      for (const p of B0.corners) {
+        const dx = p[0] - b.e[0], dy = p[1] - b.e[1], dz = p[2] - b.e[2];
+        const zc = Math.max(1, dx * b.f[0] + dy * b.f[1] + dz * b.f[2]);
+        sx = Math.max(sx, Math.abs(layout.f * (dx * b.r[0] + dy * b.r[1] + dz * b.r[2]) / zc));
+        sy = Math.max(sy, Math.abs(layout.f * (dx * b.u[0] + dy * b.u[1] + dz * b.u[2]) / zc));
+      }
+      d *= Math.max(sx / halfW, sy / halfH);
+    }
+    fitDist = d;
+  }
+  function eyeOf(v) {
+    const sp = Math.sin(v.phi);
+    return [v.target[0] + v.dist * sp * Math.cos(v.theta), v.target[1] + v.dist * sp * Math.sin(v.theta), v.target[2] + v.dist * Math.cos(v.phi)];
+  }
+  function basis(v) {
+    const e = eyeOf(v), t = v.target;
+    let f = [t[0] - e[0], t[1] - e[1], t[2] - e[2]]; const fl = Math.hypot(...f); f = f.map(x => x / fl);
+    let r = [f[1], -f[0], 0]; let rl = Math.hypot(r[0], r[1]);
+    if (rl < 1e-6) { r = [Math.sin(v.theta), -Math.cos(v.theta), 0]; rl = 1; }
+    r = r.map(x => x / rl);
+    const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+    return { e, f, r, u };
+  }
+  function homeView() { return { theta: HOME.theta, phi: HOME.phi, dist: fitDist, target: B0.c.slice() }; }
+
+  // ---------- input ----------
+  const ptrs = new Map(); let pinch = null, panMode = false, moved = false;
+  const hint = document.getElementById("hint");
+  function pan(dx, dy) {
+    const b = basis(view), k = view.dist / layout.f;
+    for (let i = 0; i < 3; i++) view.target[i] += (-dx * b.r[i] + dy * b.u[i]) * k;
+  }
+  function zoom(factor) { view.dist = Math.max(fitDist * 0.3, Math.min(fitDist * 3.5, view.dist * factor)); }
+  stage.addEventListener("pointerdown", e => {
+    stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    panMode = e.button === 2 || e.shiftKey; anim = null; view.vTheta = view.vPhi = 0;
+    stage.classList.add("dragging");
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; }
+    if (!moved) { moved = true; hint.classList.add("gone"); }
+    e.preventDefault();
+  });
+  stage.addEventListener("pointermove", e => {
+    const p = ptrs.get(e.pointerId); if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if (ptrs.size === 1) {
+      if (panMode) pan(dx, dy);
+      else {
+        view.vTheta = -dx * 0.0085; view.vPhi = -dy * 0.0085;
+        view.theta += view.vTheta; view.phi = Math.max(0.04, Math.min(Math.PI - 0.04, view.phi + view.vPhi));
+      }
+    } else if (ptrs.size === 2 && pinch) {
+      const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      zoom(pinch.d / Math.max(1, d)); pan(mx - pinch.mx, my - pinch.my);
+      pinch = { d, mx, my }; view.vTheta = view.vPhi = 0;
+    }
+    invalidate();
+  });
+  const release = e => {
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = null;
+    if (ptrs.size === 0) { stage.classList.remove("dragging"); invalidate(); }
+    else view.vTheta = view.vPhi = 0;
+  };
+  stage.addEventListener("pointerup", release); stage.addEventListener("pointercancel", release);
+  stage.addEventListener("contextmenu", e => e.preventDefault());
+  stage.addEventListener("gesturestart", e => e.preventDefault());
+  stage.addEventListener("wheel", e => { e.preventDefault(); anim = null; zoom(Math.exp(e.deltaY * 0.0012)); invalidate(); }, { passive: false });
+  stage.addEventListener("keydown", e => {
+    const k = { ArrowLeft: [0.1, 0], ArrowRight: [-0.1, 0], ArrowUp: [0, -0.08], ArrowDown: [0, 0.08] }[e.key];
+    if (k) { e.preventDefault(); view.theta += k[0]; view.phi = Math.max(0.04, Math.min(Math.PI - 0.04, view.phi + k[1])); }
+    else if (e.key === "+" || e.key === "=") zoom(0.85);
+    else if (e.key === "-" || e.key === "_") zoom(1.18);
+    else return;
+    invalidate();
+  });
+
+  // ---------- controls ----------
+  const $ = id => document.getElementById(id);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function gripLabel(a) { return a === 90 ? "90° hold" : a === 0 ? "0° flat" : a === -180 ? "stowed" : (a < 0 ? "−" + -a : a) + "°"; }
+  // turned toward the phone, the grip needs the arm out far enough to clear the phone's edge
+  const eMin = a => a <= 30 ? 0 : Math.ceil(20 * (a - 30) / 60);
+  function setE(v) { state.E = Math.max(v, eMin(state.grip)); $("slide").value = state.E; $("slideOut").textContent = state.E + " mm"; }
+  $("slide").addEventListener("input", e => { setE(+e.target.value); applyPose(); invalidate(); });
+  $("fold").addEventListener("input", e => {
+    state.grip = +e.target.value; $("foldOut").textContent = gripLabel(state.grip);
+    if (state.E < eMin(state.grip)) setE(state.E);
+    applyPose(); invalidate();
+  });
+  $("ring").addEventListener("input", e => { state.ring = +e.target.value; $("ringOut").textContent = state.ring + " mm"; applyPose(); invalidate(); });
+  $("inside").addEventListener("click", e => {
+    state.insideTarget = state.insideTarget ? 0 : 1; e.currentTarget.setAttribute("aria-pressed", String(!!state.insideTarget));
+    if (reduce) state.inside = state.insideTarget;
+    applyPose(); invalidate();
+  });
+  $("reset").addEventListener("click", () => {
+    const to = homeView(); view.vTheta = view.vPhi = 0;
+    if (reduce) { Object.assign(view, to, { target: to.target }); invalidate(); return; }
+    anim = { from: { theta: view.theta, phi: view.phi, dist: view.dist, target: view.target.slice() }, to, t: 0 };
+    // take the short way round
+    while (anim.from.theta - to.theta > Math.PI) anim.from.theta -= 2 * Math.PI;
+    while (to.theta - anim.from.theta > Math.PI) anim.from.theta += 2 * Math.PI;
+    invalidate();
+  });
+
+  // ---------- renderer 1: plain canvas (instant, works everywhere) ----------
+  const COLOR2D = { si: [80, 77, 73], cf: [44, 46, 51], al: [104, 109, 118], st: [176, 180, 186], cu: [184, 115, 51], bat: [154, 160, 172], pcb: [31, 58, 44], port: [22, 22, 24], led: [120, 220, 170] };
+  const ctx = c2d.getContext("2d");
+  const HIDDEN = new Set(["Motor Rotor Can", "Motor Stator", "Curved Battery", "Control Board"]);
+  const DEPTH_BIAS = { stage1: 4, stage2: 7 };
+  // painter's sorting needs small triangles, so long faces are split until no edge is over 6 mm
+  const SUB = PARTS.map(p => {
+    const q = p.q, out = [], stack = [];
+    for (let i = 0; i < q.length; i += 9) stack.push(Array.from(q.subarray(i, i + 9), v => v / 100));
+    const d2 = (t, a, b) => (t[a] - t[b]) ** 2 + (t[a + 1] - t[b + 1]) ** 2 + (t[a + 2] - t[b + 2]) ** 2;
+    while (stack.length) {
+      const t = stack.pop(), e = [d2(t, 0, 3), d2(t, 3, 6), d2(t, 6, 0)], m = Math.max(...e);
+      if (m <= 36) { out.push(...t); continue; }
+      const k = e.indexOf(m), A = k * 3, B = ((k + 1) % 3) * 3, C = ((k + 2) % 3) * 3;
+      const mid = [(t[A] + t[B]) / 2, (t[A + 1] + t[B + 1]) / 2, (t[A + 2] + t[B + 2]) / 2];
+      const a = t.slice(A, A + 3), b = t.slice(B, B + 3), c = t.slice(C, C + 3);
+      stack.push([...a, ...mid, ...c], [...mid, ...b, ...c]);
+    }
+    const pos = new Float32Array(out), n = new Float32Array(pos.length / 3);
+    for (let i = 0, t = 0; i < pos.length; i += 9, t += 3) {
+      const ax = pos[i + 3] - pos[i], ay = pos[i + 4] - pos[i + 1], az = pos[i + 5] - pos[i + 2];
+      const bx = pos[i + 6] - pos[i], by = pos[i + 7] - pos[i + 1], bz = pos[i + 8] - pos[i + 2];
+      let nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx; const l = Math.hypot(nx, ny, nz) || 1;
+      n[t] = nx / l; n[t + 1] = ny / l; n[t + 2] = nz / l;
+    }
+    return { pos, n };
+  });
+  function draw2d() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = Math.round(layout.w * dpr), H = Math.round(layout.h * dpr);
+    if (c2d.width !== W || c2d.height !== H) { c2d.width = W; c2d.height = H; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, layout.w, layout.h);
+    const b = basis(view), L = [-0.35, -0.45, 0.82], Ll = Math.hypot(...L);
+    const tris = [];
+    PARTS.forEach((p, pi) => {
+      if (state.inside === 0 && HIDDEN.has(p.name)) return;          // sealed inside the shell
+      const bias = DEPTH_BIAS[p.group] || 0;                            // nested arm stages draw before the rail around them
+      const m = groupMatrix(p.group), q = SUB[pi].pos, n = SUB[pi].n, col = COLOR2D[p.mat];
+      for (let i = 0, t = 0; i < q.length; i += 9, t += 3) {
+        const nx = m[0] * n[t] + m[1] * n[t + 1] + m[2] * n[t + 2], ny = m[4] * n[t] + m[5] * n[t + 1] + m[6] * n[t + 2], nz = m[8] * n[t] + m[9] * n[t + 1] + m[10] * n[t + 2];
+        const sx = [], sy = []; let depth = 0, wx = 0, wy = 0, wz = 0, ok = true;
+        for (let k = 0; k < 9; k += 3) {
+          const x = q[i + k], y = q[i + k + 1], z = q[i + k + 2];
+          const X = m[0] * x + m[1] * y + m[2] * z + m[3], Y = m[4] * x + m[5] * y + m[6] * z + m[7], Z = m[8] * x + m[9] * y + m[10] * z + m[11];
+          const dx = X - b.e[0], dy = Y - b.e[1], dz = Z - b.e[2];
+          const zc = dx * b.f[0] + dy * b.f[1] + dz * b.f[2]; if (zc < 1) { ok = false; break; }
+          sx.push(layout.cx + layout.f * (dx * b.r[0] + dy * b.r[1] + dz * b.r[2]) / zc);
+          sy.push(layout.cy - layout.f * (dx * b.u[0] + dy * b.u[1] + dz * b.u[2]) / zc);
+          depth += zc; wx += X; wy += Y; wz += Z;
+        }
+        if (!ok) continue;
+        if (nx * (b.e[0] - wx / 3) + ny * (b.e[1] - wy / 3) + nz * (b.e[2] - wz / 3) <= 0) continue;   // back face
+        const lam = Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / Ll);
+        const sh = 0.42 + 0.58 * lam;
+        tris.push([depth + bias * 3, sx, sy, `rgb(${col[0] * sh | 0},${col[1] * sh | 0},${col[2] * sh | 0})`]);
+      }
+    });
+    tris.sort((a, b2) => b2[0] - a[0]);
+    ctx.lineJoin = "round"; ctx.lineWidth = 0.6;
+    for (const [, sx, sy, c] of tris) {
+      ctx.beginPath(); ctx.moveTo(sx[0], sy[0]); ctx.lineTo(sx[1], sy[1]); ctx.lineTo(sx[2], sy[2]); ctx.closePath();
+      ctx.fillStyle = c; ctx.strokeStyle = c; ctx.fill(); ctx.stroke();
+    }
+  }
+
+  // ---------- renderer 2: WebGL via three.js (loaded from a CDN, with fallbacks) ----------
+  let gl = null;
+  function initThree() {
+    const T = window.THREE;
+    let renderer;
+    try { renderer = new T.WebGLRenderer({ canvas: cgl, antialias: true, alpha: true }); } catch (err) { return null; }
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.outputEncoding = T.sRGBEncoding;
+    renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+    const scene = new T.Scene();
+    const camera = new T.PerspectiveCamera(30, 1, 1, 6000); camera.up.set(0, 0, 1);
+    scene.add(new T.HemisphereLight(0xf3f5f9, 0x2a2c30, 0.8));
+    const key = new T.DirectionalLight(0xffffff, 1.55); key.position.set(-120, -200, 300); key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -160, right: 160, top: 160, bottom: -160, near: 10, far: 900 });
+    key.shadow.bias = -0.0004; key.shadow.radius = 5; scene.add(key);
+    const rim = new T.DirectionalLight(0xdfe8ff, 0.95); rim.position.set(260, 240, 140); scene.add(rim);
+    const fill = new T.DirectionalLight(0xffffff, 0.4); fill.position.set(220, -80, 40); scene.add(fill);
+    const under = new T.DirectionalLight(0xffffff, 0.35); under.position.set(0, 60, -200); scene.add(under);
+    const ground = new T.Mesh(new T.PlaneGeometry(4000, 4000), new T.ShadowMaterial({ opacity: 0.2 }));
+    ground.position.z = B0.lo[2] - 0.5; ground.receiveShadow = true; scene.add(ground);
+
+    // carbon fiber: 2×2 twill, 1 mm tows (the same weave as the SketchUp material)
+    const S = 256, tow = 32, cv = document.createElement("canvas"); cv.width = cv.height = S;
+    const g2 = cv.getContext("2d"), img = g2.createImageData(S, S);
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const cx = Math.floor(x / tow), cy = Math.floor(y / tow), warp = (((cx - cy) % 4) + 4) % 4 < 2;
+      const u = warp ? ((x % tow) + 0.5) / tow : ((y % tow) + 0.5) / tow, along = warp ? ((y % tow) + 0.5) / tow : ((x % tow) + 0.5) / tow;
+      let v = 16 + (warp ? 12 : 5) + 44 * Math.pow(Math.sin(Math.PI * u), 3) + 2 * Math.sin(along * 40 + cx * 1.7 + cy * 2.3) + 2 * Math.sin(u * 90 + cy);
+      v = Math.max(8, Math.min(100, v)); const o = (y * S + x) * 4;
+      img.data[o] = v; img.data[o + 1] = v + 1; img.data[o + 2] = v + 4; img.data[o + 3] = 255;
+    }
+    g2.putImageData(img, 0, 0);
+    const tex = new T.CanvasTexture(cv); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.encoding = T.sRGBEncoding; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    // fine grain for the silicone's soft-touch finish
+    const gc = document.createElement("canvas"); gc.width = gc.height = 128;
+    const gx = gc.getContext("2d"), gd = gx.createImageData(128, 128);
+    for (let i = 0; i < gd.data.length; i += 4) { const n = 110 + Math.random() * 60; gd.data[i] = gd.data[i + 1] = gd.data[i + 2] = n; gd.data[i + 3] = 255; }
+    gx.putImageData(gd, 0, 0);
+    const grain = new T.CanvasTexture(gc); grain.wrapS = grain.wrapT = T.RepeatWrapping; grain.repeat.set(3, 3);
+    const MAT = {
+      cf: new T.MeshPhysicalMaterial({ map: tex, roughness: 0.42, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.12 }),
+      al: new T.MeshStandardMaterial({ color: 0x5f646c, roughness: 0.34, metalness: 0.6 }),
+      st: new T.MeshStandardMaterial({ color: 0xb9bdc3, roughness: 0.3, metalness: 0.6 }),
+      cu: new T.MeshStandardMaterial({ color: 0xb87333, roughness: 0.35, metalness: 0.7 }),
+      bat: new T.MeshStandardMaterial({ color: 0x9aa0ac, roughness: 0.45, metalness: 0.4 }),
+      pcb: new T.MeshStandardMaterial({ color: 0x1f3a2c, roughness: 0.6 }),
+      port: new T.MeshStandardMaterial({ color: 0x141416, roughness: 0.5 }),
+      led: new T.MeshStandardMaterial({ color: 0x78dcaa, emissive: 0x2a8a5a, roughness: 0.3 }),
+      si: new T.MeshStandardMaterial({ color: new T.Color(0x4a4744).convertSRGBToLinear(), roughness: 0.9, metalness: 0, bumpMap: grain, bumpScale: 0.35 }),   // soft-touch silicone overmold
+    };
+    // smooth normals across edges under 35° (as SketchUp softens them), box-mapped UVs at 8 mm per weave tile
+    function geometry(q) {
+      const nt = q.length / 9, pos = new Float32Array(q.length), nor = new Float32Array(q.length), uv = new Float32Array(nt * 6);
+      const fn = new Float32Array(nt * 3), fa = new Float32Array(nt), buckets = new Map();
+      for (let t = 0; t < nt; t++) {
+        const i = t * 9;
+        const ax = q[i + 3] - q[i], ay = q[i + 4] - q[i + 1], az = q[i + 5] - q[i + 2], bx = q[i + 6] - q[i], by = q[i + 7] - q[i + 1], bz = q[i + 8] - q[i + 2];
+        let nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx; const l = Math.hypot(nx, ny, nz) || 1;
+        fn[t * 3] = nx / l; fn[t * 3 + 1] = ny / l; fn[t * 3 + 2] = nz / l; fa[t] = l;
+        const anx = Math.abs(nx), any = Math.abs(ny), anz = Math.abs(nz);
+        for (let k = 0; k < 3; k++) {
+          const j = i + k * 3, x = q[j] / 100, y = q[j + 1] / 100, z = q[j + 2] / 100;
+          pos[j] = x; pos[j + 1] = y; pos[j + 2] = z;
+          const uu = anz >= anx && anz >= any ? [x, y] : anx >= any ? [y, z] : [x, z];
+          uv[t * 6 + k * 2] = uu[0] / 8; uv[t * 6 + k * 2 + 1] = uu[1] / 8;
+          const key = q[j] + "," + q[j + 1] + "," + q[j + 2];
+          let bk = buckets.get(key); if (!bk) buckets.set(key, bk = []); bk.push(t);
+        }
+      }
+      const cosT = Math.cos(35 * Math.PI / 180);
+      for (let t = 0; t < nt; t++) for (let k = 0; k < 3; k++) {
+        const j = t * 9 + k * 3, bk = buckets.get(q[j] + "," + q[j + 1] + "," + q[j + 2]);
+        let sx = 0, sy = 0, sz = 0;
+        for (const o of bk) {
+          if (fn[t * 3] * fn[o * 3] + fn[t * 3 + 1] * fn[o * 3 + 1] + fn[t * 3 + 2] * fn[o * 3 + 2] > cosT) { sx += fn[o * 3] * fa[o]; sy += fn[o * 3 + 1] * fa[o]; sz += fn[o * 3 + 2] * fa[o]; }
+        }
+        const l = Math.hypot(sx, sy, sz) || 1; nor[j] = sx / l; nor[j + 1] = sy / l; nor[j + 2] = sz / l;
+      }
+      const geo = new T.BufferGeometry();
+      geo.setAttribute("position", new T.BufferAttribute(pos, 3)); geo.setAttribute("normal", new T.BufferAttribute(nor, 3)); geo.setAttribute("uv", new T.BufferAttribute(uv, 2));
+      return geo;
+    }
+    const groups = {};
+    for (const p of PARTS) {
+      if (!groups[p.group]) { const grp = new T.Group(); grp.matrixAutoUpdate = false; groups[p.group] = grp; scene.add(grp); }
+      const mesh = new T.Mesh(geometry(p.q), MAT[p.mat]); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = p.name;
+      groups[p.group].add(mesh);
+    }
+    return { T, renderer, scene, camera, groups };
+  }
+  function poseThree() {
+    for (const [g, grp] of Object.entries(gl.groups)) {
+      const m = groupMatrix(g);
+      grp.matrix.set(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], 0, 0, 0, 1);
+      grp.matrixWorldNeedsUpdate = true;
+    }
+  }
+  function drawThree() {
+    const { renderer, scene, camera } = gl;
+    if (gl.w !== layout.w || gl.h !== layout.h) { renderer.setSize(layout.w, layout.h, false); gl.w = layout.w; gl.h = layout.h; }
+    // shift the image centre to the free area between the top bar and the dock
+    const delta = layout.cy - layout.h / 2, full = layout.h + 2 * Math.abs(delta);
+    camera.fov = 2 * Math.atan((full / 2) / layout.f) * 180 / Math.PI;
+    camera.aspect = layout.w / full;
+    camera.setViewOffset(layout.w, full, 0, delta < 0 ? 2 * Math.abs(delta) : 0, layout.w, layout.h);
+    camera.updateProjectionMatrix();
+    const e = eyeOf(view);
+    camera.position.set(e[0], e[1], e[2]);
+    if (Math.abs(Math.sin(view.phi)) < 1e-3) camera.up.set(Math.cos(view.theta), Math.sin(view.theta), 0); else camera.up.set(0, 0, 1);
+    camera.lookAt(view.target[0], view.target[1], view.target[2]);
+    renderer.render(scene, camera);
+  }
+  function applyPose() { if (gl) poseThree(); }
+
+  // ---------- frame loop (renders only while something is changing) ----------
+  let raf = 0, last = 0;
+  function invalidate() { if (!raf) raf = requestAnimationFrame(tick); }
+  function tick(now) {
+    raf = 0;
+    const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now;
+    let busy = false;
+    if (ptrs.size === 0 && (Math.abs(view.vTheta) > 1e-4 || Math.abs(view.vPhi) > 1e-4)) {
+      view.theta += view.vTheta; view.phi = Math.max(0.04, Math.min(Math.PI - 0.04, view.phi + view.vPhi));
+      view.vTheta *= 0.9; view.vPhi *= 0.9; busy = true;
+    }
+    if (state.inside !== state.insideTarget) {
+      const step = dt / 0.6;
+      state.inside = state.insideTarget > state.inside ? Math.min(state.insideTarget, state.inside + step) : Math.max(state.insideTarget, state.inside - step);
+      applyPose(); busy = true;
+    }
+    if (anim) {
+      anim.t = Math.min(1, anim.t + dt / 0.6); const k = anim.t < 0.5 ? 4 * anim.t ** 3 : 1 - Math.pow(-2 * anim.t + 2, 3) / 2;
+      view.theta = anim.from.theta + (anim.to.theta - anim.from.theta) * k; view.phi = anim.from.phi + (anim.to.phi - anim.from.phi) * k;
+      view.dist = anim.from.dist + (anim.to.dist - anim.from.dist) * k;
+      for (let i = 0; i < 3; i++) view.target[i] = anim.from.target[i] + (anim.to.target[i] - anim.from.target[i]) * k;
+      if (anim.t >= 1) anim = null; else busy = true;
+    }
+    if (gl) drawThree(); else draw2d();
+    if (busy) invalidate(); else last = 0;
+  }
+
+  // ---------- start: draw at once on the plain canvas, then upgrade to WebGL ----------
+  measure(); Object.assign(view, homeView());
+  const remeasure = () => { const before = fitDist; measure(); view.dist *= fitDist / before; invalidate(); };
+  new ResizeObserver(remeasure).observe(stage);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasure);
+  invalidate();
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script"); s.src = src; s.async = true;
+      const timer = setTimeout(() => reject(new Error("timeout")), 9000);
+      s.onload = () => { clearTimeout(timer); resolve(); }; s.onerror = () => { clearTimeout(timer); reject(new Error("failed")); };
+      document.head.appendChild(s);
+    });
+  }
+  (async () => {
+    for (const src of ["https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js",
+                       "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js",
+                       "https://unpkg.com/three@0.128.0/build/three.min.js"]) {
+      if (window.THREE) break;
+      try { await loadScript(src); } catch (err) { /* try the next host */ }
+    }
+    if (!window.THREE) { $("sub").textContent += " · basic view"; return; }
+    const ready = initThree();
+    if (!ready) { $("sub").textContent += " · basic view"; return; }
+    gl = ready; poseThree();
+    cgl.hidden = false; c2d.hidden = true;
+    invalidate();
+  })();
+})();
+</script>
