@@ -49,12 +49,17 @@ export const REFRESH_KV_WRITES = 2;
  *     when they change); with the event store off (index.ts getEventStore), a tool call writes nothing there
  *   - every tool call: 1 request to the person's Durable Object to read their 5s, 1 more to save it
  *     when the tool changes it; a save is 1 row written
+ *   - the end of a session, a day after it starts (session.ts): its alarm wakes it (1 request), setting
+ *     that end wrote 2 rows (the schedule and the alarm), and ending it writes a marker and deletes the
+ *     object's rows (about 11; a delete counts as a row written)
  */
 export const PER = Object.freeze({
   sessionRequests: 4,          // initialize, notifications/initialized, tools/list, the GET event stream
   doRequestsPerMcpRequest: 3,
   doRequestsInitialize: 1,
   rowsPerNewSession: 16 + 1 + 1,
+  doRequestsSessionEnd: 1,
+  rowsPerSessionEnd: 2 + 1 + 11,
   kvReadsPerMcpRequest: 1,
   // Duration: an object is counted (at 128 MB) only while it is awake and can't hibernate; a call keeps
   // its session's object awake for about half a second, a bring_in for as long as the sites take.
@@ -76,8 +81,8 @@ export function personDay(o) {
     sessions: d.sessions, toolCalls: d.toolCalls, saves: d.saves,
     workerRequests: mcpRequests,
     kvReads: mcpRequests * PER.kvReadsPerMcpRequest,
-    doRequests: mcpRequests * PER.doRequestsPerMcpRequest + d.sessions * PER.doRequestsInitialize + d.toolCalls + d.saves,
-    rowsWritten: d.sessions * PER.rowsPerNewSession + d.saves,
+    doRequests: mcpRequests * PER.doRequestsPerMcpRequest + d.sessions * (PER.doRequestsInitialize + PER.doRequestsSessionEnd) + d.toolCalls + d.saves,
+    rowsWritten: d.sessions * (PER.rowsPerNewSession + PER.rowsPerSessionEnd) + d.saves,
     kvWrites: d.refreshesPerDay * REFRESH_KV_WRITES,
     durationGBs: +((mcpRequests * PER.awakeSecondsPerCall + d.bringIns * PER.awakeSecondsBringIn) * PER.objectGB).toFixed(2),
   };

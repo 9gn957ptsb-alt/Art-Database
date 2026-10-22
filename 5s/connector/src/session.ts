@@ -101,3 +101,39 @@ export async function serveBound(inner: Fetcher, request: Request, env: { COOKIE
 	out.set("mcp-session-id", await bindSession(key, person, raw));
 	return new Response(res.body, { status: res.status, statusText: res.statusText, headers: out });
 }
+
+/*
+ * Each session's Durable Object ends a day after it starts (README "What it costs: nothing"). On
+ * Workers Free every Durable Object shares 5 GB, and a session's object, with the agents package's
+ * tables, takes about 136 KB (34 SQLite pages, measured under wrangler dev) that nothing would ever
+ * delete: Claude seldom ends a session itself, and a person opens about two a day. The person's 5s is
+ * in their own object (FiveSPerson), so nothing of theirs goes: a later request on the ended session
+ * is answered "Session not found", and the MCP client starts a new session, as the protocol asks.
+ */
+export const SESSION_LIFETIME_S = 24 * 3600;
+/** A session used within this many seconds when its day is up is given this much longer. */
+export const SESSION_GRACE_S = 3600;
+
+type SessionObject = {
+	listSchedules(): Promise<{ callback?: unknown }[]>;
+	schedule(when: number, callback: "endSession", payload?: undefined, options?: { idempotent?: boolean }): Promise<unknown>;
+	destroy(): Promise<void>;
+};
+
+/** Called each time a session's object wakes (McpAgent init): its end is set once, so a wake writes no row. */
+export async function scheduleEnd(agent: SessionObject): Promise<boolean> {
+	if ((await agent.listSchedules()).some((s) => s.callback === "endSession")) return false;
+	await agent.schedule(SESSION_LIFETIME_S, "endSession", undefined, { idempotent: true });
+	return true;
+}
+
+/** The scheduled end: deleted, unless a tool was called in the last hour (only an object still awake knows), then an hour more. */
+export async function endSession(agent: SessionObject, lastCallMs: number, now: number): Promise<boolean> {
+	if (lastCallMs > 0 && now - lastCallMs < SESSION_GRACE_S * 1000) {
+		// Not idempotent: the schedule that is firing still exists and would be matched instead.
+		await agent.schedule(SESSION_GRACE_S, "endSession");
+		return false;
+	}
+	await agent.destroy();
+	return true;
+}

@@ -177,11 +177,13 @@ test('costs: the free plan\'s numbers, token lifetimes, and room for well over a
   assert.equal(TOKEN_LIFETIMES.refreshTokenIdleTTL, 90 * 86400);
   for (const v of Object.values(TOKEN_LIFETIMES)) assert.ok(Number.isInteger(v) && v >= 60, 'KV\'s minimum expiry');
   assert.equal(PERSON_DAY.workerRequests, 17);
-  assert.equal(PERSON_DAY.doRequests, 69);
-  assert.equal(PERSON_DAY.rowsWritten, 43);
+  // Two sessions a day, each ended a day later (session.ts): 1 more request and 14 more rows each.
+  assert.equal(PERSON_DAY.doRequests, 71);
+  assert.equal(PERSON_DAY.rowsWritten, 71);
   const c = capacity();
   assert.equal(c.limit, 'doRequests');
-  assert.equal(c.people, Math.floor(100000 / 69));
+  assert.equal(c.people, Math.floor(100000 / 71));
+  assert.equal(c.by.doRowsWritten, c.people);
   assert.ok(c.people > 1000);
   // KV writes: 300 people coming back every day refresh their sign-in once a week each.
   const kv300 = 300 * PERSON_DAY.kvWrites;

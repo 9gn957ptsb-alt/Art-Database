@@ -382,6 +382,7 @@ def parse_page(text, entry):
     p.close()
     meta = {k: clean(v) for k, v in p.meta.items()}
     og_title = meta.get("og:title") or clean(p.title)
+    og_title = re.sub(r"\s*\|\s*(?:The )?Architectural Authority\s*$", "", og_title, flags=re.I)  # site suffix
     h1 = clean("".join(p.h1))
     name = entry.get("name")
 
@@ -394,7 +395,8 @@ def parse_page(text, entry):
         if who:
             credits.append({"role": role, "name": who})
     if not architect:
-        arch = [c["name"] for c in credits if "architect" in c["role"].lower()]
+        # "Featuring": a profile of one architect (the Gehry tribute) rather than one building
+        arch = [c["name"] for c in credits if re.search(r"architect|featuring", c["role"], re.I)]
         if arch:
             architect, architect_from = " and ".join(arch), "credits"
     if not architect:

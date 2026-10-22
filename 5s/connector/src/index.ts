@@ -20,7 +20,7 @@ import { api } from "./hub.js";
 import { createFakeGitHub } from "./fake-github.js";
 import { createWeb } from "./web.js";
 import { createFakeWeb } from "./fake-web.js";
-import { serveBound } from "./session";
+import { serveBound, scheduleEnd, endSession } from "./session";
 // The artist's deck, trimmed for the connector by `npm run deck` (gitignored: Artsy-derived data).
 import deck from "./deck.generated.json";
 
@@ -58,9 +58,19 @@ export class FiveSMCP extends McpAgent<Env, Record<string, never>, Props> {
 
 	async init() {
 		registerTools(this.server, () => this.toolContext());
+		// This object is deleted a day after it starts, so sessions never fill Workers Free's 5 GB (session.ts).
+		await scheduleEnd(this);
+	}
+
+	/** When the last tool call came, in memory only (nothing written): endSession spares a session in use. */
+	private lastCall = 0;
+
+	async endSession() {
+		await endSession(this, this.lastCall, Date.now());
 	}
 
 	private async toolContext() {
+		this.lastCall = Date.now();
 		const p = this.props;
 		if (!p || !p.id || !p.login) throw new Error("No signed-in person on this session");
 		let github = null;

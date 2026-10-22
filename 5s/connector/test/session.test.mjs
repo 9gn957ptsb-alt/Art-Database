@@ -2,7 +2,7 @@
 // works only for the person who opened it, and clients can't send the agents package's internal headers.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sessionKey, bindSession, unbindSession, isInternalHeader, serveBound } from '../src/session.ts';
+import { sessionKey, bindSession, unbindSession, isInternalHeader, serveBound, scheduleEnd, endSession, SESSION_LIFETIME_S, SESSION_GRACE_S } from '../src/session.ts';
 
 const SECRET = 'a'.repeat(64);
 const RAW = 'f'.repeat(64); // a Durable Object id, as McpAgent makes them
@@ -85,4 +85,26 @@ test('serveBound: without a usable secret, 503 and nothing reaches a session', a
   const r = await serveBound(inner, post({}), { COOKIE_ENCRYPTION_KEY: 'short' }, {}, '4242');
   assert.equal(r.status, 503);
   assert.equal(inner.seen.length, 0);
+});
+
+test('a session\'s object ends a day after it starts (set once, however often it wakes), an hour later if in use', async () => {
+  const calls = [];
+  const agent = {
+    schedules: [],
+    async listSchedules() { return this.schedules; },
+    async schedule(when, callback, payload, options) { calls.push(['schedule', when, callback, options]); this.schedules.push({ callback }); },
+    async destroy() { calls.push(['destroy']); },
+  };
+  assert.equal(await scheduleEnd(agent), true);
+  assert.equal(await scheduleEnd(agent), false, 'a second wake writes nothing');
+  assert.deepEqual(calls, [['schedule', SESSION_LIFETIME_S, 'endSession', { idempotent: true }]]);
+  assert.equal(SESSION_LIFETIME_S, 86400);
+  const now = Date.UTC(2026, 9, 22, 12);
+  calls.length = 0;
+  assert.equal(await endSession(agent, now - 60 * 1000, now), false, 'a tool called a minute ago: an hour more');
+  assert.deepEqual(calls, [['schedule', SESSION_GRACE_S, 'endSession', undefined]]);
+  calls.length = 0;
+  assert.equal(await endSession(agent, now - 2 * 3600 * 1000, now), true);
+  assert.equal(await endSession(agent, 0, now), true, 'an object that slept since knows of no call: ended');
+  assert.deepEqual(calls, [['destroy'], ['destroy']]);
 });

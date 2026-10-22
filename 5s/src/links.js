@@ -655,7 +655,7 @@
 
   /** whereItLives(card, deck) -> [{label, url, kind}]: where an object lives on the web, its own place first.
    *  card: a deck card, or a brought thing (FiveS.card(state, deck, id), or the state.own[] record).
-   *  Deck card: its Artsy page (kind "artsy"); each of its genes as Artsy's page for that style ("gene",
+   *  Deck card: its Artsy page (kind "artsy"; a card whose page is elsewhere gets that page, "source"); each of its genes as Artsy's page for that style ("gene",
    *  labelled with the deck's name for it); its maker on Artsy ("maker", a search address); then
    *  "Look it up elsewhere": Wikipedia and Google Arts & Culture searches for maker + title ("elsewhere").
    *  Brought thing: where it came from ("source", its link cleaned) and its picture ("image"); then, once
@@ -668,15 +668,18 @@
     const title = oneLine(card.title || card.name || '');
     const maker = oneLine(card.own ? card.maker || '' : card.artist || card.maker || '');
     const own = !!card.own || (typeof card.id === 'string' && card.id.charAt(0) === 'y');
+    const source = (link) => {
+      const r = recognise(link);
+      out.push({ label: r.ok && !/\./.test(r.platform) ? 'On ' + r.platform : 'Where it came from' + (r.ok ? ' (' + r.platform + ')' : ''), url: link, kind: 'source' });
+    };
     if (!own) {
       const page = artsyPage(card.url);
       if (page) out.push({ label: 'This work on Artsy', url: page, kind: 'artsy' });
+      // A deck card whose own page is not on Artsy (a building from the artist's bookmarks): that page first.
+      else if (cleanUrl(card.url)) source(cleanUrl(card.url));
     } else {
       const link = cleanUrl(card.link);
-      if (link) {
-        const r = recognise(link);
-        out.push({ label: r.ok && !/\./.test(r.platform) ? 'On ' + r.platform : 'Where it came from' + (r.ok ? ' (' + r.platform + ')' : ''), url: link, kind: 'source' });
-      }
+      if (link) source(link);
       const pic = cleanUrl(card.image);
       if (pic && pic !== link) out.push({ label: 'Its picture', url: pic, kind: 'image' });
     }

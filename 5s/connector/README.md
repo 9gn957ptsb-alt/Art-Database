@@ -196,6 +196,134 @@ chat can make the connector read without end:
   sign-in endpoints (`/register`, `/authorize`, `/token`, `/callback`) per address (Workers Rate
   Limiting, `wrangler.jsonc` `ratelimits`); a state of at most 1 MB (in bytes).
 
+## What it costs: nothing
+
+The artist (22 Oct 2026): *"We can't make people pay any extra money for another app that isn't
+ours if we want them to use this app."* So no one pays anything, for the whole of this stage:
+
+| Who | Pays |
+| --- | --- |
+| a person using 5s | nothing: no account to buy, nothing to download, no card. They press **Connect** in Claude and sign in with GitHub (free) |
+| the artist | nothing: the connector runs on Cloudflare's **Workers Free** plan (no card needed), with only what that plan includes. GitHub's OAuth App is free too |
+
+Workers Free has no bill to run up: when one of its daily allowances is used up, that kind of
+operation stops working until 00:00 UTC, and nothing is charged. So the connector is built to stay
+far inside each allowance, and to say so in plain words if it ever reaches one. `src/costs.js` holds
+the numbers below and `test/free.test.mjs` checks the arithmetic.
+
+**Where things run** (read from the code of `agents` 0.28.1 and `@cloudflare/workers-oauth-provider`
+1.2.3):
+
+- **The Worker** (10 ms of CPU a request on Free; waiting on a site, KV or a Durable Object doesn't
+  count): the sign-in pages, the OAuth provider's token check on `/mcp`, the session tag
+  (`src/session.ts`), and relaying each answer from the session's Durable Object. No tool runs here.
+- **The session's Durable Object** (`FiveSMCP`, the agents package's `McpAgent`; the Worker hands each
+  MCP message to the object named `streamable-http:<session id>`): the MCP server and every tool. It
+  is deleted a day after it starts (an hour later if a tool was used in the last hour), so sessions
+  never pile up in storage; a chat that comes back after that simply starts a new session.
+- **The person's Durable Object** (`FiveSPerson`, `src/person.js`): their 5s and the hubs 5s made for
+  them, one row per save. A 5s still in KV from before 22 Oct 2026 is read from KV once, moved, and
+  deleted there.
+- **Workers KV**: only the OAuth provider's sign-ins and tokens (`OAUTH_KV`).
+
+**CPU, measured** (`node scripts/cpu-worker.mjs` and `node scripts/cpu-per-tool.mjs`;
+`process.cpuUsage()` around the handler, Node 22 on the build machine; a person with 600
+judgments, 120 brought-in things, 80 notes, 20 sets and a hub, an 84 KB state, the 400-card deck):
+
+| Worker side (limit 10 ms) | median ms | slowest of 30 |
+| --- | --- | --- |
+| `/mcp`: token check and session tag, every tool call | 1.7 | 5.6 |
+| relaying the biggest answer (`item_image`, about 370 KB) | 3.3 | 5.1 |
+| `/token` (a refresh) | 2.5 | 6.8 |
+| `/token` (the code exchange at sign-in) | 2.1 | 7.0 |
+| `/authorize` (the grant) | 1.4 | 6.6 |
+| `/register` (a new client) | 0.4 | 2.0 |
+| `/mcp` without a token (401) | 0.1 | 0.7 |
+
+| Tool (in the session's Durable Object) | first call ms | then, median ms |
+| --- | --- | --- |
+| `next_five` | 1.5 | 1.1 |
+| `judge` | 5.1 | 7.3 |
+| `get_state` | 1.7 | 1.4 |
+| `put_state` | 6.4 | 4.6 |
+| `hub_status` | 2.6 | 1.4 |
+| `read_link` | 10.8 | 1.5 |
+| `bring_in` (colours left to the app) | 8.1 | 4.6 |
+| `item_image` | 8.4 | 2.4 |
+| `item_image` (asking the site for a smaller copy) | 6.1 | 6.5 |
+| `get_taste` | 65 | 50 |
+| `aesthetic_brief` | 95 | 46 |
+| `get_seed` | 65 | 55 |
+| `save_hub` | 173 | 168 |
+| `make_hub` | 180 | 179 |
+
+Every Worker-side path stays well under 10 ms. The tools run in the Durable Object, whose limit is
+30 seconds of CPU per request on Cloudflare's Durable Objects limits page; the five over 10 ms
+(taste, brief, seed and the two hub tools) spend it in the app's own engine and hub page, which the
+connector uses unchanged. Two things that would cost more are not done on Free at all:
+- **Decoding pictures**: `COLOUR_BUDGET_PX` is `"0"` (`wrangler.jsonc`), so the connector reads no
+  pixels; every brought picture's colours, surface and texture are read by the 5s app on the
+  person's device when it next opens (`colours_pending`).
+- **Shrinking a picture over `item_image`'s cap**: instead, it asks the picture's own site for a
+  smaller copy by the site's known address patterns (`src/sizes.js`, above), which costs no CPU.
+
+**The free allowances, and a day of 5s.** An ordinary day for one person: two sessions (a chat, and
+the 5s app opening), a five played in the chat (`next_five`, `judge` × 5, `get_taste`), the app's sync
+(`get_state`, `put_state`), one `bring_in`; 9 tool calls, 7 of which save; a sign-in refresh once a
+week. That is 2 × 4 session requests + 9 tool calls = 17 requests to `/mcp`, and:
+
+| Allowance (a day, Workers Free) | One person's day | Room for, people a day |
+| --- | --- | --- |
+| 100,000 Worker requests | 17 | 100,000 / 17 = 5,882 |
+| 100,000 Durable Object requests | 17 × 3 (start, check, call) + 2 × 1 (initialize) + 2 × 1 (a session's end) + 9 reads + 7 saves = 71 | 100,000 / 71 = **1,408** |
+| 100,000 Durable Object rows written | 2 sessions × (18 to start + 14 to end) + 7 saves = 71 | 100,000 / 71 = **1,408** |
+| 5,000,000 rows read | a few hundred | over 10,000 |
+| 13,000 GB-s of Durable Object time | (17 × 0.5 s + 10 s for a `bring_in`) × 0.128 GB = 2.37 | 13,000 / 2.37 = 5,485 |
+| 100,000 KV reads | 17 (the token check) | 5,882 |
+| 1,000 KV writes | 2 per refresh, once a week: 0.29 | 3,500 (and new sign-ins share them, below) |
+| 1,000 KV deletes | 2 per sign-in; 1 or 2 once per person moved from KV | 500 sign-ins a day |
+
+So **about 1,400 people a day** can each play a five, sync the app and bring something in, every
+day, on the free plan; a person who only opens the app uses less. The person's own caps (500 saves,
+300 pictures read, 120 requests a minute, 30 reads of other sites a minute) keep any one person or
+chat gone round in circles from using what everyone shares.
+
+**Sign-ins and KV's 1,000 writes.** The OAuth provider writes to KV only when it makes tokens:
+a sign-in writes 5 keys (two short-lived records of the sign-in under way, the grant, the grant again
+at the code exchange, the access token; 4 when "Connect 5s" was already approved in that browser),
+plus 1 when Claude registers itself as a client; a refresh writes 2 (the grant and the new access
+token); using a token writes nothing. Access tokens last 7 days (the provider's default is 1 hour,
+which would make every daily person refresh daily: 500 people would use all 1,000 writes), and a
+sign-in lasts as long as it is used, ending after 90 days without use (`TOKEN_LIFETIMES`). With 300
+people coming back every day: 300 × 2 / 7 = 86 writes, leaving room for (1,000 − 86) / 6 = 152 new
+sign-ins a day; at 1,400 people, 400 writes and about 99 new sign-ins a day.
+
+**Storage: 5 GB for every Durable Object together.** A session's object takes about 140 KB (34
+SQLite pages under `wrangler dev`) for its day: at 1,400 people, 2,800 sessions ≈ 0.4 GB at any time.
+A person's 5s after four months of daily fives is an 84 KB state (at most 1 MB, `MAX_STATE_BYTES`),
+about 100 KB with its table: the remaining 4.6 GB keep about 46,000 people's 5s (4,600 if every one
+were at the 1 MB cap). KV's 1 GB holds only tokens.
+
+**What 5s does as it nears each limit, and what the person sees:**
+
+| Limit | What happens | What the person sees |
+| --- | --- | --- |
+| Durable Object requests or rows written, for the day | `/mcp` answers 503 with a `Retry-After`; a tool whose save fails answers instead of failing | In Claude: "5s couldn't answer just now. Try again in a minute; if it keeps happening, 5s has used today's free allowance, which comes back at midnight UTC. Nothing saved is lost, and the 5s app keeps working on its own meanwhile." |
+| KV writes, for the day (sign-ins) | a new sign-in, or a refresh, can't be saved | On the sign-in page: "5s couldn't finish connecting just now … today's free allowance for sign-ins, which comes back at midnight UTC. Nothing in your 5s is affected." People already connected carry on |
+| Worker requests, for the day | Cloudflare itself answers (error 1027) until midnight UTC | Claude says the 5s connector isn't answering; the app keeps working on the device and syncs the next day |
+| a person's own caps | that person's saves, pictures or requests wait | "5s has saved your state 500 times today … Carry on tomorrow. Nothing you did today is lost." (and the like for each cap) |
+| CPU | pictures are never decoded on Free; the heavy tools run in the Durable Object | colours appear when the app opens; a picture too big to hand over comes as the site's smaller copy, or a plain refusal saying what to do |
+| storage (5 GB) | sessions end after a day; a person's 5s is at most 1 MB | far off (about 46,000 people's 5s); a save that can't be stored gets the same plain answer as above, and the app keeps everything on the device |
+
+**What 5s never needs:** Workers Paid, a Durable Objects or KV add-on, Cloudflare Images, a domain,
+or any key or account with Are.na, Pinterest, Flickr or Tumblr. Not verified from here (Cloudflare's
+docs were read from their public source on GitHub, not tested on an account): that a Durable Object's
+30 seconds of CPU hold on Free as on Paid (the limits page gives 30 seconds for both, while its FAQ
+says Durable Objects have the same limits as any Worker). If Free holds them to 10 ms, Cloudflare
+allows an occasional overrun, and the tools above 10 ms are the ones the 5s app also does on the
+device (taste, the seed, the hub), so nothing would be lost; Workers Logs in Cloudflare's dashboard
+show each request's CPU time, which settles it on the first day.
+
 ## The one-time setup
 
 Five steps, once. The artist (9 Sep): copy-and-paste steps for someone who doesn't code. People

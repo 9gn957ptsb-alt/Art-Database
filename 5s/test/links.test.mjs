@@ -283,6 +283,10 @@ test('whereItLives: a deck card — its Artsy page first, its styles, its maker,
   assert.match(u[3].url, /search=Agnes%20Martin$/);
   // a card whose address is not Artsy's is not called "on Artsy"
   assert.equal(L.whereItLives({ url: 'javascript:alert(1)', title: 'T', artist: 'A' }, null).some((l) => l.kind === 'artsy'), false);
+  // a deck card whose own page is elsewhere (a building from the artist's bookmarks): that page first, cleaned
+  const b = L.whereItLives({ kind: 'space', url: 'https://www.archdaily.com/84524/ad-classics-villa-savoye-le-corbusier?utm_medium=email', title: 'Villa Savoye', artist: 'Le Corbusier' }, null);
+  assert.deepEqual(b[0], { label: 'On ArchDaily', url: 'https://www.archdaily.com/84524/ad-classics-villa-savoye-le-corbusier', kind: 'source' });
+  assert.equal(L.copyText({ url: 'https://www.archdaily.com/84524/x?utm_medium=email', title: 'Villa Savoye', artist: 'Le Corbusier' }), 'Villa Savoye — Le Corbusier\nhttps://www.archdaily.com/84524/x');
   assert.deepEqual(L.whereItLives(null, deck), []);
   assert.deepEqual(L.whereItLives('o001', deck), []);
 });
