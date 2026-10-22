@@ -9,22 +9,32 @@
  *
  * Styles
  *   press    one hard hit: the mark rises toward you (its shadow grows below and to the right, so it reads as
- *            height), hangs for an instant, slams down in two frames to a squash, the frame jolts, ink squeezes
- *            out round the letters in a rough, darker rim and dries back to the crisp edge; the ribbon prints a
- *            beat later, like a second, lighter stamp
+ *            height; in the dark it brightens instead), hangs for an instant, slams down in two frames to a
+ *            squash, the frame jolts, and the print is there: wet ink squeezed past the edge in a ragged, deeper
+ *            rim, droplets flung off it, and the rubber stamp's grain (worn patches where the ink did not take);
+ *            the shadow spreads and fades as the stamp leaves, and the print dries back to the crisp mark. The
+ *            ribbon prints a beat later, like a second, lighter stamp
  *   double   a clerk's rhythm, two hits: the 5 stamps first, then the s (lighter, a hair off-register: turned a
  *            few degrees and shifted), which is then nudged home; at 0.3 s a quick ba-dum, at 1.5 s a ritual
- *   seal     a wax seal: the ribbon melts into a pool of the turn's violet under the mark, the mark comes down
- *            into it and the wax bulges out with a wobbling rim; the letters stand embossed in it (a light edge
- *            upper left, a dark edge lower right); then the wax draws back into the bowl and becomes the ribbon
+ *   seal     a wax seal: the ribbon (which wraps the 5's bowl) thickens into a ring of wax that fills into a disc
+ *            under the rising mark; the mark comes down into it, the wax squeezes out past the die in a lumpy,
+ *            ringing rim, the die's circle is pressed into it, and the letters stand embossed (a light edge upper
+ *            left, a dark edge lower right); then the wax draws back to the ribbon's loop round the bowl and
+ *            hollows out into the ribbon again. Without the ribbon it pools from the bowl and drains back into it.
+ *            The wax is the turn's violet (cobalt in Turn; in Ink and Paper, the palette's one colour, where the
+ *            letters show only by their relief, and a die-cut rim of background parts them while they are lifted)
  *
  * Every style starts and ends on the still mark (exactly Marks.mark at t = 0 and t = 1), so it can sit anywhere.
  * Params: lift (how far it rises before the hit, times intensity), ink (how far the ink squeezes past the edge,
  * and how rough the edge is while wet), jolt (the frame shakes on impact). The slam and the jolt are timed in
  * real milliseconds from p.duration, so the hit stays a snap from 250 ms to 2 s.
  *
- * Chance (the rough edge, the jolt's direction, the off-register turn, the wax rim) comes from env.rng, drawn in
- * the same order on every frame, so a seed always stamps the same print.
+ * Chance (the rough edge, the grain, the droplets, the jolt's direction, the off-register turn, the wax rim) comes
+ * from env.rng, drawn in the same order on every frame, so a seed always stamps the same print.
+ *
+ * Soft shadows use the canvas's own shadowBlur inside a full-resolution layer, not Marks.layer's blur: that path
+ * draws at reduced resolution and, in the strip check, its pooled scratch canvas leaked stale pixels at the edge
+ * of the region it used, so the same t gave different frames.
  */
 (function () {
   'use strict';
@@ -38,7 +48,9 @@
   const PTS = { body: M.points('body', N), bar: M.points('bar', N), s: M.points('s', N) };
   const W = { body: M.widths.body, bar: M.widths.bar, s: M.widths.s };
   const FRAC = {};   // each point's fraction of its stroke's length (for the gradient along the stroke)
+  const LEN = {};
   for (const name of NAMES) {
+    LEN[name] = M.length(name);
     const pts = PTS[name], cum = [0];
     for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
     const L = cum[cum.length - 1] || 1;
@@ -66,7 +78,7 @@
     const noise = {};
     for (const name of NAMES) {
       // a smooth wobble (a control value every ~44 mark units, cosine-interpolated) plus a fine grain per point
-      const L = M.length(name), K = Math.ceil(L / 44) + 2, ctl = [];
+      const L = LEN[name], K = Math.ceil(L / 44) + 2, ctl = [];
       for (let j = 0; j < K; j++) ctl.push(r());
       const smooth = new Float64Array(N), fine = new Float64Array(N);
       for (let i = 0; i < N; i++) {
@@ -108,7 +120,7 @@
   // one stamp: rest -> lift (eased by p.easing) to the top -> a small creeping wind-up -> the slam (accelerating,
   // a few real frames) through contact into a squash -> a damped rebound back to rest. Returns the scale's
   // excess over 1 (lift > 0, squash < 0) and the hit time.
-  function stroke1(t, o) {
+  function blow(t, o) {
     // o: {t0, top, hang, slam, lift, squash, settle, ease}
     const { t0, top, hang, slam, lift, squash, settle, ease } = o;
     const H = hang + slam;
@@ -136,14 +148,15 @@
     return [Math.cos(angle) * v, Math.sin(angle) * v];
   }
 
-  // wet ink after a hit at H: squeeze (ink pushed past the edge) peaks just after contact, then dries back by 0.9;
-  // swell (the strokes' width) pulls back over 20% of t
-  function wetness(t, H) {
+  // wet ink after a hit at H: squeeze (ink pushed past the edge) peaks just after contact, then dries back by `end`
+  // (0.9 unless a style dries a print sooner); swell (the strokes' width) pulls back over 20% of t
+  function wetness(t, H, end) {
     if (t < H) return { squeeze: 0, swell: 0, wet: 0, fly: 0, grain: 0 };
+    end = end || 0.9;
     const a = M.ease.outCubic(span(t, H, H + 0.035));
-    const dry = M.ease.inOutCubic(span(t, H + 0.05, 0.9));
-    return { squeeze: a * (1 - dry), swell: 1 - M.ease.outCubic(span(t, H, H + 0.2)), wet: 1 - M.ease.inOutSine(span(t, H, 0.9)), fly: span(t, H, H + 0.09),
-      grain: M.ease.outCubic(span(t, H - 0.005, H + 0.02)) * (1 - M.ease.inOutCubic(span(t, H + 0.08, 0.86))) };
+    const dry = M.ease.inOutCubic(span(t, H + 0.05, end));
+    return { squeeze: a * (1 - dry), swell: 1 - M.ease.outCubic(span(t, H, H + 0.2)), wet: 1 - M.ease.inOutSine(span(t, H, end)), fly: span(t, H, H + 0.09),
+      grain: M.ease.outCubic(span(t, H - 0.005, H + 0.02)) * (1 - M.ease.inOutCubic(span(t, H + 0.08, end - 0.04))) };
   }
 
   /* ---------------------------------------------------------------------------------------------------------
@@ -195,8 +208,8 @@
     flush();
   }
 
-  // droplets of ink flung from the edge at the hit, each with a tapering arm back to the letter while it flies;
-  // they shrink away as the print dries
+  // droplets of ink flung from the edge at the hit (teardrops in flight, round once landed); they soak away as the
+  // print dries
   function droplets(ctx, names, pal, k, w, ch, look, n) {
     const D = look.fling, fly = w.fly, keep = w.squeeze;
     if (D <= 0 || keep <= 0.002 || n <= 0) return;
@@ -209,25 +222,31 @@
       const r0 = (W[dr.name] * k) / 2;
       const m = M.ease.outCubic(M.clamp(fly * (1.15 - 0.3 * dr.lag), 0, 1));
       const dist = r0 + D * dr.far * m;
-      const rad = look.drop * dr.size * Math.min(1, keep * 1.4) * (0.6 + 0.4 * m);
-      if (rad < 0.4) continue;
+      const rad = look.drop * dr.size * (0.75 + 0.25 * Math.min(1, keep * 1.4)) * (0.6 + 0.4 * m);
+      const fade = Math.min(1, keep * 1.6);   // dried into the paper: it fades rather than shrinking to a crumb
+      if (rad < 0.4 || fade < 0.01) continue;
       const x = pts[i][0] + nx * dist, y = pts[i][1] + ny * dist;
       ctx.fillStyle = M.colourAt(tint(pal[dr.name], look.deep, look.rimDeep * 0.5 * w.wet), dr.at);
       // in flight it is a teardrop stretched along its path (the faster, the longer), round once it lands
       const stretch = 1 + 2.6 * (1 - m) * Math.min(1, fly * 8);
+      ctx.save();
+      ctx.globalAlpha *= fade;
       ctx.beginPath();
       ctx.ellipse(x - nx * rad * (stretch - 1), y - ny * rad * (stretch - 1), rad * stretch, rad / Math.sqrt(stretch), Math.atan2(ny, nx), 0, TAU);
       ctx.fill();
+      ctx.restore();
     }
   }
 
   // the stamp's grain: specks knocked out of the fresh print (inside an isolated layer, so only the print is cut);
   // they close up as the print dries
   function grain(ctx, names, k, w, ch, look) {
-    const g = look.grain * w.grain;
-    if (g < 0.15) return;
+    // the specks fill in as the print dries: they fade (and narrow a little) rather than shrink to crumbs
+    if (w.grain < 0.01 || look.grain <= 0) return;
+    const g = look.grain * (0.6 + 0.4 * w.grain);
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
+    ctx.globalAlpha *= Math.min(1, w.grain * 1.15);
     ctx.fillStyle = '#000000';
     ctx.beginPath();
     for (let q = 0; q < look.specks && q < ch.specks.length; q++) {
@@ -247,7 +266,7 @@
 
   // a part ('five' or 's') as a print: crisp strokes, over a rough rim of squeezed ink while it is wet
   function print(ctx, part, pal, k, w, ch, look) {
-    // w: {squeeze, swell, wet, fly}; look: {grow, rough, swellBy, deep, rimDeep, fling, drop, drops}
+    // w: {squeeze, swell, wet, fly, grain, lit}; look: {grow, rough, swellBy, deep, rimDeep, wetDeep, fling, drop, drops}
     const names = PART[part];
     const width = (name) => W[name] * k * (1 + look.swellBy * w.swell);
     const grow = look.grow * w.squeeze, rough = look.rough * w.squeeze;
@@ -255,7 +274,15 @@
       droplets(ctx, names, pal, k, w, ch, look, look.drops);
       for (const name of names) inkRim(ctx, name, width(name), tint(pal[name], look.deep, look.rimDeep * w.wet), grow, rough, ch.noise[name]);
     }
-    for (const name of names) M.stroke(ctx, PTS[name], { width: width(name), colours: w.wet > 0.001 ? tint(pal[name], look.deep, look.wetDeep * w.wet) : pal[name] });
+    // lifted toward the light it is a touch brighter (most in the dark, where its shadow cannot show the height)
+    const lit = w.lit || 0;
+    const colours = (name) => {
+      let cs = pal[name];
+      if (w.wet > 0.001) cs = tint(cs, look.deep, look.wetDeep * w.wet);
+      if (lit > 0.001) cs = tint(cs, '#FFFFFF', lit);
+      return cs;
+    };
+    for (const name of names) M.stroke(ctx, PTS[name], { width: width(name), colours: colours(name) });
   }
 
   // the soft shadow of a lifted part on the paper: below and to the right, the higher the further and softer
@@ -265,9 +292,8 @@
     // The blur is the canvas's own shadowBlur (device pixels, deterministic): the letters are drawn far off the
     // canvas and only their shadow lands, offset back into place. It sits in a full-resolution layer (alpha only,
     // no layer blur), so overlapping strokes do not darken twice and no reduced-resolution scratch is resampled.
-    const FAR = 4 * Math.max(ctx.canvas.width, ctx.canvas.height) + 2000;
     M.layer(ctx, { alpha: look.alpha, composite: 'source-over' }, (c) => {
-      const m = c.getTransform();
+      const m = c.getTransform(), FAR = 4 * Math.max(c.canvas.width, c.canvas.height) + 2000;
       c.save();
       c.setTransform(m.a, m.b, m.c, m.d, m.e + FAR, m.f);
       c.shadowColor = look.colour;
@@ -279,6 +305,9 @@
     });
   }
 
+  // how far a stamp rises (scale excess): a soft cap keeps the lifted letters inside the view (1.29 at most)
+  const liftOf = (p) => 0.02 + 0.27 * (1 - Math.exp(-1.6 * p.intensity * p.lift)) / (1 - Math.exp(-1.6));
+
   function common(p, env) {
     const pal = env.palette;
     const dark = isDark(pal.bg);
@@ -287,7 +316,8 @@
       // slam: a few real frames whatever the duration (about 50 ms), as a share of t
       slam: M.clamp(50 / p.duration, 0.025, 0.07),
       shadowCol: dark ? '#000000' : M.mix(pal.ink, '#0B0820', 0.4),
-      shadowK: dark ? 2.4 : 1,
+      shadowK: dark ? 2.2 : 1,
+      lit: flat(pal) ? 0 : dark ? 0.5 : 0.25,                    // brightening per unit of lift (scale excess)
       look: {
         grow: (3 + 16 * p.ink) * (0.6 + 0.7 * p.intensity),    // how far ink passes the edge, mark units
         rough: (2 + 9 * p.ink) * (0.6 + 0.6 * p.intensity),     // the ragged grain of the wet edge
@@ -307,12 +337,12 @@
   // a shadow look for a lift of height h (0..1+) and lift scale excess s; after the hit the shadow snaps under
   // the print and then spreads and fades, as the stamp leaves it
   function shadowLook(c, h, sx, t, H, tr) {
-    const base = 0.13 + 0.07 * Math.min(1, h);
+    const base = 0.2 + 0.1 * Math.min(1, h);
     if (t < H) {
       return { colour: c.shadowCol, alpha: c.shadowK * base * M.clamp(h * 6, 0, 1), dx: sx * 300, dy: sx * 420, blur: 6 + sx * 260, tr };
     }
     const x = span(t, H, H + 0.16);
-    return { colour: c.shadowCol, alpha: c.shadowK * 0.24 * (1 - M.ease.inQuad(x)), dx: 34 * M.ease.outCubic(x), dy: 48 * M.ease.outCubic(x), blur: 5 + 70 * M.ease.outCubic(x), tr };
+    return { colour: c.shadowCol, alpha: c.shadowK * 0.3 * (1 - M.ease.inQuad(x)), dx: 34 * M.ease.outCubic(x), dy: 48 * M.ease.outCubic(x), blur: 5 + 70 * M.ease.outCubic(x), tr };
   }
 
   /* ---------------------------------------------------------------------------------------------------------
@@ -320,16 +350,16 @@
    * ------------------------------------------------------------------------------------------------------- */
   function press(ctx, t, p, env) {
     const c = common(p, env), { pal, k, I } = c;
-    const lift = 0.4 * I * p.lift + 0.02;
+    const lift = liftOf(p);
     const squash = 0.012 + 0.045 * I;
     const o = { t0: 0, top: 0.4, hang: 0.45, slam: c.slam, lift, squash, settle: 0.3, ease: c.ease };
-    const L = stroke1(t, o), H = L.H;
+    const L = blow(t, o), H = L.H;
     const beat = 0.08;                                        // the ribbon follows a beat later, lighter
-    const R = stroke1(t, Object.assign({}, o, { t0: beat, top: 0.4 + beat, hang: 0.45 + beat, lift: lift * 0.75, squash: squash * 0.5 }));
+    const R = blow(t, Object.assign({}, o, { t0: beat, top: 0.4 + beat, hang: 0.45 + beat, lift: lift * 0.75, squash: squash * 0.5 }));
     const j1 = p.jolt ? shake(t, H, p.duration, 3 + 11 * I, c.ch.joltAngle) : [0, 0];
     const j2 = p.jolt ? shake(t, R.H, p.duration, (3 + 11 * I) * 0.35, c.ch.joltAngle2) : [0, 0];
     const tr = { o: A.letters, s: 1 + L.s };
-    const w = wetness(t, H);
+    const w = Object.assign(wetness(t, H), { lit: c.lit * Math.max(0, L.s) });
 
     ctx.save();
     ctx.translate(j1[0] + j2[0], j1[1] + j2[1]);
@@ -342,7 +372,7 @@
       print(cl, 'five', pal, k, w, c.ch, c.look); print(cl, 's', pal, k, w, c.ch, c.look);
       grain(cl, NAMES, k, w, c.ch, c.look);
     });
-    if (c.look.grain * w.grain >= 0.15) M.layer(ctx, { composite: 'source-over' }, letters); else letters(ctx);
+    if (w.grain >= 0.01 && c.look.grain > 0) M.layer(ctx, { composite: 'source-over' }, letters); else letters(ctx);
     ctx.restore();
   }
 
@@ -351,13 +381,13 @@
    * ------------------------------------------------------------------------------------------------------- */
   function double(ctx, t, p, env) {
     const c = common(p, env), { pal, k, I, ch } = c;
-    const lift = 0.4 * I * p.lift + 0.02;
+    const lift = liftOf(p);
     const squash = 0.012 + 0.045 * I;
     const o5 = { t0: 0, top: 0.17, hang: 0.2, slam: c.slam, lift: lift * 1.1, squash, settle: 0.22, ease: c.ease };
-    const F = stroke1(t, o5);
+    const F = blow(t, o5);
     const t0 = F.H + 0.07;
-    const oS = { t0, top: t0 + 0.15, hang: t0 + 0.18, slam: c.slam, lift: lift * 0.8, squash: squash * 0.6, settle: 0.22, ease: c.ease };
-    const S = stroke1(t, oS);
+    const oS = { t0, top: t0 + 0.15, hang: t0 + 0.18, slam: c.slam, lift: lift * 1.3, squash: squash * 0.6, settle: 0.22, ease: c.ease };   // the s is small: it rises further to read
+    const S = blow(t, oS);
     // off-register: the s comes down turned 3-6 degrees and 10-20 units off, holds, then is nudged home
     const deg = (3 + 3 * I) * ch.offSign, dist = 10 + 10 * (0.4 * I + 0.6 * ch.offAmt);
     const slip = M.ease.inOutSine(span(t, t0, S.H)) * (1 - M.ease.outBack(2.2)(span(t, S.H + 0.1, S.H + 0.24)));
@@ -365,7 +395,8 @@
     const tr5 = { o: A.five, s: 1 + F.s };
     const j1 = p.jolt ? shake(t, F.H, p.duration, 3 + 11 * I, ch.joltAngle) : [0, 0];
     const j2 = p.jolt ? shake(t, S.H, p.duration, (3 + 11 * I) * 0.55, ch.joltAngle2) : [0, 0];
-    const w5 = wetness(t, F.H), wS = wetness(t, S.H);
+    // the 5's print dries before the s comes down, so the second hit lands as fresh ink beside a dry print
+    const w5 = Object.assign(wetness(t, F.H, Math.min(0.9, F.H + 0.36)), { lit: c.lit * Math.max(0, F.s) }), wS = Object.assign(wetness(t, S.H), { lit: c.lit * Math.max(0, S.s) });
     const lookS = Object.assign({}, c.look, { grow: c.look.grow * 0.7, rough: c.look.rough * 0.8 });
 
     ctx.save();
@@ -377,7 +408,7 @@
       place(cx, tr5, (cl) => { print(cl, 'five', pal, k, w5, ch, c.look); grain(cl, PART.five, k, w5, ch, c.look); });
       place(cx, trS, (cl) => { print(cl, 's', pal, k, wS, ch, lookS); grain(cl, PART.s, k, wS, ch, lookS); });
     };
-    if (Math.max(w5.grain, wS.grain) * c.look.grain >= 0.15) M.layer(ctx, { composite: 'source-over' }, letters); else letters(ctx);
+    if (Math.max(w5.grain, wS.grain) >= 0.01 && c.look.grain > 0) M.layer(ctx, { composite: 'source-over' }, letters); else letters(ctx);
     ctx.restore();
   }
 
@@ -413,10 +444,10 @@
 
   function seal(ctx, t, p, env) {
     const c = common(p, env), { pal, k, I, ch, dark } = c;
-    const lift = 0.4 * I * p.lift + 0.03;
+    const lift = liftOf(p) + 0.01;
     const squash = 0.015 + 0.04 * I;
     const o = { t0: 0.08, top: 0.36, hang: 0.4, slam: c.slam, lift, squash, settle: 0.28, ease: c.ease };
-    const L = stroke1(t, o), H = L.H;
+    const L = blow(t, o), H = L.H;
     const j = p.jolt ? shake(t, H, p.duration, 2 + 9 * I, ch.joltAngle) : [0, 0];
     const rib = p.ribbon;
 
@@ -502,7 +533,7 @@
       if (cut > 0.003) M.layer(cl, { alpha: cut }, (cc) => solid(cc, NAMES, k, pal.bg, Math.max(10, 1.5 / env.scale)));
       if (emb > 0.003) {
         // embossed: a dark edge lower right, a light edge upper left (at least 2 px), then the face
-        const off = Math.max(9, 2 / env.scale) * emb;
+        const off = Math.max(9, 2 / env.scale) * (flat(pal) ? 1.6 : 1) * emb;   // in one colour the relief is all there is
         cl.save(); cl.translate(off, off);
         for (const name of NAMES) M.stroke(cl, PTS[name], { width: W[name] * k, colours: tint(pal[name], dark ? '#000000' : '#12051E', 0.55), alpha: emb });
         cl.restore();
@@ -510,7 +541,7 @@
         for (const name of NAMES) M.stroke(cl, PTS[name], { width: W[name] * k, colours: tint(pal[name], '#FFFFFF', 0.72), alpha: emb });
         cl.restore();
       }
-      const w = { squeeze: 0, swell: after ? 1 - M.ease.outCubic(span(t, H, H + 0.2)) : 0, wet: 0, fly: 0, grain: 0 };
+      const w = { squeeze: 0, swell: after ? 1 - M.ease.outCubic(span(t, H, H + 0.2)) : 0, wet: 0, fly: 0, grain: 0, lit: c.lit * Math.max(0, L.s) };
       print(cl, 'five', pal, k, w, ch, c.look);
       print(cl, 's', pal, k, w, ch, c.look);
     });

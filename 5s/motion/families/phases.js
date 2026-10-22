@@ -32,7 +32,6 @@
   'use strict';
   const M = Marks;
   const A = M.anchors;
-  const TAU = Math.PI * 2;
   const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
   const span = (t, a, b) => clamp01((t - a) / (b - a));
   const bump = (t, a, b) => { const x = span(t, a, b); return x <= 0 || x >= 1 ? 0 : Math.sin(Math.PI * x) ** 2; };
@@ -50,6 +49,14 @@
   // a hairline in mark units that stays at least about a device pixel at any size
   const hair = (env, units) => Math.max(units, 1.25 / ((env.scale || 1) * (env.dpr || 1)));
   const still = (ctx, p, env) => M.mark(ctx, { palette: env.palette, weight: p.weight, ribbon: p.ribbon });
+  // the letters at rest exactly as Marks.mark strokes them (same points, order and colours), so a style that is back
+  // at rest matches the still mark pixel for pixel
+  const REST = { bar: M.points('bar', 160), body: M.points('body', 160), s: M.points('s', 160) };
+  function restLetters(ctx, pal, k, noS) {
+    M.stroke(ctx, REST.body, { width: M.widths.body * k, colours: pal.body });
+    M.stroke(ctx, REST.bar, { width: M.widths.bar * k, colours: pal.bar });
+    if (!noS) M.stroke(ctx, REST.s, { width: M.widths.s * k, colours: pal.s });
+  }
 
   function about(ctx, origin, s, draw) {
     ctx.save();
@@ -163,7 +170,8 @@
   }
   // the pair in its own colours, each letter passing its gradient to the other (Exchange's drawing order: the
   // s in front at first, the hand-over a cross-fade where the two are farthest apart)
-  function pairColour(ctx, P, k, col) {
+  function pairColour(ctx, P, k, col, pal) {
+    if (P.m <= 1e-9 || P.m >= 1 - 1e-9) { restLetters(ctx, pal, k); return; }
     const mc = P.m, wa = widthsA(k, mc), wb = widthsB(k, mc);
     const drawA = (c) => glyph5(c, P.a, wa[0], wa[1], mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc));
     const drawB = (c) => glyph5(c, P.b, wb[0], wb[1], mixList(col.sBar, col.fiveBar, mc), mixList(col.sBody, col.fiveBody, mc));
@@ -200,7 +208,7 @@
       if (t < T0 + i * STEP) break;
       let d = 0;
       for (let j = i; j <= n; j++) d += push(at(j));
-      cards.push({ i, d, m0: i / (n + 1) });
+      cards.push({ d, m0: i / (n + 1) });
     }
     const deep = cards.length ? Math.max(0, cards[0].d) : 0;
     // the cards step back up and to the right like Depth's, by a little: the swing itself spreads the stages
@@ -240,7 +248,7 @@
         // its own rim of background separates it from the cards (gone once they have folded in)
         if (cards.length && fold < 1) pairFlat(cm, P, k, rim * (1 - fold), pal.bg);
         if (p.ribbon) M.ribbon(cm, clamp01(m) * dir, { colours: pal.ribbon, alpha: 1 - 0.45 * hump(m) });
-        pairColour(cm, P, k, col);
+        pairColour(cm, P, k, col, pal);
       });
       c.restore();
     });
@@ -361,11 +369,7 @@
     }
     const sc = 1 + (0.025 + 0.06 * I) * beat;
     about(ctx, A.five, sc, (cx) => {
-      if (!counting && fill >= 0.999) {
-        M.stroke(cx, PTS.body, { width: W, colours: pal.body });
-        M.stroke(cx, PTS.bar, { width: M.widths.bar * k, colours: pal.bar });
-        return;
-      }
+      if (!counting && fill >= 0.999) { restLetters(cx, pal, k, true); return; }
       const A0 = seq[a], B0 = seq[a + 1], e = ease(q);
       const w5 = (A0 === FIVE_C ? 1 - Math.min(1, 2 * e) : 0) + (B0 === FIVE_C ? Math.max(0, 2 * e - 1) : 0);
       const pts = q <= 0 ? A0 : q >= 1 ? B0 : e < 0.5 ? M.morph(A0, lineFor(A0), e * 2) : M.morph(lineFor(B0), B0, e * 2 - 1);
@@ -401,7 +405,8 @@
       ctx.translate(785, 830); ctx.scale(1 + squash, 1 - squash); ctx.translate(-785, -830);
       ctx.translate(0, -h);
       const s = 0.04 + 0.96 * g, w = M.lerp(1.15 * WS, WS, g) / s;
-      about(ctx, A.s, s, (cs) => M.stroke(cs, PTS.s, { width: w, colours: pal.s }));
+      if (g === 1 && squash === 0 && h === 0) M.stroke(ctx, REST.s, { width: WS, colours: pal.s });
+      else about(ctx, A.s, s, (cs) => M.stroke(cs, REST.s, { width: w, colours: pal.s }));
       ctx.restore();
     } else {
       const ballR = WS * 0.5, v = Math.min(1, h / 60);
@@ -529,7 +534,7 @@
     }
     // the mark (its ribbon was drawn first, under the skins)
     const G = mergeAt(q, I, dir);
-    place(ctx, live, (c) => mergeDraw(c, G, k, col, 0));
+    place(ctx, live, (c) => { if (q === 0) restLetters(c, pal, k); else mergeDraw(c, G, k, col, 0); });
   }
 
   Motion.register({
