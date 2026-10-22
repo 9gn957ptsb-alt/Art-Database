@@ -1,8 +1,10 @@
 // The Game Plan reflection (5s/gameplan/reflect.mjs): reading transcripts, the shared law and its power.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { session, stageOf, skill, power, words, facts, broken, reflect, report, selfCheck, moment } from '../gameplan/reflect.mjs';
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { session, stageOf, skill, power, words, facts, broken, reflect, report, selfCheck, moment, load } from '../gameplan/reflect.mjs';
 
 const T = '2026-10-22T20:00:00Z'; // after ponytail and caveman joined
 const local = [
@@ -35,7 +37,21 @@ test('local and remote transcripts read into the same turns', () => {
   assert.equal(b.turns.length, 1);
   assert.equal(a.turns[0].ask, b.turns[0].ask);
   assert.equal(a.turns[0].tools[0].error, 'HTTP 403 Forbidden');
-  assert.equal(b.turns[0].cost, 0.5);
+  assert.equal(b.cost, 0.5);
+  const running = [...remote, { created_at: T, result: { total_cost_usd: 0.7 } }];
+  assert.equal(session(running).cost, 0.7, 'a running total: the largest, not the sum');
+  assert.equal(session(local).cost, null, 'no result events: unknown, not $0');
+});
+
+test('a subagent\'s work is its own, not the session\'s', () => {
+  const sub = { created_at: T, assistant: { internal_anthropic_catchall: { parent_tool_use_id: 'x', message: { content: [{ type: 'tool_use', id: 's', name: 'Write', input: { file_path: 'b.js', content: 'a\nb' } }] } } } };
+  assert.equal(session([...remote, sub]).turns[0].tools.length, 0);
+});
+
+test('a switch counts only when it opens what the person sent', () => {
+  const s = session([...turn('npx skills add someone/caveman -g', 'ok'), ...turn('read .claude/skills/ponytail/SKILL.md', 'ok', [], '2026-10-01T00:00:00Z')]);
+  assert.deepEqual(s.turns.map(t => t.on.caveman), [false, false]);
+  assert.equal(s.turns.find(t => t.at.startsWith('2026-10-01')).on.ponytail, false);
 });
 
 test('a notification starts a turn but is not the person asking', () => {
@@ -81,12 +97,14 @@ test('to the power: the cut runs until the reply stands still, and every fact su
   for (const k of ['not', '8080', '`server.js`', '/srv/app/server.js']) assert.ok(x.includes(k), k);
   assert.equal(power(words, x).n, 0, 'a second pass removes nothing');
   assert.equal(power(words, 'That is not really it.').n, 0, 'a negated word is meaning, not filler');
+  assert.equal(power(words, "It doesn't really work.").n, 0, 'a contraction negates too');
+  assert.equal(power(words, 'This is really slow. Let me know if it does not help.').n, 1, 'a refused cut does not hide the next');
 });
 
 test('a turn\'s facts: lines, checks, dependencies, shortcuts, the last line', () => {
   const f = facts(session(local).turns[0]);
-  assert.equal(f.added, 3);
-  assert.equal(f.removed, 1);
+  assert.equal(f.added, 2, 'the unchanged line of an edit is not a change');
+  assert.equal(f.removed, 0);
   assert.equal(f.tested, true);
   assert.equal(f.said, true);
   const t = { replies: ['You saved 40 lines.'], tools: [
@@ -98,6 +116,25 @@ test('a turn\'s facts: lines, checks, dependencies, shortcuts, the last line', (
   assert.equal(g.installs, 1, 'restoring the lockfile is not a new dependency');
   assert.equal(g.untriggered, 1, 'only the shortcut that names no upgrade');
   assert.equal(g.claimsSaving, true);
+  assert.equal(facts({ replies: ['All 15 favorites were saved.'], tools: [] }).claimsSaving, false, 'saved, as in stored');
+  const ctx = Array.from({ length: 11 }, (_, i) => `line ${i}`).join('\n');
+  const one = facts({ replies: [], tools: [{ name: 'Edit', input: { file_path: 'a.js', old_string: ctx + '\nx', new_string: ctx + '\ny' } }] });
+  assert.deepEqual([one.added, one.removed, one.logic], [1, 1, 1]);
+  const multi = facts({ replies: [], tools: [{ name: 'MultiEdit', input: { file_path: 'a.js', edits: [{ old_string: '', new_string: 'a\n// shortcut: no cache' }] } }] });
+  assert.deepEqual([multi.added, multi.untriggered], [2, 1]);
+  const read = facts({ replies: [], tools: [{ name: 'Bash', input: { command: 'cat test/a.test.mjs' } }, { name: 'Read', input: { file_path: 'test/a.test.mjs' } }] });
+  assert.equal(read.tested, false, 'reading a test is not running one');
+});
+
+test('folders hold other folders, and saved pages join into one transcript', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'reflect-'));
+  mkdirSync(join(dir, 'a-session-folder'));
+  const page = e => `Saved output:\n${JSON.stringify({ ccr: { data: e, has_more: false } })}\nend`;
+  writeFileSync(join(dir, 'session_x.txt'), page(remote.slice(0, 2)) + page(remote.slice(2)));
+  writeFileSync(join(dir, 'list.txt'), page([{ id: 'session_x', title: 'Network access', created_at: T }]));
+  const { transcripts, meta } = load([dir]);
+  assert.equal(transcripts.session_x.length, 3);
+  assert.equal(meta.session_x.title, 'Network access');
 });
 
 test('laws are judged only while their skill is on', () => {
@@ -124,6 +161,8 @@ test('the hook speaks only when there is something to say', () => {
   assert.equal(moment(session(remote)), 'Reflect: stage 3, Open the door.');
   assert.equal(moment(session([...turn('/caveman', 'Sure! Done.')])), 'Reflect: ceremony a cut still removes.');
   assert.equal(moment(session(turn('thanks', 'Done.'))), '');
+  const again = session([...turn('Publish the page', 'Done.'), ...turn('ok', 'Done.'), ...turn('Publish the page again', 'Done.')].map((l, i) => ({ ...l, timestamp: `2026-10-22T20:00:0${i}Z` })));
+  assert.equal(moment(again), '', 'the same stage is not announced twice');
   assert.equal(moment({ turns: [] }), '');
 });
 
