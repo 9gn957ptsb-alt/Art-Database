@@ -23,9 +23,15 @@ How the cards are chosen (greedy, seeded, so the same caches give the same deck)
   - surfaces skip artists of words and faces (text, typography, portrait genes), crops with lines of
     lettering, and a short list of works seen in review of the contact sheets.
 
-Usage:  python3 5s/build_deck.py [--fetch-only] [--no-logo]
+After the Artsy cards come the artist's Architectural Authority bookmarks: buildings.json holds the
+choices for each (hero photo, surface crop, materials, genes), data/aa/ the pages and photos that
+gather_buildings.py fetched. Each gives a space card (b001...; an object card where buildings.json says
+"kind": "object") and, where a crop was chosen, a surface card (m001...); their colours come from the app's own k-means (src/bring.js, through node).
+
+Usage:  python3 5s/build_deck.py [--fetch-only] [--no-logo] [--out DIR]
 """
 import argparse
+import base64
 import colorsys
 import io
 import json
@@ -33,6 +39,7 @@ import math
 import random
 import re
 import sqlite3
+import subprocess
 import threading
 import time
 import urllib.error
@@ -55,6 +62,9 @@ TEXTURE_JSON = DATA / "texture_analysis.json"
 DIST = HERE / "dist"
 OUT_IMG = DIST / "img"
 LOGO_SRC = HERE / "logo-source.jpg"
+BUILDINGS_JSON = HERE / "buildings.json"   # the buildings' curated choices (committed)
+AA = REPO / "data" / "aa"                  # their pages and photos, from gather_buildings.py
+BRING_JS = HERE / "src" / "bring.js"       # the app's own colour k-means
 
 GRAPHQL = "https://metaphysics-production.artsy.net/v2"
 GENE_API = "https://api.artsy.net/api/v1/gene/"
@@ -1150,9 +1160,78 @@ def build(works, artists, families):
     write_deck(pk, families, artists)
 
 
+def kmeans_colours(images):
+    """Three dominant colours of each image by the app's own k-means (bring.js dominantColours, run
+    in node), on a 96 px copy as the app takes one."""
+    small = []
+    for im in images:
+        s = min(1, 96 / max(im.size))
+        c = im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
+        small.append(base64.b64encode(c.convert("RGBA").tobytes()).decode())
+    js = ("const B = require(process.argv[1])._internals;"
+          "const ins = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
+          "console.log(JSON.stringify(ins.map((b) => B.dominantColours(Buffer.from(b, 'base64')))));")
+    out = subprocess.run(["node", "-e", js, str(BRING_JS)], input=json.dumps(small),
+                         capture_output=True, text=True, check=True)
+    return json.loads(out.stdout)
+
+
+def building_cards(cards, thumbs, lo, hi):
+    """The Architectural Authority bookmarks (buildings.json + data/aa/): a space card per building
+    from its hero photo (ids b001...; an object card where the entry has "kind": "object") and a surface card per chosen crop (m001...), made as the Artsy
+    cards are; appended to cards and thumbs. Returns the genes the deck may not know yet."""
+    blds = json.loads(BUILDINGS_JSON.read_text())
+    raw = {b["slug"]: b for b in json.loads((AA / "buildings.raw.json").read_text())["buildings"]}
+    made = []
+    for kind, letter in (("space", "b"), ("surface", "m")):
+        n = 0
+        for b in blds:
+            pick = b["hero"] if kind == "space" else (b["surface"] or {}).get("photo")
+            if not pick:
+                continue
+            r = raw[b["slug"]]
+            i = [u.rsplit("/", 1)[1] for u in r["photos"]].index(pick)
+            n += 1
+            cid = f"{letter}{n:03d}"
+            m = b["materials"]
+            medium = ", ".join(m[:-1]) + " and " + m[-1] if len(m) > 1 else "".join(m)
+            card = {
+                # a bookmark of things, not a building (buildings.json "kind": "object"), is shown as one
+                "id": cid, "kind": b.get("kind", kind) if kind == "space" else kind, "work": b["slug"], "url": r["url"], "title": b["name"],
+                "artist": b["architect"], "date": str(b["year"]) if b["year"] else None, "year": b["year"],
+                "era": b["era"], "category": b["category"], "medium": medium[:1].upper() + medium[1:],
+                "materials": m, "place": b["place"], "colours": None, "genes": b["genes"],
+                "img": f"img/{cid}.webp", "w": None, "h": None, "thumb": len(cards),
+                "source": "Architectural Authority", "cdn": r["photos"][i],
+            }
+            src = AA / r["img"][i]
+            im = open_rgb(src)
+            if kind == "space":
+                im.thumbnail((720, 720), Image.LANCZOS)
+                im.save(OUT_IMG / f"{cid}.webp", "WEBP", quality=68, method=6)
+                card.update(w=im.width, h=im.height)
+            else:
+                W, H = im.size
+                x, y, cw, ch = b["surface"]["crop"]
+                side = round(min(cw * W, ch * H))  # the chosen box is near square: its centred square
+                x0 = min(W - side, max(0, round((x + cw / 2) * W - side / 2)))
+                y0 = min(H - side, max(0, round((y + ch / 2) * H - side / 2)))
+                im = im.crop((x0, y0, x0 + side, y0 + side)).resize((512, 512), Image.LANCZOS)
+                im.save(OUT_IMG / f"{cid}.webp", "WEBP", quality=70, method=6)
+                card.update(w=512, h=512,
+                            crop=[round(x0 / W, 4), round(y0 / H, 4), round(side / W, 4), round(side / H, 4)],
+                            texture=round(min(1.0, max(0.0, (edge_density(im) - lo) / max(1e-6, hi - lo))), 2))
+            made.append((card, im))
+            cards.append(card)
+            thumbs.append(src)
+    for (card, _), colours in zip(made, kmeans_colours([im for _, im in made])):
+        card["colours"] = colours
+    return {g["slug"]: g for b in blds for g in b["new_genes"]}
+
+
 def write_deck(pk, families, artists):
     for old in OUT_IMG.glob("*.webp"):
-        if re.fullmatch(r"[iosuc]\d{3}\.webp|atlas\.webp", old.name):
+        if re.fullmatch(r"[iosucbm]\d{3}\.webp|atlas\.webp", old.name):
             old.unlink()
     cards, thumbs = [], []
     for kind in KINDS:
@@ -1164,7 +1243,7 @@ def write_deck(pk, families, artists):
                 "title": w.get("title"), "artist": artist_display(w), "date": w.get("date"),
                 "year": w["_year"], "era": w["_era"], "category": w["_cat"], "medium": w.get("medium"),
                 "materials": w["_materials"], "place": w["_place"], "colours": w["colours"],
-                "genes": w["_genes"], "img": None, "w": None, "h": None, "thumb": len(cards),
+                "genes": w["_genes"], "img": None, "w": None, "h": None, "thumb": len(cards), "source": "Artsy",
             }
             if w.get("image_url"):
                 # the work's own image on Artsy's CDN, as the database stores it (the 'large' version):
@@ -1193,17 +1272,20 @@ def write_deck(pk, families, artists):
         for c in cards:
             if c["kind"] == "surface":
                 c["texture"] = round((c["texture"] - lo) / max(1e-6, hi - lo), 2)
+    # after the Artsy cards, on their texture scale, so their ids, cells and fields stay as they were
+    new_genes = building_cards(cards, thumbs, lo, hi)
     # the atlas: every card's work as a 128 px square, 20 columns
     cols, cell = 20, 128
     rows = math.ceil(len(cards) / cols)
     atlas = Image.new("RGB", (cols * cell, rows * cell), (238, 236, 242))
     for k, w in enumerate(thumbs):
-        p = best_source(w, ("large", "larger", "normalized"))
+        p = w if isinstance(w, Path) else best_source(w, ("large", "larger", "normalized"))
         im = open_rgb(p)
         th = ImageOps.fit(im, (cell, cell), Image.LANCZOS)
         atlas.paste(th, ((k % cols) * cell, (k // cols) * cell))
     atlas.save(OUT_IMG / "atlas.webp", "WEBP", quality=72, method=6)
     used = sorted({g for c in cards for g in c["genes"]})
+    families = {**new_genes, **families}
     genes = {}
     for g in used:
         name = (families.get(g) or {}).get("name")
@@ -1211,7 +1293,8 @@ def write_deck(pk, families, artists):
             name = next((x["name"] for v in artists.values() for x in (v.get("genes") or [])
                          if x and x.get("slug") == g), g)
         genes[g] = {"name": name, "family": families[g]["family"]}
-    head = {"version": 1, "built": date.today().isoformat(), "source": "The art database: Artsy saves",
+    head = {"version": 1, "built": date.today().isoformat(),
+            "source": "The art database: Artsy saves and Architectural Authority bookmarks",
             "atlas": {"src": "img/atlas.webp", "cell": cell, "cols": cols}, "genes": genes}
     text = json.dumps(head, ensure_ascii=False, separators=(",", ":"))[:-1]
     text += ',"cards":[\n' + ",\n".join(json.dumps(c, ensure_ascii=False, separators=(",", ":"))
@@ -1332,10 +1415,13 @@ def build_logo(out, side=256):
 # ----------------------------------------------------------------------------------------------
 
 def main():
+    global DIST, OUT_IMG
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--fetch-only", action="store_true", help="fetch and cache genes, then stop")
     ap.add_argument("--no-logo", action="store_true")
+    ap.add_argument("--out", type=Path, default=DIST, help="output folder (default 5s/dist)")
     args = ap.parse_args()
+    DIST, OUT_IMG = args.out, args.out / "img"
 
     DIST.mkdir(exist_ok=True)
     OUT_IMG.mkdir(parents=True, exist_ok=True)
