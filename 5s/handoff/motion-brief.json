@@ -1,0 +1,707 @@
+{
+ "trends": "All five stars were given while browsing \"Moving between tabs\". Three of them are at their family's exact defaults (Echo Ripple, Count Morph, Rewind Retrace), so you were probably looking at the sheet that shows one of every family side by side. That makes the stars a real comparison: you chose four families out of nineteen.\n\nREAL SIGNALS\n1. Echo is the clear favorite. It is the only family you starred twice (Ripple and Depth) and the only one you tuned. Morph, Count and Rewind follow, with one star each.\n2. You like seeing the mark through time:\n   - Ripple sends outlines of the 5s rippling off it on each beat.\n   - Depth stacks five die-cut copies behind it.\n   - Retrace trails onion-skin outlines of the instants it just passed through.\n   - Count shows five states of the 5, one after another.\n   In all of these the copies stay full size and overlap the mark. Three Strands (copies spread out small, side by side) and Split (parts fly apart) were not starred.\n3. You like one shape becoming another. Count turns the 5 into 4, 3, 2, 1 and back along one unbroken stroke. Exchange turns the 5 into the s and the s into the 5 as they swing round each other. On Morph you went past the default (Merge, where both melt into one s) and past Melt to reach Exchange: a trade between the two characters, with a turn in it.\n4. Counted beats, not glides. Echo lands in five beats and Count in five changes, and Rewind's ghosts are evenly spaced. The favorites have a rhythm, and it adds up to five.\n5. The letters themselves have to move. Ribbon (only the ribbon moves) and Three were both made for tabs, and you passed them over. You also passed over Pulse (a slow breath).\n6. More rather than less. On Echo Depth you pushed intensity to the top. At 1, the copies drop in from further back and pop with a bigger overshoot.\n7. Flat and graphic, once. Echo Depth in the Paper palette turns the whole stage into a violet field with the mark as one flat cut-out, like a screen print. It happened once, so treat it as a lean rather than a rule. Still, every new style must look as strong in one flat colour as in the logo's gradients.\n8. All five end on the crisp, still mark, and Count and Exchange also start on it. That is what lets an animation sit anywhere.\n\nARTEFACTS OF THE MOMENT, NOT TASTE\n- The durations (420 to 600 ms). The lab squeezes every family toward the tab moment's 0.25 to 0.5 s. Count and Echo cannot go below 600 and 500 ms, so they played at their shortest. At that speed Count is a flicker of digits and Echo a quick flurry. You responded to them as dense, fast bursts; we don't yet know how they land for you at 1 to 2 s.\n- The easings, weight 1, ribbon on, the logo palette (on four of the five) and the right-hand direction are all defaults.\n- The sixteen per-moment picks in the lab were mine and say nothing about your taste.\n\nWHAT THIS MEANS FOR EVERYTHING NEW\n- The new styles push the two threads (traces of the mark through time; one shape becoming another) and their counted rhythm further. They get a bigger intensity range and versions that work in flat colour.\n- One hybrid family, Phases, fuses the two threads.\n- The six new families deliberately go somewhere else on every axis:\n  - Stamp: a hit.\n  - Dive: scale, passing through the mark.\n  - Neon: light coming from the mark itself.\n  - Tiles: a board of cards.\n  - Swarm: a living crowd of specks.\n  - Cast: light and shadow in a room.\n  The lab can then show whether your pull is toward traces and transformation in particular, or toward anything bold enough.\n- You want every animation to be interchangeable in any place. So each one starts or ends (ideally both) on the still mark, works from 0.25 s to 2 s, reads at 64 px and at full screen, and works in both themes and in the flat palettes.\n\nALSO CONSIDERED AND SET ASIDE\n- Slice (one clean cut), Shatter (breaking glass) and Fold (origami): too close to Split, Negative, Collage and Flip.\n- Spring (pluck, stretch, jelly): too close to Pulse and to the favorites' solid, stay-in-place letters.\n- Filings (iron filings snapping into line), Weave (threads), Halftone (print dots) and Domino (a chain reaction along the stroke): they turn to noise at 64 px.\n- Resonance (the stroke humming like a plucked string), Ink bloom (soft focus), Kindle (sparks) and Glitch: less potent, or more of a cliché, than the six chosen.",
+ "axes": [
+  {
+   "axis": "space",
+   "values": [
+    "in-place",
+    "travel",
+    "field"
+   ],
+   "meaning": "Where the motion happens. in-place: it stays inside the mark's own footprint. travel: the mark or its pieces go away and come back. field: the motion fills the whole frame around the mark (a ground, a grid, light, a field of colour, or the camera itself)."
+  },
+  {
+   "axis": "time",
+   "values": [
+    "trace",
+    "sequence",
+    "single"
+   ],
+   "meaning": "How time shows. trace: several instants of the mark are visible at once (echoes, ghosts, stacks, contours). sequence: distinct states follow one another, one at a time (digits, cards, stops, tiles). single: one body in one continuous gesture."
+  },
+  {
+   "axis": "change",
+   "values": [
+    "transform",
+    "multiply",
+    "build",
+    "break",
+    "reveal",
+    "move",
+    "modulate",
+    "impact"
+   ],
+   "meaning": "What happens to the mark. transform: its shape becomes another shape. multiply: it becomes several, then resolves into one. build: it is made (drawn, assembled, grown). break: it comes apart and back. reveal: it is uncovered, filled or lit where it stands. move: it changes place or angle, shape intact. modulate: only its scale, colour or light changes, or only what is around it. impact: it hits (pressure, recoil, a jolt)."
+  },
+  {
+   "axis": "texture",
+   "values": [
+    "line",
+    "solid",
+    "particle",
+    "paper",
+    "light",
+    "liquid"
+   ],
+   "meaning": "What the motion is made of, beyond the mark itself. line: outlines, contours, drawn strokes. solid: full-weight strokes as flat bodies. particle: dots, chips, specks. paper: cards, sheets, die-cut layers, ink on paper. light: glow, gradient flow, shadow. liquid: a level, a pour, a melt."
+  },
+  {
+   "axis": "energy",
+   "values": [
+    "calm",
+    "lively",
+    "explosive"
+   ],
+   "meaning": "How big the gesture feels. calm: slow, small or contemplative. lively: bouncy, busy, quick. explosive: a burst, hit or rush that fills the frame."
+  },
+  {
+   "axis": "rhythm",
+   "values": [
+    "beats",
+    "continuous",
+    "snap"
+   ],
+   "meaning": "How time is cut. beats: counted, separate pulses or steps (often five). continuous: one smooth curve. snap: one hit or release, then a settle."
+  },
+  {
+   "axis": "dimension",
+   "values": [
+    "flat",
+    "layered",
+    "volume"
+   ],
+   "meaning": "How deep it looks. flat: 2-D. layered: overlap, stacking, rims, drop shadows (2.5-D). volume: perspective, extrusion, turning in depth, travel toward or away from the viewer."
+  },
+  {
+   "axis": "actor",
+   "values": [
+    "whole",
+    "letters",
+    "parts",
+    "copies",
+    "surround"
+   ],
+   "meaning": "Who moves. whole: the mark as one. letters: the 5 and the s act separately or trade roles. parts: pieces (strokes, chips, slices, tiles, particles). copies: the mark multiplied (echoes, ghosts, contours, layers). surround: the ribbon, a field, light or a frame moves while the letters stay put."
+  },
+  {
+   "axis": "arc",
+   "values": [
+    "return",
+    "arrive",
+    "stage"
+   ],
+   "meaning": "How it begins and ends. return: starts and ends on the still mark (fits anywhere, can loop). arrive: comes from nothing or a partial state and ends on the mark. stage: ends on its own staging (a frame, a route) instead of the bare mark."
+  }
+ ],
+ "descriptors": {
+  "swipe": {
+   "space": "travel",
+   "time": "single",
+   "change": "move",
+   "texture": "solid",
+   "energy": "lively",
+   "rhythm": "snap",
+   "dimension": "flat",
+   "actor": "whole",
+   "arc": "return"
+  },
+  "pulse": {
+   "space": "in-place",
+   "time": "single",
+   "change": "modulate",
+   "texture": "light",
+   "energy": "calm",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "whole",
+   "arc": "return"
+  },
+  "fill": {
+   "space": "in-place",
+   "time": "single",
+   "change": "reveal",
+   "texture": "liquid",
+   "energy": "calm",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "whole",
+   "arc": "arrive"
+  },
+  "negative": {
+   "space": "field",
+   "time": "single",
+   "change": "reveal",
+   "texture": "paper",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "layered",
+   "actor": "surround",
+   "arc": "arrive"
+  },
+  "rewind": {
+   "space": "travel",
+   "time": "trace",
+   "change": "move",
+   "texture": "line",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "copies",
+   "arc": "arrive"
+  },
+  "flip": {
+   "space": "in-place",
+   "time": "single",
+   "change": "move",
+   "texture": "solid",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "volume",
+   "actor": "whole",
+   "arc": "return"
+  },
+  "draw": {
+   "space": "in-place",
+   "time": "single",
+   "change": "build",
+   "texture": "line",
+   "energy": "calm",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "letters",
+   "arc": "arrive"
+  },
+  "count": {
+   "space": "in-place",
+   "time": "sequence",
+   "change": "transform",
+   "texture": "solid",
+   "energy": "lively",
+   "rhythm": "beats",
+   "dimension": "flat",
+   "actor": "letters",
+   "arc": "return"
+  },
+  "ring": {
+   "space": "in-place",
+   "time": "single",
+   "change": "transform",
+   "texture": "line",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "parts",
+   "arc": "return"
+  },
+  "stack": {
+   "space": "in-place",
+   "time": "sequence",
+   "change": "build",
+   "texture": "paper",
+   "energy": "lively",
+   "rhythm": "beats",
+   "dimension": "layered",
+   "actor": "parts",
+   "arc": "arrive"
+  },
+  "echo": {
+   "space": "in-place",
+   "time": "trace",
+   "change": "multiply",
+   "texture": "line",
+   "energy": "lively",
+   "rhythm": "beats",
+   "dimension": "layered",
+   "actor": "copies",
+   "arc": "arrive"
+  },
+  "path": {
+   "space": "field",
+   "time": "sequence",
+   "change": "move",
+   "texture": "particle",
+   "energy": "calm",
+   "rhythm": "beats",
+   "dimension": "flat",
+   "actor": "whole",
+   "arc": "stage"
+  },
+  "split": {
+   "space": "travel",
+   "time": "single",
+   "change": "break",
+   "texture": "particle",
+   "energy": "explosive",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "parts",
+   "arc": "return"
+  },
+  "collage": {
+   "space": "in-place",
+   "time": "sequence",
+   "change": "build",
+   "texture": "paper",
+   "energy": "lively",
+   "rhythm": "beats",
+   "dimension": "layered",
+   "actor": "parts",
+   "arc": "stage"
+  },
+  "morph": {
+   "space": "in-place",
+   "time": "single",
+   "change": "transform",
+   "texture": "solid",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "letters",
+   "arc": "return"
+  },
+  "three": {
+   "space": "travel",
+   "time": "single",
+   "change": "multiply",
+   "texture": "solid",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "copies",
+   "arc": "return"
+  },
+  "pin": {
+   "space": "field",
+   "time": "single",
+   "change": "move",
+   "texture": "paper",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "layered",
+   "actor": "whole",
+   "arc": "stage"
+  },
+  "grow": {
+   "space": "field",
+   "time": "single",
+   "change": "build",
+   "texture": "solid",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "volume",
+   "actor": "whole",
+   "arc": "arrive"
+  },
+  "ribbon": {
+   "space": "in-place",
+   "time": "single",
+   "change": "modulate",
+   "texture": "light",
+   "energy": "calm",
+   "rhythm": "continuous",
+   "dimension": "layered",
+   "actor": "surround",
+   "arc": "return"
+  },
+  "stamp": {
+   "space": "in-place",
+   "time": "single",
+   "change": "impact",
+   "texture": "paper",
+   "energy": "explosive",
+   "rhythm": "snap",
+   "dimension": "volume",
+   "actor": "whole",
+   "arc": "return"
+  },
+  "dive": {
+   "space": "field",
+   "time": "single",
+   "change": "move",
+   "texture": "solid",
+   "energy": "explosive",
+   "rhythm": "continuous",
+   "dimension": "volume",
+   "actor": "whole",
+   "arc": "return"
+  },
+  "neon": {
+   "space": "field",
+   "time": "single",
+   "change": "reveal",
+   "texture": "light",
+   "energy": "lively",
+   "rhythm": "beats",
+   "dimension": "flat",
+   "actor": "whole",
+   "arc": "arrive"
+  },
+  "tiles": {
+   "space": "field",
+   "time": "sequence",
+   "change": "reveal",
+   "texture": "paper",
+   "energy": "lively",
+   "rhythm": "continuous",
+   "dimension": "layered",
+   "actor": "parts",
+   "arc": "arrive"
+  },
+  "swarm": {
+   "space": "field",
+   "time": "single",
+   "change": "break",
+   "texture": "particle",
+   "energy": "explosive",
+   "rhythm": "continuous",
+   "dimension": "flat",
+   "actor": "parts",
+   "arc": "return"
+  },
+  "cast": {
+   "space": "field",
+   "time": "single",
+   "change": "modulate",
+   "texture": "light",
+   "energy": "calm",
+   "rhythm": "continuous",
+   "dimension": "volume",
+   "actor": "surround",
+   "arc": "return"
+  },
+  "phases": {
+   "space": "in-place",
+   "time": "trace",
+   "change": "transform",
+   "texture": "paper",
+   "energy": "lively",
+   "rhythm": "beats",
+   "dimension": "layered",
+   "actor": "copies",
+   "arc": "return"
+  }
+ },
+ "refinements": [
+  {
+   "group": "trace",
+   "files": [
+    "/home/user/Art-Database/5s/motion/families/echo.js",
+    "/home/user/Art-Database/5s/motion/families/rewind.js"
+   ],
+   "styles": [
+    {
+     "family": "echo",
+     "name": "extrude",
+     "idea": "Depth's five die-cut copies become one solid block. On the five beats the stack thickens to 5, 10, 20, 30 and then 40 copies, 3 to 4 mark units apart, stepping up and to the right as in Depth, until the letters have a heavy extruded side like 1970s poster type. Each copy is drawn twice: first the letters grown by a hairline rim in bg, then the letters in one flat tone. The tones step from the ribbon violet at the back to cobalt at the front; in the Paper and Ink palettes they are the field colour mixed 25 to 45% toward ink or paper. The steps read as ridges at full screen and fuse into one solid side at 64 px. On beat four the extrusion swings from lower-left to upper-right, as if the light moved. On beat five it retracts into the front face, which lands with Depth's outBack pop (k = 1.4 + 1.2 * intensity). spread sets the extrusion length (60 to 200 units); intensity sets the pop and the swing. Draw all side copies in one Marks.layer in flat colours only, with no gradients along the strokes, so 40 copies stay cheap. The front face keeps the logo gradients. t = 1 is the plain still mark.",
+     "from": "Echo Depth (starred, with intensity pushed to 1, in the Paper palette): the stacked opaque copies with a rim of background, pushed from five cards to a solid poster block."
+    },
+    {
+     "family": "echo",
+     "name": "strata",
+     "idea": "Ripple's contours made solid, and Depth's rims made concentric. On the first beat the mark appears inside a nest of five solid bands that follow its outline: the letters grown by k * (30 + 30 * spread) units for k = 1 to 5. Each band is one flat tone, stepping from the ribbon violet (outermost) to the letters' own colour, and a hairline of background separates each band from the next, like a topographic map or stacked cut paper. On each later beat the outermost band snaps inward onto the next (a quick outBack ease), and the mark gives Ripple's small pop of scale. The nest tightens beat by beat until the fifth beat lands the plain solid mark. Build it with echo's own letters() and erase() in one group layer: widest band first, then erase a hairline ring before drawing the next. In Paper and Ink the bands are tints of the one colour. At 64 px it reads as a bold ring-stack.",
+     "from": "Echo Ripple + Echo Depth (both starred): Ripple's contours of the 5s and its five beats, with Depth's solid die-cut layering, tightening inward instead of rippling outward."
+    },
+    {
+     "family": "echo",
+     "name": "riso",
+     "idea": "The mark printed as three flat ink layers that find their register on the beats. Three copies of the letters in three flat inks (logo palette: ember, flare, iris; Paper and Ink: three tints of the one colour) overprint each other, with composite 'multiply' on a light bg and 'screen' on a dark one, so where they overlap they mix like a risograph. They start misregistered: offset 40 to 120 units along three seeded angles (env.rng), each turned 2 to 6 degrees. On each of the five beats they jump a fifth closer with a hard ease: a step on each beat and a hold between, not a glide. On the fifth beat they lock, and the flat inks crossfade into the logo's gradient mark over the last 10%. spread sets the misregistration; intensity sets the overshoot of each jump.",
+     "from": "Echo Depth in the Paper palette (flat, graphic, offset copies of the mark) and the five beats shared by Echo and Count: the copies become print layers that lock into one."
+    },
+    {
+     "family": "rewind",
+     "name": "boomerang",
+     "idea": "Retrace made to fit any moment. The mark starts at rest and flies out along Retrace's S curve (sCurve/poseAt, toward env.direction) to 0.3 to 0.5 of the view's width, tilting as it goes. It then comes straight back along the same S with the chosen easing (outBack: a touch past home, then settles). It leaves onion-skin outlines on both legs, using the ghosts and ghost params as Retrace does: the outward ghosts in the logo's colours, the homeward ones violet. All ghosts are gone by t = 0.95. It starts and ends on the still mark, so it can sit anywhere and loop (t = 0 equals t = 1).",
+     "from": "Rewind Retrace (starred): the S path, the onion-skin ghosts and the outBack settle, turned from an arrival from the edge into a there-and-back."
+    },
+    {
+     "family": "rewind",
+     "name": "spool",
+     "idea": "The gesture's path is visible. A thin line (the S, in the ribbon violet, 10 to 14 units wide) runs from the edge of the view to the mark, with the onion-skin ghosts threaded on it like beads. As the mark retraces home, the line reels in behind it and the ghosts slide along it into the mark. In the last 20% the remaining line winds into the ribbon itself: morph the line's points onto Marks.points('ribbon') and hand over to M.ribbon. The ribbon then reads as the trace of every past gesture. With ribbon off, the line reels into the s's tail and disappears. The ghosts and ghost params apply.",
+     "from": "Rewind Retrace (starred) + Echo's trace thread: the onion skins and the path they lie on, ending in the logo's own ribbon."
+    }
+   ]
+  },
+  {
+   "group": "shift",
+   "files": [
+    "/home/user/Art-Database/5s/motion/families/count.js",
+    "/home/user/Art-Database/5s/motion/families/morph.js"
+   ],
+   "styles": [
+    {
+     "family": "count",
+     "name": "tally",
+     "idea": "Counting up to five the way days are scratched on a wall. The 5's stroke unravels (Count's morph through its straight line) into one short upright tally stroke, at the 5's width x 0.7. Then come two, three and four uprights, one per beat, with Count's tick of scale; the s waits as the ticking ball when tick is on. The fifth beat is the diagonal slash across the four. Then the five strokes morph together, the slash into the bar and the four uprights merging into the body, and the s lands as it does now. The uprights are short lines in mark space around x 300 to 560, y 300 to 720, coloured by height like Count's digits. It must read at Count's 600 ms floor and at 2 s.",
+     "from": "Count Morph (starred): one stroke changing what it says, in five counted beats, turned from a countdown into a count-up for completion (five-done, streak)."
+    },
+    {
+     "family": "count",
+     "name": "dial",
+     "idea": "The digits still melt into one another along one stroke, as in Count's morph. But each change is also a fifth of a turn of the whole digit about the bowl's centre (Marks.anchors.bowl), so 5, 4, 3, 2, 1, 5 is one full revolution, like a dial winding round. The s, as the ticking ball, rides the rim one stop ahead like the dial's pointer and drops back into place on the last stop. env.direction sets clockwise (right) or counter-clockwise (left); intensity sets the overshoot of each fifth-turn. Every digit is upright when it lands, and t = 1 is the still mark.",
+     "from": "Count Morph (starred) + Morph Exchange (starred): the count's digit-to-digit melt with Exchange's swing about a centre."
+    },
+    {
+     "family": "morph",
+     "name": "revolve",
+     "idea": "Exchange as a revolving door. The 5 and the s turn together about a vertical axis through their midpoint: each letter's x is scaled by cos(theta) about that axis and shifted by sin(theta). The letter coming toward the viewer is drawn in front; the far one is darkened toward the ribbon violet by up to 35%. At the quarter-turn both are edge-on, thin vertical slivers. At the half-turn they have swapped sides, and while passing each has morphed into the other (Exchange's blend, lagging along the line), so it ends on 5s. Intensity sets half a turn or a full turn; env.direction sets which way it turns.",
+     "from": "Morph Exchange (starred over Merge and Melt): the trade between the two characters with a turn in it, given depth."
+    },
+    {
+     "family": "morph",
+     "name": "doubles",
+     "idea": "A typographic joke in three beats: 5s, then ss, then 55, then 5s again. First the 5 morphs into an s at the 5's size and place (FIVE onto S fitted to the 5's box, with Exchange's lag), so the mark reads as a big s and a small s. Then both turn into 5s (the small s into a small 5). Then the small 5 morphs back into the s. Each change is a quick morph with a kick of scale on landing, and the colours travel with the shapes (mixList). It reads at 64 px because the 5 and the s have such different silhouettes.",
+     "from": "Morph Exchange (starred) + Count's counted beats: identity traded between the 5 and the s, made into a rhythm."
+    },
+    {
+     "family": "morph",
+     "name": "shell",
+     "idea": "A shell game. The 5 and the s swap places three times in quick arcs (over, under, over), alternating which one passes in front; the front one is drawn 6% larger. They morph into each other on every pass. Each swap is faster than the last (40%, 33% and 27% of the move), so the eye loses track, and they land as 5s with Exchange's settle. env.direction sets the first arc's way; intensity sets the arc height.",
+     "from": "Morph Exchange (starred), pushed for energy: three trades instead of one."
+    }
+   ]
+  },
+  {
+   "group": "phases",
+   "files": [
+    "/home/user/Art-Database/5s/motion/families/phases.js"
+   ],
+   "hybrid": {
+    "id": "phases",
+    "name": "Phases",
+    "idea": "The mark changes form, and every stage it passes through stays behind as a trace, so the whole transformation is visible at once; then the traces fold back into the finished mark. Fits best at turn, five-done, tab, undo and streak, but must work anywhere: it starts and ends on the still mark. Duration 250 to 3000 ms (default 900). Family params: stages (3 to 8, default 5: how many traces are left) and spread (0 to 1, default 0.5: how far apart they sit).",
+    "loop": false,
+    "reduced": "fade"
+   },
+   "styles": [
+    {
+     "family": "phases",
+     "name": "chrono",
+     "idea": "The 5 and the s swing round each other and trade identities along Exchange's path. On each of five beats, the in-between shapes are left behind as die-cut copies, stepped back up and to the right like Depth's opaque cards: each shape grown by a rim of bg, then filled in a tone from the ribbon violet to cobalt. The whole transformation is visible at once, like a chronophotograph. On the last beat the copies slide forward into the finished mark (Depth's fold and outBack pop). In Paper and Ink the copies are tints of the one colour.",
+     "from": "Echo Depth + Morph Exchange, the two favorites with the most engagement (Depth tuned, Exchange chosen over the default)."
+    },
+    {
+     "family": "phases",
+     "name": "countdown",
+     "idea": "The 5 counts 4, 3, 2, 1 along its stroke (Count's morph). As each digit changes, it sheds an outline of itself outward: a Ripple ring in that digit's shape, made by widening the digit's stroke and erasing its inside, growing and fading in the palette's ring colours. The rings carry the count's history. On the fifth beat, back at 5, the mark fills solid with Ripple's last pop and the s lands.",
+     "from": "Count Morph + Echo Ripple: a shape changing, with every stage leaving an outline that ripples away."
+    },
+    {
+     "family": "phases",
+     "name": "onion",
+     "idea": "Retrace's onion skins of a shape changing. The mark travels a short S (0.2 of the view, toward env.direction) and back, while the 5 melts into one s and re-forms (Merge's path). Every few frames, an outline of the current in-between shape is left in place: ghosts in the logo's colours, older ones paler. The onion skins show the 5 becoming the s and back, then shrink into the mark.",
+     "from": "Rewind Retrace + Morph: the onion skins are no longer copies of the mark but the stages of its transformation."
+    }
+   ]
+  }
+ ],
+ "new_families": [
+  {
+   "id": "stamp",
+   "name": "Stamp",
+   "idea": "The mark is a rubber stamp. It lifts toward you, slams down onto the screen as if it were paper, ink squeezes out round its edges and the frame jolts; then it lifts away and leaves the print, which dries crisp.",
+   "why_different": "Nothing in the library hits. Stamp is a single impact along the axis toward the viewer: snap rhythm, explosive energy, pressure and ink, instead of lines, copies or time. The favorites build up gradually; Stamp decides in one blow.",
+   "why_potent": "A stamp is a verdict, and 5s is a judgment app: keep, pass, approved, done. The lift-and-slam reads at 64 px as a punch of scale. At full screen the ink squeeze, the emboss and the jolt make the screen feel like paper you can press. It needs only 0.3 s to land.",
+   "styles": [
+    {
+     "name": "press",
+     "idea": "One hard hit. From 0 to 45% of the time, the mark lifts toward the viewer: scale 1 to 1 + 0.35 * intensity * lift about the letters' centre, easing in, while a soft shadow (ink at 12 to 20% alpha) grows below and to the right of it, so it reads as height. From 45 to 52% it slams down to scale 0.97 within about two frames, and the shadow snaps under it. At the hit, the stroke widths swell by up to 14% * ink and pull back over the next 20% of t. The edge is roughened by width jitter from env.rng, sampled per point and gone by t = 0.9. The frame shakes 2 to 6 mark units (a decaying sine, when jolt is on). It ends on the still mark at scale 1. The ribbon prints a beat after the letters, like a second, lighter stamp."
+    },
+    {
+     "name": "double",
+     "idea": "A clerk's rhythm: two hits. The 5 stamps first, then the s, each with its own lift and slam. The second hit is lighter and a hair off-register (3 to 6 degrees, 10 to 20 units), then nudged home. At 0.3 s it is a quick ba-dum; at 1.5 s, a deliberate ritual."
+    },
+    {
+     "name": "seal",
+     "idea": "A wax seal. A disc of the turn's violet (palette.iris; in Ink and Paper, that palette's one colour) pools under the mark as it comes down, spreading with a bulging, slightly wobbly rim whose radius is driven by the hit. The mark presses into it and is embossed: a light edge of 1 to 2 px at its upper left and a dark edge at its lower right (offset strokes mixed toward white and toward ink). Then the wax shrinks back into the bowl and becomes the ribbon, leaving the plain mark."
+    }
+   ],
+   "moments": [
+    "keep",
+    "five-done",
+    "set-pin",
+    "streak"
+   ],
+   "loop": false,
+   "reduced": "fade",
+   "params": "lift 0 to 1 (default 0.6: how far it rises before the hit, scaled by intensity); ink 0 to 1 (default 0.5: how far the ink squeezes past the edge, and how rough the edge is); jolt boolean (default true: the frame shakes on impact); duration default 600, min 250, max 2000."
+  },
+  {
+   "id": "dive",
+   "name": "Dive",
+   "idea": "The view dives into the mark. The hollow of the 5's bowl rushes toward you until it fills the screen, you pass through it, and on the other side the same 5s comes forward to rest: an endless mark.",
+   "why_different": "The only family that moves the viewer instead of the mark: scale and passage, a camera going through the 5 into the next place. It fills the field, it is explosive, and it is one continuous move, with no traces and no counted beats.",
+   "why_potent": "Changing place is what a transition is. A dive through the bowl is going somewhere: from one tab into another, from the splash into the app, from a card into Split. At 64 px it reads as a punch-in. At full screen, the moment the whole screen turns the bowl's orange is a rush. And the mark at the end is the same one you started with: familiar, and new.",
+   "styles": [
+    {
+     "name": "bowl",
+     "idea": "Zoom centred on the counter of the 5's bowl (the hole inside it, near Marks.anchors.bowl). Scale grows exponentially, from 1 to zoom, over 0 to 55% of the time, so the stroke around the counter sweeps past the frame edges, and for a few frames the screen is the bowl's colour. Inside the counter, the next mark appears tiny at the centre and grows to rest. Scale it as s / K so the two zooms read as one continuous move, shaped by the easing param. The ribbon passes the camera as a violet blur. Ends exactly on the still mark."
+    },
+    {
+     "name": "ess",
+     "idea": "Down the s like a slide. The camera follows the s's curve into its lower bowl, turning with it (up to spin turns, the way set by env.direction). For a beat the s's stroke is the whole frame; then the camera pulls back out of the s of a new mark. Dizzy and playful."
+    },
+    {
+     "name": "tunnel",
+     "idea": "A Droste loop for waiting. The 5's counter holds a smaller 5s, whose counter holds another, five levels deep. Over the duration the whole nest zooms in by exactly one level, so t = 0 and t = 1 are the same frame and it loops seamlessly (for load and empty). Smaller levels are drawn at lower alpha, tinted toward the ribbon violet, so the depth reads. Stop drawing levels below 2 px."
+    }
+   ],
+   "moments": [
+    "tab",
+    "launch",
+    "split",
+    "path",
+    "turn"
+   ],
+   "loop": false,
+   "reduced": "fade",
+   "params": "zoom 4 to 40 (step 1, default 16: how far in the camera goes before the next mark takes over); spin 0 to 0.5 turns (default 0.1); duration default 700, min 250, max 3000."
+  },
+  {
+   "id": "neon",
+   "name": "Neon",
+   "idea": "The mark is a neon sign: the tubes buzz, stutter and catch, light blooms out of them and spills across the field in their colours, and the sign holds, humming.",
+   "why_different": "Light given off by the mark, not drawn on it: glow, halo and colour spilling onto the field, with an irregular electric stutter instead of eased motion. The letters do not move at all; they switch on.",
+   "why_potent": "A sign coming on is the oldest way a place says 'open', and the stutter makes you wait for it to catch, which feels alive in a way a slow breath does not. At 64 px, on and off is the most legible change there is. At full screen in the dark theme, the spill warms the whole screen. The surge style is a jolt of transformation for the turn.",
+   "styles": [
+    {
+     "name": "ignite",
+     "idea": "From cold glass to lit. The letters start as unlit tubes: an outline of the strokes, 6 to 10 units wide, in a grey mixed from ink and bg, with dark electrode caps at the stroke ends. The bar sparks first, stutters on and off 2 to 3 times on a seeded, irregular rhythm, then catches. The body follows, then the s, and the ribbon glows last. A lit tube is three layers: the stroke in its colours, a thin bright core (mixed 60% toward white), and a halo (the same stroke 2.2 times as wide, in a blurred Marks.layer, alpha 0.35 * glow). On dark, halos composite 'lighter' and a radial spill of the palette's ember and iris tints the field. On light, the halo is a soft tint and the unlit tubes read as pale glass. Ends on the still mark, with the halo crossfading out over the last 10%."
+    },
+    {
+     "name": "surge",
+     "idea": "There and back. The lit mark takes a surge: its cores go white-hot and the halo swells for two frames. Then it cuts out for a beat (the tubes unlit, a faint afterimage of the halo in the complementary tint), and relights in one clean go with a small flicker. Starts and ends on the still mark. Fits tab, undo and pass: a blink of power."
+    },
+    {
+     "name": "buzz",
+     "idea": "An idle loop. The sign stays lit and the halo breathes slowly. Once per cycle, one tube (seeded: the bar, the s or the bowl) stutters twice and recovers. Seamless at t = 0 and 1, for load and empty."
+    }
+   ],
+   "moments": [
+    "launch",
+    "load",
+    "empty",
+    "turn",
+    "five-start"
+   ],
+   "loop": false,
+   "reduced": "still",
+   "params": "flicker 0 to 1 (default 0.5: how many stutters; whatever the duration, never more than 3 flashes per second and never a full-frame flash, per WCAG 2.3.1); glow 0 to 1 (default 0.6: halo width and strength); spill boolean (default true: the light tints the field); duration default 1200, min 250, max 4000."
+  },
+  {
+   "id": "tiles",
+   "name": "Tiles",
+   "idea": "The mark is printed across a five-by-five board of cards. A wave turns them over one by one, each showing its piece of the mark, until the seams close and the board is the plain mark.",
+   "why_different": "A grid cuts the mark with no regard for its letters, and the motion is a wave of many small hinged cards across the whole field: a sequence over space instead of over time, and paper instead of line.",
+   "why_potent": "A board of cards is 5s itself: five cards a day, a mood board, a way of organising space. A wave of flipping tiles is one of the most legible transitions there is: at 64 px a 3 x 3 shimmer, at full screen a stadium card stunt. The coloured backs make every turn a flash of the app's colours, and the mark assembling from squares says your pieces make a whole.",
+   "styles": [
+    {
+     "name": "wave",
+     "idea": "A diagonal wave from the top-left (env.direction right; mirrored for left). Each tile (grid x grid cells over the view, each clipped to its rect) turns about its vertical axis: x scale = cos(theta) about the tile's centre, theta going from 180 to 0 degrees, staggered by the tile's distance along the diagonal, each turn shaped by the easing param with a small outBack overshoot. A tile's back is a swatch: the palette's ember, flare, iris, cobalt or bg, seeded per tile like a mood board, darkened as it turns away. Its face is the mark clipped to the tile, darkened while edge-on. A rim of bg separates the tiles (the gap param) and closes to 0 by t = 0.9. At t = 1, draw the plain mark."
+    },
+    {
+     "name": "shuffle",
+     "idea": "A sliding puzzle solved. The board starts scrambled: a seeded permutation of the tiles, each showing the wrong piece of the mark. The tiles slide to their places in five quick rounds of swaps, each on a straight line, eased, with a click of scale on arrival, and the mark assembles from its displaced squares. The seams close at the end."
+    },
+    {
+     "name": "blinds",
+     "idea": "Venetian blinds. Five vertical slats rotate about their long axes, from the mark's negative (the mark cut out of a field of palette.iris), through edge-on (thin, darker slat edges), to the mark on bg. The rotation is staggered left to right (mirrored by env.direction), sending a ripple through the slats."
+    }
+   ],
+   "moments": [
+    "tab",
+    "five-start",
+    "five-done",
+    "set-pin",
+    "bring"
+   ],
+   "loop": false,
+   "reduced": "fade",
+   "params": "grid 3 to 7, step 2 (a number, default 5); gap 0 to 1 (default 0.4: the rim between tiles while they turn); swatches boolean (default true: the backs in the app's colours; false: a tint of bg); duration default 900, min 250, max 3000."
+  },
+  {
+   "id": "swarm",
+   "name": "Swarm",
+   "idea": "The mark is a flock: hundreds of small specks in its colours sit along its strokes. Something startles them, they burst up and wheel round the frame together, and they settle back into the 5 and the s.",
+   "why_different": "Particles moving like living things: the mark leaves its footprint entirely, becomes a crowd and comes back. There are no outlines, no copies and no single body. It is the only flocking, living motion in the library.",
+   "why_potent": "A murmuration is one of the most moving sights there is, and here it says what 5s is: many small things you collect becoming one shape that is you. At 64 px the burst reads as the mark dissolving into shimmer and snapping back; at full screen it is a spectacle.",
+   "styles": [
+    {
+     "name": "murmur",
+     "idea": "The whole flock lifts and wheels in one sweeping S across the field (a large S path through the view: the s's own curve, scaled up), stretching and bunching like starlings, then lands back on the strokes, the 5's specks first and the s's last."
+    },
+    {
+     "name": "scatter",
+     "idea": "A burst from a point (the bowl, offset toward env.direction). The specks fly outward on seeded headings, slowed by drag, then are pulled home on springs with overshoot and land with a shiver. The mark re-forms in the last 20%."
+    },
+    {
+     "name": "gather",
+     "idea": "Arrival. Specks start as dust spread over the whole field (seeded positions) and stream in along curling paths (a sum of two seeded sines per speck). They settle onto the strokes, and the strokes go solid as they land."
+    }
+   ],
+   "moments": [
+    "split",
+    "bring",
+    "launch",
+    "empty",
+    "pass"
+   ],
+   "loop": false,
+   "reduced": "fade",
+   "params": "count 150 to 800 (default 400); scatter 0 to 1 (default 0.6: how far they fly); shape options ['dot', 'dash'] (default 'dash': a short dash along its flight direction, like a bird). Must stay pure: each speck's position is its home plus an offset at time t from closed-form seeded curves, with no simulation state. Homes are Marks.points along the bar, body and s, jittered across the stroke width. Each speck takes its stroke's colour at its point along the stroke (Marks.colourAt), and is at least 1 device px, so 64 px still shows them. The ribbon becomes a stream of violet specks. Crossfade from specks to the real strokes over the last 12%. Duration default 1400, min 300, max 4000."
+  },
+  {
+   "id": "cast",
+   "name": "Cast",
+   "idea": "The 5s stands up off the page like an object in a room. A light crosses over it, and its long shadow sweeps round the floor like the hand of a sundial, then tucks back under it.",
+   "why_different": "The mark does not move; the space around it does: light, shadow, a floor, a time of day. It is calm and continuous, and has depth without spinning the mark. It is the first family about a room rather than a sign.",
+   "why_potent": "The concept's picture of where 5s goes is waking up and walking through your house, seeing the things that are yours, and light moving through a room is how a space feels lived in. A sweeping shadow is a clock everyone can read: at 64 px a dark hand turning, at full screen architecture. It is also the calm loop the waiting moments still lack, with enough drama not to fade into the background.",
+   "styles": [
+    {
+     "name": "sundial",
+     "idea": "The light circles. Its compass direction goes from 0 to sweep * 360 degrees, and its height dips low mid-cycle so the shadow is longest then. The shadow is the letters' silhouette projected onto the ground: a shear and scale of the strokes away from the light, by the mark's height. It is filled in ink at 12 to 22% alpha on light, and blurred more toward its far end (two layers: sharp near the letters, a Marks.layer blur far away). The letters get a thin highlight on the side facing the light. Seamless when sweep = 1."
+    },
+    {
+     "name": "window",
+     "idea": "Morning light through a window. A parallelogram of warm light (ember at low alpha, soft edges, four panes divided by thin bars) slides across the field and over the mark, with the mark's shadow falling inside it. On dark, the patch is the only lit area and the mark is lit where the patch falls. The patch starts and ends off-frame."
+    },
+    {
+     "name": "lamp",
+     "idea": "A pendant lamp swings in close above the mark. The shadow stretches huge across the field behind it, like a shadow play (up to 2.5 times the mark at intensity 1), swings with the lamp's damped pendulum, and shrinks back under the mark as the lamp settles overhead."
+    }
+   ],
+   "moments": [
+    "seed",
+    "load",
+    "empty",
+    "launch",
+    "five-start"
+   ],
+   "loop": true,
+   "reduced": "still",
+   "params": "sweep 0.25 to 1 turns (default 1); height 0 to 1 (default 0.5: how tall the mark stands, which sets the shadow's length); soft 0 to 1 (default 0.5: blur of the shadow's far end). Every style starts and ends with the light overhead and the shadow tucked under the mark, so t = 0 equals t = 1 (the loop check). On dark, the light is what you see: a pool of warm light (a radial gradient of the palette's ember and iris at low alpha, 'lighter') with the shadow cut out of it. On light, the shadow is ink at low alpha and the light a faint warm tint. Duration default 2400, min 300, max 6000."
+  }
+ ],
+ "images": [
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav1-echo-depth-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav1-echo-depth-dark.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav2-echo-ripple-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav2-echo-ripple-dark.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav3-count-morph-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav3-count-morph-dark.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav4-rewind-retrace-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav4-rewind-retrace-dark.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav5-morph-exchange-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/fav5-morph-exchange-dark.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/styles-echo-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/styles-rewind-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/styles-count-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/styles-morph-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/all-dark.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/styles-three-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/styles-ribbon-dark.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/styles-swipe-light.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/styles-split-dark.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/s64-favs.png",
+  "/tmp/claude-0/-home-user-Art-Database/d9dbf1fb-700e-5758-9376-62e2073ec507/scratchpad/motion-fav/brief/depth-compare.png"
+ ]
+}
