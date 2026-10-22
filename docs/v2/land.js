@@ -1741,7 +1741,7 @@
     land.dataset.at = "flying";
     hideGraze();
     closeDeck();
-    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, from.y);
+    passage(downUp(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, from.y, from);
   }
 
   /* From one place to another without going back up: the world turns under
@@ -2237,7 +2237,7 @@
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
-    passage(oneOf(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], fly.dur * 0.9);
+    passage(downUp(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], fly.dur * 0.9);
   }
 
   var arriveQuiet = false;              // a city's view made on the way down (descent): its pulse is at the end
@@ -2820,7 +2820,8 @@
     arrive: true,         // 10 Oct: a photograph sometimes arrives through the mirrors (kaleidoscopeIn)
     pointed: true,        // 13 Oct: pointed at, a photograph sometimes folds about the pointer for a beat (kaleidoscopeAt)
     ring: true,           // 14 Oct: a press held on a city's map opens a rosette inside its ring, a sunflower's seeds turning in the mirrors (rosetteRuns)
-    scope: true           // 20 Oct: in the far views a telescope photograph the pointer drops sometimes lands through the telescope's two mirrors, five images at 72° (scopeShot)
+    scope: true,          // 20 Oct: in the far views a telescope photograph the pointer drops sometimes lands through the telescope's two mirrors, five images at 72° (scopeShot)
+    sweep: true           // 22 Oct: going down into a city or coming up, the sweep of cells is sometimes a pentagram, the pulse's mirrors opening a star of squares from where it began (sweepCells "rosette")
   };
 
   function folded(sx, sy, turn) {
@@ -11432,19 +11433,58 @@
   var sweepCtx = sweepCanvas ? sweepCanvas.getContext("2d") : null;
   var sweepNow = null;
 
-  function sweepCells(from, tones, dur) {
+  /* The sweep through the mirrors (22 Oct 2026; KALEIDOSCOPES.sweep): going down into a city or coming up,
+     now and then the front is a star, not a line. The pulse's two mirrors (36°) stand over where the sweep
+     began, and what the front does in the tenth between them it does in all ten: a pentagram, whose points
+     lead and whose valleys come after by φ² (the inner pentagon is 1/φ² of the points' circle), its edge
+     ragged and its tones dealt in the tenth, mirrored. Quieter than the others: a thin front of squares of
+     one and two tiles (the 13 px grid) in cells of three, and none over the globe's dial, its names or the
+     words at the world's foot (starKept, as the pixel light and the telescope's photographs keep off them). */
+  var STAR_CELL = 3 * CELL_PX;
+
+  function starReach(a) {   // how far out the pentagram goes at a folded angle (0 at a point, FOLD at a valley), a point being 1
+    var s = Math.sin(FOLD), c = Math.cos(FOLD);
+    return INV2 * s / (INV2 * s * Math.cos(a) - Math.sin(a) * (INV2 * c - 1));
+  }
+
+  // The cells (by their place in the grid) that lie under the dial's words, the globe's names and the words at the world's foot, now and as the sweep began.
+  function starKept(cu, now) {
+    var out = {};
+    cu.keep.concat(ringAvoid, nameBoxes, remainsKeep(now)).forEach(function (b) {
+      var i1 = Math.min(cu.cols - 1, Math.floor(b.x1 / cu.size)), j1 = Math.floor(b.y1 / cu.size);
+      for (var j = Math.max(0, Math.floor(b.y0 / cu.size)); j <= j1; j += 1) {
+        for (var i = Math.max(0, Math.floor(b.x0 / cu.size)); i <= i1; i += 1) { out[j * cu.cols + i] = true; }
+      }
+    });
+    return out;
+  }
+
+  function sweepCells(from, tones, dur, at) {
     if (still || !sweepCtx) { return; }
-    var size = Math.max(48, Math.round(Math.max(W, H) / 14));
+    var star = from === "rosette";
+    var size = star ? STAR_CELL : Math.max(48, Math.round(Math.max(W, H) / 14));
     var cols = Math.ceil(W / size), rows = Math.ceil(H / size);
     var ci = Math.random() < 0.5 ? 0 : cols - 1, cj = Math.random() < 0.5 ? 0 : rows - 1;
     var half = Math.max(1, (Math.min(cols, rows) - 1) / 2);
     var up = Math.random() < 0.5;
+    var turn = Math.random() * 2 * FOLD, seed = Math.floor(Math.random() * 4096);
+    var home = !!at && isFinite(at.x + at.y);     // a city off the window's edge: the star opens from its nearest point
+    var ox = home ? Math.max(0, Math.min(W, at.x)) : W / 2, oy = home ? Math.max(0, Math.min(H, at.y)) : H / 2, last = 0;
     var cells = [];
     for (var j = 0; j < rows; j += 1) {
       for (var i = 0; i < cols; i += 1) {
         var e = Math.min(i, cols - 1 - i, j, rows - 1 - j) / half;   // 0 at the edge
-        var o, most = 1;
-        if (from === "edges") { o = e; most = clamp01(1 - e * 1.5); }
+        var o, most = 1, tone = tones[Math.floor(hash2(i + 9, j + 4) * tones.length)];
+        if (star) {
+          // Worked out in the tenth between the mirrors: the cell's angle folded into it, then the ring and the arc along it.
+          var dx = (i + 0.5) * size - ox, dy = (j + 0.5) * size - oy, r = Math.sqrt(dx * dx + dy * dy);
+          var a = folded(dx, dy, turn), ring = Math.floor(r / size), arc = Math.floor(a * r / size) + seed;
+          o = (r + (hash2(arc, ring) - 0.5) * 2 * size) / starReach(a);
+          tone = tones[Math.floor(hash2(arc + 9, ring + 4) * tones.length)];
+          most = 2 / 3;
+          last = Math.max(last, o);
+        }
+        else if (from === "edges") { o = e; most = clamp01(1 - e * 1.5); }
         else if (from === "center") { o = 1 - e; }
         else if (from === "corner") {
           o = Math.sqrt((i - ci) * (i - ci) + (j - cj) * (j - cj)) / Math.sqrt(cols * cols + rows * rows);
@@ -11453,13 +11493,15 @@
           if (up) { o = 1 - o; }
         }
         if (most <= 0) { continue; }
-        cells.push({ x: i * size, y: j * size, o: clamp01(o), most: most,
-                     tone: tones[Math.floor(hash2(i + 9, j + 4) * tones.length)] });
+        cells.push({ x: i * size, y: j * size, k: j * cols + i, o: star ? o : clamp01(o), most: most, tone: tone });
       }
     }
+    if (star) { cells.forEach(function (c) { c.o = clamp01(c.o / last); }); }
     var first = !sweepNow;
-    sweepNow = { cells: cells, size: size, at: performance.now(), dur: dur || 820,
-                   anchor: oneOf([[0.5, 0.5], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]]) };
+    sweepNow = { cells: cells, size: size, cols: cols, at: performance.now(), dur: dur || 820, from: from,
+                   steps: star ? STAR_CELL / CELL_PX : 4, life: star ? 0.22 : 0.45, spread: star ? 0.78 : 0.55,
+                   keep: star ? ringAvoid.concat(nameBoxes, remainsKeep(performance.now())) : null,
+                   anchor: star ? [0.5, 0.5] : oneOf([[0.5, 0.5], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]]) };
     var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
     if (sweepCanvas.width !== pw || sweepCanvas.height !== ph) {
       sweepCanvas.width = pw;
@@ -11475,15 +11517,18 @@
     if (!cu) { return; }
     var q = (Math.floor(now / 42) * 42 - cu.at) / cu.dur;
     if (q >= 1) { sweepNow = null; return; }
+    var kept = cu.keep ? starKept(cu, now) : null;
     g.globalAlpha = 0.88;
     cu.cells.forEach(function (c) {
-      var u = (q - c.o * 0.55) / 0.45;
-      if (u <= 0 || u >= 1) { return; }
-      var s = Math.round(Math.sin(Math.PI * u) * c.most * 4) / 4;
+      var u = (q - c.o * cu.spread) / cu.life;
+      if (u <= 0 || u >= 1 || (kept && kept[c.k])) { return; }
+      var s = Math.round(Math.sin(Math.PI * u) * c.most * cu.steps) / cu.steps;
       if (s <= 0) { return; }
       var side = cu.size * s;
       g.fillStyle = c.tone;
-      g.fillRect(c.x + (cu.size - side) * cu.anchor[0], c.y + (cu.size - side) * cu.anchor[1], side, side);
+      var x = c.x + (cu.size - side) * cu.anchor[0], y = c.y + (cu.size - side) * cu.anchor[1];
+      if (cu.keep) { x = Math.round(x); y = Math.round(y); }   // the star's, on the tiles' whole pixels
+      g.fillRect(x, y, side, side);
     });
     g.globalAlpha = 1;
     requestAnimationFrame(drawSweep);
@@ -11517,10 +11562,13 @@
   }
 
   /* A transition: one of the sweeps, or the numbers. */
-  function passage(from, tones, dur, y) {
+  function passage(from, tones, dur, y, at) {
     if (Math.random() < 0.34 && dataSweep(y === undefined ? H / 2 : y)) { return; }
-    sweepCells(from, tones, dur);
+    sweepCells(from, tones, dur, at);
   }
+
+  // Going down and coming up (KALEIDOSCOPES.sweep): one of the sweeps, and sometimes the star.
+  function downUp(list) { return oneOf(KALEIDOSCOPES.sweep ? list.concat("rosette") : list); }
 
   /* ---- Magnetic Buttons ------------------------------------------------- */
 
@@ -16948,6 +16996,12 @@
         for (var n = 0; n < runs[key].length; n += 2) { out.push([runs[key][n], runs[key][n + 1], key.slice(0, cut), Number(key.slice(cut + 1))]); }
       });
       return out;
+    },
+    // The sweep of cells (scripts/check_kaleidoscope.js --sweep): begin one ("edges", "rosette" ...) from (x, y), or with no name just say
+    // which is under way.
+    sweep: function (from, x, y) {
+      if (from) { sweepCells(from, [LIGHT, LILAC, GOLD], 1000, x === undefined ? undefined : { x: x, y: y }); }
+      return sweepNow ? { from: sweepNow.from, at: sweepNow.at, cells: sweepNow.cells.length, size: sweepNow.size, steps: sweepNow.steps, dur: sweepNow.dur } : null;
     },
     // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
     grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
