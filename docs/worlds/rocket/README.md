@@ -191,7 +191,7 @@ of his arms or the guitar ever enters the head's sphere), and his upper body tur
 it, made large. Each swing takes one of three styles at random, as Mortal Kombat: Deadly Alliance gave each fighter
 three: **the sweep** (Kitana's fan swipe): he coils a quarter turn to his right with the guitar raised and cuts across
 onto the block at an even pull, his shoulders turning at two turns a beat at the strike, then follows through up to
-his left; **the slam** (Jax's ground pound): he springs up as the guitar goes up and comes down on the block as he
+his left; **the slam** (Jax's ground pound): he springs up as the guitar goes straight up and comes down on the block as he
 lands, the leap's flight the swing's half beat under the game's own gravity (0.18 m high), the guitar driven on down
 through it; **the spin** (Kung Lao's spin): the guitar out at the block's height, his whole body turns a full turn
 and strikes as it comes round, his head staying on the block as a dancer's does, his shoulders carrying on a quarter
@@ -203,7 +203,9 @@ itself meets a block a step ahead at his waist or his head, and the blow breaks 
 off at the same strike), and its six bars fly out of the face he struck at half the guitar's speed and fall, lying
 where they land, gone a beat after the strike. A tap during a swing is kept, the latest, and struck half a beat
 after, swung on from where the last one's follow-through ends (the sweep's other side; under the slam, an uppercut):
-two blocks a beat. Walking, his legs walk on under the swing; in water it goes at his speed there over his walk. If
+two blocks a beat (a kept one is a sweep or a slam: a whole turn in half a SWING would be faster than the eye
+follows), and while a swing aims he turns to its block at twice his turn, so that he faces it by the strike from any
+bearing. Walking, his legs walk on under the swing; in water it goes at his speed there over his walk. If
 the block is gone or changed by the strike, or he has gone out of reach, nothing breaks; going out as the hologram
 lets the swing go.
 
@@ -325,6 +327,35 @@ On a stone you are told once which figure it is and how it closes; the crosshair
 `node scripts/check_homage.js` plans it in every place an escape can be made of (fifteen new forms, 36
 buildings: all but Naman Pure Spa, ringed by water, have room) and checks each figure against its
 drawing from its stone; `--page PORT [shots]` plays it in headless Chromium.
+
+## The unit's studies, in a row beside your tree
+
+The artist, 21 Oct 2026: "Regarding the unit studies, I want those units [studies] to be placed in holographic Mr.
+[Pearl] right next to the tree lined up next to each other". The base unit was studied on 15 and 16 Oct; four of the
+studies made a thing you can walk round, and each stands in a row by the tree you wake under, built of the same
+figure as the homage's first (`studies.json`, written by `python3 scripts/unit_studies.py` from the studies' own
+rules), each on its mount and saying from its white stone what it found:
+
+- **the ladder of levels**: the figure holding three of itself one size down at its corners and one, upside down,
+  four sizes down in its hole (lengths of 1, 2, 3, 5, 8 thirds of a block, then 2, 3, 5, 8, 13, then 3, 5, 8, 13,
+  21, each the sum of the two before), a level-4 frame of 13 copies, each corner step tilted along the line of sight
+  in the drawing's own cyclic order;
+- **the crux**: the figure at levels 2, 3 and 4 (its outline 8, 13 and 21 thirds of a block across) with their
+  holding circles, the circles the sight draws, all touching at the one point the drawing never draws (Arnell's
+  tangent circles in BREATHTAKING, p. 6); from the stone the three apexes meet there too;
+- **the closed curve** (V3): the nine bars, each bent back a third of the way along the line of sight on arcs of
+  stated circles, in the third of its length nothing in the drawing covers, so it closes for real;
+- **the sphere of the unit**: every block whose middle lies within three of its middle, 136 blocks in six layers,
+  the place's own, in white; the pearl he throws is the same sphere at his cells.
+
+The first three are drawn in toward their stones' eyes as the homage's figures are (looked down on along the
+diagonal's slope from a white step, each in a limestone square), so from the stone each is its drawing and off it
+comes apart; the ladder and the crux, which reach level 4, are drawn with that frame the size of the homage's first
+figure (a leaf 8/21 of it). The row (`homage.js` `row`) is planned as the homage is, square to the blocks, its stones toward the
+tree: within twelve metres of the trunk where the place leaves room (the ground round the crash may be terraced by up
+to three blocks), there without the sphere if it alone does not fit, and only then further out; clear of the wreck
+and of the homage. It stands in every world, not only the first. `node scripts/check_homage.js --studies` plans it
+with the homage in every place and checks each figure against its drawing from its stone.
 
 ## Escapes made from what the site holds
 
@@ -472,7 +503,8 @@ aiming; Escape lowers it.
   unit, his parts and joints, his walk and his palette, each with the relation that sets it.
 - `homage.js` — the homage where you wake, no DOM: the three planned in the place (`plan`), each
   figure drawn in towards its stone (`drawIn`), the stone you stand on (`standing`), what a block of
-  it is (`label`); `homage.json` is the figures, written by `python3 scripts/figure_three.py`.
+  it is (`label`); `homage.json` is the figures, written by `python3 scripts/figure_three.py`. The unit's
+  studies by the tree are planned by its `row` from `studies.json` (`python3 scripts/unit_studies.py`).
 - `catalogue.json` — what each adventure can be made from, written by
   `python3 scripts/build_adventures.py`.
 

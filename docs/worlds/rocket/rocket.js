@@ -184,6 +184,10 @@
   var gl, prog, skyProg, artProg, figProg, homProg, U = {}, SU = {}, AU = {}, FU = {}, HU = {}, OU = {}, chunks = {}, queue = [], canvas, hud;
   // The homage (homage.js): its figures, where you wake in the first world of a visit, not one escaped to.
   var homage = null, homageData = null, escaped = false, onStone = false;
+  // The unit's studies, in their row beside the tree (homage.js row, studies.json; the artist, 21 Oct 2026: "I want
+  // those units [studies] to be placed in holographic Mr. [Pearl] right next to the tree lined up next to each
+  // other"): in every world with room for them.
+  var studies = null, studiesData = null;
   var FACES = [
     { d: [1, 0, 0], c: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]] }, { d: [-1, 0, 0], c: [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]] },
     { d: [0, 1, 0], c: [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]] }, { d: [0, -1, 0], c: [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]] },
@@ -696,7 +700,7 @@
     "void main() { float t = dot(vW, vec3(0.5, 0.03, 0.97)) / max(vW.x + vW.y + vW.z, 1e-3), d = length(vP - uEye);\n" +
     "  o = vec4(mix(vec3(t), uHaze, clamp(1.0 - exp(-d * 0.006), 0.0, 1.0)), 1.0); }";
   function homageUpload() {
-    (homage ? homage.figures : []).forEach(function (f) {
+    (homage ? homage.figures : []).concat(studies ? studies.figures : []).forEach(function (f) {
       var vao = gl.createVertexArray(), pb = gl.createBuffer(), wb = gl.createBuffer(), ib = gl.createBuffer();
       gl.bindVertexArray(vao);
       gl.bindBuffer(gl.ARRAY_BUFFER, pb); gl.bufferData(gl.ARRAY_BUFFER, f.mesh.pos, gl.STATIC_DRAW);
@@ -710,10 +714,12 @@
   }
   // On a stone of the homage, once each: which figure it is, and how it closes from there.
   function homageCheck() {
-    if (!homage || intro || launched) { return; }
-    var st = Homage.standing(homage, P.x, P.y, P.z);
+    if (intro || launched) { return; }
+    var st = stoneAt();
     if (st && !st.told) { st.told = true; say(st.name + ". " + st.said, true); }
   }
+  // The stone he stands on, of the homage or of the studies, if any.
+  function stoneAt() { return (homage && Homage.standing(homage, P.x, P.y, P.z)) || (studies && Homage.standing(studies, P.x, P.y, P.z)) || null; }
   // Back where you woke after walking off, the view is his own eyes, as on a stone of the homage (camera, treeSpot),
   // and you are told once that the figure in the sky has closed again.
   function skyCheck() {
@@ -821,7 +827,9 @@
     // target with a reflex sight"): the legs walk the way the stick says, sideways too, and the camera is the aim.
     var aim = swingYaw(), way = Math.atan2(P.vx, -P.vz);
     if (sight.up) { P.face = turnTo(P.face, P.yaw, TURN * dt); P.want = null; }
-    else if (aim !== null) { P.face = turnTo(P.face, aim, TURN * dt); if (fwd || side) { P.want = null; } }
+    // (while a swing aims, at twice his turn: the strike is half a beat away, and at his turn a beat let him come
+    // round to any bearing by it)
+    else if (aim !== null) { P.face = turnTo(P.face, aim, TURN * BEAT / SWING * dt); if (fwd || side) { P.want = null; } }
     else if (fwd || side) { P.face = turnTo(P.face, way, TURN * dt); P.want = null; }
     else if (P.want !== null) { P.face = turnTo(P.face, P.want, TURN * dt); }
     follow(dt, c, aim !== null && (fwd || side) ? way : P.face);
@@ -923,7 +931,7 @@
     if (!(forcePlace || mode === "place")) {
       if (hit.b === B.BEDROCK) { return; }
       if (hangsOn(hit.x, hit.y, hit.z)) { say("A work hangs on this wall."); return; }
-      // He smashes it with his guitar: it breaks at the strike, a beat from now (the smash, above).
+      // He smashes it with his guitar: it breaks at the strike, half a beat from now (SWING; the smash, above).
       smash(hit, dir);
     } else if (hit.prev) {
       var p = hit.prev;
@@ -1015,7 +1023,7 @@
     // (from over his head he would stand in front of it); so too back where you woke, the one point the figure in
     // the sky closes from (treeSpot); stepping off, it rises out over his head again. With the sight up the sight's
     // camera stands there instead; lowered there, his eyes again.
-    var stone = !!(!Hd && !sight.up && !intro && !launched && ((homage && Homage.standing(homage, P.x, P.y, P.z)) || treeSpot()));
+    var stone = !!(!Hd && !sight.up && !intro && !launched && (stoneAt() || treeSpot()));
     if (stone !== onStone) {
       onStone = stone;
       if (!Hd) { blend = { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: stone || sight.up ? null : clampV(P.pitch, TP_DOWN, TP_UP) }; camD = 1e9; }
@@ -1282,7 +1290,7 @@
     var u = s.u, a, spin = 0, lift = 0, q, v = clampV((u - (s.u0 || 0)) / (1 - (s.u0 || 0)), 0, 1);
     if (s.ret) { q = smooth((u - 1.5) / 0.5); a = lerp2(s.from, [0, 0], q); spin = (s.spin || 0) * (1 - q); lift = (s.lift || 0) * (1 - q); }
     else {
-      var st = s.style, side = st === "spin" ? 0 : s.side * COIL;
+      var st = s.style, side = st === "sweep" ? s.side * COIL : 0;
       // the top: the sweep's a quarter turn to the side, the slam's straight up the line, the spin's the strike's own
       var top = s.top || (st === "spin" ? s.hit : [ARMS_UP, s.hit[1] + side]);
       // where the follow-through ends: the sweep's and the spin's up on the other side, the slam's driven down through
@@ -1298,8 +1306,9 @@
     }
     return u >= 2 ? null : { arms: a[0], twist: a[1], spin: spin, lift: lift };
   }
-  // A tap to break: a swing whose strike is a beat away; during a swing (before its follow-through ends) it is kept,
-  // the latest only, for a beat after this one's strike; a second tap on what is already to be struck does nothing.
+  // A tap to break: a swing whose strike is half a beat away (SWING); during a swing (before its follow-through ends)
+  // it is kept, the latest only, for half a beat after this one's strike; a second tap on what is already to be struck
+  // does nothing.
   function smash(hit, dir) {
     var n = hit.prev ? [hit.prev[0] - hit.x, hit.prev[1] - hit.y, hit.prev[2] - hit.z] : [0, 0, 0];
     if (!hit.prev) { var k = abs(dir[0]) > abs(dir[1]) ? (abs(dir[0]) > abs(dir[2]) ? 0 : 2) : (abs(dir[1]) > abs(dir[2]) ? 1 : 2); n[k] = dir[k] > 0 ? -1 : 1; }
@@ -1315,7 +1324,9 @@
   // (each swing's style at random, as asked; u0 where its clock starts)
   function begin(t) {
     t.struck = false; t.hit = [0, 0]; t.hit[0] = aimArms(t); t.hit[1] = aimTwist(t.hit[0]);
-    t.style = STYLES[floor(Math.random() * STYLES.length)]; t.u0 = t.u;
+    // (a kept one, which has only half a SWING to its strike, takes the sweep or the slam: a whole turn in that time
+    // would turn faster than the eye follows)
+    t.u0 = t.u; t.style = STYLES[floor(Math.random() * (t.u0 ? 2 : STYLES.length))];
     swing = t;
   }
   // The one kept: its downswing begins where this one's follow-through ends (the sweep's top on the other side; the
@@ -1441,16 +1452,17 @@
      for the frames a blow is too fast for) and the weapon trail of fighting games. None under reduced motion. Drawn
      with the pearls' trails, after everything opaque. */
   function swooshAt(M, now) {
-    if (!swing || !GUITAR_MID || stillMotion.matches) { swoosh.length = 0; return; }
-    var m = window.PearlBody.place(M.guitar, P.x, P.y, P.z, P.face);
-    swoosh.push({ f: apply(m, FAR_END), c: apply(m, GUITAR_MID), t: now });
+    if (!GUITAR_MID || stillMotion.matches) { swoosh.length = 0; return; }
+    // (after the swing it fades out over its half SWING; its speed is the guitar's against him, not his own walk,
+    // jump or fall: r, the far end in his frame)
+    if (swing) { var m = window.PearlBody.place(M.guitar, P.x, P.y, P.z, P.face); swoosh.push({ f: apply(m, FAR_END), c: apply(m, GUITAR_MID), r: apply(M.guitar, FAR_END), t: now }); }
     while (swoosh.length && swoosh[0].t < now - SWING * 500) { swoosh.shift(); }
   }
   function drawSwoosh(now) {
     if (swoosh.length < 2 || !trailProg) { return; }
     var pts = [];
     for (var i = 1; i < swoosh.length; i += 1) {
-      var a = swoosh[i - 1], b = swoosh[i], dt = max(1e-3, (b.t - a.t) / 1000), sp = hypot(b.f[0] - a.f[0], b.f[1] - a.f[1], b.f[2] - a.f[2]) / dt;
+      var a = swoosh[i - 1], b = swoosh[i], dt = max(1e-3, (b.t - a.t) / 1000), sp = hypot(b.r[0] - a.r[0], b.r[1] - a.r[1], b.r[2] - a.r[2]) / dt;
       var k = smooth((sp - WALK) / WALK) * (1 - (now - b.t) / (SWING * 500)) * 0.6;
       if (i === 1) { pts.push(a.f[0], a.f[1], a.f[2], 0, a.c[0], a.c[1], a.c[2], 0); }
       pts.push(b.f[0], b.f[1], b.f[2], max(0, k), b.c[0], b.c[1], b.c[2], 0);
@@ -1569,7 +1581,7 @@
     // stone's own blend is not made either, raised or lowered (camera() would make one as the stone comes and goes;
     // 22 Oct 2026)
     if (still) {
-      var eyes = !on && !!((homage && Homage.standing(homage, P.x, P.y, P.z)) || treeSpot());
+      var eyes = !on && !!(stoneAt() || treeSpot());
       if (!on && !eyes) { P.pitch = clampV(P.pitch, TP_DOWN, TP_UP); }
       onStone = eyes;
     }
@@ -1749,6 +1761,8 @@
     if (hit.b === B.NOTE) { return { kind: "note", name: "A note", sub: m + (hit.r <= REACH ? " · within reach" : ""), from: "A clue made from what the works really are", rel: "the fewest facts that leave only one work" }; }
     var hl = window.Homage && homage ? Homage.label(homage, hit.x, hit.y, hit.z) : "";
     if (hl) { return { kind: "block", name: hl, sub: m, from: "The homage where you woke", rel: "three figures set across the turn you make on waking" }; }
+    var sl = window.Homage && studies ? Homage.label(studies, hit.x, hit.y, hit.z) : "";
+    if (sl) { return { kind: "block", name: sl, sub: m, from: "The unit's studies, beside your tree", rel: "each the result of one study of the block every place is built of" }; }
     if (wr && abs(hit.x - wr.x) <= 2 && abs(hit.z - wr.z) <= 2 && abs(hit.y - wr.y) <= 4) { return { kind: "wreck", name: built ? "The rocket, at your capsule" : "Your capsule, wrecked", sub: m, from: "Where you came down", rel: "the place's crash, the one open ground its lots leave round it" }; }
     var pa = Pl.partAt(place, hit.x, hit.y, hit.z), name = pa ? partText(pa) : "", mat = MAT[hit.b] || BLOCKS[hit.b] || ownMat(hit.b) || "A block";
     return { kind: "block", name: name || mat, sub: (name ? mat + " · " : "") + m + (hit.r <= REACH ? " · within reach to break" : ""),
@@ -2520,11 +2534,11 @@
       gl.bindVertexArray(skyFig.vao);
       gl.drawArrays(gl.TRIANGLES, 0, skyFig.count);
     }
-    if (homage) {
+    if (homage || studies) {
       gl.useProgram(homProg);
       gl.uniformMatrix4fv(OU.uVP, false, vp);
       gl.uniform3fv(OU.uEye, eye); gl.uniform3fv(OU.uHaze, HAZE);
-      homage.figures.forEach(function (f) { gl.bindVertexArray(f.vao); gl.drawElements(gl.TRIANGLES, f.count, gl.UNSIGNED_INT, 0); });
+      (homage ? homage.figures : []).concat(studies ? studies.figures : []).forEach(function (f) { gl.bindVertexArray(f.vao); gl.drawElements(gl.TRIANGLES, f.count, gl.UNSIGNED_INT, 0); });
     }
     if (paintings.length) {
       gl.useProgram(artProg);
@@ -2728,7 +2742,7 @@
       var tag = $("tag"), hit = !intro && !launched && vp && !sightOn() ? pick(lookDir(camLast.yaw, camLast.pitch)) : null, tt = "";
       if (hit && hit.painting) { tt = (hit.painting.f.title || "A work") + (looked[hit.painting.f.id] ? " · looked behind" : " · click to read its label"); }
       else if (hit && hit.b === B.NOTE && hit.r <= REACH) { tt = "A note · click to read it"; }
-      else if (hit && hit.b !== undefined) { tt = (window.Homage && Homage.label(homage, hit.x, hit.y, hit.z)) || partText(Pl.partAt(place, hit.x, hit.y, hit.z)); }
+      else if (hit && hit.b !== undefined) { tt = (window.Homage && (Homage.label(homage, hit.x, hit.y, hit.z) || Homage.label(studies, hit.x, hit.y, hit.z))) || partText(Pl.partAt(place, hit.x, hit.y, hit.z)); }
       tag.hidden = !tt;
       if (tt && tag.textContent !== tt) { tag.textContent = tt; }
     }
@@ -3296,6 +3310,7 @@
       var was = saved();
       if (was && was.key === advKey() && was.escaped) { escaped = true; }
       homage = homageData && window.Homage && !escaped ? Homage.plan(place, homageData, { wake: underTree(), yaw: wakeYaw(), eye: EYE, B: B }) : null;
+      studies = studiesData && window.Homage && Homage.row ? Homage.row(place, studiesData, { wake: underTree(), eye: EYE, B: B, avoid: homage && homage.box }) : null;
       voxTex = voxTexture(w.data, w.SX, w.SY, w.SZ, voxTex);
       byPlane = {};
       paintings.forEach(function (p) {
@@ -3384,11 +3399,12 @@
     Promise.all([fetch("catalogue.json").then(function (r) { return r.json(); }),
                  Fm ? fetch("sections.json").then(function (r) { return r.json(); }).catch(function () { return null; }) : null,
                  fetch("pearl-body.json").then(function (r) { return r.json(); }).catch(function () { return null; }),
-                 fetch("homage.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (res) {
+                 fetch("homage.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+                 fetch("studies.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (res) {
       var d = res[0];
       // Mr Pearl, built of the unit from his form's file (without it the game plays, and he is not seen).
       try { pearlFrom(res[2]); } catch (err) { me3 = null; }
-      homageData = res[3];
+      homageData = res[3]; studiesData = res[4];
       cat = d;
       // The sections of the Architectural Authority's projects: the buildings round every place, and the new forms.
       forms = res[1] ? Fm.load(res[1]) : null;
@@ -3436,7 +3452,7 @@
              skip: function () { if (intro) { intro.t0 -= 9600; } },
              hold: function (q, steps) { held = true; quality = q; walk = steps || 8; resize(); }, walk: function () { return walk; }, quality: function () { return quality; },
              flush: function () { pump(1e9); }, figure: figure, fly: function (on) { flying = !!on; }, sky: function () { return skyFig; }, underTree: underTree,
-             homage: function () { return homage; }, wakeYaw: wakeYaw,
+             homage: function () { return homage; }, studies: function () { return studies; }, wakeYaw: wakeYaw,
              aim: function () { var h = eye && camLast ? pick(lookDir(camLast.yaw, camLast.pitch)) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.r.toFixed(2)) : "nothing"; },
              pov: function () { return pov; }, toggle: toggleHolo, head: function () { return Hd; }, cam: function () { return { eye: eye, last: camLast, camD: camD, blend: blend, drawMe: drawMe }; },
              swing: function () { return swing && { u: swing.u, side: swing.side, hit: swing.hit, struck: !!swing.struck, broke: !!swing.broke, ret: !!swing.ret, speed: swing.speed, style: swing.style, at: [swing.x, swing.y, swing.z], next: swingNext && [swingNext.x, swingNext.y, swingNext.z], pose: swingPose() }; },

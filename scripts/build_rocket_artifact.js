@@ -7,7 +7,7 @@
    An Artifact's frame loads nothing from other sites, so everything the game needs is bundled:
    the scripts and the style inlined into the page (index.html); sections.json; Mr Pearl's form
    (pearl-body.json, the data his body is built of); homage.json (the three figures where you
-   wake); a catalogue of
+   wake); studies.json (the unit's studies beside the tree); a catalogue of
    the modelled buildings and a pool of saved works with what the clues need of their histories;
    each building's model and ground (data/); and the works' pictures, fetched once from Artsy's
    image server (art/). Its escapes are the new forms and the modelled buildings: the museums
@@ -96,6 +96,8 @@ async function main() {
   fs.copyFileSync(path.join(ROCKET, "pearl-body.json"), path.join(out, "pearl-body.json"));
   // The three figures of the homage where you wake (homage.js).
   fs.copyFileSync(path.join(ROCKET, "homage.json"), path.join(out, "homage.json"));
+  // The unit's studies, in their row beside the tree (homage.js row).
+  fs.copyFileSync(path.join(ROCKET, "studies.json"), path.join(out, "studies.json"));
 
   // The page: the game's own, with its style and scripts inlined, set to play straight in.
   let html = read(path.join(ROCKET, "index.html"));
