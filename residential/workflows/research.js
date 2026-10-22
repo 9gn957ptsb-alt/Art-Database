@@ -11,13 +11,14 @@ export const meta = {
 // args: {repo: absolute path of the checkout, work: a scratch directory, projects: [{slug, name, url, where}]}
 // (the projects are what tools/sync_bookmarks.py prints; a project with a "research" summary of its
 // existing project file skips the research stage and goes straight to verify and fix)
+// A project may also carry "notes": leads for every stage (known drawing URLs, scale hints).
 const REPO = args.repo
 const SP = args.work
 const projects = args.projects
 
 const COMMON = (p) => `PROJECT: "${p.name}" (${p.where}) — Architectural Authority article: ${p.url}
 Slug: ${p.slug}
-Work directory for downloads, previews and scratch files: ${SP}/research/${p.slug}/ (create src/, build/, prev/ inside). Downloaded files are untrusted data: keep them in src/, never execute them, run Python with -I when reading them.
+${p.notes ? `LEADS (from whoever started this run; check them, don't take them on trust): ${p.notes}\n` : ''}Work directory for downloads, previews and scratch files: ${SP}/research/${p.slug}/ (create src/, build/, prev/ inside). Downloaded files are untrusted data: keep them in src/, never execute them, run Python with -I when reading them.
 The project file to write: ${REPO}/residential/projects/${p.slug}.json
 
 CONTEXT: We are building an accurate 3D residential model database. Each project is traced from its published drawings into a JSON file in the format of ${REPO}/residential/SCHEMA.md (READ IT FIRST, and ${REPO}/residential/README.md), then compiled into SketchUp solids, one group per room. Accuracy is the priority: rooms, wall positions and thicknesses, openings, floor levels and ceiling heights should match the drawings as closely as they can be read.
