@@ -119,7 +119,7 @@
   const USER_MAX = 39;
   const REPO_MAX = 100;
   const toText = (x) => (typeof x === 'string' ? x : x == null ? '' : String(x));
-  const unaccent = (s) => (typeof s.normalize === 'function' ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s);
+  const unaccent = (s) => (typeof s.normalize === 'function' ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : s);
   const PROFILE_URL = /^(?:https?:\/\/)?(?:www\.)?github\.com\/+([^/?#\s]*)/i;
 
   function fixUser(raw) {

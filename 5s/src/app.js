@@ -1611,14 +1611,57 @@
       ui.openerSig = sigOf(ui.opener);
     }
     $('#sheet-title').textContent = title;
-    $('#sheet-body').innerHTML = render();
+    $('#sheet-body').innerHTML = safeRender(render, title);
     dlg.classList.toggle('wide', !!(opts && opts.wide));
-    if (!wasOpen) { try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); } }
+    if (!wasOpen) { try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); dlg.classList.add('fallback'); problem('The panel opened another way (' + errText(e) + ').'); } }
     $('#sheet-body').scrollTop = 0;
     const af = $('[data-autofocus]', dlg);
-    (af || $('.sheet-head .iconbtn', dlg)).focus();
-    hydrate(dlg);
+    try { (af || $('.sheet-head .iconbtn', dlg)).focus(); } catch (e) { /* focus is a nicety */ }
+    try { hydrate(dlg); } catch (e) { problem(errText(e)); }
+    if (!wasOpen) requestAnimationFrame(keepSheetOnScreen);
   }
+
+  // A panel never opens empty or out of sight: what failed is said in it, and one that lands off the
+  // screen (some phone browsers place a modal panel differently) is moved back into view.
+  function safeRender(render, title) {
+    try { return render(); } catch (e) {
+      problem(errText(e));
+      return '<p class="err" role="alert">' + esc((title || 'This') + ' didn’t open properly. Close it and try again.') + '</p>' +
+        '<p class="small">What went wrong: ' + esc(errText(e)) + '</p>';
+    }
+  }
+  function keepSheetOnScreen() {
+    if (!dlg.open) return;
+    const r = dlg.getBoundingClientRect();
+    const vh = window.innerHeight || doc.documentElement.clientHeight;
+    if (r.height < 40 || r.bottom <= 8 || r.top >= vh - 8) {
+      dlg.classList.add('fallback');
+      const r2 = dlg.getBoundingClientRect();
+      if (r2.height < 40 || r2.bottom <= 8 || r2.top >= vh - 8) problem('The panel opened out of sight (' + [r.top, r.bottom, r.height, vh].map(Math.round).join(', ') + ').');
+    }
+  }
+  function errText(e) { return String((e && (e.message || e.name)) || e || 'unknown').slice(0, 200); }
+  // A small, closable line at the top of the page, so a screenshot shows what broke on a device we can't see.
+  const problemsSeen = new Set();
+  function problem(text) {
+    try {
+      const t = String(text || '').slice(0, 240);
+      if (!t || problemsSeen.has(t)) return;
+      problemsSeen.add(t);
+      let bar = doc.getElementById('problem');
+      if (!bar) {
+        bar = doc.createElement('div');
+        bar.id = 'problem'; bar.className = 'problem'; bar.setAttribute('role', 'alert');
+        bar.innerHTML = '<p></p><button type="button" class="linkbtn" aria-label="Close this note">Close</button>';
+        bar.querySelector('button').addEventListener('click', () => { bar.hidden = true; });
+        doc.body.appendChild(bar);
+      }
+      bar.querySelector('p').textContent = '5s hit a problem: ' + t + ' A screenshot of this helps fix it.';
+      bar.hidden = false;
+    } catch (e) { /* the note itself must never break the page */ }
+  }
+  window.addEventListener('error', (e) => { if (e && (e.message || e.error)) problem(errText(e.error || e)); });
+  window.addEventListener('unhandledrejection', (e) => { if (e && e.reason) problem(errText(e.reason)); });
 
   function refreshSheet() {
     if (!dlg.open || !ui.sheetRender) return;
@@ -1626,8 +1669,8 @@
     const id = ae && dlg.contains(ae) ? ae.id || null : null;
     const act = ae && dlg.contains(ae) ? ae.getAttribute('data-act') : null;
     $('#sheet-title').textContent = ui.sheetTitle;
-    $('#sheet-body').innerHTML = ui.sheetRender();
-    hydrate(dlg);
+    $('#sheet-body').innerHTML = safeRender(ui.sheetRender, ui.sheetTitle);
+    try { hydrate(dlg); } catch (e) { problem(errText(e)); }
     let back = id ? doc.getElementById(id) : null;
     if (!back && act) back = $('[data-act="' + act + '"]', dlg);
     if (!back) back = $('[data-autofocus]', dlg) || $('.sheet-head .iconbtn', dlg);

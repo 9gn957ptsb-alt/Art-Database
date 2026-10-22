@@ -710,6 +710,19 @@ dialog.sheet {
 }
 dialog.sheet[open] { display: flex; }
 dialog.sheet::backdrop { background: var(--scrim); }
+/* When a phone browser places the modal panel out of sight, it is pinned to the bottom of the screen. */
+dialog.sheet.fallback {
+  position: fixed; inset: auto 0 0 0; z-index: 100; margin: 0 auto;
+  height: auto; max-height: 88vh; max-height: 88dvh; transform: none;
+}
+.problem {
+  position: fixed; z-index: 200; left: 8px; right: 8px; top: max(8px, env(safe-area-inset-top, 0px));
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 14px;
+  background: var(--raised); color: var(--ink); box-shadow: 0 6px 24px -8px var(--shadow), inset 0 0 0 1.5px var(--keep-ink);
+  font-size: 14px;
+}
+.problem p { margin: 0; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.problem[hidden] { display: none; }
 @media (min-width: 720px) {
   dialog.sheet { margin: auto; border-radius: 24px; max-height: min(88%, 800px); }
   dialog.sheet.wide { max-width: 760px; }
