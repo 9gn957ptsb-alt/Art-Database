@@ -98,7 +98,7 @@
   }
 
   /* --- per-style choreography -------------------------------------------------------------------- */
-  // how far each part flies (mark units at intensity 1, before the intensity scale) and how far it turns
+  // how far each part flies (mark units, scaled by 0.3 + 0.75 x intensity) and how far it turns (radians)
   const BURST = {
     bar: { v: [70, -180], r: -0.42, out: 0.0, back: 0.07 },
     stem: { v: [-170, -60], r: 0.55, out: 0.03, back: 0.05 },
@@ -143,7 +143,7 @@
 
   function burst(ctx, t, p, env, I, ease) {
     const pal = env.palette, D = 0.3 + 0.75 * I;
-    pullBack(ctx, 0.13 * I * apartness(t), () => {
+    pullBack(ctx, 0.18 * I * apartness(t), () => {
       for (const part of PARTS) {
         if (part.id === 'ribbon' && !p.ribbon) continue;
         const b = BURST[part.id];
@@ -162,7 +162,8 @@
   function ghost(ctx, pal, p, alpha) {
     if (alpha <= 0.01) return;
     const line = M.mix(pal.bg, pal.ink, 0.32);
-    M.layer(ctx, { alpha }, (g) => {
+    // composite is given so Marks.layer always uses its scratch canvas (the cut-out must never reach the page)
+    M.layer(ctx, { alpha: Math.min(alpha, 0.99), composite: 'source-over' }, (g) => {
       for (const part of PARTS) if (part.id !== 'ribbon') M.stroke(g, part.pts, { width: M.widths[part.key] * p.weight + 6, colours: line });
       g.save();
       g.globalCompositeOperation = 'destination-out';
@@ -224,7 +225,7 @@
       const slot = used.indexOf(part.id);
       const d = 0.03 * slot;                                     // out in hue order, home in reverse
       const go = ease(M.smoothstep(0, 1, win(t, 0.03 + d, 0.4)));
-      const home = ease(M.smoothstep(0, 1, win(t, 0.55 + (0.03 * (n - 1) - d), 0.4)));
+      const home = ease(M.smoothstep(0, 1, win(t, 0.55 + (0.03 * (n - 1) - d), 0.45 - 0.03 * (n - 1))));   // all home by t = 1
       const m = go * (1 - home);                                 // 0 = the part at home, 1 = the chip in its slot
       const target = [x0 + gap * slot, rowY];
       // the route: first out, away from the centre (the mark breaking apart), then a swing into the row
@@ -276,13 +277,13 @@
   const ORBIT = { ribbon: 0.0, bowl: 0.05, stem: 0.09, bar: 0.13, s: 0.17 };
   function orbit(ctx, t, p, env, I, ease) {
     const pal = env.palette;
-    pullBack(ctx, 0.12 * I * apartness(t), () => {
+    pullBack(ctx, 0.16 * I * apartness(t), () => {
       for (const part of PARTS) {
         if (part.id === 'ribbon' && !p.ribbon) continue;
         const d = ORBIT[part.id];
         const u = win(t, 0.03 + d * 0.55, 0.86);
         const phi = TAU * ease(u);                                   // always one whole turn
-        const r = 1 + (0.2 + 0.5 * I) * bump(u);
+        const r = 1 + (0.2 + 0.36 * I) * bump(u);
         const dx = part.c[0] - CENTRE[0], dy = part.c[1] - CENTRE[1];
         const cs = Math.cos(phi), sn = Math.sin(phi);
         const nx = CENTRE[0] + (dx * cs - dy * sn) * r, ny = CENTRE[1] + (dx * sn + dy * cs) * r;

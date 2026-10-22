@@ -19,9 +19,9 @@ build contract) before changing anything.
 | Path | What it is |
 | --- | --- |
 | `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp` |
-| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined), the scripts (the four, plus `hub.js` and `hubpage.js`), and `dist/dev.html` |
+| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined), the six scripts in the order the page loads them (`hub.js` and `hubpage.js` before `app.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
-| `src/app.css`, `src/app.js` | styles and UI |
+| `src/app.css`, `src/app.js` | styles and UI (including Your hub: Seed's last section and the Hub sheet, through GitHub's own pages) |
 | `src/engine.js` | pure logic: judgments, the taste model, turns, the five, profile, Path, seed (no DOM, clock or randomness) |
 | `src/bring.js` | turns a person's own images into 5s things in the browser and keeps the images private |
 | `src/ground.js` | draws Seed's isometric island on a canvas |
@@ -70,14 +70,15 @@ Environment variables:
 | UI smoke | `SITE_DIR` (default `5s/dist`) or `BASE_URL` (a served `dev.html`); `UI_PORT` (default 8731); `SHOTS`; `UI_SIZES` (e.g. `390-light`) |
 
 The UI smoke test runs at 390×844 and 1280×800, in light and dark. It covers a fake `db`, `user`,
-`sample` and `downloads`, including a store that answers slowly and a write that is rejected.
+`sample` and `downloads`, including a store that answers slowly and a write that is rejected, and
+Your hub's four steps in links mode (with GitHub's pages answered by a stand-in, so no network).
 
 ## Publish
 
 Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing and is never
 published. The supporting files go with it at the same relative paths:
 
-- `engine.js`, `bring.js`, `ground.js`, `app.js` (and `hub.js`, `hubpage.js` once the page loads them)
+- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `app.js`
 - `deck.json`, `logo.webp`, `img/atlas.webp`
 - the 320 card images `img/{i,o,s,u}NNN.webp` (Colour cards have no image)
 
@@ -86,16 +87,17 @@ Declare these capabilities: `{db: {}, user: {}, sample: {}, downloads: true}`.
 - **db and user:** the state document is `data/users/<id>/state`, and each brought-in image is its
   own document `data/users/<id>/own-<itemId>`. Both are private to each viewer.
 - **sample:** Ask Claude to write your philosophy.
-- **downloads:** Save your seed.
+- **downloads:** Save your seed, and Save my hub file (Your hub's `index.html`). Without it, the hub
+  file's text is shown to copy, with GitHub's own editor opened to paste it in.
 
 The page works without any of them: state is kept in the browser and brought-in images in
 IndexedDB, and it says so.
 
-**Two publishes, because of the file count.** The page plus 327 supporting files is 328 files (about
+**Two publishes, because of the file count.** The page plus 329 supporting files is 330 files (about
 13 MB). One publish sends at most 255 files; a version holds up to 511.
 
-1. Publish the page with the scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
-   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 248 files.
+1. Publish the page with the six scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
+   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 250 files.
 2. Publish again to the same URL with the 80 Surface crops (`img/u*.webp`). Files left out of a
    publish are kept.
 

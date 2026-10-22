@@ -2,7 +2,7 @@
  *
  * Reads the deck, keeps one State (engine.js) and draws the five views around it:
  * Sort -> Split -> Set -> See -> Seed, plus the sheets (Path, About, Bring in your own, notes,
- * details, the Set chooser). The engine is pure; everything with a clock, the DOM, storage or a
+ * details, the Set chooser, Your hub). The engine is pure; everything with a clock, the DOM, storage or a
  * capability lives here. Plain script, no modules, no libraries.
  */
 (function () {
@@ -2041,6 +2041,7 @@
     if (readOnly()) return hubExampleHTML();
     const h = hubOf(S);
     const steps = hubSteps(S);
+    if (steps.length !== 4) return ''; // an engine without the hub's milestones: no card
     const nextI = steps.findIndex((s) => s.next);
     const made = !!(h.madeAt && h.user && h.name);
     const changed = !!h.savedAt && h.savedCode !== F.seedCode(S);
@@ -2109,7 +2110,7 @@
   // -- the Hub sheet
 
   function openHub(step, opener) {
-    if (!HUB || !deck || readOnly()) return;
+    if (!HUB || !deck || readOnly() || hubSteps(S).length !== 4) return;
     const h = hubOf(S);
     const hs = ui.hub;
     hs.step = Math.max(0, Math.min(hubReach(S), step | 0));

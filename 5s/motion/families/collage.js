@@ -223,7 +223,7 @@
     };
   }
 
-  function styleSlide(s, rank, n, t, I, R, ease, view) {
+  function styleSlide(s, rank, n, t, I, R, ease) {
     const at = 0.02 + rank * (0.42 / n), len = 0.4;
     const { u, e } = landing(t, at, len, ease);
     const fin = settleOf(s, R);
@@ -301,7 +301,7 @@
       const states = ORDER.map((idx, rank) => {
         const s = list[idx];
         let xf;
-        if (p.style === 'slide') xf = styleSlide(s, rank, n, t, I, R, ease, env.view);
+        if (p.style === 'slide') xf = styleSlide(s, rank, n, t, I, R, ease);
         else if (p.style === 'paste') xf = stylePaste(s, rank, n, t, I, R, ease);
         else if (p.style === 'gather') xf = styleGather(s, rank, n, t, I, R, ease);
         else xf = styleDrop(s, rank, n, t, I, R, ease);

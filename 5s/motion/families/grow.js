@@ -147,7 +147,7 @@
     items.forEach((it, k) => {
       if (!(it.to > it.from) || it.alpha <= 0) return;
       const px = it.depth * unit;
-      const n = px < 0.6 ? 0 : Math.min(90, Math.ceil(px / 1.2));
+      const n = px < 0.6 ? 0 : Math.min(64, Math.ceil(px / 1.6));
       for (let i = n; i >= 1; i--) ops.push({ k, z: (it.depth * i) / n, f: i / n, roof: false });
       ops.push({ k, z: mode === 'plan' ? it.depth : 0, f: 0, roof: true });
     });

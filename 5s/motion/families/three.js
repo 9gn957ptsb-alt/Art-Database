@@ -12,8 +12,9 @@
  *   fork     the mark is written by a pen, and at each turn of the line (the 5's corner and foot, the
  *            s's spine) the line forks three ways; the pen goes on along the true way and the other two
  *            branches, drawn faint, fade behind it
- *   fan      the mark fans out into three, like three cards spread in a hand, and the fan closes onto the
- *            chosen one, which turns upright as the other two fold into it
+ *   fan      the mark becomes a card (the logo's own rounded square) and fans out into a hand of three; each
+ *            is looked at in turn, the chosen card rises to the top as the other two fold behind it, and it
+ *            is laid down at the centre, letting go of its mark
  *
  * `choice` picks which of the three is chosen in strands and fan: left, middle, right, `direction`
  * (env.direction: the way a tab move went) or `seeded` (the variant's seed decides, so Generate varies).
@@ -21,7 +22,6 @@
 (function () {
   'use strict';
   const M = Marks;
-  const TAU = Math.PI * 2;
   const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
   const win = (t, a, len) => clamp01((t - a) / len);
   const bump = (x) => Math.sin(Math.PI * clamp01(x));
@@ -153,7 +153,6 @@
     { line: 's', u: 0.38, turns: [-0.9, 0.85] }            // in the s's spine
   ];
   const LINES = { five: FIVE, s: PTS.s };
-  const LINE_LEN = { five: FIVE_LEN, s: M.length('s') };
 
   function forkBranch(line, u, turn, lenFrac) {
     const pts = LINES[line], n = pts.length;

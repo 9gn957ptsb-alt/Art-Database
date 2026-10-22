@@ -108,7 +108,7 @@
     return out;
   }
 
-  // draw a 5-like glyph (a bar stretch [0, KB] and a body stretch [KB, N)) with its widths and colours
+  // draw a 5-like glyph (the bar stretch [0, KB] and the body stretch [KB + 1, N)) with its widths and colours
   function glyph5(ctx, pts, wBar, wBody, colBar, colBody) {
     M.stroke(ctx, pts.slice(KB + 1), { width: wBody, colours: colBody });
     M.stroke(ctx, pts.slice(0, KB + 1), { width: wBar, colours: colBar });

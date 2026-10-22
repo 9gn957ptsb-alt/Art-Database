@@ -545,7 +545,7 @@
     s.setTransform(m.a * r, m.b * r, m.c * r, m.d * r, m.e * r, m.f * r);
     depth++;
     try { s.save(); draw(s); s.restore(); } finally { depth--; }
-    let src = sc;
+    let src = sc, sw = lw, sh = lh;
     if (blur > 0) {
       if (!blurCanvas) blurCanvas = makeCanvas(lw, lh);
       if (blurCanvas) {
@@ -553,9 +553,18 @@
         const b = blurCanvas.getContext('2d');
         b.setTransform(1, 0, 0, 1, 0, 0); b.globalAlpha = 1; b.globalCompositeOperation = 'source-over';
         b.clearRect(0, 0, lw, lh);
-        b.filter = 'blur(' + (blur * r).toFixed(2) + 'px)';
-        b.drawImage(sc, 0, 0, lw, lh, 0, 0, lw, lh);
-        b.filter = 'none';
+        if (canFilter(b)) {
+          b.filter = 'blur(' + (blur * r).toFixed(2) + 'px)';
+          b.drawImage(sc, 0, 0, lw, lh, 0, 0, lw, lh);
+          b.filter = 'none';
+        } else {
+          // no canvas filters (Safari before 18): blur by resampling, down to about one pixel per blur radius
+          // here, and the smooth scale-up below spreads it back out
+          const k = clamp(blur * r / 1.5, 1, 32);
+          sw = Math.max(1, Math.round(lw / k)); sh = Math.max(1, Math.round(lh / k));
+          b.imageSmoothingEnabled = true; b.imageSmoothingQuality = 'high';
+          b.drawImage(sc, 0, 0, lw, lh, 0, 0, sw, sh);
+        }
         src = blurCanvas;
       }
     }
@@ -564,8 +573,17 @@
     ctx.globalAlpha = ctx.globalAlpha * alpha;
     if (o.composite) ctx.globalCompositeOperation = o.composite;
     if (o.filter) ctx.filter = o.filter;
-    ctx.drawImage(src, 0, 0, lw, lh, 0, 0, cw, ch);
+    if (sw !== lw) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; }
+    ctx.drawImage(src, 0, 0, sw, sh, 0, 0, cw, ch);
     ctx.restore();
+  }
+  // whether this browser's 2D canvas applies ctx.filter (Chromium and Firefox do; Safari only from 18)
+  let filterOk = null;
+  function canFilter(c) {
+    if (filterOk === null) {
+      try { c.filter = 'blur(1px)'; filterOk = c.filter === 'blur(1px)'; c.filter = 'none'; } catch (e) { filterOk = false; }
+    }
+    return filterOk;
   }
 
   /* ------------------------------------------------------------------------------------------

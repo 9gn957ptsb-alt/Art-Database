@@ -226,11 +226,11 @@ input[type="range"] { accent-color: var(--iris); min-height: 24px; margin: 0; }
 .moment-pick { display: none; }
 .view-stage { flex: 1; display: flex; flex-direction: column; gap: 14px; padding: 18px 24px 20px; min-height: 0; }
 .stage-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px 20px; flex-wrap: wrap; }
-.stage-title { min-width: 0; }
+.stage-title { flex: 1 1 300px; min-width: 0; }   /* the note wraps inside the title, so the variant line keeps its place */
 .h1 { font: 500 22px/1.2 var(--font-display); letter-spacing: -0.015em; }
 .moment-meta { margin-top: 4px; font-size: 14px; color: var(--ink-2); }
 .moment-meta .len { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
-.variant-line { font: 400 12px/1.5 var(--font-mono); color: var(--ink-2); text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.variant-line { flex: 0 1 auto; max-width: 48%; font: 400 12px/1.5 var(--font-mono); color: var(--ink-2); text-align: right; min-width: 0; overflow-wrap: anywhere; }
 .variant-line b { font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--ink); }
 
 .stage {
@@ -333,6 +333,7 @@ input[type="range"] { accent-color: var(--iris); min-height: 24px; margin: 0; }
 .curve { width: 84px; height: 52px; display: block; border-radius: 8px; background: var(--paper-2); }
 .seed-row { grid-column: 1 / -1; display: flex; gap: 6px; }
 .seed-row .input { flex: 1; font-family: var(--font-mono); font-size: 13px; }
+.load-errors { font: 400 11px/1.6 var(--font-mono); color: var(--keep-ink); border-top: 1px solid var(--line); padding-top: 12px; }
 
 /* ------------------------------------------------------------------ board */
 .view-board { min-height: 0; overflow-y: auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); padding-block: 18px 32px; display: grid; gap: 16px; align-content: start; }
@@ -390,7 +391,8 @@ input[type="range"] { accent-color: var(--iris); min-height: 24px; margin: 0; }
   .stage { flex: none; aspect-ratio: 1 / 1; min-height: 0; width: 100%; }
   .lab[data-app="true"] .stage { aspect-ratio: 4 / 5; }
   .stage-head { align-items: flex-start; }
-  .variant-line { text-align: left; }
+  .stage-title { flex-basis: 100%; }
+  .variant-line { text-align: left; max-width: none; }
   .transport-opts { gap: 8px 10px; }
   .keys { display: none; }
   .pick-row { flex-wrap: wrap; }

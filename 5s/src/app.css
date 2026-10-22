@@ -663,6 +663,7 @@ button.hubnav-b:hover { background: var(--paper-2); }
 .hubform > label { font: 600 16px/1.3 var(--font-body); }
 .hubform input, .hub-other input { font-family: var(--font-mono); font-size: 15px; }
 .hubmsg { min-height: 24px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.hubmsg:empty { display: none; }
 .hubmsg.good { color: var(--ink); }
 .hubmsg.bad { color: var(--keep-ink); font-weight: 600; }
 .hubmsg .btn { font-weight: 600; }

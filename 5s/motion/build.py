@@ -73,8 +73,10 @@ def syntax_ok(path):
     if not node:
         return True, ''
     r = subprocess.run([node, '--check', path], capture_output=True, text=True)
-    lines = [ln for ln in (r.stderr or '').strip().splitlines() if ln.strip()]
-    return r.returncode == 0, ' | '.join(lines[:1] + lines[-1:]) if lines else ''
+    lines = [ln.strip() for ln in (r.stderr or '').splitlines() if ln.strip()]
+    err = next((ln for ln in lines if 'Error' in ln), lines[0] if lines else '')
+    where = lines[0].rsplit('/', 1)[-1] if lines else ''
+    return r.returncode == 0, (where + ': ' + err) if err else ''
 
 
 def build_families():

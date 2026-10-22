@@ -1663,6 +1663,12 @@
     renderStarCount();
     refreshNeeds();
     setSaveState();
+    const failed = Array.isArray(window.MotionLoadErrors) ? window.MotionLoadErrors : [];
+    if (failed.length) {
+      const el = $('#load-errors');
+      el.textContent = 'Not loaded: ' + failed.map((f) => f.file + ' (' + f.error + ')').join('; ');
+      el.hidden = false;
+    }
     route();
     doc.addEventListener('click', onClick);
     doc.addEventListener('input', onInput);
