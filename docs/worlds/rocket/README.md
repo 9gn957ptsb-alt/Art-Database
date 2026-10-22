@@ -169,9 +169,10 @@ metre, one block, over the top of his hat. It comes round behind him as he walks
 distance from his head, but not while you are turning the view or walking him back toward it, so you can walk him
 round to see his face. A block between it and his head pulls it in along the line from his head at once, so his
 head stays where it is on the screen and the view never enters a block; it lets out again no faster than he
-walks. You look up only as far as keeps the camera over his hat. The crosshair, a tap, breaking and placing go
-from the camera through the screen, but begin where the ray passes him and are measured from him, so his reach is
-what it was: a work within nine blocks of him, a block or a note within six. As you come to under your tree it is
+walks. You look up only as far as keeps the camera over his hat (with the sight up, as far as from his eyes). The
+crosshair, a tap, breaking and placing go from the camera through the screen, but begin where the ray passes him
+and are measured from him, so his reach is what it was: a work within nine blocks of him, a block or a note within
+six. As you come to under your tree it is
 still through his eyes, as the artist asked of the opening; then, as he sits up, the view rises out over his head
 to the nearest side where nothing stands between it and him. On a stone of the homage the view is his own
 eyes, as the stone is the one point its figure closes from (from over his head he would stand in front of it);
@@ -195,6 +196,46 @@ strike. A tap during a swing is kept, the latest, and struck a beat after, swung
 beat. Walking, his legs walk on under the swing; in water it goes at his speed there over his walk. If the block is
 gone or changed by the strike, or he has gone out of reach, nothing breaks; going out as the hologram lets the swing
 go.
+
+**The sight, and the pearls he throws** (artist, 20 Oct 2026: "I want you to be able to aim at a target with a
+reflex sight that I can control with my right finger while my left finger allows me to move around the area", and
+"And when I click with the reflex sight up, I am able to throw something"). A reflex sight is a window of partly
+reflecting curved glass with a lit mark at its focus, seen at infinity, so the mark lies on the target wherever the
+eye is behind the window. His head is the one thing in the game that can be that glass, the only perfect sphere, its
+film partly reflecting: so the head is the glass, and the figure is the mark. Sight (over Holo; `R`; the right mouse
+button, held, or clicked to leave it up) raises it in the time a switch of view takes: the camera comes down from
+over his hat to φ behind his head's centre on the line of the look (the hologram's own distance, the height of the
+head's top), so his head is the middle of the view and its outline the window, 8.7° across its half (93 px on a
+phone held upright, 79 on a computer), clear in the middle and bright at its edge as the film is seen aslant; the
+head itself clears into the glass over the raise's second half. He doffs his hat into his left glove (its brim would
+cover the glass), lifted clear of his head, out to his left and down, so it never passes through his head or his
+body, raises his right arm, the upper arm level out to his right and the forearm as upright as its bend lets it, a
+pearl in the glove, and faces the mark; the stick walks him as before, sideways too, and the camera no longer swings
+round behind him. The mark is the figure, the block's own seen down its diagonal, white and grey as light over a
+keyline of black, its aim point the crux, the figure's undrawn apex, at the middle of the screen; from the crux hang
+its holding circles, 8, 13 and 21, and their feet are the holdover marks, each labelled with the range at which the
+throw comes down through it, worked out from the arc as you aim. The figure closes into the drawing when the aim is
+still and opens into its bars as it turns; still, a ring on the ground says where the pearl comes down; under the
+glass, in words, what the mark is on, how far, what it came from and the relation that put it there (a work says how
+big it hangs against its real size). The right thumb's drag aims, a pixel of the finger moving the mark a pixel over
+the far world (a reflex sight magnifies nothing); a point held still for a beat comes to the mark (the way that does
+not drag); the arrow keys turn it its window's breadth a beat. A tap or a click anywhere, `T` or `Enter`, throws.
+
+**What he throws** is a pearl built of the unit, three of his cells round (136 of them, in six bands of his
+jacket's tints), never the perfect sphere; he carries five, one for each finger of his throwing glove ("Pearls 4 of
+5" under the alarms). It leaves the glove at 29.2 m/s, the speed whose farthest throw on level ground is F(9) = 34 m
+(35 m from his hand's height, aimed 39.5° up), on the arc that comes level with the sight's line at his reach, six
+metres out, heading for what the mark is on, so that it comes down on the mark's upright (his glove is 0.39 m right of
+the line); it takes his walk with it, spins backward a turn a beat and trails the last beat of its path. One a beat:
+his arm flings forward and comes back up, the next pearl in the fingers from the half beat, and a tap before the arm
+is up is kept, the latest. It bounces with half its speed, comes to rest, sinks in water as he does, and where it
+first touches says what it struck: a work's title and who made it (never a look behind it, never a wrong look), a
+piece of the rocket (it rings: among the pieces still lying, the arrow points to that one first), a block's section
+and project, the water. It takes, breaks and looks behind nothing. It comes back when he walks into it, or when it
+is tapped with the sight lowered within his reach; he comes to again with all five. The tap with the sight down
+smashes, as before; with it up, it throws; raising it lets a swing go. As the hologram there is no sight and no
+throw. Under reduced motion the sight comes up at once, the figure stays closed and the ring is always shown, and the
+arm does not fling.
 
 **One button**, Holo (or `H`), between the two: it sends the head out as the hologram, and pressed again the body
 follows it and the view is third person again. It is pressed while the head is out, and the ring round it is the
@@ -225,8 +266,8 @@ passes through a roof; the head settles onto it in the time a switch of view tak
 the head, without a visible move), and the view is third person. A head still lifting has not moved, and settles
 back. Put out by the guards while it is on its way, its way ends with the head back on him, and you come to
 under your tree. As the hologram you can look and read, a work's label or a
-note (the paper stays where it lies), but not take, build, launch, or break and place blocks: "you cannot complete
-the missions like going to space by merely going into holographic mode".
+note (the paper stays where it lies), but not take, build, launch, break and place blocks, or raise the sight and
+throw: "you cannot complete the missions like going to space by merely going into holographic mode".
 
 ## The homage: three figures where you wake
 
@@ -371,21 +412,22 @@ The arrow at the top points to the nearest note still to read, then to a piece s
 then to the wreck once all four are found; from outside, to the way in. Break a block by tapping
 it; switch to Place, or pick a block from the bar, to set one (a wall a work hangs on stays).
 
-On a phone: the stick on the left, drag to look, tap, the jump button (single steps are climbed by
-themselves), and over it the Holo button. The stick is a touch on water, not a tool (artist, 21 Oct 2026: "Revolutionize
-the way the joist stick shows up on the screen when using it, it's too distracting, have it be a lot more subtle
-and feel like a natural force of nature rather than an analog tool"): where the left thumb lands the surface
-answers once with a ring never quite round (the head is the one perfect sphere), the push draws it out the way he
-goes, its front running ahead of the thumb as far as the push is strong, and let go it smooths over in two beats of
-the theme song. It is a hairline of warm light with a blue-violet shade beside it, no disc and no knob, drawn into
-the canvas the game redraws each frame anyway; under reduced motion it stands at one size and only fades. The
-buttons of play (Holo, Break or Place, the blocks, Notes, Build, Launch) take a touch as it lands, as the jump
-button does, so one thumb can press them while the other is on the stick (artist, 21 Oct 2026: "I want to be able
-to switch between holographic view and third person view while I'm moving Mr Pearl"): a phone makes no click of a
-tap while another finger is down. On a computer: W A S D, drag to look, click; space jumps, 1–5
-picks a block, E switches break and place, N opens the notes, F looks behind the work whose label is open, H
-sends the head out as the hologram and, again, brings the body after it (as the button does); as the hologram,
-space rises and Shift or C sinks.
+On a phone: the stick on the left, drag to look, tap, the jump button (single steps are climbed by themselves), over
+it the Holo button, and over that Sight. The stick is a touch on water, not a tool (artist, 21 Oct 2026:
+"Revolutionize the way the joist stick shows up on the screen when using it, it's too distracting, have it be a lot
+more subtle and feel like a natural force of nature rather than an analog tool"): where the left thumb lands the
+surface answers once with a ring never quite round (the head is the one perfect sphere), the push draws it out the
+way he goes, its front running ahead of the thumb as far as the push is strong, and let go it smooths over in two
+beats of the theme song. It is a hairline of warm light with a blue-violet shade beside it, no disc and no knob,
+drawn into the canvas the game redraws each frame anyway; under reduced motion it stands at one size and only fades.
+The buttons of play (Sight, Holo, Break or Place, the blocks, Notes, Build, Launch) take a touch as it lands, as the
+jump button does, so one thumb can press them while the other is on the stick (artist, 21 Oct 2026: "I want to be
+able to switch between holographic view and third person view while I'm moving Mr Pearl"): a phone makes no click of
+a tap while another finger is down. On a computer: W A S D, drag to look, click; space jumps, 1–5 picks a block, E
+switches break and place, N opens the notes, F looks behind the work whose label is open, H sends the head out as
+the hologram and, again, brings the body after it (as the button does); as the hologram, space rises and Shift or C
+sinks. R raises the sight (or the right button, held or clicked) and a click, T or Enter then throws, the arrows
+aiming; Escape lowers it.
 
 ## Files
 
@@ -410,11 +452,12 @@ space rises and Shift or C sinks.
   pieces had been invisible within a few metres until 20 Oct 2026), the
   page's marks (`blockMark()`, the model seen down its diagonal), the figure in the sky
   (`figureBeams`, `drawnIn`, `placeSky`), the homage's figures (`HOM_VS`, `homageUpload`), the works'
-  pictures, the hand, the opening, the labels and the notes, the rocket, the start screen.
-- `pearl.js` — Mr Pearl, no DOM: his body built of the unit from his form (`build`), the walk
-  (`pose`, `phaseStep`), his place in the world (`place`), and his head's own program (`HEAD_FS`, the
-  true sphere). `rocket.js` draws them (`drawPearl`) and holds the views (`camera`, `thirdCam`,
-  `holoCam`, `toggleHolo`, `holo`, `bringBody`).
+  pictures, the hand, the opening, the labels and the notes, the sight (`raiseSight`, `sightCam`, `drawSight`) and
+  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the rocket, the start screen.
+- `pearl.js` — Mr Pearl, no DOM: his body built of the unit from his form (`build`), the walk (`pose`, with the
+  throwing arm, `act.right`, `act.fling`, and `build`'s `throwArm`; `phaseStep`), his place in the world (`place`),
+  and his head's own program (`HEAD_FS`, the true sphere). `rocket.js` draws them (`drawPearl`) and holds the views
+  (`camera`, `thirdCam`, `holoCam`, `toggleHolo`, `holo`, `bringBody`).
 - `pearl-body.json` — his form as data: the primitives of the form fitted to the album covers, his
   unit, his parts and joints, his walk and his palette, each with the relation that sets it.
 - `homage.js` — the homage where you wake, no DOM: the three planned in the place (`plan`), each

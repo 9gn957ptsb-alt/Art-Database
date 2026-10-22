@@ -777,7 +777,9 @@
         var rg = el.firstChild.getBoundingClientRect();
         pulse(rg.left + rg.width / 2, rg.top + rg.height / 2, [LIGHT, LILAC], 0.6, 144);
       }
-      if (city.open) { city.open(); } else if (place) { hopTo(city); } else { goDown(city); }
+      // A building standing in a city's skyline square goes in as its museums do, at its city's height (openMuseum).
+      if (city.open) { city.open(); } else if (city.building && city.townKey) { downToMuseum(city.slug, {}); }
+      else if (place) { hopTo(city); } else { goDown(city); }
     });
     el.addEventListener("pointerdown", function (event) {
       city.touched = event.pointerType === "touch";
@@ -864,7 +866,7 @@
       if (typeof b.lat !== "number" || typeof b.lon !== "number") { return; }
       raiseCity({
         work: null, slug: "building-" + b.slug, title: b.name || b.title, where: b.where,
-        lat: b.lat * RAD, lon: wrap(b.lon * RAD), building: b, real: true,
+        lat: b.lat * RAD, lon: wrap(b.lon * RAD), building: b, real: true, townKey: townOfBuilding[b.slug],
         layer: "architecture", hue: hues[nearWork(b)] || 0.09
       }, true);
     });
@@ -1739,7 +1741,7 @@
     land.dataset.at = "flying";
     hideGraze();
     closeDeck();
-    passage(oneOf(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, from.y);
+    passage(downUp(["edges", "corner"]), [cityTone(city), LIGHT, LILAC], fly.dur * 0.9, from.y, from);
   }
 
   /* From one place to another without going back up: the world turns under
@@ -1769,7 +1771,7 @@
     // A work's history is framed on no one place: a way from it starts unnamed.
     // Nor is a museum named again on the way up to its own city, where its
     // mark stands named already.
-    var home = city.art && city.art.kind === "town" && (place.museum || place.stage) && place.townKey === city.townKey;
+    var home = city.art && city.art.kind === "town" && (place.museum || place.stage || place.building) && place.townKey === city.townKey;
     var was = { lat: focus.lat, lon: focus.lon, key: place.townKey || place.slug, town: place.townKey || null,
                 name: (place.art && place.art.kind !== "town") || home ? "" : place.title };
     place = city;
@@ -2167,13 +2169,14 @@
   }
 
   /* One level up from where you are: from a collage's site pressed on a
-     reading's grown globe, the reading; from a museum (or the theatre), its
-     city, unless the city is only that museum; from a work's history opened
-     in a museum or a city, that museum or city; else nothing, the world. */
+     reading's grown globe, the reading; from a museum (or the theatre, or a
+     building gone into from its city's skyline), its city, unless the city is
+     only that museum; from a work's history opened in a museum or a city, that
+     museum or city; else nothing, the world. */
   function levelUp() {
     if (!place) { return null; }
     if (readingBack && readingBack.to === place) { return { name: readingBack.name, go: readingBack.go }; }
-    var home = (place.museum || place.stage) && towns && townBy[place.townKey];
+    var home = (place.museum || place.stage || place.building) && towns && townBy[place.townKey];
     if (home) {
       return home.pass ? null : { name: home.name, go: function () { openTown(home.key, { museum: place.slug }); } };
     }
@@ -2234,7 +2237,7 @@
     flyAt = performance.now();
     flying = true;
     land.dataset.at = "flying";
-    passage(oneOf(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], fly.dur * 0.9);
+    passage(downUp(["edges", "center", "rows"]), [LIGHT, LILAC, cityTone(place)], fly.dur * 0.9);
   }
 
   var arriveQuiet = false;              // a city's view made on the way down (descent): its pulse is at the end
@@ -2817,7 +2820,8 @@
     arrive: true,         // 10 Oct: a photograph sometimes arrives through the mirrors (kaleidoscopeIn)
     pointed: true,        // 13 Oct: pointed at, a photograph sometimes folds about the pointer for a beat (kaleidoscopeAt)
     ring: true,           // 14 Oct: a press held on a city's map opens a rosette inside its ring, a sunflower's seeds turning in the mirrors (rosetteRuns)
-    scope: true           // 20 Oct: in the far views a telescope photograph the pointer drops sometimes lands through the telescope's two mirrors, five images at 72° (scopeShot)
+    scope: true,          // 20 Oct: in the far views a telescope photograph the pointer drops sometimes lands through the telescope's two mirrors, five images at 72° (scopeShot)
+    sweep: true           // 22 Oct: going down into a city or coming up, the sweep of cells is sometimes a pentagram, the pulse's mirrors opening a star of squares from where it began (sweepCells "rosette")
   };
 
   function folded(sx, sy, turn) {
@@ -11429,19 +11433,58 @@
   var sweepCtx = sweepCanvas ? sweepCanvas.getContext("2d") : null;
   var sweepNow = null;
 
-  function sweepCells(from, tones, dur) {
+  /* The sweep through the mirrors (22 Oct 2026; KALEIDOSCOPES.sweep): going down into a city or coming up,
+     now and then the front is a star, not a line. The pulse's two mirrors (36°) stand over where the sweep
+     began, and what the front does in the tenth between them it does in all ten: a pentagram, whose points
+     lead and whose valleys come after by φ² (the inner pentagon is 1/φ² of the points' circle), its edge
+     ragged and its tones dealt in the tenth, mirrored. Quieter than the others: a thin front of squares of
+     one and two tiles (the 13 px grid) in cells of three, and none over the globe's dial, its names or the
+     words at the world's foot (starKept, as the pixel light and the telescope's photographs keep off them). */
+  var STAR_CELL = 3 * CELL_PX;
+
+  function starReach(a) {   // how far out the pentagram goes at a folded angle (0 at a point, FOLD at a valley), a point being 1
+    var s = Math.sin(FOLD), c = Math.cos(FOLD);
+    return INV2 * s / (INV2 * s * Math.cos(a) - Math.sin(a) * (INV2 * c - 1));
+  }
+
+  // The cells (by their place in the grid) that lie under the dial's words, the globe's names and the words at the world's foot, now and as the sweep began.
+  function starKept(cu, now) {
+    var out = {};
+    cu.keep.concat(ringAvoid, nameBoxes, remainsKeep(now)).forEach(function (b) {
+      var i1 = Math.min(cu.cols - 1, Math.floor(b.x1 / cu.size)), j1 = Math.floor(b.y1 / cu.size);
+      for (var j = Math.max(0, Math.floor(b.y0 / cu.size)); j <= j1; j += 1) {
+        for (var i = Math.max(0, Math.floor(b.x0 / cu.size)); i <= i1; i += 1) { out[j * cu.cols + i] = true; }
+      }
+    });
+    return out;
+  }
+
+  function sweepCells(from, tones, dur, at) {
     if (still || !sweepCtx) { return; }
-    var size = Math.max(48, Math.round(Math.max(W, H) / 14));
+    var star = from === "rosette";
+    var size = star ? STAR_CELL : Math.max(48, Math.round(Math.max(W, H) / 14));
     var cols = Math.ceil(W / size), rows = Math.ceil(H / size);
     var ci = Math.random() < 0.5 ? 0 : cols - 1, cj = Math.random() < 0.5 ? 0 : rows - 1;
     var half = Math.max(1, (Math.min(cols, rows) - 1) / 2);
     var up = Math.random() < 0.5;
+    var turn = Math.random() * 2 * FOLD, seed = Math.floor(Math.random() * 4096);
+    var home = !!at && isFinite(at.x + at.y);     // a city off the window's edge: the star opens from its nearest point
+    var ox = home ? Math.max(0, Math.min(W, at.x)) : W / 2, oy = home ? Math.max(0, Math.min(H, at.y)) : H / 2, last = 0;
     var cells = [];
     for (var j = 0; j < rows; j += 1) {
       for (var i = 0; i < cols; i += 1) {
         var e = Math.min(i, cols - 1 - i, j, rows - 1 - j) / half;   // 0 at the edge
-        var o, most = 1;
-        if (from === "edges") { o = e; most = clamp01(1 - e * 1.5); }
+        var o, most = 1, tone = tones[Math.floor(hash2(i + 9, j + 4) * tones.length)];
+        if (star) {
+          // Worked out in the tenth between the mirrors: the cell's angle folded into it, then the ring and the arc along it.
+          var dx = (i + 0.5) * size - ox, dy = (j + 0.5) * size - oy, r = Math.sqrt(dx * dx + dy * dy);
+          var a = folded(dx, dy, turn), ring = Math.floor(r / size), arc = Math.floor(a * r / size) + seed;
+          o = (r + (hash2(arc, ring) - 0.5) * 2 * size) / starReach(a);
+          tone = tones[Math.floor(hash2(arc + 9, ring + 4) * tones.length)];
+          most = 2 / 3;
+          last = Math.max(last, o);
+        }
+        else if (from === "edges") { o = e; most = clamp01(1 - e * 1.5); }
         else if (from === "center") { o = 1 - e; }
         else if (from === "corner") {
           o = Math.sqrt((i - ci) * (i - ci) + (j - cj) * (j - cj)) / Math.sqrt(cols * cols + rows * rows);
@@ -11450,13 +11493,15 @@
           if (up) { o = 1 - o; }
         }
         if (most <= 0) { continue; }
-        cells.push({ x: i * size, y: j * size, o: clamp01(o), most: most,
-                     tone: tones[Math.floor(hash2(i + 9, j + 4) * tones.length)] });
+        cells.push({ x: i * size, y: j * size, k: j * cols + i, o: star ? o : clamp01(o), most: most, tone: tone });
       }
     }
+    if (star) { cells.forEach(function (c) { c.o = clamp01(c.o / last); }); }
     var first = !sweepNow;
-    sweepNow = { cells: cells, size: size, at: performance.now(), dur: dur || 820,
-                   anchor: oneOf([[0.5, 0.5], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]]) };
+    sweepNow = { cells: cells, size: size, cols: cols, at: performance.now(), dur: dur || 820, from: from,
+                   steps: star ? STAR_CELL / CELL_PX : 4, life: star ? 0.22 : 0.45, spread: star ? 0.78 : 0.55,
+                   keep: star ? ringAvoid.concat(nameBoxes, remainsKeep(performance.now())) : null,
+                   anchor: star ? [0.5, 0.5] : oneOf([[0.5, 0.5], [0.5, 0], [0.5, 1], [0, 0.5], [1, 0.5]]) };
     var pw = Math.round(W * dpr), ph = Math.round(H * dpr);
     if (sweepCanvas.width !== pw || sweepCanvas.height !== ph) {
       sweepCanvas.width = pw;
@@ -11472,15 +11517,18 @@
     if (!cu) { return; }
     var q = (Math.floor(now / 42) * 42 - cu.at) / cu.dur;
     if (q >= 1) { sweepNow = null; return; }
+    var kept = cu.keep ? starKept(cu, now) : null;
     g.globalAlpha = 0.88;
     cu.cells.forEach(function (c) {
-      var u = (q - c.o * 0.55) / 0.45;
-      if (u <= 0 || u >= 1) { return; }
-      var s = Math.round(Math.sin(Math.PI * u) * c.most * 4) / 4;
+      var u = (q - c.o * cu.spread) / cu.life;
+      if (u <= 0 || u >= 1 || (kept && kept[c.k])) { return; }
+      var s = Math.round(Math.sin(Math.PI * u) * c.most * cu.steps) / cu.steps;
       if (s <= 0) { return; }
       var side = cu.size * s;
       g.fillStyle = c.tone;
-      g.fillRect(c.x + (cu.size - side) * cu.anchor[0], c.y + (cu.size - side) * cu.anchor[1], side, side);
+      var x = c.x + (cu.size - side) * cu.anchor[0], y = c.y + (cu.size - side) * cu.anchor[1];
+      if (cu.keep) { x = Math.round(x); y = Math.round(y); }   // the star's, on the tiles' whole pixels
+      g.fillRect(x, y, side, side);
     });
     g.globalAlpha = 1;
     requestAnimationFrame(drawSweep);
@@ -11514,10 +11562,13 @@
   }
 
   /* A transition: one of the sweeps, or the numbers. */
-  function passage(from, tones, dur, y) {
+  function passage(from, tones, dur, y, at) {
     if (Math.random() < 0.34 && dataSweep(y === undefined ? H / 2 : y)) { return; }
-    sweepCells(from, tones, dur);
+    sweepCells(from, tones, dur, at);
   }
+
+  // Going down and coming up (KALEIDOSCOPES.sweep): one of the sweeps, and sometimes the star.
+  function downUp(list) { return oneOf(KALEIDOSCOPES.sweep ? list.concat("rosette") : list); }
 
   /* ---- Magnetic Buttons ------------------------------------------------- */
 
@@ -12732,6 +12783,11 @@
     if (b.url) { buildingLink.href = b.url; }
     if (buildingLinkAt) { buildingLinkAt.textContent = "Read it at " + (b.source || "The Architectural Authority"); }
     if (city.museum) { showHeld(city.museum, city.via, visit, city.townKey); } else { delete buildingEl.dataset.museum; }
+    // A building standing in a city's skyline square has that city as its way up (buildingTowns), whichever
+    // way it was come to: the cities read now if they are not yet, and the banner says so.
+    if (!city.museum && !towns) {
+      readTowns().then(function () { if (place === city && bannerBackTo && !flying) { bannerBackTo.textContent = backName(levelUp()); } });
+    }
     var walkVia = city.via;
     delete city.via;
     // Come in from the skyline by the fingers: on the heading the city had, already standing (the skyline
@@ -15958,8 +16014,24 @@
   var townAt = {};
   var venueLabel = null;                // the one label a pressed gallery's tile shows
 
+  // An Architecture building with its own spot in a city's skyline square (cityplaces.json) stands in that
+  // city, as its museums do (skyline.js sets it in): no journey between the two, and up from it is the city.
+  var townOfBuilding = {};
+  function buildingTowns(squares) {
+    ((architecture && architecture.buildings) || []).forEach(function (b) {
+      if (b.precision !== "exact" || typeof b.lat !== "number") { return; }
+      (squares || []).forEach(function (p) {
+        var h = (p.side || 0) / 2, kx = 111320 * Math.cos(p.lat * Math.PI / 180);
+        if (!townOfBuilding[b.slug] && Math.abs((b.lon - p.lon) * kx) < h && Math.abs((b.lat - p.lat) * 111320) < h) {
+          townOfBuilding[b.slug] = p.key;
+        }
+      });
+    });
+    cities.forEach(function (c) { if (c.building && !c.museum && townOfBuilding[c.building.slug]) { c.townKey = townOfBuilding[c.building.slug]; } });
+  }
+
   function readTowns() {
-    return Promise.all([readPlaces(), readArt("cities.json")]).then(function (both) {
+    return Promise.all([readPlaces(), readArt("cities.json"), readArt("cityplaces.json")]).then(function (both) {
       var d = both[1];
       if (towns || !d || !d.towns) { return towns; }
       towns = d.towns.map(function (row, i) {
@@ -15974,6 +16046,7 @@
         return t;
       });
       cities.forEach(function (c) { if (c.museum && townOfSlug[c.slug]) { c.townKey = townOfSlug[c.slug]; } });
+      buildingTowns(both[2] && both[2].places);
       return towns;
     });
   }
@@ -16725,7 +16798,7 @@
     open: function (slug) {
       var c = cityOf(slug);
       if (!c || flying) { return false; }
-      if (c.museum) { openMuseum(slug, {}); return true; }
+      if (c.museum || (c.building && c.townKey)) { openMuseum(slug, {}); return true; }
       closeFinder();
       settleSwing();
       if (place === c) { return true; }
@@ -16923,6 +16996,12 @@
         for (var n = 0; n < runs[key].length; n += 2) { out.push([runs[key][n], runs[key][n + 1], key.slice(0, cut), Number(key.slice(cut + 1))]); }
       });
       return out;
+    },
+    // The sweep of cells (scripts/check_kaleidoscope.js --sweep): begin one ("edges", "rosette" ...) from (x, y), or with no name just say
+    // which is under way.
+    sweep: function (from, x, y) {
+      if (from) { sweepCells(from, [LIGHT, LILAC, GOLD], 1000, x === undefined ? undefined : { x: x, y: y }); }
+      return sweepNow ? { from: sweepNow.from, at: sweepNow.at, cells: sweepNow.cells.length, size: sweepNow.size, steps: sweepNow.steps, dur: sweepNow.dur } : null;
     },
     // The grown globe (for the tests): whether it is on, its layer, the way it came, the stored one.
     grown: function () { return { on: grown, layer: layerOn, came: cameLayer, kept: layerKept, box: grownAt && grownAt.box,
@@ -18612,6 +18691,10 @@
                                                        rest: a.when >= 0.999 && !a.byHand && !a.auto } : null };
     },
     museum: function (slug, via) { downToMuseum(slug, via || {}); },
+    // An Architecture building the skyline sets in (skyline.js: one with its own spot in the city's square),
+    // gone into as a museum is: its place stands in the city (buildingTowns), so no journey between the two,
+    // and up from it is the city (levelUp).
+    building: function (file, via) { downToMuseum("building-" + file, via || {}); },
     // Going into a museum from the skyline (skyline.js, in): the city's column, dial and banner let go of
     // over the way, s from 0 to 1, as the rise's are; 0 gives them back.
     entering: function (s) { enteringShow(s); },

@@ -34,7 +34,8 @@ works at its year, and a press on one brings it up.
 
 **A city's skyline** (`skyline.js`; 7 Oct 2026): where a city's ground has been read, its view is the
 city as its skyline, and the city's own dial (Place) is that skyline's years as well — each building
-stands from its built year, storey by storey as the dial passes it; a gallery not yet open is named a
+stands from its built year, storey by storey as the dial passes it (an Architecture building set into
+the city, its entry's own year: Shanghai's opera house rises in 2026 on what was a clearing); a gallery not yet open is named a
 step quieter; and the artists the record places there that year (born there, a life's period, a
 movements presence) walk its streets, coming and going as the dial turns. The first visit's play is
 the city growing and its artists arriving and leaving; at rest it stands at now. Nothing new is on

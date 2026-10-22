@@ -140,7 +140,8 @@ async function one(P, tag, slug, shots, name) {
 
   // And up.
   await P.evaluate(() => Land.up());
-  const gone = await until(P, () => { const w = Land.where(); return w.at === "world" && !w.flying; }, 60000, 400);
+  // A building inside a city (a museum) leaves to its town first, so go up again until the world.
+  const gone = await until(P, () => { const w = Land.where(); if (w.at !== "world" && !w.flying) { Land.up(); } return w.at === "world" && !w.flying; }, 60000, 400);
   check(tag, gone, "back up to the world", await P.evaluate(() => Land.where()));
   const errs = P.__errors.slice(errBefore);
   check(tag, errs.length === 0, "no page errors", errs);
