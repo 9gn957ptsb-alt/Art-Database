@@ -16,12 +16,14 @@ button, select { font: inherit; color: inherit; }
 #view { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
 #hud { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-.where, .alarms, .pieces, .pill, .eyebrow, .near, .tag, .toast, .status, label, .hotbar, .jump, .l-room, .notes .more, .notes .count {
+.where, .alarms, .pearls, .pieces, .pill, .eyebrow, .near, .tag, .toast, .status, label, .hotbar, .jump, .l-room, .notes .more, .notes .count {
   font-family: var(--mono); font-size: 10.2px; letter-spacing: 0.08em; text-transform: uppercase;
 }
 .top { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); display: grid; gap: 8px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9); pointer-events: none; }
 .where { margin: 0; letter-spacing: 0.22em; max-width: min(46vw, 420px); }
 .alarms { margin: -4px 0 0; color: var(--glow); letter-spacing: 0.16em; }
+/* the pearls in his glove, a line under the alarms (the sight's throw) */
+.pearls { margin: -4px 0 0; letter-spacing: 0.16em; }
 .pieces { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .pieces li { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .pieces li i { width: 14px; height: 12px; background: center / contain no-repeat; opacity: 0.3; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8)); }
@@ -80,7 +82,7 @@ body[data-touch] .jump { display: block; }
 
 /* The view: one button, Holo, over the jump button (phone) or in its place (computer), pressed while the head is
    out; else the view is third person. The ring round it is the hologram's time left. */
-.views { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(176px + env(safe-area-inset-bottom, 0px)); display: grid; }
+.views { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(176px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; }
 body:not([data-touch]) .views { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
 .vw { position: relative; min-width: 56px; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 999px; background: var(--veil); color: var(--muted); cursor: pointer;
   font-family: var(--mono); font-size: 10.2px; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -93,12 +95,31 @@ body[data-holo] #v-holo::after, body[data-ring] #v-holo::after { opacity: 1; }
 .foot { width: max-content; max-width: calc(100% - 24px); }
 .acts .pill { white-space: nowrap; }
 body[data-holo] .bar { display: none; }
+/* The sight (artist, 20 Oct 2026: "I want you to be able to aim at a target with a reflex sight that I can control
+   with my right finger while my left finger allows me to move around the area"): its button over Holo, 6 px between,
+   as the views' were; gone as the hologram (it has no sight, as it has no Break or Place); while it is up the tap
+   throws, so Break and Place step back as they do for the hologram. */
+body[data-holo] #v-sight { display: none; }
+body[data-sight] .bar { display: none; }
+/* What the mark is on, under the glass: page text on its own ground (4.7 : 1 over the brightest ground measured). */
+/* ...and said to a screen reader when the target changes, not each metre (the words above change as you walk) */
+.say { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sight-tag { position: fixed; left: 50%; transform: translateX(-50%); width: max-content; max-width: min(92vw, 420px); margin: 0; padding: 7px 11px;
+  background: rgba(14, 12, 10, 0.72); color: #f3e9d8; border-radius: 10px; font: 400 12px/1.35 var(--mono); text-align: center; z-index: 5; pointer-events: none; }
+.sight-tag b { display: block; font: italic 400 16px/1.25 var(--serif); }
+.sight-tag span { display: block; }
+.sight-tag .from { color: #cfc4b2; }
+.sight-tag .act { color: #fff; margin-top: 2px; letter-spacing: 0.06em; text-transform: uppercase; font-size: 10.5px; }
+/* on a touch screen the views column stands at the right (56 px, 12 from the edge): the words keep clear of it */
+body[data-touch] .sight-tag { left: max(12px, env(safe-area-inset-left, 0px)); right: calc(84px + env(safe-area-inset-right, 0px)); transform: none; width: auto; max-width: none; }
 body[data-holo] .jump { border-color: var(--glow); }
 @media (max-width: 560px) {
   body[data-touch] .notes { max-height: calc(100% - 54px - 340px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
   body[data-touch] .label { right: calc(88px + env(safe-area-inset-right, 0px)); }
 }
-@media (max-height: 520px) { .views { bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(90px + env(safe-area-inset-right, 0px)); } }
+/* on its side the two stand side by side along the top, Sight then Holo (a column had put Holo over the open notes) */
+@media (max-height: 520px) { .views { bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(90px + env(safe-area-inset-right, 0px)); grid-auto-flow: column; }
+  .notes { top: calc(62px + env(safe-area-inset-top, 0px)); } }
 
 /* Black until the place is built, when the eyes open on it. */
 .veil { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: #050302; color: var(--muted); font: italic 400 16px/1.5 var(--serif); text-align: center; }
@@ -122,7 +143,7 @@ select { min-height: 40px; padding: 8px 12px; border: 1px solid var(--hair); bor
 
 /* While you come to, everything else steps back. */
 .top, .corner, .notes, .near, .foot, .jump, .label { transition: opacity 0.6s steps(6); }
-body[data-film] .views, body[data-film] .top, body[data-film] .corner, body[data-film] .notes, body[data-film] .near, body[data-film] .foot, body[data-film] .jump, body[data-film] .label, body[data-film] .tag, body[data-film] .toast { opacity: 0; pointer-events: none; }
+body[data-film] .views, body[data-film] .top, body[data-film] .corner, body[data-film] .notes, body[data-film] .near, body[data-film] .foot, body[data-film] .jump, body[data-film] .label, body[data-film] .tag, body[data-film] .sight-tag, body[data-film] .toast { opacity: 0; pointer-events: none; }
 @media (max-width: 560px) {
   .near { top: calc(136px + env(safe-area-inset-top, 0px)); }
   .label { left: 12px; right: 12px; width: auto; grid-template-columns: 76px 1fr; gap: 12px; }

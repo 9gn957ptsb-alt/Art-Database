@@ -794,10 +794,16 @@
   // What the hand asks: forward and sideways (the stick, W A S D), and up (jump; as the hologram, rise or sink).
   function controls(dt) {
     var k = input.keys;
-    var fwd = input.fwd + ((k.w || k.ArrowUp) ? 1 : 0) - ((k.s || k.ArrowDown) ? 1 : 0);
+    // With the sight up the arrows aim (the artist, 20 Oct 2026, of the sight: "...that I can control with my right
+    // finger while my left finger allows me to move around the area"): the mark crosses its own window (2 asin(R / phi))
+    // in a beat, left and right and up and down; W and S still walk.
+    var aimK = sightOn() ? 2 * Math.asin(PEARL.headR / SIGHT_D) / BEAT : 0;
+    var fwd = input.fwd + ((k.w || (k.ArrowUp && !aimK)) ? 1 : 0) - ((k.s || (k.ArrowDown && !aimK)) ? 1 : 0);
     var side = input.side + (k.d ? 1 : 0) - (k.a ? 1 : 0);
-    if (k.ArrowLeft) { P.yaw -= dt * 2; }
-    if (k.ArrowRight) { P.yaw += dt * 2; }
+    if (k.ArrowLeft) { P.yaw -= dt * (aimK || 2); }
+    if (k.ArrowRight) { P.yaw += dt * (aimK || 2); }
+    if (aimK && (k.ArrowUp || k.ArrowDown)) { P.pitch = clampPitch(P.pitch + (k.ArrowUp ? 1 : -1) * aimK * dt); }
+    if (aimK && (k.ArrowUp || k.ArrowDown || k.ArrowLeft || k.ArrowRight)) { sight.turn = null; }
     var len = hypot(fwd, side);
     if (len > 1) { fwd /= len; side /= len; }
     return { fwd: fwd, side: side, up: (input.jump || k[" "] ? 1 : 0) - (k.Shift || k.c ? 1 : 0) };
@@ -811,8 +817,11 @@
     P.vz = (-Math.cos(P.yaw) * fwd + Math.sin(P.yaw) * side) * speed;
     // He faces the way he walks (relative to the camera), or what he reaches for; while a swing is on, what it will
     // strike, walking or not (the legs walk on), and the camera keeps to the way he walks.
+    // With the sight up he faces the mark, walking or not (the artist, 20 Oct 2026: "I want you to be able to aim at a
+    // target with a reflex sight"): the legs walk the way the stick says, sideways too, and the camera is the aim.
     var aim = swingYaw(), way = Math.atan2(P.vx, -P.vz);
-    if (aim !== null) { P.face = turnTo(P.face, aim, TURN * dt); if (fwd || side) { P.want = null; } }
+    if (sight.up) { P.face = turnTo(P.face, P.yaw, TURN * dt); P.want = null; }
+    else if (aim !== null) { P.face = turnTo(P.face, aim, TURN * dt); if (fwd || side) { P.want = null; } }
     else if (fwd || side) { P.face = turnTo(P.face, way, TURN * dt); P.want = null; }
     else if (P.want !== null) { P.face = turnTo(P.face, P.want, TURN * dt); }
     follow(dt, c, aim !== null && (fwd || side) ? way : P.face);
@@ -826,13 +835,13 @@
     var nx = P.x + P.vx * dt;
     if (boxHits(nx, P.y, P.z)) {
       if (P.ground && !boxHits(nx, P.y + 1.05, P.z) && !boxHits(P.x, P.y + 1.05, P.z) && (fwd || side)) { P.vy = 8.2; P.ground = false; }
-      nx = P.x;
+      nx = P.x; P.vx = 0;   // (stopped: no walk to add to a throw)
     }
     P.x = nx;
     var nz = P.z + P.vz * dt;
     if (boxHits(P.x, P.y, nz)) {
       if (P.ground && !boxHits(P.x, P.y + 1.05, nz) && !boxHits(P.x, P.y + 1.05, P.z) && (fwd || side)) { P.vy = 8.2; P.ground = false; }
-      nz = P.z;
+      nz = P.z; P.vz = 0;
     }
     P.z = nz;
     var ny = P.y + P.vy * dt;
@@ -901,6 +910,8 @@
   function act(px, py, forcePlace) {
     if (intro || launched || !vp) { return; }
     var dir = dirAt(px, py), hit = pick(dir);
+    // a pearl lying within his reach, tapped with the sight lowered, is back in his hand (the throw, 20 Oct 2026)
+    if (!Hd && takeTapped(dir, hit)) { return; }
     if (!hit) { return; }
     // A block kept for the next swing is turned to at this one's strike, not now.
     var kept = !Hd && !!swing && !swing.ret && swing.u < 1.5 && !hit.painting && hit.b !== B.NOTE && !(forcePlace || mode === "place");
@@ -917,7 +928,8 @@
     } else if (hit.prev) {
       var p = hit.prev;
       w.set(p[0], p[1], p[2], HOTBAR[slot]);
-      if (boxHits(P.x, P.y, P.z)) { w.set(p[0], p[1], p[2], B.AIR); return; }
+      // (nor where a pearl lies: it would be buried, out of reach)
+      if (boxHits(P.x, P.y, P.z) || pearls.some(function (q) { return sphereHit(q.x, q.y, q.z, pearlR()); })) { w.set(p[0], p[1], p[2], B.AIR); return; }
       remeshAt(p[0], p[2]);
     }
   }
@@ -956,8 +968,9 @@
   }
   // How far the look may go up and down: in third person the camera never sinks below his hat (it stays above his
   // head) and comes at most straight over him; from his own eyes (a stone, where you woke: the third figure is looked
-  // up at) and as the hologram, to nearly straight up and down.
-  function clampPitch(p) { return !Hd && !onStone ? clampV(p, TP_DOWN, TP_UP) : clampV(p, -1.5, 1.5); }
+  // up at), as the hologram, and with the sight up (as from his eyes: a lob is aimed high; the farthest throw is aimed
+  // 39.5 deg up), to nearly straight up and down.
+  function clampPitch(p) { return !Hd && !onStone && !sight.up ? clampV(p, TP_DOWN, TP_UP) : clampV(p, -1.5, 1.5); }
   // Where his head sits on the body (the hologram's seat).
   function seat() { return [P.x, P.y + PEARL.headY, P.z]; }
   function isOpen(b) { return b === B.AIR || b === B.WATER; }
@@ -1000,15 +1013,17 @@
     R_C = NEAR * Math.sqrt(1 + T35 * T35 * (1 + aspect * aspect));
     // On a stone of the homage the view is his own eyes, as the stone is the one point its figure closes from
     // (from over his head he would stand in front of it); so too back where you woke, the one point the figure in
-    // the sky closes from (treeSpot); stepping off, it rises out over his head again.
-    var stone = !!(!Hd && !intro && !launched && ((homage && Homage.standing(homage, P.x, P.y, P.z)) || treeSpot()));
+    // the sky closes from (treeSpot); stepping off, it rises out over his head again. With the sight up the sight's
+    // camera stands there instead; lowered there, his eyes again.
+    var stone = !!(!Hd && !sight.up && !intro && !launched && ((homage && Homage.standing(homage, P.x, P.y, P.z)) || treeSpot()));
     if (stone !== onStone) {
       onStone = stone;
-      if (!Hd) { blend = { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: stone ? null : clampV(P.pitch, TP_DOWN, TP_UP) }; camD = 1e9; }
+      if (!Hd) { blend = { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: stone || sight.up ? null : clampV(P.pitch, TP_DOWN, TP_UP) }; camD = 1e9; }
     }
-    var c = intro || launched ? firstCam(eyeH) : Hd ? holoCam(dt) : onStone ? firstCam(EYE) : thirdCam(dt);
+    var c = intro || launched ? firstCam(eyeH) : Hd ? holoCam(dt) : sight.up ? sightCam(dt) : onStone ? firstCam(EYE) : thirdCam(dt);
     if (blend && !intro) {
-      var s = smooth((now - blend.t0) / 1000 / blend.dur), f = blend.from, a = c.from || c.e;
+      // (a blend held at s for a photograph, holdView, never ends)
+      var s = blend.hold != null ? blend.hold : smooth((now - blend.t0) / 1000 / blend.dur), f = blend.from, a = c.from || c.e;
       if (blend.pitchTo != null) { P.pitch = blend.pitchFrom + (blend.pitchTo - blend.pitchFrom) * s; c.pitch = P.pitch; }
       c = { e: [0, 1, 2].map(function (k) { return f.e[k] + (c.e[k] - f.e[k]) * s; }), yaw: f.yaw + angle(c.yaw - f.yaw) * s, pitch: f.pitch + (c.pitch - f.pitch) * s };
       // On the way the camera keeps out of the blocks as the view's own does: drawn in toward what it follows.
@@ -1016,18 +1031,20 @@
         var bv = [c.e[0] - a[0], c.e[1] - a[1], c.e[2] - a[2]], bl = hypot(bv[0], bv[1], bv[2]);
         if (bl > 1e-6) { var bd = clearTo(a, [bv[0] / bl, bv[1] / bl, bv[2] / bl], bl); c.e = [a[0] + bv[0] / bl * bd, a[1] + bv[1] / bl * bd, a[2] + bv[2] / bl * bd]; }
       }
-      if (s >= 1) { blend = null; }
+      if (s >= 1 && blend.hold == null) { blend = null; }
     }
     var hc = Hd ? [Hd.x, Hd.y, Hd.z] : seat(), far = hypot(c.e[0] - hc[0], c.e[1] - hc[1], c.e[2] - hc[2]) > HAT_REACH + R_C;
     var bc = seat(), farB = hypot(c.e[0] - bc[0], c.e[1] - bc[1], c.e[2] - bc[2]) > HAT_REACH + R_C;
-    drawMe = { body: !intro && !launched && (Hd ? true : !onStone || !!blend) && farB, head: !intro && !launched && (Hd ? true : !onStone || !!blend) && far };
+    // (with the sight up the head is the glass from the raise's half: not drawn, the window drawn in its place)
+    drawMe = { body: !intro && !launched && (Hd ? true : !onStone || !!blend) && farB, head: !intro && !launched && (Hd ? true : !onStone || !!blend) && far && !(sight.up && sightEase(now) >= 0.5) };
     camLast = c;
     return c;
   }
   // Third person: the camera comes round behind him as he walks, in the time he walks its distance from his head,
-  // by the forward part of the stick (walking sideways or back to the camera does not swing it), not while you drag.
+  // by the forward part of the stick (walking sideways or back to the camera does not swing it), not while you drag,
+  // and not with the sight up: then the camera is the aim.
   function follow(dt, c, face) {
-    if (Hd || input.looking || c.fwd <= 0 || !(c.fwd || c.side)) { return; }
+    if (Hd || sight.up || input.looking || c.fwd <= 0 || !(c.fwd || c.side)) { return; }
     P.yaw += angle(face - P.yaw) * (1 - Math.exp(-dt * c.fwd * WALK / TP_HEAD));
   }
 
@@ -1043,6 +1060,7 @@
   function enterHolo() {
     if (Hd || flying) { return; }
     if (holoLeft < BAR) { say("The hologram is gathering again: " + Math.ceil(BAR - holoLeft) + " s."); return; }
+    dropSight();   // the hologram has no sight: going out with it up lowers it at once
     letGo();   // the head leaving, the swing strikes nothing (as the hologram nothing is broken)
     var s = seat(), now = performance.now();
     Hd = { x: s[0], y: s[1], z: s[2], y0: s[1], vx: 0, vy: 0, vz: 0, yaw: P.face, phase: "lift", t0: now, left: now, warned: false };
@@ -1153,7 +1171,7 @@
     if (CFG.onHarm) { CFG.onHarm(cause, bodyHarm.length); }
     return true;
   }
-  function barred() { say("As the hologram you can look and read. To take, build or break, leave the hologram (Holo, or H): your body follows your head."); }
+  function barred() { say("As the hologram you can look and read. To take, build, break or throw, leave the hologram (Holo, or H): your body follows your head."); }
 
   /* ---- the view's control -------------------------------------------------------------------------------- */
 
@@ -1281,7 +1299,8 @@
     P.want = bearingTo(t);
     begin(t);
   }
-  // The swing let go (the head leaves, he is put out): nothing struck, nothing kept; the arms to rest in half a beat.
+  // The swing let go (the head leaves, he is put out, the sight is raised): nothing struck, nothing kept; the arms to
+  // rest in half a beat.
   function letGo() {
     var p = swingPose();
     swingNext = null;
@@ -1389,6 +1408,758 @@
     });
   }
 
+  /* ---- the sight: his head, the one true sphere, as a reflex sight; and the pearls he throws ----------------------
+     The artist, 20 Oct 2026: "I want you to be able to aim at a target with a reflex sight that I can control with my
+     right finger while my left finger allows me to move around the area", and "And when I click with the reflex sight
+     up, I am able to throw something".
+
+     A reflex sight is a window of partly reflecting curved glass with a lit mark at the glass's focus: the mark's
+     light comes back off the glass collimated, so the eye sees it at infinity, on the target wherever the eye is
+     behind the window (parallax-free), both eyes open, no magnification. His head is the one thing in the game
+     that can be that glass: the only perfect sphere (its front cap is an exact spherical mirror, focus R/2 inside
+     it), and its skin is a thin film that partly reflects (pearl.glsl). Everything built of the unit would scatter
+     the mark into its facets. So the mark is lit at the cap's focus and seen through the head itself; the window is
+     the head's outline, the one outline that is the same from every point of view (the window keeps its shape
+     however the camera sways). From over his hat (third person) the line through the screen's centre passes over his
+     head, so raised, the camera comes down to the sight line (through the head's seat, along the look) at SIGHT_D
+     behind it, in the time of a switch of view, and the head clears into the glass; he doffs his hat into his left
+     glove (its brim, tilted back over the head seen from behind, would hood the window), raises his right arm with a
+     pearl in the glove, and faces the mark. The hologram has no hands: no sight, no throw (barred, as breaking is).
+
+     The mark: the artist's figure (the block's model seen down its diagonal, which is the drawing), its aim point
+     the crux, the outline's undrawn apex, where the two outer bars would meet only from the one eye; hanging from
+     the crux, the holding circles of the figure's own line of levels (F = 8, 13, 21: level 2, the drawing, and the
+     two levels it is a corner of), every one touching the others at the crux (wf6/levels, ARNELL 1). The window
+     holds the largest turned about the crux (the window's radius is its diameter), so the mark fits however it
+     turns. Their feet are the holdover marks, labelled with the ranges the throw makes of them; the arc's landing
+     is shown on the ground once the aim is still.
+
+     What he throws is a pearl built of the unit: the solids study's first sphere (a unit is its if its centre lies
+     within R = F(4) = 3 units of the middle), at his own level (phi^-7 m, the cells he is built of), 136 units in six
+     bands (12 24 32 32 24 12), each band one of the film's tints of his pearl cloth: a pearl is laid down in layers,
+     and the built sphere's layers are its bands. It is never the perfect sphere (that is his head alone), and it is
+     2.38 times smaller than the head. Every number below from its relation. */
+  var SIGHT_D = HOLO_D;          // the sight's camera behind the head's centre, on the look: the hologram's, the head top's height (phi)
+  var SIGHT_F = [8, 13, 21];     // the holding circles: F(m+4) for levels 2, 3, 4 (ARNELL 1)
+  var SIGHT_TMAX = Math.PI / 2 - Math.acos(1 / Math.sqrt(3));   // the most the figure opens: 35.26 deg, the crux's complement
+  var U_BLK = 0.12244, APEX_SY = 0.45775;                        // the block model's drawing: u (block units), the apex above its centre
+  // The film's edge (the sight's calc/film.py): ring q of the window meets the sphere at cos i = sqrt(1 - q^2); there the
+  // colour of the light the film reflects, its alpha the film's reflectance (clear face on, bright grazing).
+  var SIGHT_RIM = [[0, "224,0,255", 0.0032], [0.6, "255,173,0", 0.014], [0.8, "255,253,161", 0.041], [0.917, "213,255,253", 0.0965],
+                   [0.98, "194,231,255", 0.2484], [0.995, "217,239,255", 0.4718], [1, "247,251,255", 0.8562]];
+  var THROW = {
+    V: Math.sqrt(25 * 34),        // its speed: the farthest throw (45 deg, level ground) is F(9) = 34 m on the game's 25 m/s/s
+    G: 25,                        // the game's gravity (physics(): the fall is 25 m/s/s); no air, so no drag
+    ZERO: REACH,                  // the arc comes level with the sight's line at his reach (6 m): within it the crux is what it meets
+    FAR: 34,                      // the farthest throw, F(9): what the sight looks out to
+    CARRY: 5,                     // a pearl for each finger of the throwing hand (his glove's four and the thumb)
+    RU: 3,                        // its radius in units: F(4), the solids study's first sphere
+    E: 0.5,                       // a bounce: the Average of a perfect bounce and a dead stop (the velocity mirrored, halved)
+    SPIN: 2 * Math.PI / BEAT,     // backspin, as off the fingertips: a turn a beat of the song
+    TRAIL: BEAT,                  // its trail: the last beat of its path
+    SINK: 2.5, SINK_G: 6          // in water it sinks as he does: falling at 6 m/s/s, no faster than 2.5 m/s
+  };
+  var HOLD = null, HOLD_AT = [0.38536, 1.41552, -0.03399];       // the pearl in his raised glove: in the arm's cells; in his frame (throwFrom)
+  var HAT_DOFF = [-0.82669, -0.64551, -0.35489];                 // the hat doffed: its right brim's edge into his left glove (throwFrom)
+  var HAT_LIFT = 0.30925;                                        // lifted first, clear of the head: its top over the hat's lowest cell above it (throwFrom)
+  var sight = { up: false, t0: -1e9, told: false, hold: null, omega: 0, mx: 0, my: 1, lastYaw: 0, lastPitch: 0, theta: 0, hit: null,
+                arc: null, head: null, inHand: null, said: "", key: "", ring: null, thrown: -1e9, next: false, turn: null, flingHold: null, rmb: null, last: 0, feet: [], ringSaid: null, at: 0 };
+  var figCache = {}, pearls = [], carried = THROW.CARRY, marked = {}, pearlCh = null, trailProg = null, TU = {}, trailBuf = null, trailVao = null;
+  var NO_PEARL = "No pearl in your hand: pick one up again where it lies (walk to it, or tap it with the sight lowered).";
+  function sightOn() { return sight.up && !intro && !launched && !Hd; }
+  // How far up the sight is, 0 to 1, for the arm, the hat, the glass and the camera's blend: over a switch of view
+  // (T_VIEW), eased; at once under reduced motion; held for a photograph (holdView).
+  function sightEase(now) {
+    var s = sight.hold != null ? sight.hold : stillMotion.matches ? 1 : smooth((now - sight.t0) / 1000 / T_VIEW);
+    return sight.up ? s : 1 - s;
+  }
+  // The raised arm after a throw, about his shoulder line: down to the fore by the smash's quarter turn (COIL) over
+  // half a beat with the smash's follow-through easing, q (2 - q), and back up over the other half, smooth. None under
+  // reduced motion (the rate, one a beat, stays).
+  function flingAt(now) {
+    var u = sight.flingHold != null ? sight.flingHold : (now - sight.thrown) / 1000 / BEAT;
+    if (stillMotion.matches || u < 0 || u >= 1) { return 0; }
+    if (u < 0.5) { var q = u / 0.5; return -COIL * q * (2 - q); }
+    return -COIL * (1 - smooth((u - 0.5) / 0.5));
+  }
+  // What his arms and upper body do now, for pose(): the swing's, the raised arm's and its fling (null at rest). The
+  // fling goes as far as the arm is raised: lowered during one, the arm comes down from where it is and no further
+  // (it had swung on past his guitar after the arm was down; 22 Oct 2026).
+  function actNow(now) {
+    var a = swingPose(), r = sightEase(now), f = flingAt(now) * r;
+    if (!a && !r && !f) { return null; }
+    return { arms: a ? a.arms : 0, twist: a ? a.twist : 0, right: r, fling: f };
+  }
+  // The window's half-angle, nominal: the head's outline seen from SIGHT_D, and the focal plane's measure of it.
+  function sightTan() { return PEARL.headR / Math.sqrt(SIGHT_D * SIGHT_D - PEARL.headR * PEARL.headR); }
+  function sightU() { return sightTan() * Math.sqrt(3) / (2 * SIGHT_F[SIGHT_F.length - 1]); }   // u in tangent units
+  // Raise (true), lower (false) or turn over (nothing): a switch of view, in its time, as the views' are (none under
+  // reduced motion). The hologram has no sight (barred, as breaking is). Raised, a swing is let go: his hands leave the
+  // guitar's swing to raise a pearl.
+  function raiseSight(on) {
+    if (on == null) { on = !sight.up; }
+    if (on === sight.up || intro || launched || !place) { return; }
+    if (on && Hd) { barred(); return; }
+    var now = performance.now(), still = stillMotion.matches;
+    if (on) { letGo(); P.want = null; sight.at = now; closeLabel(); }
+    // turned over part way, the arm and the hat go back from where they are (smooth(1 - u) = 1 - smooth(u))
+    var u0 = clampV((now - sight.t0) / 1000 / T_VIEW, 0, 1);
+    sight.up = on; sight.t0 = now - (1 - u0) * T_VIEW * 1000; sight.next = false; sight.turn = null; sight.arc = null; sight.said = ""; sight.key = "";
+    sight.lastYaw = P.yaw; sight.lastPitch = P.pitch; sight.omega = 0; sight.theta = 0;
+    camD = 1e9;
+    blend = still ? null : { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: on ? null : clampV(P.pitch, TP_DOWN, TP_UP) };
+    // Under reduced motion a cut: lowered, the look comes back within third person's at once (not on a stone of the
+    // homage or where you woke, where the view is his eyes again and they look as far as they go); and there the
+    // stone's own blend is not made either, raised or lowered (camera() would make one as the stone comes and goes;
+    // 22 Oct 2026)
+    if (still) {
+      var eyes = !on && !!((homage && Homage.standing(homage, P.x, P.y, P.z)) || treeSpot());
+      if (!on && !eyes) { P.pitch = clampV(P.pitch, TP_DOWN, TP_UP); }
+      onStone = eyes;
+    }
+    if (on) { document.body.dataset.sight = "true"; } else { delete document.body.dataset.sight; }
+    $("v-sight").setAttribute("aria-pressed", String(on));
+    if (on && !sight.told) { sight.told = true; say(byTouch() ? "The sight: your head is the glass. Drag to aim, or hold a point to bring it to the mark; tap to throw a pearl." : "The sight: your head is the glass. Drag or the arrows aim; a click, T or Enter throws a pearl.", true); }
+    drawCarry();
+  }
+  // At once (the head leaving, coming to, the launch): no blend, the arm and the hat back as they rest, no fling.
+  function dropSight() {
+    if (!sight.up) { return; }
+    sight.up = false; sight.t0 = -1e9; sight.thrown = -1e9; sight.next = false; sight.turn = null;
+    delete document.body.dataset.sight; $("v-sight").setAttribute("aria-pressed", "false"); drawCarry();
+  }
+  // The right mouse button: pressed, the sight comes up; let go after a beat or more it goes down (held, it is up
+  // while held); let go within a beat it stays up (a click), and the next click lowers it.
+  function sightPress() { if (Hd) { barred(); return; } sight.rmb = { t: performance.now(), was: sight.up }; if (!sight.up) { raiseSight(true); } }
+  function sightRelease() { var r = sight.rmb; sight.rmb = null; if (r && (r.was || performance.now() - r.t >= BEAT * 1000)) { raiseSight(false); } }
+  // The sight's camera: on the line through the head's seat along the look, SIGHT_D behind it, kept out of blocks
+  // and let out no faster than he walks, as third person's is.
+  function sightCam(dt) {
+    var c = seat(), d = lookDir(P.yaw, P.pitch), u = [-d[0], -d[1], -d[2]];
+    camD = min(clearTo(c, u, SIGHT_D), camD + WALK * dt);
+    return { e: [c[0] + u[0] * camD, max(1 + R_C, c[1] + u[1] * camD), c[2] + u[2] * camD], yaw: P.yaw, pitch: P.pitch, from: c };
+  }
+  // Held still on a point for a beat (the way to aim that does not drag, WCAG 2.5.7): that point comes to the mark in
+  // the time of a switch of view. The point is what the ray through it meets, out to the farthest throw; the look is
+  // turned so that the line through the head's centre passes it, so it is under the crux at any distance (sightStep
+  // turns toward it from where his head is each frame, so it comes to the mark while he walks too).
+  function sightAimAt(x, y) {
+    if (!sightOn() || !vp) { return; }
+    var d = dirAt(x, y), at = reachFrom(), t0 = max(0, (at[0] - eye[0]) * d[0] + (at[1] - eye[1]) * d[1] + (at[2] - eye[2]) * d[2]);
+    var hit = cast(d, t0 + THROW.FAR, eye, t0), t = hit ? hit.t : t0 + THROW.FAR, Q = [eye[0] + d[0] * t, eye[1] + d[1] * t, eye[2] + d[2] * t];
+    var c = seat(), v = [Q[0] - c[0], Q[1] - c[1], Q[2] - c[2]], L = hypot(v[0], v[1], v[2]);
+    if (L < 0.5) { return; }
+    sight.turn = { t0: performance.now(), from: [P.yaw, P.pitch], Q: Q };
+  }
+  // A touch screen: one touched already, or whose pointer is a finger (the Sight button's press is not a touch of the
+  // canvas, so a phone that raised the sight before it had touched the view was told to click; 21 Oct 2026).
+  function byTouch() { return touchy || !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches); }
+  // Ready to throw: the sight up, the arm up (the raise done) and a beat since the last (the smash's one block a beat).
+  function sightReady(now) { return sightOn() && sightEase(now) >= 1 && now - sight.thrown >= BEAT * 1000; }
+  // A tap, a click, T or Enter with the sight up: the throw, at once if his arm is up and a beat has passed since the
+  // last, else kept (the latest only) until it has, as a tap during a swing is kept.
+  function throwAt() {
+    if (Hd) { barred(); return false; }
+    if (!sightOn()) { return false; }
+    if (carried <= 0) { say(NO_PEARL); return false; }
+    var now = performance.now();
+    if (sightReady(now)) { return throwPearl(now); }
+    sight.next = true;
+    return true;
+  }
+  // Each frame, after the swing's: a hold come to a beat, the hold's turn, a kept throw when the arm is up.
+  function sightStep(dt, now) {
+    holdTick(now);
+    var tr = sight.turn;
+    if (tr) {
+      var u = stillMotion.matches ? 1 : smooth((now - tr.t0) / 1000 / T_VIEW), c = seat(), v = [tr.Q[0] - c[0], tr.Q[1] - c[1], tr.Q[2] - c[2]], L = hypot(v[0], v[1], v[2]);
+      if (L < 0.5) { sight.turn = null; }
+      else {
+        var yaw = Math.atan2(v[0], -v[2]), pitch = clampPitch(Math.asin(clampV(v[1] / L, -1, 1)));
+        P.yaw = tr.from[0] + angle(yaw - tr.from[0]) * u; P.pitch = clampPitch(tr.from[1] + (pitch - tr.from[1]) * u);
+        if (u >= 1) { sight.turn = null; }
+      }
+    }
+    if (sight.next && sightReady(now)) { sight.next = false; throwPearl(now); }
+  }
+  // The look's turning speed, smoothed over T_LIFT (the time the hologram takes to start and stop), and the angle the
+  // figure opens by: how far the aim would carry in that time, to at most the crux's complement (never under reduced
+  // motion: the figure stays closed).
+  function sightSettle(dt) {
+    if (!dt) { return; }
+    var dy = angle(P.yaw - sight.lastYaw), dp = P.pitch - sight.lastPitch, om = hypot(dy * Math.cos(P.pitch), dp) / dt;
+    sight.lastYaw = P.yaw; sight.lastPitch = P.pitch;
+    var k = 1 - Math.exp(-dt / T_LIFT);
+    sight.omega += (om - sight.omega) * k;
+    if (om > 1e-3) { var L = hypot(dy, dp); sight.mx += (dy / L - sight.mx) * k; sight.my += (dp / L - sight.my) * k; }
+    sight.theta = stillMotion.matches ? 0 : min(SIGHT_TMAX, sight.omega * T_LIFT);
+  }
+  /* The figure, as the mark: the block's six bars (FIGURE) seen down the diagonal (the drawing), or turned off it by
+     theta about an axis across the aim's motion, through the apex's line of sight; walked per pixel as blockMark is.
+     Faces as light: white faces full, grey faces half (the drawing's tones as light), black faces the glass. */
+  function figureMark(px, theta, mx, my) {
+    var key = px + ":" + (theta < 0.004 ? 0 : (round(theta * 180 / Math.PI * 2) / 2) + ":" + round(Math.atan2(my, mx) * 8 / Math.PI));
+    if (figCache[key]) { return figCache[key]; }
+    var r2 = Math.SQRT2, r3 = Math.sqrt(3), r6 = Math.sqrt(6), v = [-1 / r3, -1 / r3, 1 / r3], up = [0, 1 / r2, 1 / r2], rt = [-2 / r6, 1 / r6, -1 / r6];
+    if (theta >= 0.004) {
+      var a = Math.atan2(my, mx), ax = [0, 1, 2].map(function (k) { return -Math.sin(a) * rt[k] + Math.cos(a) * up[k]; });
+      var turn = function (q) {
+        var c = Math.cos(theta), s = Math.sin(theta), d = ax[0] * q[0] + ax[1] * q[1] + ax[2] * q[2];
+        var x = [ax[1] * q[2] - ax[2] * q[1], ax[2] * q[0] - ax[0] * q[2], ax[0] * q[1] - ax[1] * q[0]];
+        return [0, 1, 2].map(function (k) { return q[k] * c + x[k] * s + ax[k] * d * (1 - c); });
+      };
+      v = turn(v); up = turn(up); rt = turn(rt);
+    }
+    var Cc = [0.65, 0.426, 0.576], Pc = [0, 1, 2].map(function (k) { return Cc[k] + [0, 1 / r2, 1 / r2][k] * APEX_SY; });
+    var k = px / U_BLK, W = Math.ceil(1.3 * 8 * px), Hh = Math.ceil(1.15 * 8 * px), ox = W / 2, oy = Math.ceil(0.12 * 8 * px), S = 2;
+    var cv = document.createElement("canvas"); cv.width = W; cv.height = Hh;
+    var c2 = cv.getContext("2d"), img = c2.createImageData(W, Hh);
+    for (var py = 0; py < Hh; py += 1) {
+      for (var qx = 0; qx < W; qx += 1) {
+        var lum = 0, cov = 0;
+        for (var j = 0; j < S; j += 1) {
+          for (var i = 0; i < S; i += 1) {
+            var sx = (qx + (i + 0.5) / S - ox) / k, sy = -(py + (j + 0.5) / S - oy) / k;
+            var o = [0, 1, 2].map(function (n) { return Pc[n] + rt[n] * sx + up[n] * sy - v[n] * 3; });
+            var best = 1e9, axh = -1;
+            for (var n = 0; n < FIGURE.length; n += 1) {
+              var bx = FIGURE[n], tn = -1e9, tf = 1e9, at = 0;
+              for (var m = 0; m < 3; m += 1) {
+                if (abs(v[m]) < 1e-9) { if (o[m] < bx[m] || o[m] > bx[m + 3]) { tn = 1e9; } continue; }
+                var t0 = (bx[m] - o[m]) / v[m], t1 = (bx[m + 3] - o[m]) / v[m], lo = min(t0, t1), hi = max(t0, t1);
+                if (lo > tn) { tn = lo; at = m; }
+                tf = min(tf, hi);
+              }
+              if (tn <= tf && tn < best) { best = tn; axh = at; }
+            }
+            if (axh >= 0) { cov += 1; lum += axh === 1 ? 1 : axh === 0 ? 0.5 : 0; }
+          }
+        }
+        var q = (py * W + qx) * 4;
+        // Light: the white and grey faces' light as white at their tone; the black faces leave the glass clear but
+        // are kept as the drawing's black (the keyline below), so the figure reads on bright ground too.
+        if (cov) { var L = lum / cov; img.data[q] = img.data[q + 1] = img.data[q + 2] = round(255 * L); img.data[q + 3] = round(255 * cov / (S * S) * (L > 0 ? 1 : 0.62)); }
+      }
+    }
+    c2.putImageData(img, 0, 0);
+    var out = { cv: cv, ox: ox, oy: oy };
+    if (Object.keys(figCache).length > 60) { figCache = {}; }
+    figCache[key] = out;
+    return out;
+  }
+  // What the crux is on, out to the farthest throw: the ray from the camera begun where it passes him, measured from
+  // him (as pick() measures); water, which the ray passes through, by its surface, since a throw comes down on it.
+  function sightPick() {
+    var d = lookDir(camLast.yaw, camLast.pitch), at = reachFrom();
+    var t0 = max(0, (at[0] - eye[0]) * d[0] + (at[1] - eye[1]) * d[1] + (at[2] - eye[2]) * d[2]);
+    var hit = cast(d, t0 + THROW.FAR, eye, t0);
+    if (hit) { hit.r = hypot(eye[0] + d[0] * hit.t - at[0], eye[1] + d[1] * hit.t - at[1], eye[2] + d[2] * hit.t - at[2]); }
+    var tw0 = t0, inW = w.get(floor(eye[0] + d[0] * t0), floor(eye[1] + d[1] * t0), floor(eye[2] + d[2] * t0)) === B.WATER;
+    for (var tw = tw0; !inW && tw < (hit ? hit.t : t0 + THROW.FAR); tw += 0.05) {
+      var qx = floor(eye[0] + d[0] * tw), qy = floor(eye[1] + d[1] * tw), qz = floor(eye[2] + d[2] * tw);
+      if (w.get(qx, qy, qz) === B.WATER) { hit = { b: B.WATER, x: qx, y: qy, z: qz, t: tw, water: true }; hit.r = hypot(eye[0] + d[0] * tw - at[0], eye[1] + d[1] * tw - at[1], eye[2] + d[2] * tw - at[2]); break; }
+    }
+    return hit;
+  }
+  var MAT = {}; MAT[B.GRASS] = "Grass"; MAT[B.DIRT] = "Earth"; MAT[B.STONE] = "Stone"; MAT[B.ROAD] = "The road"; MAT[B.PAVE] = "Paving";
+  MAT[B.WATER] = "Water"; MAT[B.LOG] = "A tree's trunk"; MAT[B.LEAVES] = "Leaves"; MAT[B.BRICK] = "Brick"; MAT[B.LIME] = "Limestone"; MAT[B.CONC] = "Concrete";
+  MAT[B.GLASS] = "Glass"; MAT[B.SLATE] = "Slate"; MAT[B.SAND] = "Sand"; MAT[B.METAL] = "Metal"; MAT[B.SCORCH] = "Scorched ground"; MAT[B.RENDER] = "Render";
+  MAT[B.LOOSE] = "Loose earth"; MAT[B.BEDROCK] = "Bedrock"; MAT[B.FLOOR] = "Floorboards"; MAT[B.PLASTER] = "Plaster";
+  /* What the sight says of what it is on: its name, how far it is from him, what it came from, and the relation
+     that put it there. Every line comes from the information the place was made of. */
+  // a model's own material (ids 32 to 63): its name from the models' materials, as the place took it
+  function ownMat(b) { var ms = w.mats || {}; for (var k in ms) { if (ms[k] === b) { return k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, " "); } } return ""; }
+  // How big a work hangs against its real size: place.js hangs it at 0.013 m to its centimetre (1.3 times: sizeIn), its
+  // longest side no more than 3.2 m and its shortest no less than 0.45 m, and smaller where its wall has no room
+  // (its scale); a work whose size is not recorded hangs 0.9 m by 0.7.
+  function sizeSaid(p) {
+    var real = p.f.wcm ? p.f.wcm / 100 : 0, k = real ? (p.u1 - p.u0) / real : 0, pct = round(k * 100);
+    if (!k) { return "its size not recorded, hung " + (p.u1 - p.u0).toFixed(1) + " m wide"; }
+    if (p.scale < 1) { return "at " + pct + " % of its real size, the most its wall leaves room for"; }
+    if (abs(k - 1.3) < 0.005) { return "at 1.3 times its real size"; }
+    return "at " + pct + " % of its real size, " + (k < 1.3 ? "its longest side no more than 3.2 m" : "its shortest side no less than 0.45 m");
+  }
+  function sightInfo(hit) {
+    if (!hit) { return { name: "Nothing within the throw", sub: "Out past " + THROW.FAR + " m, the farthest throw (on level ground, F(9))", kind: "none" }; }
+    var m = round(hit.r) + " m", wr = place.wreck;
+    if (hit.painting) {
+      var p = hit.painting, f = p.f, raw = rawOf(p);
+      return { kind: "work", name: f.title || "Untitled", sub: [f.artist, raw.date].filter(Boolean).join(", ") + " · " + m, read: hit.r <= LOOK,
+               from: "One of the works he saved on Artsy, hung in " + (p.room && p.room.name ? lower(p.room.name) : "the place") + " by the adventure's number",
+               rel: sizeSaid(p) + (looked[f.id] ? "; you have looked behind it" : "") };
+    }
+    var k = PIECE_IDS.indexOf(hit.b);
+    if (k >= 0) { var pc = adv.pieces[k]; return { kind: "piece", name: pc.name, sub: m + (hit.r <= REACH ? " · within reach" : ""), from: "A piece of your rocket", rel: "put " + ({ roof: "on a roof", park: "in the ground of a park", water: "under the water", tree: "in a tree's top", work: "behind a work" }[pc.hide.type] || "here") + " by the adventure's rule" }; }
+    if (hit.b === B.NOTE) { return { kind: "note", name: "A note", sub: m + (hit.r <= REACH ? " · within reach" : ""), from: "A clue made from what the works really are", rel: "the fewest facts that leave only one work" }; }
+    var hl = window.Homage && homage ? Homage.label(homage, hit.x, hit.y, hit.z) : "";
+    if (hl) { return { kind: "block", name: hl, sub: m, from: "The homage where you woke", rel: "three figures set across the turn you make on waking" }; }
+    if (wr && abs(hit.x - wr.x) <= 2 && abs(hit.z - wr.z) <= 2 && abs(hit.y - wr.y) <= 4) { return { kind: "wreck", name: built ? "The rocket, at your capsule" : "Your capsule, wrecked", sub: m, from: "Where you came down", rel: "the place's crash, the one open ground its lots leave round it" }; }
+    var pa = Pl.partAt(place, hit.x, hit.y, hit.z), name = pa ? partText(pa) : "", mat = MAT[hit.b] || BLOCKS[hit.b] || ownMat(hit.b) || "A block";
+    return { kind: "block", name: name || mat, sub: (name ? mat + " · " : "") + m + (hit.r <= REACH ? " · within reach to break" : ""),
+             from: pa && pa.from ? "A section of " + Fm.the(pa.from) + ", taken apart and put together again" : place.kind === "city" ? "The city's ground, from its map" : "The ground round " + setting.name,
+             rel: pa && pa.lot ? "in the lot of " + pa.lot.name + ", cells of a like height gathered" : "a metre to the block" };
+  }
+  // A point of the world on the HUD (css px), or null behind the eye.
+  function toScreen(p, W, H) {
+    var q = [0, 0, 0, 0];
+    for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; }
+    if (q[3] <= 0.05) { return null; }
+    return [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H, q[3]];
+  }
+  function hull(pts) {
+    pts = pts.filter(Boolean).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    if (pts.length < 3) { return pts; }
+    var cr = function (o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }, lo = [], hi = [];
+    pts.forEach(function (p) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) { lo.pop(); } lo.push(p); });
+    pts.slice().reverse().forEach(function (p) { while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) { hi.pop(); } hi.push(p); });
+    return lo.slice(0, -1).concat(hi.slice(0, -1));
+  }
+  // A line of the mark: the drawing's white over its black, so that it reads on every ground (the floor against any
+  // colour is 4.14 : 1, the sight's SIGHT.md section 2).
+  function twoTone(c, path, lw) {
+    c.lineJoin = "round"; c.lineCap = "round";
+    c.strokeStyle = "rgba(0,0,0,0.78)"; c.lineWidth = lw * 3; path(); c.stroke();
+    c.strokeStyle = "#ffffff"; c.lineWidth = lw; path(); c.stroke();
+  }
+  function outlineOf(hit, W, H) {
+    var corners = [];
+    if (hit.painting) {
+      var p = hit.painting, e = 0.02;
+      [[p.u0, p.y0], [p.u1, p.y0], [p.u1, p.y1], [p.u0, p.y1]].forEach(function (q) {
+        corners.push(p.axis === "x" ? [p.plane + p.dir * e, q[1], q[0]] : [q[0], q[1], p.plane + p.dir * e]);
+      });
+      return corners.map(function (q) { return toScreen(q, W, H); });
+    }
+    var lo = [hit.x, hit.y, hit.z], hi = [hit.x + 1, hit.y + 1, hit.z + 1];
+    for (var i = 0; i < 8; i += 1) { corners.push(toScreen([i & 1 ? hi[0] : lo[0], i & 2 ? hi[1] : lo[1], i & 4 ? hi[2] : lo[2]], W, H)); }
+    return hull(corners);
+  }
+  // Each frame, over the view: the window (the head's outline, its film's edge), the frame, the mark, the target
+  // lit with what it is, the holdover marks, and, the aim still, where the throw comes down. From the raise's half
+  // (the head no longer drawn) it comes in as the head clears into glass.
+  function drawSight(c, W, H, now) {
+    var dt = sight.last ? min(0.05, (now - sight.last) / 1000) : 0; sight.last = now; sightSettle(dt);
+    var tag = $("sight-tag"), e = sightEase(now);
+    if (!sightOn() || !camLast || e < 0.5) {
+      if (tag) { tag.hidden = true; }
+      sight.hit = null;
+      var to0 = $("toast"); if (to0 && to0.style.top) { to0.style.top = ""; to0.style.bottom = ""; }   // the toast back in its own place
+      return;
+    }
+    var fade = smooth((e - 0.5) / 0.5), f = H / 2 / T35, cx = W / 2, cy = H / 2, u = sightU() * f, dpr = min(2, window.devicePixelRatio || 1), hair = 1;
+    c.save(); c.globalAlpha = fade;
+    // the window: the head's outline seen from the camera (its true distance: nearer, it is larger, as glass is)
+    // (the posed head when the body was drawn this frame; else, the camera pulled in to the glass by a wall at his
+    // back so that the body is not drawn, the head's seat; pressed into the head, the whole view)
+    var hc = drawMe.body && sight.head ? sight.head : seat(), hs = toScreen(hc, W, H);
+    var D = hypot(hc[0] - eye[0], hc[1] - eye[1], hc[2] - eye[2]), rw = D <= PEARL.headR ? hypot(W, H) : f * PEARL.headR / Math.sqrt(max(1e-4, D * D - PEARL.headR * PEARL.headR));
+    var wx = hs ? hs[0] : cx, wy = hs ? hs[1] : cy;
+    // the head clearing into glass: its median colour (the covers', HEAD_EXPO's) going out as the window comes in
+    if (fade < 1) { c.globalAlpha = 1 - fade; c.fillStyle = "#b9aca9"; c.beginPath(); c.arc(wx, wy, rw, 0, Math.PI * 2); c.fill(); c.globalAlpha = fade; }
+    // the film's edge: the light the film reflects at each ring's incidence (Fresnel: clear face on, bright grazing)
+    var g = c.createRadialGradient(wx, wy, 0, wx, wy, rw);
+    SIGHT_RIM.forEach(function (s) { g.addColorStop(s[0], "rgba(" + s[1] + "," + s[2] + ")"); });
+    c.fillStyle = g; c.beginPath(); c.arc(wx, wy, rw, 0, Math.PI * 2); c.fill();
+    // the frame, built of the unit: one ring of figures one of his cells tall (phi^-7 m at the head's distance),
+    // alternating upright and point-reflected, as a built sphere's band is
+    var fh = f * unitH() / max(D, 0.05), fwid = fh * 2 / Math.sqrt(3), N = max(8, 2 * round(Math.PI * (rw + fh / 2) / fwid));
+    if (!sight.ring || sight.ring.px !== round(fh * dpr)) { sight.ring = { px: round(fh * dpr), cv: figure(max(6, round(fwid * dpr)), 2, [[236, 230, 220], [150, 146, 140], [30, 28, 26]]) }; }
+    if (rw < hypot(W, H)) {
+      for (var i = 0; i < N; i += 1) {
+        var a = i / N * Math.PI * 2, flip = i % 2, rr = rw + fh * (flip ? 0.36 : 0.64);
+        c.save(); c.translate(wx + Math.sin(a) * rr, wy - Math.cos(a) * rr); c.rotate(a + (flip ? Math.PI : 0));
+        c.drawImage(sight.ring.cv, -fwid / 2, -fh / 2, fwid, fh); c.restore();
+      }
+    }
+    // the mark, collimated: at the screen's centre whatever the camera does (the look is the sight's axis)
+    SIGHT_F.forEach(function (F) {
+      var r = F * u / Math.sqrt(3);
+      twoTone(c, function () { c.beginPath(); c.arc(cx, cy + r, r, 0, Math.PI * 2); }, hair);
+    });
+    var fm = figureMark(round(u * dpr), sight.theta, sight.mx, sight.my);
+    c.drawImage(fm.cv, cx - fm.ox / dpr, cy - fm.oy / dpr, fm.cv.width / dpr, fm.cv.height / dpr);
+    // what the crux is on, then the arc a throw now would take (it heads for what the crux is on), a frame in three
+    var hit = sightPick(), info = sightInfo(hit);
+    sight.hit = hit;
+    if (!sight.arc || tick % 3 === 0) { sight.arc = predict(); }
+    var arc = sight.arc;
+    // the holdover marks: each circle's foot, and the range at which the arc comes down through its line
+    var cam = { f: lookDir(camLast.yaw, camLast.pitch) };
+    cam.r = [Math.cos(camLast.yaw), 0, Math.sin(camLast.yaw)];
+    cam.u = [cam.r[1] * cam.f[2] - cam.r[2] * cam.f[1], cam.r[2] * cam.f[0] - cam.r[0] * cam.f[2], cam.r[0] * cam.f[1] - cam.r[1] * cam.f[0]];
+    if (cam.u[1] < 0) { cam.u = cam.u.map(function (q) { return -q; }); }
+    c.font = "500 11px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textBaseline = "middle";
+    sight.feet = []; sight.ringSaid = null;
+    // what the ring's words keep clear of: the figure and the feet's ranges (a line of the 11 px type, 14 px tall)
+    var keep = [[cx - fm.ox / dpr, cy - fm.oy / dpr, cx - fm.ox / dpr + fm.cv.width / dpr, cy - fm.oy / dpr + fm.cv.height / dpr]];
+    SIGHT_F.forEach(function (F, n) {
+      var foot = 2 * F * u / Math.sqrt(3), want = -foot / f, rng = null;
+      if (arc) {
+        var prevT = null;
+        for (var j = 0; j < arc.pts.length; j += 1) {
+          var p = arc.pts[j], v = [p[0] - eye[0], p[1] - eye[1], p[2] - eye[2]], fz = v[0] * cam.f[0] + v[1] * cam.f[1] + v[2] * cam.f[2];
+          if (fz <= 0.5) { continue; }
+          var ty = (v[0] * cam.u[0] + v[1] * cam.u[1] + v[2] * cam.u[2]) / fz;
+          if (prevT != null && prevT > want && ty <= want) { rng = hypot(p[0] - P.x, p[2] - P.z); break; }
+          prevT = ty;
+        }
+      }
+      sight.feet.push(rng);
+      var side = n % 2 ? -1 : 1, x0 = cx + side * 4, lab = rng != null ? round(rng) + " m" : "";
+      twoTone(c, function () { c.beginPath(); c.moveTo(cx - u * 0.6, cy + foot); c.lineTo(cx + u * 0.6, cy + foot); }, hair);
+      c.textAlign = side > 0 ? "left" : "right";
+      c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.8)"; c.strokeText(lab, x0 + side * u * 0.8, cy + foot);
+      c.fillStyle = "#ffffff"; c.fillText(lab, x0 + side * u * 0.8, cy + foot);
+      if (lab) { var lw = c.measureText(lab).width, lx = x0 + side * u * 0.8; keep.push([side > 0 ? lx : lx - lw, cy + foot - 7, side > 0 ? lx + lw : lx, cy + foot + 7]); }
+    });
+    // the target: what the crux is on, lit
+    if (hit) {
+      var ol = outlineOf(hit, W, H);
+      if (ol.length >= 3 && ol.every(Boolean)) {
+        twoTone(c, function () { c.beginPath(); ol.forEach(function (q, i) { if (i) { c.lineTo(q[0], q[1]); } else { c.moveTo(q[0], q[1]); } }); c.closePath(); }, hair);
+      }
+    }
+    // the aim steady (the figure closed), where the throw comes down: the holding circle of the block figure (0.98 / sqrt 3)
+    // lying on the face the pearl first touches (a ring seen at elevation t is an ellipse, minor / major = sin t), and
+    // how far that is from him; under reduced motion the figure never opens, so it is always shown
+    var steady = stillMotion.matches ? 1 : 1 - smooth((sight.theta * 180 / Math.PI - 1) / 2);
+    if (arc && arc.at && steady > 0.02) {
+      var L = arc.at, n0 = L.n, t1 = abs(n0[1]) > 0.7 ? [1, 0, 0] : [0, 1, 0], tn = t1[0] * n0[0] + t1[1] * n0[1] + t1[2] * n0[2];
+      t1 = norm([t1[0] - tn * n0[0], t1[1] - tn * n0[1], t1[2] - tn * n0[2]]);
+      var t2 = [n0[1] * t1[2] - n0[2] * t1[1], n0[2] * t1[0] - n0[0] * t1[2], n0[0] * t1[1] - n0[1] * t1[0]];
+      var Rl = 0.98 / Math.sqrt(3), ring = [], off = pearlR() - 0.01;
+      var base = [L.x - n0[0] * off, L.y - n0[1] * off, L.z - n0[2] * off];   // the touch on the surface, a centimetre off it
+      for (var s = 0; s <= 48; s += 1) { var aa = s / 48 * Math.PI * 2; ring.push(toScreen([0, 1, 2].map(function (k) { return base[k] + (t1[k] * Math.cos(aa) + t2[k] * Math.sin(aa)) * Rl; }), W, H)); }
+      if (ring.every(Boolean)) {
+        c.globalAlpha = fade * steady;
+        twoTone(c, function () { c.beginPath(); ring.forEach(function (q, i) { if (i) { c.lineTo(q[0], q[1]); } else { c.moveTo(q[0], q[1]); } }); }, hair * 1.5);
+        // its words over the ring, else under it, else beside it, wherever they first keep clear of the figure and the
+        // feet's ranges (a landing near the crux had written them over the mark; 21 Oct 2026)
+        var lt = "comes down " + round(hypot(L.x - P.x, L.z - P.z)) + " m", tw = c.measureText(lt).width, rx = [1e9, -1e9], ry = [1e9, -1e9];
+        ring.forEach(function (q) { rx[0] = min(rx[0], q[0]); rx[1] = max(rx[1], q[0]); ry[0] = min(ry[0], q[1]); ry[1] = max(ry[1], q[1]); });
+        var my = (ry[0] + ry[1]) / 2, mx = (rx[0] + rx[1]) / 2, best = null;
+        [[mx, ry[0] - 10], [mx, ry[1] + 10], [rx[1] + 8 + tw / 2, my], [rx[0] - 8 - tw / 2, my]].forEach(function (q) {
+          var b = [q[0] - tw / 2 - 2, q[1] - 7, q[0] + tw / 2 + 2, q[1] + 7], over = 0;
+          keep.forEach(function (k) { over += max(0, min(b[2], k[2]) - max(b[0], k[0])) * max(0, min(b[3], k[3]) - max(b[1], k[1])); });
+          if (!best || over < best.over) { best = { at: q, over: over }; }
+        });
+        c.textAlign = "center"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.8)"; c.strokeText(lt, best.at[0], best.at[1]); c.fillStyle = "#fff"; c.fillText(lt, best.at[0], best.at[1]);
+        sight.ringSaid = { text: lt, at: best.at, over: best.over };
+        c.globalAlpha = fade;
+      }
+    }
+    // the words, as page text under the window (read by a screen reader as they change)
+    if (tag) {
+      var act = carried > 0 ? (byTouch() ? "Tap to throw" : "Click, T or Enter to throw") : "No pearl in your hand: walk to one, or tap it with the sight lowered";
+      var html = '<b>' + esc(info.name) + '</b><span>' + esc(info.sub || "") + '</span>' + (info.from ? '<span class="from">' + esc(info.from) + (info.rel ? ', ' + esc(info.rel) : '') + '</span>' : '') + '<span class="act">' + esc(act) + '</span>';
+      if (sight.said !== html) { sight.said = html; tag.innerHTML = html; }
+      // said aloud only when what it is on changes (or the glove empties), not at every metre
+      var key = [info.name, info.from, info.rel, act].join(". ");
+      if (sight.key !== key) { sight.key = key; $("sight-say").textContent = [info.name, info.sub, info.from && info.from + (info.rel ? ", " + info.rel : ""), act].filter(Boolean).join(". "); }
+      tag.hidden = !$("notes").hidden;   // (the notes, opened over it, are read instead)
+      // under the window, but never over the foot: at most the tag's own height above the foot's top, less the HUD's
+      // 6 px gap (the views column's); pressed to the glass the window is the whole view, and the words then stand
+      // just over the foot
+      var ft = document.querySelector(".foot"), fTop = ft ? ft.getBoundingClientRect().top : H - 120;
+      var tagTop = round(max(0, min(wy + rw + fh + 10, fTop - 6 - (tag.offsetHeight || 90))));
+      tag.style.top = tagTop + "px";
+      // a toast (what a pearl struck) stands where these words do, so while the sight is up it goes over the window,
+      // 8 px clear of its frame, where the header and the arrow leave it room, else 6 px under the words (21 Oct 2026:
+      // on a phone the words had covered the toast's first lines)
+      var to = $("toast"), th = to ? to.offsetHeight || 40 : 0, over = wy - rw - fh - 8 - th, hd = 0;
+      [document.querySelector(".top"), $("near")].forEach(function (el) { if (el && !el.hidden) { hd = max(hd, el.getBoundingClientRect().bottom); } });
+      var under = tagTop + (tag.offsetHeight || 90) + 6, at = over >= hd + 6 ? over : under + th <= H - 8 ? under : null;
+      if (to) { to.style.top = at == null ? "" : round(at) + "px"; to.style.bottom = at == null ? "" : "auto"; }
+    }
+    c.restore();
+  }
+  function unitH() { return me3 ? me3.body.cell : Math.pow(PHI, -7); }
+  function pearlR() { return THROW.RU * unitH(); }
+  // The pearl's grid: 6 x 6 x 6 units, a band to each layer, the bands taking the film's tints of the pearl cloth
+  // (his jacket's K = 8) in order up the pearl.
+  function pearlGrid() {
+    if (!me3 || !gl) { return; }
+    var n = 2 * THROW.RU, ids = new Uint8Array(n * n * n), blocks = [], tint = me3.body.paletteIds.jacket || [1];
+    for (var y = 0; y < n; y += 1) {
+      for (var z = 0; z < n; z += 1) {
+        for (var x = 0; x < n; x += 1) {
+          var q = [x + 0.5 - THROW.RU, y + 0.5 - THROW.RU, z + 0.5 - THROW.RU];
+          if (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] > THROW.RU * THROW.RU) { continue; }
+          var id = tint[min(tint.length - 1, floor((y + 0.5) / n * tint.length))];
+          ids[(y * n + z) * n + x] = id; blocks.push([x, y, z, id]);
+        }
+      }
+    }
+    pearlCh = meshBlocks(blocks);
+    pearlCh.tex = voxTexture(ids, n, n, n); pearlCh.n = n; pearlCh.units = blocks.length;
+  }
+  function initThrow() {
+    trailProg = compile("#version 300 es\nlayout(location=0) in vec4 a; uniform mat4 uVP; out float vA; void main(){ vA = a.w; gl_Position = uVP * vec4(a.xyz, 1.0); }",
+      "#version 300 es\nprecision mediump float; in float vA; uniform vec3 uC; out vec4 o; void main(){ o = vec4(uC, vA); }");
+    TU.uVP = gl.getUniformLocation(trailProg, "uVP"); TU.uC = gl.getUniformLocation(trailProg, "uC");
+    trailVao = gl.createVertexArray(); trailBuf = gl.createBuffer();
+    gl.bindVertexArray(trailVao); gl.bindBuffer(gl.ARRAY_BUFFER, trailBuf);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0); gl.bindVertexArray(null);
+  }
+  // From his form when it has come: where the pearl sits in his raised glove (the palm's centre and one pearl radius
+  // on along the forearm: body.throwArm), in the arm's own cells and in his frame raised; and where the doffed hat goes
+  // (its right brim's edge, the hat's half-width to his right of its middle, into his left glove's palm).
+  function throwFrom(body, spec) {
+    var PB = window.PearlBody, part = function (n) { return body.parts.filter(function (p) { return p.name === n && !p.empty; })[0]; };
+    var arm = part("arm_right"), hat = part("hat"), ta = body.throwArm, h = body.cell, r = THROW.RU * h;
+    HOLD = null;
+    if (arm && ta) {
+      var q = [ta.palm[0] + ta.fore[0] * r, ta.palm[1] + ta.fore[1] * r, ta.palm[2] + ta.fore[2] * r];
+      HOLD = [(q[0] - arm.org[0]) / h, (q[1] - arm.org[1]) / h, (q[2] - arm.org[2]) / h];
+      HOLD_AT = apply(PB.pose(body, 0, 0, { right: 1 }).arm_right, HOLD);
+    }
+    var palm = null; ((spec.form || {}).primitives || []).forEach(function (p) { if (p.part === "glove_left_palm") { palm = PB.toGame(p.c); } });
+    if (hat && palm) {
+      var lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+      hat.blocks.forEach(function (b) { for (var k = 0; k < 3; k += 1) { var v = hat.org[k] + (b[k] + 0.5) * h; lo[k] = min(lo[k], v); hi[k] = max(hi[k], v); } });
+      HAT_DOFF = [palm[0] - hi[0], palm[1] - (lo[1] + hi[1]) / 2, palm[2] - (lo[2] + hi[2]) / 2];
+      // how far up it must go to clear his head: the head's top over the lowest of the hat's cells standing over it
+      var hc = body.head.centre, hr = body.head.radius, low = 1e9;
+      hat.blocks.forEach(function (b) { var x = hat.org[0] + (b[0] + 0.5) * h, z = hat.org[2] + (b[2] + 0.5) * h; if (hypot(x - hc[0], z - hc[2]) < hr + h) { low = min(low, hat.org[1] + b[1] * h); } });
+      if (low < 1e9) { HAT_LIFT = max(0, hc[1] + hr - low); }
+    }
+  }
+  // The hat doffed while the head is the glass, in his frame, as a hat is taken off: lifted clear of his head over the
+  // raise's first third (HAT_LIFT), out to his left over the second, down into his left glove over the last, so that
+  // it never passes through his head or his body on the way (straight there, it went through both; slid out at the
+  // head's height, as it was until 22 Oct 2026, more of it went into the head than sits round it at rest: 216 of its
+  // cells to 136; its brim meets only the guitar's neck, in the glove that holds both) (null at rest).
+  function hatOff(now) {
+    var e = sightEase(now);
+    if (!e) { return null; }
+    var up = smooth(3 * e), out = smooth(3 * e - 1), down = smooth(3 * e - 2);
+    return [HAT_DOFF[0] * out, HAT_LIFT * up * (1 - down) + HAT_DOFF[1] * down, HAT_DOFF[2] * out];
+  }
+  // Where the pearl leaves: in his raised glove (the arm up, no fling), his walk's bob and turn as they are now.
+  function handAt() {
+    if (!me3 || !HOLD) { var c = Math.cos(P.face), s = Math.sin(P.face); return [P.x + HOLD_AT[0] * c - HOLD_AT[2] * s, P.y + HOLD_AT[1], P.z + HOLD_AT[0] * s + HOLD_AT[2] * c]; }
+    var PB = window.PearlBody, body = me3.body, M = PB.pose(body, PB.phaseStep(body, 0, P.walked), P.amount, { right: 1 });
+    return apply(PB.place(M.arm_right, P.x, P.y, P.z, P.face), HOLD);
+  }
+  // The launch: from his raised glove, at the pearl's one speed, on the lower arc that comes level with the sight's
+  // line at the zero (ZERO from where the line passes him, as pick() measures), heading for what the mark is on (the
+  // point on the line at tHit; at the farthest throw on nothing) so that it comes down on the mark's upright: his
+  // glove stands 0.39 m right of the line (the arm cocked beside his head), and a heading kept parallel would put
+  // every pearl that far right of the mark. His own walk with it: it is his hand that throws.
+  function launchFrom(e, d, tHit) {
+    var H = handAt(), at = reachFrom(), t0 = max(0, (at[0] - e[0]) * d[0] + (at[1] - e[1]) * d[1] + (at[2] - e[2]) * d[2]);
+    // his glove beside a wall (the pearl reaches 0.49 m to his right, past his own box): it leaves from as near the
+    // glove as is clear, toward his head's seat, which his box keeps clear (it had struck the wall at 0 m and come back)
+    var sc = seat();
+    for (var k = 0; k < 12 && sphereHit(H[0], H[1], H[2], pearlR()); k += 1) { H = [(H[0] + sc[0]) / 2, (H[1] + sc[1]) / 2, (H[2] + sc[2]) / 2]; }
+    var A = [e[0] + d[0] * (t0 + THROW.ZERO), e[1] + d[1] * (t0 + THROW.ZERO), e[2] + d[2] * (t0 + THROW.ZERO)];
+    var tt = tHit != null ? tHit : t0 + THROW.FAR, T = [e[0] + d[0] * tt, e[2] + d[2] * tt];   // the heading is level: x and z only
+    var hx = T[0] - H[0], hz = T[1] - H[2], hl = hypot(hx, hz), ux = hl > 1e-6 ? hx / hl : Math.sin(P.yaw), uz = hl > 1e-6 ? hz / hl : -Math.cos(P.yaw);
+    var x = (A[0] - H[0]) * ux + (A[2] - H[2]) * uz, y = A[1] - H[1], v = THROW.V, g = THROW.G, th;
+    var disc = v * v * v * v - g * (g * x * x + 2 * y * v * v);
+    if (x < 1e-6) { th = d[1] > 0 ? Math.PI / 2 : -Math.PI / 2; }
+    else { th = disc >= 0 ? Math.atan2(v * v - Math.sqrt(disc), g * x) : Math.PI / 4; }
+    var mv = [P.vx || 0, P.ground || P.wet ? 0 : (P.vy || 0), P.vz || 0];
+    return { H: H, vel: [v * Math.cos(th) * ux + mv[0], v * Math.sin(th) + mv[1], v * Math.cos(th) * uz + mv[2]], th: th, yaw: Math.atan2(ux, -uz), A: A, mv: mv };
+  }
+  function throwPearl(now) {
+    if (!sightOn() || !camLast || !eye) { return false; }
+    if (carried <= 0) { say(NO_PEARL); return false; }
+    var L = launchFrom(eye, lookDir(camLast.yaw, camLast.pitch), sight.hit ? sight.hit.t : null);
+    carried -= 1; sight.thrown = now; sight.arc = null;
+    pearls.push({ x: L.H[0], y: L.H[1], z: L.H[2], vx: L.vel[0], vy: L.vel[1], vz: L.vel[2], yaw: L.yaw, spin: 0, state: "fly", t: 0, bounces: 0,
+                  trail: [[L.H[0], L.H[1], L.H[2], 0]], age: 0, from: { H: L.H, vel: L.vel, th: L.th, A: L.A, mv: L.mv, eye: eye.slice(), yaw: camLast.yaw, pitch: camLast.pitch }, first: null, wet: false });
+    drawCarry();
+    return true;
+  }
+  // The pearl against the grid: the nearest point of every block its sphere could touch (the place's sides and
+  // the bedrock as walls, the sky open); a note is a sheet, not a block, as for him (w.SOLID).
+  function sphereHit(x, y, z, r) {
+    var best = null, S = w.SOLID;
+    for (var cy = floor(y - r); cy <= floor(y + r); cy += 1) {
+      for (var cz = floor(z - r); cz <= floor(z + r); cz += 1) {
+        for (var cx = floor(x - r); cx <= floor(x + r); cx += 1) {
+          var solid = cx < 0 || cz < 0 || cx >= w.SX || cz >= w.SZ || cy < 0 ? true : cy >= w.SY ? false : !!S[w.get(cx, cy, cz)];
+          if (!solid) { continue; }
+          var qx = clampV(x, cx, cx + 1), qy = clampV(y, cy, cy + 1), qz = clampV(z, cz, cz + 1), dd = (x - qx) * (x - qx) + (y - qy) * (y - qy) + (z - qz) * (z - qz);
+          if (dd < r * r && (!best || dd < best.dd)) { best = { dd: dd, cx: cx, cy: cy, cz: cz, n: [x - qx, y - qy, z - qz] }; }
+        }
+      }
+    }
+    return best;
+  }
+  // One pearl through dt: on its own parabola in steps no longer than the time in which the chord leaves the arc by
+  // a bar of his unit (sqrt(8 x 0.1 h / g) = 0.033 s) nor than the time it takes to go half its radius (so it never
+  // passes a block), the touch found by halving the step; then the bounce, the rest, the water.
+  function stepPearl(p, dt, quiet) {
+    var g = THROW.G, h = unitH(), r = THROW.RU * h, sub = Math.sqrt(8 * 0.1 * h / g), vRest = Math.sqrt(2 * g * h), left = dt, guard = 0;
+    if (p.state === "rest") {
+      // a rest is kept while something holds it up (a block broken under it lets it fall again, or in water sink on:
+      // it had stayed where it lay, held up by nothing; 22 Oct 2026)
+      if (!sphereHit(p.x, p.y - 0.02, p.z, r)) { p.state = "fly"; } else { return; }
+    }
+    while (left > 1e-7 && guard < 400) {
+      guard += 1;
+      var wet = w.get(floor(p.x), floor(p.y), floor(p.z)) === B.WATER;
+      if (wet && !p.wet) { p.wet = true; if (!quiet) { struck(p, null, null, "water"); } }
+      var sp = hypot(p.vx, p.vy, p.vz), step = min(left, sub, r / 2 / max(sp, 1e-6)), ay = wet ? -THROW.SINK_G : -g;
+      var at = function (m) { return [p.x + p.vx * m, p.y + p.vy * m + 0.5 * ay * m * m, p.z + p.vz * m]; };
+      var q = at(step), hit = sphereHit(q[0], q[1], q[2], r);
+      if (!hit) {
+        p.x = q[0]; p.y = q[1]; p.z = q[2]; p.vy += ay * step; p.t += step; left -= step;
+        if (wet) { var s2 = hypot(p.vx, p.vy, p.vz); if (s2 > THROW.SINK) { p.vx *= THROW.SINK / s2; p.vy *= THROW.SINK / s2; p.vz *= THROW.SINK / s2; } }
+        if (p.y < -2) { p.state = "rest"; break; }
+        continue;
+      }
+      var lo = 0, hi = step;
+      for (var i = 0; i < 16; i += 1) { var m = (lo + hi) / 2, qm = at(m); if (sphereHit(qm[0], qm[1], qm[2], r)) { hi = m; } else { lo = m; } }
+      var q0 = at(lo), qh = at(hi), c = sphereHit(qh[0], qh[1], qh[2], r) || hit;
+      p.x = q0[0]; p.y = q0[1]; p.z = q0[2]; p.vy += ay * lo; p.t += lo; left -= max(lo, 1e-5);
+      var nl = hypot(c.n[0], c.n[1], c.n[2]), n = nl > 1e-9 ? [c.n[0] / nl, c.n[1] / nl, c.n[2] / nl] : (function () { var s = hypot(p.vx, p.vy, p.vz) || 1; return [-p.vx / s, -p.vy / s, -p.vz / s]; })();
+      // the first touch says what it struck; one that came down through water has said so already (it sinks)
+      if (!p.first) { p.first = { x: p.x, y: p.y, z: p.z, t: p.t, n: n, cell: [c.cx, c.cy, c.cz], b: w.get(c.cx, c.cy, c.cz) }; if (!quiet && !p.wet) { struck(p, c, n); } }
+      var vn = p.vx * n[0] + p.vy * n[1] + p.vz * n[2];
+      if (vn < 0) { p.vx = THROW.E * (p.vx - 2 * vn * n[0]); p.vy = THROW.E * (p.vy - 2 * vn * n[1]); p.vz = THROW.E * (p.vz - 2 * vn * n[2]); }
+      p.bounces += 1;
+      if ((n[1] > 0.7 && -vn * THROW.E < vRest) || p.bounces > 60) { p.vx = p.vy = p.vz = 0; p.state = "rest"; if (!quiet) { rested(p); } break; }
+    }
+  }
+  function stepPearls(dt) {
+    var r = pearlR();
+    pearls.slice().forEach(function (p) {
+      var t0 = performance.now();
+      stepPearl(p, dt, false);
+      p.spin += p.state === "rest" ? 0 : THROW.SPIN * dt;
+      // the trail on its own clock, which runs on while it lies, so the last beat fades out after it lands (it had
+      // stayed drawn and grown a point a frame for as long as it lay)
+      p.age += dt;
+      if (p.state !== "rest") { p.trail.push([p.x, p.y, p.z, p.age]); }
+      while (p.trail.length && p.trail[0][3] < p.age - THROW.TRAIL) { p.trail.shift(); }
+      p.ms = performance.now() - t0;
+      // back in his hand when he walks into it (his body's box, 0.3 m round and 1.8 m tall, touches it)
+      if (p.state === "rest" && !Hd && hypot(p.x - P.x, p.z - P.z) < 0.3 + r && p.y > P.y - r && p.y < P.y + 1.8 + r) { takeBack(p); }
+    });
+  }
+  function takeBack(p) {
+    pearls.splice(pearls.indexOf(p), 1); carried = min(THROW.CARRY, carried + 1); drawCarry();
+    say("A pearl back in your hand: " + carried + " of " + THROW.CARRY + ".", true);
+  }
+  // What the pearl answers where it first touches: anything struck says what it came from (as a tap does), from
+  // any distance it reaches; it takes nothing, breaks nothing, places nothing and looks behind nothing.
+  function struck(p, c, n, what) {
+    var m = me(), dist = round(hypot(p.x - m.x, p.z - m.z)), up = p.y - m.y > 3 ? ", " + round(p.y - m.y) + " m up" : "";
+    if (what === "water") { say("Your pearl sinks, " + dist + " m off: swim down to it."); return; }
+    if (c.cx < 0 || c.cz < 0 || c.cx >= w.SX || c.cz >= w.SZ) { say("Your pearl struck the edge of " + setting.name + ", " + dist + " m off" + up + "."); return; }
+    // a note is a sheet lying on the block under it: come down on that block's top, it falls on the note (at the
+    // pearl's speed it rarely stays: it had said what lay under the note, and that only where it came to rest)
+    if (n[1] > 0.5 && w.get(c.cx, c.cy + 1, c.cz) === B.NOTE) { p.first.note = true; say("Your pearl fell on a note, " + dist + " m off: go and read it."); return; }
+    var b = w.get(c.cx, c.cy, c.cz);
+    if (abs(n[1]) < 0.5) {
+      var ax = abs(n[0]) > abs(n[2]) ? "x" : "z", nd = ax === "x" ? (n[0] > 0 ? 1 : -1) : (n[2] > 0 ? 1 : -1);
+      var plane = ax === "x" ? (nd < 0 ? c.cx : c.cx + 1) : (nd < 0 ? c.cz : c.cz + 1), list = byPlane[ax + plane] || [], r = pearlR();
+      var qx = p.x - n[0] * r, qy = p.y - n[1] * r, qz = p.z - n[2] * r, u = ax === "x" ? qz : qx;
+      for (var i = 0; i < list.length; i += 1) {
+        var pa = list[i];
+        if (pa.dir === nd && u >= pa.u0 && u <= pa.u1 && qy >= pa.y0 && qy <= pa.y1) {
+          var raw = rawOf(pa);
+          p.first.work = pa.f.id;
+          say("Your pearl struck " + (pa.f.title || "a work") + " (" + [pa.f.artist, raw.date].filter(Boolean).join(", ") + "), " + dist + " m off. Within " + LOOK + " m you can read its label and look behind it.");
+          return;
+        }
+      }
+    }
+    var k = PIECE_IDS.indexOf(b);
+    if (k >= 0 && found.indexOf(k) < 0) { marked[k] = true; say("Your pearl rang on a piece of your rocket: " + lower(adv.pieces[k].name) + ", " + dist + " m off" + up + ". Take it by hand.", true); return; }
+    var tt = partText(Pl.partAt(place, c.cx, c.cy, c.cz));
+    say("Your pearl struck " + (tt ? lower(tt) : STUFF[b] || "the building's own " + (b >= 32 ? "material" : "block")) + ", " + dist + " m off" + up + ".");
+  }
+  // What a block is, where it came from no section (the ground, the trees, the hand's blocks).
+  var STUFF = {}; [["GRASS", "the lawn"], ["DIRT", "earth"], ["STONE", "stone"], ["ROAD", "the road"], ["PAVE", "paving"], ["LOG", "a trunk"], ["LEAVES", "leaves"],
+    ["BRICK", "brick"], ["LIME", "limestone"], ["CONC", "concrete"], ["GLASS", "glass"], ["SLATE", "slate"], ["SAND", "sand"], ["METAL", "metal"], ["SCORCH", "the scorched ground of your wreck"],
+    ["RENDER", "render"], ["LOOSE", "loose earth"], ["WHITE", "a white wall"], ["RED", "a red wall"], ["BEDROCK", "the bedrock"], ["FLOOR", "the floorboards"], ["PLASTER", "a gallery's plaster"]]
+    .forEach(function (q) { if (B[q[0]] != null) { STUFF[B[q[0]]] = q[1]; } });
+  function rested(p) {
+    if (!(p.first && p.first.note) && w.get(floor(p.x), floor(p.y), floor(p.z)) === B.NOTE) { var m = me(); say("Your pearl lies on a note, " + round(hypot(p.x - m.x, p.z - m.z)) + " m off: go and read it."); }
+  }
+  // Tapping a pearl that lies within his reach, the sight lowered, takes it back (the ray from the camera, measured
+  // from him as pick() is; its target its diameter doubled), if it lies nearer than what the tap meets: the block it
+  // lies on, or a note it lies in, does not hide it (the lower half of its target had broken the floor under it).
+  function takeTapped(dir, hit) {
+    var at = reachFrom(), r = pearlR(), best = null;
+    pearls.forEach(function (p) {
+      if (p.state !== "rest") { return; }
+      var o = [p.x - eye[0], p.y - eye[1], p.z - eye[2]], t = o[0] * dir[0] + o[1] * dir[1] + o[2] * dir[2];
+      var dd = o[0] * o[0] + o[1] * o[1] + o[2] * o[2] - t * t;
+      var seen = !hit || t < hit.t || hit.b === B.NOTE || (!hit.painting && hit.y + 1 <= p.y - r + 0.01);
+      if (t > 0 && seen && dd < 4 * r * r && hypot(p.x - at[0], p.y - at[1], p.z - at[2]) <= REACH && (!best || t < best.t)) { best = { p: p, t: t }; }
+    });
+    if (best) { takeBack(best.p); return true; }
+    return false;
+  }
+  // Drawn as his body is: through the place's own walk among the bars, his palette, the pixel's width in his unit;
+  // turned by its spin about its heading's right. And one in his glove while his arm is raised, going up or coming
+  // down (lowered, it had gone from the glove at once while the arm still came down; 22 Oct 2026), from the fling's
+  // half beat (the next pearl in the fingers). Its trail, the last beat of its path, from half the pearl cloth's colour
+  // over what lies behind (Colour Middling's Average) at the pearl to nothing a beat back.
+  function drawPearls(now) {
+    if (!pearlCh || !me3) { return; }
+    var hand = sightEase(now) > 0 && carried > 0 && sight.inHand && now - sight.thrown >= BEAT * 500 ? sight.inHand : null;
+    if (!pearls.length && !hand) { return; }
+    var PB = window.PearlBody, h = unitH(), n = pearlCh.n / 2;
+    gl.useProgram(prog);
+    gl.uniform4fv(U.uPal, me3.pal);
+    gl.uniform1f(U.uPx, pxW / h); gl.uniform2f(U.uNear, 0, 0);
+    gl.uniform3f(U.uOff, 0, 0, 0); gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform1i(U.uFloor, 0);
+    gl.uniform3i(U.uDim, pearlCh.n, pearlCh.n, pearlCh.n);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, pearlCh.tex); gl.activeTexture(gl.TEXTURE0);
+    gl.bindVertexArray(pearlCh.vao);
+    var one = function (x, y, z, yaw, spin) {
+      var m = PB.mul(PB.T(x, y, z), PB.mul(PB.RY(-yaw), PB.mul(PB.RX(spin), PB.mul(PB.S(h), PB.T(-n, -n, -n)))));
+      gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
+      gl.drawElements(gl.TRIANGLES, pearlCh.count, gl.UNSIGNED_INT, 0);
+    };
+    pearls.forEach(function (p) { one(p.x, p.y, p.z, p.yaw, p.spin); });
+    if (hand) { one(hand[0], hand[1], hand[2], P.face, 0); }
+    // the place's own again, as drawPearl leaves them, for whatever walks the place's grid after (the veil)
+    gl.uniform4fv(U.uPal, worldPal); gl.uniformMatrix4fv(U.uM, false, ID4); gl.uniformMatrix4fv(U.uInvM, false, ID4);
+    gl.uniform1f(U.uPx, pxW); gl.uniform2f(U.uNear, NEAR_F[0], NEAR_F[1]); gl.uniform1i(U.uFloor, 1); gl.uniform3i(U.uDim, w.SX, w.SY, w.SZ);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex); gl.activeTexture(gl.TEXTURE0);
+    gl.bindVertexArray(null);
+  }
+  // The trails, after everything opaque and the veil (they write no depth, so what was drawn after had painted over
+  // them), blended into the colour only: the canvas's own alpha is left whole, as the veil leaves it.
+  function drawTrails() {
+    var pts = [];
+    pearls.forEach(function (p) {
+      for (var i = 1; i < p.trail.length; i += 1) {
+        var a = p.trail[i - 1], b = p.trail[i], fa = 0.5 * max(0, 1 - (p.age - a[3]) / THROW.TRAIL), fb = 0.5 * max(0, 1 - (p.age - b[3]) / THROW.TRAIL);
+        if (fb <= 0) { continue; }
+        pts.push(a[0], a[1], a[2], fa, b[0], b[1], b[2], fb);
+      }
+    });
+    if (!pts.length || !trailProg) { return; }
+    gl.useProgram(trailProg);
+    gl.uniformMatrix4fv(TU.uVP, false, vp); gl.uniform3f(TU.uC, 0xb7 / 255, 0xa8 / 255, 0xa0 / 255);   // the jacket's own (#b7a8a0)
+    gl.bindVertexArray(trailVao); gl.bindBuffer(gl.ARRAY_BUFFER, trailBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pts), gl.DYNAMIC_DRAW);
+    gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE); gl.depthMask(false);
+    gl.drawArrays(gl.LINES, 0, pts.length / 4);
+    gl.disable(gl.BLEND); gl.depthMask(true);
+    gl.bindVertexArray(null);
+  }
+  // Where a throw now would first touch, by the same steps the pearl takes, and its path (for the holdover's ranges).
+  function predict() {
+    if (!camLast || !eye) { return null; }
+    var L = launchFrom(eye, lookDir(camLast.yaw, camLast.pitch), sight.hit ? sight.hit.t : null), pts = [L.H.slice()];
+    var q = { x: L.H[0], y: L.H[1], z: L.H[2], vx: L.vel[0], vy: L.vel[1], vz: L.vel[2], state: "fly", t: 0, bounces: 0, first: null, wet: false };
+    for (var i = 0; i < 400 && !q.first && q.state === "fly" && !q.wet; i += 1) { stepPearl(q, 0.01, true); pts.push([q.x, q.y, q.z]); }
+    return { L: L, pts: pts, at: q.first || (q.wet ? { x: q.x, y: q.y, z: q.z, t: q.t, n: [0, 1, 0], water: true } : null) };
+  }
+  // How many are in his glove, as page text in the header, while the sight is up or any pearl is out.
+  function drawCarry() {
+    var el = $("pearls");
+    if (el) { el.textContent = "Pearls " + carried + " of " + THROW.CARRY; el.hidden = !sight.up && !pearls.length; }
+  }
+
   /* ---- Mr Pearl drawn: his body of the unit through the blocks' own shader, his head the true sphere ------ */
 
   /* His body is the game's own figure seven golden steps down (pearl.js, from pearl-body.json): ten small grids,
@@ -1412,7 +2183,7 @@
     if (!PB || !spec || !gl) { return; }
     var t0 = performance.now(), body = PB.build(spec, { skip: [B.WATER, B.NOTE] }), pal = new Float32Array(64 * 4);
     body.palette.forEach(function (c, i) { pal.set(c, i * 4); });
-    smashFrom(body);
+    smashFrom(body); throwFrom(body, spec);
     var parts = body.parts.filter(function (p) { return !p.empty; }).map(function (p) {
       var ch = meshBlocks(p.blocks);
       ch.tex = voxTexture(p.ids, p.dim[0], p.dim[1], p.dim[2]); ch.p = p;
@@ -1428,6 +2199,8 @@
       [[ARMS_UP, tw0], [ARMS_UP, tw1]].forEach(function (t) { acts.push({ arms: t[0], twist: t[1] + COIL }, { arms: t[0], twist: t[1] - COIL }); });
       acts.push({ arms: 0, twist: tw0 }, { arms: ARMS_UP, twist: tw1 });
     }
+    // and his right arm raised to throw, and at the end of its fling (the sight)
+    acts.push({ right: 1 }, { right: 1, fling: -COIL });
     [[0, 0], [0, 1], [Math.PI / 2, 1], [Math.PI, 1], [1.5 * Math.PI, 1]].forEach(function (q) {
       acts.forEach(function (a) {
       var M = PB.pose(body, q[0], q[1], a);
@@ -1443,6 +2216,7 @@
     PEARL = { headY: body.head.centre[1], headR: body.head.radius, top: body.top, hatReach: body.hatReach || PEARL.hatReach,
               hatDrop: body.hatDrop || 0, leg: body.walk.L_m || PEARL.leg };
     measure();
+    pearlGrid();
   }
   // The hat, with the head gone, falls straight down onto the bare neck as anything falls here (25 m/s/s), the
   // form's own drop (option B: nothing built rides with the one perfect form); the head coming home picks it up.
@@ -1456,17 +2230,21 @@
   /* With veil, his parts' faces again for the fade's second pass (frame turns it on): where a hole of his lets
      what is behind show, it is veiled with the face's mean at lod, as the place's holes are. The head has no holes. */
   function drawPearl(now, veil) {
-    if (!me3 || (!drawMe.body && !drawMe.head)) { return; }
-    var PB = window.PearlBody, body = me3.body, phase = PB.phaseStep(body, 0, P.walked), M = PB.pose(body, phase, P.amount, swingPose());
+    if (!me3 || (!drawMe.body && !drawMe.head)) { sight.inHand = null; return; }
+    var PB = window.PearlBody, body = me3.body, phase = PB.phaseStep(body, 0, P.walked), M = PB.pose(body, phase, P.amount, actNow(now));
+    // where the head is now, on the walk's bob (the sight's window is drawn round it), and the pearl in his raised glove
+    sight.head = apply(PB.place(M.head, P.x, P.y, P.z, P.face), body.head.centre);
+    sight.inHand = HOLD && drawMe.body ? apply(PB.place(M.arm_right, P.x, P.y, P.z, P.face), HOLD) : null;
     if (drawMe.body) {
       // The same program as the place's blocks, his palette, the pixel's width in his unit; no floor under his grids,
       // and no opening by his own nearness (uNear nought): he closes by the camera alone, as before.
       gl.uniform4fv(U.uPal, me3.pal);
       gl.uniform1f(U.uPx, pxW / body.cell); gl.uniform2f(U.uNear, 0, 0);
       gl.uniform3f(U.uOff, 0, 0, 0); gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform1i(U.uFloor, 0);
-      var drop = hatDrop(now);
+      var drop = hatDrop(now), off = hatOff(now);
       me3.parts.forEach(function (ch) {
-        var m = PB.place(M[ch.p.name], P.x, P.y, P.z, P.face);
+        // the hat doffed into his left glove while the head is the glass (the sight; its brim would hood the window)
+        var m = PB.place(ch.p.name === "hat" && off ? mul(PB.T(off[0], off[1], off[2]), M.hat) : M[ch.p.name], P.x, P.y, P.z, P.face);
         if (ch.p.name === "hat" && drop) { m = mul(PB.T(0, -drop, 0), m); }
         gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
         gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, ch.tex); gl.activeTexture(gl.TEXTURE0);
@@ -1616,9 +2394,9 @@
       // (holo flies it), nothing stops it.
       if (Hd) { holo(dt, now, hand); if (!Hd || Hd.phase !== "follow") { physics(dt, { fwd: 0, side: 0, up: 0 }); } }
       else { physics(dt, hand); holoLeft = min(HOLO_T, holoLeft + HOLO_REFILL * dt); }
-      swingStep(dt);
+      swingStep(dt); sightStep(dt, now);
     }
-    shardsStep(dt);
+    shardsStep(dt); if (!intro && !launched) { stepPearls(dt); }
     pump(intro ? 14 : 6);
     var cw = canvas.width, chh = canvas.height, cam = camera(now, dt, eyeH, cw / chh);
     eye = cam.e;
@@ -1676,7 +2454,7 @@
       if (launched && lift > 300 && !ended) { ended = true; finish(); }
       rocketLift = lift;
     }
-    drawPearl(now);
+    drawPearl(now); drawPearls(now);
     drawShards();
     if (skyFig) {
       gl.useProgram(figProg);
@@ -1739,6 +2517,7 @@
       });
       gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.depthMask(true);
     }
+    drawTrails();
     gl.bindVertexArray(null);
     if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); homageCheck(); }
     overlay(now, open);
@@ -1766,6 +2545,7 @@
   function lieDown(lines) {
     var at = underTree();
     swing = swingNext = null; shards = [];
+    dropSight(); pearls = []; carried = THROW.CARRY; drawCarry();   // he comes to with his five pearls, none lying about
     if (Hd) { Hd = null; pov = "third"; delete document.body.dataset.holo; drawViews(); }
     if (skyFig) { skyFig.away = false; }
     blend = null; camD = 0;
@@ -1838,12 +2618,14 @@
     }
     // The stick's water, under the thumb (see Water).
     if (!intro) { water.step(min(0.05, (now - (water.last || now)) / 1000), stillMotion.matches); water.last = now; water.draw(c, now / 1000, stillMotion.matches); }
-    if (!intro && !launched && !touchy) {
+    // (the crosshair gives way to the sight)
+    if (!intro && !launched && !touchy && !sightOn()) {
       if (!crossMark) { crossMark = figure(17, 1, [[255, 255, 255], [196, 196, 196], [36, 34, 32]]); }
       c.globalAlpha = 0.92;
       c.drawImage(crossMark, round(W / 2 - 8.5), round(H / 2 - 9));
       c.globalAlpha = 1;
     }
+    drawSight(c, W, H, now);
     if (intro) {
       var shut = (1 - open) * H / 2;
       c.fillStyle = "#050302"; c.fillRect(0, 0, W, shut); c.fillRect(0, H - shut, W, shut);
@@ -1870,7 +2652,8 @@
       var m = me(), dist = function (a) { return hypot(a.x + 0.5 - m.x, a.z + 0.5 - m.z) + abs(a.y - m.y) * 2; };
       if (found.length === 4 && !built) { target = { x: wr.x, y: wr.y, z: wr.z }; label = "The wreck"; }
       else if (unread.length) { unread.sort(function (a, b) { return dist(a) - dist(b); }); target = unread[0]; label = "A note"; }
-      else if (lying.length) { lying.sort(function (a, b) { return dist(a) - dist(b); }); target = lying[0]; label = adv.pieces[target.k].name.replace(/^The /, ""); }
+      // (a piece a pearl rang on first)
+      else if (lying.length) { lying.sort(function (a, b) { return (marked[b.k] ? 1 : 0) - (marked[a.k] ? 1 : 0) || dist(a) - dist(b); }); target = lying[0]; label = adv.pieces[target.k].name.replace(/^The /, ""); }
       else if (found.length < 4) { text = "Behind which work? Read your notes"; }
       if (target && inRoom(target.x + 0.5, target.y, target.z + 0.5) && !inBuilding() && place.door) { target = { x: place.door.x - 0.5, y: place.door.y, z: place.door.z - 0.5 }; label = "The way in"; }
       if (target) {
@@ -1885,7 +2668,7 @@
     holoHud();
     // What the crosshair is on (on a computer): a work's title, a note.
     if (!touchy && tick % 3 === 0) {
-      var tag = $("tag"), hit = !intro && !launched && vp ? pick(lookDir(camLast.yaw, camLast.pitch)) : null, tt = "";
+      var tag = $("tag"), hit = !intro && !launched && vp && !sightOn() ? pick(lookDir(camLast.yaw, camLast.pitch)) : null, tt = "";
       if (hit && hit.painting) { tt = (hit.painting.f.title || "A work") + (looked[hit.painting.f.id] ? " · looked behind" : " · click to read its label"); }
       else if (hit && hit.b === B.NOTE && hit.r <= REACH) { tt = "A note · click to read it"; }
       else if (hit && hit.b !== undefined) { tt = (window.Homage && Homage.label(homage, hit.x, hit.y, hit.z)) || partText(Pl.partAt(place, hit.x, hit.y, hit.z)); }
@@ -1963,6 +2746,7 @@
   function launch() {
     if (!built || launched || Hd) { return; }
     launched = performance.now();
+    dropSight();
     store();
     closeLabel();
     $("notes").hidden = true;
@@ -2196,6 +2980,7 @@
   /* ---- the hand ------------------------------------------------------------------------- */
 
   var touchy = false;
+  var holdTick = function () {};   // wire() sets it: the look's holds, read each frame (sightStep)
   // A button pressed with one thumb while the other moves him or looks (the artist, 21 Oct 2026: "I want to be able to
   // switch between holographic view and third person view while I'm moving Mr Pearl. Right now if I am using my left
   // finger to move him, then it won't let me click on the perspective change button with my right finger without
@@ -2210,6 +2995,7 @@
       var made = pressed && (e.pointerType === "touch" || e.pointerType === "pen" || (e.pointerType === undefined && e.detail !== 0));
       pressed = false;
       if (made) { e.preventDefault(); e.stopPropagation(); return; }
+      if (e.detail) { el.blur(); }   // a pointer's click leaves no focus behind, so Enter then throws (not this button)
       fn(e);
     });
   }
@@ -2219,7 +3005,7 @@
     canvas.addEventListener("pointerdown", function (e) {
       if (intro) { if (performance.now() - intro.t0 > 600) { intro.t0 -= 9600; } return; }
       if (e.pointerType === "touch") { touchy = true; document.body.dataset.touch = "true"; $("tag").hidden = true; }
-      canvas.setPointerCapture(e.pointerId);
+      try { canvas.setPointerCapture(e.pointerId); } catch (er) { /* a pointer a test dispatched */ }
       // The left of a phone's screen is the stick; anywhere else turns the view, and a tap acts.
       if (touchy && e.clientX < window.innerWidth * 0.4 && e.clientY > window.innerHeight * 0.45 && !stick) {
         stick = { id: e.pointerId, x: e.clientX, y: e.clientY };
@@ -2227,9 +3013,23 @@
         $("notes").hidden = true;
         return;
       }
-      look[e.pointerId] = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: false, button: e.button };
+      look[e.pointerId] = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: false, button: e.button, held: false, chord: null };
       input.looking = true;
+      // the right mouse button is the sight's (the artist, 20 Oct 2026: "I want you to be able to aim at a target with a
+      // reflex sight"): held, it is up while held; clicked, it stays up
+      if (e.pointerType === "mouse" && e.button === 2) { sightPress(); }
     });
+    // A mouse's second button pressed or let go while the first is held comes as a move whose button is the one that
+    // changed (pointer events' chords): the right button is the sight's; the left, pressed and let go within a tap, is
+    // a click (with the sight up, the throw).
+    var chord = function (l, e) {
+      var now = performance.now();
+      if (e.button === 2) { if (e.buttons & 2) { sightPress(); } else { sightRelease(); } return; }
+      if (e.button !== 0) { return; }
+      if (e.buttons & 1) { l.chord = { t: now, x: e.clientX, y: e.clientY, moved: false }; return; }
+      var q = l.chord; l.chord = null;
+      if (q && !q.moved && now - q.t < 450) { if (sightOn()) { throwAt(); } else { var r = canvas.getBoundingClientRect(); act(r.left + r.width / 2, r.top + r.height / 2, false); } }
+    };
     canvas.addEventListener("pointermove", function (e) {
       if (stick && e.pointerId === stick.id) {
         var dx = e.clientX - stick.x, dy = e.clientY - stick.y, L = min(water.REACH, hypot(dx, dy)), a = Math.atan2(dy, dx);
@@ -2239,10 +3039,17 @@
       }
       var l = look[e.pointerId];
       if (!l) { return; }
+      if (e.pointerType === "mouse" && e.button >= 0) { chord(l, e); }
       var mx = e.clientX - l.x, my = e.clientY - l.y;
       if (abs(e.clientX - l.sx) + abs(e.clientY - l.sy) > 8) { l.moved = true; }
-      P.yaw += mx * 0.0055; P.pitch = clampPitch(P.pitch - my * 0.0055);
+      if (l.chord && abs(e.clientX - l.chord.x) + abs(e.clientY - l.chord.y) > 8) { l.chord.moved = true; }
+      // raised, one px of the finger moves the mark one px over the far world (1/f: a reflex sight magnifies nothing;
+      // the artist, 20 Oct 2026: "a reflex sight that I can control with my right finger")
+      var k = sightOn() ? 2 * T35 / window.innerHeight : 0.0055;
+      P.yaw += mx * k; P.pitch = clampPitch(P.pitch - my * k);
       if (blend) { blend.pitchTo = null; }
+      // a drag (past the tap's 8 px) stops a hold's turn; a held finger's pixel or two of tremor does not
+      if ((mx || my) && l.moved) { sight.turn = null; }
       l.x = e.clientX; l.y = e.clientY;
     });
     var up = function (e) {
@@ -2250,10 +3057,26 @@
       var l = look[e.pointerId];
       delete look[e.pointerId];
       input.looking = Object.keys(look).length > 0;
-      if (l && !l.moved && performance.now() - l.t < 450) {
-        if (touchy) { act(e.clientX, e.clientY, false); }
-        else { var r = canvas.getBoundingClientRect(); act(r.left + r.width / 2, r.top + r.height / 2, l.button === 2); }
-      }
+      if (!l) { return; }
+      // the right button is the sight's, never a tap (it placed a block until 21 Oct 2026; Place's click places)
+      if (e.pointerType === "mouse" && e.button === 2) { sightRelease(); return; }
+      var p = l.button === e.button || e.pointerType !== "mouse" ? { moved: l.moved, t: l.t } : l.chord;
+      if (!p || p.moved || performance.now() - p.t >= 450 || l.held) { return; }
+      // with the sight up a tap or a click throws (the artist, 20 Oct 2026: "And when I click with the reflex sight up,
+      // I am able to throw something"); else it acts where it was, as before
+      if (sightOn()) { if (e.type === "pointerup") { throwAt(); } }
+      else if (touchy) { act(e.clientX, e.clientY, false); }
+      else { var r = canvas.getBoundingClientRect(); act(r.left + r.width / 2, r.top + r.height / 2, false); }
+    };
+    // A look held still for a beat, with the sight up, brings the point under it to the mark (sightAimAt).
+    holdTick = function (now) {
+      if (!sightOn()) { return; }
+      Object.keys(look).forEach(function (id) {
+        var l = look[id];
+        // (held a beat with the sight up: a finger already resting when it came up counts from then; 22 Oct 2026)
+        if (l.moved || l.held || l.button !== 0 || now - max(l.t, sight.at) < BEAT * 1000) { return; }
+        l.held = true; sightAimAt(l.x, l.y);
+      });
     };
     canvas.addEventListener("pointerup", up);
     canvas.addEventListener("pointercancel", up);
@@ -2263,6 +3086,7 @@
     // The buttons of play take a touch as it presses, so the other thumb can stay on the stick (press, above).
     press($("mode"), function () { if (Hd) { barred(); return; } setMode(mode === "break" ? "place" : "break"); });
     press($("v-holo"), function () { toggleHolo(); });
+    press($("v-sight"), function () { if (Hd) { barred(); return; } raiseSight(); });
     press($("build"), function () { buildRocket(false); });
     press($("launch"), function () { launch(); });
     $("behind").onclick = lookBehind;
@@ -2277,6 +3101,10 @@
       var k = keyOf(e);
       if (["w", "a", "s", "d", " ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Shift", "c"].indexOf(k) >= 0) { input.keys[k] = true; e.preventDefault(); }
       if (k === "h" && !e.repeat) { toggleHolo(); }   // the button's key, once a press: held, it does not toggle again
+      if (k === "r" && !e.repeat) { if (Hd) { barred(); } else { raiseSight(); } }   // the sight (R), as its button
+      // with the sight up, T or Enter throws (Enter only while nothing else has the focus: a focused button takes it)
+      var free = document.activeElement === document.body || document.activeElement === canvas || document.activeElement === $("v-sight");
+      if ((k === "t" || (k === "Enter" && free)) && !e.repeat) { if (Hd) { if (k === "t") { barred(); } } else if (sight.up) { throwAt(); e.preventDefault(); } }
       if (Hd && ((k >= "1" && k <= "5") || k === "e" || k === "q" || k === "b")) { barred(); }
       else {
         if (k >= "1" && k <= "5") { slot = +k - 1; setMode("place"); }
@@ -2285,7 +3113,7 @@
       }
       if (k === "n") { $("notes").hidden = !$("notes").hidden; }
       if (k === "f" && current) { if (Hd) { barred(); } else { lookBehind(); } }
-      if (k === "Escape") { closeLabel(); $("notes").hidden = true; }
+      if (k === "Escape") { closeLabel(); $("notes").hidden = true; raiseSight(false); }
     });
     document.addEventListener("keyup", function (e) { input.keys[keyOf(e)] = false; });
     window.addEventListener("resize", resize);
@@ -2474,7 +3302,7 @@
     quality = quality0 = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
     if (!gl) { $("status").textContent = $("veil").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
     prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS); figProg = compile(FIG_VS, FIG_FS); homProg = compile(HOM_VS, HOM_FS);
-    initPearl();
+    initPearl(); initThrow();
     shardProg = compile(SHARD_VS, SHARD_FS);
     ["uVP", "uM", "uT", "uEye", "uHaze"].forEach(function (n) { SHU[n] = gl.getUniformLocation(shardProg, n); });
     ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uVox", "uOrg", "uDim", "uFloor", "uPx", "uSteps", "uVeil", "uM", "uInvM",
@@ -2559,7 +3387,21 @@
              screenOf: function (p) { var r = canvas.getBoundingClientRect(), q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [r.left + (q[0] / q[3] * 0.5 + 0.5) * r.width, r.top + (0.5 - q[1] / q[3] * 0.5) * r.height] : null; },
              farEnd: function () { return swing && !swing.ret && FAR_END ? farEndAt(swing, swing.u) : null; }, smashConsts: function () { return { BEAT: BEAT, COIL: COIL, ARMS_UP: ARMS_UP, E0: E0, Y_SH: Y_SH, FAR_END: FAR_END }; },
              stone: function () { return onStone; }, px: function () { return pxW; }, putOut: putOut,
-             bring: bringBody, home: goHome, harm: harmBody, pearl: function () { return me3 && { ms: me3.ms, cells: me3.body.cells, parts: me3.parts.length, cell: me3.body.cell, PEARL: PEARL }; }, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; } };
+             bring: bringBody, home: goHome, harm: harmBody, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; },
+             pearl: function () { return me3 && { ms: me3.ms, cells: me3.body.cells, parts: me3.parts.length, cell: me3.body.cell, PEARL: PEARL, throwArm: me3.body.throwArm }; },
+             // the sight and the throw (20 Oct 2026); holdView pins the raise (and its blend) at s for photographs, null lets go
+             sight: function () { var n = performance.now(); return { up: sight.up, on: sightOn(), ease: sightEase(n), fling: flingAt(n), ready: sightReady(n), theta: sight.theta, omega: sight.omega,
+               next: sight.next, thrown: sight.thrown, turn: !!sight.turn, aimAt: sight.turn && sight.turn.Q, rmb: !!sight.rmb, head: sight.head, inHand: sight.inHand, feet: sight.feet.slice(), ringSaid: sight.ringSaid,
+               hit: sight.hit && { t: sight.hit.t, r: sight.hit.r, b: sight.hit.b, x: sight.hit.x, y: sight.hit.y, z: sight.hit.z, work: sight.hit.painting ? sight.hit.painting.f.title : null, water: !!sight.hit.water },
+               land: sight.arc && sight.arc.at, launched: sight.arc && sight.arc.L && { th: sight.arc.L.th, vel: sight.arc.L.vel, H: sight.arc.L.H },
+               tag: $("sight-tag").hidden ? "" : $("sight-tag").textContent }; },
+             stick: function () { return water.busy(); }, raiseSight: raiseSight, throwAt: throwAt, sightAim: sightAimAt, predict: predict, hand: handAt,
+             holdView: function (s) { sight.hold = s; if (blend) { blend.hold = s; } },
+             holdFling: function (u) { sight.flingHold = u; },
+             pearls: function () { return pearls.map(function (p) { return { x: p.x, y: p.y, z: p.z, vx: p.vx, vy: p.vy, vz: p.vz, state: p.state, t: p.t, wet: p.wet, first: p.first, from: p.from }; }); },
+             carried: function (v) { if (v != null) { carried = v; drawCarry(); } return carried; }, marked: function () { return marked; },
+             clearPearls: function () { pearls.length = 0; carried = THROW.CARRY; drawCarry(); },
+             sightConsts: { SIGHT_D: SIGHT_D, SIGHT_F: SIGHT_F, WIN: Math.asin(PEARL.headR / SIGHT_D), U: sightU(), THROW: THROW, HOLD: HOLD, HOLD_AT: HOLD_AT, HAT_DOFF: HAT_DOFF, HAT_LIFT: HAT_LIFT, BEAT: BEAT, T_VIEW: T_VIEW } };
   } };
   init();
 })();
