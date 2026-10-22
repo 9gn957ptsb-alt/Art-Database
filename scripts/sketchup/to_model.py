@@ -17,6 +17,7 @@ MATERIALS = {
     "Stainless": "steel", "Steel_shade": "metal", "Glass": "glass",
     "Limestone": "stone", "Plaster": "render", "Concrete": "concrete",
     "Titanium": "steel", "Titanium_shade": "metal",
+    "Grating": "mesh", "Slats": "timber",
 }
 
 
