@@ -106,8 +106,8 @@
  "calibration": {},
  "accuracy": {
   "level": "D",
-  "basis": "No plans, sections or elevations reachable (architects' sites and every publication that may carry drawings are blocked; not on ArchDaily or Dezeen). Massing and the main spaces placed from the published nine-square-grid description and the AA photos; dimensions from two near-frontal photos (pool facade scaled by its 21 m width, approach facade by a standing person), which agree to ~5%.",
-  "notes": "Measured from photos (+-10%): 21 x 21 m block on a 7 m grid, loggia opening 4.95 x 2.9 m, parapet/courtyard wall top 8.15 m above the ground floor (AA: 9 m walls), pool terrace -0.93 m, slit 0.9 m and its position, slot windows (sill 1.56 m on the first floor), pool 4.0 m wide (photos give 3.4-4.2 m), path wall ~2.3 m. From text: courtyard of four squares (12 m clear), 30 m pool, 110 m path. Inferred: courtyard in the NW of the grid with the L-shaped two-storey wings to the south (pool side, loggia in the middle square) and east; entrance slit in the west wall; true north from afternoon shadows (pool facade lit, courtyard west wall in shade). Assumed: every interior partition, room function except loggia/courtyard/terraces, floor-to-floor 3.5 m, all openings on unseen facades (east) and courtyard doors except the hall door, stair position, wall thicknesses (0.6 m exterior, 0.2 m interior). Not modelled: stepped levels of the 110 m path (drawn flat at -0.5 m), roof access stair, skylights, the tennis court, garden walls and the lower volume east of the pool facade."
+  "basis": "No plans, sections or elevations reachable (architects' sites and every publication that may carry drawings are blocked; not on ArchDaily or Dezeen). Massing and the main spaces placed from the published nine-square-grid description and the AA photos; dimensions from two near-frontal photos (pool facade scaled by its 21 m width, approach facade by a standing person), which agree to ~5%. Checked on 22 Oct 2026 by an independent pass against the 14 AA photos (re-measured facade, parapet, loggia, pool, slot windows, slit; orientation not mirrored).",
+  "notes": "Measured from photos (+-10%): 21 x 21 m block on a 7 m grid, loggia opening 5.3 x 3.05 m with flush side walls, parapet/courtyard wall top 8.15 m above the ground floor (AA: 9 m walls), pool terrace -0.93 m, slit 0.9 m and its position, slot windows (sill 1.56 m on the first floor), pool 4.3 m wide, path wall ~1.7 m near the house, pool terrace ending ~0.8 m past the SW corner, stair flights ~0.95 m, east annex 2.3 m wide and 4.3 m high. From text: courtyard of four squares (12 m clear), 30 m pool, 110 m path. Inferred: courtyard in the NW of the grid with the L-shaped two-storey wings to the south (pool side, loggia in the middle square) and east; entrance slit in the west wall; true north from afternoon shadows (pool facade lit, courtyard west wall in shade). Assumed: every interior partition, room function except loggia/courtyard/terraces, floor-to-floor 3.5 m, all openings on unseen facades (east) and courtyard doors except the hall door, stair position, wall thicknesses (0.6 m exterior, 0.2 m interior). Not modelled: stepped levels of the 110 m path (drawn flat at -0.5 m), roof access stair, skylights, the tennis court, garden walls and the lower volume east of the pool facade. Drawings exist: archeyes.com publishes the floor plan, sections and an axonometric, but it and claudiosilvestrin.com, johnpawson.com, urlaubsarchitektur.de, minimalissimo.com and stylepark.com are blocked here; with them the model could be traced to level B. Open: courtyard size (AA 12 m, Stylepark ~12.25 m, modelled ~13.1 m clear), loggia depth (photos allow 3-6 m), the east-wing first-floor layout, a possible basement (S10 shows a flight going down), the east annex's depth, and the guest WC's position."
  },
  "north_deg": 0,
  "defaults": {
@@ -172,6 +172,10 @@
      7.0
     ],
     [
+     7.3,
+     7.0
+    ],
+    [
      14.0,
      7.0
     ],
@@ -193,6 +197,7 @@
     ]
    ],
    "walls": [
+    null,
     null,
     null,
     {
@@ -252,7 +257,7 @@
     "S6",
     "S7"
    ],
-   "notes": "Four of the nine grid squares left open to the sky ('a grid of nine squares', Pawson); AA calls it the roofless atrium entered through a narrow slit (AA: '12 m2', most likely 12 m square: clear here 12.8 m). Walls modelled 8.15 m above the courtyard floor (AA says 9 m; photo S3 gives ~8.6-8.9 m above the approach lawn). Slit 0.9 m wide, its north edge 4.3 m from the NW corner (S3), with a timber door 2.55 m high at its foot. Bench along the north wall seen in S4 and S5 (length estimated). Position of the courtyard in the grid inferred from S4 (loggia opens onto it) and S5 (view from the east-wing gallery: slit wall ahead, blank north wall on the right).",
+   "notes": "Four of the nine grid squares left open to the sky ('a grid of nine squares', Pawson); AA calls it the roofless atrium entered through a narrow slit (AA: '12 m2', most likely 12 m square; Stylepark 150 m2, about 12.25 m; modelled about 13.1 m clear, 172 m2; unresolved: S3 gives 12.7-13.8 m to the outer joint). Walls modelled 8.15 m above the courtyard floor (AA says 9 m; photo S3 gives ~8.6-8.9 m above the approach lawn). Slit 0.9 m wide, its north edge 4.3 m from the NW corner (S3), with a timber door 2.55 m high at its foot. Bench along the north wall seen in S4 and S5 (length estimated). Position of the courtyard in the grid inferred from S4 (loggia opens onto it) and S5 (view from the first-floor gallery on the courtyard side of the pool wing: slit wall ahead, blank north wall on the right).",
    "confidence": "low"
   },
   {
@@ -262,19 +267,27 @@
    "level": "L0",
    "outline": [
     [
-     7.0,
+     7.3,
      0.3
     ],
     [
-     14.0,
+     13.2,
      0.3
+    ],
+    [
+     13.2,
+     6.4
+    ],
+    [
+     14.0,
+     6.4
     ],
     [
      14.0,
      7.0
     ],
     [
-     7.0,
+     7.3,
      7.0
     ]
    ],
@@ -284,13 +297,15 @@
      "openings": [
       {
        "type": "opening",
-       "at": 1.025,
-       "w": 4.95,
-       "h": 2.9,
+       "at": 0.32,
+       "w": 5.25,
+       "h": 3.05,
        "name": "Loggia opening to the pool terrace"
       }
      ]
     },
+    null,
+    null,
     null,
     {
      "kind": "low",
@@ -316,7 +331,7 @@
     "S4",
     "S8"
    ],
-   "notes": "Middle square of the pool-side wing, open to the pool terrace (opening 4.95 x ~2.9 m, measured on S2/S4 at 46.4 px/m) and to the courtyard (opening ~3.0 m wide, S4). Long dining table (S8) not modelled (loose furniture). In the photos the side walls run flush with the front opening, so the real loggia is ~1.2 m narrower than this grid square; the ceiling is flush with the lintel (modelled at the 3.15 m slab soffit).",
+   "notes": "Middle square of the pool-side wing, open to the pool terrace and to the courtyard. Front opening 5.3 x 3.05 m, left jamb 7.60 m from the west corner (S2 at 46.4 px/m; width from the opening's width/height ratio in S4 and S8, the right jamb being hidden by the olive tree). The side walls run flush with the opening jambs (S4, S8), so the loggia is 5.3 m clear, narrower than its grid square; the ceiling sits about 0.1 m above the lintel. Rear opening to the courtyard ~2.8-3.0 m wide (S4). Depth unresolved: the photos allow about 3-6 m (modelled 6.1 m clear). Long dining table (S8) not modelled (loose furniture).",
    "confidence": "low"
   },
   {
@@ -330,11 +345,11 @@
      0.3
     ],
     [
-     7.0,
+     7.3,
      0.3
     ],
     [
-     7.0,
+     7.3,
      7.0
     ],
     [
@@ -358,7 +373,7 @@
      "openings": [
       {
        "type": "glass_door",
-       "at": 2.75,
+       "at": 3.05,
        "w": 1.2,
        "h": 2.6
       }
@@ -380,7 +395,7 @@
    "level": "L0",
    "outline": [
     [
-     14.0,
+     13.2,
      0.3
     ],
     [
@@ -394,6 +409,14 @@
     [
      14.0,
      7.0
+    ],
+    [
+     14.0,
+     6.4
+    ],
+    [
+     13.2,
+     6.4
     ]
    ],
    "walls": [
@@ -402,13 +425,16 @@
      "kind": "open"
     },
     null,
+    null,
+    null,
     {
      "openings": [
       {
        "type": "door",
-       "at": 1.6,
-       "w": 0.9,
-       "h": 2.4
+       "at": 4.6,
+       "w": 0.95,
+       "h": 2.4,
+       "name": "Flush door from the loggia"
       }
      ]
     }
@@ -417,7 +443,7 @@
     "S1",
     "S9"
    ],
-   "notes": "Interior dining room shown in S9 (white plaster, stone floor); its position next to the loggia and kitchen is assumed.",
+   "notes": "Interior dining room shown in S9 (white plaster, stone floor); its position next to the loggia and kitchen is assumed. Its flush door opens from the front of the loggia's east wall, beside the jamb (handle in S8 and S2).",
    "confidence": "low"
   },
   {
@@ -580,6 +606,14 @@
     ],
     [
      17.6,
+     18.9
+    ],
+    [
+     15.9,
+     18.9
+    ],
+    [
+     15.9,
      20.7
     ],
     [
@@ -595,6 +629,8 @@
     {
      "t": 0.24
     },
+    null,
+    null,
     "ext",
     {
      "kind": "ext",
@@ -615,6 +651,52 @@
    ],
    "notes": "Door from the courtyard near its NE corner is visible through the loggia in S4; hall and stair arrangement assumed.",
    "confidence": "low"
+  },
+  {
+   "id": "L0-wc",
+   "name": "Guest WC",
+   "type": "wc",
+   "level": "L0",
+   "outline": [
+    [
+     15.9,
+     18.9
+    ],
+    [
+     17.6,
+     18.9
+    ],
+    [
+     17.6,
+     20.7
+    ],
+    [
+     15.9,
+     20.7
+    ]
+   ],
+   "walls": [
+    null,
+    {
+     "t": 0.24
+    },
+    "ext",
+    {
+     "openings": [
+      {
+       "type": "door",
+       "at": 0.4,
+       "w": 0.8,
+       "h": 2.2
+      }
+     ]
+    }
+   ],
+   "sources": [
+    "S1"
+   ],
+   "confidence": "low",
+   "notes": "Guest powder room from the rental listing (4 bathrooms plus a guest WC); its position, carved out of the entrance hall, is assumed."
   },
   {
    "id": "L0-stair",
@@ -662,7 +744,7 @@
     "S1",
     "S10"
    ],
-   "notes": "Double-height stairwell up to the roof slab. U-stair with a central wall between the flights as in S10 (20 risers of 0.175 m, going 0.29 m); its position is assumed. The flight up to the roof terrace is not modelled.",
+   "notes": "Double-height stairwell up to the roof slab. U-stair with a central wall between the flights as in S10: flights about 0.95 m wide, spine wall about 0.18 m, 20 risers of 0.175 m, going 0.29 m; S10 shows winders at the turn, drawn here as a flat landing. Its position is assumed. The flight up to the roof terrace (or down to a possible basement, S10) is not modelled.",
    "confidence": "low"
   },
   {
@@ -672,23 +754,23 @@
    "level": "L0",
    "outline": [
     [
-     -4.0,
+     -0.8,
      -6.0
     ],
     [
-     8.5,
+     8.3,
      -6.0
     ],
     [
-     8.5,
+     8.3,
      -0.9
     ],
     [
-     12.5,
+     12.6,
      -0.9
     ],
     [
-     12.5,
+     12.6,
      -6.0
     ],
     [
@@ -700,7 +782,7 @@
      0.0
     ],
     [
-     -4.0,
+     -0.8,
      0.0
     ]
    ],
@@ -742,7 +824,7 @@
     "S11",
     "S12"
    ],
-   "notes": "Raised plinth along the pool facade, 0.93 m below the house floor (two big steps up into the loggia, S4) and ~0.57 m above the lawn (S2, S11). Depth ~6 m from the pool's perspective in S2; extends ~4 m past the SW corner (S11). Bench positions measured on S2.",
+   "notes": "Raised plinth along the pool facade, 0.93 m below the house floor (two big steps up into the loggia, S4) and ~0.57 m above the lawn (S2, S11). Depth ~6 m from the pool's perspective in S2; extends about 0.8 m past the SW corner (S11, from the perspective of the plinth edge; it may continue north along the west face, not modelled). Bench positions measured on S2.",
    "confidence": "low"
   },
   {
@@ -1210,21 +1292,21 @@
      "kind": "open"
     },
     null,
+    "ext",
     {
      "kind": "ext",
      "openings": [
       {
        "type": "opening",
-       "at": 2.8,
-       "w": 6.0,
-       "sill": 1.0,
-       "h": 1.7,
+       "at": 0.6,
+       "w": 12.4,
+       "sill": 1.1,
+       "h": 2.0,
        "glass": false,
-       "name": "Gallery opening over the courtyard (1.0 m parapet)"
+       "name": "Gallery opening over the courtyard (solid parapet)"
       }
      ]
     },
-    "ext",
     "ext"
    ],
    "sources": [
@@ -1232,7 +1314,7 @@
     "S5",
     "S13"
    ],
-   "notes": "Corridor along the courtyard side of the pool wing (narrow, top-lit corridor of S13), turning into a covered gallery open to the courtyard behind a solid parapet in the east wing (S5: eye height ~5.4 m from the converging wall lines, i.e. first floor) and the stair landing. Widths assumed.",
+   "notes": "Covered first-floor gallery along the courtyard side of the pool wing, open to the courtyard above a solid parapet (S5: the parapet edge runs to the same vanishing point as the north courtyard wall, camera about 12.8 m east of the west wall, eye ~5.4 m), turning into the corridor of the east wing and the stair landing. The opening covers x 1.0-13.4 (S5 supports at least x 6.0-13.4); parapet 1.1 m. Narrow top-lit corridor of S13 (its small end window not modelled). Widths assumed.",
    "confidence": "low"
   },
   {
@@ -1571,11 +1653,11 @@
    "flights": [
     {
      "start": [
-      10.5,
+      10.25,
       -0.9
      ],
      "dir_deg": 90,
-     "width": 4.95,
+     "width": 5.3,
      "steps": 2,
      "rise": 0.93,
      "going": 0.45
@@ -1589,19 +1671,19 @@
    "name": "Pool (30 m)",
    "outline": [
     [
-     8.5,
+     8.3,
      -0.9
     ],
     [
-     12.5,
+     12.6,
      -0.9
     ],
     [
-     12.5,
+     12.6,
      -30.9
     ],
     [
-     8.5,
+     8.3,
      -30.9
     ]
    ],
@@ -1615,35 +1697,35 @@
    "name": "Pool copings beyond the terrace",
    "outline": [
     [
-     12.5,
+     12.6,
      -6.0
     ],
     [
-     13.0,
+     13.1,
      -6.0
     ],
     [
-     13.0,
+     13.1,
      -31.4
     ],
     [
-     8.0,
+     7.8,
      -31.4
     ],
     [
-     8.0,
+     7.8,
      -6.0
     ],
     [
-     8.5,
+     8.3,
      -6.0
     ],
     [
-     8.5,
+     8.3,
      -30.9
     ],
     [
-     12.5,
+     12.6,
      -30.9
     ]
    ],
@@ -1661,22 +1743,22 @@
    "flights": [
     {
      "start": [
-      18.32,
+      18.195,
       16.4
      ],
      "dir_deg": 90,
-     "width": 1.2,
+     "width": 0.95,
      "steps": 10,
      "rise": 1.75,
      "going": 0.29
     },
     {
      "start": [
-      19.8,
+      19.325,
       19.3
      ],
      "dir_deg": 270,
-     "width": 1.2,
+     "width": 0.95,
      "steps": 10,
      "rise": 1.75,
      "going": 0.29
@@ -1715,15 +1797,15 @@
    "name": "Wall between the flights",
    "path": [
     [
-     19.06,
+     18.76,
      16.4
     ],
     [
-     19.06,
+     18.76,
      19.3
     ]
    ],
-   "t": 0.28,
+   "t": 0.18,
    "h": 6.6,
    "mat": "plaster"
   },
@@ -1767,7 +1849,7 @@
      16.45
     ],
     [
-     18.92,
+     18.67,
      16.45
     ]
    ],
@@ -1807,7 +1889,7 @@
    "id": "path-wall",
    "kind": "wall",
    "level": "L0",
-   "name": "Freestanding wall along the path",
+   "name": "Freestanding wall along the path (height measured near the house; its steps are not modelled)",
    "path": [
     [
      -110.0,
@@ -1819,8 +1901,35 @@
     ]
    ],
    "t": 0.5,
-   "h": 2.3,
+   "h": 1.7,
    "z": -0.5,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "east-annex",
+   "kind": "prism",
+   "level": "L0",
+   "name": "East annex (lower volume; depth assumed)",
+   "outline": [
+    [
+     21.0,
+     0.0
+    ],
+    [
+     23.3,
+     0.0
+    ],
+    [
+     23.3,
+     7.0
+    ],
+    [
+     21.0,
+     7.0
+    ]
+   ],
+   "z": -0.93,
+   "h": 4.3,
    "mat": "santanyi_render"
   }
  ]

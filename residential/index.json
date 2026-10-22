@@ -17,8 +17,8 @@
    "architect": "John Pawson and Claudio Silvestrin",
    "location": "near Santanyi, Mallorca, Balearic Islands, Spain (AA lists Palma, Islas Baleares)",
    "accuracy": "D",
-   "rooms": 20,
-   "solids": 169,
+   "rooms": 21,
+   "solids": 180,
    "warnings": 0,
    "skp": null
   }
@@ -560,10 +560,10 @@
    "name": "Loggia (covered outdoor dining)",
    "type": "porch",
    "level": "L0",
-   "area_m2": 39.04,
+   "area_m2": 32.33,
    "clear_height_m": 3.15,
    "bbox_m": [
-    7.3,
+    7.6,
     0.0,
     13.7,
     7.3
@@ -583,12 +583,12 @@
    "name": "Study / sitting room",
    "type": "study",
    "level": "L0",
-   "area_m2": 37.21,
+   "area_m2": 39.04,
    "clear_height_m": 3.15,
    "bbox_m": [
     0.0,
     0.0,
-    7.3,
+    7.6,
     7.3
    ],
    "doors": 2,
@@ -606,10 +606,10 @@
    "name": "Dining room",
    "type": "dining",
    "level": "L0",
-   "area_m2": 20.79,
+   "area_m2": 25.19,
    "clear_height_m": 3.15,
    "bbox_m": [
-    13.7,
+    12.9,
     0.0,
     17.6,
     7.0
@@ -675,7 +675,7 @@
    "name": "Entrance hall",
    "type": "entry",
    "level": "L0",
-   "area_m2": 20.31,
+   "area_m2": 17.62,
    "clear_height_m": 3.15,
    "bbox_m": [
     13.7,
@@ -683,10 +683,33 @@
     17.6,
     21.0
    ],
-   "doors": 2,
+   "doors": 3,
    "windows": 0,
    "outdoor": false,
    "group_path": "Neuendorf House/L0 Ground floor/Entrance hall",
+   "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
+   "confidence": "low",
+   "built": false
+  },
+  {
+   "project": "Neuendorf House",
+   "slug": "architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin",
+   "room_id": "L0-wc",
+   "name": "Guest WC",
+   "type": "wc",
+   "level": "L0",
+   "area_m2": 2.07,
+   "clear_height_m": 3.15,
+   "bbox_m": [
+    15.9,
+    18.9,
+    17.6,
+    21.0
+   ],
+   "doors": 1,
+   "windows": 0,
+   "outdoor": false,
+   "group_path": "Neuendorf House/L0 Ground floor/Guest WC",
    "file": "residential/skp/architectural-purity-neuendorf-house-by-john-pawson-and-claudio-silvestrin.skp",
    "confidence": "low",
    "built": false
@@ -721,10 +744,10 @@
    "name": "Pool terrace",
    "type": "terrace",
    "level": "L0",
-   "area_m2": 129.6,
+   "area_m2": 108.87,
    "clear_height_m": 4.08,
    "bbox_m": [
-    -4.0,
+    -0.8,
     -6.0,
     21.0,
     0.0
