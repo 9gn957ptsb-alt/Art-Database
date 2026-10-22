@@ -901,8 +901,8 @@ export const TOOLS = [
     inputSchema: {
       items: z.array(z.object({
         image: z.string().trim().min(1).max(2048).describe('The picture\'s https address.'),
-        title: z.string().max(300).optional().describe('Its title, if it has one (kept as its name, at most 60 characters).'),
-        link: z.string().max(2048).optional().describe('The page it came from (a pin, a block, a post), if known.'),
+        title: z.string().max(300).nullable().optional().describe('Its title, if it has one (kept as its name, at most 60 characters).'),
+        link: z.string().max(2048).nullable().optional().describe('The page it came from (a pin, a block, a post), if known.'),
         source: z.string().trim().min(1).max(60).describe('Where it comes from: Pinterest, Are.na, Flickr, Tumblr, Instagram, Artsy or The web.'),
         thumb: z.string().max(2048).nullable().optional().describe('A smaller copy\'s address, when read_link gave one.'),
         kind: z.enum(OWN_KINDS).optional().describe('What this one is, if it differs from the call\'s kind.'),

@@ -333,6 +333,19 @@ test('shrink: a big picture becomes the app\'s size (720 px) under the cap', () 
 
 // ------------------------------------------------------------------ bring_in
 
+test('bring_in takes read_link\'s items exactly as they come, untitled and unlinked ones (null) included', async () => {
+  const { ctx } = ctxFor();
+  const found = await call(ctx, 'read_link', { url: 'https://www.pinterest.com/ada/slow-mornings/' });
+  const items = found.data.items.slice(0, 2).map((it) => Object.assign({}, it, { title: null, link: null }));
+  const r = await call(ctx, 'bring_in', { items });
+  assert.equal(r.isError, undefined, r.summary);
+  assert.equal(r.data.added.length, 2);
+  const st = await stateOf(ctx);
+  assert.equal(st.own.length, 2);
+  assert.ok(st.own[0].link == null, 'no link stored when none was given');
+  assert.equal(checkState(st), '', 'the state stays one put_state accepts');
+});
+
 test('bring_in: read_link then bring_in adds brought-in things, kept, with source, link and their colours read here', async () => {
   const { ctx } = ctxFor();
   const found = await call(ctx, 'read_link', { url: 'https://www.pinterest.com/ada/slow-mornings/' });
