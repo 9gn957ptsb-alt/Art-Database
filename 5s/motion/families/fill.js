@@ -20,7 +20,7 @@
   const M = Marks;
   const TAU = Math.PI * 2;
   const PTS = { bar: M.points('bar', 120), body: M.points('body', 220), s: M.points('s', 170) };
-  const BOTTOM = 905, TOP = 150;          // the level's travel: just under the lowest ink, just over the bar
+  const BOTTOM = 892, TOP = 150;          // the level's travel: just under the lowest ink, just over the bar
   const BOWL_X = 360;                     // the surface tilts about the bowl
 
   const seg = (t, a, b) => M.clamp((t - a) / (b - a), 0, 1);

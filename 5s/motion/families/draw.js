@@ -228,10 +228,9 @@
             };
             swelling(c, pts, colours, widthAt, Math.max(0, front - wave), M.clamp(front, 0, 1));
           };
-          const ink = M.rgba(pal.ink, inkA);
           if (inkA > 0.01) {
-            M.stroke(c, FIVE, { width: 10 * k, to: T5(sk5), colours: ink });
-            M.stroke(c, PTS.s, { width: 10 * k, to: TS(skS), colours: ink });
+            M.stroke(c, FIVE, { width: 10 * k, to: T5(sk5), colours: pal.ink, alpha: inkA });
+            M.stroke(c, PTS.s, { width: 10 * k, to: TS(skS), colours: pal.ink, alpha: inkA });
           }
           // the 5's bar and body flood as the one line FIVE (bar backwards) so the flood runs like the pen did
           if (q5 > 0) flood(FIVE, c5, W5, q5, 0.28);
