@@ -1,0 +1,37 @@
+/**
+ * 5s as a Claude connector (README.md "The one-time setup").
+ * Secrets are never written here: set them with `npx wrangler secret put <NAME>`:
+ *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, COOKIE_ENCRYPTION_KEY
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fives-connector",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  // nodejs_compat: the agents package needs it. global_fetch_strictly_public: required by the OAuth
+  // provider for Client ID Metadata Documents (its SSRF protection); every fetch 5s makes is public.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["FiveSMCP"] }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "MCP_OBJECT", "class_name": "FiveSMCP" }
+    ]
+  },
+  // Two KV namespaces. Without an "id", `wrangler deploy` creates them and writes the ids here;
+  // or create them first (README step 4) and paste each id in.
+  "kv_namespaces": [
+    { "binding": "OAUTH_KV" },
+    { "binding": "FIVES_KV" }
+  ],
+  // Workers Rate Limiting (index.ts): /mcp per signed-in person, and the sign-in endpoints anyone can
+  // reach (/register, /authorize, /token, /callback) per address. namespace_id is any number unique
+  // in the Cloudflare account. Without these two bindings the Worker still runs, unlimited.
+  "ratelimits": [
+    { "name": "RATE_LIMIT_PERSON", "namespace_id": "5001", "simple": { "limit": 120, "period": 60 } },
+    { "name": "RATE_LIMIT_SIGNIN", "namespace_id": "5002", "simple": { "limit": 30, "period": 60 } }
+  ],
+  "observability": { "enabled": true },
+  "dev": { "port": 8800, "inspector_port": 8801 }
+}

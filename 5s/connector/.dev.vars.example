@@ -1,0 +1,9 @@
+# Copy to .dev.vars (gitignored) for `npx wrangler dev`. Never deploy these: production values are
+# Worker secrets set with `npx wrangler secret put`.
+GITHUB_CLIENT_ID=dev-placeholder
+GITHUB_CLIENT_SECRET=dev-placeholder
+COOKIE_ENCRYPTION_KEY=dev-placeholder-dev-placeholder-dev-placeholder
+# Local tests only: every /mcp request is this person ("login" or "id:login") and GitHub is a fake.
+# A comma-separated list names several people; a request picks one with the header X-5s-Dev-User.
+# Refused on any host but localhost. Leave it out to test the real sign-in (401 + OAuth discovery).
+DEV_FAKE_USER=1001:artist-dev

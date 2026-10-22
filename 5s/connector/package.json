@@ -1,0 +1,28 @@
+{
+  "name": "fives-connector",
+  "version": "0.1.0",
+  "private": true,
+  "description": "5s as a Claude connector: a remote MCP server on Cloudflare Workers, signed in with GitHub.",
+  "type": "module",
+  "scripts": {
+    "deck": "node scripts/build-deck.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.mjs",
+    "smoke": "node test/smoke.mjs",
+    "type-check": "tsc --noEmit",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "1.2.3",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "agents": "0.28.1",
+    "hono": "4.13.13",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261008.1",
+    "typescript": "6.0.3",
+    "wrangler": "4.150.0"
+  }
+}
