@@ -180,10 +180,11 @@
         f.blocks.forEach(function (c) { n = max(n, c[0] + 1, c[1] + 1, c[2] + 1); });
         var h0 = floor(n / 2);
         f.blocks.forEach(function (c) { use(c[0] - h0, v + c[2] - h0, n + 2); set(c[0] - h0, v + c[2] - h0, gs + c[1], B.WHITE); labels.push([cell(c[0] - h0, v + c[2] - h0), names[i]]); });
-        for (var k0 = -h0 - 2; k0 < -h0; k0 += 1) { use(k0, v, 3); }
-        set(-h0 - 2, v, top, B.WHITE);
-        stands.push({ i: i, at: point(-h0 - 2, v, gs), eye: point(-h0 - 2, v, gs + eyeH), said: f.said, name: names[i] });
-        labels.push([cell(-h0 - 2, v), "Stand here · " + names[i].toLowerCase()]);
+        // (its stone as far off as it is across, so from the eye on it the whole of it is in the view, 70 degrees high)
+        for (var k0 = -h0 - n + 1; k0 < -h0; k0 += 1) { use(k0, v, 3); }
+        set(-h0 - n + 1, v, top, B.WHITE);
+        stands.push({ i: i, at: point(-h0 - n + 1, v, gs), eye: point(-h0 - n + 1, v, gs + eyeH), said: f.said, name: names[i] });
+        labels.push([cell(-h0 - n + 1, v), "Stand here · " + names[i].toLowerCase()]);
         return;
       }
       if (!f) {

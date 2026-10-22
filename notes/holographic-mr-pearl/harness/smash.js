@@ -1,6 +1,6 @@
 // smash.js - the guitar smash in the game (the prototype on its own server): node smash.js desk|phone outdir port
 // Every case of the design: a block a step ahead at his waist, low (the ground) and at his head, one five metres off
-// (the blow within REACH), one beyond REACH; each must break exactly at the strike, a beat after the tap. Rapid taps
+// (the blow within REACH), one beyond REACH; each must break exactly at the strike, half a beat after the tap (SWING, since 22 Oct 2026; and each of the three styles). Rapid taps
 // (one kept, the latest), the chain (a beat after, swung back), walking (the legs walk on), in water (the swing at
 // SWIM / WALK), the target changed before the strike, the hologram mid-swing, and a real tap or click. The keyframes
 // are photographed in third person. Writes log.txt and results.json in outdir.
