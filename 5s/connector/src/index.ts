@@ -100,8 +100,7 @@ export class FiveSMCP extends McpAgent<Env, Record<string, never>, Props> {
  * Object per GitHub user id, named "person:<id>". On Workers Free: 100,000 rows written a day for the
  * whole connector, one row for each save of a state. Only the Worker's own code can reach it (a
  * Durable Object has no address of its own), and each call must name the person the object is for:
- * a call for anyone else is refused. The first time a key is asked for, a copy still in Workers KV
- * (FIVES_KV, from before the move) is brought over once and deleted there (person.js).
+ * a call for anyone else is refused.
  */
 export class FiveSPerson extends DurableObject<Env> {
 	private store: ReturnType<typeof personStore> | null = null;
@@ -111,11 +110,7 @@ export class FiveSPerson extends DurableObject<Env> {
 		// Native ctx.id.name is the name the object was addressed by (idFromName). Fail closed without it.
 		if (this.ctx.id.name !== name) throw new Error("This is not that person's 5s.");
 		if (!this.store) {
-			this.store = personStore(this.ctx.storage.sql, {
-				uid,
-				kv: this.env.FIVES_KV || null,
-				waitUntil: (p: Promise<unknown>) => this.ctx.waitUntil(p),
-			});
+			this.store = personStore(this.ctx.storage.sql, { uid });
 		}
 		return this.store;
 	}
@@ -150,13 +145,13 @@ function devProps(value: string, request: Request): Props | null {
 	return people.find((p) => p.login.toLowerCase() === asked.trim().toLowerCase()) || null;
 }
 
-/** A fake GitHub that remembers its repositories in FIVES_KV, so make_hub then save_hub works across requests. */
+/** A fake GitHub that remembers its repositories in the local OAUTH_KV (wrangler dev only), so make_hub then save_hub works across requests. */
 async function devGitHub(env: Env, p: Props) {
 	const fake = createFakeGitHub({ users: [{ token: DEV_TOKEN, id: Number(p.id) || 1001, login: p.login }] });
-	fake.restore(await env.FIVES_KV.get(DEV_FAKE_KEY, "json"));
+	fake.restore(await env.OAUTH_KV.get(DEV_FAKE_KEY, "json"));
 	const fetchAndKeep = async (input: RequestInfo, init?: RequestInit) => {
 		const res = await fake.fetch(input, init);
-		await env.FIVES_KV.put(DEV_FAKE_KEY, JSON.stringify(fake.snapshot()));
+		await env.OAUTH_KV.put(DEV_FAKE_KEY, JSON.stringify(fake.snapshot()));
 		return res;
 	};
 	return api(DEV_TOKEN, fetchAndKeep, { base: fake.base });
@@ -245,7 +240,7 @@ export default {
 				return boundMcp.fetch(request, env, ctx as ExecutionContext & { props: Props });
 			}
 			if (url.pathname === "/dev/fake-github") {
-				return Response.json((await env.FIVES_KV.get(DEV_FAKE_KEY, "json")) || {});
+				return Response.json((await env.OAUTH_KV.get(DEV_FAKE_KEY, "json")) || {});
 			}
 		}
 		if (env.RATE_LIMIT_SIGNIN && SIGNIN_PATHS.has(url.pathname)) {

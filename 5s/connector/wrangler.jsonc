@@ -26,13 +26,11 @@
       { "name": "PERSON", "class_name": "FiveSPerson" }
     ]
   },
-  // Two KV namespaces. Without an "id", `wrangler deploy` creates them and writes the ids here;
-  // or create them first (README step 4) and paste each id in. OAUTH_KV is the OAuth provider's
-  // (sign-ins and tokens: a few writes per sign-in, see index.ts TOKEN_LIFETIMES). FIVES_KV is where
-  // each person's 5s was kept before FiveSPerson: now only read, once per person, to move it over.
+  // One KV namespace, the OAuth provider's: sign-ins and tokens only (a few writes per sign-in, see
+  // costs.js TOKEN_LIFETIMES). Create it first (README step 4) and paste its id in here. Each person's
+  // 5s is in FiveSPerson, never in KV.
   "kv_namespaces": [
-    { "binding": "OAUTH_KV" },
-    { "binding": "FIVES_KV" }
+    { "binding": "OAUTH_KV" }
   ],
   // Workers Rate Limiting (index.ts): /mcp per signed-in person, and the sign-in endpoints anyone can
   // reach (/register, /authorize, /token, /callback) per address. namespace_id is any number unique

@@ -18,6 +18,7 @@ export const FREE_PLAN = Object.freeze({
   kvReads: 100000,            // a day
   kvWrites: 1000,             // a day
   kvDeletes: 1000,            // a day
+  kvLists: 1000,              // a day
   kvStorageGB: 1,
 });
 
@@ -26,6 +27,9 @@ export const FREE_PLAN = Object.freeze({
  * tokens: a sign-in at most SIGNIN_KV_WRITES keys (two short-lived transaction records, the grant,
  * the grant again at the code exchange, the access token), plus 1 when Claude registers itself as a
  * client; a refresh REFRESH_KV_WRITES (the grant and the new access token); using a token none.
+ * A sign-in also deletes its two transaction records and lists the person's grants once; one that
+ * replaces an earlier sign-in of the same app lists that grant's tokens and deletes them and it too
+ * (at most SIGNIN_KV_DELETES and SIGNIN_KV_LISTS). A refresh lists and deletes nothing.
  * Access tokens last 7 days, so a person who comes back every day refreshes once a week; the sign-in
  * itself lasts as long as it is used, ending after 90 days without any use.
  */
@@ -37,6 +41,8 @@ export const TOKEN_LIFETIMES = Object.freeze({
 export const SIGNIN_KV_WRITES = 5;
 export const REGISTER_KV_WRITES = 1;
 export const REFRESH_KV_WRITES = 2;
+export const SIGNIN_KV_DELETES = 5;   // 2 transactions; replacing a sign-in: its grant and up to 2 live access tokens
+export const SIGNIN_KV_LISTS = 2;     // the person's grants; replacing a sign-in: its tokens
 
 /**
  * What each piece of 5s uses, counted from the code (agents 0.28.1 McpAgent, src/person.js,

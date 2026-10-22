@@ -7,24 +7,19 @@
  * the McpAgent's object, because that one belongs to a single MCP session: a person has a new one
  * each time Claude or the app opens a session, so nothing kept there would be found again.
  *
- * The logic is here, in plain JS over the two things it needs (a SQL `exec` like the Durable Object's
- * `ctx.storage.sql.exec`, and the old KV namespace), so `node --test` runs it on node:sqlite. The
- * Durable Object itself (index.ts FiveSPerson) only passes calls in.
+ * The logic is here, in plain JS over the one thing it needs (a SQL `exec` like the Durable Object's
+ * `ctx.storage.sql.exec`), so `node --test` runs it on node:sqlite. The Durable Object itself
+ * (index.ts FiveSPerson) only passes calls in.
  *
- *   kv(k, v)      k is "state:<id>" or "repos:<id>" for this person only; v the same JSON text that
- *                 KV held (store.js readState/writeState and readRepos/addRepo read and write it)
- *   moved(k)      keys already brought over from KV (or found missing there), so KV is read once
+ *   kv(k, v)      k is "state:<id>" or "repos:<id>" for this person only; v the JSON text store.js
+ *                 readState/writeState and readRepos/addRepo read and write
  *
- * Moving from KV: the first time a key is asked for (or written) and it is not here yet, it is read
- * from KV once. Found: kept here, then deleted from KV (best effort: if KV's free deletes for the day
- * are used up the old copy stays, never read again). Not found: noted as moved, so KV is not asked
- * again. A write that arrives while that read is under way is never overwritten by it (INSERT OR
- * IGNORE), so nothing newer is lost.
+ * No move from Workers KV: the connector was never deployed with each 5s in KV, so there is nothing
+ * to move, and reading KV for it would cost a second namespace and a read for every new person.
  */
 
 export const PERSON_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY NOT NULL, v TEXT NOT NULL) WITHOUT ROWID',
-  'CREATE TABLE IF NOT EXISTS moved (k TEXT PRIMARY KEY NOT NULL) WITHOUT ROWID',
 ];
 
 const UID = /^[A-Za-z0-9_-]{1,64}$/;
@@ -45,55 +40,31 @@ export function personKeys(uid) {
 const rows = (cursor) => (cursor && typeof cursor.toArray === 'function' ? cursor.toArray() : Array.from(cursor || []));
 
 /**
- * personStore(sql, {uid, kv, waitUntil}) -> {get(k), put(k, v), counts}
+ * personStore(sql, {uid}) -> {get(k), put(k, v), counts}
  * sql: {exec(query, ...params) -> iterable of row objects}, as ctx.storage.sql is.
- * kv: the old KV namespace (get/delete), or null when there is nothing to move.
  * counts: rows read and written by this store (what the free plan counts), for tests and the README.
  */
 export function personStore(sql, opts) {
-  const o = opts || {};
-  const uid = String(o.uid);
+  const uid = String((opts || {}).uid);
   if (!UID.test(uid)) throw new Error('bad user id');
   const allowed = personKeys(uid);
-  const kv = o.kv || null;
-  const counts = { read: 0, written: 0, kvReads: 0, kvDeletes: 0 };
+  const counts = { read: 0, written: 0 };
   for (const q of PERSON_SCHEMA) sql.exec(q);
-  const one = (q, ...p) => { const r = rows(sql.exec(q, ...p)); counts.read += r.length; return r[0] || null; };
-  const write = (q, ...p) => { sql.exec(q, ...p); counts.written += 1; };
   const check = (k) => { if (!allowed.has(k)) throw new Error('not this person\'s key'); };
-
-  async function bringOver(k) {
-    if (one('SELECT k FROM moved WHERE k = ?', k)) return;
-    let old = null;
-    if (kv) {
-      counts.kvReads++;
-      old = await kv.get(k);
-    }
-    if (one('SELECT k FROM moved WHERE k = ?', k)) return; // another call moved it while KV answered
-    if (typeof old === 'string' && old) write('INSERT OR IGNORE INTO kv (k, v) VALUES (?, ?)', k, old);
-    write('INSERT OR IGNORE INTO moved (k) VALUES (?)', k);
-    if (typeof old === 'string' && old && kv) {
-      counts.kvDeletes++;
-      const gone = Promise.resolve().then(() => kv.delete(k)).catch(() => {});
-      if (typeof o.waitUntil === 'function') o.waitUntil(gone); else await gone;
-    }
-  }
 
   return {
     counts,
     async get(k) {
       check(k);
-      const r = one('SELECT v FROM kv WHERE k = ?', k);
-      if (r) return r.v;
-      await bringOver(k);
-      const again = one('SELECT v FROM kv WHERE k = ?', k);
-      return again ? again.v : null;
+      const r = rows(sql.exec('SELECT v FROM kv WHERE k = ?', k));
+      counts.read += r.length;
+      return r[0] ? r[0].v : null;
     },
     async put(k, v) {
       check(k);
       if (typeof v !== 'string') throw new Error('a stored value is text');
-      await bringOver(k);
-      write('INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v', k, v);
+      sql.exec('INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v', k, v);
+      counts.written += 1;
     },
   };
 }

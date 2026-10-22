@@ -1,9 +1,7 @@
 /* Bindings and secrets the Worker sees (wrangler.jsonc, Worker secrets, .dev.vars). */
 interface Env {
-	/** The OAuth provider's own store: clients, grants, tokens (props encrypted). */
+	/** The OAuth provider's own store: clients, grants, tokens (props encrypted). Under wrangler dev, also the dev bypass's fake GitHub. */
 	OAUTH_KV: KVNamespace;
-	/** Where each person's 5s was kept before FiveSPerson: read once per person to move it over (person.js). Also the dev bypass's fake GitHub. */
-	FIVES_KV: KVNamespace;
 	/** McpAgent's Durable Object: one per MCP session. */
 	MCP_OBJECT: DurableObjectNamespace;
 	/** Each person's 5s (state, hubs 5s made): one SQLite-backed Durable Object per GitHub user id (index.ts FiveSPerson). */
