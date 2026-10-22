@@ -79,18 +79,18 @@
   // moved (reaching 40 copies), and retracts into the front face on beat five, which lands with Depth's pop.
   const XBEAT = [0.05, 0.15, 0.25, 0.35, 0.64];
   const XCOPIES = [0, 5, 10, 20, 30];
-  const XA0 = Math.atan2(0.72, -1), XA1 = Math.atan2(-0.72, 1) ;   // lower-left, upper-right
+  const XA0 = Math.atan2(0.72, -1), XA1 = Math.atan2(-0.72, 1);   // lower-left, upper-right
   function extrude(ctx, t, p, env, pal) {
     const I = p.intensity, k = p.weight, ease = M.easing(p.easing);
     const flat = flatPal(pal);
     const L = 60 + 140 * p.spread, gap = L / 40;
     let n = 0;
     for (let i = 0; i < 4; i++) n += (XCOPIES[i + 1] - XCOPIES[i]) * ease(span(t, XBEAT[i], XBEAT[i] + 0.07));
-    const sw = span(t, XBEAT[3], XBEAT[3] + 0.22);
+    const sw = span(t, XBEAT[3], XBEAT[3] + 0.24);
     n += 10 * M.ease.inOutCubic(sw);
     const retract = M.ease.inCubic(span(t, XBEAT[4], XBEAT[4] + 0.1));
     n *= 1 - retract;
-    const ang = M.lerp(XA0, XA1 - 2 * Math.PI * 0, M.ease.outBack(0.6 + 2.2 * I)(sw));
+    const ang = M.lerp(XA0, XA1, M.ease.outBack(0.6 + 2.2 * I)(M.ease.inOutSine(sw)));
     const dir = [Math.cos(ang), Math.sin(ang)];
     // the block is kept centred on the view: the face sits half the extrusion away from home
     const sh = -0.5 * gap * n;
@@ -133,8 +133,94 @@
     ctx.restore();
   }
 
-  function strata(ctx, t, p, env, pal) { if (p.ribbon) M.ribbon(ctx, 0, { colours: pal.ribbon }); letters(ctx, pal, p.weight, 0); }
-  function riso(ctx, t, p, env, pal) { if (p.ribbon) M.ribbon(ctx, 0, { colours: pal.ribbon }); letters(ctx, pal, p.weight, 0); }
+  // strata: Ripple's contours made solid and Depth's rims made concentric. On beat one the mark bursts into a
+  // nest of five solid bands that follow its outline, like a topographic map or stacked cut paper; on each later
+  // beat the outermost band snaps inward onto the next, and the fifth lands the plain mark.
+  const SBEAT = [0.06, 0.22, 0.36, 0.5, 0.64];
+  function strataTones(pal) {
+    if (flatPal(pal)) return [0.12, 0.25, 0.38, 0.51, 0.64].map((x) => M.mix(pal.bg, pal.ink, x));   // band 5 .. band 1
+    let stops;
+    if (pal.name === 'pass') stops = [pal.iris, pal.cobalt];
+    else if (pal.name === 'turn') stops = [pal.cobalt, pal.iris];
+    else stops = [VIOLET(pal), M.mix('#B64CD6', pal.bg, pal.theme === 'dark' ? 0.08 : 0), pal.flare, pal.ember];
+    return [0, 1, 2, 3, 4].map((i) => M.colourAt(stops, i / 4));
+  }
+  function strata(ctx, t, p, env, pal) {
+    const I = p.intensity, k = p.weight;
+    const g = 30 + 30 * p.spread, hair = 5;
+    const tones = strataTones(pal);
+    // how many bands are still out (5 -> 0): one snaps in on each of beats two to four, the last two on beat five
+    const snap = M.ease.outBack(0.8 + 2.4 * I);
+    const top = 5 - snap(span(t, SBEAT[1], SBEAT[1] + 0.07)) - snap(span(t, SBEAT[2], SBEAT[2] + 0.07))
+      - snap(span(t, SBEAT[3], SBEAT[3] + 0.07)) - 2 * M.ease.outBack(1 + 1.2 * I)(span(t, SBEAT[4], SBEAT[4] + 0.1));
+    const R = [0];
+    for (let i = 1; i <= 5; i++) {
+      // beat one: the bands burst out of the mark, the outer ones a moment later
+      const out = M.ease.outBack(1 + 1.6 * I)(span(t, SBEAT[0] + 0.014 * (i - 1), SBEAT[0] + 0.1 + 0.014 * (i - 1)));
+      R.push(g * Math.min(i * out, top));
+    }
+    // the nest is drawn a little smaller while it is wide, so it stays inside the view; back to full as it tightens
+    const S = 1 - 0.18 * M.clamp(R[5] / (5 * g), 0, 1);
+    let beat = 0;
+    for (let i = 0; i < 5; i++) beat += bump(t, SBEAT[i] - 0.015, SBEAT[i] + 0.09) * (i === 4 ? 1.6 : 1) - 0.4 * bump(t, SBEAT[i] - 0.06, SBEAT[i]);
+    const sc = S * (1 + 0.05 * I * beat);
+    about(ctx, A.letters, sc, (c) => {
+      if (p.ribbon) M.ribbon(c, 0.12 * I * M.clamp(R[5] / (5 * g), 0, 1), { colours: pal.ribbon });
+      if (R[5] > 0.5) {
+        group(c, 1, (cc) => {
+          for (let i = 5; i >= 1; i--) {
+            if (R[i] <= R[i - 1] + hair) continue;          // snapped in: nothing of it shows
+            letters(cc, pal, k, R[i], tones[5 - i]);
+            erase(cc, pal, k, R[i - 1] + hair, 1);
+          }
+        });
+      }
+      letters(c, pal, k, 0);
+    });
+  }
+
+  // riso: the mark printed as three flat ink plates that find their register on the beats. They overprint
+  // (multiply on a light ground, screen on a dark one), start out of register along three seeded angles and
+  // jump a fifth closer on each beat, a step and a hold; on the fifth they lock and the inks become the mark.
+  const RBEAT = [0.08, 0.22, 0.36, 0.5, 0.64];
+  function riso(ctx, t, p, env, pal) {
+    const I = p.intensity, k = p.weight;
+    const dark = isDark(pal.bg);
+    const inks = flatPal(pal) ? [0.5, 0.68, 0.86].map((x) => M.mix(pal.bg, pal.ink, x))
+      : pal.name === 'pass' ? [M.mix(pal.cobalt, '#FFFFFF', 0.35), pal.cobalt, pal.iris]
+      : pal.name === 'turn' ? [M.mix(pal.iris, '#FFFFFF', 0.35), pal.iris, pal.cobalt]
+      : [pal.ember, pal.flare, pal.iris];
+    const rnd = env.rng;
+    const a0 = rnd() * Math.PI * 2, reach = 40 + 80 * p.spread;
+    const plates = inks.map((ink, i) => {
+      const a = a0 + (i * Math.PI * 2) / 3 + (rnd() - 0.5) * 0.9, d = reach * (0.8 + 0.4 * rnd());
+      const r = (rnd() < 0.5 ? -1 : 1) * (2 + 4 * rnd()) * Math.PI / 180;
+      return { ink, x: Math.cos(a) * d, y: Math.sin(a) * d, r };
+    });
+    const jump = M.ease.outBack(4 * I);
+    let m = 1;
+    for (let i = 0; i < 5; i++) m -= 0.2 * jump(span(t, RBEAT[i], RBEAT[i] + 0.045));
+    const fade = M.ease.inOutCubic(span(t, 0.84, 0.95));
+    if (fade < 1) {
+      const comp = dark ? 'screen' : 'multiply';
+      M.layer(ctx, { alpha: 1 - fade, composite: 'source-over' }, (c) => {
+        // the plates print onto a sheet of the ground colour so the blend has paper to work against
+        plates.forEach((pl, i) => {
+          M.layer(c, { composite: i === 0 ? 'source-over' : comp }, (cc) => {
+            cc.translate(A.letters[0] + pl.x * m, A.letters[1] + pl.y * m);
+            cc.rotate(pl.r * m);
+            cc.translate(-A.letters[0], -A.letters[1]);
+            if (p.ribbon && i === 2) M.ribbon(cc, 0.1 * I * m, { colours: [pl.ink] });
+            letters(cc, pal, k, 0, pl.ink);
+          });
+        });
+      });
+    }
+    if (fade > 0) {
+      const mark = (c) => { if (p.ribbon) M.ribbon(c, 0, { colours: pal.ribbon }); letters(c, pal, k, 0); };
+      if (fade >= 0.999) mark(ctx); else M.layer(ctx, { alpha: fade }, mark);
+    }
+  }
 
   Motion.register({
     id: 'echo',

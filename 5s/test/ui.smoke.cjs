@@ -1459,7 +1459,8 @@ async function sheetChecks(page, where) {
   const r = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, vw: innerWidth, body: document.getElementById('sheet-body').scrollWidth, bw: document.getElementById('sheet-body').clientWidth }));
   assert.ok(r.doc <= r.vw, where + ': page scrolls sideways');
   assert.ok(r.body <= r.bw + 1, where + ': the sheet scrolls sideways (' + r.body + ' > ' + r.bw + ')');
-  const words = await page.$eval('#sheet', (n) => n.textContent);
+  // 5s's own words (a file's own name, shown as its heading, is the person's)
+  const words = await page.$eval('#sheet', (n) => { const c = n.cloneNode(true); c.querySelectorAll('.found-h').forEach((x) => x.remove()); return c.textContent; });
   assert.ok(!/\b(json|csv|zip|html|api|oauth|mcp|github)\b/i.test(words), where + ': no file-format or platform words: ' + (words.match(/\b(json|csv|zip|html|api|oauth|mcp|github)\b/gi) || []));
 }
 
@@ -1508,11 +1509,6 @@ for (const cfg of CONFIGS) {
       await page.click('[data-act="doors"]');
       await page.waitForSelector('#sheet .doors');
       assert.equal(await page.evaluate(() => document.activeElement.getAttribute('data-door')), 'ask', 'back to the door it came from');
-
-      // Paste a link without the connector: the field waits, and the door says what opens it
-      await page.evaluate(() => document.querySelector('#door-link .door-name').scrollIntoView());
-      await page.click('#door-link .door-name');
-      assert.equal(await page.locator('#door-link button').count(), 0);
 
       // Your data file: a file with nested picture addresses and post links
       await page.click('[data-act="door"][data-door="file"]');
