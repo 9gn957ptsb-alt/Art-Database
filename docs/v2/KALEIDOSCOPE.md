@@ -49,7 +49,12 @@ the mirrors can be, all φ's:
   views (`--scope`), NASA's real answer and thumbnails are fetched with curl and served to the page, the
   world is brought far off (`Land.globeAt`), the clock stopped and stepped, `Land.shot` drops one through
   the mirrors and the CSS fade is held to the same time; then the pointer crosses the sky at real
-  speed and the shots that came through the mirrors are counted against the plain.
+  speed and the shots that came through the mirrors are counted against the plain. For one that lands
+  in the sweep (`--sweep`), the clock is stopped and stepped, `Land.sweep` begins one from the middle
+  and one from a point pressed, the whole window is photographed at every held frame and the `#sweep`
+  canvas read at each (how much of the window the squares cover, one wave up and down, and none over
+  the dial's words, the names or the words at the world's foot); then, at real speed, trips down into a
+  city and up again count which sweeps came.
 
 ## So far
 
@@ -60,6 +65,7 @@ the mirrors can be, all φ's:
 | 13 Oct 2026 | A photograph pointed at (a mouse), or a door pressed — the thumbnail's answer | One pointed effect of the others, dealt: the 36° mirrors stand over the point the pointer is on and the picture is seen through them as they close and open by φ — 1.5, 3.8, 10 images, then 10, 3.8, 1.5 — seven held steps, about 0.9 s; the picture shows through where an image is broken, the mirrors' edges a short lavender line at the point (`kaleidoscopeAt`) | `pointed` |
 | 14 Oct 2026 | The held ring — a press held on a city's map | The first with pieces in the glass (the others fold a picture or a pulse), in pixel light. Inside the ring that opens under a held finger the pulse's two mirrors (36°) stand over the point and a sunflower's seeds turn in front of them: Vogel's, the golden angle (2π/φ² = 137.5°) apart on a radius that goes as √n, each seen ten times, five turned and five reflected. One seed as the ring opens, then one every φ²/12 s, the thirteenth at φ² s; the Fibonacci ones (1, 2, 3, 5, 8, 13) lilac: they fall alternately either side of one ray, each a golden step nearer it (−85°, +53°, −32°, +20°, −12°), so the mirrors string them out along ten spokes and the first thing drawn is a star. They turn once in φ⁸ s after a flick (2π/φ⁴ rad/s) that settles in φ s, as a kaleidoscope turned and let go: pairs of tiles slide together at a mirror and part, never the same twice. A tile a seed has left stays lit eight held frames, stepping down as the pointer's trail does, so none lights more than 24/(8+2) = 2.4 times a second. Let go, and the pulse goes out on the same mirrors (`rosetteRuns`, `squash`'s `turn`) | `ring` |
 | 20 Oct 2026 | The telescope's photographs — dropped behind the pointer in the far views | One in φ³ of the photographs the pointer drops across the sky when the world is far off (`dropHubble`, deep space only) lands through the telescope's own two mirrors — a telescope is a pair of mirrors, as a kaleidoscope is. The mirrors stand over its middle 72° apart, so five images come round it (the pentagon; five is odd, so the circle cannot close and the seam shows), then open by φ a step, 72°, 116°, 188°, 305° — 5, 3.1, 1.9, 1.2 images — and it is the photograph, which goes on as the others do, the same fade (since 21 Oct it fades in place, and its own light stays in the black: "the remains" in land.js; never the mirrors' lilac). Four held steps at 24 a second (the first four frames, waiting out the fade-in, then two each: 0.4 s of the shot's 1.1 s), drawn at half its pixels and blown up unsmoothed, the mirrors' edges in the lilac. A canvas in the plain photograph's place (`scopeShot`); the others stay the `<img>` they were (`drawArt`'s `bare`: no card behind a photograph on the dark) | `scope` |
+| 22 Oct 2026 | The sweep of cells — going down into a city, coming up | One sweep of the others, dealt (a third of the descents and a quarter of the ascents that the numbers' sweep does not take): the front is a pentagram. The pulse's two mirrors (36°) stand over where the sweep began — the city pressed, on the way down; the middle, on the way up — and what the front does in the tenth between them it does in all ten: the points lead and the valleys come after by φ² (the inner pentagon of a pentagram is 1/φ² of the circle through its points; its diagonals cut each other in φ), the edge ragged and the tones dealt in the tenth, mirrored (`starReach`, `folded`). The quietest of the sweeps: a thin front (a cell lives 0.22 of it) of squares of one and two tiles of the 13 px grid in cells of three, whole pixels, held frames at 24 a second, about 1 s (the others grow to cells of 48–103 px and cover 31–63 % of the window at their height; this 8–14 %). Never over the globe's dial's words, its names or the words at the world's foot (`starKept`, the cells under them left bare). A city off the window's edge: the star opens from its nearest point | `sweep` |
 
 ## Still to come
 
@@ -73,8 +79,10 @@ strike it here when it is done.
    (`DIVE = false`; its code is kept), so there is no aim to fold until it comes back.*
 3. ~~**The squash's held ring** (`ringNow`, a city held): a rosette that turns while the finger holds.~~
    Done 14 Oct, as a sunflower's seeds in the mirrors.
-4. **The sweep of cells** going down, coming up, opening and closing (`sweepCells`): its cells laid
-   out by the 36° mirrors about where it began, a rosette curtain instead of a front.
+4. ~~**The sweep of cells** going down, coming up, opening and closing (`sweepCells`): its cells laid
+   out by the 36° mirrors about where it began, a rosette curtain instead of a front.~~ Done 22 Oct,
+   as a pentagram, going down and coming up; opening and closing the deck stay plain (`downUp` in
+   their `passage` calls would give them the star).
 5. ~~**The telescope's photographs** dropped in the far views (`dropHubble`): deep space seen through
    the mirrors for a moment as it lands, five images at 72°.~~ Done 20 Oct, one in φ³.
 6. **The dial's two geared rings**, which already turn against each other at φ: drawn, once in a
@@ -112,3 +120,10 @@ strike it here when it is done.
   twice or thrice rather than five times round a point; the NASA thumbnails are mostly centred.
 - Its seeds are one tile each, and a thumb covers the middle of it on a phone. The figure is best
   seen with a mouse, or on a phone by pressing the upper part of a map, clear of its column.
+- The star (22 Oct) is a sweep: it lasts a second and comes on about one descent or ascent in five
+  (a third of the descents and a quarter of the ascents that are not the numbers' sweep), so it is
+  seen in passing, and few will name it a pentagram. On a phone the narrow window cuts it: the points
+  leave the sides at once and it reads as a plume of squares rather than a star, best on a wide window.
+  Where it keeps off the dial's words and the names it leaves their cells bare, so a ring of gaps can
+  show round the globe. Opening and closing the deck, hopping between cities and the walk's own
+  sweeps stay plain.
