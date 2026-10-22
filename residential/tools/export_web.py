@@ -203,6 +203,8 @@ def export_project(path, skp_dir):
     if path.stem != slug:
         raise rdb.Problem(f"slug {slug!r} does not match the file name")
     plan, index, warnings, owners, exact = compile_with_owners(p)
+    if not plan["leaves"] or not index:
+        raise rdb.Problem("no rooms or solids yet (project still being written?)")
     notes = [f"compiler: {w}" for w in warnings]
     if not exact:
         notes.append("solids assigned to rooms by group (rdb.py emission order changed); "

@@ -188,7 +188,7 @@ def check_index(R, library, index_path, projects_dir):
         R.check("index", False, f"{slug}: " + "; ".join(diff[:5]))
 
 
-def check_library(R, out, library):
+def check_library(R, out, library, skp_dir=ROOT / "skp"):
     R.check("library", library.get("schema") == export_web.SCHEMA, f"schema {library.get('schema')}")
     R.check("library", (out / "library.json").stat().st_size < MAX_FILE, "library.json over 8 MB")
     keys = [r["key"] for r in library["rooms"]]
@@ -210,7 +210,7 @@ def check_library(R, out, library):
         R.check("library", per_project.get(lp["slug"], 0) == lp["rooms"], f"{lp['slug']}: room rows")
         (lo, hi) = lp["bbox"]
         R.check("library", all(lo[k] < hi[k] for k in range(3)), f"{lp['slug']}: bbox {lp['bbox']}")
-        skp = ROOT / "skp" / f"{lp['slug']}.skp"
+        skp = Path(skp_dir) / f"{lp['slug']}.skp"
         R.check("library", (lp["skp_url"] is not None) == skp.exists(), f"{lp['slug']}: skp_url vs {skp}")
         if lp.get("thumb"):
             png = out / "res" / f"{lp['slug']}.png"
@@ -225,17 +225,19 @@ def main(argv=None):
     ap.add_argument("--out", default=str(ROOT / "build" / "web"))
     ap.add_argument("--projects", default=str(ROOT / "projects"))
     ap.add_argument("--index", default=str(ROOT / "index.json"))
+    ap.add_argument("--skp", default=str(ROOT / "skp"), help="the .skp folder the export was made with")
     ap.add_argument("--fresh", action="store_true", help="export into a temporary directory and check that")
     a = ap.parse_args(argv)
     projects_dir = Path(a.projects)
+    skp_dir = Path(a.skp)
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(a.out)
         if a.fresh:
             out = Path(tmp)
-            export_web.export(out, projects_dir, ROOT / "skp", log=lambda m: print("  export:", m))
+            export_web.export(out, projects_dir, skp_dir, log=lambda m: print("  export:", m))
         library = json.loads((out / "library.json").read_text(encoding="utf-8"))
         R = Report()
-        check_library(R, out, library)
+        check_library(R, out, library, skp_dir)
         for lp in library["projects"]:
             check_project(R, out, lp, projects_dir)
         check_index(R, library, Path(a.index), projects_dir)
