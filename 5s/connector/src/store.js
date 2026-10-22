@@ -1,5 +1,6 @@
-/* Each person's 5s, privately, in the connector's own store (Workers KV in production, a Map in
- * tests), keyed by their GitHub user id (a number that never changes, unlike a login).
+/* Each person's 5s, privately, in the connector's own store (in production their own SQLite-backed
+ * Durable Object, person.js and index.ts FiveSPerson, which took over from Workers KV for the free
+ * plan's sake; a Map in tests), keyed by their GitHub user id (a number that never changes, unlike a login).
  *
  *   state:<id>  {rev, at, state, use}    the 5s state, shared with the app through get_state/put_state;
  *                                        use = today's counts {day, writes, saves} for the daily caps
@@ -11,8 +12,8 @@
  * GitHub (make_hub and save_hub), DAILY_NEW_HUBS new repositories and DAILY_BRING pictures read and
  * brought in from other sites (bring_in; counted as `brought`, whether or not each one was added). They keep one person (or a
  * chat gone round in circles) from filling the store's daily writes or their GitHub account. The
- * counts ride in the same record as the state, so counting costs no extra write. Like everything
- * in KV they are best effort: two writes at the same moment can both pass.
+ * counts ride in the same record as the state, so counting costs no extra write. They are best
+ * effort: two tool calls at the same moment (two chats at once) can both pass.
  */
 import FiveS from './engine.js';
 
@@ -46,9 +47,30 @@ function checkUid(uid) {
   return s;
 }
 
-/** A store over a KV namespace (get/put of strings). */
+/** A store over a KV namespace (get/put of strings): how the connector kept each 5s before person.js. */
 export function kvStore(kv) {
   return { get: (k) => kv.get(k), put: (k, v) => kv.put(k, v) };
+}
+
+/** A failure of the store itself (not a cap 5s sets): the tools answer it in plain words, never "something went wrong". */
+export class StoreError extends Error {
+  constructor(when, cause) {
+    const why = when === 'put' ? '5s couldn\'t save your 5s just now.' : '5s couldn\'t open your saved 5s just now.';
+    super(why);
+    this.name = 'StoreError';
+    this.why = why;
+    // On the free plan the likeliest cause is the day's allowance, which comes back at midnight UTC.
+    this.resolution = 'Try again in a minute. If it keeps happening, 5s has used its free allowance for today: it comes back at midnight UTC, and nothing you saved before is lost (the 5s app keeps working on its own meanwhile).';
+    this.cause = cause;
+  }
+}
+
+/** store with every failure of get or put turned into a StoreError. */
+export function guardedStore(store) {
+  return {
+    get: async (k) => { try { return await store.get(k); } catch (e) { throw new StoreError('get', e); } },
+    put: async (k, v) => { try { return await store.put(k, v); } catch (e) { throw new StoreError('put', e); } },
+  };
 }
 
 /** A store in memory, for tests. `map` is exposed so tests can look inside. */

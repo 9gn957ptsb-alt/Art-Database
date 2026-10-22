@@ -13,16 +13,23 @@
   // It also keeps read_link, bring_in and item_image (src/web.js) on the public internet, under the
   // connector's own address, DNS and redirect checks.
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Two Durable Object classes, both SQLite-backed (the only kind on Workers Free): FiveSMCP, one per
+  // MCP session (the agents package's McpAgent), and FiveSPerson, one per person, holding their 5s
+  // (src/person.js). v2 adds FiveSPerson beside v1; nothing is removed.
   "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["FiveSMCP"] }
+    { "tag": "v1", "new_sqlite_classes": ["FiveSMCP"] },
+    { "tag": "v2", "new_sqlite_classes": ["FiveSPerson"] }
   ],
   "durable_objects": {
     "bindings": [
-      { "name": "MCP_OBJECT", "class_name": "FiveSMCP" }
+      { "name": "MCP_OBJECT", "class_name": "FiveSMCP" },
+      { "name": "PERSON", "class_name": "FiveSPerson" }
     ]
   },
   // Two KV namespaces. Without an "id", `wrangler deploy` creates them and writes the ids here;
-  // or create them first (README step 4) and paste each id in.
+  // or create them first (README step 4) and paste each id in. OAUTH_KV is the OAuth provider's
+  // (sign-ins and tokens: a few writes per sign-in, see index.ts TOKEN_LIFETIMES). FIVES_KV is where
+  // each person's 5s was kept before FiveSPerson: now only read, once per person, to move it over.
   "kv_namespaces": [
     { "binding": "OAUTH_KV" },
     { "binding": "FIVES_KV" }

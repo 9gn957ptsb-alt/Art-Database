@@ -56,6 +56,20 @@
   const MAX_NOTE = 500;
   const MAX_SET_NAME = 80;
   const MAX_OWN_NAME = 60;
+  // A brought thing's definition (SPEC.md "Links out and in"): optional fields, the same in the app,
+  // here and in the connector's validation. Text is one line; lists are the deck's own words.
+  const DEFINED_BY = Object.freeze(['page', 'claude', 'address', 'person']);
+  const OWN_LIMITS = Object.freeze({
+    url: 2048, maker: 120, date: 40, year: 10, medium: 200, place: 60, about: 200, category: 60,
+    genes: 12, gene: 80, materials: 8, material: 40,
+  });
+  const OWN_TEXT = Object.freeze(['maker', 'date', 'medium', 'place', 'about']);
+  const OWN_LINKS = Object.freeze(['link', 'image', 'thumb']);
+  // The order the definition's fields take in a brought thing, after the fields every thing has.
+  const OWN_DEFINED = Object.freeze(['link', 'image', 'thumb', 'maker', 'date', 'year', 'medium', 'place', 'about',
+    'category', 'era', 'genes', 'materials', 'coloursEstimated', 'definedBy']);
+  const GENE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  const YEAR_TEXT = /^(?:c\.\s?)?-?\d{1,4}s?$/i;
 
   // The month, as eight milestones (SPEC.md "The Path").
   const MILESTONES = Object.freeze([
@@ -95,6 +109,12 @@
   const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many || one + 's');
   const article = (w) => (/^[aeiou]/i.test(String(w)) ? 'an ' : 'a ') + w;
   const capital = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  const hasOwn = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
+  // One line of text: control, zero-width and bidi characters gone, whitespace collapsed.
+  const oneLine = (x) => (typeof x === 'string' || isNum(x)
+    ? String(x).replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁤﻿]/g, ' ').replace(/\s+/g, ' ').trim() : '');
+  // An https address of at most OWN_LIMITS.url characters with no spaces, or ''.
+  const httpsAddr = (x) => (typeof x === 'string' && x.length <= OWN_LIMITS.url && /^https:\/\/[^\s/?#@]+[^\s]*$/i.test(x) ? x : '');
 
   // FNV-1a, then the murmur3 finaliser so near-identical strings spread over all 32 bits.
   function hash32(str) {
@@ -443,8 +463,25 @@
     return m;
   }
 
-  function ownCard(o) {
+  // A brought thing's definition as card fields: what it is (maker, date, medium, place, about), the
+  // deck's words for it (category, era, genes, materials: these feed features() as a deck card's do),
+  // and where it lives (link, image, thumb). A thing with no definition gets [] and null, as before.
+  function ownDefinition(o) {
+    const str = (k) => (typeof o[k] === 'string' && o[k] ? o[k] : null);
+    const list = (k) => (Array.isArray(o[k]) ? o[k].filter((x) => typeof x === 'string' && x) : []);
+    const y = typeof o.year === 'string' || isNum(o.year) ? /(-?\d{1,4})/.exec(String(o.year)) : null;
     return {
+      materials: list('materials'), genes: list('genes').filter((g) => GENE_SLUG.test(g)),
+      era: ERAS.indexOf(o.era) >= 0 ? o.era : null, place: str('place'),
+      date: str('date') || (typeof o.year === 'string' && o.year ? o.year : null), year: y ? Number(y[1]) : null,
+      category: str('category'), maker: str('maker'), medium: str('medium'), about: str('about'),
+      link: httpsAddr(o.link) || null, image: httpsAddr(o.image) || null, thumb: httpsAddr(o.thumb) || null,
+      coloursEstimated: o.coloursEstimated === true, definedBy: DEFINED_BY.indexOf(o.definedBy) >= 0 ? o.definedBy : null,
+    };
+  }
+
+  function ownCard(o) {
+    return assign({
       id: o.id, kind: o.kind, own: true, source: o.source || 'Somewhere else',
       title: o.name || 'Untitled', artist: 'You',
       colours: Array.isArray(o.colours) ? o.colours.slice() : [],
@@ -455,7 +492,7 @@
       work: null, url: null, date: null, year: null, category: null,
       at: o.at == null ? null : o.at, let: o.let == null ? null : o.let, seenAt: o.seenAt == null ? null : o.seenAt,
       imgFrom: o.imgFrom || null,
-    };
+    }, ownDefinition(o));
   }
 
   function cardOf(st, deck, id) {
@@ -849,7 +886,7 @@
 
   // ---------------------------------------------------------------- brought things and notes
 
-  function cleanOwn(item, base) {
+  function cleanOwn(item, base, deck) {
     const o = assign(base);
     if (item.kind != null || !base.kind) o.kind = OWN_KINDS.indexOf(item.kind) >= 0 ? item.kind : (base.kind || 'image');
     if (item.name != null || base.name == null) o.name = typeof item.name === 'string' ? item.name.replace(/\s+/g, ' ').trim().slice(0, MAX_OWN_NAME) : (base.name || '');
@@ -861,12 +898,115 @@
     if (item.texture != null || base.texture === undefined) o.texture = isNum(item.texture) ? round(clamp(item.texture, 0, 1), 3) : null;
     for (const k of ['w', 'h']) if (item[k] != null || base[k] === undefined) o[k] = isNum(item[k]) && item[k] > 0 ? Math.round(item[k]) : null;
     if (typeof item.imgFrom === 'string') o.imgFrom = item.imgFrom;
+    defineOwn(o, item, deck);
     return o;
   }
 
-  /** bring(state, {id, kind, name, source, colours, crop, texture, w, h}, now) -> State.
-   *  Bringing an id that is already there updates its details (kind, name, source…). */
-  function bring(state, item, now) {
+  // The deck's own words for a definition: its cards' categories and eras, and its genes (null without a deck).
+  const deckWords = new WeakMap();
+  function wordsOfDeck(deck) {
+    if (!deck || typeof deck !== 'object') return null;
+    let w = deckWords.get(deck);
+    if (!w) {
+      const cats = new Set(), eras = new Set();
+      for (const c of deck.cards || []) {
+        if (c && typeof c.category === 'string' && c.category) cats.add(c.category);
+        if (c && ERAS.indexOf(c.era) >= 0) eras.add(c.era);
+      }
+      w = { cats, eras, genes: deck.genes && typeof deck.genes === 'object' ? deck.genes : {} };
+      deckWords.set(deck, w);
+    }
+    return w;
+  }
+
+  // Applies the definition fields an item carries to o (a brought thing being made or updated).
+  // A field the item does not mention is left as it is; null or '' (or [] or false) clears it; a value
+  // of the wrong kind is ignored. Text is one line and cut to its limit (as a name is); with a deck,
+  // category, era and genes must be the deck's own.
+  function defineOwn(o, item, deck) {
+    const words = wordsOfDeck(deck);
+    const set = (k, v) => { if (v === '' || v == null || (Array.isArray(v) && !v.length)) delete o[k]; else o[k] = v; };
+    const cleared = (v) => v === null || v === '' || v === false || (Array.isArray(v) && !v.length);
+    for (const k of OWN_LINKS) {
+      if (!hasOwn(item, k) || item[k] === undefined) continue;
+      if (cleared(item[k])) set(k, null); else if (httpsAddr(item[k])) set(k, item[k]);
+    }
+    for (const k of OWN_TEXT) {
+      if (!hasOwn(item, k) || item[k] === undefined) continue;
+      if (cleared(item[k])) { set(k, null); continue; }
+      const t = oneLine(item[k]).slice(0, OWN_LIMITS[k]).trim();
+      if (t) set(k, t);
+    }
+    if (hasOwn(item, 'year') && item.year !== undefined) {
+      const t = oneLine(item.year);
+      if (cleared(item.year)) set('year', null); else if (t.length <= OWN_LIMITS.year && YEAR_TEXT.test(t)) set('year', t);
+    }
+    if (hasOwn(item, 'category') && item.category !== undefined) {
+      const t = oneLine(item.category).slice(0, OWN_LIMITS.category);
+      if (cleared(item.category)) set('category', null); else if (t && (!words || words.cats.has(t))) set('category', t);
+    }
+    if (hasOwn(item, 'era') && item.era !== undefined) {
+      if (cleared(item.era)) set('era', null); else if (ERAS.indexOf(item.era) >= 0 && (!words || words.eras.has(item.era))) set('era', item.era);
+    }
+    if (hasOwn(item, 'genes') && item.genes !== undefined) {
+      if (cleared(item.genes)) set('genes', null);
+      else if (Array.isArray(item.genes)) {
+        const gs = [];
+        for (const g of item.genes.slice(0, 100)) {
+          if (typeof g !== 'string' || g.length > OWN_LIMITS.gene || !GENE_SLUG.test(g) || gs.indexOf(g) >= 0) continue;
+          if (words && !hasOwn(words.genes, g)) continue;
+          gs.push(g);
+        }
+        set('genes', gs.slice(0, OWN_LIMITS.genes));
+      }
+    }
+    if (hasOwn(item, 'materials') && item.materials !== undefined) {
+      if (cleared(item.materials)) set('materials', null);
+      else if (Array.isArray(item.materials)) {
+        const ms = [];
+        for (const m of item.materials.slice(0, 100)) {
+          const t = oneLine(m).toLowerCase().slice(0, OWN_LIMITS.material).trim();
+          if (t && ms.indexOf(t) < 0) ms.push(t);
+        }
+        set('materials', ms.slice(0, OWN_LIMITS.materials));
+      }
+    }
+    if (hasOwn(item, 'coloursEstimated') && item.coloursEstimated !== undefined) set('coloursEstimated', item.coloursEstimated === true ? true : null);
+    if (hasOwn(item, 'definedBy') && item.definedBy !== undefined) {
+      if (cleared(item.definedBy)) set('definedBy', null); else if (DEFINED_BY.indexOf(item.definedBy) >= 0) set('definedBy', item.definedBy);
+    }
+  }
+
+  /** checkOwnFields(o) -> '' when a brought thing's definition fields (all optional) have the right
+   *  kinds and sizes, else one plain sentence saying which does not ("has a maker that is not one line
+   *  of at most 120 characters"). For a state check such as the connector's put_state: it refuses,
+   *  where bring() tidies. Fields: link, image, thumb (https, ≤2048), maker ≤120, date ≤40, year ≤10,
+   *  medium ≤200, place ≤60, about ≤200 (one line each), category (≤60), era (one of ERAS), genes
+   *  (≤12 gene slugs), materials (≤8 words, ≤40 each), coloursEstimated (boolean), definedBy
+   *  ('page' | 'claude' | 'address' | 'person'). */
+  function checkOwnFields(o) {
+    if (!o || typeof o !== 'object') return 'is not an object';
+    for (const k of OWN_LINKS) if (o[k] != null && !httpsAddr(o[k])) return 'has a ' + k + ' that is not an https address of at most ' + OWN_LIMITS.url + ' characters';
+    for (const k of OWN_TEXT.concat(['category'])) {
+      if (o[k] == null) continue;
+      if (typeof o[k] !== 'string' || o[k].length > OWN_LIMITS[k] || /[\r\n]/.test(o[k])) return 'has a ' + k + ' that is not one line of at most ' + OWN_LIMITS[k] + ' characters';
+    }
+    if (o.year != null && !(typeof o.year === 'string' && o.year.length <= OWN_LIMITS.year)) return 'has a year that is not text of at most ' + OWN_LIMITS.year + ' characters';
+    if (o.era != null && ERAS.indexOf(o.era) < 0) return 'has an era that is not one of the deck\'s eras';
+    if (o.genes != null && !(Array.isArray(o.genes) && o.genes.length <= OWN_LIMITS.genes && o.genes.every((g) => typeof g === 'string' && g.length <= OWN_LIMITS.gene && GENE_SLUG.test(g)))) return 'has genes that are not at most ' + OWN_LIMITS.genes + ' gene names';
+    if (o.materials != null && !(Array.isArray(o.materials) && o.materials.length <= OWN_LIMITS.materials && o.materials.every((m) => typeof m === 'string' && m.length <= OWN_LIMITS.material))) return 'has materials that are not at most ' + OWN_LIMITS.materials + ' short words';
+    if (o.coloursEstimated != null && typeof o.coloursEstimated !== 'boolean') return 'has a coloursEstimated that is not true or false';
+    if (o.definedBy != null && DEFINED_BY.indexOf(o.definedBy) < 0) return 'has a definedBy that is not page, claude, address or person';
+    return '';
+  }
+
+  /** bring(state, {id, kind, name, source, colours, crop, texture, w, h, …definition}, now, deck?) -> State.
+   *  Bringing an id that is already there updates its details (kind, name, source…).
+   *  The definition (all optional; see defineOwn and checkOwnFields): link, image, thumb, maker, date,
+   *  year, medium, place, about, category, era, genes, materials, coloursEstimated, definedBy. Only
+   *  the fields given are kept (a thing brought without them looks as it always has); with `deck`,
+   *  category, era and genes must be the deck's own words. */
+  function bring(state, item, now, deck) {
     const st = norm(state);
     if (!item || typeof item !== 'object') return assign(st);
     const t = toSec(now);
@@ -876,11 +1016,12 @@
       while (st.own.some((o) => o && o.id === id)) id = 'y' + hash32(id).toString(36);
     }
     const existing = st.own.find((o) => o && o.id === id);
-    if (existing) return assign(st, { own: st.own.map((o) => (o === existing ? cleanOwn(item, existing) : o)) });
-    const o = cleanOwn(item, { id });
+    if (existing) return assign(st, { own: st.own.map((o) => (o === existing ? cleanOwn(item, existing, deck) : o)) });
+    const o = cleanOwn(item, { id }, deck);
     const ordered = { id, kind: o.kind, name: o.name, source: o.source, colours: o.colours, crop: o.crop, texture: o.texture,
       w: o.w, h: o.h, at: t, let: null, seenAt: null };
     if (o.imgFrom) ordered.imgFrom = o.imgFrom;
+    for (const k of OWN_DEFINED) if (hasOwn(o, k)) ordered[k] = o[k];
     return assign(st, { own: st.own.concat([ordered]) });
   }
 
@@ -1113,6 +1254,7 @@
       keptByKind, drift,
       streak: streak(st, nowMs), todayDone: st.days.indexOf(dayOf(nowMs)) >= 0,
       brought: st.own.length, letGo: st.own.filter((o) => o && o.let != null).length,
+      defined: st.own.filter((o) => o && DEFINED_BY.indexOf(o.definedBy) >= 0).length,
       sources, notes: st.notes.length, lean,
     };
   }
@@ -1246,6 +1388,43 @@
     return '5S-' + hex.slice(0, 4) + '-' + hex.slice(4);
   }
 
+  // Parameters that only say who shared it or how it was found, or could carry something of the
+  // person's (an email, a token, a session): never in a seed. The same lists as FiveSLinks.cleanUrl.
+  const SEED_DROP = /^(?:utm_[a-z0-9_]*|fbclid|gclid|gclsrc|dclid|gbraid|wbraid|msclkid|yclid|twclid|ttclid|li_fat_id|mc_cid|mc_eid|_ga|_gl|_hsenc|_hsmi|igshid|igsh|si|ref|ref_|ref_src|ref_url|mibextid|spm|scm|share_id|share_source|feature|pp|_r|_t|click_key|click_sum|_trkparms|_trksid|smid|cid|e?mail|email_?address|e|token|access_?token|id_?token|refresh_?token|auth|auth_?key|auth_?token|key|api_?key|session|session_?id|sid|password|passwd|pwd|pass|code|state|signature|sig|secret|login|user|username|user_?id|uid|account|phone|tel|first_?name|last_?name|invite|invite_?code)$/i;
+
+  // A brought thing's link as a seed may carry it: https, a public host, no user name, password or
+  // port, no fragment, none of SEED_DROP's parameters, nothing with an "@" in it; else null.
+  function publicLink(x) {
+    const a = httpsAddr(x);
+    if (!a || typeof URL !== 'function') return null;
+    let u;
+    try { u = new URL(a); } catch (e) { return null; }
+    if (u.protocol !== 'https:' || !/\./.test(u.hostname) || /^[0-9.]+$|^\[/.test(u.hostname) || /(?:^|\.)(?:localhost|local|internal)$/i.test(u.hostname)) return null;
+    const keep = [];
+    u.searchParams.forEach((v, k) => { if (!SEED_DROP.test(k) && !/@|%40/.test(v)) keep.push([k, v]); });
+    u.search = '';
+    for (const [k, v] of keep) u.searchParams.append(k, v);
+    u.username = ''; u.password = ''; u.port = ''; u.hash = '';
+    const out = u.toString();
+    return out.length <= OWN_LIMITS.url && out.indexOf('@') < 0 ? out : null;
+  }
+
+  // A brought thing in a seed: its name, kind, source, colours and whether it was let go, as always;
+  // then, once it is defined, what it is (maker, date, medium, place, about, the deck's words for it)
+  // and the public address it came from. Never its picture or thumbnail (someone else's, or private),
+  // its id or its connector id.
+  function seedOwn(o, name) {
+    const e = { name, kind: o.kind, source: o.source, colours: (o.colours || []).slice(), let: o.let != null };
+    const d = ownDefinition(o);
+    for (const k of ['maker', 'date', 'medium', 'place', 'about', 'category', 'era']) if (d[k]) e[k] = d[k];
+    if (d.genes.length) e.genes = d.genes.slice();
+    if (d.materials.length) e.materials = d.materials.slice();
+    if (d.coloursEstimated && e.colours.length) e.coloursEstimated = true;
+    const link = publicLink(o.link);
+    if (link) e.link = link;
+    return e;
+  }
+
   /** exportSeed(state, deck, now) -> the 5s-seed JSON: works by Artsy slug, brought things by name;
    *  no card ids, no images, no account details (state.hub never goes in). Kept works also carry
    *  their public Artsy addresses: `image` (the deck's "cdn") and `url` (the work's Artsy page). */
@@ -1292,7 +1471,7 @@
         for (const k of SLOT_NAMES) o[k] = refOf(s[k]);
         return o;
       }),
-      own: st.own.filter(Boolean).map((o) => ({ name: nameOf(o), kind: o.kind, source: o.source, colours: (o.colours || []).slice(), let: o.let != null })),
+      own: st.own.filter(Boolean).map((o) => seedOwn(o, nameOf(o))),
       notes: st.notes.filter(Boolean).map((n) => ({ q: n.q, text: n.text, about: aboutOf(n.ref), at: dayOf(n.at * 1000) })),
       speed: { medianMs: P.medianMs },
     };
@@ -1484,6 +1663,7 @@
     version: 1,
     ERAS, KINDS, SLOTS, SLOT_NAMES, OWN_KINDS, SOURCES, DECK_SOURCE, NOTE_QS, GROUPS, HUES, MILESTONES,
     HUB_MILESTONES, HUB_MODES, setHub,
+    DEFINED_BY, OWN_LIMITS, checkOwnFields,
     hexToHsl, colourName, chord, features, featureLabel, featureGroup,
     newState, migrate, setOpt, judge, undo, model, predict,
     nextFive, isRevisit, startFive, currentCard, fiveDone, streak, dayOf,

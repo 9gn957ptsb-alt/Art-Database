@@ -10,12 +10,13 @@
  */
 import { z } from 'zod';
 import FiveS from './engine.js';
-import { readState, writeState, readRepos, addRepo, usage, madeOn, byteLength, LimitError, MAX_STATE_BYTES, DAILY_WRITES, DAILY_HUB_SAVES, DAILY_NEW_HUBS, DAILY_BRING } from './store.js';
-import { checkState, LIMITS } from './validate.js';
+import { readState, writeState, readRepos, addRepo, usage, madeOn, byteLength, LimitError, StoreError, MAX_STATE_BYTES, DAILY_WRITES, DAILY_HUB_SAVES, DAILY_NEW_HUBS, DAILY_BRING } from './store.js';
+import { checkState, LIMITS, DEFINED_BY } from './validate.js';
 import { checkAddress, typeWord, WebError, WEB_LIMITS } from './web.js';
 import { readLink, MAX_ITEMS, IMAGE_ACCEPT } from './links.js';
 import { sniff, dimensions, decode, analyse, mimeOf, dataUrl, shrink, fit } from './pixels.js';
 import { newId } from './bring.js';
+import { definedFacts } from './define.js';
 import { quoted, safeUrl, turnSentence, describeBefore, dateText, colourOf, KIND_LABEL, listWords } from './words.js';
 import { checkName, fixName, isPagesName, pagesName, sameName, hubAddress, repoUrl, pagesSettingsUrl } from './names.js';
 import * as hubpage from './hubpage.js';
@@ -836,7 +837,7 @@ export const TOOLS = [
       const text = JSON.stringify(args.state);
       const bytes = byteLength(text);
       if (bytes > MAX_STATE_BYTES) return refuse('That state is over 1 MB, more than 5s keeps. Brought-in images belong in the app, not in the state.', { error: 'too large', bytes });
-      const bad = checkState(args.state);
+      const bad = checkState(args.state, ctx.deck);
       if (bad) return refuse('That is not a 5s state: ' + bad, { error: 'bad state', why: bad });
       const base = args.base == null ? 0 : args.base;
       let conflict = null, dropped = 0;
@@ -897,16 +898,30 @@ export const TOOLS = [
   {
     name: 'bring_in',
     title: 'Bring in pictures',
-    description: 'Add pictures to the person\'s 5s as their own brought-in things ("Brought in" in the app): kept, as their own saves are, with where they came from, and back later as "Still yours?" cards. Call it only after the person has confirmed which pictures to add, usually ones read_link found (pass them as read_link gave them). For pictures from elsewhere in the chat, give each its https address and a source ("The web" when unsure). 5s reads each picture: its colours, surface and texture are measured here when the picture is small enough, otherwise they are marked pending and the 5s app measures them when it next opens. kind says what the pictures are (image by default; object for things like a chair or a bowl; space for rooms, buildings, landscapes). Pictures already in their 5s are skipped. At most ' + MAX_ITEMS + ' at a time and ' + DAILY_BRING + ' a day.',
+    description: 'Add pictures to the person\'s 5s as their own brought-in things ("Brought in" in the app): kept, as their own saves are, with where they came from, and back later as "Still yours?" cards. Call it only after the person has confirmed which pictures to add, usually ones read_link found (pass them as read_link gave them). For pictures from elsewhere in the chat, give each its https address and a source ("The web" when unsure). 5s reads each picture: its colours, surface and texture are measured here when the picture is small enough, otherwise they are marked pending and the 5s app measures them when it next opens. kind says what the pictures are (image by default; object for things like a chair or a bowl; space for rooms, buildings, landscapes). Pictures already in their 5s are skipped. At most ' + MAX_ITEMS + ' at a time and ' + DAILY_BRING + ' a day. To catalog what a thing is (from read_link\'s data.page, or what you know of it), give each item its maker, date or year, medium, place, about (one line), category, era, genes and materials as far as they are known, and definedBy; never invent them. A thing with no picture can be added by its link alone (image null): nothing is read, and it is kept as a link.',
     inputSchema: {
       items: z.array(z.object({
-        image: z.string().trim().min(1).max(2048).describe('The picture\'s https address.'),
+        image: z.string().trim().min(1).max(2048).nullable().describe('The picture\'s https address; null only for a thing known by its link alone (a page with no picture), which then needs link.'),
         title: z.string().max(300).nullable().optional().describe('Its title, if it has one (kept as its name, at most 60 characters).'),
-        link: z.string().max(2048).nullable().optional().describe('The page it came from (a pin, a block, a post), if known.'),
+        link: z.string().max(2048).nullable().optional().describe('The page it came from (a pin, a block, a post, the object\'s own page), if known.'),
         source: z.string().trim().min(1).max(60).describe('Where it comes from: Pinterest, Are.na, Flickr, Tumblr, Instagram, Artsy or The web.'),
         thumb: z.string().max(2048).nullable().optional().describe('A smaller copy\'s address, when read_link gave one.'),
         kind: z.enum(OWN_KINDS).optional().describe('What this one is, if it differs from the call\'s kind.'),
-      })).min(1).max(MAX_ITEMS).describe('The pictures the person chose, as read_link gave them.'),
+        // What the thing is (read_link's page facts, or what Claude knows of it): kept with it, so the person's database says what it is.
+        maker: z.string().max(400).nullable().optional().describe('Who made it (artist, designer, brand, architect), as the page or a reliable source says. Kept to 120 characters.'),
+        date: z.string().max(200).nullable().optional().describe('When it was made, as written ("c. 1962", "2019–21"). Kept to 40 characters.'),
+        year: z.union([z.string().max(40), z.number().int().min(-5000).max(3000)]).nullable().optional().describe('Its year, one number ("1962"). Kept to 10 characters; gives its era when era is left out.'),
+        medium: z.string().max(600).nullable().optional().describe('What it is made of or with, as written ("oil on linen", "walnut and brass"). Kept to 200 characters.'),
+        place: z.string().max(200).nullable().optional().describe('Where it is from (a country, as the deck says them: "Japan", "United States"). Kept to 60 characters.'),
+        about: z.string().max(600).nullable().optional().describe('What it is, in one line ("A walnut lounge chair with a woven seat"). Kept to 200 characters.'),
+        category: z.string().max(80).nullable().optional().describe('One of the deck\'s categories: Painting, Print, Photography, Sculpture, Design/Decorative Art, Architecture, Textile Arts, Jewelry, Fashion Design and Wearable Art, Installation, Mixed Media, Posters, or Drawing, Collage or other Work on Paper. Anything else is left out.'),
+        era: z.string().max(40).nullable().optional().describe('One of the deck\'s eras: Before 1800, 1800s, 1900–45, 1945–69, 1970–99, 2000s, 2010s–now. Left out, it comes from year.'),
+        genes: z.array(z.string().max(120)).max(24).nullable().optional().describe('Up to 12 of the deck\'s genes (Artsy\'s qualities and movements), by slug ("abstract-art") or name ("Abstract Art"); others are left out.'),
+        materials: z.array(z.string().max(80)).max(16).nullable().optional().describe('Up to 8 material words, as the deck says them where possible: oil, canvas, paper, wood, ceramic, glass, steel, textile, linen, bronze…'),
+        colours: z.array(z.string().max(9)).max(6).nullable().optional().describe('Only with coloursEstimated true: up to three #rrggbb colours you estimate it has, most of it first, when no picture can be read.'),
+        coloursEstimated: z.boolean().nullable().optional().describe('true when colours are your estimate rather than read from a picture.'),
+        definedBy: z.enum(DEFINED_BY).nullable().optional().describe('Who supplied these facts: page (read_link\'s page facts), claude (you), address (only its link), person (the person said or edited them).'),
+      })).min(1).max(MAX_ITEMS).describe('The pictures (or things) the person chose, as read_link gave them, with what each is when known.'),
       kind: z.enum(OWN_KINDS).optional().describe('What the pictures are: image (default), object or space.'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
@@ -920,7 +935,8 @@ export const TOOLS = [
         return limitRefusal(new LimitError('daily writes', '5s has saved your state ' + use.writes + ' times today, its most in one day.', 'Bring these in tomorrow (the count starts again at midnight UTC).'));
       }
       const left = DAILY_BRING - use.brought;
-      if (left <= 0) {
+      const someByLink = args.items.some((it) => it.image == null);
+      if (left <= 0 && !someByLink) {
         return limitRefusal(new LimitError('daily things brought in', '5s has read ' + use.brought + ' pictures from other sites for you today, its most in one day.', 'Bring in the rest tomorrow (the count starts again at midnight UTC).'));
       }
       const room = LIMITS.own - first.state.own.length;
@@ -933,7 +949,20 @@ export const TOOLS = [
       const have = new Set(first.state.own.map((o) => o && o.image).filter(Boolean));
       const seen = new Set();
       const plan = [], skipped = [];
+      // A thing known by its link alone (no picture): kept as a link, nothing read.
+      const haveLinks = new Set(first.state.own.filter((o) => o && !o.image && o.link).map((o) => o.link));
+      const linkOnly = [];
       args.items.forEach((it, i) => {
+        const def = definedFacts(it, ctx.deck);
+        if (it.image == null) {
+          const link = addressOrNull(it.link);
+          if (!link) { skipped.push({ item: i, image: null, why: it.link ? 'Its link is not an address 5s keeps.' : 'It has neither a picture nor a link.' }); return; }
+          if (haveLinks.has(link)) { skipped.push({ item: i, image: null, link, why: 'Already in their 5s.' }); return; }
+          if (plan.length + linkOnly.length >= room) { skipped.push({ item: i, image: null, link, why: 'Their 5s is full.' }); return; }
+          haveLinks.add(link);
+          linkOnly.push({ i, image: null, thumb: null, link, title: it.title, source: sourceName(it.source), kind: it.kind || args.kind || 'image', def, given: it });
+          return;
+        }
         let image;
         try { image = checkAddress(asHttps(it.image).text).href; } catch (e) {
           if (!(e instanceof WebError)) throw e;
@@ -941,21 +970,24 @@ export const TOOLS = [
           return;
         }
         if (have.has(image) || seen.has(image)) { skipped.push({ item: i, image, why: 'Already in their 5s.' }); return; }
-        if (plan.length >= Math.min(left, room)) {
-          skipped.push({ item: i, image, why: plan.length >= room ? 'Their 5s is full.' : 'Past today\'s ' + DAILY_BRING + ' pictures from other sites; bring it in tomorrow.' });
+        if (plan.length >= Math.min(left, room - linkOnly.length)) {
+          skipped.push({ item: i, image, why: plan.length >= room - linkOnly.length ? 'Their 5s is full.' : 'Past today\'s ' + DAILY_BRING + ' pictures from other sites; bring it in tomorrow.' });
           return;
         }
         seen.add(image);
         const kind = it.kind || args.kind || 'image';
-        plan.push({ i, image, thumb: addressOrNull(it.thumb), link: addressOrNull(it.link), title: it.title, source: sourceName(it.source), kind, given: it });
+        plan.push({ i, image, thumb: addressOrNull(it.thumb), link: addressOrNull(it.link), title: it.title, source: sourceName(it.source), kind, def, given: it });
       });
-      if (!plan.length) {
+      if (!plan.length && !linkOnly.length) {
         return ok('Nothing new to add: ' + skipped.length + (skipped.length === 1 ? ' picture was' : ' pictures were') + ' skipped (data.skipped says why).', { added: [], skipped, remaining: [], colours: { read_here: 0, pending: 0 } });
       }
-      const limited = await webAllowed(ctx);
-      if (limited) return limited;
-      const web = webFor(ctx, CONNECT.bringBudget);
-      if (!web) return NO_WEB();
+      let web = null;
+      if (plan.length) {
+        const limited = await webAllowed(ctx);
+        if (limited) return limited;
+        web = webFor(ctx, CONNECT.bringBudget);
+        if (!web) return NO_WEB();
+      }
       // 3. Read the pictures, a few at a time; measure in item order while the pixel budget lasts.
       let pxLeft = Number.isFinite(ctx.colourBudgetPx) ? ctx.colourBudgetPx : CONNECT.colourBudgetPx;
       let measured = 0;
@@ -991,39 +1023,55 @@ export const TOOLS = [
         }
       }
       // 4. Add them, with the engine (FiveS.bring), to the state as it is now.
+      for (const p of linkOnly) done.push({ p, m: null, pending: null, w: null, h: null, linkOnly: true });
+      done.sort((x, y) => x.p.i - y.p.i);
       const cur = await readState(ctx.store, ctx.user.id);
       let st = cur.state;
       const added = [];
       const haveNow = new Set(st.own.map((o) => o && o.image).filter(Boolean));
+      const linksNow = new Set(st.own.filter((o) => o && !o.image && o.link).map((o) => o.link));
       for (const d of done) {
-        if (haveNow.has(d.p.image)) { skipped.push({ item: d.p.i, image: d.p.image, why: 'Already in their 5s.' }); continue; }
+        if (d.linkOnly ? linksNow.has(d.p.link) : haveNow.has(d.p.image)) { skipped.push({ item: d.p.i, image: d.p.image, ...(d.linkOnly ? { link: d.p.link } : {}), why: 'Already in their 5s.' }); continue; }
         if (st.own.length >= LIMITS.own) { skipped.push({ item: d.p.i, image: d.p.image, why: 'Their 5s is full.' }); continue; }
         const id = freshId(st);
         const m = d.m;
+        const f = d.p.def.facts;
+        const estimated = !m && f.estimatedColours ? f.estimatedColours : null;
         st = FiveS.bring(st, {
           id, kind: d.p.kind, name: quoted(d.p.title, 60) || '', source: d.p.source,
-          colours: m ? m.colours : [], crop: m ? m.crop : null, texture: m ? m.texture : null, w: d.w, h: d.h,
+          colours: m ? m.colours : estimated || [], crop: m ? m.crop : null, texture: m ? m.texture : null, w: d.w, h: d.h,
         }, now);
         const extra = { image: d.p.image, link: d.p.link || null };
         if (d.p.thumb) extra.thumb = d.p.thumb;
-        if (!m) extra.coloursPending = true;
+        if (!m && !d.linkOnly) extra.coloursPending = true;
+        if (d.linkOnly) extra.noPicture = true;
+        // What it is: the facts given with it (define.js), never the colours estimate once colours were read.
+        for (const k of ['maker', 'date', 'year', 'medium', 'place', 'about', 'category', 'era', 'genes', 'materials', 'definedBy']) if (f[k] !== undefined) extra[k] = f[k];
+        if (estimated) extra.coloursEstimated = true;
         st = Object.assign({}, st, { own: st.own.map((o) => (o && o.id === id ? Object.assign({}, o, extra) : o)) });
-        haveNow.add(d.p.image);
+        if (d.linkOnly) linksNow.add(d.p.link); else haveNow.add(d.p.image);
         const o = st.own.find((x) => x && x.id === id);
+        const facts = {};
+        for (const k of ['maker', 'date', 'year', 'medium', 'place', 'about', 'category', 'era', 'genes', 'materials', 'definedBy', 'coloursEstimated']) if (o[k] !== undefined) facts[k] = o[k];
         added.push({
           id, name: quoted(o.name, 60) || null, kind: o.kind, source: quoted(o.source, 40), image: o.image, link: o.link,
-          colours: (o.colours || []).map(colourOf), colours_pending: !m, ...(m ? { crop: o.crop, texture: o.texture } : { pending_because: d.pending }),
+          colours: (o.colours || []).map(colourOf),
+          ...(d.linkOnly ? { no_picture: true, colours_pending: false } : { colours_pending: !m }),
+          ...(m ? { crop: o.crop, texture: o.texture } : d.linkOnly ? {} : { pending_because: d.pending }),
+          ...(Object.keys(facts).length ? { facts } : {}),
+          ...(d.p.def.dropped.length ? { left_out: d.p.def.dropped } : {}),
         });
       }
       let rec = null;
       if (added.length) rec = await writeState(ctx.store, ctx.user.id, st, cur.rev + 1, now, { use: cur.use, brought: attempted });
       else if (attempted) rec = await writeState(ctx.store, ctx.user.id, cur.state, cur.rev, now, { use: cur.use, brought: attempted });
       const pending = added.filter((a) => a.colours_pending).length;
+      const linksOnly = added.filter((a) => a.no_picture).length;
       const data = {
         added, skipped: skipped.sort((a, b) => a.item - b.item),
         remaining: remaining.map((p) => p.given),
         colours: {
-          read_here: added.length - pending, pending,
+          read_here: added.length - pending - linksOnly, pending,
           ...(pending ? { note: 'Colours pending: the 5s app reads them from the picture (item_image) when it next opens.' } : {}),
         },
         brought_today: (rec ? rec.use.brought : use.brought), daily_cap: DAILY_BRING,
@@ -1032,7 +1080,8 @@ export const TOOLS = [
       const sources = Array.from(new Set(added.map((a) => a.source))).filter((x) => KNOWN_SOURCE.has(x));
       let summary = added.length
         ? 'Added ' + added.length + (added.length === 1 ? ' thing' : ' things') + ' to their 5s' + (sources.length ? ' (from ' + listWords(sources) + ')' : '') +
-          ', kept as their own saves. Colours read here for ' + (added.length - pending) + (pending ? '; ' + pending + ' with colours pending (the 5s app reads them when it next opens).' : '.')
+          ', kept as their own saves. Colours read here for ' + (added.length - pending - linksOnly) + (pending ? '; ' + pending + ' with colours pending (the 5s app reads them when it next opens).' : '.') +
+          (linksOnly ? ' ' + linksOnly + ' kept by link alone (no picture).' : '')
         : 'Nothing was added.';
       if (skipped.length) summary += ' Skipped ' + skipped.length + ' (data.skipped says why).';
       if (remaining.length) summary += ' Not read this time: ' + remaining.length + '; call bring_in again with data.remaining to add them.';
@@ -1104,6 +1153,10 @@ export async function execute(tool, ctx, args) {
     return await tool.run(ctx, args);
   } catch (e) {
     if (e instanceof LimitError) return limitRefusal(e);
+    if (e instanceof StoreError) {
+      console.error('5s store failed:', e.cause && e.cause.message ? e.cause.message : e.cause);
+      return refuse(e.why + ' ' + e.resolution, { error: 'store', why: e.why, resolution: e.resolution });
+    }
     throw e;
   }
 }

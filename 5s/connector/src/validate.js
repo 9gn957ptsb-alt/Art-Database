@@ -15,6 +15,52 @@ const SLOTS = ['wall', 'window', 'picture', 'floor', 'object'];
 
 export const LIMITS = Object.freeze({ judgments: 50000, sets: 500, own: 1000, notes: 5000, days: 5000, text: 2000, name: 200, url: 2048 });
 
+/**
+ * What a brought-in thing may say about itself (SPEC "Connect your apps": a thing defined from a
+ * pasted link, by the page, by Claude, from its address alone, or by the person), all optional and
+ * the same in the app, the engine and here. Lengths in characters.
+ */
+export const OWN_FACTS = Object.freeze({ maker: 120, date: 40, year: 10, medium: 200, place: 60, about: 200, genes: 12, materials: 8, material: 40 });
+export const DEFINED_BY = Object.freeze(['page', 'claude', 'address', 'person']);
+
+const vocabs = new WeakMap();
+/** The deck's own words for category, era and genes (deck.json cards and top-level genes). */
+export function deckVocab(deck) {
+  if (!deck || typeof deck !== 'object') return null;
+  let v = vocabs.get(deck);
+  if (!v) {
+    const categories = new Set(), eras = new Set();
+    for (const c of deck.cards || []) {
+      if (c && typeof c.category === 'string' && c.category) categories.add(c.category);
+      if (c && typeof c.era === 'string' && c.era) eras.add(c.era);
+    }
+    v = { categories, eras, genes: new Set(Object.keys(deck.genes || {})) };
+    vocabs.set(deck, v);
+  }
+  return v;
+}
+
+const oneLine = (x, max) => isStr(x, max) && !/[\r\n\u2028\u2029]/.test(x);
+const GENE = /^[a-z0-9][a-z0-9-]{0,99}$/;
+
+/** The new facts of one brought-in thing: '' when fine, else what is wrong. vocab: deckVocab(deck) or null. */
+function ownFacts(o, vocab) {
+  for (const k of ['maker', 'date', 'year', 'medium', 'place']) if (!(o[k] == null || isStr(o[k], OWN_FACTS[k]))) return 'has a ' + k + ' that is not text of at most ' + OWN_FACTS[k] + ' characters';
+  if (!(o.about == null || oneLine(o.about, OWN_FACTS.about))) return 'has an about that is not one line of at most ' + OWN_FACTS.about + ' characters';
+  if (o.category != null && !(typeof o.category === 'string' && (vocab ? vocab.categories.has(o.category) : isStr(o.category, 80)))) return 'has a category that is not one of the deck\'s categories';
+  if (o.era != null && !(typeof o.era === 'string' && (vocab ? vocab.eras.has(o.era) : isStr(o.era, 40)))) return 'has an era that is not one of the deck\'s eras';
+  if (o.genes != null) {
+    if (!Array.isArray(o.genes) || o.genes.length > OWN_FACTS.genes) return 'has genes that are not a list of at most ' + OWN_FACTS.genes;
+    if (!o.genes.every((g) => typeof g === 'string' && GENE.test(g) && (!vocab || vocab.genes.has(g)))) return 'has a gene that is not one of the deck\'s genes';
+  }
+  if (o.materials != null && !(Array.isArray(o.materials) && o.materials.length <= OWN_FACTS.materials && o.materials.every((m) => isStr(m, OWN_FACTS.material)))) {
+    return 'has materials that are not a list of at most ' + OWN_FACTS.materials + ' words of at most ' + OWN_FACTS.material + ' characters';
+  }
+  if (!(o.coloursEstimated == null || typeof o.coloursEstimated === 'boolean')) return 'has a coloursEstimated that is not true or false';
+  if (!(o.definedBy == null || DEFINED_BY.includes(o.definedBy))) return 'has a definedBy that is not one of ' + DEFINED_BY.join(', ');
+  return '';
+}
+
 function judgment(e) {
   if (!Array.isArray(e) || e.length < 4 || e.length > 8) return 'is not [card, keep, ms, time, turn]';
   if (typeof e[0] !== 'string' || !ID.test(e[0])) return 'does not start with a card id';
@@ -25,7 +71,7 @@ function judgment(e) {
   return '';
 }
 
-function own(o) {
+function own(o, vocab) {
   if (!isObj(o)) return 'is not an object';
   if (typeof o.id !== 'string' || !ID.test(o.id)) return 'has no id';
   if (!optStr(o.kind, 20) || !optStr(o.name, LIMITS.name) || !optStr(o.source, LIMITS.name)) return 'has a kind, name or source that is not short text';
@@ -37,7 +83,7 @@ function own(o) {
   // tool reads them (web.js), so here they need only be short text.
   for (const k of ['image', 'thumb', 'link']) if (!optStr(o[k], LIMITS.url)) return 'has a ' + k + ' that is not an address of at most ' + LIMITS.url + ' characters';
   if (!(o.coloursPending == null || typeof o.coloursPending === 'boolean')) return 'has a coloursPending that is not true or false';
-  return '';
+  return ownFacts(o, vocab);
 }
 
 function set(s) {
@@ -65,13 +111,17 @@ function list(s, key, max, each) {
   return '';
 }
 
-/** checkState(s) -> '' when the state is fine, else one plain sentence saying what is wrong. */
-export function checkState(s) {
+/**
+ * checkState(s, deck?) -> '' when the state is fine, else one plain sentence saying what is wrong.
+ * With the deck, a brought-in thing's category, era and genes must be the deck's own words.
+ */
+export function checkState(s, deck) {
   if (!isObj(s)) return 'The state must be an object.';
+  const vocab = deckVocab(deck);
   const why = list(s, 'j', LIMITS.judgments, judgment) ||
     list(s, 'sets', LIMITS.sets, set) ||
     list(s, 'days', LIMITS.days, (d) => (isStr(d, 20) ? '' : 'is not a date')) ||
-    list(s, 'own', LIMITS.own, own) ||
+    list(s, 'own', LIMITS.own, (o) => own(o, vocab)) ||
     list(s, 'notes', LIMITS.notes, note);
   if (why) return why;
   if (s.five != null) {

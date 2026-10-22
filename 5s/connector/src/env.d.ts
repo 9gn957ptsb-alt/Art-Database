@@ -2,10 +2,12 @@
 interface Env {
 	/** The OAuth provider's own store: clients, grants, tokens (props encrypted). */
 	OAUTH_KV: KVNamespace;
-	/** Each person's 5s state and the repositories the connector made, keyed by GitHub user id. */
+	/** Where each person's 5s was kept before FiveSPerson: read once per person to move it over (person.js). Also the dev bypass's fake GitHub. */
 	FIVES_KV: KVNamespace;
 	/** McpAgent's Durable Object: one per MCP session. */
 	MCP_OBJECT: DurableObjectNamespace;
+	/** Each person's 5s (state, hubs 5s made): one SQLite-backed Durable Object per GitHub user id (index.ts FiveSPerson). */
+	PERSON: DurableObjectNamespace<import("./index").FiveSPerson>;
 	/** Worker secrets (wrangler secret put). */
 	GITHUB_CLIENT_ID: string;
 	GITHUB_CLIENT_SECRET: string;

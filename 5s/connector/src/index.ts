@@ -6,12 +6,14 @@
  * The tools themselves are plain handlers in tools.js.
  */
 import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
+import { DurableObject } from "cloudflare:workers";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpAgent } from "agents/mcp";
 import { GitHubHandler } from "./github-handler";
 import { githubFetch, type Props } from "./utils";
 import { registerTools, SERVER_INSTRUCTIONS } from "./tools.js";
-import { kvStore } from "./store.js";
+import { guardedStore } from "./store.js";
+import { personStore, personRpcStore, personName } from "./person.js";
 import { api } from "./hub.js";
 import { createFakeGitHub } from "./fake-github.js";
 import { createWeb } from "./web.js";
@@ -61,7 +63,44 @@ export class FiveSMCP extends McpAgent<Env, Record<string, never>, Props> {
 		// whose 10 ms of CPU a request can't decode a picture: colours are then read by the 5s app.
 		const budget = String(this.env.COLOUR_BUDGET_PX ?? "").trim();
 		const colourBudgetPx = /^\d{1,9}$/.test(budget) ? Number(budget) : undefined;
-		return { store: kvStore(this.env.FIVES_KV), deck, github, user: { id: p.id, login: p.login }, web, limitWeb, colourBudgetPx };
+		// The person's 5s lives in their own SQLite-backed Durable Object (FiveSPerson, person.js), not in
+		// this session's object: a person opens a new session each time, their 5s stays in one place.
+		const store = guardedStore(personRpcStore(this.env.PERSON, p.id));
+		return { store, deck, github, user: { id: p.id, login: p.login }, web, limitWeb, colourBudgetPx };
+	}
+}
+
+/**
+ * FiveSPerson: one person's 5s (their state and the hubs 5s made for them), one SQLite-backed Durable
+ * Object per GitHub user id, named "person:<id>". On Workers Free: 100,000 rows written a day for the
+ * whole connector, one row for each save of a state. Only the Worker's own code can reach it (a
+ * Durable Object has no address of its own), and each call must name the person the object is for:
+ * a call for anyone else is refused. The first time a key is asked for, a copy still in Workers KV
+ * (FIVES_KV, from before the move) is brought over once and deleted there (person.js).
+ */
+export class FiveSPerson extends DurableObject<Env> {
+	private store: ReturnType<typeof personStore> | null = null;
+
+	private storeFor(uid: string) {
+		const name = personName(uid);
+		// Native ctx.id.name is the name the object was addressed by (idFromName). Fail closed without it.
+		if (this.ctx.id.name !== name) throw new Error("This is not that person's 5s.");
+		if (!this.store) {
+			this.store = personStore(this.ctx.storage.sql, {
+				uid,
+				kv: this.env.FIVES_KV || null,
+				waitUntil: (p: Promise<unknown>) => this.ctx.waitUntil(p),
+			});
+		}
+		return this.store;
+	}
+
+	async get(uid: string, key: string): Promise<string | null> {
+		return this.storeFor(uid).get(key);
+	}
+
+	async put(uid: string, key: string, value: string): Promise<void> {
+		await this.storeFor(uid).put(key, value);
 	}
 }
 
@@ -125,6 +164,22 @@ const boundMcp = {
 // request arrived on (workers.dev in production, localhost under wrangler dev). Cloudflare only
 // routes this Worker's own hostnames here, and every token is bound to the origin it was issued on.
 const providers = new Map<string, OAuthProvider<Env>>();
+
+/**
+ * Token lifetimes, set for Workers KV's free 1,000 writes a day (README "What it costs: nothing").
+ * The OAuth provider writes to KV only when tokens are made: a sign-in writes 5 keys (plus 1 when
+ * Claude registers itself), a refresh 2 (the grant and the new access token); using a token writes
+ * nothing. With the provider's default one-hour access tokens, a person who opens 5s once a day
+ * refreshes about once a day: 2 writes each, so 500 people a day would use all 1,000. With access
+ * tokens that last 7 days, a person who comes back every day refreshes once a week: about 0.3
+ * writes a day each, so 300 people a day use about 90 writes. The sign-in itself lasts while it is
+ * used: it expires after 90 days without any use (refreshTokenIdleTTL), and each refresh moves that on.
+ */
+export const TOKEN_LIFETIMES = Object.freeze({
+	accessTokenTTL: 7 * 24 * 3600,
+	refreshTokenTTL: 90 * 24 * 3600,
+	refreshTokenIdleTTL: 90 * 24 * 3600,
+});
 function providerFor(origin: string) {
 	let p = providers.get(origin);
 	if (!p) {
@@ -136,6 +191,7 @@ function providerFor(origin: string) {
 			tokenEndpoint: "/token",
 			clientRegistrationEndpoint: "/register",
 			clientIdMetadataDocumentEnabled: true,
+			...TOKEN_LIFETIMES,
 			resourceMetadata: {
 				resource: origin + "/mcp",
 				authorization_servers: [origin],
