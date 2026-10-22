@@ -10,10 +10,12 @@ directory first and checks that instead. Checks:
   counts    rooms, groups and leaves equal a fresh rdb.compile_project of the project file
   rooms     every room's leaves belong to its group or the group's descendants, no leaf has two
             rooms, every solid inside a room group belongs to a room, origins are their group's
-  index     library rooms match residential/index.json (a project missing from index.json, or
-            whose rows differ only because index.json is older than the project, is reported
-            as stale rather than failed)
+  index     library rooms match residential/index.json (a project missing from index.json is
+            checked against the rows index.py would write for it, and one whose rows differ only
+            because index.json is older than the project is reported as stale, not failed)
   library   room types, sizes and thumbnails are consistent and within limits
+  json      library.json and every res/*.json parse as strict JSON, as a browser's JSON.parse
+            would (no NaN, Infinity or -Infinity tokens)
 A project file changed after its export is reported as stale, not failed. Exits 1 on failure.
 """
 import argparse
@@ -47,6 +49,30 @@ class Report:
         return ok
 
 
+def _no_constant(token):
+    raise ValueError(f"non-finite number {token} (a browser's JSON.parse rejects it)")
+
+
+def load_json(R, path, what):
+    """Parse path as strict JSON and record a 'json' failure (not a crash) if a browser could not
+    parse it. Returns the data (parsed leniently when only NaN/Infinity were wrong) or None."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as e:
+        R.check("json", False, f"{what}: cannot read {path.name}: {e}")
+        return None
+    try:
+        data = json.loads(text, parse_constant=_no_constant)
+        R.check("json", True, "")
+        return data
+    except ValueError as e:
+        R.check("json", False, f"{what}: {path.name} is not valid JSON for a browser: {e}")
+    try:
+        return json.loads(text)
+    except ValueError:
+        return None
+
+
 def same(a, b):
     """Equal after a JSON round trip (tuples vs lists)."""
     return json.loads(json.dumps(a)) == json.loads(json.dumps(b))
@@ -58,7 +84,9 @@ def check_project(R, out, lp, projects_dir):
     if not R.check("library", res_path.exists(), f"{slug}: {res_path} missing"):
         return
     R.check("library", res_path.stat().st_size < MAX_FILE, f"{slug}: res file over 8 MB")
-    res = json.loads(res_path.read_text(encoding="utf-8"))
+    res = load_json(R, res_path, slug)
+    if res is None:
+        return
     R.check("library", res.get("schema") == export_web.SCHEMA and res.get("slug") == slug,
             f"{slug}: res schema/slug {res.get('schema')}/{res.get('slug')}")
     R.check("library", lp["file"].endswith(f"res/{slug}.json"), f"{slug}: file {lp['file']}")
@@ -93,6 +121,9 @@ def check_project(R, out, lp, projects_dir):
             (same(res["materials"], plan["materials"]) and same(res["levels"], plan["levels"])
              and same(res["bbox_in"], plan["totals"]["bbox_in"]), "materials/levels/bbox differ"),
             ([r["room_id"] for r in rooms] == [r["room_id"] for r in index], "room order or ids differ"),
+            (same([(r["name"], r["type"], r["level"], r["area"], r["height"], r["outdoor"]) for r in rooms],
+                  [(r["name"], r["type"], r["level"], r["area_m2"], r["clear_height_m"], r["outdoor"])
+                   for r in index]), "room name/type/level/area/height/outdoor differ from the compile"),
         ]
         for ok, msg in checks:
             if not ok and newer:
@@ -164,8 +195,18 @@ def check_index(R, library, index_path, projects_dir):
                 continue
             R.check("index", False, f"{slug} is in index.json and compiles, but is missing from the library")
             continue
-        if ix is None:
-            R.stale.append(f"index: {slug} is not in index.json yet (run tools/index.py)")
+        if ix is None:                              # compare with the rows index.py would write
+            R.stale.append(f"index: {slug} is not in index.json yet (run tools/index.py); "
+                           "checked against a fresh compile instead")
+            try:
+                _, fresh, _ = rdb.compile_project(rdb.load(projects_dir / f"{slug}.json"))
+            except Exception as e:
+                R.stale.append(f"index: {slug}: project file fails now ({type(e).__name__}); not checked")
+                continue
+            fresh_rows = {f"{slug}#{row['room_id']}": {f: row.get(f) for f in fields} for row in fresh}
+            lib_rows = {k: as_index(v) for k, v in lib.items()}
+            bad = [k for k in sorted(set(fresh_rows) | set(lib_rows)) if fresh_rows.get(k) != lib_rows.get(k)]
+            R.check("index", not bad, f"{slug}: library rows differ from a fresh compile: {bad[:5]}")
             continue
         diff = []
         if set(lib) != set(ix):
@@ -211,7 +252,7 @@ def check_library(R, out, library, skp_dir=ROOT / "skp"):
         (lo, hi) = lp["bbox"]
         R.check("library", all(lo[k] < hi[k] for k in range(3)), f"{lp['slug']}: bbox {lp['bbox']}")
         skp = Path(skp_dir) / f"{lp['slug']}.skp"
-        R.check("library", (lp["skp_url"] is not None) == skp.exists(), f"{lp['slug']}: skp_url vs {skp}")
+        R.check("library", (lp["skp_url"] is not None) == skp.is_file(), f"{lp['slug']}: skp_url vs {skp}")
         if lp.get("thumb"):
             png = out / "res" / f"{lp['slug']}.png"
             if R.check("library", png.exists(), f"{lp['slug']}: thumbnail missing"):
@@ -235,15 +276,18 @@ def main(argv=None):
         if a.fresh:
             out = Path(tmp)
             export_web.export(out, projects_dir, skp_dir, log=lambda m: print("  export:", m))
-        library = json.loads((out / "library.json").read_text(encoding="utf-8"))
         R = Report()
+        library = load_json(R, out / "library.json", "library")
+        if library is None:
+            print("FAIL json     library.json cannot be parsed:", R.fail[-1])
+            return 1
         check_library(R, out, library, skp_dir)
         for lp in library["projects"]:
             check_project(R, out, lp, projects_dir)
         check_index(R, library, Path(a.index), projects_dir)
     for s in library.get("skipped", []):
         R.stale.append(f"export skipped {s['file']}: {s['reason']}")
-    for name in ("volumes", "counts", "rooms", "index", "library"):
+    for name in ("json", "volumes", "counts", "rooms", "index", "library"):
         bad = sum(1 for f in R.fail if f.startswith(name + ":"))
         print(f"{'FAIL' if bad else 'ok  '} {name:8s} {R.counts.get(name, 0)} checks, {bad} failed")
     for f in R.fail[:40]:

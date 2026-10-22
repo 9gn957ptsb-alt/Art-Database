@@ -15,7 +15,8 @@ Compiles every residential/projects/*.json with rdb.compile_project and writes
 
 Paths inside library.json are DIR-relative with --prefix in front ("data/" by default, for a
 page that serves DIR as data/). A project file that cannot be read or compiled (for example one
-another session is still writing) is skipped with a warning; the export never stops for it.
+another session is still writing), or that holds NaN or Infinity (which Python's json reads but
+a browser's JSON.parse rejects), is skipped with a warning; the export never stops for it.
 Files are written atomically, and res/ files no project uses any more are removed.
 Default DIR: residential/build/web (not committed). Units: metres, z up.
 """
@@ -35,6 +36,7 @@ from shapely.geometry import Polygon
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import preview  # noqa: E402
+import primitives  # noqa: E402
 import rdb  # noqa: E402
 
 ROOT = HERE.parent
@@ -167,38 +169,94 @@ def spread(values):
 
 # ---------- thumbnails ----------
 
+def framed(plan, owners):
+    """The plan cut down to the house for its thumbnail: the solids the rooms own, plus any other
+    solid that reaches within a margin of them and is not much longer than the house itself
+    (a pool stays; a 110 m approach path or a far garden wall, which would shrink the house to a
+    speck, does not). Returns the plan itself when nothing is left out."""
+    boxes = []
+    for lf in plan["leaves"]:
+        V, _ = primitives.realize(lf["k"], lf["s"])
+        xs, ys = [q[0] for q in V], [q[1] for q in V]
+        boxes.append((min(xs), min(ys), max(xs), max(ys)))
+    own = [b for b, who in zip(boxes, owners) if who is not None]
+    if not own:
+        return plan
+    x0, y0 = min(b[0] for b in own), min(b[1] for b in own)
+    x1, y1 = max(b[2] for b in own), max(b[3] for b in own)
+    size = max(x1 - x0, y1 - y0)
+    m = max(6.0, 0.35 * size)
+    keep = [lf for lf, b, who in zip(plan["leaves"], boxes, owners)
+            if who is not None or (b[0] <= x1 + m and b[2] >= x0 - m and b[1] <= y1 + m and b[3] >= y0 - m
+                                   and max(b[2] - b[0], b[3] - b[1]) <= 2.5 * max(size, 8.0))]
+    if len(keep) == len(plan["leaves"]):
+        return plan
+    return dict(plan, leaves=keep)
+
+
+def tmp_name(path):
+    """A temporary file next to path, unique to this process (two exports may run at once)."""
+    return path.with_name(f"{path.name}.{os.getpid()}.tmp")
+
+
 def thumbnail(plan, out, tmpdir):
     """Axonometric at 960 px (preview.axon supersamples it 2x), downscaled to 480 px wide and
     reduced to a palette until the PNG is at most 80 KB. Returns the bytes written."""
     big = Path(tmpdir) / "axon.png"
     preview.axon(plan, big, size=(960, 686))
     im = Image.open(big).convert("RGB")
+    tmp = tmp_name(out)
     for w in (THUMB_W, 400, 320, 240):
         sm = im.resize((w, max(1, round(im.height * w / im.width))), Image.LANCZOS)
         for colours in (256, 128, 64, 32):
             q = sm.quantize(colours, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
-            tmp = out.with_name(out.name + ".tmp")
             q.save(tmp, "PNG", optimize=True)
             size = tmp.stat().st_size
             if size <= THUMB_MAX_BYTES:
                 os.replace(tmp, out)
                 return size
-            tmp.unlink()
+            tmp.unlink(missing_ok=True)
     raise RuntimeError("thumbnail stays over 80 KB")
 
 
 # ---------- export ----------
 
+def non_finite(obj, where=""):
+    """Path of the first NaN or Infinity in a parsed JSON value (Python's json accepts them, a
+    browser's JSON.parse does not), or None."""
+    if isinstance(obj, float):
+        return None if math.isfinite(obj) else (where or "/")
+    if isinstance(obj, dict):
+        items = obj.items()
+    elif isinstance(obj, list):
+        items = enumerate(obj)
+    else:
+        return None
+    for k, v in items:
+        hit = non_finite(v, f"{where}/{k}")
+        if hit:
+            return hit
+    return None
+
+
 def write_json(path, obj):
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(obj, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
-    os.replace(tmp, path)
-    return path.stat().st_size
+    tmp = tmp_name(path)
+    data = json.dumps(obj, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+    try:
+        tmp.write_bytes(data)
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+    return len(data)
 
 
 def export_project(path, skp_dir):
-    """Compile one project file. Returns (library project, library rooms, res document, plan, notes)."""
+    """Compile one project file. Returns (library project, library rooms, res document, plan,
+    owner room id per leaf, notes)."""
     p = rdb.load(path)
+    bad = non_finite(p)
+    if bad:
+        raise rdb.Problem(f"non-finite number (NaN or Infinity) at {bad}")
     slug = p["slug"]
     if path.stem != slug:
         raise rdb.Problem(f"slug {slug!r} does not match the file name")
@@ -242,7 +300,7 @@ def export_project(path, skp_dir):
 
     bb = plan["totals"]["bbox_in"]
     acc = p.get("accuracy") or {}
-    has_skp = (skp_dir / f"{slug}.skp").exists()
+    has_skp = (skp_dir / f"{slug}.skp").is_file()
     lib_project = {"slug": slug, "name": p["name"], "architect": p.get("architect"),
                    "location": p.get("location"), "year": p.get("year"),
                    "accuracy": {"level": acc.get("level"), "basis": acc.get("basis")},
@@ -255,7 +313,11 @@ def export_project(path, skp_dir):
     res = {"schema": SCHEMA, "slug": slug, "name": p["name"], "materials": plan["materials"],
            "levels": plan["levels"], "bbox_in": bb, "groups": groups, "leaves": plan["leaves"],
            "rooms": res_rooms}
-    return lib_project, lib_rooms, res, plan, notes
+    try:                                    # browsers' JSON.parse rejects NaN and Infinity
+        json.dumps([lib_project, lib_rooms, res], allow_nan=False)
+    except ValueError:
+        raise rdb.Problem("non-finite number (NaN or Infinity) in the compiled project") from None
+    return lib_project, lib_rooms, res, plan, owners, notes
 
 
 def export(out, projects_dir, skp_dir, prefix="data/", thumbs=True, log=print):
@@ -268,7 +330,7 @@ def export(out, projects_dir, skp_dir, prefix="data/", thumbs=True, log=print):
     with tempfile.TemporaryDirectory() as tmpdir:
         for path in sorted(Path(projects_dir).glob("*.json")):
             try:
-                lib_project, lib_rooms, res, plan, notes = export_project(path, skp_dir)
+                lib_project, lib_rooms, res, plan, owners, notes = export_project(path, skp_dir)
             except Exception as e:                  # half-written, invalid or failing project
                 msg = f"{type(e).__name__}: {e}"
                 log(f"warning: skipped {path.name}: {msg}")
@@ -289,12 +351,12 @@ def export(out, projects_dir, skp_dir, prefix="data/", thumbs=True, log=print):
             lib_project["thumb"] = None
             if thumbs:
                 try:
-                    sizes["res_png"] += thumbnail(plan, res_dir / f"{slug}.png", tmpdir)
+                    sizes["res_png"] += thumbnail(framed(plan, owners), res_dir / f"{slug}.png", tmpdir)
                     keep.add(f"{slug}.png")
                     lib_project["thumb"] = f"{prefix}res/{slug}.png"
                 except Exception as e:
                     log(f"warning: {slug}: no thumbnail: {type(e).__name__}: {e}")
-            elif (res_dir / f"{slug}.png").exists():
+            elif (res_dir / f"{slug}.png").is_file():
                 keep.add(f"{slug}.png")
                 lib_project["thumb"] = f"{prefix}res/{slug}.png"
             projects.append(lib_project)
@@ -316,10 +378,10 @@ def export(out, projects_dir, skp_dir, prefix="data/", thumbs=True, log=print):
     removed = []
     for f in sorted(res_dir.iterdir()):
         if f.is_file() and f.suffix in (".json", ".png") and f.name not in keep:
-            f.unlink()
+            f.unlink(missing_ok=True)
             removed.append(f.name)
-    for f in res_dir.glob("*.tmp"):
-        f.unlink()
+    for f in res_dir.glob(f"*.{os.getpid()}.tmp"):
+        f.unlink(missing_ok=True)
     if removed:
         log(f"removed {len(removed)} unused res files: {', '.join(removed)}")
     n_leaves = sum(pr["solids"] for pr in projects)
