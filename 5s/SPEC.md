@@ -198,6 +198,64 @@ material words (never the title or artist).
   grow into a world; the cards come from an artist's database of saved works, and what you bring in is
   yours. Then the how-to lines, the privacy line, and the "Five-second ring" switch.
 
+### Your hub: the person's own GitHub repository and site, made from inside 5s (Path milestones 9–12)
+
+The artist, 22 Oct 2026: "We need to make making a repository on GitHub much more simple and keep the
+user-interface for it on 5s … the button to create and name a repository on GitHub should all be done on
+the 5s app … 5s … a dumbed down user interface for GitHub … for every challenge you come up against, I
+need you to provide me a resolution as well."
+
+**Words.** 5s never shows GitHub's vocabulary except the one button label the person must press on
+GitHub's own page. A repository is **your hub**; a commit is **save**; GitHub Pages is **your hub's
+address**; branches, pull requests and settings are never mentioned.
+
+**Where.** A final section of Seed, **Your hub** (a card with the four steps as a stepper, each with
+its state: Done / Next / Not yet, in words), opening the **Hub sheet**. The Path gains four milestones
+after the eight (additive; the eight are unchanged):
+ 9. `github` · Seed · "Have a GitHub account" · "The artist kept everything in one GitHub repository from the first evening."
+10. `hub` · Seed · "Make your hub" · "The artist's repository was made in four minutes, before the first session."
+11. `saved` · Seed · "Save your seed to your hub" · "The artist's database grew by saving to it, every day."
+12. `opened` · Seed · "Open your hub's address" · "The artist's site went live on GitHub Pages on 14 Sep."
+
+**The four steps (the links bridge: works in the claude.ai artifact, for every viewer).** An artifact
+cannot call GitHub (its frame blocks other sites), so 5s does everything except two button presses on
+GitHub's own pages, which it opens already filled in.
+1. **GitHub account.** "Make a GitHub account" opens github.com/signup in a new tab beside a three-line
+   guide ("Pick a username you like: it becomes your hub's address, username.github.io"); "I have one"
+   skips. Then **Your GitHub username** (public information; checked against GitHub's username rules).
+2. **Make your hub.** Name prefilled `<username>.github.io` (labelled "becomes a website by itself";
+   GitHub publishes a repository with that name automatically) or another name (then step 4 adds one
+   tap). Public / Private ("Private: only you can see it; it won't be a website"). **Make my hub on
+   GitHub** opens `https://github.com/new?name=…&description=…&visibility=…` and says: "Press the green
+   Create repository button, then come back." A Copy name button covers a page that doesn't prefill.
+   **I made it** moves on.
+3. **Save your seed to your hub.** **Save my hub file** saves one self-contained `index.html` (the hub
+   page, below) through the downloads capability (fallback: the file's text to copy). **Open the upload
+   page** opens `https://github.com/<user>/<hub>/upload/main`: "Drag the file in and press Commit
+   changes." **I saved it.**
+4. **Your hub's address.** `https://<user>.github.io/` (or `/<hub>/`), "Open my hub", "It can take a
+   minute to appear." For a hub not named `<user>.github.io`, one more tap: Settings → Pages opened
+   directly, with the one choice to make spelled out.
+Later: **Save to my hub again** whenever the seed has changed (the card says when it was last saved).
+
+**The hub page** (`src/hubpage.js`, global `FiveSHubPage.build(...)`): a complete standalone HTML
+document (its own doctype and head: it lives on github.io, not in an artifact, so it may show images
+from Artsy's CDN) built from the person's seed: the seed code, their philosophy lines, positive and
+negative space, their kept works as a grid (Artsy CDN images, each linking to its Artsy page, credited),
+their colours, their pinned sets as rooms, their ground (rendered in 5s and embedded as a PNG), and,
+only if they tick "Include my notes", their notes. Brought-in images are never included unless they
+tick "Include my own images". The seed itself rides in `<script type="application/json" id="seed">`.
+
+**The drivers** (`src/hub.js`, global `FiveSHub`): `rules` (GitHub's username and repository-name
+rules, with a fix-up), `suggest(user)`, `links` (signup, login, newRepo, upload, site, pagesSettings),
+and `api(token, fetch)`: the one-button driver for the standalone 5s app (create the hub, save files,
+turn on the address, read the hub back, through api.github.com), tested against a fake GitHub, unused in
+the artifact. Sign-in for the standalone app is GitHub's device flow (a code shown in 5s, approved at
+github.com/login/device): no secret in the app.
+
+**State** (additive): `state.hub = {user, name, private, mode: "links" | "api", madeAt, savedAt,
+savedCode}` and `FiveS.setHub(state, patch, now)`; `path()` returns twelve milestones.
+
 ### Example mode
 - Every tab except Sort can show **an example taste** (built by `engine.exampleState(deck)`), behind a
   clearly marked banner "Example taste. Not yours." with "Back to mine". It is never saved. On a first
