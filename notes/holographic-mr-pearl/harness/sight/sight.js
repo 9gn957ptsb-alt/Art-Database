@@ -243,12 +243,25 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
     R.cases.rate.two = { f1: t1.f, f2: f2 && f2.f, dframes: f2 && f2.f - t1.f, expectFrame: expect && expect.f, kept };
     check(kept === true && f2 && f2.f - t1.f === 20 && f2.f === expect.f, "two taps 3 frames apart: the second kept, thrown " + (f2 && f2.f - t1.f) + " frames after the first (20: BEAT at 25 ms)");
     // five taps in a beat throw two
+    // (dispatched in the page on the game's own frames: from outside, the software renderer's frames run on between
+    // taps, and five taps 3 frames apart had spread over more than a beat)
     await clear(); await frames(21);
-    for (let i = 0; i < 5; i++) { await tap(); await frames(3); }
+    const tapF = await D((a) => new Promise((done) => {
+      const cv = document.getElementById("view"), f0 = window.__frames, out = []; let i = 0;
+      const go = () => {
+        if (window.__frames - f0 >= i * 3) {
+          const o = { pointerId: 60 + i, pointerType: a.type, isPrimary: true, button: 0, buttons: 1, clientX: a.x, clientY: a.y, bubbles: true };
+          cv.dispatchEvent(new PointerEvent("pointerdown", o)); cv.dispatchEvent(new PointerEvent("pointerup", Object.assign({}, o, { buttons: 0 })));
+          out.push(window.__frames - f0); i += 1;
+        }
+        if (i < 5) { requestAnimationFrame(go); } else { done(out); }
+      };
+      go();
+    }), { type: phone ? "touch" : "mouse", x: TX, y: TY });
     await frames(30);
     const five = await D(() => 5 - window.Rocket.debug().carried());
-    R.cases.rate.five = five;
-    check(five === 2, "five taps in a beat throw two (" + five + ")");
+    R.cases.rate.five = { thrown: five, tapFrames: tapF };
+    check(five === 2, "five taps in a beat (at frames " + tapF.join(", ") + ") throw two (" + five + ")");
     // a tap at the raise's frame 5 is thrown when the arm is up
     await clear(); await lowerNow(); await frames(21);
     await L.recOn(G, true);
@@ -297,19 +310,29 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
   }
   // the aim at a point: the yaw from his head over it, and the pitch turned until the arc's first touch is where asked
   const aimLand = async (T, test) => {
-    const g0 = await geo(), yaw = Math.atan2(T[0] - g0.seat[0], -(T[2] - g0.seat[2]));
-    let pitch = Math.atan2(T[1] - g0.seat[1], Math.hypot(T[0] - g0.seat[0], T[2] - g0.seat[2])), s = null;
-    for (let i = 0; i < 12; i++) {
+    // (halving the pitch on the range: the landing's own angle from his head changes too little with its range on
+    // flat ground for a step on the angle to come to it)
+    const g0 = await geo(), yaw = Math.atan2(T[0] - g0.seat[0], -(T[2] - g0.seat[2])), want = Math.hypot(T[0] - g0.seat[0], T[2] - g0.seat[2]);
+    let lo = -1.2, hi = 0.75, s = null;
+    for (let i = 0; i < 16; i++) {
+      const pitch = (lo + hi) / 2;
       await D((a) => { const d = window.Rocket.debug(); d.P.yaw = a.yaw; d.P.pitch = a.pitch; }, { yaw, pitch }); await frames(4);
       s = await S();
       if (s.land && test(s.land)) { return s; }
-      const g = await geo(), want = Math.atan2(T[1] - g.seat[1], Math.hypot(T[0] - g.seat[0], T[2] - g.seat[2]));
-      const got = s.land ? Math.atan2(s.land.y - g.seat[1], Math.hypot(s.land.x - g.seat[0], s.land.z - g.seat[2])) : want - 0.1;
-      pitch += (want - got) * 0.9;
+      const got = s.land ? Math.hypot(s.land.x - g0.seat[0], s.land.z - g0.seat[2]) : 1e9;
+      if (got < want) { lo = pitch; } else { hi = pitch; }
     }
     return s;
   };
+  // the crux on a point: the look from the head's seat through it (the sight's line passes the head's centre)
+  const aimCrux = async (T) => {
+    const g0 = await geo(), yaw = Math.atan2(T[0] - g0.seat[0], -(T[2] - g0.seat[2])), pitch = Math.atan2(T[1] - g0.seat[1], Math.hypot(T[0] - g0.seat[0], T[2] - g0.seat[2]));
+    await D((a) => { const d = window.Rocket.debug(); d.P.yaw = a.yaw; d.P.pitch = a.pitch; }, { yaw, pitch }); await frames(4);
+    return S();
+  };
   // ---- 10. where it lands: a work beyond LOOK, a piece lying as a block, water, a block, a note
+  // (the crux is put on the target for what the tag says, then held over it for the throw, as the feet show: past
+  // the zero the pearl comes down under the sight's line)
   {
     R.cases.lands = {};
     // a work, from a stand beyond nine metres with nothing between
@@ -340,10 +363,10 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       await L.stand(G, { x: work.stand.x, y: work.stand.y, z: work.stand.z, yaw: Math.atan2(work.C[0] - work.stand.x, -(work.C[2] - work.stand.z)), pitch: 0 });
       await frames(4); await raiseNow();
       const onWork = (q) => { const r = work.rect, u = r.axis === "x" ? q.z : q.x; return u > r.u0 + 0.05 && u < r.u1 - 0.05 && q.y > r.y0 + 0.05 && q.y < r.y1 - 0.05; };
+      const sNow = await aimCrux(work.C);
+      await shot("07_on_a_work", 1);
       const s = await aimLand(work.C, onWork);
       await frames(3);
-      const sNow = await S();
-      await shot("07_on_a_work", 1);
       const al0 = await D(() => window.Rocket.debug().alarms()); await toasts();
       await D(() => window.Rocket.debug().throwAt());
       await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.first; }, null, { timeout: 600000 });
@@ -386,10 +409,11 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       await L.setB(G, floorC, 3); await L.setB(G, pool, 6);
       await L.stand(G, Object.assign({}, home, { pitch: 0 })); await raiseNow();
       const T = cell(11, 0, -1);
-      await aimLand([T[0] + 0.5, T[1] + 0.9, T[2] + 0.5], (q) => { const a = (q.x - site.x) * site.ax + (q.z - site.z) * site.az; return a > 10.3 && a < 12.5; });
-      await frames(3);
-      const sNow = await S();
+      const sNow = await aimCrux([T[0] + 0.5, T[1] + 0.9, T[2] + 0.5]);
       await shot("09_on_water", 1);
+      const sl = await aimLand([T[0] + 0.5, T[1] + 0.9, T[2] + 0.5], (q) => { const a = (q.x - site.x) * site.ax + (q.z - site.z) * site.az; return a > 10.3 && a < 12.5; });
+      say("water aim " + JSON.stringify(sl && { land: sl.land, hit: sl.hit, pitch: (await geo()).P.pitch }));
+      await frames(3);
       await toasts();
       await D(() => window.Rocket.debug().throwAt());
       await frames(8);
@@ -416,20 +440,22 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       check(said.some((t) => /^Your pearl struck /.test(t)) && first.b === 9, "a block: " + JSON.stringify(said));
       await L.setB(G, [c, c2], 0); await lowerNow(); await clear();
     }
-    // a note at the bottom of a hole a block deep, 4 m off: it comes to rest on it
+    // a note on the ground in a hole a block deep, 4 m off: the pearl falls on it and says so (the note is a sheet on
+    // the block under it; at its speed the pearl seldom stays there)
     {
       const hole = cell(4, 0, -1), under = cell(4, 0, -2);
       const wasHole = await ids([hole, under]);
       await L.setB(G, [under], 3); await L.setB(G, [hole], 26);
       await L.stand(G, Object.assign({}, home, { pitch: -0.4 })); await raiseNow();
-      await aimLand([hole[0] + 0.5, hole[1] + 0.2, hole[2] + 0.5], (q) => Math.floor(q.x) === hole[0] && Math.floor(q.z) === hole[2] && q.y < hole[1] + 0.5);
+      const sl = await aimLand([hole[0] + 0.5, hole[1] + 0.2, hole[2] + 0.5], (q) => Math.floor(q.x) === hole[0] && Math.floor(q.z) === hole[2] && q.y < hole[1] + 0.5);
+      say("note aim " + JSON.stringify(sl && sl.land));
       await toasts();
       await D(() => window.Rocket.debug().throwAt());
-      await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.state === "rest"; }, null, { timeout: 600000 });
+      await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.first; }, null, { timeout: 600000 });
+      await frames(3);
       const p = await D(() => window.Rocket.debug().pearls()[0]), said = await toasts();
-      const inHole = Math.floor(p.x) === hole[0] && Math.floor(p.y) === hole[1] && Math.floor(p.z) === hole[2];
-      R.cases.lands.note = { rest: [p.x, p.y, p.z], inHole, said };
-      check(inHole && said.some((t) => /^Your pearl lies on a note/.test(t)), "a note: it comes to rest on it (" + JSON.stringify(said) + ")");
+      R.cases.lands.note = { first: p.first, said };
+      check(p.first.note && said.some((t) => /^Your pearl fell on a note/.test(t)), "a note: the pearl falls on it and says so (" + JSON.stringify(said) + ")");
       await putBack([hole, under], wasHole); await lowerNow(); await clear();
     }
   }
@@ -589,11 +615,18 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
   {
     await L.stand(G, Object.assign({}, home, { pitch: 0 })); await raiseNow(); await frames(4);
     const x0 = phone ? 260 : K.W * 0.6, y0 = phone ? 420 : K.H * 0.45;
-    if (phone) { await G.touch("touchStart", [{ x: x0, y: y0, id: 12 }]); } else { await P.mouse.move(x0, y0); await P.mouse.down(); }
-    for (let i = 1; i <= 10; i++) { if (phone) { await G.touch("touchMove", [{ x: x0 + 10 * i, y: y0, id: 12 }]); } else { await P.mouse.move(x0 + 10 * i, y0); } await frames(1); }
-    const s = await S();
+    // (moved in the page on the game's own frames, 10 px a frame: from outside the renderer's frames ran on between
+    // moves and the drag was slower than it was meant to be)
+    const s = await D((a) => new Promise((done) => {
+      const cv = document.getElementById("view"), o = (x, b) => ({ pointerId: 71, pointerType: a.type, isPrimary: true, button: 0, buttons: b, clientX: x, clientY: a.y, bubbles: true });
+      cv.dispatchEvent(new PointerEvent("pointerdown", o(a.x, 1)));
+      const f0 = window.__frames; let i = 0;
+      const go = () => { if (window.__frames > f0 + i) { i += 1; cv.dispatchEvent(new PointerEvent("pointermove", Object.assign(o(a.x + 10 * i, 1), { button: -1 }))); }
+        if (i < 10) { requestAnimationFrame(go); } else { requestAnimationFrame(() => done(window.Rocket.debug().sight())); } };
+      go();
+    }), { type: phone ? "touch" : "mouse", x: x0, y: y0 });
     await shot("06_dragging_open", 0);
-    if (phone) { await G.touch("touchEnd", []); } else { await P.mouse.up(); }
+    await D((a) => document.getElementById("view").dispatchEvent(new PointerEvent("pointerup", { pointerId: 71, pointerType: a.type, isPrimary: true, button: 0, buttons: 0, clientX: a.x + 100, clientY: a.y, bubbles: true })), { type: phone ? "touch" : "mouse", x: x0, y: y0 });
     R.cases.dragOpen = { theta: deg(s.theta) };
     check(s.theta > rad(3), "dragging, the figure opens (theta " + deg(s.theta).toFixed(1) + " deg), the ring gone (steady " + (1 - Math.min(1, Math.max(0, (deg(s.theta) - 1) / 2))).toFixed(2) + ")");
     await lowerNow();

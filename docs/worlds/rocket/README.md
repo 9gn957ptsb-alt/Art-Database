@@ -240,11 +240,12 @@ the line); it takes his walk with it, spins backward a turn a beat and trails th
 his arm flings forward and comes back up, the next pearl in the fingers from the half beat, and a tap before the arm
 is up is kept, the latest. It bounces with half its speed, comes to rest, sinks in water as he does, and where it
 first touches says what it struck: a work's title and who made it (never a look behind it, never a wrong look), a
-piece of the rocket (it rings: the arrow points to that piece first), a block's section and project, the water. It
-takes, breaks and looks behind nothing. It comes back when he walks into it, or when it is tapped with the sight
-lowered within his reach; he comes to again with all five. The tap with the sight down smashes, as before; with it
-up, it throws; raising it lets a swing go. As the hologram there is no sight and no throw. Under reduced motion the
-sight comes up at once, the figure stays closed and the ring is always shown, and the arm does not fling.
+piece of the rocket (it rings: among the pieces still lying, the arrow points to that one first), a block's section
+and project, the water. It takes, breaks and looks behind nothing. It comes back when he walks into it, or when it
+is tapped with the sight lowered within his reach; he comes to again with all five. The tap with the sight down
+smashes, as before; with it up, it throws; raising it lets a swing go. As the hologram there is no sight and no
+throw. Under reduced motion the sight comes up at once, the figure stays closed and the ring is always shown, and the
+arm does not fling.
 
 **One button**, Holo (or `H`), between the two: it sends the head out as the hologram, and pressed again the body
 follows it and the view is third person again. It is pressed while the head is out, and the ring round it is the

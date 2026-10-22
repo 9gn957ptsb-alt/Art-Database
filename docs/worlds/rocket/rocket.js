@@ -835,13 +835,13 @@
     var nx = P.x + P.vx * dt;
     if (boxHits(nx, P.y, P.z)) {
       if (P.ground && !boxHits(nx, P.y + 1.05, P.z) && !boxHits(P.x, P.y + 1.05, P.z) && (fwd || side)) { P.vy = 8.2; P.ground = false; }
-      nx = P.x;
+      nx = P.x; P.vx = 0;   // (stopped: no walk to add to a throw)
     }
     P.x = nx;
     var nz = P.z + P.vz * dt;
     if (boxHits(P.x, P.y, nz)) {
       if (P.ground && !boxHits(P.x, P.y + 1.05, nz) && !boxHits(P.x, P.y + 1.05, P.z) && (fwd || side)) { P.vy = 8.2; P.ground = false; }
-      nz = P.z;
+      nz = P.z; P.vz = 0;
     }
     P.z = nz;
     var ny = P.y + P.vy * dt;
@@ -911,7 +911,7 @@
     if (intro || launched || !vp) { return; }
     var dir = dirAt(px, py), hit = pick(dir);
     // a pearl lying within his reach, tapped with the sight lowered, is back in his hand (the throw, 20 Oct 2026)
-    if (!Hd && takeTapped(dir, hit ? hit.t : null)) { return; }
+    if (!Hd && takeTapped(dir, hit)) { return; }
     if (!hit) { return; }
     // A block kept for the next swing is turned to at this one's strike, not now.
     var kept = !Hd && !!swing && !swing.ret && swing.u < 1.5 && !hit.painting && hit.b !== B.NOTE && !(forcePlace || mode === "place");
@@ -928,7 +928,8 @@
     } else if (hit.prev) {
       var p = hit.prev;
       w.set(p[0], p[1], p[2], HOTBAR[slot]);
-      if (boxHits(P.x, P.y, P.z)) { w.set(p[0], p[1], p[2], B.AIR); return; }
+      // (nor where a pearl lies: it would be buried, out of reach)
+      if (boxHits(P.x, P.y, P.z) || pearls.some(function (q) { return sphereHit(q.x, q.y, q.z, pearlR()); })) { w.set(p[0], p[1], p[2], B.AIR); return; }
       remeshAt(p[0], p[2]);
     }
   }
@@ -1517,7 +1518,7 @@
   var HAT_DOFF = [-0.82669, -0.64551, -0.35489];                 // the hat doffed: its right brim's edge into his left glove (throwFrom)
   var HAT_LIFT = 0.30925;                                        // lifted first, clear of the head: its top over the hat's lowest cell above it (throwFrom)
   var sight = { up: false, t0: -1e9, told: false, hold: null, omega: 0, mx: 0, my: 1, lastYaw: 0, lastPitch: 0, theta: 0, hit: null,
-                arc: null, head: null, inHand: null, said: "", ring: null, thrown: -1e9, next: false, turn: null, flingHold: null, rmb: null, last: 0, feet: [], ringSaid: null, at: 0 };
+                arc: null, head: null, inHand: null, said: "", key: "", ring: null, thrown: -1e9, next: false, turn: null, flingHold: null, rmb: null, last: 0, feet: [], ringSaid: null, at: 0 };
   var figCache = {}, pearls = [], carried = THROW.CARRY, marked = {}, pearlCh = null, trailProg = null, TU = {}, trailBuf = null, trailVao = null;
   var NO_PEARL = "No pearl in your hand: pick one up again where it lies (walk to it, or tap it with the sight lowered).";
   function sightOn() { return sight.up && !intro && !launched && !Hd; }
@@ -1555,10 +1556,10 @@
     if (on === sight.up || intro || launched || !place) { return; }
     if (on && Hd) { barred(); return; }
     var now = performance.now(), still = stillMotion.matches;
-    if (on) { letGo(); P.want = null; sight.at = now; }
+    if (on) { letGo(); P.want = null; sight.at = now; closeLabel(); }
     // turned over part way, the arm and the hat go back from where they are (smooth(1 - u) = 1 - smooth(u))
     var u0 = clampV((now - sight.t0) / 1000 / T_VIEW, 0, 1);
-    sight.up = on; sight.t0 = now - (1 - u0) * T_VIEW * 1000; sight.next = false; sight.turn = null; sight.arc = null; sight.said = "";
+    sight.up = on; sight.t0 = now - (1 - u0) * T_VIEW * 1000; sight.next = false; sight.turn = null; sight.arc = null; sight.said = ""; sight.key = "";
     sight.lastYaw = P.yaw; sight.lastPitch = P.pitch; sight.omega = 0; sight.theta = 0;
     camD = 1e9;
     blend = still ? null : { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: on ? null : clampV(P.pitch, TP_DOWN, TP_UP) };
@@ -1907,7 +1908,10 @@
       var act = carried > 0 ? (byTouch() ? "Tap to throw" : "Click, T or Enter to throw") : "No pearl in your hand: walk to one, or tap it with the sight lowered";
       var html = '<b>' + esc(info.name) + '</b><span>' + esc(info.sub || "") + '</span>' + (info.from ? '<span class="from">' + esc(info.from) + (info.rel ? ', ' + esc(info.rel) : '') + '</span>' : '') + '<span class="act">' + esc(act) + '</span>';
       if (sight.said !== html) { sight.said = html; tag.innerHTML = html; }
-      tag.hidden = false;
+      // said aloud only when what it is on changes (or the glove empties), not at every metre
+      var key = [info.name, info.from, info.rel, act].join(". ");
+      if (sight.key !== key) { sight.key = key; $("sight-say").textContent = [info.name, info.sub, info.from && info.from + (info.rel ? ", " + info.rel : ""), act].filter(Boolean).join(". "); }
+      tag.hidden = !$("notes").hidden;   // (the notes, opened over it, are read instead)
       // under the window, but never over the foot: at most the tag's own height above the foot's top, less the HUD's
       // 6 px gap (the views column's); pressed to the glass the window is the whole view, and the words then stand
       // just over the foot
@@ -1999,6 +2003,10 @@
   // every pearl that far right of the mark. His own walk with it: it is his hand that throws.
   function launchFrom(e, d, tHit) {
     var H = handAt(), at = reachFrom(), t0 = max(0, (at[0] - e[0]) * d[0] + (at[1] - e[1]) * d[1] + (at[2] - e[2]) * d[2]);
+    // his glove beside a wall (the pearl reaches 0.49 m to his right, past his own box): it leaves from as near the
+    // glove as is clear, toward his head's seat, which his box keeps clear (it had struck the wall at 0 m and come back)
+    var sc = seat();
+    for (var k = 0; k < 12 && sphereHit(H[0], H[1], H[2], pearlR()); k += 1) { H = [(H[0] + sc[0]) / 2, (H[1] + sc[1]) / 2, (H[2] + sc[2]) / 2]; }
     var A = [e[0] + d[0] * (t0 + THROW.ZERO), e[1] + d[1] * (t0 + THROW.ZERO), e[2] + d[2] * (t0 + THROW.ZERO)];
     var tt = tHit != null ? tHit : t0 + THROW.FAR, T = [e[0] + d[0] * tt, e[2] + d[2] * tt];   // the heading is level: x and z only
     var hx = T[0] - H[0], hz = T[1] - H[2], hl = hypot(hx, hz), ux = hl > 1e-6 ? hx / hl : Math.sin(P.yaw), uz = hl > 1e-6 ? hz / hl : -Math.cos(P.yaw);
@@ -2015,7 +2023,7 @@
     var L = launchFrom(eye, lookDir(camLast.yaw, camLast.pitch), sight.hit ? sight.hit.t : null);
     carried -= 1; sight.thrown = now; sight.arc = null;
     pearls.push({ x: L.H[0], y: L.H[1], z: L.H[2], vx: L.vel[0], vy: L.vel[1], vz: L.vel[2], yaw: L.yaw, spin: 0, state: "fly", t: 0, bounces: 0,
-                  trail: [[L.H[0], L.H[1], L.H[2], 0]], from: { H: L.H, vel: L.vel, th: L.th, A: L.A, mv: L.mv, eye: eye.slice(), yaw: camLast.yaw, pitch: camLast.pitch }, first: null, wet: false });
+                  trail: [[L.H[0], L.H[1], L.H[2], 0]], age: 0, from: { H: L.H, vel: L.vel, th: L.th, A: L.A, mv: L.mv, eye: eye.slice(), yaw: camLast.yaw, pitch: camLast.pitch }, first: null, wet: false });
     drawCarry();
     return true;
   }
@@ -2077,8 +2085,11 @@
       var t0 = performance.now();
       stepPearl(p, dt, false);
       p.spin += p.state === "rest" ? 0 : THROW.SPIN * dt;
-      p.trail.push([p.x, p.y, p.z, p.t]);
-      while (p.trail.length > 2 && p.trail[1][3] < p.t - THROW.TRAIL) { p.trail.shift(); }
+      // the trail on its own clock, which runs on while it lies, so the last beat fades out after it lands (it had
+      // stayed drawn and grown a point a frame for as long as it lay)
+      p.age += dt;
+      if (p.state !== "rest") { p.trail.push([p.x, p.y, p.z, p.age]); }
+      while (p.trail.length && p.trail[0][3] < p.age - THROW.TRAIL) { p.trail.shift(); }
       p.ms = performance.now() - t0;
       // back in his hand when he walks into it (his body's box, 0.3 m round and 1.8 m tall, touches it)
       if (p.state === "rest" && !Hd && hypot(p.x - P.x, p.z - P.z) < 0.3 + r && p.y > P.y - r && p.y < P.y + 1.8 + r) { takeBack(p); }
@@ -2093,6 +2104,10 @@
   function struck(p, c, n, what) {
     var m = me(), dist = round(hypot(p.x - m.x, p.z - m.z)), up = p.y - m.y > 3 ? ", " + round(p.y - m.y) + " m up" : "";
     if (what === "water") { say("Your pearl sinks, " + dist + " m off: swim down to it."); return; }
+    if (c.cx < 0 || c.cz < 0 || c.cx >= w.SX || c.cz >= w.SZ) { say("Your pearl struck the edge of " + setting.name + ", " + dist + " m off" + up + "."); return; }
+    // a note is a sheet lying on the block under it: come down on that block's top, it falls on the note (at the
+    // pearl's speed it rarely stays: it had said what lay under the note, and that only where it came to rest)
+    if (n[1] > 0.5 && w.get(c.cx, c.cy + 1, c.cz) === B.NOTE) { p.first.note = true; say("Your pearl fell on a note, " + dist + " m off: go and read it."); return; }
     var b = w.get(c.cx, c.cy, c.cz);
     if (abs(n[1]) < 0.5) {
       var ax = abs(n[0]) > abs(n[2]) ? "x" : "z", nd = ax === "x" ? (n[0] > 0 ? 1 : -1) : (n[2] > 0 ? 1 : -1);
@@ -2119,17 +2134,19 @@
     ["RENDER", "render"], ["LOOSE", "loose earth"], ["WHITE", "a white wall"], ["RED", "a red wall"], ["BEDROCK", "the bedrock"], ["FLOOR", "the floorboards"], ["PLASTER", "a gallery's plaster"]]
     .forEach(function (q) { if (B[q[0]] != null) { STUFF[B[q[0]]] = q[1]; } });
   function rested(p) {
-    if (w.get(floor(p.x), floor(p.y), floor(p.z)) === B.NOTE) { var m = me(); say("Your pearl lies on a note, " + round(hypot(p.x - m.x, p.z - m.z)) + " m off: go and read it."); }
+    if (!(p.first && p.first.note) && w.get(floor(p.x), floor(p.y), floor(p.z)) === B.NOTE) { var m = me(); say("Your pearl lies on a note, " + round(hypot(p.x - m.x, p.z - m.z)) + " m off: go and read it."); }
   }
   // Tapping a pearl that lies within his reach, the sight lowered, takes it back (the ray from the camera, measured
-  // from him as pick() is; its target its diameter doubled), if it lies nearer than what the tap meets.
-  function takeTapped(dir, tMax) {
+  // from him as pick() is; its target its diameter doubled), if it lies nearer than what the tap meets: the block it
+  // lies on, or a note it lies in, does not hide it (the lower half of its target had broken the floor under it).
+  function takeTapped(dir, hit) {
     var at = reachFrom(), r = pearlR(), best = null;
     pearls.forEach(function (p) {
       if (p.state !== "rest") { return; }
       var o = [p.x - eye[0], p.y - eye[1], p.z - eye[2]], t = o[0] * dir[0] + o[1] * dir[1] + o[2] * dir[2];
       var dd = o[0] * o[0] + o[1] * o[1] + o[2] * o[2] - t * t;
-      if (t > 0 && t < (tMax == null ? 1e9 : tMax) && dd < 4 * r * r && hypot(p.x - at[0], p.y - at[1], p.z - at[2]) <= REACH && (!best || t < best.t)) { best = { p: p, t: t }; }
+      var seen = !hit || t < hit.t || hit.b === B.NOTE || (!hit.painting && hit.y + 1 <= p.y - r + 0.01);
+      if (t > 0 && seen && dd < 4 * r * r && hypot(p.x - at[0], p.y - at[1], p.z - at[2]) <= REACH && (!best || t < best.t)) { best = { p: p, t: t }; }
     });
     if (best) { takeBack(best.p); return true; }
     return false;
@@ -2162,19 +2179,24 @@
     gl.uniform4fv(U.uPal, worldPal); gl.uniformMatrix4fv(U.uM, false, ID4); gl.uniformMatrix4fv(U.uInvM, false, ID4);
     gl.uniform1f(U.uPx, pxW); gl.uniform2f(U.uNear, NEAR_F[0], NEAR_F[1]); gl.uniform1i(U.uFloor, 1); gl.uniform3i(U.uDim, w.SX, w.SY, w.SZ);
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex); gl.activeTexture(gl.TEXTURE0);
+    gl.bindVertexArray(null);
+  }
+  // The trails, after everything opaque and the veil (they write no depth, so what was drawn after had painted over
+  // them), blended into the colour only: the canvas's own alpha is left whole, as the veil leaves it.
+  function drawTrails() {
     var pts = [];
     pearls.forEach(function (p) {
       for (var i = 1; i < p.trail.length; i += 1) {
-        var a = p.trail[i - 1], b = p.trail[i], fa = 0.5 * max(0, 1 - (p.t - a[3]) / THROW.TRAIL), fb = 0.5 * max(0, 1 - (p.t - b[3]) / THROW.TRAIL);
+        var a = p.trail[i - 1], b = p.trail[i], fa = 0.5 * max(0, 1 - (p.age - a[3]) / THROW.TRAIL), fb = 0.5 * max(0, 1 - (p.age - b[3]) / THROW.TRAIL);
         if (fb <= 0) { continue; }
         pts.push(a[0], a[1], a[2], fa, b[0], b[1], b[2], fb);
       }
     });
-    if (!pts.length || !trailProg) { gl.bindVertexArray(null); return; }
+    if (!pts.length || !trailProg) { return; }
     gl.useProgram(trailProg);
     gl.uniformMatrix4fv(TU.uVP, false, vp); gl.uniform3f(TU.uC, 0xb7 / 255, 0xa8 / 255, 0xa0 / 255);   // the jacket's own (#b7a8a0)
     gl.bindVertexArray(trailVao); gl.bindBuffer(gl.ARRAY_BUFFER, trailBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pts), gl.DYNAMIC_DRAW);
-    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+    gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE); gl.depthMask(false);
     gl.drawArrays(gl.LINES, 0, pts.length / 4);
     gl.disable(gl.BLEND); gl.depthMask(true);
     gl.bindVertexArray(null);
@@ -2551,6 +2573,7 @@
       });
       gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.depthMask(true);
     }
+    drawTrails();
     gl.bindVertexArray(null);
     if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); homageCheck(); }
     overlay(now, open);
@@ -3028,6 +3051,7 @@
       var made = pressed && (e.pointerType === "touch" || e.pointerType === "pen" || (e.pointerType === undefined && e.detail !== 0));
       pressed = false;
       if (made) { e.preventDefault(); e.stopPropagation(); return; }
+      if (e.detail) { el.blur(); }   // a pointer's click leaves no focus behind, so Enter then throws (not this button)
       fn(e);
     });
   }
@@ -3135,7 +3159,7 @@
       if (k === "h" && !e.repeat) { toggleHolo(); }   // the button's key, once a press: held, it does not toggle again
       if (k === "r" && !e.repeat) { if (Hd) { barred(); } else { raiseSight(); } }   // the sight (R), as its button
       // with the sight up, T or Enter throws (Enter only while nothing else has the focus: a focused button takes it)
-      var free = document.activeElement === document.body || document.activeElement === canvas;
+      var free = document.activeElement === document.body || document.activeElement === canvas || document.activeElement === $("v-sight");
       if ((k === "t" || (k === "Enter" && free)) && !e.repeat) { if (Hd) { if (k === "t") { barred(); } } else if (sight.up) { throwAt(); e.preventDefault(); } }
       if (Hd && ((k >= "1" && k <= "5") || k === "e" || k === "q" || k === "b")) { barred(); }
       else {

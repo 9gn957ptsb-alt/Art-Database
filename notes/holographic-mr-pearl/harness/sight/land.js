@@ -3,6 +3,7 @@
 const L = require("./lib.js");
 const fs = require("fs");
 const [out, port] = process.argv.slice(2);
+const overlap0 = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
 (async () => {
   const G = await L.start("phone", port, out);
   const { P, D, say, check, shot } = G;
@@ -22,7 +23,11 @@ const [out, port] = process.argv.slice(2);
   say("landscape " + JSON.stringify(r));
   await shot("18_on_its_side", 1);
   check(Math.abs(r.rw - 42.78) < 1, "on its side the window's radius " + r.rw.toFixed(2) + " px (42.8 ± 1)");
-  check(r.sight[1] < r.holo[1] && r.sight[3] <= r.holo[1] - 5, "the column runs down from the top: Sight, then Holo, 6 px between (" + JSON.stringify([r.sight, r.holo]) + ")");
+  check(r.sight[2] <= r.holo[0] - 5 && Math.abs(r.sight[1] - r.holo[1]) < 1 && r.holo[3] < 70, "side by side along the top: Sight, then Holo, 6 px between (" + JSON.stringify([r.sight, r.holo]) + ")");
+  // and neither over the notes when they are open
+  const nb = await D(() => { document.getElementById("notes").hidden = false; const b = document.getElementById("notes").getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom].map(Math.round); });
+  check(!overlap0(nb, r.sight) && !overlap0(nb, r.holo), "the open notes clear of Sight and Holo (" + JSON.stringify(nb) + ")");
+  await D(() => { document.getElementById("notes").hidden = true; });
   const overlap = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
   check(!overlap(r.tag, r.sight) && !overlap(r.tag, r.holo), "the words under the glass clear of the buttons");
   check(G.errors.length === 0, "no page errors " + JSON.stringify(G.errors));

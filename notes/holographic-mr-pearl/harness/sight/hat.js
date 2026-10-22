@@ -29,3 +29,10 @@ console.log("HAT_DOFF", DOFF.map(function (v) { return +v.toFixed(4); }));
 var J = function (a) { return a ? a.join("\n  ") : "none"; };
 console.log("straight: hat cells within half a cell of him (raise: by part)\n  " + J(worst(function (e) { return [DOFF[0] * e, DOFF[1] * e, DOFF[2] * e]; })));
 console.log("built (out, then down):\n  " + J(worst(function (e) { var a = smooth(2 * e), b = smooth(2 * e - 1); return [DOFF[0] * a, DOFF[1] * b, DOFF[2] * a]; })));
+// the path as built since 22 Oct (rocket.js hatOff): lifted clear of the head over the first third, out to his left
+// over the second, down into his left glove over the last
+var hcx = body.head.centre, low = 1e9;
+hat.blocks.forEach(function (b) { var x = hat.org[0] + (b[0] + 0.5) * h, z = hat.org[2] + (b[2] + 0.5) * h; if (Math.hypot(x - hcx[0], z - hcx[2]) < R + h) { low = Math.min(low, hat.org[1] + b[1] * h); } });
+var LIFT = Math.max(0, hcx[1] + R - low);
+console.log("HAT_LIFT", +LIFT.toFixed(5));
+console.log("built (lift, out, down):\n  " + J(worst(function (e) { var u = smooth(3 * e), o = smooth(3 * e - 1), d = smooth(3 * e - 2); return [DOFF[0] * o, LIFT * u * (1 - d) + DOFF[1] * d, DOFF[2] * o]; })));
