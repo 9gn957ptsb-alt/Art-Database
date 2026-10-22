@@ -22,13 +22,13 @@
    "id": "S2",
    "kind": "photo",
    "url": "https://s3.amazonaws.com/api.thelocalproject/public/Articles/139/neuendorf15-1296x1620.jpg",
-   "what": "Pool facade, near-frontal from the pool axis: facade width:height, loggia opening 4.95 x 2.9-3.06 m, parapet 8.14 m above the loggia floor, terrace 0.93 m below it, slot-window band and benches; scaled at 46.4 px/m by taking the facade as 21 m (three 7 m grid squares)"
+   "what": "Pool facade, frontal from the pool axis. Scaled by the plan's 18.9 m facade (51.6 px/m): parapet 7.39 m above the loggia floor, loggia opening 2.7 m high, left jamb 6.75 m from the south corner (plan 6.76 m), slot-window band with windows at Y 1.7-2.8, 5.2-5.5 and 7.9-8.9 m (0.27 x 0.25 m, bottoms 4.67 m above the loggia floor, i.e. sill 1.47 m above the first floor)"
   },
   {
    "id": "S3",
    "kind": "photo",
    "url": "https://s3.amazonaws.com/api.thelocalproject/public/Articles/139/neuendorf09-1296x1620.jpg",
-   "what": "Approach facade (west courtyard wall) with the slit and door: a 1.7 m person 0.9 of the wall distance gives ~70 px/m: wall 13.6-13.9 m long, 8.8-9.0 m above the approach lawn, slit 0.9 m wide 4.3 m from the north corner, door 2.55 m; freestanding path wall on the north side, ~2.3 m high near the house"
+   "what": "Approach (south) facade with the slit: scaled by the slit's plan position (74-76 px/m; a 1.65 m person agrees): wall top 8.3 m above the lawn, slit threshold 0.44 m above the lawn, door 2.36 m high"
   },
   {
    "id": "S4",
@@ -94,24 +94,93 @@
    "id": "S14",
    "kind": "text",
    "url": "https://johnpawson.com/journal/a-grid-of-nine-squares",
-   "what": "Pawson journal 'A grid of nine squares' (blocked here; read via search summary): plan on a nine-square grid, four squares left open as a courtyard, five forming two wings"
+   "what": "Pawson journal: cube within a cube, nine-square grid, four squares left open as the courtyard, slit rising the full height"
   },
   {
    "id": "S15",
    "kind": "text",
    "url": "https://bdt.degruyter.com/?p=18790",
    "what": "Building-type entry (blocked here; via search summary): ground floor living/working areas facing the courtyard, loggia towards the pool; upper floor bedrooms and bathrooms lit by skylights; drawings listed but not reachable"
+  },
+  {
+   "id": "S16",
+   "kind": "plan",
+   "level": "L0",
+   "url": "https://archeyes.com/wp-content/uploads/2016/07/Neuendorf-House-John-Pawson-Claudio-Silvestrin-ArchEyes-11.jpg",
+   "what": "Site and ground floor plan (850 x 1593 px, no scale bar or dimensions): house, pool, 110 m approach path in 11 modules, sunken tennis court; scaled from the tennis court lines (214.5 x 97 px = 23.77 x 10.97 m, 9.02 px/m), checked by the path modules (90.5 px = 10 m if the path is 110 m) and the 12 m courtyard"
+  },
+  {
+   "id": "S17",
+   "kind": "plan",
+   "level": "L1",
+   "url": "https://archeyes.com/wp-content/uploads/2016/07/Neuendorf-House-John-Pawson-Claudio-Silvestrin-ArchEyes-11.jpg",
+   "what": "Upper floor plan, inset at the top left of the same sheet at the same scale (house 170 px square in both)"
+  },
+  {
+   "id": "S18",
+   "kind": "section",
+   "url": "https://archeyes.com/wp-content/uploads/2016/07/Neuendorf-House-John-Pawson-Claudio-Silvestrin-ArchEyes-10-1.jpg",
+   "what": "Two site sections, no scale: (1) north-south along the path through the courtyard and the sunken tennis court, looking at the west courtyard wall and the pool facade; (2) east-west through the courtyard, then the south elevation of the pool wing and the pool. Used for proportions (opening/parapet ratios, level path-wall top, tennis court depth, pool length 36 m); their absolute height scales disagree (house 9.3 and 8.3 m tall if scaled by its width)"
+  },
+  {
+   "id": "S19",
+   "kind": "axonometric",
+   "url": "https://archeyes.com/wp-content/uploads/2016/07/Neuendorf-House-John-Pawson-Claudio-Silvestrin-ArchEyes-2.jpg",
+   "what": "Axonometric of house, path wall, pool and tennis court (massing check)"
+  },
+  {
+   "id": "S20",
+   "kind": "photo",
+   "url": "https://archeyes.com/wp-content/uploads/2016/07/neuendorf-house-silvestrin-pawson-majorca-1169-1.jpg",
+   "what": "Courtyard face of the pool wing, frontal: loggia and living-room openings (2.77 m in the plan) 2.84 m high; gallery parapet top 4.15-4.18 m above the courtyard; gallery soffit roughly 6.0-6.3 m (back-wall door tops, camera distance estimated); gallery doors with timber shutters (archeyes gallery, photos Ulrike Schamoni / neuendorfhouse.com)"
+  },
+  {
+   "id": "S21",
+   "kind": "photo",
+   "url": "https://archeyes.com/wp-content/uploads/2016/07/Neuendorf-House-John-Pawson-Claudio-Silvestrin-ArchEyes-4.jpg",
+   "what": "North-east corner: row of square first-floor windows in the east facade (about 0.45 m, sill about 1.55 m), ground-floor bathroom window and tall slot, the screen wall at the plinth edge and steps beside it, hood over the pool-facade slot band"
+  },
+  {
+   "id": "S22",
+   "kind": "text",
+   "url": "https://johnpawson.com/works/neuendorf-house",
+   "what": "Pawson project page: holiday house for a German art dealer in an almond grove, 1987-1989, with Claudio Silvestrin, team Crispin Osborne; photos only, no drawings"
+  },
+  {
+   "id": "S23",
+   "kind": "text",
+   "url": "https://archeyes.com/neuendorf-house/",
+   "what": "ArchEyes article: credits (structures Tietz & Partners, builder J. Salis), gallery photos (bathroom with round basin, bedroom with three windows, guest WC, tennis court) and the three drawings"
   }
  ],
- "calibration": {},
- "accuracy": {
-  "level": "D",
-  "basis": "No plans, sections or elevations reachable (architects' sites and every publication that may carry drawings are blocked; not on ArchDaily or Dezeen). Massing and the main spaces placed from the published nine-square-grid description and the AA photos; dimensions from two near-frontal photos (pool facade scaled by its 21 m width, approach facade by a standing person), which agree to ~5%. Checked on 22 Oct 2026 by an independent pass against the 14 AA photos (re-measured facade, parapet, loggia, pool, slot windows, slit; orientation not mirrored).",
-  "notes": "Measured from photos (+-10%): 21 x 21 m block on a 7 m grid, loggia opening 5.3 x 3.05 m with flush side walls, parapet/courtyard wall top 8.15 m above the ground floor (AA: 9 m walls), pool terrace -0.93 m, slit 0.9 m and its position, slot windows (sill 1.56 m on the first floor), pool 4.3 m wide, path wall ~1.7 m near the house, pool terrace ending ~0.8 m past the SW corner, stair flights ~0.95 m, east annex 2.3 m wide and 4.3 m high. From text: courtyard of four squares (12 m clear), 30 m pool, 110 m path. Inferred: courtyard in the NW of the grid with the L-shaped two-storey wings to the south (pool side, loggia in the middle square) and east; entrance slit in the west wall; true north from afternoon shadows (pool facade lit, courtyard west wall in shade). Assumed: every interior partition, room function except loggia/courtyard/terraces, floor-to-floor 3.5 m, all openings on unseen facades (east) and courtyard doors except the hall door, stair position, wall thicknesses (0.6 m exterior, 0.2 m interior). Not modelled: stepped levels of the 110 m path (drawn flat at -0.5 m), roof access stair, skylights, the tennis court, garden walls and the lower volume east of the pool facade. Drawings exist: archeyes.com publishes the floor plan, sections and an axonometric, but it and claudiosilvestrin.com, johnpawson.com, urlaubsarchitektur.de, minimalissimo.com and stylepark.com are blocked here; with them the model could be traced to level B. Open: courtyard size (AA 12 m, Stylepark ~12.25 m, modelled ~13.1 m clear), loggia depth (photos allow 3-6 m), the east-wing first-floor layout, a possible basement (S10 shows a flight going down), the east annex's depth, and the guest WC's position."
+ "calibration": {
+  "S16": {
+   "level": "L0",
+   "px_per_m": 9.03,
+   "origin_px": [
+    87.5,
+    501.5
+   ],
+   "rot_deg": 0
+  },
+  "S17": {
+   "level": "L1",
+   "px_per_m": 9.03,
+   "origin_px": [
+    77.5,
+    259.5
+   ],
+   "rot_deg": 0
+  }
  },
- "north_deg": 0,
+ "accuracy": {
+  "level": "C",
+  "basis": "Traced from the published ground and upper floor plans (ArchEyes, credited to Pawson + Silvestrin), which have no scale bar or printed dimensions: scaled from a standard element, the doubles tennis court drawn on the site plan (23.77 x 10.97 m = 214.5 x 97 px, 9.02 px/m), cross-checked by the 110 m approach path drawn as 11 equal modules (9.05 px/m) and the stated 12 m courtyard (drawn 11.5 m clear, 11.9 m between wall centres). Heights from the two unscaled site sections (proportions) and photos scaled by plan widths.",
+  "notes": "Re-traced 22 Oct 2026 from the drawings; replaces the photo-only model (accuracy D, 21 m square). The house is 18.9 m square (not 21 m); exterior walls drawn about 0.45 m, the ground-floor wall between the north wing and the courtyard about 0.85 m. Frame: +y up the archeyes plan, origin at the outer south-west corner of the house; true north is inferred (as before, from afternoon shadows) to point to plan -x, i.e. north_deg 90 = north lies 90 deg counter-clockwise from plan +y; the plan is not mirrored relative to the photos (slit near the west end of the approach facade, screen wall to the right of the pool facade, loggia to the left of the living room seen from the courtyard). Estimated: total height 7.45 m (the frontal pool-facade photo S2, scaled by the 18.9 m facade at 51.6 px/m, puts the parapet 7.39 m above the loggia floor; approach photo S3 gives about 7.6 m with a person for scale; the unscaled sections (8.3-9.3 m) and AA's 9 m are not used); first floor at 3.2 m (gallery parapet 4.15 m above the courtyard in photo S20); roof terrace at 6.4 m (gallery soffit about 6.0 m; photo S20 suggests 6.0-6.3 m) with a 1.05 m parapet; pool terrace -0.85 m; screen wall 3.4 m above the house floor; door heights; stair risers (18); path levels (0.4 m per module, from section S18) and the level top of the path wall at +1.2 m; tennis court floor -5.25 m with walls to -1.7 m (section S18). Slot windows of the pool facade taken from photo S2 where the plan shows none (bottoms 4.67 m above the loggia floor, sill 1.47 m above the first floor). Not modelled: the slot-window recess and its hood on the pool facade, skylights, the stair to the roof and to the lower level, a below-grade room the section shows under the pool surround, the lower basin past the pool end (plan x 55-61.5 m) and the walk beyond it, the short path to the tennis court, the lawn and the sloping ground. A lower level is likely: section S18 shows rooms below grade on the pool axis and an archeyes photo shows a sunken patio with a water spout, but no plan of it is published; it would explain why the drawn floors (about 290 m2 of rooms, 400 m2 gross) fall short of the stated 557 m2 and hold three bedrooms where the text says five. Unresolved: room functions are not labelled on the plan (taken from photos and fittings); the text's five bedrooms vs three drawn; the absolute height scale (about +-0.3 m). Pool head: the plan draws the pool outline from the facade line with a 0.55 m element at its head (water from about x 19.2 m); the model keeps two 0.45 m steps down from the loggia and the water from x 19.8 m, because photos S4 and S12 show two full-width steps and a coping before the water."
+ },
+ "north_deg": 90,
  "defaults": {
-  "ext_t": 0.6,
+  "ext_t": 0.45,
   "int_t": 0.2,
   "glass_t": 0.1,
   "slab": 0.35,
@@ -143,20 +212,20 @@
    "id": "L0",
    "name": "Ground floor",
    "elevation": 0.0,
-   "height": 3.5
+   "height": 3.2
   },
   {
    "id": "L1",
    "name": "First floor",
-   "elevation": 3.5,
-   "height": 3.5,
+   "elevation": 3.2,
+   "height": 3.2,
    "slab": 0.35
   },
   {
    "id": "L2",
    "name": "Roof terrace",
-   "elevation": 7.0,
-   "height": 1.15,
+   "elevation": 6.4,
+   "height": 1.05,
    "slab": 0.4
   }
  ],
@@ -168,283 +237,184 @@
    "level": "L0",
    "outline": [
     [
-     0.3,
-     7.0
+     0.225,
+     0.225
     ],
     [
-     7.3,
-     7.0
+     12.3,
+     0.225
     ],
     [
-     14.0,
-     7.0
+     12.3,
+     6.6
     ],
     [
-     14.0,
-     20.7
+     12.3,
+     12.4
     ],
     [
-     0.3,
-     20.7
+     9.65,
+     12.4
     ],
     [
-     0.3,
-     16.7
-    ],
-    [
-     0.3,
-     15.8
+     0.225,
+     12.4
     ]
    ],
    "walls": [
+    {
+     "kind": "low",
+     "h": 7.45,
+     "t": 0.45,
+     "openings": [
+      {
+       "type": "opening",
+       "at": 3.875,
+       "w": 0.66,
+       "h": 7.45,
+       "name": "Entrance slit (full height)"
+      }
+     ]
+    },
+    null,
     null,
     null,
     null,
     {
      "kind": "low",
-     "h": 8.15,
-     "t": 0.6
-    },
-    {
-     "kind": "low",
-     "h": 8.15,
-     "t": 0.6
-    },
-    {
-     "kind": "open"
-    },
-    {
-     "kind": "low",
-     "h": 8.15,
-     "t": 0.6
+     "h": 7.45,
+     "t": 0.45
     }
    ],
    "floor": "santanyi_stone",
    "finish": "santanyi_render",
    "fixtures": [
     {
-     "name": "Stone bench (north wall)",
+     "name": "Stone bench along the west wall",
      "at": [
-      1.2,
-      19.95
+      0.45,
+      0.85
      ],
      "size": [
-      7.0,
-      0.45,
+      0.55,
+      10.9,
       0.45
      ],
-     "mat": "santanyi_stone"
+     "mat": "travertine"
     },
     {
-     "name": "Timber door in the entrance slit",
+     "name": "Timber door at the foot of the slit",
      "at": [
-      0.0,
-      15.8
+      4.1,
+      0.19
      ],
+     "z": 0.02,
      "size": [
-      0.08,
-      0.9,
-      2.55
+      0.66,
+      0.07,
+      2.4
      ],
      "mat": "timber_dark"
     }
    ],
    "sources": [
     "S1",
-    "S2",
+    "S16",
+    "S18",
     "S3",
     "S5",
     "S6",
     "S7"
    ],
-   "notes": "Four of the nine grid squares left open to the sky ('a grid of nine squares', Pawson); AA calls it the roofless atrium entered through a narrow slit (AA: '12 m2', most likely 12 m square; Stylepark 150 m2, about 12.25 m; modelled about 13.1 m clear, 172 m2; unresolved: S3 gives 12.7-13.8 m to the outer joint). Walls modelled 8.15 m above the courtyard floor (AA says 9 m; photo S3 gives ~8.6-8.9 m above the approach lawn). Slit 0.9 m wide, its north edge 4.3 m from the NW corner (S3), with a timber door 2.55 m high at its foot. Bench along the north wall seen in S4 and S5 (length estimated). Position of the courtyard in the grid inferred from S4 (loggia opens onto it) and S5 (view from the first-floor gallery on the courtyard side of the pool wing: slit wall ahead, blank north wall on the right).",
-   "confidence": "low"
+   "confidence": "medium",
+   "notes": "Four of the nine squares left open (Pawson). Drawn about 11.5 m clear (text: 12 x 12 m). Slit in the south wall 4.1-4.76 m from the west corner (plan), full height; timber door at its foot (photo S3, 2.36 m). Walls 7.45 m above the courtyard floor: from the frontal pool-facade photo S2 (7.39 m) and photo S3 (about 7.6 m); the two unscaled sections give 8.3 and 9.3 m and AA says 9 m. Bench along the west wall as drawn (about 10.9 m)."
   },
   {
-   "id": "L0-loggia",
-   "name": "Loggia (covered outdoor dining)",
-   "type": "porch",
+   "id": "L0-dining",
+   "name": "Dining and sitting room",
+   "type": "dining",
    "level": "L0",
    "outline": [
     [
-     7.3,
-     0.3
+     0.225,
+     12.4
     ],
     [
-     13.2,
-     0.3
+     9.65,
+     12.4
     ],
     [
-     13.2,
-     6.4
+     9.65,
+     18.675
     ],
     [
-     14.0,
-     6.4
-    ],
-    [
-     14.0,
-     7.0
-    ],
-    [
-     7.3,
-     7.0
+     0.225,
+     18.675
     ]
    ],
    "walls": [
     {
      "kind": "ext",
-     "openings": [
-      {
-       "type": "opening",
-       "at": 0.32,
-       "w": 5.25,
-       "h": 3.05,
-       "name": "Loggia opening to the pool terrace"
-      }
-     ]
-    },
-    null,
-    null,
-    null,
-    {
-     "kind": "low",
-     "h": 3.15,
-     "t": 0.6,
-     "openings": [
-      {
-       "type": "opening",
-       "at": 2.0,
-       "w": 3.0,
-       "h": 2.9,
-       "name": "Loggia opening to the courtyard"
-      }
-     ]
-    },
-    null
-   ],
-   "floor": "santanyi_stone",
-   "finish": "santanyi_render",
-   "sources": [
-    "S1",
-    "S2",
-    "S4",
-    "S8"
-   ],
-   "notes": "Middle square of the pool-side wing, open to the pool terrace and to the courtyard. Front opening 5.3 x 3.05 m, left jamb 7.60 m from the west corner (S2 at 46.4 px/m; width from the opening's width/height ratio in S4 and S8, the right jamb being hidden by the olive tree). The side walls run flush with the opening jambs (S4, S8), so the loggia is 5.3 m clear, narrower than its grid square; the ceiling sits about 0.1 m above the lintel. Rear opening to the courtyard ~2.8-3.0 m wide (S4). Depth unresolved: the photos allow about 3-6 m (modelled 6.1 m clear). Long dining table (S8) not modelled (loose furniture).",
-   "confidence": "low"
-  },
-  {
-   "id": "L0-study",
-   "name": "Study / sitting room",
-   "type": "study",
-   "level": "L0",
-   "outline": [
-    [
-     0.3,
-     0.3
-    ],
-    [
-     7.3,
-     0.3
-    ],
-    [
-     7.3,
-     7.0
-    ],
-    [
-     0.3,
-     7.0
-    ]
-   ],
-   "walls": [
-    "ext",
-    {
+     "t": 0.85,
      "openings": [
       {
        "type": "door",
-       "at": 4.4,
-       "w": 0.9,
-       "h": 2.4
-      }
-     ]
-    },
-    {
-     "openings": [
+       "at": 2.655,
+       "w": 2.77,
+       "h": 2.8,
+       "name": "Folding timber doors to the courtyard (2.77 m, drawn; height from photo)"
+      },
       {
-       "type": "glass_door",
-       "at": 3.05,
-       "w": 1.2,
-       "h": 2.6
+       "type": "door",
+       "at": 6.645,
+       "w": 2.76,
+       "h": 2.8,
+       "name": "Folding timber doors to the courtyard (2.77 m, drawn; height from photo)"
       }
      ]
     },
-    "ext"
-   ],
-   "notes": "Function assumed ('living and working areas facing the courtyard'). South and west facades are blank in the photos (S2, S3); the courtyard door and the loggia door are assumed.",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L0-dining",
-   "name": "Dining room",
-   "type": "dining",
-   "level": "L0",
-   "outline": [
-    [
-     13.2,
-     0.3
-    ],
-    [
-     17.6,
-     0.3
-    ],
-    [
-     17.6,
-     7.0
-    ],
-    [
-     14.0,
-     7.0
-    ],
-    [
-     14.0,
-     6.4
-    ],
-    [
-     13.2,
-     6.4
-    ]
-   ],
-   "walls": [
-    "ext",
     {
      "kind": "open"
     },
-    null,
-    null,
-    null,
+    "ext",
+    "ext"
+   ],
+   "fixtures": [
     {
-     "openings": [
-      {
-       "type": "door",
-       "at": 4.6,
-       "w": 0.95,
-       "h": 2.4,
-       "name": "Flush door from the loggia"
-      }
-     ]
+     "name": "Travertine table on two pedestals (drawn)",
+     "at": [
+      3.27,
+      16.43
+     ],
+     "size": [
+      2.77,
+      1.22,
+      0.75
+     ],
+     "mat": "travertine"
+    },
+    {
+     "name": "Built-in bench / day-bed along the end wall (drawn; use uncertain)",
+     "at": [
+      0.45,
+      13.0
+     ],
+     "size": [
+      1.3,
+      5.4,
+      0.45
+     ],
+     "mat": "plaster"
     }
    ],
    "sources": [
     "S1",
+    "S16",
+    "S18",
     "S9"
    ],
-   "notes": "Interior dining room shown in S9 (white plaster, stone floor); its position next to the loggia and kitchen is assumed. Its flush door opens from the front of the loggia's east wall, beside the jamb (handle in S8 and S2).",
-   "confidence": "low"
+   "confidence": "medium",
+   "notes": "West end of the north wing, open to the kitchen; lit only by two folding-door openings to the courtyard (2.77 m wide in the plan, 2.84 m high from photo S20). The wall to the courtyard is drawn about 0.85 m thick. Function from photos (dining table, bench); the plan has no labels."
   },
   {
    "id": "L0-kitchen",
@@ -453,204 +423,311 @@
    "level": "L0",
    "outline": [
     [
-     17.6,
-     0.3
+     9.65,
+     12.4
     ],
     [
-     20.7,
-     0.3
+     12.3,
+     12.4
     ],
     [
-     20.7,
-     7.0
+     12.3,
+     14.85
     ],
     [
-     17.6,
-     7.0
+     12.3,
+     17.5
+    ],
+    [
+     14.6,
+     17.5
+    ],
+    [
+     14.6,
+     18.675
+    ],
+    [
+     9.65,
+     18.675
     ]
    ],
    "walls": [
-    "ext",
     {
      "kind": "ext",
-     "openings": [
-      {
-       "type": "window",
-       "at": 2.4,
-       "w": 1.6,
-       "sill": 1.0,
-       "h": 1.4,
-       "name": "East window (assumed)"
-      }
-     ]
+     "t": 0.85
     },
-    null,
     {
-     "kind": "open"
-    }
-   ],
-   "notes": "Position assumed (corner square without courtyard frontage). East facade not photographed: window assumed.",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L0-living",
-   "name": "Living room",
-   "type": "living",
-   "level": "L0",
-   "outline": [
-    [
-     14.0,
-     7.0
-    ],
-    [
-     20.7,
-     7.0
-    ],
-    [
-     20.7,
-     14.0
-    ],
-    [
-     14.0,
-     14.0
-    ]
-   ],
-   "walls": [
-    {
+     "t": 0.2,
      "openings": [
       {
        "type": "opening",
-       "at": 0.9,
-       "w": 1.8,
-       "h": 2.6,
-       "name": "Opening to dining room"
-      },
-      {
-       "type": "door",
-       "at": 4.6,
-       "w": 0.9,
+       "at": 0.47,
+       "w": 0.78,
        "h": 2.4,
-       "name": "Door to kitchen"
+       "name": "Passage to the hall"
       }
      ]
+    },
+    {
+     "t": 0.2
+    },
+    {
+     "t": 0.2
+    },
+    {
+     "t": 0.2
+    },
+    "ext",
+    {
+     "kind": "open"
+    }
+   ],
+   "fixtures": [
+    {
+     "name": "Counter (drawn)",
+     "at": [
+      9.69,
+      13.57
+     ],
+     "size": [
+      0.78,
+      4.08,
+      0.9
+     ],
+     "mat": "travertine"
+    },
+    {
+     "name": "Counter with hob (drawn)",
+     "at": [
+      11.46,
+      13.57
+     ],
+     "size": [
+      0.67,
+      4.08,
+      0.9
+     ],
+     "mat": "travertine"
+    }
+   ],
+   "sources": [
+    "S1",
+    "S16",
+    "S18"
+   ],
+   "confidence": "medium",
+   "notes": "Galley of two drawn counters between the dining room and the stair, with the passage behind the stair to the bathroom. Kitchen function inferred from the counters and photo of the kitchen counter beside the dining table."
+  },
+  {
+   "id": "L0-stair",
+   "name": "Stair",
+   "type": "stair",
+   "level": "L0",
+   "outline": [
+    [
+     12.3,
+     14.85
+    ],
+    [
+     14.6,
+     14.85
+    ],
+    [
+     14.6,
+     17.5
+    ],
+    [
+     12.3,
+     17.5
+    ]
+   ],
+   "walls": [
+    {
+     "kind": "open"
+    },
+    {
+     "t": 0.2
+    },
+    {
+     "t": 0.2
+    },
+    {
+     "t": 0.2
+    }
+   ],
+   "roof": false,
+   "sources": [
+    "S1",
+    "S16",
+    "S18",
+    "S10"
+   ],
+   "confidence": "medium",
+   "notes": "U-stair with a semicircular winder turn at its north end and a spine wall between the flights (plan; photo S10). Risers estimated: 18 x 0.178 m to the first floor (6 straight, 6 winders, 6 straight). The flight on to the roof terrace and the flight down to a lower level (photo S10) are not modelled. Open to the first-floor landing; no room above the stairwell."
+  },
+  {
+   "id": "L0-hall",
+   "name": "Hall",
+   "type": "hall",
+   "level": "L0",
+   "outline": [
+    [
+     12.3,
+     12.4
+    ],
+    [
+     16.05,
+     12.4
+    ],
+    [
+     16.05,
+     12.1875
+    ],
+    [
+     17.6,
+     12.1875
+    ],
+    [
+     17.6,
+     14.85
+    ],
+    [
+     14.6,
+     14.85
+    ],
+    [
+     12.3,
+     14.85
+    ]
+   ],
+   "walls": [
+    {
+     "kind": "ext",
+     "t": 0.85,
+     "openings": [
+      {
+       "type": "door",
+       "at": 1.35,
+       "w": 0.85,
+       "h": 2.4,
+       "name": "Door to the loggia"
+      }
+     ]
+    },
+    {
+     "kind": "open"
+    },
+    {
+     "kind": "ext",
+     "t": 0.425
+    },
+    {
+     "t": 0.2,
+     "openings": [
+      {
+       "type": "door",
+       "at": 1.81,
+       "w": 0.7,
+       "h": 2.4
+      }
+     ]
+    },
+    {
+     "t": 0.25
+    },
+    {
+     "kind": "open"
+    },
+    null
+   ],
+   "sources": [
+    "S1",
+    "S16",
+    "S18"
+   ],
+   "confidence": "medium",
+   "notes": "Hall at the foot of the stair; its wall to the loggia is drawn 0.85 m thick up to x 16.05 and 0.44 m beyond, and an L-shaped wall stub stands in front of the WC door (drawn). Entered from the loggia through a 0.85 m door; links the kitchen, stair, guest WC and (via the kitchen passage) the bathroom."
+  },
+  {
+   "id": "L0-bath",
+   "name": "Bathroom",
+   "type": "bathroom",
+   "level": "L0",
+   "outline": [
+    [
+     14.6,
+     14.85
+    ],
+    [
+     17.6,
+     14.85
+    ],
+    [
+     17.6,
+     18.675
+    ],
+    [
+     14.6,
+     18.675
+    ],
+    [
+     14.6,
+     17.5
+    ]
+   ],
+   "walls": [
+    null,
+    {
+     "t": 0.2
     },
     {
      "kind": "ext",
      "openings": [
       {
        "type": "window",
-       "at": 2.5,
-       "w": 2.0,
-       "sill": 0.9,
-       "h": 1.6,
-       "name": "East window (assumed)"
+       "at": 1.25,
+       "w": 0.5,
+       "sill": 1.4,
+       "h": 0.45
       }
      ]
     },
     {
+     "t": 0.2,
      "openings": [
       {
        "type": "door",
-       "at": 4.85,
-       "w": 0.9,
-       "h": 2.4,
-       "name": "Door to hall"
+       "at": 0.325,
+       "w": 0.7,
+       "h": 2.4
       }
      ]
     },
-    {
-     "openings": [
-      {
-       "type": "glass_door",
-       "at": 1.0,
-       "w": 1.4,
-       "h": 2.6
-      },
-      {
-       "type": "glass_door",
-       "at": 4.6,
-       "w": 1.4,
-       "h": 2.6
-      }
-     ]
-    }
+    null
    ],
-   "notes": "East-wing square facing the courtyard ('living areas facing the courtyard'); openings assumed.",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L0-hall",
-   "name": "Entrance hall",
-   "type": "entry",
-   "level": "L0",
-   "outline": [
-    [
-     14.0,
-     14.0
-    ],
-    [
-     17.6,
-     14.0
-    ],
-    [
-     17.6,
-     16.4
-    ],
-    [
-     17.6,
-     18.9
-    ],
-    [
-     15.9,
-     18.9
-    ],
-    [
-     15.9,
-     20.7
-    ],
-    [
-     14.0,
-     20.7
-    ]
-   ],
-   "walls": [
-    null,
+   "fixtures": [
     {
-     "kind": "open"
-    },
-    {
-     "t": 0.24
-    },
-    null,
-    null,
-    "ext",
-    {
-     "kind": "ext",
-     "openings": [
-      {
-       "type": "door",
-       "at": 1.2,
-       "w": 1.1,
-       "h": 2.6,
-       "name": "Door from the courtyard"
-      }
-     ]
+     "name": "Bath (drawn)",
+     "at": [
+      16.5,
+      15.95
+     ],
+     "size": [
+      0.6,
+      1.6,
+      0.55
+     ],
+     "mat": "travertine"
     }
    ],
    "sources": [
     "S1",
-    "S4"
+    "S16",
+    "S18",
+    "S21"
    ],
-   "notes": "Door from the courtyard near its NE corner is visible through the loggia in S4; hall and stair arrangement assumed.",
-   "confidence": "low"
+   "confidence": "medium",
+   "notes": "Bath and WC drawn; door from the passage behind the stair. Small square window in the east facade (photo S21: sill about 1.4 m)."
   },
   {
    "id": "L0-wc",
@@ -659,93 +736,191 @@
    "level": "L0",
    "outline": [
     [
-     15.9,
-     18.9
+     17.6,
+     12.1875
+    ],
+    [
+     18.675,
+     12.1875
+    ],
+    [
+     18.675,
+     18.675
     ],
     [
      17.6,
-     18.9
+     18.675
     ],
     [
      17.6,
-     20.7
+     14.85
+    ]
+   ],
+   "walls": [
+    {
+     "kind": "ext",
+     "t": 0.425
+    },
+    "ext",
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "window",
+       "at": 0.475,
+       "w": 0.3,
+       "sill": 0.6,
+       "h": 2.2,
+       "name": "Tall slot window"
+      }
+     ]
+    },
+    null,
+    null
+   ],
+   "sources": [
+    "S1",
+    "S16",
+    "S18",
+    "S21",
+    "S20"
+   ],
+   "confidence": "medium",
+   "notes": "Long, 0.75 m wide WC strip along the pool facade (drawn; its wall to the loggia is 0.44 m, so the strip runs about 6.0 m clear), entered from the hall; tall slot window at its north end (plan and photo S21; archeyes guest-toilet photo)."
+  },
+  {
+   "id": "L0-loggia",
+   "name": "Loggia (covered outdoor dining)",
+   "type": "porch",
+   "level": "L0",
+   "outline": [
+    [
+     12.3,
+     6.6
     ],
     [
-     15.9,
-     20.7
+     18.675,
+     6.6
+    ],
+    [
+     18.675,
+     12.1875
+    ],
+    [
+     17.6,
+     12.1875
+    ],
+    [
+     16.05,
+     12.1875
+    ],
+    [
+     16.05,
+     12.4
+    ],
+    [
+     12.3,
+     12.4
     ]
    ],
    "walls": [
     null,
     {
-     "t": 0.24
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "opening",
+       "at": 0.28,
+       "w": 5.07,
+       "h": 2.75,
+       "name": "Loggia opening to the pool terrace"
+      }
+     ]
     },
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "low",
+     "h": 2.85,
+     "t": 0.5,
+     "openings": [
+      {
+       "type": "opening",
+       "at": 1.6,
+       "w": 2.77,
+       "h": 2.8,
+       "name": "Opening to the courtyard"
+      }
+     ]
+    }
+   ],
+   "floor": "santanyi_stone",
+   "finish": "santanyi_render",
+   "sources": [
+    "S1",
+    "S16",
+    "S18",
+    "S2",
+    "S4",
+    "S8",
+    "S20"
+   ],
+   "confidence": "medium",
+   "notes": "Middle square of the pool wing, open to the pool (5.2 m, the full clear width) and to the courtyard (2.77 m). Opening heights from photos (2.75 m pool side, 2.8 m courtyard side)."
+  },
+  {
+   "id": "L0-living",
+   "name": "Living room",
+   "type": "living",
+   "level": "L0",
+   "outline": [
+    [
+     12.3,
+     0.225
+    ],
+    [
+     18.675,
+     0.225
+    ],
+    [
+     18.675,
+     6.6
+    ],
+    [
+     12.3,
+     6.6
+    ]
+   ],
+   "walls": [
+    "ext",
     "ext",
     {
+     "t": 0.5
+    },
+    {
+     "kind": "ext",
+     "t": 0.5,
      "openings": [
       {
        "type": "door",
-       "at": 0.4,
-       "w": 0.8,
-       "h": 2.2
+       "at": 2.28,
+       "w": 2.77,
+       "h": 2.8,
+       "name": "Folding timber doors to the courtyard (2.77 m, drawn; height from photo)"
       }
      ]
     }
    ],
    "sources": [
-    "S1"
-   ],
-   "confidence": "low",
-   "notes": "Guest powder room from the rental listing (4 bathrooms plus a guest WC); its position, carved out of the entrance hall, is assumed."
-  },
-  {
-   "id": "L0-stair",
-   "name": "Stair hall",
-   "type": "stair",
-   "level": "L0",
-   "outline": [
-    [
-     17.6,
-     14.0
-    ],
-    [
-     20.7,
-     14.0
-    ],
-    [
-     20.7,
-     20.7
-    ],
-    [
-     17.6,
-     20.7
-    ],
-    [
-     17.6,
-     16.4
-    ]
-   ],
-   "walls": [
-    {
-     "t": 0.24
-    },
-    "ext",
-    "ext",
-    {
-     "t": 0.24
-    },
-    {
-     "kind": "open"
-    }
-   ],
-   "height": 6.6,
-   "roof": false,
-   "sources": [
     "S1",
-    "S10"
+    "S16",
+    "S18",
+    "S20"
    ],
-   "notes": "Double-height stairwell up to the roof slab. U-stair with a central wall between the flights as in S10: flights about 0.95 m wide, spine wall about 0.18 m, 20 risers of 0.175 m, going 0.29 m; S10 shows winders at the turn, drawn here as a flat landing. Its position is assumed. The flight up to the roof terrace (or down to a possible basement, S10) is not modelled.",
-   "confidence": "low"
+   "confidence": "medium",
+   "notes": "South square of the pool wing, lit only by its folding-door opening to the courtyard (photo S20 shows armchairs inside). Blank to the pool and the south."
   },
   {
    "id": "L0-pool-terrace",
@@ -754,350 +929,364 @@
    "level": "L0",
    "outline": [
     [
-     -0.8,
-     -6.0
+     18.9,
+     -0.83
     ],
     [
-     8.3,
-     -6.0
+     26.9,
+     -0.83
     ],
     [
-     8.3,
-     -0.9
+     26.9,
+     7.59
     ],
     [
-     12.6,
-     -0.9
+     19.8,
+     7.59
     ],
     [
-     12.6,
-     -6.0
+     19.8,
+     11.18
     ],
     [
-     21.0,
-     -6.0
+     26.9,
+     11.18
     ],
     [
-     21.0,
-     0.0
+     26.9,
+     21.26
     ],
     [
-     -0.8,
-     0.0
+     18.9,
+     21.26
+    ],
+    [
+     18.9,
+     20.755
+    ],
+    [
+     18.9,
+     18.9
     ]
    ],
-   "ffl_offset": -0.93,
-   "slab": 0.57,
+   "walls": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "ffl_offset": -0.85,
+   "slab": 0.6,
    "floor": "santanyi_stone",
    "fixtures": [
     {
-     "name": "Stone bench (west)",
+     "name": "Stone bench (south)",
      "at": [
-      0.34,
-      -0.45
+      18.95,
+      0.28
      ],
      "size": [
-      6.47,
       0.45,
-      0.4
+      6.09,
+      0.45
      ],
      "mat": "santanyi_stone"
     },
     {
-     "name": "Stone bench (east)",
+     "name": "Stone bench (north)",
      "at": [
-      13.9,
-      -0.45
+      18.95,
+      12.79
      ],
      "size": [
-      6.45,
       0.45,
-      0.4
+      5.54,
+      0.45
      ],
      "mat": "santanyi_stone"
     }
    ],
    "sources": [
     "S1",
+    "S16",
+    "S18",
     "S2",
     "S4",
     "S11",
     "S12"
    ],
-   "notes": "Raised plinth along the pool facade, 0.93 m below the house floor (two big steps up into the loggia, S4) and ~0.57 m above the lawn (S2, S11). Depth ~6 m from the pool's perspective in S2; extends about 0.8 m past the SW corner (S11, from the perspective of the plinth edge; it may continue north along the west face, not modelled). Bench positions measured on S2.",
-   "confidence": "low"
+   "confidence": "medium",
+   "notes": "Plinth along the pool facade, 8.0 m deep (plan) and 0.85 m below the house floor (two big steps up into the loggia; photo S4); benches along the facade either side of the loggia as drawn. The plinth's level is estimated from photos."
   },
   {
-   "id": "L1-bed1",
-   "name": "Bedroom 1",
-   "type": "bedroom",
+   "id": "L0-court",
+   "name": "East court behind the screen wall",
+   "type": "patio",
+   "level": "L0",
+   "outline": [
+    [
+     -0.78,
+     18.9
+    ],
+    [
+     18.9,
+     18.9
+    ],
+    [
+     18.9,
+     20.755
+    ],
+    [
+     -0.78,
+     20.755
+    ]
+   ],
+   "walls": [
+    null,
+    null,
+    null,
+    null
+   ],
+   "slab": 0.85,
+   "floor": "santanyi_stone",
+   "sources": [
+    "S1",
+    "S16",
+    "S18",
+    "S21"
+   ],
+   "confidence": "low",
+   "notes": "Strip between the east facade and the freestanding screen wall at the plinth edge (plan). Its level is assumed to be the house floor (steps up from the pool terrace at its south end, photo S21)."
+  },
+  {
+   "id": "L1-master-bath",
+   "name": "Master bathroom and dressing room",
+   "type": "ensuite",
    "level": "L1",
    "outline": [
     [
-     0.3,
-     0.3
+     0.225,
+     12.62
     ],
     [
-     4.8,
-     0.3
+     12.3,
+     12.62
     ],
     [
-     4.8,
-     5.6
+     12.3,
+     14.85
     ],
     [
-     0.3,
-     5.6
+     12.3,
+     17.5
+    ],
+    [
+     14.6,
+     17.5
+    ],
+    [
+     14.6,
+     18.675
+    ],
+    [
+     0.225,
+     18.675
     ]
    ],
    "walls": [
     {
      "kind": "ext",
+     "t": 0.45
+    },
+    {
+     "t": 0.2,
      "openings": [
       {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 1.51,
-       "w": 0.3
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 1.98,
-       "w": 0.28
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 2.41,
-       "w": 0.31
+       "type": "opening",
+       "at": 0.25,
+       "w": 0.93,
+       "h": 2.4,
+       "name": "Opening to the landing"
       }
      ]
     },
     {
-     "openings": [
-      {
-       "type": "door",
-       "at": 3.8,
-       "w": 0.8,
-       "h": 2.2
-      }
-     ]
+     "kind": "ext",
+     "t": 0.2
     },
     {
+     "kind": "open"
+    },
+    {
+     "t": 0.2
+    },
+    {
+     "kind": "ext",
      "openings": [
       {
-       "type": "door",
-       "at": 0.5,
-       "w": 0.9,
-       "h": 2.2
+       "type": "window",
+       "at": 0.255,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45,
+       "name": "Window of the WC niche"
+      },
+      {
+       "type": "window",
+       "at": 13.325,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 12.045,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 10.885,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 9.665,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 8.505,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 7.345,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 6.125,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 4.955,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 3.795,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 2.575,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
       }
      ]
     },
     "ext"
    ],
-   "notes": "Upper floor holds bedrooms and bathrooms lit by skylights (published description); partition layout assumed. Slot windows measured on S2 (sill 1.56, head 1.91 above the floor); skylights not modelled.",
-   "confidence": "low",
+   "fixtures": [
+    {
+     "name": "Freestanding partition (drawn)",
+     "at": [
+      6.02,
+      13.79
+     ],
+     "size": [
+      0.15,
+      3.87,
+      2.6
+     ],
+     "mat": "plaster"
+    },
+    {
+     "name": "Closet unit (drawn)",
+     "at": [
+      7.25,
+      13.79
+     ],
+     "size": [
+      0.8,
+      3.87,
+      2.2
+     ],
+     "mat": "plaster"
+    },
+    {
+     "name": "Travertine counter (drawn)",
+     "at": [
+      8.6,
+      16.5
+     ],
+     "size": [
+      3.0,
+      0.9,
+      0.85
+     ],
+     "mat": "travertine"
+    },
+    {
+     "name": "Round pedestal basin (drawn)",
+     "at": [
+      9.99,
+      15.08
+     ],
+     "size": [
+      0.5,
+      0.5,
+      0.85
+     ],
+     "mat": "travertine"
+    },
+    {
+     "name": "Built-in storage wall along the west wall (drawn solid, 0.89 m with the shell)",
+     "at": [
+      0.45,
+      12.845
+     ],
+     "size": [
+      0.44,
+      5.605,
+      2.8
+     ],
+     "mat": "plaster"
+    }
+   ],
    "sources": [
     "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L1-bath1",
-   "name": "Bathroom 1",
-   "type": "ensuite",
-   "level": "L1",
-   "outline": [
-    [
-     4.8,
-     0.3
-    ],
-    [
-     7.0,
-     0.3
-    ],
-    [
-     7.0,
-     5.6
-    ],
-    [
-     4.8,
-     5.6
-    ]
+    "S17",
+    "S18",
+    "S21",
+    "S23"
    ],
-   "walls": [
-    {
-     "kind": "ext",
-     "openings": [
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 0.95,
-       "w": 0.32
-      }
-     ]
-    },
-    null,
-    null,
-    null
-   ],
-   "notes": "Layout assumed.",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L1-bath2",
-   "name": "Bathroom 2",
-   "type": "ensuite",
-   "level": "L1",
-   "outline": [
-    [
-     7.0,
-     3.3
-    ],
-    [
-     9.4,
-     3.3
-    ],
-    [
-     9.4,
-     5.6
-    ],
-    [
-     7.0,
-     5.6
-    ]
-   ],
-   "walls": [
-    {
-     "openings": [
-      {
-       "type": "door",
-       "at": 1.2,
-       "w": 0.8,
-       "h": 2.2
-      }
-     ]
-    },
-    null,
-    null,
-    null
-   ],
-   "notes": "Inner bathroom (top-lit) carved out of the middle square; layout assumed.",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L1-bed2",
-   "name": "Bedroom 2",
-   "type": "bedroom",
-   "level": "L1",
-   "outline": [
-    [
-     7.0,
-     0.3
-    ],
-    [
-     14.0,
-     0.3
-    ],
-    [
-     14.0,
-     5.6
-    ],
-    [
-     9.4,
-     5.6
-    ],
-    [
-     9.4,
-     3.3
-    ],
-    [
-     7.0,
-     3.3
-    ]
-   ],
-   "walls": [
-    {
-     "kind": "ext",
-     "openings": [
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 1.64,
-       "w": 0.3
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 2.09,
-       "w": 0.3
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 2.54,
-       "w": 0.3
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 4.16,
-       "w": 0.3
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 4.61,
-       "w": 0.3
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 5.06,
-       "w": 0.3
-      }
-     ]
-    },
-    null,
-    {
-     "openings": [
-      {
-       "type": "door",
-       "at": 0.6,
-       "w": 0.9,
-       "h": 2.2
-      }
-     ]
-    },
-    null,
-    null,
-    null
-   ],
-   "notes": "Over the loggia; the six slot windows centred on the square (S2) suggest one room across it. Layout assumed; the three slot windows east of x = 10.5 are mirrored from the visible west half.",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
+   "confidence": "medium",
+   "notes": "The north wing's upper floor west of the stair: one long top-lit room with a freestanding partition and a closet unit (dressing area to the west) and the bathroom with a travertine counter and round pedestal basin (archeyes bathroom photo). Row of square windows in the east facade (plan; photo S21: about 0.45 m, sill 1.55 m). Includes the WC niche over the stair head (drawn WC, one east window): the plan draws it open to this room and closed to the north-east bedroom by a 0.2 m wall. The west wall is drawn 0.89 m thick here: modelled as the 0.45 m shell plus a full-height built-in storage wall 0.44 m deep (use uncertain)."
   },
   {
    "id": "L1-master",
@@ -1106,111 +1295,39 @@
    "level": "L1",
    "outline": [
     [
-     14.0,
-     0.3
+     14.6,
+     13.8
     ],
     [
-     17.8,
-     0.3
+     18.675,
+     13.8
     ],
     [
-     17.8,
-     5.6
+     18.675,
+     18.675
     ],
     [
-     14.0,
-     5.6
+     14.6,
+     18.675
+    ],
+    [
+     14.6,
+     17.5
+    ],
+    [
+     14.6,
+     14.85
     ]
    ],
    "walls": [
     {
-     "kind": "ext",
-     "openings": [
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 0.93,
-       "w": 0.32
-      }
-     ]
-    },
-    {
+     "t": 0.25,
      "openings": [
       {
        "type": "door",
-       "at": 3.8,
-       "w": 0.8,
-       "h": 2.2
-      }
-     ]
-    },
-    {
-     "openings": [
-      {
-       "type": "door",
-       "at": 2.4,
-       "w": 0.9,
-       "h": 2.2
-      }
-     ]
-    },
-    null
-   ],
-   "notes": "Layout assumed; slot windows mirrored from the visible west half of the facade.",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L1-master-bath",
-   "name": "Master bathroom",
-   "type": "ensuite",
-   "level": "L1",
-   "outline": [
-    [
-     17.8,
-     0.3
-    ],
-    [
-     20.7,
-     0.3
-    ],
-    [
-     20.7,
-     5.6
-    ],
-    [
-     17.8,
-     5.6
-    ]
-   ],
-   "walls": [
-    {
-     "kind": "ext",
-     "openings": [
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 0.18,
-       "w": 0.31
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 0.64,
-       "w": 0.28
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 1.09,
-       "w": 0.3
+       "at": 1.62,
+       "w": 0.78,
+       "h": 2.4
       }
      ]
     },
@@ -1219,279 +1336,516 @@
      "openings": [
       {
        "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 1.6,
-       "w": 0.3,
-       "name": "East slot window (assumed)"
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 2.3,
-       "w": 0.3,
-       "name": "East slot window (assumed)"
+       "at": 2.27,
+       "w": 0.27,
+       "sill": 1.47,
+       "h": 0.25
       }
      ]
     },
-    null,
-    null
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "window",
+       "at": 3.11,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 2.0,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      },
+      {
+       "type": "window",
+       "at": 0.78,
+       "w": 0.45,
+       "sill": 1.55,
+       "h": 0.45
+      }
+     ]
+    },
+    {
+     "t": 0.2
+    },
+    {
+     "kind": "ext",
+     "t": 0.2
+    },
+    {
+     "t": 0.25
+    }
    ],
-   "notes": "Layout assumed; east facade not photographed (slot windows assumed like the south facade).",
-   "confidence": "low",
    "sources": [
     "S1",
-    "S2"
-   ]
+    "S17",
+    "S18",
+    "S21"
+   ],
+   "confidence": "medium",
+   "notes": "North-east corner room entered from the corridor: three square windows in the east (top) facade and one slot window in the pool facade (plan; photo S21). The ArchEyes bedroom photo with three windows and a skylight shows bedroom 1, not this room. Skylight not modelled."
   },
   {
    "id": "L1-corridor",
-   "name": "Upper corridor, gallery and landing",
+   "name": "Landing and corridor",
    "type": "corridor",
    "level": "L1",
    "outline": [
     [
-     0.3,
-     5.6
+     12.3,
+     12.62
     ],
     [
-     16.6,
-     5.6
+     14.6,
+     12.62
     ],
     [
-     16.6,
-     14.0
+     18.675,
+     12.62
     ],
     [
-     17.6,
-     14.0
+     18.675,
+     13.8
     ],
     [
-     17.6,
-     16.4
+     14.6,
+     13.8
     ],
     [
-     14.0,
-     16.4
+     14.6,
+     14.85
     ],
     [
-     14.0,
-     7.0
+     13.45,
+     14.85
     ],
     [
-     0.3,
-     7.0
-    ]
-   ],
-   "walls": [
-    null,
-    null,
-    null,
-    {
-     "kind": "open"
-    },
-    null,
-    "ext",
-    {
-     "kind": "ext",
-     "openings": [
-      {
-       "type": "opening",
-       "at": 0.6,
-       "w": 12.4,
-       "sill": 1.1,
-       "h": 2.0,
-       "glass": false,
-       "name": "Gallery opening over the courtyard (solid parapet)"
-      }
-     ]
-    },
-    "ext"
-   ],
-   "sources": [
-    "S1",
-    "S5",
-    "S13"
-   ],
-   "notes": "Covered first-floor gallery along the courtyard side of the pool wing, open to the courtyard above a solid parapet (S5: the parapet edge runs to the same vanishing point as the north courtyard wall, camera about 12.8 m east of the west wall, eye ~5.4 m), turning into the corridor of the east wing and the stair landing. The opening covers x 1.0-13.4 (S5 supports at least x 6.0-13.4); parapet 1.1 m. Narrow top-lit corridor of S13 (its small end window not modelled). Widths assumed.",
-   "confidence": "low"
-  },
-  {
-   "id": "L1-bath3",
-   "name": "Bathroom 3",
-   "type": "ensuite",
-   "level": "L1",
-   "outline": [
-    [
-     16.6,
-     5.6
+     12.4,
+     14.85
     ],
     [
-     20.7,
-     5.6
-    ],
-    [
-     20.7,
-     9.4
-    ],
-    [
-     16.6,
-     9.4
-    ]
-   ],
-   "walls": [
-    null,
-    {
-     "kind": "ext",
-     "openings": [
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 1.6,
-       "w": 0.3,
-       "name": "East slot window (assumed)"
-      }
-     ]
-    },
-    null,
-    null
-   ],
-   "notes": "Layout assumed.",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L1-bed3",
-   "name": "Bedroom 3",
-   "type": "bedroom",
-   "level": "L1",
-   "outline": [
-    [
-     16.6,
-     9.4
-    ],
-    [
-     20.7,
-     9.4
-    ],
-    [
-     20.7,
-     14.0
-    ],
-    [
-     17.6,
-     14.0
-    ],
-    [
-     16.6,
-     14.0
+     12.3,
+     14.85
     ]
    ],
    "walls": [
     {
-     "openings": [
-      {
-       "type": "door",
-       "at": 2.8,
-       "w": 0.8,
-       "h": 2.2
-      }
-     ]
-    },
-    {
-     "kind": "ext",
-     "openings": [
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 1.4,
-       "w": 0.3,
-       "name": "East slot window (assumed)"
-      },
-      {
-       "type": "window",
-       "sill": 1.56,
-       "h": 0.35,
-       "at": 2.9,
-       "w": 0.3,
-       "name": "East slot window (assumed)"
-      }
-     ]
-    },
-    {
-     "kind": "open"
-    },
-    null,
-    {
-     "openings": [
-      {
-       "type": "door",
-       "at": 2.0,
-       "w": 0.9,
-       "h": 2.2
-      }
-     ]
-    }
-   ],
-   "notes": "Layout assumed. The north side is the stairwell wall (built by the stair hall).",
-   "confidence": "low",
-   "sources": [
-    "S1",
-    "S2"
-   ]
-  },
-  {
-   "id": "L1-bed4",
-   "name": "Bedroom 4",
-   "type": "bedroom",
-   "level": "L1",
-   "outline": [
-    [
-     14.0,
-     16.4
-    ],
-    [
-     17.6,
-     16.4
-    ],
-    [
-     17.6,
-     20.7
-    ],
-    [
-     14.0,
-     20.7
-    ]
-   ],
-   "walls": [
-    {
+     "t": 0.45,
      "openings": [
       {
        "type": "door",
        "at": 1.2,
-       "w": 0.9,
-       "h": 2.2
+       "w": 0.85,
+       "h": 2.4,
+       "name": "Door to the gallery"
       }
      ]
     },
     {
+     "t": 0.25,
+     "openings": [
+      {
+       "type": "door",
+       "at": 1.8,
+       "w": 0.75,
+       "h": 2.4
+      }
+     ]
+    },
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "window",
+       "at": 0.48,
+       "w": 0.27,
+       "sill": 1.47,
+       "h": 0.25,
+       "name": "Corridor end window"
+      }
+     ]
+    },
+    null,
+    null,
+    {
      "kind": "open"
     },
-    "ext",
-    "ext"
+    {
+     "kind": "low",
+     "h": 1.0,
+     "t": 0.1
+    },
+    {
+     "kind": "open"
+    },
+    null
    ],
-   "notes": "Layout assumed (fifth bedroom per the rental description). East side is the stairwell wall.",
-   "confidence": "low",
    "sources": [
     "S1",
+    "S17",
+    "S18",
+    "S13"
+   ],
+   "confidence": "medium",
+   "notes": "Stair landing and the narrow top-lit corridor to the pool facade, with a small end window (plan; photo S13). Low balustrade over the up-flight assumed."
+  },
+  {
+   "id": "L1-gallery",
+   "name": "Open gallery over the courtyard",
+   "type": "corridor",
+   "level": "L1",
+   "outline": [
+    [
+     12.2,
+     0.225
+    ],
+    [
+     14.6,
+     0.225
+    ],
+    [
+     14.6,
+     5.15
+    ],
+    [
+     14.6,
+     6.81
+    ],
+    [
+     14.6,
+     10.63
+    ],
+    [
+     14.6,
+     12.62
+    ],
+    [
+     12.3,
+     12.62
+    ],
+    [
+     12.3,
+     12.395
+    ],
+    [
+     12.2,
+     12.395
+    ]
+   ],
+   "walls": [
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "window",
+       "at": 1.65,
+       "w": 0.4,
+       "sill": 1.8,
+       "h": 0.6,
+       "name": "Small end window (plan; section S18)"
+      }
+     ]
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "open"
+    },
+    {
+     "kind": "open"
+    },
+    {
+     "kind": "low",
+     "h": 0.95,
+     "t": 0.3
+    }
+   ],
+   "sources": [
+    "S1",
+    "S17",
+    "S18",
+    "S5",
+    "S20"
+   ],
+   "confidence": "medium",
+   "notes": "Roofed gallery along the courtyard side of the pool wing, open to the courtyard above a solid parapet (plan; photos S5, S20); modelled as an indoor corridor so its walls split cleanly with the rooms it serves. Parapet top 4.15 m above the courtyard (photo S20), i.e. 0.95 m above this floor; tall glazed doors with timber shutters to the two south bedrooms."
+  },
+  {
+   "id": "L1-bath2",
+   "name": "Bathroom 2",
+   "type": "bathroom",
+   "level": "L1",
+   "outline": [
+    [
+     14.6,
+     10.63
+    ],
+    [
+     18.675,
+     10.63
+    ],
+    [
+     18.675,
+     12.62
+    ],
+    [
+     14.6,
+     12.62
+    ]
+   ],
+   "walls": [
+    {
+     "t": 0.25
+    },
+    "ext",
+    null,
+    {
+     "t": 0.4
+    }
+   ],
+   "fixtures": [
+    {
+     "name": "Bath, semicircular in plan (drawn)",
+     "at": [
+      14.8,
+      10.76
+     ],
+     "size": [
+      1.6,
+      1.45,
+      0.55
+     ],
+     "mat": "travertine"
+    }
+   ],
+   "sources": [
+    "S1",
+    "S17",
+    "S18"
+   ],
+   "confidence": "medium",
+   "notes": "Bathroom off the landing, with a semicircular bath drawn against the gallery wall."
+  },
+  {
+   "id": "L1-bed2",
+   "name": "Bedroom 2",
+   "type": "bedroom",
+   "level": "L1",
+   "outline": [
+    [
+     14.6,
+     6.81
+    ],
+    [
+     18.675,
+     6.81
+    ],
+    [
+     18.675,
+     10.63
+    ],
+    [
+     14.6,
+     10.63
+    ]
+   ],
+   "walls": [
+    {
+     "t": 0.25
+    },
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "window",
+       "at": 1.025,
+       "w": 0.25,
+       "sill": 1.47,
+       "h": 0.25
+      },
+      {
+       "type": "window",
+       "at": 1.395,
+       "w": 0.25,
+       "sill": 1.47,
+       "h": 0.25
+      },
+      {
+       "type": "window",
+       "at": 1.795,
+       "w": 0.25,
+       "sill": 1.47,
+       "h": 0.25
+      }
+     ]
+    },
+    null,
+    {
+     "t": 0.4,
+     "openings": [
+      {
+       "type": "glass_door",
+       "at": 2.44,
+       "w": 0.78,
+       "h": 2.7,
+       "name": "Glazed door with timber shutters to the gallery"
+      }
+     ]
+    }
+   ],
+   "sources": [
+    "S1",
+    "S17",
+    "S18",
+    "S2",
+    "S20"
+   ],
+   "confidence": "medium",
+   "notes": "Over the loggia; entered only from the gallery (plan, photo S20; the walls to both bathrooms are drawn solid); three slot windows in the pool-facade band (photo S2; not drawn in the plan)."
+  },
+  {
+   "id": "L1-bath1",
+   "name": "Bathroom 1",
+   "type": "bathroom",
+   "level": "L1",
+   "outline": [
+    [
+     14.6,
+     5.15
+    ],
+    [
+     18.675,
+     5.15
+    ],
+    [
+     18.675,
+     6.81
+    ],
+    [
+     14.6,
+     6.81
+    ]
+   ],
+   "walls": [
+    {
+     "t": 0.25,
+     "openings": [
+      {
+       "type": "door",
+       "at": 1.6,
+       "w": 0.8,
+       "h": 2.4
+      }
+     ]
+    },
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "window",
+       "at": 0.15,
+       "w": 0.27,
+       "sill": 1.47,
+       "h": 0.25
+      }
+     ]
+    },
+    null,
+    {
+     "t": 0.4
+    }
+   ],
+   "sources": [
+    "S1",
+    "S17",
+    "S18",
     "S2"
-   ]
+   ],
+   "confidence": "medium",
+   "notes": "Ensuite to bedroom 1 only, reached through a 0.78 m passage between the bedroom's closets (plan); the 1.4 x 0.5 m recess in its wall to bedroom 2 opens to this bathroom, not to the bedroom. Window in the pool-facade band (photo S2)."
+  },
+  {
+   "id": "L1-bed1",
+   "name": "Bedroom 1",
+   "type": "bedroom",
+   "level": "L1",
+   "outline": [
+    [
+     14.6,
+     0.225
+    ],
+    [
+     18.675,
+     0.225
+    ],
+    [
+     18.675,
+     5.15
+    ],
+    [
+     14.6,
+     5.15
+    ]
+   ],
+   "walls": [
+    "ext",
+    {
+     "kind": "ext",
+     "openings": [
+      {
+       "type": "window",
+       "at": 1.455,
+       "w": 0.27,
+       "sill": 1.47,
+       "h": 0.25
+      },
+      {
+       "type": "window",
+       "at": 1.845,
+       "w": 0.27,
+       "sill": 1.47,
+       "h": 0.25
+      },
+      {
+       "type": "window",
+       "at": 2.275,
+       "w": 0.27,
+       "sill": 1.47,
+       "h": 0.25
+      }
+     ]
+    },
+    null,
+    {
+     "t": 0.4,
+     "openings": [
+      {
+       "type": "glass_door",
+       "at": 1.49,
+       "w": 0.78,
+       "h": 2.7,
+       "name": "Glazed door with timber shutters to the gallery"
+      }
+     ]
+    }
+   ],
+   "sources": [
+    "S1",
+    "S17",
+    "S18",
+    "S2",
+    "S20",
+    "S23"
+   ],
+   "confidence": "medium",
+   "notes": "South-east corner room; door from the gallery; three slot windows to the pool (drawn in the plan and measured on photo S2: 0.27 x 0.25 m, sill 1.47 m). The ArchEyes bedroom photo with three close-set windows, a skylight and closets on the north wall shows this room (skylight not modelled)."
   },
   {
    "id": "L2-roof-terrace",
@@ -1500,239 +1854,74 @@
    "level": "L2",
    "outline": [
     [
-     0.3,
-     0.3
+     12.2,
+     0.225
     ],
     [
-     20.7,
-     0.3
+     18.675,
+     0.225
     ],
     [
-     20.7,
-     20.7
+     18.675,
+     18.675
     ],
     [
-     14.0,
-     20.7
+     0.225,
+     18.675
     ],
     [
-     14.0,
-     7.0
+     0.225,
+     12.62
     ],
     [
-     0.3,
-     7.0
+     12.2,
+     12.62
     ]
    ],
    "walls": [
     {
      "kind": "low",
-     "h": 1.15,
-     "t": 0.6
+     "h": 1.05,
+     "t": 0.45
     },
     {
      "kind": "low",
-     "h": 1.15,
-     "t": 0.6
+     "h": 1.05,
+     "t": 0.45
     },
     {
      "kind": "low",
-     "h": 1.15,
-     "t": 0.6
+     "h": 1.05,
+     "t": 0.45
     },
     {
      "kind": "low",
-     "h": 1.15,
-     "t": 0.6
+     "h": 1.05,
+     "t": 0.45
     },
     {
      "kind": "low",
-     "h": 1.15,
-     "t": 0.6
+     "h": 1.05,
+     "t": 0.45
     },
     {
      "kind": "low",
-     "h": 1.15,
-     "t": 0.6
+     "h": 1.05,
+     "t": 0.3
     }
    ],
    "floor": "santanyi_stone",
    "finish": "santanyi_render",
    "sources": [
     "S1",
-    "S2",
-    "S3"
+    "S18",
+    "S2"
    ],
-   "notes": "Rooftop terrace (AA). Flat roof behind a 1.15 m parapet whose top (8.15 m) is level with the courtyard walls; parapet top from S2 (8.14 m above the loggia floor at 46.4 px/m). Roof access stair and skylights not modelled.",
-   "confidence": "low"
+   "confidence": "low",
+   "notes": "Rooftop terrace (AA) behind a parapet level with the courtyard walls (7.45 m). Roof level and parapet height estimated; access stair and skylights not modelled."
   }
  ],
  "elements": [
-  {
-   "id": "plinth",
-   "kind": "prism",
-   "level": "L0",
-   "name": "House plinth / foundations",
-   "outline": [
-    [
-     0,
-     0
-    ],
-    [
-     21.0,
-     0
-    ],
-    [
-     21.0,
-     21.0
-    ],
-    [
-     0,
-     21.0
-    ]
-   ],
-   "z": -1.5,
-   "h": 1.25,
-   "mat": "santanyi_render"
-  },
-  {
-   "id": "slit-threshold",
-   "kind": "slab",
-   "level": "L0",
-   "name": "Slit threshold",
-   "outline": [
-    [
-     0,
-     15.8
-    ],
-    [
-     0.3,
-     15.8
-    ],
-    [
-     0.3,
-     16.7
-    ],
-    [
-     0,
-     16.7
-    ]
-   ],
-   "z": 0.0,
-   "t": 0.25,
-   "mat": "santanyi_stone"
-  },
-  {
-   "id": "slit-steps",
-   "kind": "stair",
-   "level": "L0",
-   "name": "Steps up to the entrance slit",
-   "z": -0.5,
-   "mat": "santanyi_stone",
-   "flights": [
-    {
-     "start": [
-      -0.6,
-      16.25
-     ],
-     "dir_deg": 0,
-     "width": 0.9,
-     "steps": 2,
-     "rise": 0.5,
-     "going": 0.3
-    }
-   ]
-  },
-  {
-   "id": "loggia-steps",
-   "kind": "stair",
-   "level": "L0",
-   "name": "Steps from the pool terrace to the loggia",
-   "z": -0.93,
-   "mat": "santanyi_stone",
-   "flights": [
-    {
-     "start": [
-      10.25,
-      -0.9
-     ],
-     "dir_deg": 90,
-     "width": 5.3,
-     "steps": 2,
-     "rise": 0.93,
-     "going": 0.45
-    }
-   ]
-  },
-  {
-   "id": "pool",
-   "kind": "pool",
-   "level": "L0",
-   "name": "Pool (30 m)",
-   "outline": [
-    [
-     8.3,
-     -0.9
-    ],
-    [
-     12.6,
-     -0.9
-    ],
-    [
-     12.6,
-     -30.9
-    ],
-    [
-     8.3,
-     -30.9
-    ]
-   ],
-   "z": -0.93,
-   "depth": 1.5
-  },
-  {
-   "id": "pool-coping",
-   "kind": "terrace",
-   "level": "L0",
-   "name": "Pool copings beyond the terrace",
-   "outline": [
-    [
-     12.6,
-     -6.0
-    ],
-    [
-     13.1,
-     -6.0
-    ],
-    [
-     13.1,
-     -31.4
-    ],
-    [
-     7.8,
-     -31.4
-    ],
-    [
-     7.8,
-     -6.0
-    ],
-    [
-     8.3,
-     -6.0
-    ],
-    [
-     8.3,
-     -30.9
-    ],
-    [
-     12.6,
-     -30.9
-    ]
-   ],
-   "z": -0.93,
-   "t": 0.57,
-   "mat": "santanyi_stone"
-  },
   {
    "id": "stair",
    "kind": "stair",
@@ -1743,194 +1932,1518 @@
    "flights": [
     {
      "start": [
-      18.195,
-      16.4
+      12.875,
+      14.85
      ],
      "dir_deg": 90,
      "width": 0.95,
-     "steps": 10,
-     "rise": 1.75,
-     "going": 0.29
+     "steps": 6,
+     "rise": 1.067,
+     "going": 0.25
     },
     {
      "start": [
-      19.325,
-      19.3
+      14.025,
+      16.35
      ],
      "dir_deg": 270,
      "width": 0.95,
-     "steps": 10,
-     "rise": 1.75,
-     "going": 0.29
+     "steps": 6,
+     "rise": 1.067,
+     "going": 0.25,
+     "z": 2.133
     }
    ],
    "landings": [
     {
      "outline": [
       [
-       17.72,
-       19.3
+       13.45,
+       16.35
       ],
       [
-       20.4,
-       19.3
+       12.4,
+       16.35
       ],
       [
-       20.4,
-       20.4
-      ],
-      [
-       17.72,
-       20.4
+       12.4,
+       16.956
       ]
      ],
-     "z": 1.75,
-     "t": 0.2
+     "z": 1.244,
+     "t": 1.244
+    },
+    {
+     "outline": [
+      [
+       13.45,
+       16.35
+      ],
+      [
+       12.4,
+       16.956
+      ],
+      [
+       12.4,
+       17.4
+      ],
+      [
+       12.844,
+       17.4
+      ]
+     ],
+     "z": 1.422,
+     "t": 1.422
+    },
+    {
+     "outline": [
+      [
+       13.45,
+       16.35
+      ],
+      [
+       12.844,
+       17.4
+      ],
+      [
+       13.45,
+       17.4
+      ]
+     ],
+     "z": 1.6,
+     "t": 1.6
+    },
+    {
+     "outline": [
+      [
+       13.45,
+       16.35
+      ],
+      [
+       13.45,
+       17.4
+      ],
+      [
+       14.056,
+       17.4
+      ]
+     ],
+     "z": 1.778,
+     "t": 1.778
+    },
+    {
+     "outline": [
+      [
+       13.45,
+       16.35
+      ],
+      [
+       14.056,
+       17.4
+      ],
+      [
+       14.5,
+       17.4
+      ],
+      [
+       14.5,
+       16.956
+      ]
+     ],
+     "z": 1.956,
+     "t": 1.956
+    },
+    {
+     "outline": [
+      [
+       13.45,
+       16.35
+      ],
+      [
+       14.5,
+       16.956
+      ],
+      [
+       14.5,
+       16.35
+      ]
+     ],
+     "z": 2.133,
+     "t": 2.133
     }
    ]
   },
   {
-   "id": "stair-wall",
+   "id": "stair-spine",
    "kind": "wall",
    "room": "L0-stair",
    "level": "L0",
-   "name": "Wall between the flights",
+   "name": "Spine wall between the flights",
    "path": [
     [
-     18.76,
-     16.4
+     13.45,
+     14.95
     ],
     [
-     18.76,
-     19.3
+     13.45,
+     16.35
     ]
    ],
-   "t": 0.18,
-   "h": 6.6,
+   "t": 0.2,
+   "h": 4.2,
    "mat": "plaster"
   },
   {
-   "id": "upper-landing",
-   "kind": "landing",
-   "room": "L0-stair",
-   "level": "L0",
-   "name": "First-floor landing",
-   "outline": [
-    [
-     17.6,
-     14.12
-    ],
-    [
-     20.4,
-     14.12
-    ],
-    [
-     20.4,
-     16.4
-    ],
-    [
-     17.6,
-     16.4
-    ]
-   ],
-   "z": 3.5,
-   "t": 0.35,
-   "mat": "santanyi_stone"
-  },
-  {
-   "id": "landing-parapet",
+   "id": "hall-stub-1",
    "kind": "wall",
-   "room": "L0-stair",
+   "room": "L0-hall",
    "level": "L0",
-   "name": "Landing balustrade wall",
+   "name": "Wall stub in the hall (drawn)",
    "path": [
     [
-     17.72,
-     16.45
+     15.755,
+     14.725
     ],
     [
-     18.67,
-     16.45
+     15.755,
+     13.58
     ]
    ],
-   "t": 0.1,
-   "h": 1.0,
-   "z": 3.5,
+   "t": 0.2,
+   "h": 2.85,
    "mat": "plaster"
   },
   {
-   "id": "approach-path",
-   "kind": "terrace",
-   "level": "L0",
-   "name": "Approach path (110 m, steps not modelled)",
-   "outline": [
-    [
-     -110.0,
-     15.65
-    ],
-    [
-     -0.6,
-     15.65
-    ],
-    [
-     -0.6,
-     16.85
-    ],
-    [
-     -110.0,
-     16.85
-    ]
-   ],
-   "z": -0.5,
-   "t": 0.15,
-   "mat": "santanyi_stone"
-  },
-  {
-   "id": "path-wall",
+   "id": "hall-stub-2",
    "kind": "wall",
+   "room": "L0-hall",
    "level": "L0",
-   "name": "Freestanding wall along the path (height measured near the house; its steps are not modelled)",
+   "name": "Wall stub in the hall, foot (drawn)",
    "path": [
     [
-     -110.0,
-     20.75
+     15.855,
+     13.68
     ],
     [
-     0.0,
-     20.75
+     16.39,
+     13.68
     ]
    ],
-   "t": 0.5,
-   "h": 1.7,
-   "z": -0.5,
-   "mat": "santanyi_render"
+   "t": 0.2,
+   "h": 2.85,
+   "mat": "plaster"
   },
   {
-   "id": "east-annex",
+   "id": "niche-wall",
+   "kind": "wall",
+   "room": "L1-master-bath",
+   "level": "L1",
+   "name": "Wall between the WC niche and the stairwell",
+   "path": [
+    [
+     12.4,
+     17.5
+    ],
+    [
+     14.5,
+     17.5
+    ]
+   ],
+   "t": 0.2,
+   "h": 2.8,
+   "mat": "plaster"
+  },
+  {
+   "id": "house-plinth",
    "kind": "prism",
    "level": "L0",
-   "name": "East annex (lower volume; depth assumed)",
+   "name": "House plinth / foundations",
    "outline": [
     [
-     21.0,
-     0.0
+     0,
+     0
     ],
     [
-     23.3,
-     0.0
+     18.9,
+     0
     ],
     [
-     23.3,
-     7.0
+     18.9,
+     18.9
     ],
     [
-     21.0,
-     7.0
+     0,
+     18.9
     ]
    ],
-   "z": -0.93,
-   "h": 4.3,
+   "z": -0.85,
+   "h": 0.6,
    "mat": "santanyi_render"
+  },
+  {
+   "id": "corner-filler",
+   "kind": "prism",
+   "level": "L0",
+   "name": "Courtyard wall corner above the thick ground-floor wall",
+   "outline": [
+    [
+     0,
+     11.975
+    ],
+    [
+     0.45,
+     11.975
+    ],
+    [
+     0.45,
+     12.395
+    ],
+    [
+     0,
+     12.395
+    ]
+   ],
+   "z": 3.25,
+   "h": 4.2,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "loggia-steps",
+   "kind": "stair",
+   "level": "L0",
+   "name": "Steps from the pool terrace to the loggia",
+   "z": -0.85,
+   "mat": "santanyi_stone",
+   "flights": [
+    {
+     "start": [
+      19.8,
+      9.36
+     ],
+     "dir_deg": 180,
+     "width": 5.2,
+     "steps": 2,
+     "rise": 0.85,
+     "going": 0.45
+    }
+   ]
+  },
+  {
+   "id": "pool",
+   "kind": "pool",
+   "level": "L0",
+   "name": "Pool (about 35 m)",
+   "z": -0.85,
+   "depth": 1.5,
+   "outline": [
+    [
+     19.8,
+     7.59
+    ],
+    [
+     54.6,
+     7.59
+    ],
+    [
+     54.6,
+     11.18
+    ],
+    [
+     19.8,
+     11.18
+    ]
+   ]
+  },
+  {
+   "id": "pool-surround",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Raised pool surround",
+   "z": -0.85,
+   "t": 1.0,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     26.9,
+     6.37
+    ],
+    [
+     55.1,
+     6.37
+    ],
+    [
+     55.1,
+     12.46
+    ],
+    [
+     36.8,
+     12.46
+    ],
+    [
+     36.8,
+     11.57
+    ],
+    [
+     26.9,
+     11.57
+    ],
+    [
+     26.9,
+     11.18
+    ],
+    [
+     54.6,
+     11.18
+    ],
+    [
+     54.6,
+     7.59
+    ],
+    [
+     26.9,
+     7.59
+    ]
+   ]
+  },
+  {
+   "id": "pool-steps",
+   "kind": "stair",
+   "level": "L0",
+   "name": "Stepped ramp down beside the pool (drawn; drop estimated)",
+   "z": -2.75,
+   "mat": "santanyi_stone",
+   "flights": [
+    {
+     "start": [
+      36.8,
+      12.015
+     ],
+     "dir_deg": 180,
+     "width": 0.89,
+     "steps": 33,
+     "rise": 1.9,
+     "going": 0.3
+    }
+   ]
+  },
+  {
+   "id": "court-steps",
+   "kind": "stair",
+   "level": "L0",
+   "name": "Steps up from the pool terrace to the east court",
+   "z": -0.85,
+   "mat": "santanyi_stone",
+   "flights": [
+    {
+     "start": [
+      19.8,
+      19.445
+     ],
+     "dir_deg": 180,
+     "width": 1.0,
+     "steps": 3,
+     "rise": 0.85,
+     "going": 0.3
+    }
+   ]
+  },
+  {
+   "id": "plinth",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Plinth strip along the west and south facades",
+   "z": -0.45,
+   "t": 0.4,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     -0.78,
+     -0.83
+    ],
+    [
+     18.9,
+     -0.83
+    ],
+    [
+     18.9,
+     0
+    ],
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     18.9
+    ],
+    [
+     -0.78,
+     18.9
+    ]
+   ]
+  },
+  {
+   "id": "slit-steps",
+   "kind": "stair",
+   "level": "L0",
+   "name": "Steps up to the entrance slit",
+   "z": -0.45,
+   "mat": "santanyi_stone",
+   "flights": [
+    {
+     "start": [
+      4.43,
+      -0.83
+     ],
+     "dir_deg": 90,
+     "width": 0.66,
+     "steps": 2,
+     "rise": 0.45,
+     "going": 0.4
+    }
+   ]
+  },
+  {
+   "id": "screen-wall-1",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Screen wall at the east plinth edge",
+   "path": [
+    [
+     1.27,
+     20.98
+    ],
+    [
+     17.66,
+     20.98
+    ]
+   ],
+   "t": 0.45,
+   "z": -0.85,
+   "h": 4.25,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "screen-wall-2",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Screen wall at the east plinth edge (end return)",
+   "path": [
+    [
+     1.435,
+     20.43
+    ],
+    [
+     1.435,
+     20.755
+    ]
+   ],
+   "t": 0.33,
+   "z": 0.0,
+   "h": 3.4,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "screen-wall-3",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Screen wall at the east plinth edge (end return)",
+   "path": [
+    [
+     1.27,
+     20.21
+    ],
+    [
+     3.16,
+     20.21
+    ]
+   ],
+   "t": 0.44,
+   "z": 0.0,
+   "h": 3.4,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "screen-wall-4",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Screen wall at the east plinth edge (end return)",
+   "path": [
+    [
+     17.44,
+     20.43
+    ],
+    [
+     17.44,
+     20.755
+    ]
+   ],
+   "t": 0.44,
+   "z": 0.0,
+   "h": 3.4,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "screen-wall-5",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Screen wall at the east plinth edge (end return)",
+   "path": [
+    [
+     15.6,
+     20.21
+    ],
+    [
+     17.66,
+     20.21
+    ]
+   ],
+   "t": 0.44,
+   "z": 0.0,
+   "h": 3.4,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-01",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 1",
+   "z": -0.45,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -10.85
+    ],
+    [
+     4.8,
+     -10.85
+    ],
+    [
+     4.8,
+     -0.83
+    ],
+    [
+     4.05,
+     -0.83
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-01",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 1",
+   "z": -0.45,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -10.85
+    ],
+    [
+     4.05,
+     -10.85
+    ],
+    [
+     4.05,
+     -0.83
+    ],
+    [
+     0.4,
+     -0.83
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-01",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 1",
+   "path": [
+    [
+     0.2,
+     -0.83
+    ],
+    [
+     0.2,
+     -10.85
+    ]
+   ],
+   "t": 0.4,
+   "z": -0.95,
+   "h": 2.15,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-02",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 2",
+   "z": -0.85,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -20.87
+    ],
+    [
+     4.8,
+     -20.87
+    ],
+    [
+     4.8,
+     -10.85
+    ],
+    [
+     4.05,
+     -10.85
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-02",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 2",
+   "z": -0.85,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -20.87
+    ],
+    [
+     4.05,
+     -20.87
+    ],
+    [
+     4.05,
+     -10.85
+    ],
+    [
+     0.4,
+     -10.85
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-02",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 2",
+   "path": [
+    [
+     0.2,
+     -10.85
+    ],
+    [
+     0.2,
+     -20.87
+    ]
+   ],
+   "t": 0.4,
+   "z": -1.35,
+   "h": 2.55,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-03",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 3",
+   "z": -1.25,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -30.89
+    ],
+    [
+     4.8,
+     -30.89
+    ],
+    [
+     4.8,
+     -20.87
+    ],
+    [
+     4.05,
+     -20.87
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-03",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 3",
+   "z": -1.25,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -30.89
+    ],
+    [
+     4.05,
+     -30.89
+    ],
+    [
+     4.05,
+     -20.87
+    ],
+    [
+     0.4,
+     -20.87
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-03",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 3",
+   "path": [
+    [
+     0.2,
+     -20.87
+    ],
+    [
+     0.2,
+     -30.89
+    ]
+   ],
+   "t": 0.4,
+   "z": -1.75,
+   "h": 2.95,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-04",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 4",
+   "z": -1.65,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -40.91
+    ],
+    [
+     4.8,
+     -40.91
+    ],
+    [
+     4.8,
+     -30.89
+    ],
+    [
+     4.05,
+     -30.89
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-04",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 4",
+   "z": -1.65,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -40.91
+    ],
+    [
+     4.05,
+     -40.91
+    ],
+    [
+     4.05,
+     -30.89
+    ],
+    [
+     0.4,
+     -30.89
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-04",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 4",
+   "path": [
+    [
+     0.2,
+     -30.89
+    ],
+    [
+     0.2,
+     -40.91
+    ]
+   ],
+   "t": 0.4,
+   "z": -2.15,
+   "h": 3.35,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-05",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 5",
+   "z": -2.05,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -50.93
+    ],
+    [
+     4.8,
+     -50.93
+    ],
+    [
+     4.8,
+     -40.91
+    ],
+    [
+     4.05,
+     -40.91
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-05",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 5",
+   "z": -2.05,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -50.93
+    ],
+    [
+     4.05,
+     -50.93
+    ],
+    [
+     4.05,
+     -40.91
+    ],
+    [
+     0.4,
+     -40.91
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-05",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 5",
+   "path": [
+    [
+     0.2,
+     -40.91
+    ],
+    [
+     0.2,
+     -50.93
+    ]
+   ],
+   "t": 0.4,
+   "z": -2.55,
+   "h": 3.75,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-06",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 6",
+   "z": -2.45,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -60.95
+    ],
+    [
+     4.8,
+     -60.95
+    ],
+    [
+     4.8,
+     -50.93
+    ],
+    [
+     4.05,
+     -50.93
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-06",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 6",
+   "z": -2.45,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -60.95
+    ],
+    [
+     4.05,
+     -60.95
+    ],
+    [
+     4.05,
+     -50.93
+    ],
+    [
+     0.4,
+     -50.93
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-06",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 6",
+   "path": [
+    [
+     0.2,
+     -50.93
+    ],
+    [
+     0.2,
+     -60.95
+    ]
+   ],
+   "t": 0.4,
+   "z": -2.95,
+   "h": 4.15,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-07",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 7",
+   "z": -2.85,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -70.97
+    ],
+    [
+     4.8,
+     -70.97
+    ],
+    [
+     4.8,
+     -60.95
+    ],
+    [
+     4.05,
+     -60.95
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-07",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 7",
+   "z": -2.85,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -70.97
+    ],
+    [
+     4.05,
+     -70.97
+    ],
+    [
+     4.05,
+     -60.95
+    ],
+    [
+     0.4,
+     -60.95
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-07",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 7",
+   "path": [
+    [
+     0.2,
+     -60.95
+    ],
+    [
+     0.2,
+     -70.97
+    ]
+   ],
+   "t": 0.4,
+   "z": -3.35,
+   "h": 4.55,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-08",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 8",
+   "z": -3.25,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -80.99
+    ],
+    [
+     4.8,
+     -80.99
+    ],
+    [
+     4.8,
+     -70.97
+    ],
+    [
+     4.05,
+     -70.97
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-08",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 8",
+   "z": -3.25,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -80.99
+    ],
+    [
+     4.05,
+     -80.99
+    ],
+    [
+     4.05,
+     -70.97
+    ],
+    [
+     0.4,
+     -70.97
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-08",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 8",
+   "path": [
+    [
+     0.2,
+     -70.97
+    ],
+    [
+     0.2,
+     -80.99
+    ]
+   ],
+   "t": 0.4,
+   "z": -3.75,
+   "h": 4.95,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-09",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 9",
+   "z": -3.65,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -91.01
+    ],
+    [
+     4.8,
+     -91.01
+    ],
+    [
+     4.8,
+     -80.99
+    ],
+    [
+     4.05,
+     -80.99
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-09",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 9",
+   "z": -3.65,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -91.01
+    ],
+    [
+     4.05,
+     -91.01
+    ],
+    [
+     4.05,
+     -80.99
+    ],
+    [
+     0.4,
+     -80.99
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-09",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 9",
+   "path": [
+    [
+     0.2,
+     -80.99
+    ],
+    [
+     0.2,
+     -91.01
+    ]
+   ],
+   "t": 0.4,
+   "z": -4.15,
+   "h": 5.35,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-10",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 10",
+   "z": -4.05,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -101.03
+    ],
+    [
+     4.8,
+     -101.03
+    ],
+    [
+     4.8,
+     -91.01
+    ],
+    [
+     4.05,
+     -91.01
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-10",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 10",
+   "z": -4.05,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -101.03
+    ],
+    [
+     4.05,
+     -101.03
+    ],
+    [
+     4.05,
+     -91.01
+    ],
+    [
+     0.4,
+     -91.01
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-10",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 10",
+   "path": [
+    [
+     0.2,
+     -91.01
+    ],
+    [
+     0.2,
+     -101.03
+    ]
+   ],
+   "t": 0.4,
+   "z": -4.55,
+   "h": 5.75,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "path-walk-11",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Approach walkway, module 11",
+   "z": -4.45,
+   "t": 0.5,
+   "mat": "santanyi_stone",
+   "outline": [
+    [
+     4.05,
+     -111.05
+    ],
+    [
+     4.8,
+     -111.05
+    ],
+    [
+     4.8,
+     -101.03
+    ],
+    [
+     4.05,
+     -101.03
+    ]
+   ]
+  },
+  {
+   "id": "path-lawn-11",
+   "kind": "terrace",
+   "level": "L0",
+   "name": "Lawn terrace beside the walkway, module 11",
+   "z": -4.45,
+   "t": 0.5,
+   "mat": "grass",
+   "outline": [
+    [
+     0.4,
+     -111.05
+    ],
+    [
+     4.05,
+     -111.05
+    ],
+    [
+     4.05,
+     -101.03
+    ],
+    [
+     0.4,
+     -101.03
+    ]
+   ]
+  },
+  {
+   "id": "path-wall-11",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Freestanding path wall, module 11",
+   "path": [
+    [
+     0.2,
+     -101.03
+    ],
+    [
+     0.2,
+     -111.05
+    ]
+   ],
+   "t": 0.4,
+   "z": -4.95,
+   "h": 6.15,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "tennis-floor",
+   "kind": "slab",
+   "level": "L0",
+   "name": "Sunken clay tennis court",
+   "z": -5.25,
+   "t": 0.2,
+   "mat": "terracotta",
+   "outline": [
+    [
+     7.6,
+     -100.85
+    ],
+    [
+     25.87,
+     -100.85
+    ],
+    [
+     25.87,
+     -61.28
+    ],
+    [
+     7.6,
+     -61.28
+    ]
+   ]
+  },
+  {
+   "id": "tennis-wall-1",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Tennis court retaining wall",
+   "path": [
+    [
+     7.45,
+     -61.13
+    ],
+    [
+     26.02,
+     -61.13
+    ]
+   ],
+   "t": 0.3,
+   "z": -5.45,
+   "h": 3.75,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "tennis-wall-2",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Tennis court retaining wall",
+   "path": [
+    [
+     26.02,
+     -61.28
+    ],
+    [
+     26.02,
+     -100.85
+    ]
+   ],
+   "t": 0.3,
+   "z": -5.45,
+   "h": 3.75,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "tennis-wall-3",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Tennis court retaining wall",
+   "path": [
+    [
+     26.02,
+     -101.0
+    ],
+    [
+     7.45,
+     -101.0
+    ]
+   ],
+   "t": 0.3,
+   "z": -5.45,
+   "h": 3.75,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "tennis-wall-4",
+   "kind": "wall",
+   "level": "L0",
+   "name": "Tennis court retaining wall",
+   "path": [
+    [
+     7.45,
+     -100.85
+    ],
+    [
+     7.45,
+     -61.28
+    ]
+   ],
+   "t": 0.3,
+   "z": -5.45,
+   "h": 3.75,
+   "mat": "santanyi_render"
+  },
+  {
+   "id": "tennis-steps",
+   "kind": "stair",
+   "level": "L0",
+   "name": "Steps down into the tennis court",
+   "z": -5.25,
+   "mat": "santanyi_stone",
+   "flights": [
+    {
+     "start": [
+      16.9,
+      -61.78
+     ],
+     "dir_deg": 180,
+     "width": 1.0,
+     "steps": 31,
+     "rise": 3.55,
+     "going": 0.3
+    }
+   ]
   }
  ]
 }
