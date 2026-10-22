@@ -217,8 +217,9 @@
       // the stem and bar: they retract into the foot as the bowl opens and grow back out of it after
       const rStem = Math.max(ease(span(t, 0.1, 0.26)), 0) * (1 - ease(span(t, 0.7, 0.86)));
       const rBar = ease(span(t, 0.06, 0.18)) * (1 - ease(span(t, 0.78, 0.94)));
-      const foot = [ringC[0] + ringR * Math.cos(a0), ringC[1] + ringR * Math.sin(a0)];
-      const off = [foot[0] - BOWL[0][0], foot[1] - BOWL[0][1]];
+      // the foot rides the start of the ring (the morph's first point)
+      const ring0 = [ringC[0] + ringR * Math.cos(a0), ringC[1] + ringR * Math.sin(a0)];
+      const off = [m * (ring0[0] - BOWL[0][0]), m * (ring0[1] - BOWL[0][1])];
 
       // the s: up into the middle of the ring, smaller (the timer's "5 s"), then down into its nest
       const sUp = ease(span(t, 0.1, 0.36)), sDown = span(t, 0.7, 0.93);
