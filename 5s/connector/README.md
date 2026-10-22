@@ -21,7 +21,9 @@ and the `agents` package's `McpAgent` serves the tools at `/mcp`. Read [`../SPEC
 Every tool returns a short text summary and the same answer as plain JSON (`structuredContent`).
 Titles, artist names, media and notes in an answer are other people's (or the person's) text: they
 only ever appear as quoted, one-line values inside the JSON, never in the summary, and the server's
-instructions tell Claude they are data, not instructions.
+instructions tell Claude they are data, not instructions. The same goes for what another site says
+about itself: a refusal names a file's type only when it is a type 5s knows (`src/web.js`
+`typeWord`), never the site's own Content-Type text, which could say anything.
 
 | Tool | Input | Returns | Claude uses it |
 | --- | --- | --- | --- |
@@ -86,13 +88,13 @@ chat can make the connector read without end:
 | What | Cap |
 | --- | --- |
 | an address | `https` only, the default port, no `user:password@`, a public name (never a bare IP, a single-label name like `fileserver`, or `.local`, `.internal`, `.localhost` …); at most 2048 characters |
-| where a name points | asked of Cloudflare's DNS over HTTPS first: every answer must be a public address (no loopback, private, link-local, cloud metadata, carrier-grade NAT, multicast or reserved range, IPv4 or IPv6, nor IPv4 hidden in IPv6); a name DNS can't answer is refused |
+| where a name points | asked of Cloudflare's DNS over HTTPS first: every answer must be a public address (no loopback, private, link-local, cloud metadata, carrier-grade NAT, multicast or reserved range, IPv4 or IPv6, nor IPv4 hidden in IPv6, nor anything in the reserved `0000::/8` block, IPv4-translated `::ffff:0:a.b.c.d` included); a name DNS can't answer is refused |
 | redirects | at most 3, each checked again as a new address before it is read |
 | one request | 8 seconds (headers and body); only `GET`, an `Accept` header and a User-Agent saying what 5s is |
-| a page, feed or API answer | 1.5 MB, read chunk by chunk and stopped at the cap (a declared size over it is not read at all) |
+| a page, feed or API answer | 1.5 MB, read chunk by chunk and stopped at the cap (a declared size over it is not read at all); parsed in one pass (`src/links.js` scanners: no pattern rescans the text from every tag, so a page under the cap is read in milliseconds, whatever is in it) |
 | a picture | 3 MB read whole; when it isn't measured, only its first 64 KB (enough to tell what it is and its size) |
 | one `read_link` | 12 requests (DNS lookups and redirects counted), 60 pictures offered |
-| one `bring_in` | 60 items, 40 requests, 4 pictures read at a time, 4 megapixels decoded and 16 pictures measured (`COLOUR_BUDGET_PX`, see the setup), 25 seconds; the rest come back in `remaining` |
+| one `bring_in` | 60 items, 40 requests, 4 pictures read at a time, 4 megapixels decoded and 16 pictures measured (`COLOUR_BUDGET_PX`, see the setup), 25 seconds; the rest come back in `remaining`. The megapixels are counted as decoded, never as a header claims, and no decode goes past what is left of them; a PNG whose header is not its first chunk, or that has two, is left to the app (`colours_pending`) |
 | one `item_image` | 10 requests; a picture of at most 4 megapixels decoded to make the smaller copy |
 | a person | 30 calls that read other sites a minute (`RATE_LIMIT_WEB`), 300 pictures brought in a day (UTC), 1000 brought-in things in all |
 
@@ -365,7 +367,7 @@ from a session that has it, or build it there first. For a local trial without t
 | `src/bring.js` | the app's own [`../src/bring.js`](../src/bring.js) (`FiveSBring`: `newId` and its measures), imported unchanged |
 | `src/fake-web.js` | a fake public web (Are.na, Pinterest, Flickr, Tumblr, pages, pictures, redirects into private networks, huge and slow sites, its own DNS) for tests and the dev bypass |
 | `scripts/make-pictures.py`, `test/pictures.mjs` | PNG and JPEG files made by Pillow, with Pillow's decoding of each, for the decoders' tests |
-| `test/*.test.mjs` | `npm test`: every tool, the engine against the app, the protocol, the hub, the sign-in helpers, session binding (`session.test.mjs`), the adversarial review's findings (`review.test.mjs`), and Connect your apps (`connect.test.mjs`: every source, every way an address can point somewhere private, the caps, what is stored) |
+| `test/*.test.mjs` | `npm test`: every tool, the engine against the app, the protocol, the hub, the sign-in helpers, session binding (`session.test.mjs`), the adversarial review's findings (`review.test.mjs`), and Connect your apps (`connect.test.mjs`: every source, every way an address can point somewhere private, the caps, what is stored), and the security review of Connect your apps (`hostile.test.mjs`: pages and feeds that would hang the parsers, a Content-Type written to Claude, pictures whose headers lie about their size, broken %-escapes, IPv4 inside IPv6) |
 | `test/smoke.mjs` | `npm run smoke`: the Worker itself under `wrangler dev` (see below) |
 | `wrangler.jsonc` | the Worker: name `fives-connector`, the Durable Object, the two KV namespaces, the two rate limits |
 | `.dev.vars.example` | placeholders for `wrangler dev`; copy to `.dev.vars` (gitignored) |

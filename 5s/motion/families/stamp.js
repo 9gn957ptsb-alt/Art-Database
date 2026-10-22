@@ -262,8 +262,20 @@
   function shadow(ctx, env, names, k, h, look) {
     // look: {colour, alpha, dx, dy, blur (mark units), tr}
     if (look.alpha <= 0.003) return;
-    M.layer(ctx, { alpha: look.alpha, blur: Math.max(0.5, look.blur * env.scale * env.dpr) }, (c) => {
+    // The blur is the canvas's own shadowBlur (device pixels, deterministic): the letters are drawn far off the
+    // canvas and only their shadow lands, offset back into place. It sits in a full-resolution layer (alpha only,
+    // no layer blur), so overlapping strokes do not darken twice and no reduced-resolution scratch is resampled.
+    const FAR = 4 * Math.max(ctx.canvas.width, ctx.canvas.height) + 2000;
+    M.layer(ctx, { alpha: look.alpha, composite: 'source-over' }, (c) => {
+      const m = c.getTransform();
+      c.save();
+      c.setTransform(m.a, m.b, m.c, m.d, m.e + FAR, m.f);
+      c.shadowColor = look.colour;
+      c.shadowBlur = Math.max(0, 2 * look.blur * env.scale * env.dpr);
+      c.shadowOffsetX = -FAR;
+      c.shadowOffsetY = 0;
       place(c, look.tr, (cc) => { cc.translate(look.dx, look.dy); solid(cc, names, k, look.colour, 0); });
+      c.restore();
     });
   }
 

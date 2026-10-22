@@ -219,16 +219,18 @@
 
     about(ctx, A.letters, Ssc, (c) => {
       // back to front: the oldest card first; each re-forms toward the finished mark as it folds forward
+      // (no scratch layers here: the ribbon, drawn next, is cheapest straight after plain strokes. As they finish
+      // folding, the cards sink into the background and their rims close, rather than fading through a layer)
+      const gone = span(fold, 0.8, 1);
       for (const card of cards) {
+        if (gone >= 1) break;
         const d = card.d * (1 - fold);
-        const alpha = 1 - span(fold, 0.86, 1);
-        if (alpha <= 0.003) continue;
         const P = pairAt(M.lerp(card.m0, 1, fold), I, dir);
-        const tone = cardTone(pal, Math.max(1, card.d), n, dark);
-        const draw = (cc) => { pairFlat(cc, P, k, rim, pal.bg); pairFlat(cc, P, k, 0, tone); };
+        const tone = M.mix(cardTone(pal, Math.max(1, card.d), n, dark), pal.bg, gone);
         c.save();
         c.translate(shift[0] + V[0] * d, shift[1] + V[1] * d);
-        if (alpha >= 0.999) draw(c); else M.layer(c, { alpha }, draw);
+        pairFlat(c, P, k, rim * (1 - gone), pal.bg);
+        pairFlat(c, P, k, 0, tone);
         c.restore();
       }
       c.save();
@@ -236,7 +238,7 @@
       about(c, A.letters, sc, (cm) => {
         const P = pairAt(m, I, dir);
         // its own rim of background separates it from the cards (gone once they have folded in)
-        if (cards.length && fold < 1) M.layer(cm, { alpha: 1 - fold, composite: 'source-over' }, (cc) => pairFlat(cc, P, k, rim, pal.bg));
+        if (cards.length && fold < 1) pairFlat(cm, P, k, rim * (1 - fold), pal.bg);
         if (p.ribbon) M.ribbon(cm, clamp01(m) * dir, { colours: pal.ribbon, alpha: 1 - 0.45 * hump(m) });
         pairColour(cm, P, k, col);
       });
@@ -496,6 +498,14 @@
       for (let it = 0; it < 22; it++) { const mid = (lo + hi) / 2; if (1 - ease(mid) <= qj) hi = mid; else lo = mid; }
       return M.lerp(BACK[0], BACK[1], hi);
     };
+    // the live mark's ribbon goes first, under everything: the skins after it are composited through scratch layers
+    if (p.ribbon) {
+      place(ctx, live, (c) => {
+        const g = m, bx = A.bowl[0], by = A.bowl[1], s = 1 - 0.12 * g * (0.5 + I);
+        c.translate(bx + 70 * g, by - 20 * g); c.scale(s, s); c.translate(-bx, -by);
+        M.ribbon(c, 0.18 * g * (0.4 + I) * dir, { colours: pal.ribbon, alpha: 1 - 0.35 * g });
+      });
+    }
     // the skins: the stage the mark leaves on each click, older ones paler; each, once the mark has passed back
     // through it, shrinks into the mark
     for (let j = 0; j < n; j++) {
@@ -517,18 +527,9 @@
         });
       });
     }
-    // the mark
+    // the mark (its ribbon was drawn first, under the skins)
     const G = mergeAt(q, I, dir);
-    place(ctx, live, (c) => {
-      if (p.ribbon) {
-        const g = m, bx = A.bowl[0], by = A.bowl[1], s = 1 - 0.12 * g * (0.5 + I);
-        c.save();
-        c.translate(bx + 70 * g, by - 20 * g); c.scale(s, s); c.translate(-bx, -by);
-        M.ribbon(c, 0.18 * g * (0.4 + I) * dir, { colours: pal.ribbon, alpha: 1 - 0.35 * g });
-        c.restore();
-      }
-      mergeDraw(c, G, k, col, 0);
-    });
+    place(ctx, live, (c) => mergeDraw(c, G, k, col, 0));
   }
 
   Motion.register({
