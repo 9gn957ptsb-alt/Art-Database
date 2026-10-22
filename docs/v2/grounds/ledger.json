@@ -173,7 +173,7 @@
       "lon": 4.36079,
       "release": "2026-09-23.1",
       "read": "2026-10-14",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 41020,
       "green": 10229,
       "dated_share": 0.47,
@@ -191,7 +191,8 @@
         "2026-10-15 · still wrong, biggest first: (1) 83% of its building cells at two storeys, the default where Overture gives no height (it has one for 7% of Brussels' buildings; EUBUCCO's for Belgium are not a register's: median 6 m, r = 0.35 with Overture's), so a five- or six-storey street reads as a two-storey one beside the North Quarter's towers and the Tour du Midi (150 m); (2) 47% of its building cells dated (12% by the satellites' between-1930-and-1975 year, 1952; the rest by the heritage inventory, OpenStreetMap, Wikidata and the satellites' later years), the other 53% have no year and stand from the dial's first, so the city hardly grows on the dial; (3) the Senne, vaulted since 1871, is rightly not drawn, and the canal is a 1-2 cell ribbon (2.0% water), so the city reads dry; (4) bridge decks and the ring's flyovers are drawn at ground or water height; (5) streets kept are a whole 20 m cell, so the Petite Ceinture's boulevards read thicker than they are (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Brussels at both sizes)",
         "2026-10-21 · dated again with its runners' records · 47% of its building cells dated (47% at the last cut)",
         "2026-10-21 · `--tunnels`: 257 road cells in tunnels and 1004 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · dated again with its runners' records · 47% of its building cells dated (47% at the last cut)"
+        "2026-10-21 · dated again with its runners' records · 47% of its building cells dated (47% at the last cut)",
+        "2026-10-22 · dated again with its runners' records · 47% of its building cells dated (47% at the last cut)"
       ]
     },
     "chicago-us": {
@@ -471,10 +472,10 @@
       "lon": 9.186,
       "release": "2026-09-23.1",
       "read": "2026-10-21",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 32185,
       "green": 24774,
-      "dated_share": 0.784,
+      "dated_share": 0.783,
       "kb": 1577,
       "gz": 207,
       "log": [
@@ -493,7 +494,8 @@
         "2026-10-21 · raised to tier 3 · 496 cells a side (13.9 m) from Overture 2026-09-23.1 · 32185 buildings, 24774 green cells · 78% dated, 64497 cells' years carried from the last cut (ISTAT census 2011 (each block's buildings by period; which is which is not known) did not answer) · 1577 KB (209 KB sent)",
         "2026-10-21 · `--tunnels`: 3250 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
         "2026-10-21 · still wrong, most important first: (1) 78% dated, but the census blocks' years (which building is which is not known) were carried from the 20 m cut for 64,497 cells, because the runners' records are for the old grid: asked again on 21 Oct in records/REQUEST, `--redate` once they are in; (2) 51% of its building cells at the default two storeys: Overture gives few heights in Italy (the ISTAT census sections may count a block's floors: to be checked), the tallest cell 71 storeys; (3) the Cerchia dei Navigli, covered, is now drawn as the streets over it, while the open Naviglio Grande and Pavese and the Darsena are one-cell ribbons; (4) bridge decks, elevated rail and the railway cuttings are at ground or water height; (5) a street is a whole cell wide. Its covered watercourses (3,250 water cells, mostly under streets) were blue lines through the old city until the `--tunnels` repair",
-        "2026-10-21 · dated again (its years had been carried) · 78% of its building cells dated (78% at the last cut)"
+        "2026-10-21 · dated again (its years had been carried) · 78% of its building cells dated (78% at the last cut)",
+        "2026-10-22 · dated again with its runners' records · 78% of its building cells dated (78% at the last cut)"
       ]
     },
     "munich-de": {
@@ -587,7 +589,7 @@
       "lon": 2.3351,
       "release": "2026-09-23.1",
       "read": "2026-10-15",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 54484,
       "green": 19479,
       "dated_share": 0.954,
@@ -605,9 +607,10 @@
         "2026-10-15 · cut again with its building parts and without its tunnels: the Eiffel Tower is a needle (103 storeys, 330 m) over a cross of 86-storey cells, a platform at 36-38 and its legs at 18-20 (it had been a 27-cell slab at 103), the Tour Montparnasse stands at 66 storeys, 2,254 building cells take the heights of their parts, 324 road cells in tunnels (the quais' among them) are off the surface, and the Seine is the sea's deep tone where a cell has no dot",
         "2026-10-15 · still wrong, biggest first: (1) 95% of its building cells are dated but 103,657 of the 109,166 take their years from the 20 m cut: the BDNB did not answer (its Paris communes are over a thousand groups each, so records/bdnb.json now asks GitHub's runners for the department's files and `--redate` takes them in once they are in), so the dating is APUR's periods and Wikidata's landmarks at the old grid's grain, not a year a building; (2) before 1800 stands as 1800 (the Atelier parisien's first class), so Paris's oldest quarters rise together on the dial; (3) the Seine (2.8% water) is crossed by decks at water height with no arches, and a covered road is left off the surface only where Overture flags it `is_tunnel`; (4) 9% at two storeys, the default where Overture gives no height, and the Eiffel Tower's legs and needle are single 14 m cells; (5) green is 7.9% of the square, the parks, gardens and cemeteries Overture's land use names: the street trees that make Paris green are not drawn (checked at 390x844 and 1440x900 after the final cut, with the final drawing; screenshots looked at: Paris at both sizes)",
         "2026-10-21 · dated again (its years had been carried) · 95% dated, 104108 cells' years carried from the last cut (BDNB (CSTB) did not answer)",
-        "2026-10-21 · `--tunnels`: 461 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 461 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · dated again (its years had been carried) · 95% dated, 104108 cells' years carried from the last cut (BDNB (CSTB) did not answer)"
       ],
-      "retries": 1
+      "retries": 2
     },
     "philadelphia-us": {
       "tier": 2,
@@ -650,7 +653,8 @@
         "2026-10-15 · still wrong, biggest first: (1) 43% of its building cells have no year (57% dated, from ISTAT's census blocks (each block's buildings by period, dealt to its cells in a shuffled order: right per block, not which building is which) and Wikidata's landmarks); (2) 51% at two storeys, the default where Overture gives no height: the centro storico's four- to six-storey blocks read low, no register of heights is read; (3) the Tiber is crossed (59 bridge cells) by decks at water level, and the lungotevere's sunken quays are not terrain; (4) the Forum and the Baths of Caracalla are open land, not ruins; the Vatican, a separate state with no Italian census, is dated by Wikidata and the satellites only (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Rome at both sizes)",
         "2026-10-21 · dated again with its runners' records · 59% of its building cells dated (59% at the last cut)",
         "2026-10-21 · `--tunnels`: 72 road cells in tunnels and 47 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · dated again with its runners' records · 59% of its building cells dated (59% at the last cut)"
+        "2026-10-21 · dated again with its runners' records · 59% of its building cells dated (59% at the last cut)",
+        "2026-10-22 · dated again with its runners' records · 59% of its building cells dated (59% at the last cut)"
       ],
       "name": "Rome",
       "n": 272,
@@ -660,7 +664,7 @@
       "lon": 12.4822,
       "release": "2026-09-23.1",
       "read": "2026-10-10",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 14556,
       "green": 12485,
       "dated_share": 0.592,
@@ -861,7 +865,8 @@
         "2026-10-15 · still wrong, biggest first: (1) 94% of its building cells have no year: 6% are dated (Wikidata's landmarks and the satellites; the city's own records are not read, nor OpenStreetMap's dates); (2) 48% at two storeys, the default where Overture gives no height, while Venice is mostly three to five storeys; (3) its minor canals (the rii, 3-10 m) are gaps between buildings, not water cells: only the Grand Canal, the Giudecca Canal and the lagoon read, the Grand Canal a ribbon one or two cells wide; (4) its roads are 169 cells (0.7%), the causeway's and Piazzale Roma's: the calli and quays are left out; (5) the lagoon's other islands (Murano, San Michele, the Lido) are outside its 3 km square (checked at 390x844 and 1440x900 after the final cut, with the final drawing, and the 2D fallback at 1440x900; screenshots looked at: Venice at both sizes)",
         "2026-10-21 · dated again with its runners' records · 28% of its building cells dated (6% at the last cut)",
         "2026-10-21 · `--tunnels`: 3 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · dated again with its runners' records · 28% of its building cells dated (28% at the last cut)"
+        "2026-10-21 · dated again with its runners' records · 28% of its building cells dated (28% at the last cut)",
+        "2026-10-22 · dated again with its runners' records · 28% of its building cells dated (28% at the last cut)"
       ],
       "name": "Venice",
       "n": 152,
@@ -871,7 +876,7 @@
       "lon": 12.33235,
       "release": "2026-09-23.1",
       "read": "2026-10-15",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 3923,
       "green": 737,
       "dated_share": 0.277,
