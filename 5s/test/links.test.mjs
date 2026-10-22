@@ -40,7 +40,8 @@ const mini = {
   ],
 };
 
-const isClean = (u) => /^https:\/\/[^\s@]+$/.test(u) && !/[?&](?:utm_|fbclid|gclid|igshid|igsh|si=|email|token)/i.test(u) && !/#/.test(u);
+// https, no user name or password before the host (an "@handle" in a path, as TikTok's, is the poster's page), no tracking.
+const isClean = (u) => /^https:\/\/[^\s@/]+(?:\/\S*)?$/.test(u) && !/[?&](?:utm_|fbclid|gclid|igshid|igsh|si=|email|token)/i.test(u) && !/#/.test(u);
 
 // --------------------------------------------------------------- the module
 

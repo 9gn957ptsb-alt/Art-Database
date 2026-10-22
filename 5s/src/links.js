@@ -244,8 +244,8 @@
   // Kind and category from the address's own words (the head noun of a product name is usually last;
   // a description such as Unsplash's "a living room with a sofa" names it first).
   const SPACE_WORDS = new Set(('house villa building pavilion chapel church museum tower residence cathedral library station ' +
-    'bridge apartment apartments temple school room interior interiors garden park landscape city street hotel restaurant ' +
-    'cafe office kitchen bathroom bedroom home loft cabin barn courtyard plaza architecture campus gallery hall theatre ' +
+    'bridge apartment apartments temple school room interior interiors garden park landscape city street hotel ' +
+    'kitchen bathroom bedroom home loft cabin barn courtyard plaza architecture campus gallery hall theatre ' +
     'theater stadium mosque monastery palace castle cottage farmhouse bungalow skyscraper housing').split(' '));
   const OBJECT_WORDS = new Set(('chair armchair stool sofa couch table lamp desk cabinet shelf shelving vase bowl teapot cup mug ' +
     'jug vessel chandelier sconce mirror clock bench bed ottoman sideboard credenza dresser rug carpet quilt blanket basket ' +
