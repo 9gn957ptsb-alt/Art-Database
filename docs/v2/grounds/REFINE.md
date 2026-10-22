@@ -195,6 +195,13 @@ as they stand (counted from each ground's `tall` and `built` by
   its skyline: Shanghai's (7.1 km round the Yuz Museum) stops at 31.226 N, short
   of the Bund and Lujiazui; London's at 0.088 W, short of the Shard and the
   City's towers.
+- **A museum's name on a phone** (22 Oct 2026, found by the check at Rome): `skyline.js` places a museum's name right of its
+  mark, else left, else above or below it (six tries), each inside the band and clear of the others; a name nearly as wide as the
+  screen (Galleria Nazionale d'Arte Moderna Rome, about 260 px on a band 390 wide) fits right of the mark only where it stands in
+  the band's left 117 px and left of it only in its right 117 px, so on a phone it was named at one heading of four and, after
+  the heights of 10,000 of Rome's cells changed (a few pixels of lift under its mark, probably), at none:
+  the check's "named" failed at 390x844. A seventh and eighth try, the name centred above or below the mark and kept inside the
+  band, would name it; it changes the drawing, so the check is to be run on every skyline at both sizes afterwards.
 - A source for any of these is looked for by the network research
   (`NETWORK.md`) and, where it is on a host the session cannot reach, read on
   GitHub's runners (`scripts/fetch_city_records.py`).
