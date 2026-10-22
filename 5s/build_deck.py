@@ -1166,6 +1166,10 @@ def write_deck(pk, families, artists):
                 "materials": w["_materials"], "place": w["_place"], "colours": w["colours"],
                 "genes": w["_genes"], "img": None, "w": None, "h": None, "thumb": len(cards),
             }
+            if w.get("image_url"):
+                # the work's own image on Artsy's CDN, as the database stores it (the 'large' version):
+                # the hub page a person publishes on github.io shows it from there, never a copy
+                card["cdn"] = w["image_url"]
             if kind in ("image", "object", "space"):
                 im = open_rgb(extra["src"])
                 im.thumbnail((720, 720), Image.LANCZOS)

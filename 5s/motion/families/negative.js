@@ -115,33 +115,67 @@
     field(ctx, p, pal, dir, { x: fx, y: -30 * I * M.ease.inQuad(x), r: lean, k: 1, alpha: 1, holes: { x: 0, y: 0, r: 0, k: 1 } });
   }
 
-  function lift(ctx, t, p, env, pal, dir) {
+  /* peel: the field comes away like a sticker, from the corner on the side it is leaving toward, folding over
+   * itself. A fold line (normal n, at distance d) sweeps across: beyond it the mark is uncovered; the part
+   * already peeled lies folded back over the flat part (reflected across the line), its pale back showing,
+   * with the letters' holes mirrored in it. */
+  function halfPlane(c, n, d, side) {   // the half plane side * (P.n - d) > 0, as a big polygon
+    const px = n[0] * d, py = n[1] * d, tx = -n[1], ty = n[0], B = 4000;
+    c.beginPath();
+    c.moveTo(px + tx * B, py + ty * B);
+    c.lineTo(px - tx * B, py - ty * B);
+    c.lineTo(px - tx * B + side * n[0] * B, py - ty * B + side * n[1] * B);
+    c.lineTo(px + tx * B + side * n[0] * B, py + ty * B + side * n[1] * B);
+    c.closePath();
+  }
+  function peel(ctx, t, p, env, pal, dir) {
     const I = p.intensity, e = M.easing(p.easing);
-    // the sheet is peeled up toward you and carried off: it swells, turns, rises and leaves the frame
-    const x = seg(t, 0.04, 0.62);
-    const up = M.ease.inCubic(x) * 0.8 + M.ease.inQuad(x) * 0.2;
-    const k = 1 + (0.5 + 0.6 * I) * up - 0.03 * antic(x);
-    const r = dir * (0.08 + 0.16 * I) * up;
-    const fx = dir * (260 + 260 * I) * up, fy = -(380 + 200 * I) * up + 12 * antic(x);
-    const alpha = 1 - M.smoothstep(0.7, 1, x);
-    // the mark underneath: there as soon as the sheet moves, settling up into place as it clears
-    const m = seg(t, 0.06, 0.95);
-    const ma = M.smoothstep(0, 0.12, m), mk = 0.95 + 0.05 * e(seg(m, 0.15, 1));
-    if (ma > 0) {
-      M.layer(ctx, { alpha: ma }, (c) => {
-        c.save(); c.translate(505, 495); c.scale(mk, mk); c.translate(-505, -495);
-        mark(c, p, pal, -0.12 * I * (1 - e(m)));
-        c.restore();
-      });
-    }
-    // the sheet's shadow on the mark, softer and further off as it rises
-    if (alpha > 0.01 && up > 0.005) {
-      M.layer(ctx, { alpha: 0.22 * alpha * (1 - 0.6 * up), blur: (8 + 30 * up) * env.scale * env.dpr }, (c) => {
-        c.save(); c.translate(500 + fx * 0.6, 500 + fy * 0.6 + 50 * up); c.rotate(r * 0.8); c.scale(1 + (k - 1) * 0.6, 1 + (k - 1) * 0.6); c.translate(-500, -500);
-        c.fillStyle = pal.name === 'paper' ? '#000' : pal.ink; rounded(c, 0, 0, 1000, 1000, 256); c.fill(); c.restore();
-      });
-    }
-    field(ctx, p, pal, dir, { x: fx, y: fy, r, k, alpha });
+    const v = env.view;
+    const ang = -(0.3 + 0.25 * I);                                   // peeled from the upper corner
+    const n = [-dir * Math.cos(ang), Math.sin(ang)];                 // points at the side that lifts first
+    const dots = (pts) => pts.map((q) => q[0] * n[0] + q[1] * n[1]);
+    const dMax = Math.max(...dots([[256, 256], [744, 256], [256, 744], [744, 744]])) + 256;   // the tile's rounded edge
+    const dEnd = Math.min(...dots([[v.x0, v.y0], [v.x1, v.y0], [v.x0, v.y1], [v.x1, v.y1]])) - 20;
+    const x = seg(t, 0.02, 0.8);
+    // a lift at the corner (a small curl back), then the peel accelerating through and away
+    const q = 0.65 * M.ease.inOutSine(x) + 0.35 * M.ease.inCubic(x) - 0.02 * antic(Math.min(1, x * 2));
+    const d = M.lerp(dMax + 6, dEnd, q);
+    const mirror = (c) => { c.transform(1 - 2 * n[0] * n[0], -2 * n[0] * n[1], -2 * n[0] * n[1], 1 - 2 * n[1] * n[1], 2 * d * n[0], 2 * d * n[1]); };
+    const settle = seg(t, 0.55, 1);
+
+    // 1. the mark, where the field has come away
+    M.layer(ctx, { alpha: 1, composite: 'source-over' }, (c) => {
+      mark(c, p, pal, 0.1 * I * (1 - e(settle)));
+      c.globalCompositeOperation = 'destination-in';
+      c.fillStyle = '#000'; halfPlane(c, n, d, 1); c.fill();
+    });
+    // 2. the flat part of the field, still on the mark: the letters are holes in it
+    M.layer(ctx, { alpha: 1, composite: 'source-over' }, (c) => {
+      c.save(); halfPlane(c, n, d, -1); c.clip();
+      c.fillStyle = fieldPaint(c, p, pal, dir); rounded(c, 0, 0, 1000, 1000, 256); c.fill();
+      c.restore();
+      c.globalCompositeOperation = 'destination-out';
+      letters(c, p, pal, 0, '#000000');
+    });
+    // 3. the flap's shadow, then the flap: the peeled part folded back, its pale back up, holes mirrored
+    const lift = Math.min(1, (dMax - d) / 260);
+    M.layer(ctx, { alpha: (0.16 + 0.1 * I) * lift, blur: 16 * env.scale * env.dpr }, (c) => {
+      c.save(); c.translate(-n[0] * 26 * lift, -n[1] * 26 * lift + 18 * lift); mirror(c); halfPlane(c, n, d, 1); c.clip();
+      c.fillStyle = pal.name === 'paper' ? '#000' : pal.ink; rounded(c, 0, 0, 1000, 1000, 256); c.fill(); c.restore();
+    });
+    M.layer(ctx, { alpha: 1, composite: 'source-over' }, (c) => {
+      c.save(); mirror(c); halfPlane(c, n, d, 1); c.clip();
+      // the back of the paper: pale, shaded darker toward the fold where it curls
+      const back = M.mix(M.colourAt(pal.frame, 0.4), '#FFFFFF', env.theme === 'dark' ? 0.45 : 0.72);
+      const g = c.createLinearGradient(n[0] * d, n[1] * d, n[0] * (d + 420), n[1] * (d + 420));
+      g.addColorStop(0, M.mix(back, pal.ink, 0.22));
+      g.addColorStop(0.18, back);
+      g.addColorStop(1, M.mix(back, '#FFFFFF', 0.5));
+      c.fillStyle = g; rounded(c, 0, 0, 1000, 1000, 256); c.fill();
+      c.globalCompositeOperation = 'destination-out';
+      letters(c, p, pal, 0, '#000000');
+      c.restore();
+    });
   }
 
   function iris(ctx, t, p, env, pal, dir) {
@@ -212,10 +246,10 @@
     idea: 'The mark is cut out of a field of colour; the field slides away and leaves the hole, and the letters take their colour where it has been.',
     why: 'A pass is subtraction, and 5s is "a game of subtraction and negation": what you let go of shapes you as much as what you keep, the way the negative space shows the room.',
     moments: ['pass', 'empty'],
-    styles: ['slide', 'lift', 'iris', 'sweep'],
+    styles: ['slide', 'peel', 'iris', 'sweep'],
     params: {
       duration: { default: 650, min: 300, max: 4000, step: 50 },
-      style: { default: 'slide', options: ['slide', 'lift', 'iris', 'sweep'] },
+      style: { default: 'slide', options: ['slide', 'peel', 'iris', 'sweep'] },
       field: { default: 'frame', options: ['frame', 'judgment', 'ink'] },   // the field's colour
       easing: { default: 'outCubic', options: M.EASES.slice() }
     },
@@ -230,7 +264,7 @@
         else mark(ctx, p, pal, 0);
         return;
       }
-      if (p.style === 'lift') lift(ctx, t, p, env, pal, dir);
+      if (p.style === 'peel') peel(ctx, t, p, env, pal, dir);
       else if (p.style === 'iris') iris(ctx, t, p, env, pal, dir);
       else if (p.style === 'sweep') sweep(ctx, t, p, env, pal, dir);
       else slide(ctx, t, p, env, pal, dir);
