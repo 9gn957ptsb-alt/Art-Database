@@ -190,7 +190,7 @@ const median = xs => (xs.length ? [...xs].sort((a, b) => a - b)[xs.length >> 1] 
 // replies stood from their fixed point, and what its changes did.
 export function reflect(s, meta = {}) {
   const asks = s.turns.map(t => t.ask).join('\n');
-  const stage = stageOf(`${meta.title || ''}\n${asks}`);
+  const stage = stageOf(meta.title || '') || stageOf(asks); // the person's own name for a session comes first
   const errors = s.turns.flatMap(t => [...t.tools.map(x => x.error), t.failed]).filter(Boolean);
   const traps = ROAD.filter(r => errors.some(e => r.trap.test(e))).map(r => r.stage);
   const replies = s.turns.flatMap(t => t.replies);
