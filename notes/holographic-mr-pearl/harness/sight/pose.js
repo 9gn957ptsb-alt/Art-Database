@@ -1,6 +1,6 @@
 // pose.js - test 6.1.18 in Node on the game's own pearl.js: the throwing arm's raise (act.right 0..1 by 1/16) and its
 // fling (0..-pi/2 by pi/32), at rest and at the walk's four quarters: no cell of arm_right in the head's sphere.
-var PB = require("/home/user/site/docs/worlds/rocket/pearl.js"), spec = require("/home/user/site/docs/worlds/rocket/pearl-body.json");
+var PB = require(__dirname + "/../../../../docs/worlds/rocket/pearl.js"), spec = require(__dirname + "/../../../../docs/worlds/rocket/pearl-body.json");
 var body = PB.build(spec, { skip: [6, 26] }), ta = body.throwArm, h = body.cell, r = 3 * h, bad = [];
 var check = function (ok, what) { console.log((ok ? "ok   " : "FAIL ") + what); if (!ok) { bad.push(what); } };
 function ap(m, p) { return [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]]; }

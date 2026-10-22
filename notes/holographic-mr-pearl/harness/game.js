@@ -3,8 +3,8 @@ const { chromium } = require("/opt/node22/lib/node_modules/playwright");
 const fs = require("fs");
 // A copy of the browser under its own name and its own profile folder: other workflows on this machine stop their
 // browsers by name (that stopped every run here at once, 20 Oct), and a pattern on the name never meets this one.
-const EXE = "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf10/build/brw/w10/w10brw";
-const PROFILES = "/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf10/build/brw/profiles";
+const EXE = process.env.PEARL_EXE || "/opt/pw-browsers/chromium";   // or a renamed copy of your own (see README)
+const PROFILES = process.env.PEARL_PROFILES || require("os").tmpdir() + "/pearl-profiles";
 const PIC = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="#8a6"/></svg>';
 const VIEWS = { phone: { width: 390, height: 844, dsf: 2, mobile: true }, desk: { width: 1280, height: 720, dsf: 1, mobile: false } };
 const HASH = "building/golden-continuity-allison-island-residence-by-riva-spain/1";

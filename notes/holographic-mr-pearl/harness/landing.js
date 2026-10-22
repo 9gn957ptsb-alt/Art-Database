@@ -2,7 +2,7 @@
 // Copied from wf10/build/scripts/landing.js and changed for "The body follows the head, not the other way around",
 // one button (Holo, H) instead of Third / First / Holo, no "Bring the body here", no V or G, and the hologram's speed
 // doubled. It requires the harness's own game.js where it is.
-const { open, frames, state } = require("/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf10/build/scripts/game.js");
+const { open, frames, state } = require("./game.js");
 const fs = require("fs");
 const [view, out, port] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });

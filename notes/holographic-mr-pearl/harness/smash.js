@@ -4,7 +4,7 @@
 // (one kept, the latest), the chain (a beat after, swung back), walking (the legs walk on), in water (the swing at
 // SWIM / WALK), the target changed before the strike, the hologram mid-swing, and a real tap or click. The keyframes
 // are photographed in third person. Writes log.txt and results.json in outdir.
-const { open, frames, state } = require("/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf10/build/scripts/game.js");
+const { open, frames, state } = require("./game.js");
 const fs = require("fs");
 const [view, out, port] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });

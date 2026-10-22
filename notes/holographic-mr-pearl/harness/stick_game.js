@@ -1,5 +1,5 @@
 // stick_game.js - the water stick in the game on a phone, driven by real touch events: node stick_game.js outdir [port]
-const { open, frames, state } = require("/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf10/build/scripts/game.js");
+const { open, frames, state } = require("./game.js");
 const fs = require("fs");
 const [out, port] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });

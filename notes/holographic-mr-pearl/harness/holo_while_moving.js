@@ -1,5 +1,5 @@
 // holo_while_moving.js - the left thumb on the stick, the right taps Holo, twice: node holo_while_moving.js outdir [port]
-const { open, frames } = require("/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf10/build/scripts/game.js");
+const { open, frames } = require("./game.js");
 const fs = require("fs");
 const [out, port] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });

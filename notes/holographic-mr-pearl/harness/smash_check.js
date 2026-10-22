@@ -6,7 +6,7 @@
 // of the arms or the guitar comes into his head's sphere (a cell's farthest corner at most on it), that the hat (which
 // turns with the upper body) is never nearer them than a unit, and how near the legs come. Exit 1 on a fault.
 const fs = require("fs");
-const dir = process.argv[2] || "/home/user/site/docs/worlds/rocket";
+const dir = process.argv[2] || __dirname + "/../../../docs/worlds/rocket";
 const PB = require(dir + "/pearl.js");
 const body = PB.build(JSON.parse(fs.readFileSync(dir + "/pearl-body.json", "utf8")), { skip: [6, 26] });
 const hypot = Math.hypot, h = body.cell, half = h * Math.sqrt(3) / 2;

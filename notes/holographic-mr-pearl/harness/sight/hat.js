@@ -1,6 +1,6 @@
 // hat.js - the doffed hat's way from his head to his left glove: does it pass through him? The straight way (the
 // spec's: HAT_DOFF * e) against the one built (out to his left over the raise's first half, then down).
-var PB = require("/home/user/site/docs/worlds/rocket/pearl.js"), spec = require("/home/user/site/docs/worlds/rocket/pearl-body.json");
+var PB = require(__dirname + "/../../../../docs/worlds/rocket/pearl.js"), spec = require(__dirname + "/../../../../docs/worlds/rocket/pearl-body.json");
 var body = PB.build(spec, { skip: [6, 26] }), h = body.cell;
 function ap(m, p) { return [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]]; }
 function smooth(s) { s = Math.max(0, Math.min(1, s)); return s * s * (3 - 2 * s); }

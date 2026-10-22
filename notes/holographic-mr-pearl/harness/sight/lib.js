@@ -1,6 +1,6 @@
 // lib.js - what the sight's tests share: the game opened through the harness (with the frame's own virtual time
 // kept as window.__V), a level arena built ahead of him, standing, blocks set, taps by touch and by mouse, a recorder.
-const { open, frames, state } = require("/tmp/claude-0/-home-user-Art-Database/a1b41505-97aa-5c99-a2ff-1a0633b67077/scratchpad/wf10/build/scripts/game.js");
+const { open, frames, state } = require("../game.js");
 const fs = require("fs");
 
 // The game's frame is wrapped by the harness (it knows it by its name, "frame"); this wraps it once more, under the
