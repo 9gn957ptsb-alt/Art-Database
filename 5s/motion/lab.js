@@ -85,16 +85,20 @@
   }
   function cleanData(d) {
     const out = { picks: {}, stars: {}, v: 1 };
+    const seenStar = new Set();
     if (!d || typeof d !== 'object') return out;
     for (const m of MOMENTS) {
       const p = d.picks && cleanVariant(d.picks[m.id]);
       if (p) out.picks[m.id] = p;
-      const s = d.stars && Array.isArray(d.stars[m.id]) ? d.stars[m.id].map(cleanVariant).filter(Boolean) : [];
+      const s = d.stars && Array.isArray(d.stars[m.id]) ? d.stars[m.id].map(cleanVariant).filter(Boolean).filter((v) => { const k = vkey(v); if (seenStar.has(k)) return false; seenStar.add(k); return true; }) : [];
       if (s.length) out.stars[m.id] = s;
     }
     return out;
   }
-  const vkey = (v) => v.family + '|' + v.seed + '|' + JSON.stringify(v.params) + '|' + (v.direction || 'right');
+  // The database hands params back with their keys in another order, so a variant's key sorts them;
+  // otherwise one favorite saved twice reads as two (it did: 26 stars were 15 favorites).
+  const canon = (x) => JSON.stringify(x, (k, val) => (val && typeof val === 'object' && !Array.isArray(val) ? Object.keys(val).sort().reduce((o, key) => { o[key] = val[key]; return o; }, {}) : val));
+  const vkey = (v) => v.family + '|' + v.seed + '|' + canon(v.params) + '|' + (v.direction || 'right');
   const sameData = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const hasAny = (d) => Object.keys(d.picks).length > 0 || Object.keys(d.stars).length > 0;
 
@@ -969,7 +973,7 @@
         ' <button type="button" class="linkish" data-act="clear-pick">Clear</button>';
     }
     els.pickStatus.innerHTML = html;
-    const starred = v && (data.stars[ui.moment] || []).some((s) => vkey(s) === vkey(v));
+    const starred = v && isStarred(v);
     setStar(els.starStage, starred);
   }
   function setStar(btn, on) {
@@ -1204,21 +1208,34 @@
     change((d) => { d.picks[ui.moment] = Object.assign(variantRecord(v), { note, at: new Date().toISOString() }); });
     say('Picked ' + fam.name + ' for ' + m.name);
   }
+  // Favorites are one pool, used anywhere in 5s: a star made on any moment shows on every moment, and
+  // unstarring takes it out of the pool wherever it was found. Each star still records the moment it
+  // was found on (stars stay keyed by moment, so the saved shape is unchanged).
   function toggleStar(v, moment) {
     const key = vkey(v);
-    let on = false;
+    const was = isStarred(v);
     change((d) => {
-      const list = d.stars[moment] || [];
-      const i = list.findIndex((s) => vkey(s) === key);
-      if (i >= 0) list.splice(i, 1);
-      else { list.unshift(Object.assign(variantRecord(v), { at: new Date().toISOString() })); on = true; }
-      if (list.length) d.stars[moment] = list; else delete d.stars[moment];
+      if (was) {
+        for (const m of Object.keys(d.stars)) {
+          const list = d.stars[m].filter((s) => vkey(s) !== key);
+          if (list.length) d.stars[m] = list; else delete d.stars[m];
+        }
+      } else {
+        const list = d.stars[moment] || [];
+        list.unshift(Object.assign(variantRecord(v), { at: new Date().toISOString() }));
+        d.stars[moment] = list;
+      }
     });
-    say((on ? 'Starred ' : 'Unstarred ') + MO.get(v.family).name + ' · ' + v.params.style + ' for ' + MOMENT[moment].name);
-    return on;
+    say((was ? 'Unstarred ' : 'Starred ') + MO.get(v.family).name + ' · ' + v.params.style + (was ? '' : ': a favorite, used anywhere in 5s'));
+    return !was;
   }
-  function isStarred(v, moment) { const k = vkey(v); return (data.stars[moment] || []).some((s) => vkey(s) === k); }
-  function renderStarCount() { els.starCount.textContent = String((data.stars[ui.moment] || []).length); }
+  function allStars() {
+    const seen = new Set(), out = [];
+    for (const m of Object.keys(data.stars)) for (const s of data.stars[m]) { const k = vkey(s); if (!seen.has(k)) { seen.add(k); out.push(Object.assign({ found: m }, s)); } }
+    return out.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+  }
+  function isStarred(v) { const k = vkey(v); return Object.keys(data.stars).some((m) => data.stars[m].some((s) => vkey(s) === k)); }
+  function renderStarCount() { els.starCount.textContent = String(allStars().length); }
 
   /* ============================================================== explore: the contact sheet */
 
@@ -1238,8 +1255,8 @@
       list = all.map((f) => Object.assign(baseVariant(ui.moment, f.id), { wild: !fits.includes(f) }));
       els.exploreSub.textContent = 'One of every family, at its defaults, for ' + m.name + ' (' + m.feel + '). ' + (fits.length ? 'Families made for other moments are marked Wildcard.' : 'No family was made for this moment yet: every one is a wildcard.');
     } else if (ui.source === 'starred') {
-      list = (data.stars[ui.moment] || []).filter((s) => famOk(s.family)).map((s) => ({ family: s.family, params: MO.resolve(s.family, s.params), seed: s.seed, direction: s.direction, wild: !fits.some((f) => f.id === s.family) }));
-      els.exploreSub.textContent = 'The variants you starred for ' + m.name + ', newest first.';
+      list = allStars().filter((s) => famOk(s.family)).map((s) => ({ family: s.family, params: MO.resolve(s.family, s.params), seed: s.seed, direction: s.direction, wild: !fits.some((f) => f.id === s.family) }));
+      els.exploreSub.textContent = 'All your favorites, from every moment, newest first. They are the ones 5s will use, anywhere.';
     } else {
       list = batchFor(ui.moment, ui.batch[ui.moment]);
       els.exploreSub.textContent = 'Twelve variants for ' + m.name + ' (' + m.feel + ') from seed ' + ui.batch[ui.moment] + ': ' + (fits.length ? 'nine from the families made for it and three wildcards.' : 'no family was made for this moment yet, so all twelve are wildcards.') + ' All play on one clock.';
@@ -1247,7 +1264,7 @@
     sheetVariants = list;
     syncCycle('sheet', list);
     els.sheetEmpty.hidden = list.length > 0;
-    if (!list.length) els.sheetEmpty.textContent = ui.source === 'starred' ? 'Nothing starred for ' + m.name + ' yet. Star a variant in the sheet or on the stage and it will wait here.' : 'No motion families are loaded yet.';
+    if (!list.length) els.sheetEmpty.textContent = ui.source === 'starred' ? 'No favorites yet. Star a variant in the sheet or on the stage and it will wait here, whatever moment you are on.' : 'No motion families are loaded yet.';
     els.sheet.innerHTML = list.map((v, i) => {
       const fam = MO.get(v.family);
       return '<li class="cell">' +
@@ -1258,7 +1275,7 @@
     }).join('');
     $$('.cell', els.sheet).forEach((li, i) => {
       sheetPlayers.push(addPlayer($('canvas', li), 'sheet', () => ({ variant: sheetVariants[i], theme: ui.theme }), { pad: 0.1, maxDpr: 1.5 }));
-      setStar($('.cell-star', li), isStarred(list[i], ui.moment));
+      setStar($('.cell-star', li), isStarred(list[i]));
     });
     groups.sheet.pos = groups.sheet.playing ? 0 : null;
     renderStarCount();
