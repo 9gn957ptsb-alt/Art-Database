@@ -117,6 +117,8 @@ material words (never the title or artist).
 - **Let go**: the things the person let go of on a "Still yours?" card (thumbnail, when), quiet.
 
 ### Set (compose: the mood board as a room)
+- **22 Oct 2026: Set becomes a mood board and a game** (see "Set: the board and the game" below). The
+  board is Set's presentation; the room below stays exactly as it is, one tap away ("See it as a room").
 - Heading "Set", sentence: "Put your parts together. Every place in the room offers three; choose one."
 - An elevation of a room built from five slots, drawn with plain elements, as a collage:
   - **Wall**: a kept Colour card's chord: colour 1 the wall, colour 2 the cornice/trim band, colour 3 the
@@ -652,3 +654,601 @@ by the name the person gave them (no images). No account name, email or id ever 
 7. Status changes (kept/passed, a turn, five done, saved) go to one polite live region.
 8. Timing: nothing forces a decision; the ring can be turned off ("Five-second ring" switch in the
    intro/about sheet).
+
+## Set: the board and the game (22 Oct 2026)
+
+The artist, over a screenshot of Set's room (CONCEPT.md, "Set as a game"): the liked objects should
+appear "more like a mood board that you would find on Pinterest"; "you are able to reinforce
+juxtapositions of aesthetics by associating compliments [complements] that you like between liked
+objects", drawn with "the same gestures you find in Candy Crush Saga"; and this part "should be the
+most game-like and should be able to be played just like Candy Crush Saga".
+
+So Set gains two things and keeps the room:
+- **The board** is Set's presentation: a Pinterest-style masonry board of everything the person keeps,
+  at its own proportions, grouped by what they have put together in the game.
+- **The game** is Candy Crush Saga's rules played with the person's own things. Three in a line is a
+  juxtaposition: three different things (a rug, a painting, a building) that share one of the
+  person's own threads (a colour family, a material, a movement), put together by the person's own
+  swap. The pairings made this way organise the board and, later, teach the taste model what goes
+  together.
+- **The room** stays as it is, one tap away ("See it as a room"): its slots, its three candidates,
+  Pin this set, the pinned sets and the Path's milestone 4 are unchanged.
+
+The standing rules, applied: nothing to download (web only; every sound is synthesised, no files);
+no one pays (no lives, no waiting, nothing bought, no ads, no timers, nothing that nags); aesthetics
+only (threads are colours, materials, qualities, movements and textures, never price, fame or
+place); add, never take away. Irwin's rule becomes a game rule: the board always offers at least
+three ways to go.
+
+### Set's view (wired in by the integration team)
+- `#set` shows the board. Heading "Set", sentence: "Your board: what you kept, grouped by what you put
+  together." Then two buttons: **Play level 7** (Ember, ≥ 56 px; the next level's number) and **See it
+  as a room** (quiet). The room view carries **See it as a board** in the same place. The board is
+  always what `#set` opens.
+- Play opens the game over Set at full height (the tab bar hides while a level is on; the map's Back
+  returns to the board). It is part of Set, not a new tab. Leaving a level costs nothing; the app
+  keeps the running level in memory while the page is open, and it is not saved.
+- Example mode: the board shows the example taste; the game plays, and nothing is saved.
+- Nothing kept yet: "Your board fills with what you keep. Sort a five and it starts." with **Sort** and
+  **See an example**; Play is still offered (the tiles are colour swatches until things are kept).
+
+### The board (FiveSBoard)
+- **What is on it**: kept things (deck cards whose latest judgment is a keep, and brought things not
+  let go: `profile.keptByKind`, across every kind and source) and the paintings kept from paint levels.
+- **Each tile at its own proportions**: a picture at its image's w:h; a Colour card as its three bands
+  (3:2:1, top to bottom) at 3:4; a painting as its grid at cols:rows. Corner radius 16 px, no border,
+  no caption (the name is the button's label); while an image loads, the tile is its first colour.
+- **Masonry**: columns = clamp(floor((width + 8) / 176), 2, 5) (two on a 390 px phone), 8 px gaps;
+  each tile goes into the shortest column so far (ties: the leftmost), in order. Images
+  `loading="lazy" decoding="async"` with width and height set (no layout shift). Relayout on resize
+  (ResizeObserver, at most once per frame).
+- **Sections**, each a small heading (Figtree 600) and a meta line, each its own masonry:
+  1. **Clusters** (once there are associations), from `FiveSMatch.clusters`: heading = the one or two
+     threads most of its members share ("Paper · Orange"; none shared by two: "Put together"); meta =
+     "5 things · put together 9 times" (+ " · 2 kept" for hearted pairings). Strongest first; inside a
+     cluster, the most connected thing first.
+  2. **Paintings you made** (when there are any). A painting tile opens a small sheet: the painting
+     large, "Level 7 · 22 Oct", and Remove (in-page confirm).
+  3. **The rest**. Before any associations, by kind: "Images", "Objects", "Spaces", "Surfaces",
+     "Colours" (brought things sit in their kind). After: one section, "Not put together yet", in kind
+     order, newest first.
+- Each thing's tile is a button (`aria-haspopup="dialog"`, label = kind + the app's name line) that
+  opens the detail sheet, which already says where the thing lives.
+- Tiles fade in once (150 ms) when first shown; nothing moves under reduced motion.
+
+### Suits: your threads
+In Candy Crush a suit is a candy colour. In 5s a suit is **one of the person's threads**, and every
+tile shows the thing's own picture (or a Colour card's bands) inside its suit's frame. The frame is
+what reads at a glance, by colour and by shape, so no one needs colour to play:
+
+| # | Token | Frame colour | Shape (clip-path in the tile's box) | Plain word |
+| --- | --- | --- | --- | --- |
+| 0 | flare | `#FF6B4D` | circle: `circle(50%)` | Red |
+| 1 | ember | `#FF9B55` | petal: `inset(0 round 50% 6% 50% 6%)` | Orange |
+| 2 | sun | `#FFD54A` | arch: `inset(0 round 50% 50% 8% 8%)` | Yellow |
+| 3 | fern | `#4FD18B` | hexagon: `polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)` | Green |
+| 4 | cobalt | `#6C9DFF` | square: `inset(4% round 18%)` | Blue |
+| 5 | iris | `#A78BFF` | diamond: `polygon(50% 0,100% 50%,50% 100%,0 50%)` | Violet |
+
+A tile is the shape filled with its frame colour, and the picture inset 14 % in the same shape (a ring
+of about 5 px at 40 px). The board sits on a dark **table** in both themes (`#1B1726`): every frame
+colour is ≥ 6.2:1 against it.
+
+**Choosing the threads**: `FiveSMatch.pieces(state, deck, n)`, deterministic:
+1. Things = the kept things above, as cards (`FiveS.card`).
+2. Thread candidates: every feature key a thing carries with weight ≥ 0.3 (`FiveS.features`) whose
+   group is Materials, Qualities, Movements or Textures, or that is a `hue:` key (13 hue families,
+   neutral included). Never kinds, categories, eras, places, subjects, value, chroma or chord.
+   Eligible: ≥ 3 members, of ≥ 2 kinds (so a line can juxtapose kinds).
+3. Score = min(members, 12) × (1 + max(0, lift)), lift = the key's lift in `profile.groups` (n ≥ 3;
+   else 0). Sort by score, then key.
+4. Pick in that order, skipping a thread whose members overlap a picked one by Jaccard ≥ 0.6, and a
+   third thread from one group; if fewer than n are picked, a second pass without the group limit.
+5. Assign each thing to the picked thread where weight × (1 + lift) is largest (≥ 0.3; ties: the
+   earlier pick). A thread left with fewer than 2 things takes back its own candidates from threads
+   holding ≥ 4 (highest weight first) until it has 2.
+6. Still fewer than n: hue families in order of members (any count, any kinds), taking only things not
+   yet in a suit; then **swatch suits**.
+7. Swatches (for any suit left with no things): the person's kept colours (`profile.keptColours`) of
+   the suit's hue family for a hue thread, otherwise all of them, three at a time as chords; with no
+   kept colours at all, the suit's frame colour at 100 %, 70 % and 40 % toward paper.
+8. Tokens: suits keep their score order (suit 0 is the strongest thread). A hue thread takes its
+   family's token (red, rose → flare; orange → ember; yellow, lime → sun; green, teal → fern; cyan,
+   blue, indigo → cobalt; violet, magenta → iris), first come first served; every other suit takes the
+   free tokens in table order.
+9. Labels: `FiveS.featureLabel(key)` ("Orange", "Paper", "Abstract Art", "Fine texture"); a swatch
+   suit without a thread uses its token's plain word.
+10. Also returned: `passed` (deck cards whose latest judgment is a pass, then let-go brought things,
+    newest first: the pictures on pass blockers) and `out` (things in no suit; they sit this level out
+    and stay on the board).
+
+On the example taste (37 things) this gives Orange, Neutral, Paper, Acrylic and Fine texture.
+**Why threads, not hue alone**: a match then says something about the person ("these three share
+Paper") and joins different kinds of things; one suit per thing keeps matching as unambiguous as
+candy; suit 0 is always the person's strongest thread, so a collect goal asks for their own taste;
+hue families still win when they are the strongest threads, and are the fallback when there is
+little data. Hue-only suits would only ever say "these are orange".
+
+**The legend**, under the board: each suit's token, its label and how many things are in it
+("Paper · 5"); a swatch suit says "Blue · your colours". Tiles of a suit cycle through its things in
+a ring (kinds interleaved: image, object, space, surface, colour, again; shuffled within a kind by
+the game's seed), so all of them appear and neighbours tend to be different kinds.
+
+### The game: the rules (Candy Crush Saga's)
+**The grid.** cols × rows (7×7 to 9×9; cell i = row × cols + col, row 0 at the top), optionally
+shaped by a mask. A playable cell can be a paint cell (1 or 2 coats), hold a pass blocker, or hold a
+tile. A tile has a suit (0..5, or none for the mark), a thing (or a swatch), and maybe a special.
+
+**Swapping** (the gesture). Press a tile and drag toward a neighbour: past 0.3 of a cell (at least
+10 px) along the dominant axis, the two swap at once. Or tap one (it lifts and gets an Iris ring:
+"Selected") and tap a neighbour; tapping it again, or Escape, puts it down; tapping a non-neighbour
+selects that one instead. Keyboard: one tab stop on the board; arrow keys move focus; Enter or Space
+picks up the focused tile, and while it is up an arrow swaps it that way; Shift+arrow swaps directly;
+H shows a hint; M toggles sound. Input waits while the board is resolving. `touch-action: none` on
+the board only.
+
+**A swap counts** when neither tile is held or blocked, and: a line of 3+ of one suit passes through
+either tile after the swap, or both tiles are specials, or either is the mark. Otherwise the tiles
+slide back (bounce) and no move is spent. A counted swap spends one move.
+
+**Matching and specials.** Every horizontal and vertical run of 3+ tiles of one suit is a run (held
+tiles count; the mark never does); runs sharing a tile form one group. A group makes at most one
+special, by priority:
+
+| Group | Makes | Name in 5s | It does, when cleared |
+| --- | --- | --- | --- |
+| a run of 5+ in a line | the colour bomb | **the mark** (the 5s logo tile: no suit, no picture) | swapped with a tile: clears every tile of that tile's suit. Hit by a blast: clears every tile of the most common suit (ties: lowest suit) |
+| a horizontal and a vertical run (L, T, +) | wrapped | **a burst** | clears the 3×3 around it, stays, falls with the board, clears the 3×3 again, then goes |
+| a run of exactly 4 | striped | **a stripe** | a horizontal run makes a column stripe (clears its column); a vertical run makes a row stripe (clears its row) |
+| a run of 3 | nothing | | |
+
+The special appears in the cell the person dragged the tile into if that cell is in the group, else
+in the other swapped cell if it is; otherwise (cascades) a burst at the runs' crossing, other
+specials in the middle cell of the longest run (the lower/left middle when even). It keeps that
+tile's suit and thing; the mark takes neither.
+
+**Two specials swapped** (as in Candy Crush; centred on the cell the tile was dragged into):
+
+| Swap | Result |
+| --- | --- |
+| stripe + stripe | its row and its column clear |
+| stripe + burst | three rows and three columns clear |
+| burst + burst | the 5×5 clears, the burst falls, the 5×5 clears again |
+| the mark + a plain tile | every tile of that suit clears |
+| the mark + a stripe | every plain tile of the stripe's suit becomes a stripe (row or column, by the seed), then all fire |
+| the mark + a burst | every plain tile of the burst's suit becomes a burst, then all fire (twice each) |
+| the mark + the mark | **"Clean slate."** every tile clears, every pass loses a layer, every held tile is freed |
+
+**Resolving, in waves** (deterministic; `steps` record each event for the animation):
+1. Wave 1 is the swap's own (by the person). A combo or the mark resolves as above; otherwise find the
+   groups and decide their specials.
+2. The clear set = every group's cells, minus the cells where a special is being made. Specials in the
+   clear set fire, first in, first out, each adding its cells (cells in row-major order); any special
+   they hit fires in turn. A burst that fires for the first time stays, armed.
+3. Apply, in row-major order: a held tile in the clear set is freed and stays; any other tile leaves.
+   A paint cell whose tile leaves takes a coat (below). Each pass next to a matched cell (orthogonally)
+   or inside a blast loses one layer, at most one per wave; at 0 its cell becomes empty. Collect goals
+   count the tiles that leave. Score is added.
+4. In wave 1, each group with 2+ different things is a juxtaposition the person made: it is recorded
+   (`onAssociate`). Waves 2+ (cascades), blasts, combos and the mark record nothing.
+5. **Gravity**: tiles fall straight down into empty cells until a hole, a pass, a held tile, the edge or
+   another tile stops them. A **source** is a playable cell with a hole, a pass, a held tile or the
+   edge above it; an empty source takes a new tile, which falls on. Repeat until no playable cell is
+   empty. A new tile's suit is uniform over the level's suits (the game's PRNG, no bias, so lucky
+   cascades happen); its thing is the suit ring's next.
+6. Armed bursts fire again, then the next wave (by cascade) finds groups. Repeat until nothing moves.
+7. **Three ways, always**: when the settled board offers fewer than 3 counted swaps, it reshuffles
+   (the movable tiles permuted by the PRNG until no run exists and ≥ 3 swaps do; after 100 tries,
+   their suits are drawn afresh): "Shuffled: always three ways to go." No move is spent.
+8. End check (below).
+
+**Paint** (Candy Crush's jelly). A paint cell is painted when its tile leaves, in that thing's first
+colour (a swatch's first colour; the frame colour for a thing without colours; Iris `#7350EE` when
+the mark itself leaves). A one-coat cell is done in one; a two-coat cell shows the first coat as a
+wash and, on the second, takes the middle of the two colours (each RGB channel averaged and rounded): Color Middling, on a board. A painted cell keeps
+its colour: later clears do not repaint it, so the finale cannot spoil the picture. Painting every
+paint cell is the goal; the finished board is a composition the person can keep.
+
+**Blockers** (later levels):
+- **A pass**: a cell held by a thing the person passed (from `pieces.passed`, in order; none passed: an
+  empty outline). Shown hollow: the picture greyed at 45 % inside a dashed outline (two outlines for
+  two layers). It cannot be swapped or moved, takes no tile, and loses a layer to a match beside it or
+  a blast over it. Clearing passes is negative space opening up.
+- **Held**: a tile under two straps (an X). It cannot be swapped and does not fall; a match through it
+  or a blast frees it (it stays, free) and it does not count as collected until it leaves later.
+Paint cells never lie under a pass or a held tile.
+
+**Moves, goals, the end.** Each level has a move budget and one or two goals: **score** (reach n),
+**collect** (n tiles of one suit, or of one kind of thing), **paint** (every paint cell), **clear** (every
+pass, every layer). A level whose only goal is a score plays out all its moves and is won if the score
+reached the first star. Any other level is won the moment its goals are met once the board settles,
+then **the finale**: "All set." Each move left turns a random plain tile into a stripe (+100 each), and
+every special on the board fires in turn, in waves (nothing recorded, nothing repainted). Out of moves
+without the goals: **"Out of moves."** with what is left ("3 cells left to paint"), **Five more** if the
+person has one and has not used it this level, **Try again** and **Map**. Nothing is ever lost.
+
+A kind goal ("Collect 12 Images") is scaled to the person's things: with share = the expected share of
+tiles of that kind (the average over the suits of that kind's share of the suit's things), n becomes
+max(4, round(n × min(1, share / 0.25))); with share 0 it becomes "collect n of suit 0".
+
+**Stars.** Score-only levels: one star per threshold reached (s1 to win). Other levels: winning gives
+1, and 2 and 3 at s2 and s3, counted after the finale. Best scores are kept.
+
+**Score.** Each tile that leaves: 20 × min(wave, 5). Making a stripe +60, a burst +100, the mark +200.
+Each coat +50, each pass layer +50, each held tile freed +50. The finale: +100 per move left, plus
+what its stripes clear (at wave 1). A "+120" rises from each group.
+
+**Hint.** After 5 s without input (when hints are on), the best swap nudges twice (the swap whose wave 1
+clears the most; combos and the mark count 10; ties: lowest cells), and again every 5 s. On a coach
+level the first hint is the swap that makes the taught special.
+
+**Boosters**, earned, never bought (each held 0..9; first play starts with one of each):
+
+| Booster | Candy Crush's | It does | Spends a move |
+| --- | --- | --- | --- |
+| **Pass** | lollipop hammer | press a tile: it leaves (a special fires; a held tile is freed; a pass loses a layer) | no |
+| **Turn** | free switch | swap any two movable neighbours, no line needed; lines it makes count as yours | no |
+| **Five more** | +5 moves | +5 moves, once a level, during play or on "Out of moves" (play resumes) | no |
+
+Earned by: the first time a level reaches 3 stars, one booster (Pass, Turn, Five more in turn by level
+number: (n − 1) mod 3); the first win of each fifth level (5, 10 … 30), one of each; and (by the
+integration team) finishing today's five in Sort, one Pass, once a day.
+
+**No lives.** Play any unlocked level as often as you like; every attempt that ends (won, out of
+moves, or left) counts in `saga.plays`, so the next attempt is a new board (the seed is
+`'5s:' + n + ':' + saga.plays`). Levels unlock one after another; nothing else gates them.
+
+### Associations: what you put together
+- A juxtaposition is a wave-1 group with 2+ different things. Every pair in it is recorded:
+  `state.assoc` entries `[a, b, n, heart, at]`. Cascades, blasts, combos, the mark and the finale
+  record nothing: only the person's own swap (or Turn) is a judgment.
+- **The level end** shows "What you put together": up to 6 groups made in the level (most things first,
+  then newest), each its thumbnails, the thread and the short names ("Paper: Bone Armchair, Untitled,
+  Casa Malaparte"), and a heart button **Keep** (`aria-pressed`) that keeps those pairings explicitly
+  (tap again to unkeep). Groups made in a level that ran out of moves are shown too: they still count.
+- **The board** clusters by them: edges weigh n + 2 × heart; strongest edges first (ties: hearted,
+  newest, ids), two clusters merge only while the result has ≤ 8 things; clusters of 2+ are shown.
+- **The taste model** (the integration team's additive engine change, later; the intent): pairings say
+  which features go together for this person. Proposed: `FiveS.together(state, deck)` = feature pairs
+  (thread keys of the two things, weight ≥ 0.3) weighted by n + 2 × heart, with lift over chance; See
+  gains "What you put together" (pair chips, "Paper + Steel · 9"), the philosophy and Claude's prompt
+  name the top pairings, nextFive's match slots may favour a card that carries one side of a strong
+  pairing whose other side the person keeps, and exportSeed gains `pairs` (works by slug, brought
+  things by name) and `paintings`. `removeOwn` drops pairs that name the removed thing.
+
+### The saga
+- Six episodes of five levels, named for the five steps and the habit, on a map that climbs (level 1
+  at the bottom, DOM order 1..30 so Tab follows the path upward), scrolled to the next level:
+  1 **Sort** (1–5) "Line things up." · 2 **Split** (6–10) "Paint with their colours." · 3 **Set** (11–15)
+  "Clear what you passed." · 4 **See** (16–20) "Free what's held." · 5 **Seed** (21–25) "Boards in new
+  shapes." · 6 **Another five** (26–30) "All of it, together." Level 25 is Seed's house; level 30 is
+  the 5 itself, to paint in your own colours.
+- Nodes are 56 px rounded squares (the logo's corner) with the number in Unbounded, on a path drawn as
+  the logo's ribbon (violet and blue bands). Done: Ember to Flare fill, its stars as glyphs and "2 of 3
+  stars" in text. Next: an Iris ring and "Next". Not yet: hollow, "Not yet" in its label. Never colour
+  alone.
+- A level node opens **the level card**: "Level 7", the goals in words ("Paint every cell", "Collect 20
+  · Orange"), moves, the suits' legend, the boosters held, **Play**. Coach levels add one line.
+- Levels past 30 come from `FiveSMatch.level(n)` (the 26–30 recipes in turn, each with 2 more moves
+  and its thresholds × 1.1 per lap), so the saga never stops.
+
+### Levels 1–30 (initial; the playtest tunes them)
+Moves come from a rough simulation (a player taking the swap that paints most, 200 boards each):
+about the 80th percentile early and the 65th later. Paint-everything levels use 4 suits, because 5
+suits on 8×8 took 32 moves at the median. s1 = "win" means any finish earns the first star.
+
+| n | Episode | Board (cells) | Suits | Moves | Goals | Blockers | Stars s1 / s2 / s3 | Coach |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Sort | 7×7 (49) | 4 | 15 | score 3,000 | — | 3,000 / 6,000 / 9,000 | swap |
+| 2 | Sort | 7×7 | 4 | 15 | collect 20 of suit 0 | — | win / 5,000 / 8,000 | |
+| 3 | Sort | 7×7 | 4 | 18 | score 5,000 | — | 5,000 / 8,000 / 11,000 | stripe |
+| 4 | Sort | 7×7 | 5 | 20 | collect 12 of suit 0 + 12 of suit 1 | — | win / 4,500 / 6,500 | |
+| 5 | Sort | 8×8 (64) | 5 | 20 | score 3,000 | — | 3,000 / 4,500 / 6,500 | burst |
+| 6 | Split | 7×7 | 4 | 14 | paint centre 5×5 (25) | — | win / 6,000 / 9,000 | paint |
+| 7 | Split | 7×7 | 4 | 24 | paint all (49) | — | win / 9,000 / 13,000 | |
+| 8 | Split | 8×8 | 5 | 22 | collect 12 Images | — | win / 5,500 / 7,500 | mark |
+| 9 | Split | 8×8 | 5 | 22 | paint centre 6×6 (36) | — | win / 6,000 / 8,500 | |
+| 10 | Split | 8×8 | 4 | 30 | paint all (64), centre 4×4 two coats | — | win / 12,000 / 16,000 | |
+| 11 | Set | 8×8 | 5 | 20 | clear | 8 passes, bottom | win / 5,000 / 7,000 | pass |
+| 12 | Set | 8×8 | 5 | 24 | clear + score 4,000 | 12 passes, bottom | 4,000 / 6,000 / 8,000 | |
+| 13 | Set | 8×8 | 4 | 26 | paint all (52) + clear | 12 passes, bottom | win / 11,000 / 15,000 | |
+| 14 | Set | 8×8 | 5 | 26 | clear | 8 two-layer then 8 passes, bottom | win / 6,500 / 9,000 | |
+| 15 | Set | 9×9 (81) | 4 | 28 | paint all (69) + clear | 12 two-layer passes, scatter | win / 12,000 / 17,000 | |
+| 16 | See | 8×8 | 5 | 22 | collect 15 of suit 0 | 8 held, scatter | win / 5,500 / 7,500 | held |
+| 17 | See | 9×9 | 4 | 28 | paint all (71) | 10 held, scatter | win / 12,000 / 16,000 | |
+| 18 | See | 9×9 | 5 | 25 | score 5,000 | 9 held, centre 3×3 | 5,000 / 7,500 / 10,000 | |
+| 19 | See | 9×9 | 5 | 28 | clear | 18 passes, bottom; 9 held, scatter | win / 7,500 / 10,500 | |
+| 20 | See | 9×9 | 4 | 32 | paint all (73), centre 3×3 two coats | 8 held, scatter | win / 14,000 / 19,000 | |
+| 21 | Seed | diamond (41) | 4 | 24 | paint all (41) | — | win / 7,000 / 10,000 | |
+| 22 | Seed | ring (72) | 6 | 30 | collect 12 each of suits 0, 1, 2 | — | win / 5,000 / 7,000 | |
+| 23 | Seed | island (69) | 5 | 28 | paint centre 5×5 (25) + clear | 10 passes, sides | win / 8,000 / 11,000 | |
+| 24 | Seed | halves (72) | 4 | 32 | paint all (72) | — | win / 12,000 / 16,000 | |
+| 25 | Seed | house (53) | 4 | 30 | paint all (53), walls (rows 5–8) two coats | — | win / 12,000 / 16,000 | |
+| 26 | Another five | 9×9 | 6 | 32 | collect 10 Spaces + 10 Objects | — | win / 6,000 / 8,500 | |
+| 27 | Another five | 9×9 | 4 | 34 | paint all (81), centre 5×5 two coats | — | win / 15,000 / 20,000 | |
+| 28 | Another five | cross (45) | 4 | 28 | clear | 12 two-layer passes, bottom; 6 held, scatter | win / 7,000 / 10,000 | |
+| 29 | Another five | 9×9 | 5 | 32 | paint centre 5×5 (25) + clear | 18 passes, bottom; 6 held, scatter | win / 10,000 / 14,000 | |
+| 30 | Another five | the 5 (61) | 4 | 30 | paint all (61) | — | win / 10,000 / 14,000 | |
+
+**Masks** (9×9, `#` playable, `.` a hole):
+```
+diamond    ring       island     halves     house      cross      five
+....#....  #########  ..#####..  ####.####  ....#....  ...###...  #########
+...###...  #########  .#######.  ####.####  ...###...  ...###...  #########
+..#####..  #########  #########  ####.####  ..#####..  ...###...  ###......
+.#######.  ###...###  #########  ####.####  .#######.  #########  ###......
+#########  ###...###  #########  ####.####  #########  #########  ########.
+.#######.  ###...###  #########  ####.####  .#######.  #########  #########
+..#####..  #########  #########  ####.####  .#######.  ...###...  ......###
+...###...  #########  .#######.  ####.####  .#######.  ...###...  #########
+....#....  #########  ..#####..  ####.####  .#######.  ...###...  ########.
+```
+**Placing** (in this order: mask, passes, held, paint; paint takes only cells still plain):
+- *bottom*: the lowest row first, each row from the board's centre column (floor((cols − 1) / 2))
+  outward (centre, left of it, right of it, …, skipping holes), upward until n are placed (several
+  entries continue where the last stopped).
+- *sides*: each row's leftmost then rightmost playable cell, bottom row first.
+- *scatter*: random playable cells (PRNG `'layout:' + n`), never in the top row, never orthogonally
+  next to another pass or held tile, never inside the level's centre paint or two-coat square.
+- *centre K×K*: the cells of the centred square (first row and column = floor((N − K) / 2)).
+- *all*: every playable cell still plain.
+
+`FiveSMatch.level(n)` expands a recipe into grid strings (`.` hole, `#` plain, `o` one coat, `O` two
+coats, `p` pass, `P` two-layer pass, `h` held), the canonical layout; the cell counts in the table are
+its tests.
+
+**Coach lines** (once, over the board, with a ghost hand on the hinted swap; under reduced motion an
+arrow): swap "Swap two neighbours to line up three in the same frame. Drag, or tap one then the other." ·
+stripe "Line up four for a stripe. It clears its whole row or column." · burst "Make an L or a T for a
+burst. It bursts twice." · paint "A match paints the cells under it in your things' colours. Paint
+them all." · mark "Line up five for the mark. Swap it with any tile to clear every tile in that frame." ·
+pass "These are things you passed. Match beside them to clear them away." · held "Held tiles can't
+move. Match through them to free them."
+
+The playtest's bar (a bot playing the hint): each level won in ≥ 60 % of 50 boards for 1–10, ≥ 45 %
+for 11–20, ≥ 35 % for 21–30, and 3 stars in 10–25 %.
+
+### Feel
+**Words** (5s's voice: plain, short, a full stop). Cascades, shown once per swap for its deepest wave:
+wave 2 "Good eye." · 3 "Together." · 4 "In tune." · 5 "Composed." · 6+ "Sublime." Making the mark: "The
+mark." Mark + mark: "Clean slate." The finale: "All set." A win: "Level 7 done." Three stars: "Three
+stars." Out: "Out of moves." Reshuffle: "Shuffled: always three ways to go." Words pop in Unbounded
+(28–36 px, paper with the Ember to Flare gradient underline) over the board.
+
+**Motion** (transform and opacity only):
+
+| Moment | What moves | ms |
+| --- | --- | --- |
+| press | the tile lifts (scale 1.08) | 80 |
+| swap | both tiles slide | 160, out-cubic |
+| bounce | there and back with a 4 px overshoot | 160 + 160 |
+| clear | scale 1 → 1.15 → 0 and fade; 6–8 particles in the frame colour; the cell's paint floods from the centre | 180 (paint 200) |
+| fall | gravity, landing with a small bounce (outBack) | 90 + 45 per cell |
+| next wave | after the falls land | +40 |
+| special made | pops 1.25 → 1 with a white flash | 220 |
+| stripe | a beam along the row or column; tiles clear from the stripe outward | 200, 25 per cell |
+| burst | a ring wave over the 3×3; again after the fall | 220 |
+| the mark | the logo's ribbon (violet, blue, lilac bands) arcs to each target, which lifts and clears | 30 stagger, ≤ 900 |
+| word | 0.6 → 1.05 → 1, hold, fade | 260 + 500 + 200 |
+| score | "+120" rises from the group | 500 |
+| finale | a stripe made every 80 ms, fired every 120 ms; stars fill one by one | 300 a star |
+| win | the tiles lift away and leave the painting (paint levels) | 600 |
+| hint | the two tiles nudge 3 px toward each other, twice | 2 × 300 |
+
+**Reduced motion**: nothing slides, falls, pops or flies. Swaps and falls place at once; clears and new
+tiles fade (≤ 150 ms); each wave still waits ~150 ms so it can be followed; blasts show their cells
+highlighted for 150 ms; words sit in the status line for 1.2 s; the hint is a static dashed Iris
+outline; the ghost hand is an arrow. Fully playable.
+
+**Sound** (WebAudio, synthesised, no files). One AudioContext made on the first press or key in the
+game (autoplay rules) and suspended when the page is hidden; master gain 0.35 into a compressor; at
+most 12 voices (extras dropped). Notes from the C major pentatonic (five notes): C5 D5 E5 G5 A5 C6
+D6 E6.
+
+| Event | Voice |
+| --- | --- |
+| swap | sine glide 600 → 900 Hz, 60 ms, quiet |
+| bounce | triangle 300 → 200 Hz, 120 ms |
+| match | a pluck (triangle + a sine an octave up, 5 ms attack, 220 ms decay) on pentatonic note min(wave − 1, 7): cascades climb, as in Candy Crush |
+| special made | three quick plucks up |
+| stripe | band-passed noise swept 400 → 4,000 Hz, 250 ms |
+| burst | sine thump 120 → 60 Hz, 200 ms, with a noise burst |
+| the mark | a pentatonic glissando up, with two detuned saws through a low-pass |
+| paint | low-passed noise (1,200 Hz), 80 ms, at most one every 60 ms |
+| win | five notes up, then a bell per star (sine with partials ×2 and ×3), each higher |
+| out of moves | a soft falling minor third |
+
+**Sound on/off**: a visible button in the game's top bar (speaker glyph and "Sound", `aria-pressed`),
+remembered in `opts.sound`; M toggles it. **Haptics**: `navigator.vibrate` where it exists (swap 6 ms,
+bounce 4, match 10, special 18, the mark [12, 40, 12], win [20, 60, 20, 60, 40]); off when sound is off,
+so "off" means quiet.
+
+**Performance** (60 fps on a mid phone): tiles are absolutely placed elements moved only by
+`translate3d` and opacity, with `will-change` only while moving; one requestAnimationFrame loop drives
+every animation and stops when nothing moves; particles, beams and the ribbon on one overlay canvas
+(device pixel ratio ≤ 2); images decoded before the level starts (`img.decode()`); no layout reads
+inside the loop; paint floods are a scaled layer, never an animated background colour. The smoke test
+throttles the CPU 4× (CDP) and requires a p95 frame ≤ 20 ms through a cascade.
+
+### Look and layout (390 px first)
+- Top bar (56 px): Back ("Map"), "Level 7", Sound. Status (64 px): **Moves** large (Unbounded), the
+  goals with progress in words ("12 of 20", "Paint 31 of 49"), the score with a three-star meter.
+- The board: full width less 16 px gutters (9 columns ≈ 40 px cells on a phone; at most 480 px wide),
+  on the table (`#1B1726`, both themes) with 12 px padding and the card radius (28 px); cells `#2A2438`
+  with 3 px gaps; holes show the table. Under it the legend (one or two rows of chips), then the
+  boosters (Pass, Turn, Five more: ≥ 48 px, glyph + word + count; at 0 disabled and "0").
+- Unpainted paint cells are hatched (45°, `#77708C`, 2 px every 6 px; ≥ 3.2:1 on cell and table); two-coat
+  cells cross-hatched; after one of two coats, the colour at 45 % over a single hatch; painted cells
+  solid. Passes: hollow and dashed (`#B9B2CC`). Held: two straps in table ink at 80 %. Stripes: three
+  white bands across the tile in their direction plus an arrow glyph; bursts: a second, dashed outer
+  ring; the mark: the 5s logo tile (Cobalt to Iris frame, "5s" in the Ember to Flare gradient).
+- Text on the table `#EEEBF5` (14.9:1). The level card and level end are sheets in the app's style.
+- **The level end**: "Level 7 done." · the stars (glyphs and "2 of 3 stars") · "Score 8,240 · Best 9,100"
+  · What you put together (hearts) · the painting, with **Keep this painting** (paint levels; when the
+  board already holds 24: "Your board holds 24 paintings. Remove one to keep this.") · any booster
+  earned ("You earned a Pass.") · **Next level**, **Play again**, **Your board**.
+
+### Accessibility
+- The board is a `role="grid"` labelled "Level 7 board, 8 by 8" with rows of `gridcell`s and a roving
+  tabindex. Each cell's label: thread, the thing's short name, special, state, place: "Paper, Bone
+  Armchair, stripe: clears its column. Row 3, column 4." / "A pass, 2 layers." / "Held: Orange,
+  Untitled." / "Unpainted." Holes are not cells.
+- One polite live region, one message per move once it settles: "Matched 3 Paper. Painted 3. Good eye.
+  14 moves left." Also selection, hint, reshuffle and the end.
+- Every gesture has a tap way and a key way; targets ≥ 24 px (cells ≈ 40 px; buttons ≥ 48 px).
+- Never colour alone: suits by shape and legend, specials by pattern and glyph, paint by hatching,
+  stars and map states in words.
+- No timing: no clock, no countdown; the hint is optional (`opts.hints`, a switch in the level card).
+- Focus ring 2 px Iris (`#A78BFF` on the table), 2 px offset; sheets trap focus and Escape closes them;
+  the game's Back is always reachable.
+
+### Data (additive state fields; `norm()` fills the defaults)
+```jsonc
+{
+  "assoc": [["i020", "o017", 3, 1, 1761100000]],   // [a, b (a < b), n 1..99 (times put together by your swap), heart 0|1, last unix s]
+  "saga": {"stars": [3, 2, 1], "best": [8240, 5120, 4410],   // index n−1, levels won in order (length = levels won)
+           "boost": {"pass": 1, "turn": 1, "more": 1},       // held, 0..9 each
+           "plays": 14,                                        // level attempts finished (seeds the next board)
+           "day": "2026-10-22"},                               // last day Sort's five gave a Pass
+  "paintings": [{"at": 1761100000, "n": 7, "cols": 7, "rows": 7, "c": "f28a3c…"}],   // 6 hex per cell row-major, "------" outside the painting
+  "opts": {"ring": true, "sound": true, "hints": true}
+}
+```
+Limits: `assoc` ≤ 400 entries: past it, the unhearted entry with the lowest n, then the oldest, goes;
+hearted entries never go. `paintings` ≤ 24 (refused past it, never dropped). `saga.stars`/`best` ≤ 999.
+About 15 KB at the caps. The running level is not saved. In example mode nothing is written.
+
+### FiveSMatch (`src/match.js`: pure, no DOM, no clock; `window.FiveSMatch` / `module.exports`)
+Uses FiveS (`window.FiveS`, or `require('./engine.js')` in Node). Nothing mutates its input; every
+random draw comes from the game's own PRNG state, so the same inputs give the same board and steps.
+```js
+FiveSMatch.version = 1
+FiveSMatch.TOKENS     // the six suit tokens: [{name:'flare', hex:'#FF6B4D', shape:'circle', word:'Red'}, …]
+FiveSMatch.LEVELS     // the 30 recipes: {n, size:[cols,rows]|mask:'diamond', suits, moves, goals:[…],
+                      //   paint:'all'|'centre:5'|null, coats2:'centre:4'|'rows:5-8'|'all'|null,
+                      //   passes:[{n, layers, at:'bottom'|'sides'|'scatter'}], held:{n, at:'scatter'|'centre:3'}|null,
+                      //   stars:[s1|0, s2, s3], coach:'swap'|'stripe'|'burst'|'paint'|'mark'|'pass'|'held'|null}
+FiveSMatch.EPISODES   // [{name:'Sort', line:'Line things up.', from:1, to:5}, …]
+FiveSMatch.MASKS      // {diamond:[9 strings], ring, island, halves, house, cross, five}
+FiveSMatch.WORDS      // {2:'Good eye.', 3:'Together.', 4:'In tune.', 5:'Composed.', 6:'Sublime.', mark:'The mark.', slate:'Clean slate.', finale:'All set.', shuffle:'Shuffled: always three ways to go.'}
+FiveSMatch.prng(seed) -> () => [0,1)            // mulberry32 over the same string hash as FiveS.prng
+FiveSMatch.level(n) -> Level   // {n, episode, cols, rows, grid:[strings], suits, moves, goals, stars, coach}; n > 30 generated
+FiveSMatch.pieces(state, deck, n) -> {suits:[Suit × n], passed:[id], out:[id]}
+   // Suit = {key:'mat:paper'|'hue:orange'|null, label:'Paper', token:'ember', hex, shape, ids:[id], swatches:[[hex,hex,hex]]}
+FiveSMatch.newGame(level, pieces, seed) -> Game  // no runs; ≥ 3 counted swaps; a coach level has a swap making its special (≤ 200 tries)
+FiveSMatch.canSwap(game, a, b) -> boolean
+FiveSMatch.swap(game, a, b) -> {game, valid, steps}   // invalid: valid false, steps [bounce], game unchanged
+FiveSMatch.moves(game) -> [[a, b]]                     // every counted swap, a < b
+FiveSMatch.hint(game, prefer?) -> [a, b] | null        // prefer: 'stripe'|'burst'|'mark'
+FiveSMatch.boost(game, 'pass', cell) | (game, 'turn', [a, b]) | (game, 'more') -> {game, ok, steps}
+FiveSMatch.finale(game) -> {game, steps}               // once, when game.state is 'won'; then 'done'
+FiveSMatch.result(game) -> Result
+FiveSMatch.addAssociations(assoc, ids, nowSec) -> assoc   // every pair of distinct ids: n + 1 (≤ 99), at; then the cap
+FiveSMatch.heart(assoc, ids, on) -> assoc                 // every pair among ids: heart 1|0 (a missing pair is added with n 1)
+FiveSMatch.recordLevel(saga, result, nowSec) -> {saga, earned:{pass, turn, more}}
+FiveSMatch.useBoost(saga, kind) -> saga | null            // null when none is held
+FiveSMatch.keepPainting(paintings, result, nowSec) -> paintings | null   // null at 24
+FiveSMatch.clusters(state, deck, max = 8) -> {clusters:[{ids, keys, label, times, hearts}], rest:[id]}
+```
+```jsonc
+// Game (plain JSON)
+{"v": 1, "n": 7, "cols": 7, "rows": 7, "r": 123456789,          // r: the PRNG state (uint32)
+ "suits": [/* Suit, plus "at": the ring's next index */],
+ "cells": [{"hole": false, "coats": 1, "first": null, "colour": null, "pass": 0, "pid": null,
+            "t": {"k": 41, "s": 2, "o": "o017", "sw": null, "sp": null, "held": false, "armed": false}}],
+            // sp: null | "row" | "col" | "burst" | "mark"; s: -1 for the mark; o or sw (swatch index)
+ "moves": 12, "score": 4210, "k": 120,                          // k: the next tile id
+ "goals": [{"type": "paint", "n": 49, "have": 31}],             // type: score | collect (+ suit | kind) | paint | clear
+ "groups": [{"ids": ["i020", "o017", "s004"], "suit": 2}],      // this level's juxtapositions, in order
+ "made": {"stripe": 2, "burst": 1, "mark": 0}, "more": false,   // more: Five more used
+ "state": "play"}                                               // play | won | out | done
+```
+```jsonc
+// steps: [{e, …}] in order; FiveSPlay animates them
+{"e": "swap", "a": 10, "b": 11}     {"e": "bounce", "a": 10, "b": 11}     {"e": "wave", "n": 2}
+{"e": "match", "cells": [..], "suit": 2, "ids": [..], "by": "you"|"cascade"}
+{"e": "make", "cell": 11, "tile": {..}}   {"e": "fire", "cell": 11, "sp": "col", "cells": [..]}
+{"e": "clear", "cell": 3, "k": 41}        {"e": "paint", "cell": 3, "colour": "#c0c2c1", "left": 0}
+{"e": "block", "cell": 40, "left": 1, "id": "s011"}   {"e": "free", "cell": 22}
+{"e": "fall", "k": 41, "from": 3, "to": 17}          {"e": "drop", "cell": 3, "tile": {..}}
+{"e": "word", "text": "Good eye."}        {"e": "score", "add": 120, "total": 4330, "cell": 11}
+{"e": "goal", "i": 0, "have": 32}         {"e": "shuffle", "moves": [[41, 17], ..]}
+{"e": "boost", "kind": "pass"}            {"e": "end", "state": "won"|"out"}
+```
+```jsonc
+// Result
+{"n": 7, "won": true, "stars": 2, "score": 8240, "movesLeft": 0, "used": 19,
+ "goals": [{"type": "paint", "n": 49, "have": 49}],
+ "groups": [{"ids": [..], "key": "mat:paper", "label": "Paper"}],   // distinct, newest first, ≤ 12
+ "painting": {"cols": 7, "rows": 7, "c": "…"} | null, "made": {"stripe": 3, "burst": 1, "mark": 1}}
+```
+
+### FiveSPlay (`src/play.js`: the game in an element; `window.FiveSPlay`)
+```js
+FiveSPlay.mountMap(el, {saga, onLevel(n), onBack()}) -> {update({saga}), destroy()}
+FiveSPlay.mount(el, {
+  n, pieces, seed,                         // pieces = FiveSMatch.pieces(state, deck, FiveSMatch.level(n).suits)
+  boost: {pass, turn, more},               // held
+  thumb(id) -> {src, cols, index} | {src} | {colours},   // atlas cell, one image, or a Colour card's bands
+  name(id) -> string,                      // a short name for the level end ("Bone Armchair")
+  opts: {sound, hints, reduce},            // reduce: prefers-reduced-motion (it also listens for changes)
+  onAssociate({ids, key, label}),          // each juxtaposition, as it happens: the app calls addAssociations and saves
+  onHeart({ids, on}),                      // a heart at the level end: the app calls heart
+  onBoost(kind),                           // a booster spent: the app calls useBoost
+  onEnd(result),                           // every end: won (after the finale), out of moves, or left unfinished (won false): recordLevel
+  onKeepPainting(painting) -> boolean,     // the app calls keepPainting; false: the board is full
+  onOpts(opts),                            // Sound or Hints changed
+  onNext(n), onMap(), onBoard()            // leaving
+}) -> {destroy(), pause(), resume()}       // pause on page hide: the loop and audio stop
+```
+It draws the level card, the level, the out-of-moves sheet and the level end; owns its sound,
+haptics, motion and hint timer; injects its CSS once (`<style data-fives="play">`, the app's tokens
+with fallbacks); and never writes state itself: the callbacks do.
+
+### FiveSBoard (`src/board.js`: the mood board in an element; `window.FiveSBoard`)
+```js
+FiveSBoard.mount(el, {
+  state, deck,                       // the app's state (assoc and paintings may be absent) and deck
+  image(card) -> url | null,         // the tile's picture (deck img or a brought thing's image); null: draw bands or the first colour
+  name(card) -> string,              // the app's name line, for labels
+  onOpen(id, tileEl),                // a thing pressed: the app opens the detail sheet
+  onPainting(index, tileEl),         // a painting pressed
+}) -> {update({state, deck}), destroy()}
+```
+Sections from `FiveSMatch.clusters`, masonry as above, its CSS injected once (`data-fives="board"`).
+The view's heading, sentence and the Play / See it as a room buttons stay the app's.
+
+### Files and tests
+`src/match.js`, `src/play.js`, `src/board.js`; `test/match.test.cjs` (node --test: determinism; no
+starting runs and ≥ 3 swaps; bounce changes nothing; 4 → the right stripe; L and T → burst at the
+crossing; 5 → the mark; every combo; gravity and sources around holes, passes and held tiles; the
+reshuffle; coats and the middle colour; goals, finale, stars; pieces on the example taste and on
+nothing kept; addAssociations' cap and hearts; clusters' cap and the by-kind start; all 30 levels
+expand to the table's cell counts); `test/game.html` (a harness loading engine.js, match.js,
+play.js and board.js with the fixture deck); `test/play.smoke.cjs` and `test/board.smoke.cjs`
+(Playwright at 390 × 844: drag, tap-tap and keyboard swaps, a bounce, a cascade, reduced motion, the
+mute button, the level end, the frame-time budget; the masonry's columns and proportions). The
+integration team adds the three scripts to `build_page.py`'s list and `src/index.html` (after
+engine.js, before app.js) and wires Set.
+
+### Decisions, obstacles and their resolutions
+- *Pictures cannot be candy colours.* Each suit is a frame colour and a shape around the thing's own
+  picture, plus a legend in words.
+- *A newcomer has little or nothing kept.* Threads fall back to hue families, then to swatches of the
+  person's own colours, then to the frame colours; level 1 plays with nothing kept.
+- *Candy colours on light paper fall under 3:1* (Ember 2.0:1). The board sits on a dark table in both
+  themes (every frame ≥ 6.2:1).
+- *A broad thread swallows the rest* (Neutral contains most things, so a containment test dropped
+  Paper). Redundancy is Jaccard ≥ 0.6 between threads, with at most two threads a group on the first
+  pass; on the example taste this gives five distinct threads.
+- *Paint levels are slow with 5 suits* (8×8 paint-all: 32 moves at the median, 46 at the 80th). Paint
+  everything with 4 suits; with 5, paint a centre square. Moves set from the simulation.
+- *Candy Crush's diagonal refill around blockers is fiddly to get deterministic.* Straight gravity only,
+  with a source under every hole, pass and held tile.
+- *The finale's stripes would repaint the picture.* A painted cell keeps its first finished colour.
+- *Saving a level mid-way.* Not saved: with no lives and no cost, leaving is free; the app keeps it in
+  memory while the page is open.
+- *Cascades are luck, not taste.* Only the swap's own wave records a juxtaposition.
+- *Another workflow adds Architectural Authority buildings (a `source` field).* Nothing here assumes a
+  card is from Artsy: pictures and names come from the app's callbacks, and a tile opens the detail
+  sheet, which says where the thing lives.
