@@ -392,7 +392,7 @@
   // Dates arrive as written on Artsy: "Executed in 2002.", "(Date unknown)", "Undated". Say the date, or nothing.
   function dateText(d) {
     const t = String(d == null ? '' : d).replace(/\s+/g, ' ').trim();
-    if (/^\(?\s*(date\s+)?(unknown|undated|n\.\s?d\.|no date)(\s+date)?\s*\)?\.?$/i.test(t)) return '';
+    if (/^\(?\s*(date\s+)?(unknown|undated|n\.\s?d\.|n\/?a|no date)(\s+date)?\s*\)?\.?$/i.test(t)) return '';
     return t.replace(/^executed in\s+/i, '').replace(/(\d)\.$/, '$1');
   }
   // A medium worth showing has words in it (one real record's medium is just its year).

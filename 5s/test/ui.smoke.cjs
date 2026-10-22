@@ -701,6 +701,7 @@ function fakeClaude(opts) {
   return `(() => {
     const opts = ${JSON.stringify(opts || {})};
     const docs = new Map(); window.__docs = docs; window.__writes = 0;
+    if (opts.stored) docs.set(opts.stored.path, JSON.stringify(opts.stored.data));
     const subs = new Map();
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const snap = (p) => ({ id: p.split('/').pop(), exists: docs.has(p), data: () => (docs.has(p) ? JSON.parse(docs.get(p)) : undefined), metadata: { fromCache: false, hasPendingWrites: false } });
@@ -718,7 +719,15 @@ function fakeClaude(opts) {
             (subs.get(p) || []).forEach((f) => setTimeout(() => f(snap(p)), 5));
           },
           async delete() { await wait(20); docs.delete(p); },
-          onSnapshot(next) { const l = subs.get(p) || []; l.push(next); subs.set(p, l); setTimeout(() => next(snap(p)), 10); return () => {}; },
+          onSnapshot(next) {
+            const l = subs.get(p) || []; l.push(next); subs.set(p, l);
+            if (opts.cacheFirstMs) {
+              // A slow store: first a cache view that doesn't have the document yet, then the server's answer.
+              setTimeout(() => next({ id: p.split('/').pop(), exists: false, data: () => undefined, metadata: { fromCache: true, hasPendingWrites: false } }), 10);
+              setTimeout(() => { window.__answered = true; next(snap(p)); }, opts.cacheFirstMs);
+            } else setTimeout(() => next(snap(p)), 10);
+            return () => {};
+          },
         };
       },
       collection() { throw new TypeError('not in this fake'); },
@@ -790,6 +799,41 @@ test('with db, user, sample and downloads (faked): state, images, Claude, seed',
     assert.equal(seed.format, '5s-seed');
     assert.ok(!/u_test1/.test(saved.data), 'no account id in the seed');
     await page.waitForFunction(() => { const d = JSON.parse(window.__docs.get('data/users/u_test1/state')); return d.seen && d.seen.seed === 1; }, null, { timeout: 5000 });
+  } finally { await ctx.close(); }
+});
+
+test('db: nothing is written before the store answers, and a state saved elsewhere is not overwritten', { timeout: 60000 }, async () => {
+  // A state saved on another device: three judgments of today's first five.
+  const deck = await (await fetch(new URL('deck.json', BASE))).json();
+  const t0 = Date.now() - 60000;
+  let remote = FiveS.startFive(FiveS.markSeen(FiveS.newState(), 'intro'), deck, t0);
+  for (let i = 0; i < 3; i++) remote = FiveS.judge(remote, deck, FiveS.currentCard(remote), true, 1500, t0 + i * 2000).state;
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+  await page.addInitScript(fakeClaude({ stored: { path: 'data/users/u_test1/state', data: remote }, cacheFirstMs: 3000 }));
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  try {
+    await page.goto(BASE + '#sort');
+    await page.click('#btn-start');
+    for (let i = 0; i < 2; i++) { const id = await topId(page); await page.click('#btn-pass'); await waitTopChange(page, id); }
+    await sleep(1200); // past the 800 ms debounce, still before the store's answer
+    assert.equal(await page.evaluate(() => !!window.__answered), false, 'the store has not answered yet');
+    assert.equal(await page.evaluate(() => window.__writes), 0, 'nothing written before the store answered');
+    // The answer arrives: the stored state is adopted, not overwritten.
+    await page.waitForFunction(() => window.__answered && JSON.parse(localStorage.getItem('5s.state.v1')).j.length === 3, null, { timeout: 6000 });
+    const local = await page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1')));
+    assert.deepEqual(local.j, remote.j);
+    assert.equal(await counter(page), 4, 'the five carries on where the other device left it');
+    // Judging now writes on top of the stored history.
+    const id = await topId(page);
+    await page.click('#btn-keep');
+    await waitTopChange(page, id);
+    await page.waitForFunction(() => { const d = window.__docs.get('data/users/u_test1/state'); return d && JSON.parse(d).j.length === 4; }, null, { timeout: 5000 });
+    const stored = await page.evaluate(() => JSON.parse(window.__docs.get('data/users/u_test1/state')));
+    assert.deepEqual(stored.j.slice(0, 3), remote.j);
+    assert.deepEqual(errors, []);
   } finally { await ctx.close(); }
 });
 
