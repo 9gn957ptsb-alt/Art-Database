@@ -894,3 +894,44 @@ dialog.sheet.fallback {
 .obj .ph-slot { position: relative; width: 72%; aspect-ratio: 1; border-radius: 12px; }
 .obj .ph-slot .ph-i { font-size: 28px; }
 .room.mini .ph-i { font-size: 12px !important; }
+
+/* ------------------------------------------------------------------ links out: Where it lives */
+.where { display: grid; gap: 8px; padding-top: 4px; }
+.where-h { margin: 0; font: 500 18px/1.3 var(--font-display); }
+.where-h:focus-visible { outline-offset: 4px; border-radius: 6px; }
+.where-sub { margin: 6px 0 0; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.where-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.wl { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.wl-t { display: grid; gap: 2px; min-width: 0; }
+.wl-t .t { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.wl-t .u { font: 400 12px/1.3 var(--font-mono); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.where-all { font: 400 12px/1.45 var(--font-mono); }
+.where-all[hidden] { display: none; }
+.strip-btns { flex-wrap: wrap; }
+.revisit .where-btn { margin-left: auto; flex: none; font-size: 14px; }
+.room-key .where-btn { min-height: 24px; padding: 0 2px; font-size: 13px; }
+.choices li { flex-direction: column; gap: 2px; }
+.choices .choice { flex: 1; }
+.choices .where-btn { align-self: start; font-size: 13px; }
+
+/* ------------------------------------------------------------------ links in: the paste box */
+.linkform input[type="text"] { flex: 1 1 220px; min-width: 0; width: auto; }
+.pdrop { padding: 18px 16px; }
+.pdrop .err { color: var(--keep-ink); font-weight: 600; }
+.define { display: grid; gap: 14px; padding: 14px; border-radius: 18px; border: 1px solid var(--line); }
+.def-sure { margin: 0; font-weight: 600; }
+.def-top { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: start; }
+.def-pic { width: 120px; aspect-ratio: 1; border-radius: 14px; }
+.def-pic.ph .ph-i { font-size: 44px; }
+.def-fields { display: grid; gap: 10px; min-width: 0; }
+@media (max-width: 420px) { .def-top { grid-template-columns: 84px minmax(0, 1fr); } .def-pic { width: 84px; } .def-pic.ph .ph-i { font-size: 32px; } }
+.def-words { display: grid; gap: 8px; }
+.def-words p { margin: 0; }
+.def-chip { display: inline-flex; align-items: center; gap: 2px; padding: 0 4px 0 12px; }
+.chip-x { display: inline-grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--ink-2); }
+.chip-x:hover { background: var(--line); color: var(--ink); }
+.chip-x svg { width: 14px; height: 14px; }
+.facts .chip-x { width: 24px; height: 24px; vertical-align: middle; }
+.def-cols { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.def-cols .sw { width: 24px; height: 24px; border-radius: 6px; }
+.tag { font: 500 12px/1 var(--font-mono); padding: 4px 8px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--ink-2); }

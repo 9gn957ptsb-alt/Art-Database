@@ -1,6 +1,6 @@
 /* Each person's 5s, privately, in the connector's own store (in production their own SQLite-backed
- * Durable Object, person.js and index.ts FiveSPerson, which took over from Workers KV for the free
- * plan's sake; a Map in tests), keyed by their GitHub user id (a number that never changes, unlike a login).
+ * Durable Object, person.js and index.ts FiveSPerson, never Workers KV, for the free plan's sake; a
+ * Map in tests), keyed by their GitHub user id (a number that never changes, unlike a login).
  *
  *   state:<id>  {rev, at, state, use}    the 5s state, shared with the app through get_state/put_state;
  *                                        use = today's counts {day, writes, saves} for the daily caps
@@ -45,11 +45,6 @@ function checkUid(uid) {
   const s = String(uid == null ? '' : uid);
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(s)) throw new Error('bad user id');
   return s;
-}
-
-/** A store over a KV namespace (get/put of strings): how the connector kept each 5s before person.js. */
-export function kvStore(kv) {
-  return { get: (k) => kv.get(k), put: (k, v) => kv.put(k, v) };
 }
 
 /** A failure of the store itself (not a cap 5s sets): the tools answer it in plain words, never "something went wrong". */

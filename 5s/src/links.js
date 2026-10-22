@@ -96,9 +96,9 @@
   // ---------------------------------------------------------------- addresses
 
   // Parameters that only say who shared, from where, or which campaign: never part of the thing.
-  const TRACKING = /^(?:utm_[a-z0-9_]*|fbclid|gclid|gclsrc|dclid|gbraid|wbraid|msclkid|yclid|twclid|ttclid|li_fat_id|mc_cid|mc_eid|_ga|_gl|_hsenc|_hsmi|__hs[a-z]+|hsctatracking|igshid|igsh|si|ref_src|ref_url|mibextid|spm|scm|share_id|share_source|sharesource|_branch_match_id|_branch_referrer|s_cid|cmpid|trk|trkcampaign|sr_share|feature|pp|ab_channel|_r|_t|is_from_webapp|sender_device|sender_web_id|is_copy_url|web_id|epik|rdt|click_key|click_sum|ga_[a-z_]+|_trkparms|_trksid|mkcid|mkrid|mkevt|campid|toolid|customid|pf_rd_[a-z]+|pd_rd_[a-z]+|smid|smtyp|cid|ocid|wt\.mc_id|oly_[a-z_]+|vero_[a-z_]+|rb_clickid|s_kwcid|ef_id|irclickid|ranmid|raneaid|ransiteid)$/i;
+  const TRACKING = /^(?:utm_[a-z0-9_]*|fbclid|gclid|gclsrc|dclid|gbraid|wbraid|msclkid|yclid|twclid|ttclid|li_fat_id|mc_cid|mc_eid|_ga|_gl|_hsenc|_hsmi|__hs[a-z]+|hsctatracking|igshid|igsh|si|ref_src|ref_url|mibextid|spm|scm|share_id|share_source|sharesource|_branch_match_id|_branch_referrer|s_cid|cmpid|trk|trkcampaign|sr_share|feature|pp|ab_channel|_r|_t|is_from_webapp|sender_device|sender_web_id|is_copy_url|web_id|epik|rdt|click_key|click_sum|ga_[a-z_]+|_trkparms|_trksid|mkcid|mkrid|mkevt|campid|toolid|customid|pf_rd_[a-z]+|pd_rd_[a-z]+|smid|smtyp|cid|ocid|wt\.mc_id|oly_[a-z_]+|vero_[a-z_]+|rb_clickid|s_kwcid|ef_id|irclickid|ranmid|raneaid|ransiteid|ref|referrer|referer|aff|affid|aff_id|affiliate|affiliate_id|srsltid|fb_action_ids|fb_action_types|fb_source|fb_ref|guccounter|guce_referrer|guce_referrer_sig)$/i;
   // Parameters that could carry something of the person's: never kept in any address 5s makes.
-  const PERSONAL = /^(?:e?mail|email_?address|e|token|access_?token|id_?token|refresh_?token|auth|auth_?key|auth_?token|key|api_?key|session|session_?id|sid|password|passwd|pwd|pass|code|state|signature|sig|secret|login|user|username|user_?id|uid|account|phone|tel|first_?name|last_?name|invite|invite_?code)$/i;
+  const PERSONAL = /^(?:e?mail|email_?address|e|token|access_?token|id_?token|refresh_?token|auth|auth_?key|auth_?token|key|api_?key|session|session_?id|sid|password|passwd|pwd|pass|code|state|signature|sig|secret|login|user|username|user_?id|uid|account|phone|tel|first_?name|last_?name|invite|invite_?code|jsessionid|phpsessid|cfid|cftoken|_kx|mkt_tok|ck_subscriber_id)$/i;
   // Sites whose object is named by its path: their whole query is sharing and tracking.
   const PATH_ONLY = new Set(['Artsy', 'Are.na', 'Pinterest', 'Instagram', 'Etsy', 'eBay', 'Amazon', '1stDibs', 'IKEA',
     'Behance', 'Dribbble', 'Unsplash', 'Tumblr', 'X', 'TikTok', 'Vimeo', 'ArchDaily', 'Dezeen', 'Flickr', 'Rijksmuseum', 'Tate', 'MoMA']);
@@ -206,6 +206,8 @@
     for (const [k, v] of keep) u.searchParams.append(k, v);
     // Amazon's "/ref=…" path segments say which list or search it was found from: not the thing.
     if (p === 'Amazon') u.pathname = u.pathname.replace(/\/ref=[^/]*\/?$/i, '');
+    // An old site's session in the path ("/object/12;jsessionid=…"): the person's, never the thing's.
+    u.pathname = u.pathname.replace(/;jsessionid=[^/;]*/gi, '');
     // A fragment is kept only as a plain anchor on a page that uses them (a Wikipedia section).
     const frag = u.hash.slice(1);
     if (!(frag && !PATH_ONLY.has(p) && /^[\w.:%-]{1,64}$/.test(frag) && !/token|auth|key|session|code|state|pass|mail/i.test(frag))) u.hash = '';

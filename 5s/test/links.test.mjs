@@ -201,6 +201,10 @@ test('recognise: tracking and anything of the person\'s stripped; https; one add
     ['https://www.amazon.co.uk/dp/B0ABCDEF12/ref=cm_sw_r_cp?tag=me-21&linkCode=x', 'https://www.amazon.co.uk/dp/B0ABCDEF12'],
     ['https://www.tiktok.com/@a/video/7300000000000000000?_r=1&_t=8abc&is_from_webapp=1&sender_device=pc', 'https://www.tiktok.com/@a/video/7300000000000000000'],
     ['https://x.com/a/status/179?s=46&t=AbCd', 'https://x.com/a/status/179'],
+    // referral, affiliate and Google Shopping tags; an email's subscriber ids; a session in the query or the path
+    ['https://hay.dk/en/chair?ref=alice123&variant=4&referrer=a&aff=9&affiliate_id=7&srsltid=AfmBO&fb_action_ids=3', 'https://hay.dk/en/chair?variant=4'],
+    ['https://www.vitra.com/en-us/product/eames?_kx=abc.def&mkt_tok=NzAw&ck_subscriber_id=99&s=lounge', 'https://www.vitra.com/en-us/product/eames?s=lounge'],
+    ['https://collection.example-museum.org/objects/12;jsessionid=A1B2C3?lang=en&PHPSESSID=cc&jsessionid=bb', 'https://collection.example-museum.org/objects/12?lang=en'],
   ];
   for (const [pasted, clean] of cases) {
     const r = L.recognise(pasted);

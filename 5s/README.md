@@ -98,7 +98,9 @@ IndexedDB, and it says so.
 from data files) go through the 5s connector. Once it is deployed (`connector/README.md`), add
 `mcp: {servers: [{server: "5s", tools: ["read_link", "bring_in", "item_image", "get_state"]}]}` (with
 the tools the hub will use) to the capabilities; until then the page says what opens those doors,
-and the data file door works without it.
+and the data file door works without it. Paste a link itself works without it too (the address's own
+words, Define through `sample`, or a pasted picture); the connector adds the page's own picture and
+facts, and whole boards and channels (SPEC.md, "As built, 22 Oct 2026").
 
 **Two publishes, because of the file count.** The page plus 330 supporting files is 331 files (about
 13 MB). One publish sends at most 255 files; a version holds up to 511.

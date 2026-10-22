@@ -1,6 +1,5 @@
 // The connector on Cloudflare's free plan (README "What it costs: nothing"): each person's 5s in their
-// own SQLite-backed Durable Object (src/person.js, run here on node:sqlite) and moved there from KV
-// once; token lifetimes and the capacity arithmetic (src/costs.js); item_image asking a picture's own
+// own SQLite-backed Durable Object (src/person.js, run here on node:sqlite), never in KV; token lifetimes and the capacity arithmetic (src/costs.js); item_image asking a picture's own
 // site for a smaller copy instead of decoding (src/sizes.js); read_link's page facts (src/links.js);
 // and the facts a brought-in thing may carry (src/define.js, src/validate.js).
 import { test } from 'node:test';
@@ -9,14 +8,14 @@ import { DatabaseSync } from 'node:sqlite';
 import FiveS from '../src/engine.js';
 import { personStore, personRpcStore, personName, PERSON_SCHEMA } from '../src/person.js';
 import { guardedStore, readState, writeState, readRepos, addRepo, memoryStore } from '../src/store.js';
-import { FREE_PLAN, TOKEN_LIFETIMES, PERSON_DAY, capacity, personDay, SIGNIN_KV_WRITES, REFRESH_KV_WRITES } from '../src/costs.js';
+import { FREE_PLAN, TOKEN_LIFETIMES, PERSON_DAY, capacity, personDay, SIGNIN_KV_WRITES, REFRESH_KV_WRITES, SIGNIN_KV_DELETES, SIGNIN_KV_LISTS } from '../src/costs.js';
 import { smallerCopies, MIN_EDGE, SIZED_SITES } from '../src/sizes.js';
 import { parsePage, pageFacts } from '../src/links.js';
 import { checkState, deckVocab } from '../src/validate.js';
 import { definedFacts, eraOfYear } from '../src/define.js';
 import { pictureBytes, sizedBytes, MISSING_COPIES, ODD_COPIES } from '../src/fake-web.js';
 import { dimensions } from '../src/pixels.js';
-import { TOOLS } from '../src/tools.js';
+import { TOOLS, CONNECT } from '../src/tools.js';
 import { ctxFor, call, playFives, UID, LOGIN, fixtureDeck, at } from './helpers.mjs';
 
 // ------------------------------------------------------------------ a Durable Object's SQL, on node:sqlite
@@ -38,21 +37,9 @@ function doSql() {
   };
 }
 
-/** A KV namespace in memory that counts its operations. */
-function fakeKv(entries) {
-  const m = new Map(Object.entries(entries || {}));
-  const ops = { get: 0, put: 0, delete: 0 };
-  return {
-    m, ops,
-    async get(k) { ops.get++; return m.has(k) ? m.get(k) : null; },
-    async put(k, v) { ops.put++; m.set(k, String(v)); },
-    async delete(k) { ops.delete++; m.delete(k); },
-  };
-}
-
 test('person store: one person\'s keys only; a save of the state is one row written', async () => {
   const sql = doSql();
-  const s = personStore(sql, { uid: UID, kv: null });
+  const s = personStore(sql, { uid: UID });
   assert.equal(await s.get('state:' + UID), null);
   await s.put('state:' + UID, '{"rev":1}');
   assert.equal(await s.get('state:' + UID), '{"rev":1}');
@@ -69,52 +56,9 @@ test('person store: one person\'s keys only; a save of the state is one row writ
   assert.equal(PERSON_SCHEMA.every((q) => /WITHOUT ROWID/.test(q)), true, 'a key is the table itself: no second index row to write');
 });
 
-test('person store: a 5s still in KV is read once, moved, and deleted there; a newer save is never overwritten by it', async () => {
-  const old = JSON.stringify({ rev: 7, at: '2026-10-20T10:00:00.000Z', state: Object.assign(FiveS.newState(), { j: [['o017', 1, 1200, 1761000000, 0]] }), use: null });
-  const kv = fakeKv({ ['state:' + UID]: old, ['repos:' + UID]: '{"made":[{"name":"ada-lovelace.github.io","at":"2026-10-20T10:00:00.000Z"}]}', 'state:9999': 'someone else' });
-  const sql = doSql();
-  const s = personStore(sql, { uid: UID, kv });
-  const store = guardedStore(s);
-  const r = await readState(store, UID);
-  assert.equal(r.rev, 7);
-  assert.equal(r.state.j.length, 1);
-  assert.equal(kv.m.has('state:' + UID), false, 'deleted from KV once moved');
-  assert.equal(kv.m.get('state:9999'), 'someone else', 'nobody else\'s is touched');
-  assert.equal((await readRepos(store, UID)).made[0].name, 'ada-lovelace.github.io');
-  const reads = kv.ops.get;
-  await readState(store, UID);
-  await readRepos(store, UID);
-  assert.equal(kv.ops.get, reads, 'KV is not asked again');
-  // A person who was never in KV: asked once, then never again.
-  const kv2 = fakeKv();
-  const s2 = personStore(doSql(), { uid: '5151', kv: kv2 });
-  assert.equal(await s2.get('state:5151'), null);
-  assert.equal(await s2.get('state:5151'), null);
-  assert.equal(kv2.ops.get, 1);
-  assert.equal(kv2.ops.delete, 0, 'nothing found, nothing deleted');
-  // A save that lands while KV is answering is kept: the old copy goes in only where nothing is.
-  let release;
-  const slow = { m: new Map([['state:6161', '{"rev":1,"state":{}}']]), get(k) { return new Promise((res) => { release = () => res(this.m.get(k)); }); }, async delete(k) { this.m.delete(k); } };
-  const s3 = personStore(doSql(), { uid: '6161', kv: slow });
-  const reading = s3.get('state:6161');
-  await new Promise((r) => setImmediate(r));
-  const sql3 = doSql();
-  void sql3;
-  release();
-  assert.equal(await reading, '{"rev":1,"state":{}}');
-  await s3.put('state:6161', '{"rev":2}');
-  assert.equal(await s3.get('state:6161'), '{"rev":2}');
-  // A failure to delete in KV (the day's deletes used up) never fails the move.
-  const kv4 = fakeKv({ 'state:7171': '{"rev":3}' });
-  kv4.delete = async () => { throw new Error('KV delete limit exceeded for the day'); };
-  const s4 = personStore(doSql(), { uid: '7171', kv: kv4 });
-  assert.equal(await s4.get('state:7171'), '{"rev":3}');
-});
-
 test('person store: the tools run on it as on any store (a five, a thing brought in, a hub), the state kept as JSON text', async () => {
   const sql = doSql();
-  const kv = fakeKv();
-  const store = guardedStore(personStore(sql, { uid: UID, kv }));
+  const store = guardedStore(personStore(sql, { uid: UID }));
   const { ctx, gh } = ctxFor({ store });
   await playFives(ctx, 2);
   const brought = await call(ctx, 'bring_in', { items: [{ image: 'https://img.example.com/bowl.jpg', source: 'The web', title: 'Bowl', maker: 'Studio North', category: 'design/decorative art', definedBy: 'page' }] });
@@ -193,6 +137,11 @@ test('costs: the free plan\'s numbers, token lifetimes, and room for well over a
   // New sign-ins: what is left after 300 people's refreshes, at 5 writes (+1 registration) each.
   assert.equal(Math.floor((FREE_PLAN.kvWrites - kv300) / (SIGNIN_KV_WRITES + 1)), 152);
   assert.equal(REFRESH_KV_WRITES, 2);
+  // Each call's requests to other sites, plus its read and save of the person's 5s, stay inside Free's 50 subrequests.
+  for (const b of [CONNECT.readBudget, CONNECT.bringBudget, CONNECT.imageBudget]) assert.ok(b + 2 <= FREE_PLAN.subrequests, String(b));
+  // KV's deletes and lists (1,000 a day each) allow more sign-ins than its writes do, so writes are the limit.
+  const byWrites = Math.floor(FREE_PLAN.kvWrites / (SIGNIN_KV_WRITES + 1));
+  assert.ok(byWrites <= Math.floor(FREE_PLAN.kvDeletes / SIGNIN_KV_DELETES) && byWrites <= Math.floor(FREE_PLAN.kvLists / SIGNIN_KV_LISTS));
 });
 
 // ------------------------------------------------------------------ smaller copies (sizes.js)

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>5s play harness</title>
+<!-- A harness for src/play.js and src/board.js: the deck, an example taste (~37 kept things, brought
+     things among them), and the app's part played by the callbacks below. Served from 5s/:
+     /test/play.html#map | #level=7 | #board, with ?assoc=1 (sample pairings and a painting),
+     ?theme=dark|light, ?reduce=1, ?plays=N (the board's seed), ?deck=fixture. -->
+<link rel="stylesheet" href="../src/app.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Martian+Mono:wght@400;500&amp;family=Unbounded:wght@500;700&amp;display=swap">
+<style>
+  html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
+  #stage { height: 100%; }
+  .h-board { max-width: 960px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+  .h-board .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="../src/engine.js"></script>
+<script src="../src/match.js"></script>
+<script src="../src/board.js"></script>
+<script src="../src/play.js"></script>
+<script>
+(async function () {
+  'use strict';
+  const q = new URLSearchParams(location.search);
+  if (q.get('theme')) document.documentElement.dataset.theme = q.get('theme');
+  const F = window.FiveS, M = window.FiveSMatch, P = window.FiveSPlay, B = window.FiveSBoard;
+  const NOW = Date.UTC(2026, 9, 22, 12); // fixed, so a test in Node builds the same taste and boards
+  let base = q.get('deck') === 'fixture' ? 'fixture/' : '../dist/';
+  let deck;
+  try { deck = await (await fetch(base + 'deck.json')).json(); }
+  catch (e) { base = 'fixture/'; deck = await (await fetch(base + 'deck.json')).json(); }
+  const byId = new Map(deck.cards.map((c) => [c.id, c]));
+
+  let state = F.exampleState(deck, NOW);
+  state = Object.assign({}, state, { assoc: [], paintings: [], saga: { stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: +(q.get('plays') || 0), day: null } });
+  if (q.get('assoc')) {
+    // Pairings as if three levels had been played: groups of kept things that share a thread.
+    const pcs = M.pieces(state, deck, 5);
+    let assoc = [];
+    pcs.suits.forEach((s, i) => {
+      if (s.ids.length < 3) return;
+      for (let k = 0; k < 3 + i; k++) assoc = M.addAssociations(assoc, [s.ids[k % s.ids.length], s.ids[(k + 1) % s.ids.length], s.ids[(k + 2) % s.ids.length]], NOW / 1000 - k * 60);
+    });
+    if (pcs.suits[0] && pcs.suits[0].ids.length > 1) assoc = M.heart(assoc, pcs.suits[0].ids.slice(0, 2), true);
+    const cols = 7, rows = 7;
+    let c = '';
+    for (let i = 0; i < cols * rows; i++) c += ['f28a3c', 'e5482b', '7350ee', '2f6be0', 'ece5d1'][(i * 7 + (i >> 3)) % 5];
+    state.assoc = assoc;
+    state.paintings = [{ at: NOW / 1000 - 3600, n: 7, cols, rows, c }];
+  }
+
+  const own = (id) => (state.own || []).find((o) => o.id === id);
+  function thumb(id) {
+    const o = own(id);
+    const c = byId.get(o ? o.imgFrom : id);
+    if (!c) return { colours: (o && o.colours) || [] };
+    if (c.kind === 'colour') return { colours: c.colours };
+    if (deck.atlas && Number.isFinite(c.thumb)) return { src: base + deck.atlas.src, cols: deck.atlas.cols, index: c.thumb };
+    return c.img ? { src: base + c.img } : { colours: c.colours };
+  }
+  function shortName(id) {
+    const c = F.card(state, deck, id);
+    if (!c) return 'Something';
+    const t = String(c.title || 'Untitled').replace(/\s+/g, ' ').trim();
+    return t.length > 28 ? t.slice(0, 27).replace(/[\s,.;:]+$/, '') + '…' : t;
+  }
+  const nameLine = (c) => (c.own ? c.title + ', from ' + c.source : [c.title, c.artist, c.date].filter(Boolean).join(', '));
+  function image(c) {
+    if (c.own) { const d = byId.get(c.imgFrom); return d && d.img ? base + d.img : null; }
+    return c.img ? base + c.img : null;
+  }
+
+  const calls = [];
+  const log = (k, v) => { calls.push([k, v]); };
+  const stage = document.getElementById('stage');
+  let current = null;
+  const clear = () => { if (current) current.destroy(); current = null; stage.textContent = ''; };
+  const reduce = q.get('reduce') ? true : undefined;
+
+  function showBoard() {
+    clear();
+    const wrap = document.createElement('div');
+    wrap.className = 'h-board';
+    const next = state.saga.stars.length + 1;
+    wrap.innerHTML = '<div class="view-head"><h1 class="h1">Set</h1><p class="lede">Your board: what you kept, grouped by what you put together.</p>' +
+      '<div class="actions"><button type="button" class="btn btn-keep btn-big" id="h-play">Play level ' + next + '</button><button type="button" class="btn btn-quiet" id="h-room">See it as a room</button></div></div>';
+    const host = document.createElement('div');
+    wrap.appendChild(host);
+    stage.appendChild(wrap);
+    wrap.querySelector('#h-play').addEventListener('click', () => { location.hash = 'map'; });
+    wrap.querySelector('#h-room').addEventListener('click', () => log('room', true));
+    const b = B.mount(host, { state, deck, image, name: nameLine, onOpen: (id) => log('open', id), onPainting: (i) => log('painting', i) });
+    current = { destroy: () => { b.destroy(); wrap.remove(); } };
+  }
+  function showMap() {
+    clear();
+    current = P.mountMap(stage, { saga: state.saga, onLevel: (n) => { location.hash = 'level=' + n; }, onBack: () => { location.hash = 'board'; } });
+  }
+  function showLevel(n) {
+    clear();
+    const level = M.level(n);
+    const pieces = M.pieces(state, deck, level.suits);
+    const seed = '5s:' + n + ':' + state.saga.plays;
+    window.harness.level = { n, pieces, seed };
+    current = P.mount(stage, {
+      n, pieces, seed,
+      boost: state.saga.boost,
+      thumb, name: shortName,
+      opts: { sound: state.opts.sound !== false, hints: state.opts.hints !== false, reduce },
+      onAssociate: (a) => { log('associate', a); state.assoc = M.addAssociations(state.assoc, a.ids, NOW / 1000); },
+      onHeart: (a) => { log('heart', a); state.assoc = M.heart(state.assoc, a.ids, a.on); },
+      onBoost: (k) => { log('boost', k); state.saga = M.useBoost(state.saga, k) || state.saga; },
+      onEnd: (r) => { log('end', r); const rec = M.recordLevel(state.saga, r, NOW / 1000); state.saga = rec.saga; return rec; },
+      onKeepPainting: (p) => { log('keepPainting', p); const ps = M.keepPainting(state.paintings, { painting: p, n }, NOW / 1000); if (!ps) return false; state.paintings = ps; return true; },
+      onOpts: (o) => { log('opts', o); state.opts = Object.assign({}, state.opts, o); },
+      onNext: (k) => { log('next', k); location.hash = 'level=' + k + '&t=' + Date.now(); },
+      onMap: () => { log('map', true); location.hash = 'map'; },
+      onBoard: () => { log('board', true); location.hash = 'board'; },
+    });
+  }
+  function route() {
+    const h = location.hash.slice(1);
+    const m = /^level=(\d+)/.exec(h);
+    if (m) showLevel(+m[1]); else if (h === 'map') showMap(); else showBoard();
+  }
+  window.harness = { deck, get state() { return state; }, calls, NOW, route };
+  window.addEventListener('hashchange', route);
+  route();
+  window.harness.ready = true;
+})().catch((e) => { document.body.textContent = 'Harness failed: ' + e.message; window.harnessError = String(e && e.stack || e); });
+</script>
+</body>
+</html>

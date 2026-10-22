@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // Live smoke (npm run smoke): the Worker itself under `wrangler dev`, twice.
 //
-//  1. Dev bypass (DEV_FAKE_USER, port 8800 or SMOKE_PORT): a 5s left in KV from before is moved into its
-//     person's own Durable Object on first use (and deleted from KV); an MCP client (@modelcontextprotocol/sdk, streamable
-//     HTTP) lists the tools and plays a five (next_five, judge ×5, get_taste), makes a hub against the
+//  1. Dev bypass (DEV_FAKE_USER, port 8800 or SMOKE_PORT): each person's 5s is saved in their own Durable
+//     Object, never in KV; an MCP client (@modelcontextprotocol/sdk, streamable HTTP) lists the tools and plays a five (next_five, judge ×5, get_taste), makes a hub against the
 //     fake GitHub, and the bypass is refused for any host but localhost. A second dev person can't
 //     use, strip or end the first one's session id, and the local storage never holds the token.
 //     Connect your apps: read_link reads a Pinterest board and a web page from the fake web
@@ -21,7 +20,7 @@
 // of the four ports it uses, default 8800: the Workers on SMOKE_PORT and SMOKE_PORT + 2, each with its
 // inspector on the next port).
 // Needs src/deck.generated.json (npm run deck, or npm run deck -- --fixture).
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -44,20 +43,11 @@ if (!existsSync(join(CONNECTOR, 'src', 'deck.generated.json'))) {
 const results = [];
 const check = (name, fn) => { fn(); results.push(name); console.log('  ok  ' + name); };
 
-/** wrangler kv against the local store of a smoke Worker (`args` after `kv key`). */
-function localKv(name, args) {
-  const r = spawnSync(join(CONNECTOR, 'node_modules', '.bin', 'wrangler'), ['kv', 'key', ...args, '--binding', 'FIVES_KV', '--local', '--persist-to', join(DIR, name + '-state')],
-    { cwd: CONNECTOR, env: Object.assign({}, process.env, { WRANGLER_SEND_METRICS: 'false' }), encoding: 'utf8' });
-  return (r.stdout || '') + (r.stderr || '');
-}
-
-function startWorker(name, port, vars, kvBefore) {
+function startWorker(name, port, vars) {
   const envFile = join(DIR, name + '.env');
   writeFileSync(envFile, Object.entries(vars).map(([k, v]) => k + '=' + v).join('\n') + '\n');
   const log = join(DIR, name + '.log');
   rmSync(join(DIR, name + '-state'), { recursive: true, force: true }); // every run starts with empty KV and sessions
-  // A 5s kept in KV before the move to each person's Durable Object (src/person.js), put there first.
-  for (const [k, v] of Object.entries(kvBefore || {})) localKv(name, ['put', k, v]);
   // Its own process group, so stopping it stops wrangler's children (node, workerd) too.
   const child = spawn(join(CONNECTOR, 'node_modules', '.bin', 'wrangler'), ['dev', '--port', String(port), '--inspector-port', String(port + 1), '--ip', '127.0.0.1',
     '--env-file', envFile, '--persist-to', join(DIR, name + '-state'), '--show-interactive-dev-session=false'], {
@@ -109,10 +99,10 @@ async function devBypass() {
   console.log('1. dev bypass (DEV_FAKE_USER) on :' + PORT);
   const w = startWorker('bypass', PORT, {
     GITHUB_CLIENT_ID: 'dev-placeholder', GITHUB_CLIENT_SECRET: 'dev-placeholder',
-    COOKIE_ENCRYPTION_KEY: 'dev-placeholder-dev-placeholder-dev-placeholder', DEV_FAKE_USER: '1001:artist-dev,1002:other-dev,1003:kv-dev',
+    COOKIE_ENCRYPTION_KEY: 'dev-placeholder-dev-placeholder-dev-placeholder', DEV_FAKE_USER: '1001:artist-dev,1002:other-dev,1003:third-dev',
     // wrangler.jsonc sets 0 for Workers Free; here the pictures are measured inside workerd, as on Paid.
     COLOUR_BUDGET_PX: '4000000',
-  }, { 'state:1003': KV_STATE });
+  });
   try {
     await w.ready;
     const client = new Client({ name: '5s-smoke', version: '1' });
@@ -185,20 +175,22 @@ async function devBypass() {
     });
     const still = await client.callTool({ name: 'get_taste', arguments: {} });
     check('and the session still works for its own person', () => assert.equal(still.structuredContent.judged, 5));
-    // A 5s kept in KV before the move: read once into the person's own Durable Object, then gone from KV.
-    const moved = new Client({ name: '5s-smoke-kv', version: '1' });
-    await moved.connect(new StreamableHTTPClientTransport(new URL(w.base + '/mcp'), { requestInit: { headers: { 'x-5s-dev-user': 'kv-dev' } } }));
-    const fromKv = (await moved.callTool({ name: 'get_state', arguments: {} })).structuredContent;
-    check('a 5s still in KV is moved to the person\'s Durable Object on first use, judgments and rev kept', () => {
-      assert.equal(fromKv.rev, 9);
-      assert.equal(fromKv.state.j.length, 2);
-      assert.equal(fromKv.state.notes[0].text, KV_MARK);
+    // A third person's 5s, put by the app: kept in their own Durable Object (checked on disk below).
+    const third = new Client({ name: '5s-smoke-third', version: '1' });
+    await third.connect(new StreamableHTTPClientTransport(new URL(w.base + '/mcp'), { requestInit: { headers: { 'x-5s-dev-user': 'third-dev' } } }));
+    const put = (await third.callTool({ name: 'put_state', arguments: { state: MARKED_STATE, base: 0 } })).structuredContent;
+    const back = (await third.callTool({ name: 'get_state', arguments: {} })).structuredContent;
+    check('put_state then get_state: a person\'s 5s comes back as saved, judgments and rev kept', () => {
+      assert.equal(put.ok, true, JSON.stringify(put));
+      assert.equal(back.rev, put.rev);
+      assert.equal(back.state.j.length, 2);
+      assert.equal(back.state.notes[0].text, MARK);
     });
-    const afterMove = await moved.callTool({ name: 'next_five', arguments: {} });
-    check('and saved there from then on (next_five writes rev 10)', () => assert.equal((afterMove.structuredContent.five || {}).of, 5));
-    const rev10 = (await moved.callTool({ name: 'get_state', arguments: {} })).structuredContent.rev;
-    check('the moved 5s carries on from its rev', () => assert.equal(rev10, 10));
-    await moved.close();
+    const afterPut = await third.callTool({ name: 'next_five', arguments: {} });
+    check('and saved there from then on (next_five writes the next rev)', () => assert.equal((afterPut.structuredContent.five || {}).of, 5));
+    const revNext = (await third.callTool({ name: 'get_state', arguments: {} })).structuredContent.rev;
+    check('the 5s carries on from its rev', () => assert.equal(revNext, put.rev + 1));
+    await third.close();
     const stranger = await fetch(w.base + '/mcp', { method: 'POST', headers: Object.assign({ 'x-5s-dev-user': 'not-listed' }, MCP_HEADERS), body: toolsList });
     check('the dev bypass only plays people listed in DEV_FAKE_USER', () => assert.equal(stranger.status, 403));
 
@@ -297,9 +289,8 @@ async function devBypass() {
     assert.deepEqual(filesHolding(state, 'dev-fake-token'), []);
   });
   check('each person\'s 5s is in their own Durable Object (FiveSPerson\'s SQLite), not in KV', () => {
-    const where = filesHolding(state, KV_MARK);
-    assert.ok(where.some((f) => /FiveSPerson/.test(f)), where.join(', '));
-    assert.match(localKv('bypass', ['get', 'state:1003']), /not found/i, 'deleted from KV once moved');
+    const where = filesHolding(state, MARK);
+    assert.ok(where.length > 0 && where.every((f) => /FiveSPerson/.test(f)), where.join(', '));
     assert.ok(filesHolding(state, 'artist-dev.github.io').some((f) => /FiveSPerson/.test(f)), 'the hub 5s made, in the person\'s object');
   });
   check('local storage keeps the brought pictures\' addresses, never the pictures', () => {
@@ -312,10 +303,10 @@ async function devBypass() {
 
 let pictureSample = null;
 
-// A person's 5s as the connector kept it in KV before the move (store.js record: rev, at, state, use).
-const KV_MARK = 'kept-in-kv-before-the-move';
-const KV_STATE = JSON.stringify({ rev: 9, at: '2026-10-20T09:00:00.000Z', use: null, state: { v: 1, j: [['o001', 1, 1500, 1760950000, 0], ['i002', 0, 2100, 1760950010, 0]],
-  five: null, sets: [], days: [], own: [], notes: [{ at: 1760950020, q: 'free', ref: null, text: KV_MARK }], seen: { path: [] }, opts: { ring: true } } });
+// A person's 5s as the app puts it, with a note to find on disk.
+const MARK = 'kept-in-the-persons-own-object';
+const MARKED_STATE = { v: 1, j: [['o001', 1, 1500, 1760950000, 0], ['i002', 0, 2100, 1760950010, 0]],
+  five: null, sets: [], days: [], own: [], notes: [{ at: 1760950020, q: 'free', ref: null, text: MARK }], seen: { path: [] }, opts: { ring: true } };
 
 const COOKIE_KEY = randomBytes(32).toString('hex');
 
