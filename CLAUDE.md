@@ -268,7 +268,8 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   writes **Stopped** with the date and his words at the head of KALEIDOSCOPE.md, and asks him once whether to take back
   the latest (their flags in `KALEIDOSCOPES` in `land.js`).
 - **The daily routines fire into the artist's own conversation** (artist, 14 Oct 2026: "Can you collapse all of the
-  daily routines into this session"; session_017Kv6WGqA4BeBjASfZpXzPC). Six, each named "… (daily, here)" until 21 Oct 2026: Color
+  daily routines into this session"; session_017Kv6WGqA4BeBjASfZpXzPC, and since 22 Oct 2026 session_01HvHizESN8qpAyuKqqQgu8k,
+  where each was made again with the same name, schedule and prompt, the old ones disabled, not deleted). Six, each named "… (daily, here)" until 21 Oct 2026: Color
   Middling's Artsy reconcile 07:23 UTC (its own branch, `claude/artsy-import-rwgk8s`, and its two artifacts; **paused
   14 Oct**: its first run here found 52,924 saves against the 5,021 it holds — the saving run of every work by the
   artists he follows — and stopped before writing, its page would be ~105 MB against an artifact's 16; like the
