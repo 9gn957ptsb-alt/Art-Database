@@ -2074,19 +2074,20 @@
   const FILE_ACCEPT = '.json,.js,.html,.htm,.csv,.tsv,.txt,.zip,application/json,text/html,text/csv,text/plain,application/zip';
   const CX_LINE = CX ? CX.CONNECT_LINE : 'Connect 5s to Claude (Settings → Connectors → Add custom connector) to open this door.';
 
+  // The doors that work today come first; nothing here asks anyone to add a connector to use 5s.
   const DOORS = [
-    { key: 'link', icon: 'link', name: 'Paste a link', needs: true,
-      does: 'A public board, channel or page: 5s reads its pictures.',
-      works: 'Pinterest boards, Are.na channels, Flickr, Tumblr, any web page' },
-    { key: 'signin', icon: 'signin', name: 'Sign in to the app', needs: true,
-      does: 'Sign in once, read-only, and 5s brings in your saves.',
-      works: 'Pinterest, Are.na, Spotify (album covers), Flickr' },
     { key: 'file', icon: 'file', name: 'Your data file',
       does: 'The “download your data” file an app gives you, read on this device. Nothing is uploaded.',
       works: 'Instagram saved posts, Pinterest, Google Takeout, TikTok favourites, X bookmarks and likes' },
     { key: 'images', icon: 'image', name: 'Bring in images',
       does: 'Photos, screenshots and pins as pictures. Their colours are read on this device.',
       works: 'Everything' },
+    { key: 'link', icon: 'link', name: 'Paste a link', needs: true,
+      does: 'A public board, channel or page: 5s reads its pictures.',
+      works: 'Pinterest boards, Are.na channels, Flickr, Tumblr, any web page' },
+    { key: 'signin', icon: 'signin', name: 'Sign in to the app', needs: true,
+      does: 'Sign in once, read-only, and 5s brings in your saves.',
+      works: 'Pinterest, Are.na, Spotify (album covers), Flickr' },
     { key: 'ask', icon: 'chat', name: 'Ask Claude', needs: true,
       does: 'In any chat with 5s connected, ask in your own words.',
       works: 'Anything Claude can reach: web pages, other connectors' },
@@ -2210,16 +2211,18 @@
   }
 
   function doorState(d) {
-    if (d.key === 'signin') return ['later', 'Not yet'];
+    if (d.key === 'signin') return ['later', 'Coming soon'];
     if (!d.needs || cx.status === 'connected') return ['open', 'Open'];
     if (cx.status === 'checking') return ['wait', 'Checking'];
-    return ['wait', 'Needs 5s in Claude'];
+    return d.key === 'ask' ? ['wait', 'Only in Claude'] : ['wait', 'Coming next'];
   }
   function opensLine(d) {
     if (!d.needs) return '';
     if (cx.status === 'reauth') return 'Reconnect 5s in Claude (Settings → Connectors) to open this door.';
-    if (d.key === 'signin') return cx.status === 'connected' ? 'Each app has to approve 5s first. Until then, use your data file or a link.' : CX_LINE + ' Each app also has to approve 5s.';
-    return cx.status === 'connected' ? '' : CX_LINE;
+    if (d.key === 'signin') return 'Coming with 5s’s own website: sign in to each app right here, with nothing to add anywhere. Until then, use your data file.';
+    if (cx.status === 'connected') return '';
+    if (d.key === 'ask') return 'Only if you use Claude: add 5s there (Settings → Connectors → Add custom connector), then ask in any chat. Nothing else in 5s needs it.';
+    return 'Coming next: paste any link and 5s works out what it is. Nothing to add anywhere.';
   }
 
   function doorRow(d) {

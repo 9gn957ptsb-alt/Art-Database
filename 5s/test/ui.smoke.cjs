@@ -184,7 +184,7 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js) load before app.js');
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, and Links out and in\'s links.js) load before app.js');
   const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
   assert.match(css, /:root\[data-theme="dark"\] \{/);
@@ -1446,8 +1446,8 @@ function fakeConnector(opts) {
   })();`;
 }
 
-const DOOR_NAMES = ['Paste a link', 'Sign in to the app', 'Your data file', 'Bring in images', 'Ask Claude'];
-const OPENS = 'Connect 5s to Claude (Settings → Connectors → Add custom connector) to open this door.';
+const DOOR_NAMES = ['Your data file', 'Bring in images', 'Paste a link', 'Sign in to the app', 'Ask Claude'];
+const OPENS = { link: 'Coming next: paste any link and 5s works out what it is.', signin: 'Coming with 5s’s own website: sign in to each app right here', ask: 'Only if you use Claude: add 5s there' };
 const doorText = (page, key) => page.$eval('#door-' + key, (n) => n.textContent.replace(/\s+/g, ' ').trim());
 const doorState = (page, key) => page.$eval('#door-' + key + ' .state', (n) => n.textContent.trim());
 const sheetGone = (page) => page.waitForFunction(() => !document.getElementById('sheet').open, null, { timeout: 15000 });
@@ -1476,13 +1476,14 @@ for (const cfg of CONFIGS) {
       await page.click('#intro [data-act="connect"]');
       await page.waitForSelector('#sheet[open] .doors');
       assert.equal(await page.textContent('#sheet-title'), 'Connect your apps');
-      assert.deepEqual(await page.$$eval('#sheet .door-name', (h) => h.map((x) => x.textContent)), DOOR_NAMES, 'the five doors, in the SPEC\'s order');
+      assert.deepEqual(await page.$$eval('#sheet .door-name', (h) => h.map((x) => x.textContent)), DOOR_NAMES, 'the five doors, the ones that work today first');
       // no connector here: the doors that need it say what opens them, in words; the other two are open
       await page.waitForFunction(() => !/Checking/.test(document.querySelector('#door-link .state').textContent));
-      for (const k of ['link', 'signin', 'ask']) assert.ok((await doorText(page, k)).indexOf(OPENS) >= 0, k + ' says what opens it');
-      assert.equal(await doorState(page, 'link'), 'Needs 5s in Claude');
-      assert.equal(await doorState(page, 'signin'), 'Not yet');
-      assert.equal(await doorState(page, 'ask'), 'Needs 5s in Claude');
+      for (const k of ['link', 'signin', 'ask']) assert.ok((await doorText(page, k)).indexOf(OPENS[k]) >= 0, k + ' says what opens it');
+      for (const k of ['link', 'signin']) assert.ok((await doorText(page, k)).indexOf('Add custom connector') < 0, k + ' never asks anyone to add a connector');
+      assert.equal(await doorState(page, 'link'), 'Coming next');
+      assert.equal(await doorState(page, 'signin'), 'Coming soon');
+      assert.equal(await doorState(page, 'ask'), 'Only in Claude');
       assert.equal(await doorState(page, 'file'), 'Open');
       assert.equal(await doorState(page, 'images'), 'Open');
       for (const k of ['link', 'signin', 'file', 'images', 'ask']) assert.match(await doorText(page, k), /Works for \S/);
@@ -1504,7 +1505,7 @@ for (const cfg of CONFIGS) {
       await page.click('#cx-copy');
       await liveSays(page, /The sentence copied/);
       assert.equal(await page.evaluate(() => navigator.clipboard.readText()), sentence);
-      assert.ok((await page.textContent('#sheet-body')).indexOf(OPENS) >= 0);
+      assert.ok((await page.textContent('#sheet-body')).indexOf('Add custom connector') >= 0, 'Ask Claude, and only Ask Claude, says how to add 5s in Claude');
       await sheetChecks(page, 'ask');
       await shot('61-connect-ask');
       await page.click('[data-act="doors"]');
@@ -1662,9 +1663,9 @@ for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') ||
       assert.match(await page.textContent('#sheet .cx-on'), /5s is connected in Claude\./);
       assert.equal(await doorState(page, 'link'), 'Open');
       assert.equal(await doorState(page, 'ask'), 'Open');
-      assert.equal(await doorState(page, 'signin'), 'Not yet');
-      assert.match(await doorText(page, 'signin'), /Each app has to approve 5s first/);
-      assert.ok((await doorText(page, 'link')).indexOf(OPENS) < 0);
+      assert.equal(await doorState(page, 'signin'), 'Coming soon');
+      assert.match(await doorText(page, 'signin'), /Coming with 5s’s own website/);
+      assert.ok((await doorText(page, 'link')).indexOf(OPENS.link) < 0);
       await shot('70-connected-doors');
       await page.click('[data-act="door"][data-door="link"]');
       await page.waitForSelector('#cx-url:not([disabled])');
@@ -1744,8 +1745,8 @@ test('the connector absent in other ways: an mcp with no 5s, and a 5s that stops
       await page.goto(BASE + '#split');
       await page.click('#view-split [data-act="connect"]');
       if (opts.unlisted) {
-        await page.waitForFunction(() => /Needs 5s in Claude/.test(document.querySelector('#door-link .state').textContent));
-        assert.ok((await doorText(page, 'link')).indexOf(OPENS) >= 0);
+        await page.waitForFunction(() => /Coming next/.test(document.querySelector('#door-link .state').textContent));
+        assert.ok((await doorText(page, 'link')).indexOf(OPENS.link) >= 0);
         assert.equal(await page.evaluate(() => window.__calls.length), 0, 'never probed with a call');
       } else {
         // listed, but the call finds no connector: the door says what opens it
@@ -1754,9 +1755,9 @@ test('the connector absent in other ways: an mcp with no 5s, and a 5s that stops
         await page.fill('#cx-url', 'https://www.are.na/me/rooms');
         await page.click('#cx-read');
         await page.waitForSelector('#sheet .cx-err');
-        assert.equal((await page.textContent('#sheet .cx-err')).trim(), OPENS);
+        assert.equal((await page.textContent('#sheet .cx-err')).trim(), 'Connect 5s to Claude (Settings → Connectors → Add custom connector) to open this door.', 'only someone who already has 5s listed in Claude, and it stopped answering, is told how to reconnect it');
         await page.click('[data-act="doors"]');
-        assert.equal(await doorState(page, 'link'), 'Needs 5s in Claude');
+        assert.equal(await doorState(page, 'link'), 'Coming next');
         await shooter(page, cfg)('75-connector-stopped');
       }
       assert.deepEqual(page.errors(), []);
