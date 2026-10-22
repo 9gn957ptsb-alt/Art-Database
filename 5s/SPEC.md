@@ -2,6 +2,13 @@
 
 Read `CONCEPT.md` first: it is the artist's own words and outranks anything here.
 
+**Standing rule: add, never take away** (the artist, 22 Oct 2026: "I really like what you have
+developed so far, so don't get rid of anything; let's add to it for now"). Every view, flow, card,
+milestone and file that exists stays. New work (a calibration deck of styles and movements, the hub a
+person builds for themselves, the motion of the mark) arrives alongside what is there: a new deck
+beside the artist's deck, a new milestone after the eight, a new view or sheet, never a replacement.
+A change that would remove or rewrite something already built is asked about first.
+
 **Its job, in the system's one line** (see the site's CLAUDE.md, "What we are making"):
 *5s — how a person brings their own information in: quick judgments of what they like become their
 aesthetic database, the seed of their world.* With the information it **manipulates: sorts**, and
