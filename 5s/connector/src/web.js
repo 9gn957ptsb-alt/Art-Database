@@ -47,6 +47,20 @@ export class WebError extends Error {
   }
 }
 
+// Content types 5s may name in a refusal. Any other Content-Type header is the site's own text (it
+// can say anything, even words meant for Claude), so it is never repeated: refusals say "a file".
+const NAMED_TYPES = new Set([
+  'text/html', 'application/xhtml+xml', 'text/xml', 'application/xml', 'application/rss+xml', 'application/atom+xml',
+  'text/plain', 'text/csv', 'text/css', 'text/javascript', 'application/javascript', 'application/json',
+  'application/pdf', 'application/zip', 'application/octet-stream',
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/svg+xml', 'image/heic', 'image/heif',
+  'image/tiff', 'image/bmp', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/jxl', 'image/jp2',
+  'video/mp4', 'video/webm', 'video/quicktime', 'audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/wav',
+]);
+
+/** A content type (as get() gives it: lower case, no parameters) when 5s knows it, else null. */
+export const typeWord = (t) => (NAMED_TYPES.has(t) ? t : null);
+
 const PUBLIC_ADDRESS = 'Use the public address of the board, channel or page: the one you would send a friend.';
 
 const REFUSALS = {
@@ -124,6 +138,7 @@ export function v6(host) {
 export function privateV6(h) {
   if (h.slice(0, 6).every((x) => x === 0)) return true;                       // ::, ::1, ::a.b.c.d
   if (h.slice(0, 5).every((x) => x === 0) && h[5] === 0xffff) return true;    // ::ffff:a.b.c.d: an IPv4 address in disguise
+  if (h[0] < 0x100) return true;                                              // all of 0000::/8 (reserved): also ::ffff:0:a.b.c.d (RFC 2765)
   if (h[0] === 0x64 && h[1] === 0xff9b) return true;                          // NAT64 (64:ff9b::/96 and /48)
   if (h[0] === 0x2002) return true;                                           // 6to4: an IPv4 address in disguise
   if (h[0] === 0x2001 && h[1] === 0) return true;                             // Teredo

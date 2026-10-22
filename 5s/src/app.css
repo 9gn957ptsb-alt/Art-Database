@@ -820,7 +820,9 @@ dialog.sheet::backdrop { background: var(--scrim); }
 .door-for b { font-weight: 600; color: var(--ink); margin-right: 4px; }
 .door-opens { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); background: var(--paper-2); padding: 8px 12px; border-radius: 12px; max-width: 60ch; }
 .door .btn { margin-top: 6px; }
-.cx-on { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: 600; color: var(--keep-ink); }
+.cx-on { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-weight: 600; color: var(--iris-ink); }
+.cx-kind .seg { width: 100%; max-width: 420px; }
+.cx-from select { max-width: 420px; }
 .cx-on svg { width: 20px; height: 20px; flex: none; }
 .cx-over { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 14px; border-radius: 16px; background: var(--iris-tint); }
 .cx-over p { margin: 0; color: var(--ink); }
@@ -845,7 +847,7 @@ dialog.sheet::backdrop { background: var(--scrim); }
 .found { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .pick { display: grid; grid-template-columns: 24px 44px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 56px; padding: 6px 8px; border-radius: 14px; cursor: pointer; }
 .pick:hover { background: var(--paper-2); }
-.pick input { width: 22px; height: 22px; margin: 1px; accent-color: var(--iris); cursor: pointer; }
+.pick input { width: 24px; height: 24px; margin: 0; accent-color: var(--iris); cursor: pointer; }
 .pick input:disabled { cursor: default; }
 .pick input:disabled ~ .pick-t { opacity: 0.7; }
 .pick .th { width: 44px; height: 44px; border-radius: 10px; }

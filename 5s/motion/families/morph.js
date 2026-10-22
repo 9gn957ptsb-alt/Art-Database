@@ -13,6 +13,17 @@
  *             5; the swing turns with env.direction (right: clockwise), so a tab move has a way
  *   melt      both letters drain down their strokes into their shared bowls, two swollen bowls side by
  *             side for a beat, then fill back up into 5 and s ("taking it back")
+ *   revolve   Exchange as a revolving door: the 5 and the s are its two wings on a vertical axis between them;
+ *             at the quarter-turn both are edge-on slivers, and while edge-on each morphs into the other, so at
+ *             the half-turn they have traded sides and read 5s. The near wing is larger and in front, the far one
+ *             sinks toward the ribbon's violet (toward the ground in one-colour palettes). Intensity 0.75 and up
+ *             turns the door a full turn (two trades); env.direction sets which way it turns.
+ *   doubles   a typographic joke in three beats: 5s, ss, 55, 5s. The 5 becomes an s at its own size, then both
+ *             become 5s, then the small 5 becomes the s again; each change lands with a kick of scale.
+ *   shell     a shell game: they trade places three times in quick arcs (over, under, over), the one passing in
+ *             front larger, each pass faster than the last (40, 33, 27 % of the move) and each a morph, so every
+ *             landing reads 5s; the last settles. env.direction: the first arc's way; intensity: arc height.
+ *   (revolve, doubles and shell start and end exactly on the still mark)
  */
 (function () {
   'use strict';
@@ -233,16 +244,171 @@
     M.stroke(ctx, sPts, { width: M.widths.s * k * M.lerp(1, swell, mcs), colours: mixList(col.s, col.sBowl, mcs) });
   }
 
+  /* --- revolve, doubles and shell ----------------------------------------------------------------- */
+  const AXIS = (C5[0] + CS[0]) / 2, MIDY = (C5[1] + CS[1]) / 2, HALF = Math.hypot(CS[0] - C5[0], CS[1] - C5[1]) / 2;
+  const mirrorX = (pts) => pts.map((q) => [2 * AXIS - q[0], q[1]]);
+  const S_M = mirrorX(S), FIVE_M = mirrorX(FIVE);           // each letter's shape seen from behind, in the other's place
+  const at = (pts, from, to, k) => pts.map((q) => [to[0] + (q[0] - from[0]) * k, to[1] + (q[1] - from[1]) * k]);
+  const S_BIG = at(S, CS, C5, MERGE_SCALE);                  // the s at the 5's size and place
+  const FIVE_SMALL = at(FIVE, C5, CS, 1 / MERGE_SCALE);      // the 5 at the s's size and place
+  const still = (ctx, p, env) => M.mark(ctx, { palette: env.palette, weight: p.weight, ribbon: p.ribbon });
+  // a colour list pulled toward one colour by k
+  const toward = (list, c, k) => (k <= 0.001 ? list : mixList(list, [[0, c], [1, c]], k));
+  // where depth sinks to: the ribbon's violet, or the ground when the letters are already that colour (flat palettes)
+  function depthColour(pal) {
+    const v = M.colourAt(pal.ribbon, 0.3);
+    return v.toLowerCase() === M.colourAt(pal.s, 0.5).toLowerCase() ? pal.bg : v;
+  }
+  // a letter morphing from the 5 (m = 0) to the s (m = 1), or back, with its widths and colours
+  function letter(ctx, pts, m, k, col, tint, tk) {
+    const mc = clamp01(m);
+    glyph5(ctx, pts, M.lerp(M.widths.bar * k, M.widths.s * k, mc), M.lerp(M.widths.body * k, M.widths.s * k, mc),
+      toward(mixList(col.fiveBar, col.sBar, mc), tint, tk), toward(mixList(col.fiveBody, col.sBody, mc), tint, tk));
+  }
+  const aboutPt = (ctx, c, sx, sy, draw) => { ctx.save(); ctx.translate(c[0], c[1]); ctx.scale(sx, sy); ctx.translate(-c[0], -c[1]); draw(); ctx.restore(); };
+
+  // revolve: a revolving door. The 5 and the s are its two wings, on a vertical axis between them; each wing's x
+  // is scaled by cos(theta) about the axis, so at the quarter-turn both are edge-on slivers and at the half-turn
+  // they have traded sides, each seen from behind: so while edge-on each morphs into the other mirrored, and
+  // lands reading true. The near wing is larger and in front (seen from a little to one side, so the two slivers
+  // part); the far one sinks toward the ribbon's violet.
+  function revolve(ctx, t, p, env, I, ease) {
+    if (t <= 0 || t >= 1) { still(ctx, p, env); return; }
+    const pal = env.palette, col = colourSets(pal), k = p.weight;
+    const dir = env.direction === 'left' ? -1 : 1;
+    const turns = I >= 0.75 ? 2 : 1;                         // half a turn, or (intense) a full turn
+    const u0 = win(t, 0.04, 0.84), s = M.smoothstep(0, 1, u0);
+    const lean = -0.04 * bump(t / 0.1);
+    const v = win(t, 0.84, 0.16), settle = 0.03 * (0.4 + 0.6 * I) * Math.sin(TAU * v) * (1 - v);
+    const phase = turns * (0.5 * (ease(s) + s) + lean - settle);   // half-turns done
+    const th = Math.PI * phase;
+    const depth = 0.16 + 0.2 * I, cam = AXIS - dir * 170, sink = depthColour(pal);
+    const cs = Math.cos(th), sn = Math.sin(th);
+    const sx = (cs < 0 ? -1 : 1) * Math.max(0.1, Math.abs(cs));
+    // which shape each wing shows: it changes while edge-on, lagging along the line
+    const shapeAt = (from, to, lag) => {
+      const h = Math.max(0, Math.floor(clamp01(phase / turns) * turns - 1e-9)), x = phase - h;   // this half-turn and how far into it
+      const m = M.smoothstep(0.3, 0.7, x);
+      return h % 2 === 0 ? { pts: blend(from, to, m, lag), m } : { pts: blend(to, from, m, (f) => 1 - lag(f)), m: 1 - m };
+    };
+    const wings = [
+      { c: C5, sh: shapeAt(FIVE, S_M, (f) => 1 - f), five: true },
+      { c: CS, sh: shapeAt(S, FIVE_M, (f) => f), five: false }
+    ].map((w) => {
+      const z = -dir * (w.c[0] - AXIS) * sn / HALF;           // -1 far .. 1 near
+      return Object.assign(w, { z, sc: 1 + depth * z });
+    });
+    // the ribbon stays behind the door and turns once with it
+    if (p.ribbon) M.ribbon(ctx, clamp01(phase / turns) * dir, { colours: pal.ribbon, alpha: 1 - 0.4 * bump(clamp01(phase / turns)) });
+    // near wing last (at rest the s is on top)
+    wings.sort((a, b) => (Math.abs(a.z - b.z) < 1e-6 ? (a.five ? -1 : 1) : a.z - b.z));
+    for (const w of wings) {
+      ctx.save();
+      ctx.translate(cam, MIDY); ctx.scale(w.sc, w.sc); ctx.translate(-cam, -MIDY);   // perspective: about the eye
+      ctx.translate(AXIS, 0); ctx.scale(sx, 1); ctx.translate(-AXIS, 0);              // the turn: x about the axis
+      const m = w.five ? w.sh.m : 1 - w.sh.m;
+      letter(ctx, w.sh.pts, m, k, col, sink, 0.35 * Math.max(0, -w.z));
+      ctx.restore();
+    }
+  }
+
+  // doubles: three beats, 5s -> ss -> 55 -> 5s: the 5 becomes a big s, then both become 5s, then the small 5 the s
+  function doubles(ctx, t, p, env, I, ease) {
+    if (t <= 0 || t >= 1) { still(ctx, p, env); return; }
+    const pal = env.palette, col = colourSets(pal), k = p.weight;
+    const dir = env.direction === 'left' ? -1 : 1;
+    const B = [[0.06, 0.22], [0.38, 0.54], [0.7, 0.86]];
+    // a beat's progress: a little lean back, the move, and a small settle past the end
+    const beat = (b, d) => {
+      const s = M.smoothstep(0, 1, win(t, b[0] + d, b[1] - b[0]));
+      const lean = -0.06 * bump(win(t, b[0] + d - 0.02, 0.07));
+      const v = win(t, b[1] + d, 0.08), settle = 0.06 * (0.4 + 0.6 * I) * Math.sin(TAU * v) * (1 - v);
+      return 0.5 * (ease(s) + s) + lean - settle;
+    };
+    const kick = (b, d) => (0.06 + 0.16 * I) * bump(win(t, b[1] + d - 0.04, 0.12));
+    const m1 = beat(B[0], 0), m2 = beat(B[1], 0), m2s = beat(B[1], 0.02), m3 = beat(B[2], 0);
+    if (p.ribbon) {
+      const r = (clamp01(m1) + clamp01(m2) + clamp01(m3)) / 3;
+      M.ribbon(ctx, r * dir, { colours: pal.ribbon, alpha: 1 - 0.3 * bump(win(t, 0.03, 0.92)) });
+    }
+    // the big letter: 5 -> s (beat 1), s -> 5 (beat 2)
+    let big, bm, bk;
+    if (t < B[1][0] - 0.02) { big = blend(FIVE, S_BIG, m1, (f) => 1 - f); bm = m1; bk = kick(B[0], 0); }
+    else { big = blend(S_BIG, FIVE, m2, (f) => f); bm = 1 - m2; bk = kick(B[1], 0); }
+    // the small letter: s -> 5 (beat 2), 5 -> s (beat 3)
+    let small, sm, sk;
+    if (t < B[2][0] - 0.02) { small = blend(S, FIVE_SMALL, m2s, (f) => f); sm = 1 - m2s; sk = kick(B[1], 0.02); }
+    else { small = blend(FIVE_SMALL, S, m3, (f) => 1 - f); sm = m3; sk = kick(B[2], 0); }
+    const bigW = (m) => [M.lerp(M.widths.bar * k, 128 * k, clamp01(m)), M.lerp(M.widths.body * k, 128 * k, clamp01(m))];
+    aboutPt(ctx, C5, 1 + bk, 1 + bk, () => {
+      const [wb, wy] = bigW(bm), mc = clamp01(bm);
+      glyph5(ctx, big, wb, wy, mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc));
+    });
+    aboutPt(ctx, CS, 1 + sk, 1 + sk, () => {
+      const mc = clamp01(sm), w5 = M.widths.s * k;
+      glyph5(ctx, small, M.lerp(w5 * 1.05, w5, mc), w5, mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc));
+    });
+  }
+
+  // shell: a shell game. They trade places three times in quick arcs, each faster than the last, the one passing
+  // in front larger; every pass is a morph, so each landing reads 5s again, and the last settles
+  function shell(ctx, t, p, env, I, ease) {
+    if (t <= 0 || t >= 1) { still(ctx, p, env); return; }
+    const pal = env.palette, col = colourSets(pal), k = p.weight;
+    const dir = env.direction === 'left' ? -1 : 1;
+    const T0 = 0.04, MOVE = 0.8, SHARE = [0.4, 0.33, 0.27];
+    const wins = [];
+    let a = T0;
+    for (const f of SHARE) { wins.push([a, a + MOVE * f]); a += MOVE * f; }
+    let j = 0;
+    for (let i = 0; i < 3; i++) if (t >= wins[i][0]) j = i;
+    const s = M.smoothstep(0, 1, win(t, wins[j][0], wins[j][1] - wins[j][0]));
+    let u = 0.5 * (ease(s) + s);
+    if (j === 2) { const v = win(t, wins[2][1], 1 - wins[2][1] - 0.02); u -= 0.04 * (0.4 + 0.6 * I) * Math.sin(TAU * v) * (1 - v); }
+    // the letters: A starts as the 5 on the left, B as the s on the right; on even passes A goes left to right
+    const aGoesRight = j % 2 === 0;
+    const L2R = aGoesRight ? 'A' : 'B';
+    // the arc: perpendicular to the line between the places; over (up) on passes 1 and 3, under on 2; dir flips it
+    const nx = -(CS[1] - C5[1]) / (2 * HALF), ny = (CS[0] - C5[0]) / (2 * HALF);   // unit normal, pointing down-left
+    const h = HALF * (0.3 + 0.75 * I) * Math.sin(Math.PI * clamp01(u)) * dir * (j === 1 ? 1 : -1);
+    const sink = depthColour(pal);
+    const one = (who) => {
+      const goesRight = who === L2R;
+      const isFiveNow = who === 'A' ? j % 2 === 0 : j % 2 === 1;   // the 5 at the start of this pass
+      const from = isFiveNow ? FIVE : S, to = isFiveNow ? S : FIVE;
+      const lag = isFiveNow ? (f) => 1 - f : (f) => f;
+      const sign = goesRight ? 1 : -1;
+      const pts = blend(from, to, u, lag, nx * h * sign, ny * h * sign);
+      const m = isFiveNow ? u : 1 - u;
+      const c = [M.lerp(isFiveNow ? C5[0] : CS[0], isFiveNow ? CS[0] : C5[0], u) + nx * h * sign, M.lerp(isFiveNow ? C5[1] : CS[1], isFiveNow ? CS[1] : C5[1], u) + ny * h * sign];
+      return { pts, m, c, front: goesRight };
+    };
+    const A = one('A'), Bq = one('B');
+    if (p.ribbon) {
+      const r = (j + clamp01(u)) / 3;
+      M.ribbon(ctx, r * dir, { colours: pal.ribbon, alpha: 1 - 0.4 * bump(win(t, 0.02, 0.9)) });
+    }
+    const pass = Math.sin(Math.PI * clamp01(u));
+    const draw = (q) => {
+      const g = q.front ? 1 + 0.06 * pass : 1 - 0.03 * pass;
+      aboutPt(ctx, q.c, g, g, () => letter(ctx, q.pts, q.m, k, col, sink, q.front ? 0 : 0.22 * pass));
+    };
+    // the one passing behind first; at the landings, the s on top (as at rest)
+    const back = A.front ? Bq : A, fore = A.front ? A : Bq;
+    if (pass > 0.02) { draw(back); draw(fore); }
+    else { const five = A.m < 0.5 ? A : Bq, sl = five === A ? Bq : A; draw(five); draw(sl); }
+  }
+
   Motion.register({
     id: 'morph',
     name: 'Morph',
     idea: 'The 5 melts into the s through their shared bowl, and back: traced from the tip of its bar, the 5 is the s with corners.',
     why: 'Moving between tabs, or taking a judgment back, is a change you can undo: the mark shows that the 5 and the s are one gesture, familiar and new.',
     moments: ['tab', 'undo'],
-    styles: ['merge', 'exchange', 'melt'],
+    styles: ['merge', 'exchange', 'melt', 'revolve', 'doubles', 'shell'],
     params: {
       duration: { default: 480, min: 250, max: 2000, step: 10 },
-      style: { default: 'merge', options: ['merge', 'exchange', 'melt'] },
+      style: { default: 'merge', options: ['merge', 'exchange', 'melt', 'revolve', 'doubles', 'shell'] },
       easing: { default: 'outCubic', options: M.EASES.slice() }
     },
     reduced: 'still',
@@ -251,7 +417,10 @@
     draw(ctx, t, p, env) {
       const ease = M.easing(p.easing);
       const I = p.intensity;
-      if (p.style === 'exchange') exchange(ctx, t, p, env, I, ease);
+      if (p.style === 'revolve') revolve(ctx, t, p, env, I, ease);
+      else if (p.style === 'doubles') doubles(ctx, t, p, env, I, ease);
+      else if (p.style === 'shell') shell(ctx, t, p, env, I, ease);
+      else if (p.style === 'exchange') exchange(ctx, t, p, env, I, ease);
       else if (p.style === 'melt') melt(ctx, t, p, env, I, ease);
       else merge(ctx, t, p, env, I, ease);
     }

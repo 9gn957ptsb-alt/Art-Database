@@ -19,11 +19,12 @@ build contract) before changing anything.
 | Path | What it is |
 | --- | --- |
 | `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp` |
-| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined), the six scripts in the order the page loads them (`hub.js` and `hubpage.js` before `app.js`), and `dist/dev.html` |
+| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined), the seven scripts in the order the page loads them (`hub.js`, `hubpage.js` and `connect.js` before `app.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
 | `src/app.css`, `src/app.js` | styles and UI (including Your hub: Seed's last section and the Hub sheet, through GitHub's own pages) |
 | `src/engine.js` | pure logic: judgments, the taste model, turns, the five, profile, Path, seed (no DOM, clock or randomness) |
 | `src/bring.js` | turns a person's own images into 5s things in the browser and keeps the images private |
+| `src/connect.js` | Connect your apps (`FiveSConnect`): an app's "download your data" file read on the device (JSON, web pages, spreadsheets, text, .zip), and the one client of the 5s connector through the `mcp` capability (server `"5s"`) |
 | `src/ground.js` | draws Seed's isometric island on a canvas |
 | `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
 | `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
@@ -54,7 +55,7 @@ Node 22 and Playwright with Chromium are required for the browser suites; each o
 its own `python3 -m http.server`.
 
 ```sh
-node --test 5s/test/                    # engine and hub (pure logic; runs through test/index.js)
+node --test 5s/test/                    # engine and hub (pure logic; runs through test/index.js), and connect.test.mjs
 node --test 5s/test/hub.test.mjs        # the hub drivers and page, against a fake GitHub
 node --test 5s/test/bring.test.cjs      # bring-in: images, colours, crop, texture, stores
 node --test 5s/test/ground.test.cjs     # the ground renderer
@@ -78,7 +79,7 @@ Your hub's four steps in links mode (with GitHub's pages answered by a stand-in,
 Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing and is never
 published. The supporting files go with it at the same relative paths:
 
-- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `app.js`
+- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `app.js`
 - `deck.json`, `logo.webp`, `img/atlas.webp`
 - the 320 card images `img/{i,o,s,u}NNN.webp` (Colour cards have no image)
 
@@ -93,11 +94,17 @@ Declare these capabilities: `{db: {}, user: {}, sample: {}, downloads: true}`.
 The page works without any of them: state is kept in the browser and brought-in images in
 IndexedDB, and it says so.
 
-**Two publishes, because of the file count.** The page plus 329 supporting files is 330 files (about
+**Not declared yet: `mcp`.** Connect your apps' Paste a link (and the pictures of things brought in
+from data files) go through the 5s connector. Once it is deployed (`connector/README.md`), add
+`mcp: {servers: [{server: "5s", tools: ["read_link", "bring_in", "item_image", "get_state"]}]}` (with
+the tools the hub will use) to the capabilities; until then the page says what opens those doors,
+and the data file door works without it.
+
+**Two publishes, because of the file count.** The page plus 330 supporting files is 331 files (about
 13 MB). One publish sends at most 255 files; a version holds up to 511.
 
-1. Publish the page with the six scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
-   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 250 files.
+1. Publish the page with the seven scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
+   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 251 files.
 2. Publish again to the same URL with the 80 Surface crops (`img/u*.webp`). Files left out of a
    publish are kept.
 

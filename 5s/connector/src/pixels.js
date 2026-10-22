@@ -155,6 +155,9 @@ export async function decodePng(b, maxPx) {
     const type = String.fromCharCode(b[i + 4], b[i + 5], b[i + 6], b[i + 7]);
     const d = b.subarray(i + 8, i + 8 + len);
     if (d.length < len) throw new Error('PNG cut short');
+    // One header, first (as the PNG standard says): so the size dimensions() reads from byte 16, which
+    // bring_in charges against its pixel budget, is the size decoded here.
+    if ((i === 8) !== (type === 'IHDR')) throw new Error(i === 8 ? 'PNG without its header first' : 'PNG with a second header');
     if (type === 'IHDR') { w = u32be(d, 0); h = u32be(d, 4); depth = d[8]; ctype = d[9]; interlace = d[12]; }
     else if (type === 'PLTE') palette = d;
     else if (type === 'tRNS') trns = d;
@@ -233,7 +236,7 @@ export function decodeJpeg(b, maxPx) {
   if (!dim) throw new Error('JPEG without a frame header');
   if (dim.w * dim.h > maxPx) return null;
   const img = jpeg.decode(b, { useTArray: true, formatAsRGBA: true, tolerantDecoding: true,
-    maxResolutionInMP: Math.max(1, maxPx / 1e6), maxMemoryUsageInMB: 64 });
+    maxResolutionInMP: (maxPx + 1) / 1e6, maxMemoryUsageInMB: 64 });   // the caller's cap, even for a frame the header check didn't see
   return orient({ w: img.width, h: img.height, data: img.data }, jpegOrientation(b));
 }
 

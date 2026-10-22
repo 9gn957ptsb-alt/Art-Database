@@ -1455,7 +1455,8 @@ const sourcesOf = (page) => page.$$eval('#view-split .sources li', (ls) => ls.ma
 
 async function sheetChecks(page, where) {
   assert.deepEqual(await contrastIssues(page, '#sheet'), [], where + ': contrast');
-  assert.deepEqual(await smallTargets(page, '#sheet'), [], where + ': targets under 24 px');
+  // (the file input itself is reached through its label, "Choose a file", 44 px tall)
+  assert.deepEqual((await smallTargets(page, '#sheet')).filter((x) => x.what !== 'cx-file'), [], where + ': targets under 24 px');
   const r = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, vw: innerWidth, body: document.getElementById('sheet-body').scrollWidth, bw: document.getElementById('sheet-body').clientWidth }));
   assert.ok(r.doc <= r.vw, where + ': page scrolls sideways');
   assert.ok(r.body <= r.bw + 1, where + ': the sheet scrolls sideways (' + r.body + ' > ' + r.bw + ')');
@@ -1621,7 +1622,7 @@ test('Your data file: JSON, HTML, a spreadsheet and a zip; Sources; Still yours?
           await shot('68-still-yours-placeholder');
           await page.click('#btn-keep');
           await page.waitForSelector('#strip .strip-in');
-          assert.match(await page.textContent('#strip'), /Kept/);
+          assert.match(await page.textContent('#strip'), /Still yours: /);
         } else await page.click('#btn-keep');
         await waitTopChange(page, id);
       }
@@ -1761,4 +1762,50 @@ test('the connector absent in other ways: an mcp with no 5s, and a 5s that stops
       assert.deepEqual(page.errors(), []);
     } finally { await ctx.close(); }
   }
+});
+
+test('Your data file: a file holding more than one file adds says so; the rest come from adding it again', { timeout: 90000 }, async () => {
+  const cfg = { w: 390, h: 844, scheme: 'light' };
+  const { ctx, page } = await newPage(cfg);
+  const lines = Array.from({ length: 250 }, (_, i) => 'Saved thing ' + (i + 1) + ' https://www.tumblr.com/someone/' + (100000 + i) + '/post');
+  const big = { name: 'my-saves.txt', mimeType: 'text/plain', buffer: Buffer.from(lines.join('\n')) };
+  try {
+    await page.goto(BASE + '#split');
+    await page.click('#view-split [data-act="connect"]');
+    await page.click('[data-act="door"][data-door="file"]');
+    await page.setInputFiles('#cx-file', big);
+    await page.waitForSelector('#cx-found-sum');
+    assert.equal(await page.textContent('#cx-found-sum'), '250 links found, none with pictures.');
+    assert.equal(await page.inputValue('#cx-file-source'), 'Tumblr');
+    assert.match(await page.textContent('#cx-file-notes'), /One file adds up to 200 at a time, so the first 200 are chosen\. Add the same file again for the next ones\./);
+    assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (200)');
+    assert.equal(await page.locator('#sheet .found li').count(), 50, 'fifty at a time');
+    await page.click('#cx-more');
+    assert.equal(await page.locator('#sheet .found li').count(), 100);
+    assert.equal(await page.evaluate(() => document.activeElement.value), 'f50', 'focus on the first of the next fifty');
+    await page.locator('#sheet .found label', { hasText: 'Saved thing 99' }).click();
+    assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (199)');
+    await page.click('[data-act="cx-all"][data-which="file"]');
+    assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (200)');
+    await shooter(page, cfg)('76-file-cap');
+    await page.click('#cx-file-add');
+    await sheetGone(page);
+    assert.equal((await stored(page)).own.length, 200);
+    assert.equal(await page.locator('#view-split section[aria-labelledby="sec-brought-in"] .rows li').count(), 24, 'Brought in folds a long list');
+    await page.click('#view-split [data-act="split-all"][data-key="brought"]');
+    assert.equal(await page.locator('#view-split section[aria-labelledby="sec-brought-in"] .rows li').count(), 200);
+    // the same file again: the next fifty
+    await page.click('#view-split [data-act="connect"]');
+    await page.click('[data-act="door"][data-door="file"]');
+    await page.setInputFiles('#cx-file', big);
+    await page.waitForSelector('#cx-found-sum');
+    assert.match(await page.textContent('#cx-file-notes'), /^200 are already in your 5s\./);
+    assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (50)');
+    await page.click('#cx-file-add');
+    await sheetGone(page);
+    const st = await stored(page);
+    assert.equal(st.own.length, 250);
+    assert.ok(Buffer.byteLength(JSON.stringify(st)) < 200 * 1024, 'the state stays under the store\'s document limit');
+    assert.deepEqual(page.errors(), []);
+  } finally { await ctx.close(); }
 });

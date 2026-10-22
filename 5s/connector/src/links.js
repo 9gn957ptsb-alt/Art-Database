@@ -15,7 +15,7 @@
  * private address offers nothing there). Titles are other people's text: decoded, stripped of tags
  * and quoted to one line by the caller; they never reach a summary.
  */
-import { checkAddress, readableAddress, textOf, WebError, WEB_LIMITS } from './web.js';
+import { checkAddress, readableAddress, textOf, typeWord, WebError, WEB_LIMITS } from './web.js';
 import { sniff, dimensions } from './pixels.js';
 
 export const MAX_ITEMS = 60;
@@ -24,9 +24,83 @@ const DOC_ACCEPT = 'text/html,application/xhtml+xml,application/rss+xml,applicat
 // Pictures as JPEG or PNG where a site can choose (those are what the connector can read for colours).
 export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/*;q=0.5';
 
+// ------------------------------------------------------------------ scanning, in one pass
+
+// The parsers find tags, comments and blocks exactly where the lazy patterns /<!--[\s\S]*?-->/,
+// /<item\b[\s\S]*?<\/item>/, /<meta\b[^>]*>/ and /<[^>]*>/ would, without their cost on a hostile
+// body: on one full of openers that never close, such a pattern scans from every opener to the end
+// (a page of 1.5 MB, under the read cap, took minutes of CPU). Here each search runs from an opener
+// to the first closer after it, and an opener with no closer after it means no later opener has one
+// either, so the search stops there: one pass over the text, whatever is in it.
+
+/** [[start, end], …] of each match of /OPEN[\s\S]*?CLOSE/ in s (open and close are pattern sources). */
+function spans(s, open, close, flags = 'gi') {
+  const o = new RegExp(open, flags), c = new RegExp(close, flags), out = [];
+  for (let m; (m = o.exec(s));) {
+    c.lastIndex = o.lastIndex;
+    const e = c.exec(s);
+    if (!e) break;
+    out.push([m.index, c.lastIndex]);
+    o.lastIndex = c.lastIndex;
+  }
+  return out;
+}
+
+/** s with each span replaced by keep(start, end), or by a space. */
+function cut(s, list, keep) {
+  const parts = [];
+  let at = 0;
+  for (const [a, b] of list) { parts.push(s.slice(at, a), keep ? keep(a, b) : ' '); at = b; }
+  parts.push(s.slice(at));
+  return parts.join('');
+}
+
+/** What the first /<name\b[^>]*>([\s\S]*?)<\/name>/i in s captures, or undefined. */
+function inner(s, name) {
+  const o = new RegExp('<' + name + '\\b', 'gi');
+  if (!o.exec(s)) return undefined;
+  const gt = s.indexOf('>', o.lastIndex);
+  if (gt < 0) return undefined;
+  const c = new RegExp('<\\/' + name + '>', 'gi');
+  c.lastIndex = gt + 1;
+  const e = c.exec(s);
+  return e ? s.slice(gt + 1, e.index) : undefined;
+}
+
+/** Whether /<name\b[^>]*href=/i matches in s. */
+function tagWithHref(s, name) {
+  const o = new RegExp('<' + name + '\\b', 'gi');
+  while (o.exec(s)) {
+    const gt = s.indexOf('>', o.lastIndex);
+    if (/href=/i.test(s.slice(o.lastIndex, gt < 0 ? s.length : gt))) return true;
+    if (gt < 0) return false;
+    o.lastIndex = gt + 1;
+  }
+  return false;
+}
+
+/** Each match of /<(script|style|noscript|template)\b[\s\S]*?<\/\1>/gi: to the closer of its own name. */
+function rawBlocks(s) {
+  const o = /<(script|style|noscript|template)\b/gi, unclosed = new Set(), out = [];
+  for (let m; (m = o.exec(s));) {
+    const name = m[1].toLowerCase();
+    if (unclosed.has(name)) continue;
+    const c = new RegExp('<\\/' + name + '>', 'gi');
+    c.lastIndex = o.lastIndex;
+    const e = c.exec(s);
+    if (!e) { unclosed.add(name); continue; }
+    out.push([m.index, c.lastIndex]);
+    o.lastIndex = c.lastIndex;
+  }
+  return out;
+}
+
+/** decodeURIComponent, or the text as it is when its escapes are broken (%E0%A4%A). */
+const safeDecode = (p) => { try { return decodeURIComponent(p); } catch { return p; } };
+
 // ------------------------------------------------------------------ text
 
-const NAMED = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', hellip: '…', mdash: '—', ndash: '–', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', middot: '·', copy: '©' };
+const NAMED ={ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', hellip: '…', mdash: '—', ndash: '–', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', middot: '·', copy: '©' };
 
 /** HTML and XML entities to characters (named, decimal and hex); unknown ones are left as they are. */
 export function decodeEntities(s) {
@@ -40,11 +114,13 @@ export function decodeEntities(s) {
   });
 }
 
-const unCdata = (s) => String(s || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+// As s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1'), in one pass.
+const unCdata = (x) => { const s = String(x || ''); return cut(s, spans(s, '<!\\[CDATA\\[', '\\]\\]>', 'g'), (a, b) => s.slice(a + 9, b - 3)); };
 
 /** Plain text from a bit of markup: CDATA opened, tags dropped, entities decoded, spaces folded. */
 export function plainText(s) {
-  return decodeEntities(unCdata(s).replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+  const t = unCdata(s);
+  return decodeEntities(cut(t, spans(t, '<', '>'))).replace(/\s+/g, ' ').trim();
 }
 
 /** The attributes of one tag (names lower case, values entity-decoded). */
@@ -60,7 +136,8 @@ export function attrsOf(tag) {
   return out;
 }
 
-const tags = (html, name) => String(html).match(new RegExp('<' + name + '\\b[^>]*>', 'gi')) || [];
+// Each /<name\b[^>]*>/gi in html, in one pass.
+const tags = (html, name) => { const s = String(html); return spans(s, '<' + name + '\\b', '>').map(([a, b]) => s.slice(a, b)); };
 
 // ------------------------------------------------------------------ addresses
 
@@ -88,7 +165,7 @@ const PINTEREST_NOT_BOARDS = new Set(['pin', 'ideas', 'search', 'today', 'settin
  */
 export function whatLink(u) {
   const host = u.hostname.replace(/^www\./, '');
-  const parts = u.pathname.split('/').filter(Boolean).map((p) => decodeURIComponent(p));
+  const parts = u.pathname.split('/').filter(Boolean).map(safeDecode);
   if (host === 'are.na' || host === 'api.are.na') {
     let slug = null;
     if (host === 'api.are.na') { const i = parts.indexOf('channels'); slug = i >= 0 ? parts[i + 1] : null; }
@@ -183,12 +260,13 @@ const firstImgSrc = (html, base) => {
 /** RSS 2.0 or Atom: each item's picture (media:content, enclosure, or the first <img> in it). */
 export function parseFeed(xml, base) {
   const s = String(xml);
-  const blocks = s.match(/<item\b[\s\S]*?<\/item>/gi) || s.match(/<entry\b[\s\S]*?<\/entry>/gi) || [];
+  const itemSpans = spans(s, '<item\\b', '<\\/item>');
+  const blocks = (itemSpans.length ? itemSpans : spans(s, '<entry\\b', '<\\/entry>')).map(([a, z]) => s.slice(a, z));
   const head = s.slice(0, Math.max(0, s.search(/<item\b|<entry\b/i)) || s.length);
-  const feedTitle = (/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(head) || [])[1];
+  const feedTitle = inner(head, 'title');
   const items = [], seen = new Set();
   for (const b of blocks) {
-    const field = (name) => (new RegExp('<' + name + '\\b[^>]*>([\\s\\S]*?)<\\/' + name + '>', 'i').exec(b) || [])[1];
+    const field = (name) => inner(b, name);
     let image = null;
     for (const t of tags(b, 'media:content').concat(tags(b, 'enclosure'))) {
       const a = attrsOf(t);
@@ -209,7 +287,7 @@ export function parseFeed(xml, base) {
     if (!image) image = thumb;
     let link = null;
     const rssLink = field('link');
-    if (rssLink && !/<link\b[^>]*href=/i.test(rssLink)) link = pictureAddress(plainText(rssLink), base);
+    if (rssLink && !tagWithHref(rssLink, 'link')) link = pictureAddress(plainText(rssLink), base);
     if (!link) {
       for (const t of tags(b, 'link')) {
         const a = attrsOf(t);
@@ -238,13 +316,14 @@ const ICONISH = /(^|[/_.-])(icon|logo|sprite|avatar|favicon|spacer|pixel|badge|e
 
 /** A page: its og:image / twitter:image (each one), else its first large <img>; and its title. */
 export function parsePage(html, base) {
-  const s = String(html).replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style|noscript|template)\b[\s\S]*?<\/\1>/gi, ' ');
+  const noComments = cut(String(html), spans(String(html), '<!--', '-->'));
+  const s = cut(noComments, rawBlocks(noComments));
   const metas = tags(s, 'meta').map(attrsOf);
   const metaOf = (...names) => metas.filter((a) => names.includes(String(a.property || a.name || '').toLowerCase())).map((a) => a.content);
   let baseHref = base;
   const baseTag = tags(s, 'base').map(attrsOf).find((a) => a.href);
   if (baseTag) { try { baseHref = new URL(baseTag.href, base).href; } catch { /* keep */ } }
-  const title = plainText(metaOf('og:title')[0] || metaOf('twitter:title')[0] || (/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(s) || [])[1] || '');
+  const title = plainText(metaOf('og:title')[0] || metaOf('twitter:title')[0] || inner(s, 'title') || '');
   const items = [], seen = new Set();
   const shared = metaOf('og:image:secure_url', 'og:image', 'og:image:url', 'twitter:image', 'twitter:image:src');
   for (const t of tags(s, 'link').map(attrsOf)) if (String(t.rel || '').toLowerCase() === 'image_src') shared.push(t.href);
@@ -273,7 +352,10 @@ export function parsePage(html, base) {
 // ------------------------------------------------------------------ reading
 
 const looksJson = (b) => /^\s*[[{]/.test(textOf(b.subarray(0, 64)));
-const looksFeed = (t) => /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*<(rss|feed|rdf:RDF)\b/i.test(t);
+// It was /…(<!--[\s\S]*?-->\s*)*<(rss|…: a run of k comments could be split 2^k ways, all tried on a
+// page that is not a feed (28 empty comments, 296 bytes, took 14 s). A run of comments is itself one
+// "<!--", anything, "-->", so this matches exactly the same texts, with one way to split them.
+const looksFeed = (t) => /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*-->\s*)?<(rss|feed|rdf:RDF)\b/i.test(t);
 
 function notReadable(what) {
   return new WebError('not readable', 'That address is ' + what + ', not a page or a picture 5s can read.', 'Use the address of the board, channel or page that shows the pictures.');
@@ -294,8 +376,9 @@ export async function readLink(web, url) {
   const kindOfBytes = sniff(doc.bytes);
   if (kindOfBytes || /^image\//.test(doc.type)) {
     // The address is itself a picture.
-    if (!kindOfBytes) throw notReadable('a kind of picture 5s does not read (' + (doc.type || 'unknown') + ')');
-    const name = decodeURIComponent((new URL(doc.url).pathname.split('/').pop() || '').replace(/\.[a-z0-9]{2,5}$/i, '')).replace(/[_-]+/g, ' ');
+    // The site's Content-Type is its own text: named only when it is a type 5s knows (web.js typeWord).
+    if (!kindOfBytes) throw notReadable('a kind of picture 5s does not read' + (typeWord(doc.type) ? ' (' + typeWord(doc.type) + ')' : ''));
+    const name = safeDecode((new URL(doc.url).pathname.split('/').pop() || '').replace(/\.[a-z0-9]{2,5}$/i, '')).replace(/[_-]+/g, ' ');
     out = { title: null, items: [{ image: doc.url, thumb: null, title: plainText(name), link: url.href }] };
   } else if (what.kind === 'arena') {
     whole();
@@ -326,7 +409,7 @@ export async function readLink(web, url) {
     whole();
     throw notReadable('data (JSON) from a site 5s does not know');
   } else {
-    throw notReadable(doc.type ? 'a file of type ' + doc.type : 'a file');
+    throw notReadable(typeWord(doc.type) ? 'a file of type ' + typeWord(doc.type) : 'a file');
   }
   if (what.source === 'Pinterest') out.items = out.items.map(pinterestSizes);
   const more = out.items.length > MAX_ITEMS;
@@ -344,3 +427,6 @@ function pinterestSizes(it) {
 function tooLargeDoc() {
   return new WebError('too large', 'That is bigger than 5s reads (over ' + Math.round(WEB_LIMITS.pageBytes / 1024) + ' KB).', 'Use the address of a single board, channel or page.');
 }
+
+/** For the tests: the one-pass scanners and looksFeed, each checked against the pattern it stands in for. */
+export const scan = Object.freeze({ spans, cut, inner, tagWithHref, rawBlocks, tags, unCdata, looksFeed, safeDecode });

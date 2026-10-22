@@ -331,6 +331,67 @@ definition, and comes back as "Still yours?" (the existing mechanic).
 
 Never: a password typed into 5s, a scraped login, or a browser extension.
 
+**As built in the app (22 Oct 2026; where it differs from or adds to the plan above).**
+- **Where.** The **Connect your apps** sheet opens from Split (a button beside "Bring in your own") and,
+  as a second button beside "Bring in your own", from the intro and the Five sorted summary. It lists
+  the five doors in the table's order, each a row with what it does in one line, "Works for …", and its
+  state in words: **Open**, **Needs 5s in Claude**, **Not yet** (Sign in to the app) or, while the page
+  is still asking, **Checking**. A door opens inside the same sheet (the sheet's title becomes the
+  door's name; "All five doors" goes back). Bring in images opens the existing sheet, unchanged.
+- **The connector, through the artifact's `mcp` capability** (`src/connect.js`, `FiveSConnect.connector`;
+  the server name is the one constant `SERVER = "5s"`; tools `read_link`, `bring_in`, `item_image`, and
+  `get_state` only to find things it already holds). `mcp` is **not** declared in the published
+  capabilities until the connector is deployed; the code lights up when it is. A page that declares
+  `db` can get a non-null `mcp` namespace for Claude's own artifact servers, so "connected" means
+  `use("mcp")` resolved **and** `listTools("5s")` lists the server with tools; anything else (no
+  namespace, no server, `server_not_connected` on a call) reads as not connected, and Paste a link,
+  Sign in to the app and Ask Claude say: "Connect 5s to Claude (Settings → Connectors → Add custom
+  connector) to open this door." (`needs_reauth`: "Reconnect 5s in Claude …"). A refusal shows the
+  connector's own `why` and `resolution`.
+- **Paste a link** (needs the connector): the address (with or without `https://`), **Read link**, the
+  pictures listed with checkboxes (all chosen; the page can't show other sites' pictures, so each
+  shows its source's letter), one Kind for all of them, **Add to my database (n)** → `bring_in` (its
+  `remaining` sent again until done), each added thing kept here under the connector's id (`cid`),
+  then its picture fetched with `item_image`, measured on the canvas (`FiveSBring.process`, so colours
+  pending in the connector are read here) and kept like a person's own image.
+- **Sign in to the app**: not built; its row says what opens it (the connector, and each app's approval).
+- **Your data file** (works now, no connector): one reader for every app instead of one per format.
+  It reads JSON (also X's script-wrapped archive files), web pages, spreadsheets, plain text, and a
+  .zip holding them (zip64 too; unpacked by the browser's own `DecompressionStream`, no library), on
+  the device. **Saves first**: when an export names its saves (keys, folders or files called saved,
+  liked, favourites, bookmarks, pins, boards, collections), only those are read, so an Instagram
+  download's messages are never opened. It walks JSON values, links and pictures in pages (a picture
+  inside a link goes with it) and spreadsheet cells; groups what belongs to one post; drops help,
+  policy and front pages; de-duplicates by link and picture address; says "214 links found, 37 with
+  pictures."; and names the source from the file's name, then its contents, then where most links
+  point (Instagram, Pinterest, Google Takeout, X, TikTok, Are.na, Flickr, Tumblr, else **Your file**;
+  the person can change it). **Cap:** one file adds at most 200 things at a time and the saved state
+  stays under 200 KiB (the store's document limit is 256 KiB); the sheet says so and the same file
+  added again brings the next ones (what is in already is shown as such). Fifty rows show at a time.
+- **What a brought-in thing from another app keeps** (state `own[]`, additive, the connector's field
+  names): `image` (a picture address, when there is one), `link` (the post, pin or page), `thumb?`,
+  `coloursPending: true` until its picture is read, `cid` (its id in the connector), `noPicture` when
+  the picture couldn't be brought over. Kind is Image unless the person chooses otherwise; a thing with
+  no name is called by what it is ("Instagram post", "Pinterest pin") or "Untitled". Links without a
+  picture never get one, and the page says so plainly.
+- **Pictures for things from files**, once 5s is connected: the ones with picture addresses go to the
+  connector (`bring_in`) when they are added, or later with **Bring the pictures over**; then their
+  pictures come back through `item_image`, 24 a visit without asking (the connector reads 30 a minute),
+  then **Bring the rest of the pictures**.
+- **The placeholder**: a thing with no picture here shows its source's letter (Instagram "I", Your file
+  "F") on its colour, or on hatched paper, everywhere a brought thing appears: Split (Brought in, whose
+  rows also say "Link only" or "Picture to come"), the "Still yours?" card (with why there is no
+  picture), the Set chooser and room, the detail sheet (with **Open where it came from**) and the Five
+  sorted tiles. "Still yours?" works for them as for any brought thing. Brought in folds to the newest
+  24 with "Show all".
+- **Ask Claude**: the sentence to say, with a **Copy** button and an optional link field that goes
+  into it: "Show me the pictures at this link, then add the ones I pick to my 5s: [your link]".
+- **Never on the public hub**: pictures brought in from other sites (by link or data file) are someone
+  else's, so the hub page and its ground leave them out even with "Include my own images".
+- **Obstacle → resolution**: the connector's `bring_in` refuses a `null` title or link, which its own
+  `read_link` returns for untitled pictures → the app leaves empty fields out (`FiveSConnect.bringItem`);
+  the connector could also accept `null` there.
+
 ### Example mode
 - Every tab except Sort can show **an example taste** (built by `engine.exampleState(deck)`), behind a
   clearly marked banner "Example taste. Not yours." with "Back to mine". It is never saved. On a first

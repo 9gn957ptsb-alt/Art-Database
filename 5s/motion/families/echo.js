@@ -11,6 +11,17 @@
  *            the fifth is the mark, and the four fade in order
  *   depth    five copies stack up in depth, back to front, one a beat; the front one is solid and the four
  *            behind slide forward into it
+ *   extrude  (22 Oct, from Depth) the stack becomes one solid block, like 1970s poster type: the side thickens on
+ *            the beats (5, 10, 20, 30 copies) in bands of flat tone, swings from lower-left to upper-right as if the
+ *            light moved (40 copies), and retracts into the face, which lands with Depth's pop
+ *   strata   (22 Oct, from Ripple + Depth) the mark bursts into a nest of five solid bands that follow its outline,
+ *            like a topographic map or stacked cut paper; the outermost snaps inward on each beat until the fifth
+ *            lands the plain mark
+ *   riso     (22 Oct, from Depth in Paper) three flat ink plates overprint (multiply on light, screen on dark),
+ *            out of register; they jump a fifth closer on each beat, a step and a hold, lock on the fifth and the
+ *            inks become the logo's mark
+ *
+ * extrude and strata start and end on the still mark; riso starts on its plates out of register (seeded by env.rng).
  *
  * Outlines are made by knocking a narrower copy of the letters out of a wider one inside one isolated layer
  * (Marks.layer), and every group of outlines shares one layer, so a frame costs a few layers at most.
@@ -74,6 +85,23 @@
   const flatPal = (pal) => pal.name === 'paper' || pal.name === 'ink';
   const VIOLET = (pal) => (pal.name === 'logo' || pal.name === 'inverse' || pal.name === 'turn' ? M.colourAt(pal.ribbon, 0.3) : pal.iris);
 
+  // copies of the letters in one flat colour, one path per stroke for all of them (offsets in mark units)
+  function flatCopies(c, offs, k, grow, colour) {
+    c.save();
+    c.strokeStyle = colour; c.lineCap = 'round'; c.lineJoin = 'round';
+    for (const [name, w] of [['body', M.widths.body], ['bar', M.widths.bar], ['s', M.widths.s]]) {
+      const pts = PTS[name];
+      c.lineWidth = Math.max(0.5, w * k + 2 * grow);
+      c.beginPath();
+      for (const [ox, oy] of offs) {
+        c.moveTo(pts[0][0] + ox, pts[0][1] + oy);
+        for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0] + ox, pts[i][1] + oy);
+      }
+      c.stroke();
+    }
+    c.restore();
+  }
+
   // extrude: Depth's die-cut copies pushed into one solid block, like 1970s poster type. The side thickens on
   // beats one to four (5, 10, 20, 30 copies), swings from lower-left to upper-right on beat four as if the light
   // moved (reaching 40 copies), and retracts into the front face on beat five, which lands with Depth's pop.
@@ -99,7 +127,7 @@
     const land = span(t, XBEAT[4] + 0.1, XBEAT[4] + 0.28);
     const pop = M.ease.outBack(1.4 + 1.2 * I)(land);
     const S = land > 0 ? (1 - (0.04 + 0.05 * I)) + (0.04 + 0.05 * I) * pop : 1 - (0.04 + 0.05 * I) * retract;
-    const rim = 1.6, faceRim = 5 * k;
+    const rim = 1.6, faceRim = Math.max(5 * k, 1.1 / (env.scale || 1));
     const N = Math.ceil(n - 1e-6);
     // the ribbon stays in the face's plane but behind the block, so the side reads solid over it
     if (p.ribbon) {
@@ -114,14 +142,16 @@
         about(c, A.letters, S, (cc) => {
           // copies in bands of five, one flat tone a band (cobalt at the front to violet at the back); the back
           // copy of each band is cut out by a hairline rim, so the bands read as ridges
+          // (a band's five copies share one colour, so each band is one path per stroke: cheap at 40 copies)
           const bands = Math.ceil(N / 5);
-          for (let j = N; j >= 1; j--) {
-            const d = gap * Math.min(j, n), b = Math.ceil(j / 5);
-            cc.save();
-            cc.translate(fx + dir[0] * d, fy + dir[1] * d);
-            if (j % 5 === 0 || j === N) erase(cc, pal, k, rim, 1);
-            letters(cc, pal, k, 0, M.mix(front, back, bands > 1 ? (b - 1) / (bands - 1) : 0));
+          const at = (j) => { const d = gap * Math.min(j, n); return [fx + dir[0] * d, fy + dir[1] * d]; };
+          for (let b = bands; b >= 1; b--) {
+            const j0 = Math.min(N, 5 * b), offs = [];
+            for (let j = j0; j > 5 * (b - 1); j--) offs.push(at(j));
+            cc.save(); cc.globalCompositeOperation = 'destination-out';
+            flatCopies(cc, [at(j0)], k, rim, '#000000');
             cc.restore();
+            flatCopies(cc, offs, k, 0, M.mix(front, back, bands > 1 ? (b - 1) / (bands - 1) : 0));
           }
           cc.save(); cc.translate(fx, fy); erase(cc, pal, k, faceRim, 1); cc.restore();
         });
@@ -142,12 +172,12 @@
     let stops;
     if (pal.name === 'pass') stops = [pal.iris, pal.cobalt];
     else if (pal.name === 'turn') stops = [pal.cobalt, pal.iris];
-    else stops = [VIOLET(pal), M.mix('#B64CD6', pal.bg, pal.theme === 'dark' ? 0.08 : 0), pal.flare, pal.ember];
+    else stops = [VIOLET(pal), M.mix('#B64CD6', pal.bg, pal.theme === 'dark' ? 0.08 : 0), pal.flare, M.mix(pal.flare, pal.ember, 0.6)];
     return [0, 1, 2, 3, 4].map((i) => M.colourAt(stops, i / 4));
   }
   function strata(ctx, t, p, env, pal) {
     const I = p.intensity, k = p.weight;
-    const g = 30 + 30 * p.spread, hair = 5;
+    const g = 30 + 30 * p.spread, hair = Math.max(5, 1.1 / (env.scale || 1));   // at least a device pixel or so
     const tones = strataTones(pal);
     // how many bands are still out (5 -> 0): one snaps in on each of beats two to four, the last two on beat five
     const snap = M.ease.outBack(0.8 + 2.4 * I);
@@ -182,14 +212,15 @@
   // riso: the mark printed as three flat ink plates that find their register on the beats. They overprint
   // (multiply on a light ground, screen on a dark one), start out of register along three seeded angles and
   // jump a fifth closer on each beat, a step and a hold; on the fifth they lock and the inks become the mark.
-  const RBEAT = [0.08, 0.22, 0.36, 0.5, 0.64];
+  const RBEAT = [0.1, 0.25, 0.4, 0.55, 0.7];
   function riso(ctx, t, p, env, pal) {
     const I = p.intensity, k = p.weight;
     const dark = isDark(pal.bg);
     const inks = flatPal(pal) ? [0.5, 0.68, 0.86].map((x) => M.mix(pal.bg, pal.ink, x))
       : pal.name === 'pass' ? [M.mix(pal.cobalt, '#FFFFFF', 0.35), pal.cobalt, pal.iris]
       : pal.name === 'turn' ? [M.mix(pal.iris, '#FFFFFF', 0.35), pal.iris, pal.cobalt]
-      : [pal.ember, pal.flare, pal.iris];
+      : dark ? [pal.ember, pal.flare, pal.iris].map((c) => M.mix(c, pal.bg, 0.2))
+      : [M.mix(pal.ember, '#FFFFFF', 0.25), M.mix(pal.flare, '#FFFFFF', 0.3), M.mix(pal.iris, '#FFFFFF', 0.35)];
     const rnd = env.rng;
     const a0 = rnd() * Math.PI * 2, reach = 40 + 80 * p.spread;
     const plates = inks.map((ink, i) => {
@@ -200,11 +231,15 @@
     const jump = M.ease.outBack(4 * I);
     let m = 1;
     for (let i = 0; i < 5; i++) m -= 0.2 * jump(span(t, RBEAT[i], RBEAT[i] + 0.045));
-    const fade = M.ease.inOutCubic(span(t, 0.84, 0.95));
-    if (fade < 1) {
+    const fade = M.ease.inOutCubic(span(t, 0.82, 0.94));
+    // the press: a small thump as the plates lock
+    const sc = 1 + 0.05 * I * bump(t, RBEAT[4], RBEAT[4] + 0.1);
+    about(ctx, A.letters, sc, (cx) => {
+      // once locked, the logo's mark is printed underneath and the inks lift off it: the shape never thins
+      if (fade > 0) { if (p.ribbon) M.ribbon(cx, 0, { colours: pal.ribbon }); letters(cx, pal, k, 0); }
+      if (fade >= 1) return;
       const comp = dark ? 'screen' : 'multiply';
-      M.layer(ctx, { alpha: 1 - fade, composite: 'source-over' }, (c) => {
-        // the plates print onto a sheet of the ground colour so the blend has paper to work against
+      M.layer(cx, { alpha: 1 - fade, composite: 'source-over' }, (c) => {
         plates.forEach((pl, i) => {
           M.layer(c, { composite: i === 0 ? 'source-over' : comp }, (cc) => {
             cc.translate(A.letters[0] + pl.x * m, A.letters[1] + pl.y * m);
@@ -215,11 +250,7 @@
           });
         });
       });
-    }
-    if (fade > 0) {
-      const mark = (c) => { if (p.ribbon) M.ribbon(c, 0, { colours: pal.ribbon }); letters(c, pal, k, 0); };
-      if (fade >= 0.999) mark(ctx); else M.layer(ctx, { alpha: fade }, mark);
-    }
+    });
   }
 
   Motion.register({

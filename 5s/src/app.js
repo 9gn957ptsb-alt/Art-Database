@@ -2127,13 +2127,6 @@
   }
 
   const hostOf = (href) => { try { return new URL(href).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
-  function shortAddr(href) {
-    try {
-      const u = new URL(href);
-      const s = u.hostname.replace(/^www\./, '') + decodeURI(u.pathname).replace(/\/$/, '');
-      return s.length > 48 ? s.slice(0, 47) + '…' : s;
-    } catch (e) { return String(href || '').slice(0, 48); }
-  }
   // A name for a thing whose file gave none: what it is, where it lives.
   function linkName(href) {
     let u;
@@ -2239,7 +2232,7 @@
   }
 
   function kindSeg(which, kind) {
-    return '<fieldset class="fieldset-seg"><legend>Kind, for all of them</legend><div class="seg">' + OWN_KINDS.map((kd) =>
+    return '<fieldset class="fieldset-seg cx-kind"><legend>Kind, for all of them</legend><div class="seg">' + OWN_KINDS.map((kd) =>
       '<label' + (kind === kd ? ' class="on"' : '') + '><input type="radio" name="cx-kind-' + which + '" value="' + kd + '"' + (kind === kd ? ' checked' : '') + '>' + KIND_LABEL[kd] + '</label>').join('') + '</div></fieldset>';
   }
 
@@ -2250,7 +2243,7 @@
   }
 
   function pickRow(which, key, it, on, source, note) {
-    const title = it.title || linkName(it.link || it.image) || shortAddr(it.link || it.image);
+    const title = it.title || (it.link ? linkName(it.link) : '') || 'Untitled';
     const what = note || ((it.image ? 'With a picture' : 'Link only') + ' · ' + hostOf(it.link || it.image));
     return '<li><label class="pick"><input type="checkbox" data-pick="' + which + '" value="' + esc(key) + '"' + (on ? ' checked' : '') + (note ? ' disabled' : '') + '>' +
       '<span class="th ph">' + phMark({ source }) + '</span>' +
@@ -2263,7 +2256,7 @@
     const L = cx.link, on = cx.status === 'connected' && !!cx.conn;
     let h = backHTML(!on) + '<p class="lede">Paste the address of a public board, channel or page. 5s shows you its pictures first; nothing is added until you choose.</p>';
     if (!on) h += '<p class="door-opens">' + esc(opensLine(DOOR_BY.link)) + '</p>';
-    h += '<form class="linkform" data-form="connect-link"><label class="field" for="cx-url"><span>A public board, channel or page</span></label>' +
+    h += '<form class="linkform" data-form="connect-link" novalidate><label class="field" for="cx-url"><span>A public board, channel or page</span></label>' +
       '<div class="row"><input type="url" id="cx-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://www.are.na/…" value="' + esc(L.url) + '"' + (on ? ' data-autofocus' : ' disabled') + '>' +
       '<button type="submit" class="btn btn-ink" id="cx-read"' + (on && !L.busy ? '' : ' disabled') + '>' + (L.busy === 'read' ? 'Reading…' : 'Read link') + '</button></div></form>' +
       '<p class="small">Works for ' + esc(DOOR_BY.link.works) + '. Public links only: 5s never signs in to other sites.</p>';
@@ -2469,7 +2462,7 @@
     if (!fresh.length) return h + '<p>Everything in it is already in your 5s.</p>';
     const k = Math.min(D.sel.size, D.room);
     const shown = f.items.slice(0, D.shown);
-    h += '<label class="field"><span>From</span><select id="cx-file-source">' + uniq(FILE_SOURCES.concat([D.source])).map((s) => '<option' + (s === D.source ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select></label>' +
+    h += '<label class="field cx-from"><span>From</span><select id="cx-file-source">' + uniq(FILE_SOURCES.concat([D.source])).map((s) => '<option' + (s === D.source ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select></label>' +
       kindSeg('file', D.kind) + selbar('file', D.sel.size, fresh.length) +
       '<ul class="found">' + shown.map((it) => pickRow('file', it.key, it, D.sel.has(it.key), D.source, D.have.has(it.key) ? 'Already in your 5s' : '')).join('') + '</ul>' +
       (f.items.length > D.shown ? '<button type="button" class="btn btn-quiet" data-act="cx-more" id="cx-more">Show ' + Math.min(50, f.items.length - D.shown) + ' more</button>' : '') +
@@ -2545,7 +2538,7 @@
     const ids = [];
     for (const it of take) {
       const id = freshOwnId(st);
-      st = F.bring(st, { id, kind: D.kind, name: it.title || linkName(it.link || it.image), source: D.source, colours: [], crop: null, texture: null, w: null, h: null }, t);
+      st = F.bring(st, { id, kind: D.kind, name: it.title || (it.link ? linkName(it.link) : ''), source: D.source, colours: [], crop: null, texture: null, w: null, h: null }, t);
       const extra = {};
       if (it.link) extra.link = it.link;
       if (it.image) { extra.image = it.image; extra.coloursPending = true; }
@@ -2686,8 +2679,12 @@
     if (!deck) return;
     const v = $('#view-' + view);
     if (view === 'sort') { if (!ui.drag) updateStack(); return; }
-    if (v && v.contains(doc.activeElement)) return;
+    const ae = doc.activeElement;
+    const onHeading = !!(ae && v && v.contains(ae) && ae.tagName === 'H1');
+    if (v && v.contains(ae) && !onHeading) return false;
     renderView();
+    if (onHeading) { const h = $('#view-' + view + ' h1'); if (h) h.focus({ preventScroll: true }); }
+    return true;
   }
 
   function pictureArrived(id) {
@@ -2701,7 +2698,12 @@
     if (view === 'sort' && !ui.drag) {
       const n = $('#stack .card[data-id="' + CSS.escape(id) + '"]:not(.flying)');
       if (n) { n.remove(); updateStack(); }
-    } else softRender();
+    } else if (softRender() === false) {
+      // A control in the view has the focus, so the view stays as it is: its Brought in row says what changed.
+      $$('#view-split section[aria-labelledby="sec-brought-in"] .rowbtn[data-id="' + CSS.escape(id) + '"] .s').forEach((x) => {
+        x.textContent = KIND_LABEL[c.kind] + ' · ' + c.source + waitTag(ownRec(id, S));
+      });
+    }
     if (ui.sheet === 'detail' && ui.detailId === id) refreshSheet();
   }
 

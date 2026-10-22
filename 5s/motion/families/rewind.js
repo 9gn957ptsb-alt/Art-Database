@@ -13,6 +13,12 @@
  *            slides into the next, and the next, until the last one lands and turns solid
  *   unwind   the undo turn: the mark spins back against the clock out of a tilt, a bright arc winding
  *            back round it like the undo sign, and ghosts at the angles it just left
+ *   boomerang  (22 Oct, from Retrace) from rest out along the S toward env.direction, a hang at the far end, and
+ *            straight back with the chosen easing; onion skins on both legs (outward in the logo's colours,
+ *            homeward violet), gone by t = 0.95. Starts and ends on the still mark, so it loops (t = 0 is t = 1)
+ *   spool    (22 Oct, from Retrace) the path is visible: a violet thread from the edge of the view to the tip of
+ *            the 5's bar, the onion skins threaded on it like beads; it reels in behind the mark as it retraces,
+ *            then what is left winds into the ribbon (ribbon off: it reels into the bar's tip and is gone)
  *
  * Pure: draw(ctx, t, p, env) depends on t, p and env only; t = 1 is the still mark, centred.
  */
@@ -52,8 +58,8 @@
     return { bar: pal.bar, body: pal.body, s: pal.s };
   }
   // P: {x, y, r, k} for the 5 and {sx, sy, sr, sk} for the s
-  function ghost(ctx, p, pal, P, alpha) {
-    const gc = ghostColours(p, pal);
+  function ghost(ctx, p, pal, P, alpha, colours) {
+    const gc = colours || ghostColours(p, pal);
     if (p.ghost === 'blur') {
       M.layer(ctx, { alpha }, (c) => {
         place(c, C, P.x, P.y, P.r, P.k, (cc) => five(cc, p, gc));
@@ -188,16 +194,156 @@
     place(ctx, o, 0, 0, ang(xs), scl(xs), (c) => ess(c, p, pal));
   }
 
+  /* ---------------------------------------------------------------------------------------------------------
+   * The refinements (22 Oct): boomerang and spool. Retrace was starred; these keep its S, its onion skins and its
+   * outBack settle, and make it fit any moment (boomerang starts and ends on the still mark) or show the path
+   * itself (spool: the trace becomes the ribbon).
+   * ------------------------------------------------------------------------------------------------------- */
+  const flatPal = (pal) => pal.name === 'ink' || pal.name === 'paper';
+  const violetOf = (pal) => (flatPal(pal) ? pal.ink : pal.iris);
+  // the homeward ghosts: the same kind of ghost as the param asks for, in violet
+  function violetGhosts(p, pal) {
+    const v = violetOf(pal), c = p.ghost === 'blur' ? M.mix(v, pal.bg, 0.25) : v;
+    return { bar: [c], body: [c], s: [c] };
+  }
+  // the thread's violet: the ribbon's own (logo, inverse, turn) or the iris; one colour in the flat palettes
+  const threadColour = (pal) => (flatPal(pal) ? pal.ink : pal.name === 'logo' || pal.name === 'inverse' || pal.name === 'turn' ? M.colourAt(pal.ribbon, 0.28) : pal.iris);
+
+  // boomerang: from rest, out along the S toward env.direction (a small wind-up first), a hang at the far end,
+  // then straight back along the same S with the chosen easing. Onion skins sampled evenly in time, so they
+  // spread where it is fast and bunch where it hangs: the outward ones in the logo's colours, the homeward violet.
+  const BOUT = 0.4, BHANG = 0.47, BHOME = 0.86;
+  function boomerang(ctx, t, p, env, pal, dir) {
+    const I = p.intensity, e = M.easing(p.easing);
+    const span = env.view.x1 - env.view.x0;
+    const curve = sCurve(span * (0.3 + 0.2 * I), 40 + 80 * I);
+    const qAt = (tt) => {
+      if (tt <= 0 || tt >= 1) return 0;
+      if (tt < BOUT) return M.ease.outCubic(seg(tt, 0.05, BOUT)) - (0.05 + 0.07 * I) * Math.sin(Math.PI * seg(tt, 0, 0.1));
+      if (tt < BHANG) return 1;
+      return 1 - e(seg(tt, BHANG, BHOME));
+    };
+    // at the far end it hangs and rocks a little, as a thrown thing does at the top of its arc
+    const rock = (tt) => dir * (0.06 + 0.12 * I) * Math.sin(Math.PI * seg(tt, BOUT - 0.04, BHANG + 0.04));
+    const pose = (tt) => { const P = poseAt(curve, qAt(tt), dir, I); P.r += rock(tt); return P; };
+    const LAG = 0.04;
+    const n = Math.round(p.ghosts), dt = 0.034 + 0.012 * I;
+    const fade = 1 - M.smoothstep(0.84, 0.95, t);
+    if (fade > 0.001) {
+      const outward = ghostColours(p, pal), home = violetGhosts(p, pal), now = pose(t);
+      for (let g = n; g >= 1; g--) {
+        const tg = t - g * dt;
+        if (tg <= 0) continue;
+        const P = pose(tg), S = pose(tg - LAG);
+        // a ghost that sits on the mark shows nothing: skip it rather than draw it under the mark
+        if (Math.hypot(P.x - now.x, P.y - now.y) < 4 && Math.abs(P.r - now.r) < 0.01) continue;
+        const al = (0.72 - 0.5 * (g / (n + 1))) * fade;
+        ghost(ctx, p, pal, { x: P.x, y: P.y, r: P.r, k: P.k, sx: S.x, sy: S.y, sr: S.r, sk: S.k }, al, tg < BHANG ? outward : home);
+      }
+    }
+    const P5 = pose(t), PS = pose(t - LAG), PR = pose(t - 2 * LAG);
+    place(ctx, C, PR.x, PR.y, PR.r, PR.k, (c) => ribbon(c, p, pal, -0.2 * I * qAt(t - 2 * LAG), 1));
+    place(ctx, C, P5.x, P5.y, P5.r, P5.k, (c) => five(c, p, pal));
+    place(ctx, C, PS.x, PS.y, PS.r, PS.k, (c) => ess(c, p, pal));
+  }
+
+  // spool: the gesture's path is visible. A thread (the path the mark's end travelled, in the ribbon's violet)
+  // runs from the edge of the view to the mark, with the onion skins threaded on it like beads. As the mark
+  // retraces home the thread reels in behind it and the beads slide along it into the mark; then what is left
+  // of the thread winds into the ribbon itself (ribbon off: it reels into the mark's end and is gone).
+  const BAR = M.points('bar', 2);
+  function spool(ctx, t, p, env, pal, dir) {
+    const I = p.intensity, e = M.easing(p.easing);
+    const span = env.view.x1 - env.view.x0;
+    const curve = sCurve(span * (0.3 + 0.2 * I), 40 + 80 * I);
+    const end = curve[64], pre = curve[62], el = Math.hypot(end[0] - pre[0], end[1] - pre[1]) || 1;
+    const ext = [(end[0] - pre[0]) / el, (end[1] - pre[1]) / el];
+    const reach = Math.hypot(end[0], end[1]);
+    // a pose anywhere along the S, continued straight on past its far end (the thread runs out of the view)
+    const poseX = (q) => {
+      if (q <= 1) return poseAt(curve, q, dir, I);
+      const P = poseAt(curve, 1, dir, I);
+      P.x += dir * ext[0] * (q - 1) * reach; P.y += ext[1] * (q - 1) * reach;
+      return P;
+    };
+    // the thread is tied to the end of the 5's bar on the side the gesture went (its bright tip for a right):
+    // the open space beside the bar keeps the path in view, and the ribbon ends at the bar's foot, so the thread
+    // winds into the ribbon from its own end
+    const tie = dir > 0 ? BAR[1] : BAR[0];
+    const tieAt = (P) => {
+      const dx = tie[0] - C[0], dy = tie[1] - C[1], c = Math.cos(P.r), sn = Math.sin(P.r);
+      return [C[0] + P.x + P.k * (c * dx - sn * dy), C[1] + P.y + P.k * (sn * dx + c * dy)];
+    };
+    const x = seg(t, 0, 0.72), xs = seg(t, 0.05, 0.78);
+    const q = (xx) => 1 - e(M.clamp(xx, 0, 1));
+    const q5 = q(x), qs = q(xs), qTie = q5;
+    // the thread's far end reels in: from past the view's edge to a stretch of the S (ribbon on), or to the mark
+    const keep = p.ribbon ? 0.55 : 0;
+    const qTail = M.lerp(1.9, keep, M.ease.inOutCubic(seg(t, 0.02, p.ribbon ? 0.78 : 0.9)));
+    const width = Math.max((10 + 4 * I) * p.weight, 1.3 / (env.scale || 1));   // at least a device pixel or so
+    const col = threadColour(pal);
+    const wind = M.ease.inOutCubic(seg(t, 0.78, 0.94));
+    const lo = Math.max(0, qTie), hi = Math.max(lo, qTail);
+    let rev = true;   // which end of the ribbon the thread's tied end winds onto (the nearer one)
+    if (hi - lo > 1e-3 && wind < 1) {
+      let pts = [];
+      for (let i = 0; i <= 90; i++) pts.push(tieAt(poseX(M.lerp(lo, hi, i / 90))));
+      pts = M.resample(pts, 120);
+      let alpha = 1;
+      if (wind > 0 && p.ribbon) {
+        // wind into the ribbon: the thread's points travel onto the ribbon's spine, from whichever end is nearer
+        let rib = RIB;
+        const d1 = Math.hypot(pts[0][0] - rib[0][0], pts[0][1] - rib[0][1]) + Math.hypot(pts[119][0] - rib[119][0], pts[119][1] - rib[119][1]);
+        const d2 = Math.hypot(pts[0][0] - rib[119][0], pts[0][1] - rib[119][1]) + Math.hypot(pts[119][0] - rib[0][0], pts[119][1] - rib[0][1]);
+        rev = d2 < d1;
+        if (rev) rib = RIB_REV;
+        pts = M.morph(pts, rib, wind);
+        alpha = 1 - M.smoothstep(0.55, 1, wind);
+      }
+      M.stroke(ctx, pts, { width, colours: [[0, col], [1, M.mix(col, pal.bg, 0.35)]], alpha });
+    }
+    // the beads: onion skins threaded on the thread, sliding along it into the mark
+    const n = Math.round(p.ghosts), close = Math.pow(1 - x, 0.6), gap = (hi - lo) / (n + 1), beads = [];
+    if (close > 0.001) {
+      for (let g = n; g >= 1; g--) {
+        const qg = qTie + g * Math.min(gap, 0.16 + 0.04 * I) * close;
+        if (qg > hi + 1e-6) continue;
+        const P = poseX(qg), S = poseX(qg + (qs - q5));
+        const al = (0.7 - 0.45 * (g / (n + 1))) * close;
+        if (al >= 0.01) ghost(ctx, p, pal, { x: P.x, y: P.y, r: P.r, k: P.k, sx: S.x, sy: S.y, sr: S.r, sk: S.k }, al);
+        beads.push({ at: tieAt(P), al });
+      }
+    }
+    // and the beads themselves: a bright dot where each skin is threaded, counted along the thread
+    for (const b of beads) {
+      ctx.save();
+      ctx.globalAlpha *= M.clamp(b.al * 1.5, 0, 1);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(b.at[0], b.at[1], width * 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    // the ribbon is born from the thread
+    if (p.ribbon && wind > 0) {
+      // drawn on from the end the thread arrives at, a little behind it
+      const a = M.ease.inOutCubic(seg(wind, 0.1, 1));
+      if (a > 0) M.ribbon(ctx, 0.25 * I * (1 - wind), { colours: pal.ribbon, along: rev ? [1 - a, 1] : [0, a] });
+    }
+    const P5 = poseAt(curve, q5, dir, I), PS = poseAt(curve, qs, dir, I);
+    place(ctx, C, P5.x, P5.y, P5.r, P5.k, (c) => five(c, p, pal));
+    place(ctx, C, PS.x, PS.y, PS.r, PS.k, (c) => ess(c, p, pal));
+  }
+  const RIB = M.points('ribbon', 120), RIB_REV = RIB.slice().reverse();
+
   Motion.register({
     id: 'rewind',
     name: 'Rewind',
     idea: 'The last gesture plays backwards: the mark comes back the way it went through a ghosted trail of the instants it passes, and settles.',
     why: 'Taking it back is allowed. A judgment is light enough to undo, and the mark shows time running backwards for a moment, then it is simply there again, unhurt.',
     moments: ['undo'],
-    styles: ['retrace', 'reel', 'unwind'],
+    styles: ['retrace', 'reel', 'unwind', 'boomerang', 'spool'],
     params: {
       duration: { default: 520, min: 250, max: 1600, step: 10 },
-      style: { default: 'retrace', options: ['retrace', 'reel', 'unwind'] },
+      style: { default: 'retrace', options: ['retrace', 'reel', 'unwind', 'boomerang', 'spool'] },
       ghosts: { default: 4, min: 2, max: 8, step: 1 },
       ghost: { default: 'onion', options: ['onion', 'blur', 'violet'] },   // outlines, pale smears, or violet outlines
       easing: { default: 'outBack', options: M.EASES.slice() }
@@ -209,7 +355,9 @@
       const pal = env.palette;
       const dir = env.direction === 'left' ? -1 : 1;
       if (t >= 1) { still(ctx, p, pal); return; }
-      if (p.style === 'reel') reel(ctx, t, p, env, pal, dir);
+      if (p.style === 'boomerang') boomerang(ctx, t, p, env, pal, dir);
+      else if (p.style === 'spool') spool(ctx, t, p, env, pal, dir);
+      else if (p.style === 'reel') reel(ctx, t, p, env, pal, dir);
       else if (p.style === 'unwind') unwind(ctx, t, p, env, pal, dir);
       else retrace(ctx, t, p, env, pal, dir);
     }

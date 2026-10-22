@@ -12,7 +12,7 @@ import { z } from 'zod';
 import FiveS from './engine.js';
 import { readState, writeState, readRepos, addRepo, usage, madeOn, byteLength, LimitError, MAX_STATE_BYTES, DAILY_WRITES, DAILY_HUB_SAVES, DAILY_NEW_HUBS, DAILY_BRING } from './store.js';
 import { checkState, LIMITS } from './validate.js';
-import { checkAddress, WebError, WEB_LIMITS } from './web.js';
+import { checkAddress, typeWord, WebError, WEB_LIMITS } from './web.js';
 import { readLink, MAX_ITEMS, IMAGE_ACCEPT } from './links.js';
 import { sniff, dimensions, decode, analyse, mimeOf, dataUrl, shrink, fit } from './pixels.js';
 import { newId } from './bring.js';
@@ -449,7 +449,7 @@ async function readPicture(web, p, mayMeasure) {
     }
     const type = sniff(r.bytes);
     if (!type) {
-      last = /svg/.test(r.type) ? 'It is a drawing file (SVG), which 5s does not keep.' : 'That address is not a picture (it gives ' + (r.type || 'something else') + ').';
+      last = /svg/.test(r.type) ? 'It is a drawing file (SVG), which 5s does not keep.' : 'That address is not a picture (it gives ' + (typeWord(r.type) || 'something else') + ').';
       continue;
     }
     return { ok: true, src, type, bytes: r.bytes, truncated: r.truncated, dim: dimensions(r.bytes, type) };
@@ -979,8 +979,10 @@ export const TOOLS = [
           else if (g.truncated) pending = 'a picture too large to read here';
           else {
             try {
-              const img = await decode(g.bytes, g.type, CONNECT.maxDecodePx);
-              if (img) { m = analyse(img); pxLeft -= px; measured++; } else pending = 'a picture this connector does not decode';
+              // Never more than the budget left, and charged what was decoded, not what the header said
+              // (a header can disagree with the pixels: see decodePng).
+              const img = await decode(g.bytes, g.type, Math.min(CONNECT.maxDecodePx, pxLeft));
+              if (img) { m = analyse(img); pxLeft -= img.w * img.h; measured++; } else pending = 'a picture this connector does not decode';
             } catch { pending = 'a picture this connector could not decode'; }
           }
           // Its size as the app keeps one (at most 720 px); from a smaller copy, the shape is still right.
