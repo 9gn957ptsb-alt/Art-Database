@@ -54,6 +54,17 @@ That month, as this repository records it (the site branch's CLAUDE.md, the impo
   to trends in my favorite animations so you can further refine those types, as well as, explore new
   ones that are very different, but just as potent and exciting."
 
+## Set as a game (22 Oct 2026)
+
+Said over a screenshot of Set's room (wall, window, picture, floor, object):
+
+- "We need to combine this part of the app with Candy Crush Saga. Instead of displaying a wall where
+  you can hang things, I want the presentation of liked objects to appear more like a mood board that
+  you would find on Pinterest. Furthermore, you are able to reinforce juxtapositions of aesthetics by
+  associating compliments that you like between liked objects. The way in which you draw those
+  associations should be the same gestures you find in Candy Crush Saga. That part of the app perhaps
+  should be the most game-like and should be able to be played just like Candy Crush Saga."
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
