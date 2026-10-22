@@ -14,9 +14,16 @@
  * the Five sorted summary with its one word, a five by keys, a five by pointer drags; Bring in two
  * generated images (kinds, from, names), seen in Split (Brought in, Sources); one returns as
  * "Still yours?" and is let go (Let go in Split); Pin a set with a name; Write a note; the Path sheet
- * (eight milestones, exactly one Next); About and the ring switch; Seed draws the ground and shows the
+ * (twelve milestones: the eight, then the hub's four; exactly one Next); About and the ring switch; Seed draws the ground and shows the
  * code; no horizontal scroll; reload keeps judgments, notes and brought things (device storage).
  * A seeded scenario (an example-sized history saved as the person's own) finds a turn and uses Note why.
+ * Your hub, in links mode, at every size and theme: the Seed card (an ordered list of the four steps,
+ * states in words), the Hub sheet step by step (GitHub's sign-up, the username rules with the fix
+ * offered, the filled-in "new" page opened in a new tab, the hub file built and offered through a faked
+ * downloads, with notes and own images only when ticked, the upload page, the address and, for another
+ * name, the one choice that turns it on), the states advancing, Save to my hub again, reload, the Path's
+ * twelve with at most one Next, focus, the live region, 24 px targets, measured contrast and no GitHub
+ * words in 5s's own copy; Example mode's example hub; the file's text to copy when there is no downloads.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -177,7 +184,7 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'app.js']);
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'app.js'], 'the hub drivers load before app.js');
   const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
   assert.match(css, /:root\[data-theme="dark"\] \{/);
@@ -441,10 +448,10 @@ for (const cfg of CONFIGS) {
         await shot('17-see-mine');
       });
 
-      await t.test('the Path sheet: eight milestones, exactly one Next; About and the ring switch', async () => {
+      await t.test('the Path sheet: twelve milestones (the eight, then the hub\'s four), exactly one Next; About and the ring switch', async () => {
         await page.click('#pathchip');
         await page.waitForSelector('#sheet[open] .path li');
-        assert.equal(await page.locator('#sheet .path li').count(), 8);
+        assert.equal(await page.locator('#sheet .path li').count(), 12);
         assert.equal(await page.locator('#sheet .path li.next').count(), 1);
         const words = await page.$$eval('#sheet .path .state', (s) => s.map((x) => x.textContent));
         assert.equal(words.filter((w) => w === 'Next').length, 1);
@@ -616,7 +623,7 @@ test('layout holds with real-sized content (sheets, Path, Bring, Split columns)'
     // a sheet opened straight after another closes keeps its own content (the close event comes later)
     await page.evaluate(() => { document.getElementById('sheet').close(); document.getElementById('pathchip').click(); });
     await sleep(150);
-    assert.equal(await page.locator('#sheet[open] .path li').count(), 8, 'the reopened sheet kept its body');
+    assert.equal(await page.locator('#sheet[open] .path li').count(), 12, 'the reopened sheet kept its body');
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.getElementById('sheet').open);
     // Bring: the "Choose images" button's words are visible on it
@@ -742,10 +749,14 @@ function fakeClaude(opts) {
       o && o.onText && o.onText({ text, delta: '' });
       return { text, truncated: false };
     };
-    const downloads = Object.freeze({ save: async (r) => { window.__saved = r; return { status: 'saved' }; } });
+    const downloads = Object.freeze({ save: async (r) => {
+      if (opts.saveError) { const e = { code: opts.saveError, message: 'no' }; throw e; }
+      window.__saved = r; return { status: 'saved' };
+    } });
     window.claude = { use: async (name) => {
       await wait(250);
       if (opts.none) return null;
+      if (opts.only && opts.only.indexOf(name) < 0) return null;
       return { db, user, sample, downloads }[name] || null;
     } };
   })();`;
@@ -868,4 +879,425 @@ test('a rejected write says "Saved in this browser only." once; no capabilities 
     await p2.waitForSelector('[data-act="copy-seed"]');
     assert.equal(await p2.locator('[data-act="save-seed"]').count(), 0);
   } finally { await ctx2.close(); }
+});
+
+// ---------------------------------------------------------------- Your hub (links mode)
+
+const HUB = require(path.join(ROOT, 'src', 'hub.js'));
+const HUB_DESC = 'My taste, sorted five at a time in 5s.'; // app.js HUB_DESC: the description GitHub's form is given
+
+// The words 5s never says in its own copy (SPEC "Your hub", Words). GitHub's own labels, which the
+// person must press, are quoted in <q class="gh"> and left out of the check, as is the file's text.
+async function hubWordsOk(page, sel, where) {
+  const text = await page.$eval(sel, (root) => {
+    const c = root.cloneNode(true);
+    c.querySelectorAll('q.gh, textarea').forEach((n) => n.remove());
+    return c.textContent;
+  });
+  const bad = (text.match(/repositor\w*|commit\w*|branch\w*|pull request/gi) || []).concat(text.match(/\bPages\b/g) || []);
+  assert.deepEqual(bad, [], where + ': GitHub words in 5s copy');
+}
+
+// Text contrast, measured: each visible text's colour against the opaque background behind it
+// (translucent layers composited). Text over a gradient (the Keep buttons) is left to the design tokens.
+async function contrastIssues(page, sel) {
+  return page.$eval(sel, (root) => {
+    const parse = (c) => {
+      const m = /rgba?\(([^)]+)\)/.exec(c || '');
+      if (!m) return null;
+      const p = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+      return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+    };
+    const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+    const over = (top, bot) => ({ r: top.r * top.a + bot.r * (1 - top.a), g: top.g * top.a + bot.g * (1 - top.a), b: top.b * top.a + bot.b * (1 - top.a), a: 1 });
+    function bgOf(el) {
+      const layers = [];
+      for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+        const cs = getComputedStyle(n);
+        if (Number(cs.opacity) < 1) return null;
+        const c = parse(cs.backgroundColor);
+        if (cs.backgroundImage !== 'none' && (!c || c.a === 0)) return null; // a gradient behind the text
+        if (c && c.a > 0) { layers.push(c); if (c.a >= 1) break; }
+      }
+      let bg = { r: 255, g: 255, b: 255, a: 1 };
+      for (let i = layers.length - 1; i >= 0; i--) bg = over(layers[i], bg);
+      return bg;
+    }
+    const out = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+      if (!t.nodeValue.trim()) continue;
+      const el = t.parentElement;
+      if (!el || !el.getClientRects().length || el.closest('.visually-hidden, [hidden], textarea')) continue;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden') continue;
+      const fg = parse(cs.color), bg = bgOf(el);
+      if (!fg || !bg) continue;
+      const a = lum(over(fg, bg)), b = lum(bg);
+      const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      const px = parseFloat(cs.fontSize), bold = Number(cs.fontWeight) >= 700;
+      const need = px >= 24 || (bold && px >= 18.66) ? 3 : 4.5;
+      if (ratio < need) out.push(t.nodeValue.trim().slice(0, 40) + ' ' + ratio.toFixed(2));
+    }
+    return out;
+  });
+}
+
+// Every control in the part is at least 24 by 24 px (WCAG 2.5.8).
+async function smallTargets(page, sel) {
+  return page.$eval(sel, (root) => Array.from(root.querySelectorAll('button, a[href], input, select, textarea'))
+    .filter((el) => el.getClientRects().length && !el.closest('[hidden]') && getComputedStyle(el).visibility !== 'hidden')
+    .map((el) => { const r = el.getBoundingClientRect(); return { what: el.id || el.textContent.trim().slice(0, 30) || el.tagName, w: Math.round(r.width), h: Math.round(r.height) }; })
+    .filter((x) => x.w < 24 || x.h < 24));
+}
+
+async function hubChecks(page, sel, where) {
+  await hubWordsOk(page, sel, where);
+  assert.deepEqual(await contrastIssues(page, sel), [], where + ': contrast');
+  assert.deepEqual(await smallTargets(page, sel), [], where + ': targets under 24 px');
+}
+
+const hubLink = (page, sel) => page.$eval(sel, (a) => ({ href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel') || '' }));
+const cardStates = (page) => page.$$eval('#hub-sec .hubsteps .state', (s) => s.map((x) => x.textContent));
+const stepIs = (page, n) => page.waitForFunction((k) => { const h = document.getElementById('hub-step-h'); return h && h.textContent.indexOf('Step ' + k + ' of 4') === 0; }, n);
+const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1')));
+const liveSays = (page, re) => page.waitForFunction((src) => new RegExp(src).test(document.getElementById('live').textContent), re.source);
+
+function seedFromPage(html) {
+  const m = /<script type="application\/json" id="seed">([\s\S]*?)<\/script>/.exec(html);
+  assert.ok(m, 'the hub page carries its seed');
+  return JSON.parse(m[1]);
+}
+
+// A history the size of the example, saved as the person's own; brought things keep their images in
+// this browser's store (put there by the test), as a person's would.
+async function seededHubPage(cfg, fake, hub) {
+  const deck = await (await fetch(new URL('deck.json', BASE))).json();
+  let st = FiveS.exampleState(deck, Date.now());
+  st = Object.assign({}, st, { seen: Object.assign({}, st.seen, { intro: 1 }), own: st.own.map((o) => { const x = Object.assign({}, o); delete x.imgFrom; return x; }) });
+  if (hub) st = FiveS.setHub(st, hub, Date.now());
+  const { ctx, page } = await newPage(cfg);
+  await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+  await page.addInitScript(fakeClaude(fake));
+  // GitHub's pages, opened in new tabs, answer with a stand-in (no network in tests)
+  await ctx.route(/^https:\/\/github\.com\//, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>GitHub (stand-in)</title><p>GitHub</p>' }));
+  await page.goto(BASE + '#seed');
+  await page.waitForSelector('#hub-sec #hub-go');
+  const thumbs = await page.evaluate(async (ids) => {
+    const store = window.FiveSBring.store({ db: null, uid: null });
+    const out = {};
+    for (let i = 0; i < ids.length; i++) {
+      const c = document.createElement('canvas'); c.width = c.height = 64;
+      const g = c.getContext('2d'); g.fillStyle = 'hsl(' + (i * 67) % 360 + ' 60% 50%)'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#fff'; g.fillRect(8 + i * 4, 8, 20, 20);
+      const url = c.toDataURL('image/png');
+      await store.put(ids[i], { img: url, thumb: url, at: 1 });
+      out[ids[i]] = url;
+    }
+    return out;
+  }, st.own.map((o) => o.id));
+  return { ctx, page, deck, st, thumbs };
+}
+
+for (const cfg of CONFIGS) {
+  test('Your hub, links mode, at ' + cfg.w + 'x' + cfg.h + ' ' + cfg.scheme, { timeout: 180000 }, async () => {
+    const other = cfg.scheme === 'dark'; // dark runs make a hub with another name (step 4's one more tap)
+    const { ctx, page, deck, st: st0, thumbs } = await seededHubPage(cfg, { only: ['downloads'] });
+    const shot = shooter(page, cfg);
+    const user = 'ada-l';
+    const name = other ? 'My-hub' : user + '.github.io';
+    try {
+      await page.waitForSelector('[data-act="save-seed"]'); // downloads has answered
+      // the card: Seed's last section, the four steps as an ordered list with their states in words
+      assert.equal(await page.$eval('#view-seed .wrap', (w) => w.lastElementChild.id), 'hub-sec', 'Your hub is the last section');
+      assert.equal(await page.locator('#hub-sec ol.hubsteps > li').count(), 4);
+      assert.deepEqual(await cardStates(page), ['Next', 'Not yet', 'Not yet', 'Not yet']);
+      assert.equal((await page.textContent('#hub-go')).trim(), 'Start my hub');
+      await page.$eval('#hub-sec', (n) => n.scrollIntoView({ block: 'start' }));
+      await noHScroll(page, 'hub card');
+      await hubChecks(page, '#hub-sec', 'hub card');
+      await shot('40-hub-card');
+
+      // step 1: an account, then the username
+      await page.click('#hub-go');
+      await page.waitForSelector('#sheet[open] #hub-step-h');
+      assert.equal(await page.textContent('#sheet-title'), 'Your hub');
+      await stepIs(page, 1);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'hub-step-h', 'focus lands on the step');
+      await liveSays(page, /Step 1 of 4/);
+      assert.equal(await page.getAttribute('#sheet .hubnav li:nth-child(1)', 'aria-current'), 'step');
+      const signup = await hubLink(page, '#hub-signup');
+      assert.deepEqual(signup, { href: 'https://github.com/signup', target: '_blank', rel: 'noopener' });
+      assert.match(await page.textContent('#sheet .hubguide'), /Pick a username you like: it becomes your hub’s address, username\.github\.io\./);
+      await hubChecks(page, '#sheet-body', 'step 1');
+      await shot('41-hub-step1');
+      for (const typed of ['@ada', 'José Luis', 'https://github.com/' + user, '-ada-', 'ada--l']) {
+        const r = HUB.rules.user(typed);
+        await page.fill('#hub-user', typed);
+        await page.waitForFunction((x) => document.getElementById('hub-user-msg').textContent.indexOf(x) >= 0, r.reason);
+        assert.equal(await page.getAttribute('#hub-user', 'aria-invalid'), 'true', typed);
+        const fix = await page.locator('#hub-user-msg [data-act="hub-fix-user"]').count();
+        assert.equal(fix, r.fixed && r.fixed !== typed.trim() ? 1 : 0, 'the fix for ' + typed);
+        if (fix) assert.equal((await page.textContent('#hub-user-msg [data-act="hub-fix-user"]')).trim(), 'Use “' + r.fixed + '”');
+      }
+      await page.fill('#hub-user', '-ada-');
+      await page.click('#hub-user-go');
+      await liveSays(page, /start or end with a hyphen/);
+      await stepIs(page, 1);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'hub-user', 'an unusable name keeps the field');
+      await page.fill('#hub-user', 'https://github.com/' + user);
+      await shot('41-hub-step1-rules');
+      await page.click('#hub-user-msg [data-act="hub-fix-user"]');
+      assert.equal(await page.inputValue('#hub-user'), user);
+      assert.equal(await page.getAttribute('#hub-user', 'aria-invalid'), 'false');
+      assert.match(await page.textContent('#hub-user-msg'), new RegExp('That works\\. Your hub’s address can be https://' + user + '\\.github\\.io/'));
+      await page.click('#hub-user-go');
+      await stepIs(page, 2);
+      assert.equal((await stored(page)).hub.user, user);
+      assert.deepEqual(await cardStates(page), ['Done', 'Next', 'Not yet', 'Not yet']);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'hub-step-h');
+      await shot('42-hub-step2');
+
+      // step 2: the name, who can see it, GitHub's "new" page filled in
+      const site = await page.$eval('#sheet input[name="hub-name"][value="site"]', (i) => ({ on: i.checked, words: i.closest('label').textContent }));
+      assert.ok(site.on, 'the site name is the default');
+      assert.match(site.words, new RegExp(user + '\\.github\\.io\\s*Becomes a website by itself\\.'));
+      const expect = (n, priv) => HUB.links.newRepo({ name: n, description: HUB_DESC, private: priv });
+      assert.deepEqual(await hubLink(page, '#hub-new'), { href: expect(user + '.github.io', false), target: '_blank', rel: 'noopener' });
+      assert.equal((await page.textContent('#sheet .hubsay')).replace(/\s+/g, ' ').trim(), 'Press the green Create repository button, then come back.');
+      await page.check('#sheet input[name="hub-vis"][value="private"]');
+      assert.equal((await hubLink(page, '#hub-new')).href, expect(user + '.github.io', true));
+      assert.match(await page.textContent('#sheet .hubset:nth-of-type(2)'), /Private\s*Only you can see it; it won’t be a website\./);
+      await page.check('#sheet input[name="hub-vis"][value="public"]');
+      if (other) {
+        await page.check('#sheet input[name="hub-name"][value="other"]');
+        await page.waitForSelector('#hub-other:visible');
+        assert.equal(await page.inputValue('#hub-other'), '5s-hub', 'the second suggestion');
+        await page.fill('#hub-other', 'My hub');
+        await page.waitForSelector('#hub-name-msg [data-act="hub-fix-name"]');
+        assert.equal(await page.getAttribute('#hub-other', 'aria-invalid'), 'true');
+        assert.equal((await hubLink(page, '#hub-new')).href, expect('My-hub', false), 'GitHub gets the name it accepts');
+        await page.click('#hub-name-msg [data-act="hub-fix-name"]');
+        assert.equal(await page.inputValue('#hub-other'), 'My-hub');
+      }
+      assert.equal((await hubLink(page, '#hub-new')).href, expect(name, false));
+      assert.equal(await page.textContent('#hub-name-text'), name);
+      await page.click('#hub-copy-name');
+      await liveSays(page, new RegExp('The name ' + name.replace(/\./g, '\\.') + ' copied'));
+      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), name);
+      await hubChecks(page, '#sheet-body', 'step 2');
+      await page.evaluate(() => { const b = document.getElementById('sheet-body'); b.scrollTop = b.scrollHeight; });
+      await shot('42-hub-step2-chosen');
+      // the real link opens GitHub's page in a new tab, filled in; the name is kept straight away
+      const [popup] = await Promise.all([ctx.waitForEvent('page'), page.click('#hub-new')]);
+      await popup.waitForLoadState();
+      assert.equal(popup.url(), expect(name, false));
+      await popup.close();
+      assert.equal((await stored(page)).hub.name, name);
+      await page.click('#hub-made');
+      await stepIs(page, 3);
+      const madeSt = await stored(page);
+      assert.ok(madeSt.hub.madeAt > 0 && madeSt.hub.mode === 'links' && madeSt.hub.private === false);
+      assert.deepEqual(await cardStates(page), ['Done', 'Done', 'Next', 'Not yet']);
+
+      // step 3: the hub file, through downloads; notes and own images only when ticked
+      assert.equal(await page.isChecked('#hub-notes'), false);
+      assert.equal(await page.isChecked('#hub-own'), false);
+      assert.deepEqual(await hubLink(page, '#hub-upload'), { href: HUB.links.upload(user, name), target: '_blank', rel: 'noopener' });
+      assert.match((await page.textContent('#sheet .hubdo3')).replace(/\s+/g, ' '), /Drag the file in and press Commit changes\./);
+      await hubChecks(page, '#sheet-body', 'step 3');
+      await shot('43-hub-step3');
+      const save = async () => {
+        await page.evaluate(() => { window.__saved = null; });
+        await page.click('#hub-file');
+        await page.waitForFunction(() => !!window.__saved, null, { timeout: 30000 });
+        await page.waitForFunction(() => /Saved your hub file/.test(document.getElementById('hub-file-msg').textContent));
+        return page.evaluate(() => window.__saved);
+      };
+      let file = await save();
+      assert.equal(file.filename, 'index.html');
+      const html = file.data;
+      assert.match(html, /^<!doctype html>/);
+      assert.match(html, /<meta name="generator" content="5s">/);
+      const now = await stored(page);
+      const seed = seedFromPage(html);
+      assert.equal(seed.format, '5s-seed');
+      assert.equal(seed.code, FiveS.seedCode(now));
+      assert.ok(seed.kept.length > 0 && seed.kept.every((k) => /^https:\/\//.test(k.url)), 'kept works carry their Artsy pages');
+      assert.deepEqual(seed.notes, [], 'notes stay out unless ticked');
+      assert.ok(!/id="notes"/.test(html) && !/id="own"/.test(html));
+      assert.match(html, /<img src="data:image\/png;base64,[A-Za-z0-9+/=]{2000,}" alt="An island/, 'the ground, as a PNG, described');
+      assert.ok(Object.values(thumbs).every((u) => html.indexOf(u) < 0), 'no brought-in picture unless ticked');
+      assert.ok(html.indexOf(user) < 0 && html.indexOf('u_test') < 0, 'no username or account in the page');
+      await liveSays(page, /Saved your hub file/);
+      await shot('43-hub-step3-saved');
+      await page.check('#hub-notes');
+      await page.check('#hub-own');
+      file = await save();
+      const seed2 = seedFromPage(file.data);
+      assert.equal(seed2.notes.length, now.notes.length, 'notes, once ticked');
+      assert.match(file.data, /id="notes"/);
+      assert.match(file.data, /id="own"/);
+      const kept = now.own.filter((o) => o.let == null).map((o) => thumbs[o.id]);
+      assert.ok(kept.length && kept.every((u) => file.data.indexOf(u) >= 0), 'every brought-in picture, once ticked');
+      await page.click('#hub-saved');
+      await stepIs(page, 4);
+      const savedSt = await stored(page);
+      assert.ok(savedSt.hub.savedAt > 0);
+      assert.equal(savedSt.hub.savedCode, FiveS.seedCode(savedSt));
+      assert.deepEqual(await cardStates(page), ['Done', 'Done', 'Done', 'Next']);
+
+      // step 4: the address; for another name, the one choice that turns it on
+      const addr = HUB.links.site(user, name);
+      assert.equal(addr, other ? 'https://ada-l.github.io/My-hub/' : 'https://ada-l.github.io/');
+      assert.deepEqual(await hubLink(page, '#hub-addr'), { href: addr, target: '_blank', rel: 'noopener' });
+      assert.equal((await hubLink(page, '#hub-open')).href, addr);
+      assert.match(await page.textContent('#sheet-body'), /It can take a minute to appear\./);
+      if (other) {
+        assert.deepEqual(await hubLink(page, '#hub-turnon'), { href: HUB.links.pagesSettings(user, name), target: '_blank', rel: 'noopener' });
+        const choice = await page.$$eval('#sheet .hubonce q.gh', (q) => q.map((x) => x.textContent));
+        assert.deepEqual(choice, ['Source', 'Deploy from a branch', 'Branch', 'main', '/ (root)', 'Save']);
+      } else {
+        assert.equal(await page.locator('#hub-turnon').count(), 0, 'a site name needs no extra tap');
+      }
+      await hubChecks(page, '#sheet-body', 'step 4');
+      await shot('44-hub-step4');
+      await page.click('#hub-opened');
+      await page.waitForSelector('#hub-done');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'hub-done');
+      assert.equal((await stored(page)).seen['hub-opened'], 1);
+      assert.deepEqual(await cardStates(page), ['Done', 'Done', 'Done', 'Done']);
+      await liveSays(page, /Your hub is open\./);
+      await shot('44-hub-step4-done');
+      // the nav goes back to any step
+      await page.click('#sheet .hubnav [data-step="0"]');
+      await stepIs(page, 1);
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('sheet').open && document.activeElement && document.activeElement.id === 'hub-go');
+
+      // the card, done: the address, when it was last saved
+      assert.deepEqual(await hubLink(page, '#hub-sec .hub-addr a'), { href: addr, target: '_blank', rel: 'noopener' });
+      assert.match(await page.textContent('#hub-sec .hub-saved'), /^Last saved today\.$/);
+      assert.equal(await page.locator('#hub-again').count(), 0, 'nothing changed since the save');
+      await page.$eval('#hub-sec', (n) => n.scrollIntoView({ block: 'start' }));
+      await hubChecks(page, '#hub-sec', 'hub card, done');
+      await shot('45-hub-card-done');
+
+      // the Path: twelve, the eight then the hub's four, as the engine says; at most one Next
+      await page.click('#pathchip');
+      await page.waitForSelector('#sheet[open] .path li');
+      const pst = await stored(page);
+      const items = FiveS.path(pst, deck, Date.now());
+      assert.equal(items.length, 12);
+      assert.deepEqual(items.slice(8).map((m) => m.key), ['github', 'hub', 'saved', 'opened']);
+      assert.equal(await page.locator('#sheet .path li').count(), 12);
+      const words = await page.$$eval('#sheet .path .state', (s) => s.map((x) => x.textContent));
+      assert.deepEqual(words, items.map((m) => (m.done ? 'Done' : m.next ? 'Next' : 'Not yet')));
+      assert.equal(words.filter((w) => w === 'Next').length, items.some((m) => !m.done) ? 1 : 0);
+      assert.deepEqual(words.slice(8), ['Done', 'Done', 'Done', 'Done']);
+      assert.equal(await page.textContent('#path-n'), items.filter((m) => m.done).length + '/12');
+      await hubWordsOk(page, '#sheet-body', 'the Path');
+      await page.evaluate(() => { const b = document.getElementById('sheet-body'); b.scrollTop = b.scrollHeight; });
+      await shot('46-hub-path-end');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('sheet').open);
+
+      // a judgment changes the seed: Save to my hub again
+      await tab(page, 'sort');
+      if (await summaryShown(page)) await page.click('#summary [data-act="another"]');
+      await page.waitForSelector('#stack .card.is-top');
+      const id = await topId(page);
+      // a kept deck card changes the code; a "Still yours?" card changes it only when let go
+      await page.click(id.charAt(0) === 'y' ? '#btn-pass' : '#btn-keep');
+      await waitTopChange(page, id);
+      await tab(page, 'seed');
+      await page.waitForSelector('#hub-again');
+      assert.match(await page.textContent('#hub-sec .hub-changed'), /Your seed has changed since you last saved it to your hub\./);
+      await page.$eval('#hub-sec', (n) => n.scrollIntoView({ block: 'start' }));
+      await shot('47-hub-again');
+      await page.click('#hub-again');
+      await stepIs(page, 3);
+      await page.click('#hub-saved');
+      await stepIs(page, 4);
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('sheet').open && document.activeElement && document.activeElement.id === 'hub-go');
+      assert.equal(await page.locator('#hub-again').count(), 0, 'saved again');
+
+      // reload keeps it all
+      const before = (await stored(page)).hub;
+      await page.reload();
+      await page.waitForSelector('#hub-sec #hub-go');
+      assert.deepEqual((await stored(page)).hub, before);
+      assert.deepEqual(await cardStates(page), ['Done', 'Done', 'Done', 'Done']);
+      assert.equal((await hubLink(page, '#hub-sec .hub-addr a')).href, addr);
+      await noHScroll(page, 'seed with a hub');
+      assert.deepEqual(page.errors(), []);
+      void st0;
+    } finally {
+      await ctx.close();
+    }
+  });
+}
+
+test('Your hub in Example mode: an example hub, clearly marked, that never opens GitHub', { timeout: 60000 }, async () => {
+  for (const cfg of CONFIGS) {
+    const { ctx, page } = await newPage(cfg);
+    try {
+      await page.goto(BASE + '#seed');
+      await page.click('#view-seed [data-act="example-on"]');
+      await page.waitForSelector('#hub-sec .hubcard.ex');
+      const sec = await page.textContent('#hub-sec');
+      assert.match(sec, /Example hub\.\s*Not yours\./);
+      assert.match(sec, /https:\/\/example\.github\.io\//);
+      assert.deepEqual(await cardStates(page), ['Done', 'Done', 'Done', 'Done']);
+      assert.equal(await page.locator('#hub-sec a, #hub-sec button').count(), 0, 'no link, no button');
+      await page.$eval('#hub-sec', (n) => n.scrollIntoView({ block: 'start' }));
+      await hubChecks(page, '#hub-sec', 'example hub');
+      await shooter(page, cfg)('48-hub-example');
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
+  }
+});
+
+test('Your hub without downloads: the file\'s text to copy, and GitHub\'s editor to paste it in', { timeout: 120000 }, async () => {
+  const cfgs = CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') || (c.w === 1280 && c.scheme === 'dark'));
+  for (const cfg of cfgs.length ? cfgs : CONFIGS.slice(0, 1)) {
+    // a downloads that can't save .html here behaves like none at all
+    for (const fake of [{ none: true }, { only: ['downloads'], saveError: 'extension_not_enabled' }]) {
+      const user = 'ada-l', name = 'ada-l.github.io';
+      const { ctx, page } = await seededHubPage(cfg, fake, { user, name, madeAt: true, mode: 'links' });
+      try {
+        assert.equal((await page.textContent('#hub-go')).trim(), 'Save my seed to my hub');
+        assert.deepEqual(await cardStates(page), ['Done', 'Done', 'Next', 'Not yet']);
+        if (fake.none) { await sleep(400); } else { await page.waitForSelector('[data-act="save-seed"]'); }
+        await page.click('#hub-go');
+        await stepIs(page, 3);
+        if (fake.none) assert.match(await page.textContent('#sheet-body'), /This view can’t save files, so 5s shows the file’s text for you to copy\./);
+        await page.click('#hub-file');
+        await page.waitForSelector('#hub-text', { timeout: 30000 });
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'hub-copy-file', 'focus on Copy');
+        const text = await page.inputValue('#hub-text');
+        assert.match(text, /^<!doctype html>/);
+        assert.equal(seedFromPage(text).code, FiveS.seedCode(await stored(page)));
+        assert.equal(await page.getAttribute('#hub-text', 'readonly'), '');
+        assert.equal(await page.locator('#hub-upload').count(), 0);
+        assert.deepEqual(await hubLink(page, '#hub-paste'), { href: HUB.links.repo(user, name) + '/new/main?filename=index.html', target: '_blank', rel: 'noopener' });
+        assert.match((await page.textContent('#sheet .hubdo3')).replace(/\s+/g, ' '), /Paste the text in and press Commit changes\./);
+        await page.click('#hub-copy-file');
+        await liveSays(page, /Your hub file copied/);
+        assert.equal(await page.evaluate(() => navigator.clipboard.readText()), text);
+        await hubChecks(page, '#sheet-body', 'step 3, text');
+        await shooter(page, cfg)('49-hub-text' + (fake.none ? '' : '-refused'));
+        // once saved, the file is already there: GitHub's editor opens it to paste over
+        await page.click('#hub-saved');
+        await stepIs(page, 4);
+        await page.click('#sheet .hubnav [data-step="2"]');
+        await stepIs(page, 3);
+        await page.click('#hub-file');
+        await page.waitForSelector('#hub-text', { timeout: 30000 });
+        assert.equal((await hubLink(page, '#hub-paste')).href, HUB.links.repo(user, name) + '/edit/main/index.html');
+        assert.deepEqual(page.errors(), []);
+      } finally { await ctx.close(); }
+    }
+  }
 });

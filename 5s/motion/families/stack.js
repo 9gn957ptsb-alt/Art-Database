@@ -13,7 +13,6 @@
 (function () {
   'use strict';
   const M = Marks;
-  const A = M.anchors;
   const DEG = Math.PI / 180;
   const PTS = { bar: M.points('bar', 140), body: M.points('body', 260), s: M.points('s', 180) };
 
@@ -23,6 +22,14 @@
   const EDGES = [TOP, 306, 459, 612, 766, BOTTOM];
   const span = (t, a, b) => M.clamp((t - a) / (b - a), 0, 1);
   const bump = (t, a, b) => { const x = span(t, a, b); return x <= 0 || x >= 1 ? 0 : Math.sin(Math.PI * x) ** 2; };
+
+  // is a colour dark? (relative luminance): colour choices follow the actual background, not only the theme,
+  // so the paper and inverse palettes read right too
+  const isDark = (hex) => {
+    const h = M.mix(hex, hex, 0), r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
+    const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) < 0.25;
+  };
 
   function roundRect(ctx, x, y, w, h, r) {
     r = Math.min(r, w / 2, h / 2);
@@ -50,9 +57,11 @@
   function picture(ctx, p, pal, view) {
     if (!ctx.getTransform) return null;
     const B = ctx.getTransform();
-    // the device box of the view (axis-aligned: Motion.render only scales and translates)
-    const x0 = Math.floor(B.a * view.x0 + B.c * view.y0 + B.e) - 2, y0 = Math.floor(B.b * view.x0 + B.d * view.y0 + B.f) - 2;
-    const x1 = Math.ceil(B.a * view.x1 + B.c * view.y1 + B.e) + 2, y1 = Math.ceil(B.b * view.x1 + B.d * view.y1 + B.f) + 2;
+    // the device box around the view's four corners (any affine transform the caller has set), on the canvas
+    const xs = [], ys = [];
+    for (const [x, y] of [[view.x0, view.y0], [view.x1, view.y0], [view.x0, view.y1], [view.x1, view.y1]]) { xs.push(B.a * x + B.c * y + B.e); ys.push(B.b * x + B.d * y + B.f); }
+    const x0 = Math.max(0, Math.floor(Math.min(...xs)) - 2), y0 = Math.max(0, Math.floor(Math.min(...ys)) - 2);
+    const x1 = Math.min(ctx.canvas.width, Math.ceil(Math.max(...xs)) + 2), y1 = Math.min(ctx.canvas.height, Math.ceil(Math.max(...ys)) + 2);
     const w = x1 - x0, h = y1 - y0;
     if (!(w > 0 && h > 0) || w > 8192 || h > 8192) return null;
     const c = canvas(w, h);
@@ -96,7 +105,7 @@
       const I = p.intensity;
       const ease = M.easing(p.easing);
       const view = env.view;
-      const dark = env.theme === 'dark';
+      const dark = isDark(pal.bg);
       const face = dark ? M.mix(pal.bg, pal.ink, 0.08) : M.mix(pal.bg, '#FFFFFF', 0.85);
       const edge = M.mix(pal.bg, pal.ink, dark ? 0.2 : 0.11);
       const rng = env.rng;
@@ -156,10 +165,20 @@
         cards.push({ i, x, yTop, h, dx, dy, rot, sq, alpha, fanRot, started: t > a });
       }
 
+      // once the five lie square and flat with no gaps and no backs, they are simply the mark: draw it whole
+      // (no seams where the cards meet)
+      const still = (c) => c.started && c.alpha >= 0.999 && Math.abs(c.dx) < 0.01 && Math.abs(c.dy) < 0.01 && Math.abs(c.rot) < 1e-5 && Math.abs(c.sq) < 1e-5 && Math.abs(c.fanRot) < 1e-5;
+      if (backs <= 0.002 && gap <= 0.01 && cards.every(still)) {
+        if (pic) { ctx.save(); const v = pic.inv; ctx.transform(v.a, v.b, v.c, v.d, v.e, v.f); ctx.drawImage(pic.canvas, 0, 0, pic.w, pic.h, pic.x, pic.y, pic.w, pic.h); ctx.restore(); }
+        else mark(ctx, p, pal);
+        return;
+      }
+      // without gaps, each card's slice reaches a hair (about a device pixel) into the next, so no seam shows
+      const hair = gap > 0.5 ? 0 : 1.2 / Math.max(1e-6, env.scale * env.dpr);
       // draw bottom card first so the higher ones lie on top when they overlap (the pile, the fan)
       for (const c of cards) {
         if (!c.started) continue;
-        const cx = 500, cy = c.yTop + c.h / 2;
+        const cx = 500;
         ctx.save();
         ctx.globalAlpha *= c.alpha;
         // the fan's pivot: the stack's lower-left corner
@@ -188,7 +207,7 @@
         // the card's slice of the mark (the outermost cards reach to the view's edge so nothing is cut off)
         ctx.beginPath();
         const top = c.i === 0 ? view.y0 - 200 : c.yTop;
-        const bot = c.i === 4 ? view.y1 + 200 : c.yTop + c.h;
+        const bot = c.i === 4 ? view.y1 + 200 : c.yTop + c.h + hair;
         if (backs > 0.002 && gap > 0.5) { ctx.rect(view.x0 - 200, Math.max(top, y0), view.x1 - view.x0 + 400, Math.min(bot, y1) - Math.max(top, y0)); }
         else ctx.rect(view.x0 - 200, top, view.x1 - view.x0 + 400, bot - top);
         ctx.clip();

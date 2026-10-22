@@ -180,11 +180,12 @@
 
   function iris(ctx, t, p, env, pal, dir) {
     const I = p.intensity, e = M.easing(p.easing);
-    const x = seg(t, 0.08, 0.9);
-    const g = Math.pow(e(x), 1.8);
+    const x = seg(t, 0.06, 0.9);
+    // the opening: slow to start (the letters' edges loosen), then wide; most of what you see happens mid-way
+    const g = Math.pow(e(1 - Math.cos((Math.PI / 2) * x)), 1.7);
     const grow = (820 + 200 * I) * g - (16 + 24 * I) * antic(Math.min(1, x * 2.5));   // a small tighten first
     // the mark inside the opening: it gathers colour as the hole widens
-    const ma = M.smoothstep(2, 70, grow);
+    const ma = M.ease.inOutSine(seg(x, 0.1, 0.5));   // over a good stretch, so the colour arrives rather than flips
     if (ma > 0) M.layer(ctx, { alpha: ma }, (c) => mark(c, p, pal, 0.12 * I * (1 - e(x))));
     // the field: the opening is cut out of it inside the frame's inner edge; the band at the edge stays
     const band = M.widths.frame * p.weight;
@@ -209,13 +210,15 @@
   function sweep(ctx, t, p, env, pal, dir) {
     const I = p.intensity, e = M.easing(p.easing);
     const v = env.view;
-    // a band of field, as wide as the tile, crosses from one side to the other
-    const x = M.ease.inOutSine(seg(t, 0.05, 0.95));
+    // the tile crosses from one side to the other: the user's easing brings it onto the mark (where it
+    // pauses, exactly aligned) and, mirrored, takes it off again
+    const u = seg(t, 0.04, 0.96);
+    const x = u < 0.5 ? 0.5 * e(2 * u) : 0.5 + 0.5 * (1 - e(1 - (2 * u - 1)));
     // the logo's tile passes across: halfway, it sits exactly on the mark and the mark is all negative space
     const startX = dir < 0 ? v.x1 + 40 : v.x0 - 1040;
     const endX = dir < 0 ? v.x0 - 1040 : v.x1 + 40;
-    const fx = x < 0.5 ? M.lerp(startX, 0, 1 - Math.pow(1 - 2 * x, 1.6)) : M.lerp(0, endX, Math.pow(2 * x - 1, 1.6));
-    const fy = -(20 + 40 * I) * Math.sin(Math.PI * x) * (x < 0.5 ? -1 : 1) * Math.abs(Math.sin(2 * Math.PI * x));
+    const fx = x < 0.5 ? M.lerp(startX, 0, 2 * x) : M.lerp(0, endX, 2 * x - 1);
+    const fy = (20 + 40 * I) * Math.sin(2 * Math.PI * x) * Math.sin(Math.PI * x);   // in a little low, out a little high
     const tilt = dir * (0.03 + 0.05 * I) * Math.sin(2 * Math.PI * x);
     const tile = (c) => { c.translate(500 + fx, 500 + fy); c.rotate(tilt); c.translate(-500, -500); rounded(c, 0, 0, 1000, 1000, 256); };
     // the mark is whole except where the tile is; there, it is a hole in the tile

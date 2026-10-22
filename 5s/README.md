@@ -19,12 +19,14 @@ build contract) before changing anything.
 | Path | What it is |
 | --- | --- |
 | `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp` |
-| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined), the four scripts, and `dist/dev.html` |
+| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined), the scripts (the four, plus `hub.js` and `hubpage.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
 | `src/app.css`, `src/app.js` | styles and UI |
 | `src/engine.js` | pure logic: judgments, the taste model, turns, the five, profile, Path, seed (no DOM, clock or randomness) |
 | `src/bring.js` | turns a person's own images into 5s things in the browser and keeps the images private |
 | `src/ground.js` | draws Seed's isometric island on a canvas |
+| `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
+| `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
 | `test/` | engine, bring, ground and UI tests; `test/fixture/` is a synthetic 50-card deck (no real data) |
 | `dist/` | built output; gitignored |
 
@@ -52,7 +54,8 @@ Node 22 and Playwright with Chromium are required for the browser suites; each o
 its own `python3 -m http.server`.
 
 ```sh
-node --test 5s/test/                    # engine (pure logic; runs through test/index.js)
+node --test 5s/test/                    # engine and hub (pure logic; runs through test/index.js)
+node --test 5s/test/hub.test.mjs        # the hub drivers and page, against a fake GitHub
 node --test 5s/test/bring.test.cjs      # bring-in: images, colours, crop, texture, stores
 node --test 5s/test/ground.test.cjs     # the ground renderer
 node --test 5s/test/ui.smoke.cjs        # the whole page, against a build (default 5s/dist)
@@ -74,7 +77,7 @@ The UI smoke test runs at 390×844 and 1280×800, in light and dark. It covers a
 Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing and is never
 published. The supporting files go with it at the same relative paths:
 
-- `engine.js`, `bring.js`, `ground.js`, `app.js`
+- `engine.js`, `bring.js`, `ground.js`, `app.js` (and `hub.js`, `hubpage.js` once the page loads them)
 - `deck.json`, `logo.webp`, `img/atlas.webp`
 - the 320 card images `img/{i,o,s,u}NNN.webp` (Colour cards have no image)
 

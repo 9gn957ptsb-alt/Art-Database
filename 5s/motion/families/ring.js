@@ -215,7 +215,7 @@
       const sweepNow = BOWL_SPAN + (TAU - BOWL_SPAN) * close * (1 - f);
 
       // the stem and bar: they retract into the foot as the bowl opens and grow back out of it after
-      const rStem = Math.max(ease(span(t, 0.1, 0.26)), 0) * (1 - ease(span(t, 0.7, 0.86)));
+      const rStem = ease(span(t, 0.1, 0.26)) * (1 - ease(span(t, 0.7, 0.86)));
       const rBar = ease(span(t, 0.06, 0.18)) * (1 - ease(span(t, 0.78, 0.94)));
       // the foot rides the start of the ring (the morph's first point)
       const ring0 = [ringC[0] + ringR * Math.cos(a0), ringC[1] + ringR * Math.sin(a0)];
@@ -239,9 +239,9 @@
         if (rest) M.stroke(c, PTS.body, { width: W, colours: pal.body });
         else stem(c, pal, k, rStem, off);
 
-        if (p.style === 'tick') {
+        if (p.style === 'tick' && !rest) {
           // five arcs: they part as the ring opens (pale, waiting), light one by one, and join as it closes
-          const gapA = 16 * DEG * m * (1 - flash * 0) * (1 - ease(span(t, 0.56, 0.66)));
+          const gapA = 16 * DEG * m * (1 - ease(span(t, 0.56, 0.66)));
           for (let i = 0; i < 5; i++) {
             const lightAt = 0.33 + 0.055 * i;
             const lit = ease(span(t, lightAt, lightAt + 0.05));

@@ -69,6 +69,17 @@
     { key: 'habit', step: 'Sort', label: 'Five days in a row', why: 'The artist came back to it every day.' },
   ].map(Object.freeze));
 
+  // Your hub: four more milestones after the eight (SPEC.md "Your hub"). path() returns all twelve.
+  const HUB_MILESTONES = Object.freeze([
+    { key: 'github', step: 'Seed', label: 'Have a GitHub account', why: 'The artist kept everything in one GitHub repository from the first evening.' },
+    { key: 'hub', step: 'Seed', label: 'Make your hub', why: "The artist's repository was made in four minutes, before the first session." },
+    { key: 'saved', step: 'Seed', label: 'Save your seed to your hub', why: "The artist's database grew by saving to it, every day." },
+    { key: 'opened', step: 'Seed', label: "Open your hub's address", why: "The artist's site went live on GitHub Pages on 14 Sep." },
+  ].map(Object.freeze));
+  const HUB_MODES = Object.freeze(['links', 'api']);
+  const MAX_HUB_USER = 39;  // GitHub's longest username
+  const MAX_HUB_NAME = 100; // GitHub's longest repository name
+
   // ---------------------------------------------------------------- small helpers
 
   const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -929,6 +940,46 @@
     return assign(st, { seen: assign(st.seen, { [key]: 1 }) });
   }
 
+  // ---------------------------------------------------------------- your hub
+
+  // A timestamp for state.hub: true = now; a number = unix seconds (a millisecond timestamp, anything
+  // past 1e11, is taken as milliseconds); anything else clears it.
+  function hubStamp(v, now) {
+    if (v === true) return toSec(now);
+    if (!isNum(v) || v < 0) return null;
+    return v > 1e11 ? Math.floor(v / 1000) : Math.floor(v);
+  }
+
+  /** setHub(state, patch, now) -> State with state.hub = {user, name, private, mode, madeAt, savedAt, savedCode}
+   *  updated from the fields the patch carries (undefined = unchanged, null or '' = cleared):
+   *    user        GitHub username: trimmed, a leading "@" dropped, ≤ 39 characters (check it first
+   *                with FiveSHub.rules.user; the engine only tidies it)
+   *    name        the hub's name: trimmed, ≤ 100 characters (check it with FiveSHub.rules.repo)
+   *    private     boolean
+   *    mode        "links" (the artifact's bridge, the default) or "api" (the standalone app); others ignored
+   *    madeAt      true = now, or unix seconds (ms accepted), or null
+   *    savedAt     the same; setting it also records savedCode = seedCode(state) unless the patch names one
+   *    savedCode   the seed code that was saved
+   *  state.hub is absent until the first setHub; nothing else in the state changes. The hub never goes
+   *  into exportSeed (no account details in a seed). */
+  function setHub(state, patch, now) {
+    const st = norm(state);
+    const p = patch && typeof patch === 'object' ? patch : {};
+    const old = st.hub && typeof st.hub === 'object' ? st.hub : {};
+    const h = assign({ user: null, name: null, private: false, mode: 'links', madeAt: null, savedAt: null, savedCode: null }, old);
+    if (p.user !== undefined) h.user = typeof p.user === 'string' ? p.user.trim().replace(/^@+/, '').trim().slice(0, MAX_HUB_USER) || null : null;
+    if (p.name !== undefined) h.name = typeof p.name === 'string' ? p.name.trim().slice(0, MAX_HUB_NAME) || null : null;
+    if (p.private !== undefined) h.private = !!p.private;
+    if (p.mode !== undefined && HUB_MODES.indexOf(p.mode) >= 0) h.mode = p.mode;
+    if (p.madeAt !== undefined) h.madeAt = hubStamp(p.madeAt, now);
+    if (p.savedAt !== undefined) {
+      h.savedAt = hubStamp(p.savedAt, now);
+      if (p.savedCode === undefined) h.savedCode = h.savedAt == null ? null : seedCode(st);
+    }
+    if (p.savedCode !== undefined) h.savedCode = typeof p.savedCode === 'string' && p.savedCode.trim() ? p.savedCode.trim().slice(0, 40) : null;
+    return assign(st, { hub: h });
+  }
+
   // ---------------------------------------------------------------- profile
 
   function median(xs) {
@@ -1196,7 +1247,8 @@
   }
 
   /** exportSeed(state, deck, now) -> the 5s-seed JSON: works by Artsy slug, brought things by name;
-   *  no card ids, no images, no account details. */
+   *  no card ids, no images, no account details (state.hub never goes in). Kept works also carry
+   *  their public Artsy addresses: `image` (the deck's "cdn") and `url` (the work's Artsy page). */
   function exportSeed(state, deck, now) {
     const st = norm(state);
     const idx = indexOf(deck);
@@ -1213,7 +1265,8 @@
     for (const e of latestJudgments(st, deck)) {
       const c = idx.get(e[0]);
       if (e[1] === 1 || e[1] === true) {
-        kept.push({ work: c.work, kind: c.kind, ms: e[2] });
+        // image: the work's own image on Artsy's CDN (deck "cdn"); url: its Artsy page. Both public.
+        kept.push({ work: c.work, kind: c.kind, ms: e[2], image: c.cdn || null, url: c.url || null });
         if (c.kind === 'surface' && Array.isArray(c.crop)) surfaces.push({ work: c.work, crop: c.crop.slice() });
       } else passed.push({ work: c.work, kind: c.kind });
     }
@@ -1247,12 +1300,19 @@
 
   // ---------------------------------------------------------------- the path
 
-  /** path(state, deck, now) -> the eight milestones, in order: {key, step, label, why, done, next, announced}.
+  /** path(state, deck, now) -> the twelve milestones, in order: {key, step, label, why, done, next, announced}:
+   *  the eight of the month (unchanged), then the hub's four (github, hub, saved, opened: done when
+   *  state.hub has a user, a madeAt, a savedAt, and seen "hub-opened" is marked).
    *  Exactly one is `next` (the first not done) until all are done. */
   function path(state, deck, now) {
     const st = norm(state);
     const kinds = new Set(keptThings(st, deck).map((x) => x.kind));
+    const hub = st.hub && typeof st.hub === 'object' ? st.hub : {};
     const done = {
+      github: !!hub.user,
+      hub: !!hub.madeAt,
+      saved: !!hub.savedAt,
+      opened: !!st.seen['hub-opened'],
       sort: st.days.length > 0,
       bring: st.own.length > 0,
       kinds: KINDS.every((k) => kinds.has(k)),
@@ -1263,7 +1323,7 @@
       habit: longestRun(st.days) >= 5,
     };
     let nextGiven = false;
-    return MILESTONES.map((m) => {
+    return MILESTONES.concat(HUB_MILESTONES).map((m) => {
       const isNext = !done[m.key] && !nextGiven;
       if (isNext) nextGiven = true;
       return { key: m.key, step: m.step, label: m.label, why: m.why, done: done[m.key], next: isNext, announced: st.seen.path.indexOf(m.key) >= 0 };
@@ -1423,6 +1483,7 @@
   const FiveS = Object.freeze({
     version: 1,
     ERAS, KINDS, SLOTS, SLOT_NAMES, OWN_KINDS, SOURCES, DECK_SOURCE, NOTE_QS, GROUPS, HUES, MILESTONES,
+    HUB_MILESTONES, HUB_MODES, setHub,
     hexToHsl, colourName, chord, features, featureLabel, featureGroup,
     newState, migrate, setOpt, judge, undo, model, predict,
     nextFive, isRevisit, startFive, currentCard, fiveDone, streak, dayOf,

@@ -4,10 +4,11 @@
     python3 5s/build_page.py [--deck DIR] [--out DIR]
 
 Writes OUT/index.html (src/index.html with app.css inlined in a <style> right after the <title> and
-<meta> at the top, as the Artifact page contract asks), copies engine.js, bring.js, ground.js and
-app.js into OUT, copies DECK/deck.json and DECK/img/ (and DECK/logo.webp when present) into OUT when
-DECK is not OUT, and writes OUT/dev.html: the same page wrapped in the skeleton the Artifact platform
-adds at publish, for local testing.
+<meta> at the top, as the Artifact page contract asks), copies engine.js, bring.js, ground.js, the
+hub's hub.js and hubpage.js, and app.js into OUT (the page loads them in that order, and the build
+stops if src/index.html loads any other list), copies DECK/deck.json and DECK/img/ (and
+DECK/logo.webp when present) into OUT when DECK is not OUT, and writes OUT/dev.html: the same page
+wrapped in the skeleton the Artifact platform adds at publish, for local testing.
 """
 import argparse
 import os
@@ -17,7 +18,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, 'src')
-SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'app.js']
+# In the order src/index.html loads them: the hub's drivers (hub.js, hubpage.js) before app.js.
+SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'app.js']
+SCRIPT_RE = re.compile(r'<script\s+src="([^"]+)"')
 
 SKELETON_HEAD = (
     '<!doctype html><html><head><meta charset=utf8>'
@@ -51,6 +54,11 @@ def build_page():
     for tag in ('!doctype', 'html', 'head', 'body'):
         if re.search(r'<' + re.escape(tag) + r'[\s>]', html, re.I):
             sys.exit('src/index.html must not contain <' + tag + '>')
+    # Every script the page loads ships with it, and in the order above (hub.js and hubpage.js
+    # define FiveSHub and FiveSHubPage, which app.js reads when it starts).
+    loaded = SCRIPT_RE.findall(html)
+    if loaded != SCRIPTS:
+        sys.exit('src/index.html loads %s; build_page.py ships %s (same files, same order)' % (loaded, SCRIPTS))
     return html
 
 

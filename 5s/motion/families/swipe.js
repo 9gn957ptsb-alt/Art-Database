@@ -162,7 +162,7 @@
     const curve = sCurve(D, depth);
     const OUT = 0.46;                                        // the ride ends (off frame) at t = 0.46
     // overlap: the letter at the front of the motion leads (the s going right, the 5 going left), the ribbon drags
-    const lead = 0.03 * dir, drag = 0.06;
+    const lead = 0.03 * dir, drag = 0.035;
     const prog = (x) => { x = M.clamp(x, 0, 1); return 0.8 * M.ease.inCubic(x) + 0.2 * M.ease.inQuad(x) - (0.03 + 0.03 * I) * antic(Math.min(1, x * 1.6)); };
     const pose = (tt) => {
       const x = seg(tt, 0, OUT), q = prog(x), a = along(curve, q);
@@ -231,13 +231,13 @@
     const tc = trailColours(p, pal, dir);
 
     // the 5 leans after the s, then settles with a little follow-through
-    const lean = Math.sin(Math.PI * seg(t, 0.06, 0.55)) * (1 - seg(t, 0.55, 1)) + 0.0;
-    const back = seg(t, 0.5, 1);
+    const lean = Math.sin(Math.PI * seg(t, 0.06, 0.55)) * (1 - seg(t, 0.55, 0.94));
+    const back = seg(t, 0.5, 0.94);
     const fiveR = dir * (0.035 + 0.05 * I) * (lean - 0.35 * Math.sin(Math.PI * back) * (1 - back));
     const fiveX = dir * (10 + 18 * I) * lean;
 
     // the ribbon turns as the s leaves, and turns back as it returns
-    const rt = 0.18 * I * Math.sin(Math.PI * seg(t, 0.05, 1));
+    const rt = 0.18 * I * Math.sin(Math.PI * seg(t, 0.05, 0.94));
     place(ctx, A.bowl, fiveX * 0.5, 0, fiveR * 0.6, 1, (c) => ribbon(c, p, pal, rt, 1));
 
     // the trail the s leaves: its own centreline, stretched out along the S behind it
@@ -276,7 +276,7 @@
     const d = (tt) => {
       if (tt <= 0) return 0;
       if (tt < PEAK) { const x = tt / PEAK; return M.ease.inOutSine(x) * 0.25 + M.ease.outCubic(x) * 0.75 - 0.08 * antic(x); }
-      return 1 - e(seg(tt, PEAK, 1));
+      return 1 - e(seg(tt, PEAK, 0.85));   // home by 0.85, so the ribbon (0.06 behind) and the smear are still by the end
     };
     const pose = (tt, k) => {
       const q = d(tt), a = along(curve, q);

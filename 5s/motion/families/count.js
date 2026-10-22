@@ -31,6 +31,12 @@
     SEQ.push(dist(prev, f) <= dist(prev, r) ? f : r);
   }
   SEQ.push(FIVE);
+  // the stroke every digit straightens into on its way to the next (the digits' shared lean): a morph goes
+  // A -> line -> B, so a change never passes through a tangle. Each digit has the line turned its own way
+  // (whichever way is closer), and the digits' colours are by height, so the two turns look the same.
+  const LINE = M.resample([[500, 236], [330, 756]], N);
+  const LINE_R = LINE.slice().reverse();
+  const lineFor = (d) => (dist(d, LINE) <= dist(d, LINE_R) ? LINE : LINE_R);
   // the same digits the way a hand writes them (for the write style)
   const HAND = [FIVE].concat(['d4', 'd3', 'd2', 'd1'].map((n) => M.points(n, N)), [FIVE]);
 
@@ -88,9 +94,9 @@
     const ends = [0, 1, 2, 3, 4].map((k) => change(k)[1]);
     const starts = [0.04].concat(ends.slice(0, 4));
     for (let k = 0; k < 5; k++) {
-      if (t >= starts[k] && t < ends[k]) { const x = (t - starts[k]) / (ends[k] - starts[k]); return 4 * x * (1 - x) * (130 + 40 * k / 4) * I; }
+      if (t >= starts[k] && t < ends[k]) { const x = (t - starts[k]) / (ends[k] - starts[k]); return 4 * x * (1 - x) * (150 + 50 * k / 4) * (0.4 + I); }
     }
-    if (t >= ends[4] && t < LAND[1]) { const x = (t - ends[4]) / (LAND[1] - ends[4]); return 4 * x * (1 - x) * 300 * I; }
+    if (t >= ends[4] && t < LAND[1]) { const x = (t - ends[4]) / (LAND[1] - ends[4]); return 4 * x * (1 - x) * 260 * (0.4 + I); }
     return 0;
   }
 
@@ -185,7 +191,7 @@
           }
         } else if (p.style === 'write') {
           // un-write A from its start while B is written from its start; they overlap in the middle
-          const out = ease(span(q, 0, 0.6)), inn = ease(span(q, 0.35, 1));
+          const out = ease(span(q, 0, 0.72)), inn = ease(span(q, 0.18, 1));
           if (out < 1) digit(c, HAND[a], out, 1);
           if (inn > 0) digit(c, HAND[a + 1], 0, inn);
         } else if (p.style === 'drop') {
@@ -202,7 +208,13 @@
             c.restore();
           }
         } else {   // morph
-          digit(c, M.morph(A0, B0, e), 0, 1, 1, (A0 === FIVE ? 1 - e : 0) + (B0 === FIVE ? e : 0));
+          // A straightens into the line, then the line bends into B (the easing is over the whole change, so it is
+          // fastest as it passes the line)
+          // the 5's own colouring fades out on the way to the line and back in after it, so the line itself is
+          // coloured by height only (the same whichever way round it is)
+          const w = (A0 === FIVE ? 1 - Math.min(1, 2 * e) : 0) + (B0 === FIVE ? Math.max(0, 2 * e - 1) : 0);
+          const pts = e < 0.5 ? M.morph(A0, lineFor(A0), e * 2) : M.morph(lineFor(B0), B0, e * 2 - 1);
+          digit(c, pts, 0, 1, 1, w);
         }
       });
 
@@ -226,7 +238,7 @@
           });
         } else {
           // the ball: squashes a little on each landing and stretches in flight
-          const v = h > 1 ? 1 : 0;
+          const v = Math.min(1, h / 60);   // stretched in flight, eased in and out with the height
           const land = tick;
           const sx = 1 + 0.25 * I * land - 0.08 * I * v, sy = 1 - 0.22 * I * land + 0.12 * I * v;
           const y = ground[1] + ballR * (1 - sy) - h;

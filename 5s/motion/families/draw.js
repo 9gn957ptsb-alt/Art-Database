@@ -67,11 +67,12 @@
       return M.lerp(u[lo], u[hi], span > 0 ? (f - cost[lo]) / span : 0);
     };
   }
-  // the turn cost is per radian, as a share of the route's length: about 1.4x slower round the bowl
+  // the turn cost is the extra time per radian turned, as a share of the route's length: at the default
+  // intensity the pen goes round the bowl about 1.5x slower than down the stem, and eases through the corner
   const TIMING = {};
   function timing(name, pts, I) {
     const key = name + ':' + Math.round(I * 20);
-    if (!TIMING[key]) TIMING[key] = penTiming(pts, (0.01 + 0.035 * I) * 0.5);
+    if (!TIMING[key]) TIMING[key] = penTiming(pts, 0.025 + 0.055 * I);
     return TIMING[key];
   }
 
@@ -119,15 +120,16 @@
 
   // a written stroke: from `a` to `b` of pts, with the pen's tip at `tip` (a or b) carrying a light while `on`
   // (glow.swell: the pen touching down, a width factor that rises from 0 with a little overshoot)
-  function written(ctx, pts, colours, width, a, b, tip, glow, I) {
+  function written(ctx, pts, colours, width, a, b, tip, glow, I, lightOnly) {
     if (!(glow.swell > 0)) return;
     width *= glow.swell;
     if (b <= a + 1e-4) {   // not moved yet: a dot
+      if (lightOnly) return;
       const p = M.at(pts, tip);
       M.stroke(ctx, [[p.x, p.y]], { width, colours: M.colourAt(colours, tip) });
       return;
     }
-    M.stroke(ctx, pts, { width, from: a, to: b, colours });
+    if (!lightOnly) M.stroke(ctx, pts, { width, from: a, to: b, colours });
     if (glow.on > 0.002) {
       // the light: a narrower core inside the stroke, from nothing behind the tip to bright at it, like a
       // highlight on wet paint travelling with the pen
@@ -187,7 +189,7 @@
     moments: ['launch', 'five-start'],
     styles: ['one-stroke', 'hand', 'ribbon-first', 'sketch'],
     params: {
-      duration: { default: 1600, min: 600, max: 4000, step: 50 },
+      duration: { default: 1200, min: 600, max: 4000, step: 50 },   // 1.2 s: inside both launch (1.2-2 s) and five-start (0.6-1.2 s)
       style: { default: 'one-stroke', options: ['one-stroke', 'hand', 'ribbon-first', 'sketch'] },
       overlap: { default: 0.5, min: 0, max: 1, step: 0.05 },     // how early the s (and ribbon) start while the 5 is still being written
       pen: { default: true },                                     // the light at the pen's tip
@@ -221,10 +223,12 @@
           if (p.ribbon && rib > 0) M.ribbon(c, 0.18 * I * (1 - rib), { colours: pal.ribbon, alpha: rib });
           const flood = (pts, colours, W, q, wave) => {
             // width along the line: full behind the flood's front, thinning to the sketch line ahead of it
+            // (W: a number, or a function of u: the 5's bar is a little heavier than its body)
             const front = q * (1 + wave);
+            const full = typeof W === 'function' ? W : () => W;
             const widthAt = (u) => {
               const x = M.clamp((front - u) / wave, 0, 1);
-              return M.lerp(10 * k, W, M.ease.inOutSine(x));
+              return M.lerp(10 * k, full(u), M.ease.inOutSine(x));
             };
             swelling(c, pts, colours, widthAt, Math.max(0, front - wave), M.clamp(front, 0, 1));
           };
@@ -233,8 +237,8 @@
             M.stroke(c, PTS.s, { width: 10 * k, to: TS(skS), colours: pal.ink, alpha: inkA });
           }
           // the 5's bar and body flood as the one line FIVE (bar backwards) so the flood runs like the pen did
-          if (q5 > 0) flood(FIVE, c5, W5, q5, 0.28);
-          if (qS > 0) flood(PTS.s, pal.s, WS, qS, 0.35);
+          if (q5 > 0 && q5 < 1) flood(FIVE, c5, (u) => M.lerp(WB, W5, M.smoothstep(SHARE_BAR - 0.02, SHARE_BAR + 0.02, u)), q5, 0.28);
+          if (qS > 0 && qS < 1) flood(PTS.s, pal.s, WS, qS, 0.35);
           if (q5 >= 1) {   // landed: the real strokes, so the bar keeps its own weight and the rest pose is exact
             M.stroke(c, PTS.body, { width: W5, colours: pal.body });
             M.stroke(c, PTS.bar, { width: WB, colours: pal.bar });
@@ -272,8 +276,15 @@
           const f5 = span(t, five[0], five[1]), u5 = T5(ease(f5));
           const on = glowK * (1 - span(f5, 0.85, 1));
           if (f5 < 1) {
-            if (reverse) written(c, FIVE, c5, W5, 1 - u5, 1, 1 - u5, { on, light, swell: dot(f5) }, I);
-            else written(c, FIVE, c5, W5, 0, u5, u5, { on, light, swell: dot(f5) }, I);
+            const g = { on, light, swell: dot(f5) };
+            // the bar's stretch of the line is drawn with the bar's own (heavier) stroke, so nothing changes
+            // when the real strokes take over; the pen's light is drawn last, over it
+            const barPart = (a, b) => {   // FIVE's [a, b] inside the bar, in the bar's own u (it runs backwards)
+              const lo = Math.max(a, 0), hi = Math.min(b, SHARE_BAR);
+              if (hi > lo + 1e-4) M.stroke(c, PTS.bar, { width: WB * g.swell, colours: pal.bar, from: 1 - hi / SHARE_BAR, to: 1 - lo / SHARE_BAR });
+            };
+            if (reverse) { written(c, FIVE, c5, W5, 1 - u5, 1, 1 - u5, Object.assign({}, g, { on: 0 }), I); barPart(1 - u5, 1); written(c, FIVE, c5, W5, 1 - u5, 1, 1 - u5, g, I, true); }
+            else { written(c, FIVE, c5, W5, 0, u5, u5, Object.assign({}, g, { on: 0 }), I); barPart(0, u5); written(c, FIVE, c5, W5, 0, u5, u5, g, I, true); }
           } else {   // landed: the real strokes (the bar keeps its own weight and colours)
             M.stroke(c, PTS.body, { width: W5, colours: pal.body });
             M.stroke(c, PTS.bar, { width: WB, colours: pal.bar });

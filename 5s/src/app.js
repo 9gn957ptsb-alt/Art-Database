@@ -11,6 +11,8 @@
   const F = window.FiveS;
   const B = window.FiveSBring || null;
   const G = window.FiveSGround || null;
+  const HUB = window.FiveSHub || null;          // Your hub: GitHub's naming rules and filled-in links
+  const HUBPAGE = window.FiveSHubPage || null;  // Your hub: the hub page built from the seed
   const doc = document;
   const $ = (sel, root) => (root || doc).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || doc).querySelectorAll(sel));
@@ -522,9 +524,11 @@
   // ---------------------------------------------------------------- chrome: path chip, banner, step line
 
   function updateChrome() {
-    const done = deck ? F.path(S, deck, now()).filter((m) => m.done).length : 0;
-    $('#path-n').textContent = done + '/8';
-    $('#pathchip').setAttribute('aria-label', 'Path, ' + done + ' of 8 done');
+    const items = deck ? F.path(S, deck, now()) : [];
+    const done = items.filter((m) => m.done).length;
+    const total = items.length || F.MILESTONES.length + (F.HUB_MILESTONES || []).length;
+    $('#path-n').textContent = done + '/' + total;
+    $('#pathchip').setAttribute('aria-label', 'Path, ' + done + ' of ' + total + ' done');
     $('#exbanner').hidden = !(example && view !== 'sort');
     $('#bar-step').innerHTML = VIEWS.map((v) => (v === view ? '<b>' + TITLES[v] + '</b>' : TITLES[v])).join(' <i>→</i> ');
   }
@@ -1454,7 +1458,8 @@
         '</section>';
     } else html += '<p class="small">Back to yours to take your own seed.</p>';
     html += '<p class="privacy">Your seed holds no name, no email, no card. Only what you kept, passed and set.</p>' +
-      '<p class="privacy">Holographic Mr Pearl builds worlds from a person’s information. This seed is yours, ready for it.</p></div>';
+      '<p class="privacy">Holographic Mr Pearl builds worlds from a person’s information. This seed is yours, ready for it.</p>' +
+      hubCardHTML() + '</div>';
     el.innerHTML = html;
     if (ui.copyOpen) {
       const ta = $('#seed-json');
@@ -1648,16 +1653,17 @@
     openSheet('path', 'The Path', () => {
       const items = F.path(S, deck, now());
       const done = items.filter((m) => m.done).length;
-      return '<p class="lede">The month the artist spent organizing a digital aesthetic, as eight steps. ' + done + ' of 8 done.</p>' +
+      return '<p class="lede">The month the artist spent organizing a digital aesthetic, as eight steps, then four for your hub. ' + done + ' of ' + items.length + ' done.</p>' +
         '<ol class="path">' + items.map((m, i) => {
           const cls = m.done ? 'done' : m.next ? 'next' : 'notyet';
           const word = m.done ? 'Done' : m.next ? 'Next' : 'Not yet';
           const v = m.step.toLowerCase();
+          const hubKey = HUB_KEYS.indexOf(m.key) >= 0;
           return '<li class="' + cls + '"><span class="mk" aria-hidden="true">' + (i + 1) + '</span>' +
             '<p class="lbl"><span>' + esc(m.label) + '</span><span class="state">' + word + '</span></p>' +
-            '<p class="why">' + esc(m.why) + '</p>' +
-            '<p class="step">In ' + esc(m.step) + '</p>' +
-            (m.next ? '<button type="button" class="btn btn-quiet go" data-act="goto" data-view="' + esc(v) + '">Go to ' + esc(m.step) + '</button>' : '') + '</li>';
+            '<p class="why">' + esc(hubKey ? hubWords(m.why) : m.why) + '</p>' +
+            '<p class="step">In ' + esc(m.step) + (hubKey ? ', under Your hub' : '') + '</p>' +
+            (m.next ? '<button type="button" class="btn btn-quiet go" data-act="goto" data-view="' + esc(v) + '"' + (hubKey ? ' data-focus="hub-h"' : '') + '>Go to ' + esc(m.step) + '</button>' : '') + '</li>';
         }).join('') + '</ol>';
     }, opener);
   }
@@ -1978,6 +1984,633 @@
     say('Removed ' + (c ? '“' + (c.title || 'Untitled') + '”' : 'it') + ' from your database.');
   }
 
+  // ================================================================ YOUR HUB (SPEC "Your hub")
+  //
+  // The person's own GitHub repository ("your hub") and its website, made from inside 5s through the
+  // links bridge: an artifact cannot call GitHub (its frame blocks other sites), so 5s fills in
+  // GitHub's own pages and opens them in a new tab; the person presses one button there and comes
+  // back. Seed's last section is the card (a stepper of the four steps); the Hub sheet walks them.
+  // Words: 5s says hub, save and address. GitHub's own words appear only as the labels of buttons and
+  // choices the person must press on GitHub's pages, each quoted in a <q class="gh">.
+  // State: state.hub (FiveS.setHub, mode "links") and seen["hub-opened"]; the Path reads both.
+
+  const HUB_KEYS = ['github', 'hub', 'saved', 'opened'];
+  const HUB_TITLES = ['Your GitHub account', 'Make your hub', 'Save your seed to your hub', 'Your hub’s address'];
+  const HUB_NAV = ['Account', 'Make', 'Save', 'Address'];
+  const HUB_GO = ['Start my hub', 'Make my hub', 'Save my seed to my hub', 'Go to my hub’s address'];
+  const HUB_DESC = 'My taste, sorted five at a time in 5s.';
+  const HUB_LEDE = 'Your taste as a page of its own, at your own web address, kept in your own GitHub account. ' +
+    '5s fills everything in; on GitHub you only press a couple of buttons.';
+  const NEW_TAB = '<span class="visually-hidden"> (opens in a new tab)</span>';
+  ui.hub = { step: 0, have: false, user: '', choice: 'site', other: '', priv: false, notes: false, own: false, busy: false, msg: '', text: null, done: false };
+  let hubToken = 0;
+
+  // The Path's four hub milestones keep SPEC's words in the engine; 5s shows them in its own words.
+  function hubWords(s) {
+    return String(s || '').replace(/GitHub repository/g, 'hub on GitHub').replace(/\brepository\b/g, 'hub')
+      .replace(/ on GitHub Pages\b/g, ' at its own address').replace(/GitHub Pages/g, 'its own address');
+  }
+
+  function hubOf(st) { const h = st && st.hub; return h && typeof h === 'object' ? h : {}; }
+
+  // The four steps as the Path reads them, each with the hub's own Next (the first of the four not done).
+  function hubSteps(st) {
+    const items = F.path(st, deck, now()).filter((m) => HUB_KEYS.indexOf(m.key) >= 0);
+    let given = false;
+    return items.map((m) => { const next = !m.done && !given; if (next) given = true; return { key: m.key, label: m.label, done: !!m.done, next }; });
+  }
+  // The furthest step the sheet opens at: the first not done (all done: the last).
+  function hubReach(st) { const i = hubSteps(st).findIndex((s) => !s.done); return i < 0 ? 3 : i; }
+  function hubWhen(sec) { return !sec ? '' : F.dayOf(sec * 1000) === F.dayOf(now()) ? 'today' : fmtDate(sec); }
+
+  // An ordered list, each step's state in words (never colour alone).
+  function hubStepperHTML(steps, details) {
+    return '<ol class="hubsteps">' + steps.map((s, i) => {
+      const cls = s.done ? 'done' : s.next ? 'next' : 'notyet';
+      const word = s.done ? 'Done' : s.next ? 'Next' : 'Not yet';
+      return '<li class="' + cls + '"><span class="mk" aria-hidden="true">' + (i + 1) + '</span><span class="body">' +
+        '<span class="lbl">' + esc(s.label) + '</span><span class="visually-hidden">: </span><span class="state">' + word + '</span>' +
+        (details[i] ? '<span class="det">' + details[i] + '</span>' : '') + '</span></li>';
+    }).join('') + '</ol>';
+  }
+
+  // -- the card (Seed's last section)
+
+  function hubCardHTML() {
+    if (!HUB || !deck) return '';
+    if (readOnly()) return hubExampleHTML();
+    const h = hubOf(S);
+    const steps = hubSteps(S);
+    const nextI = steps.findIndex((s) => s.next);
+    const made = !!(h.madeAt && h.user && h.name);
+    const changed = !!h.savedAt && h.savedCode !== F.seedCode(S);
+    const details = [
+      steps[0].done ? '<span class="mono">' + esc(h.user) + '</span>' : '',
+      steps[1].done && h.name ? '<span class="mono">' + esc(h.name) + '</span>' + (h.private ? ' · private' : '') : '',
+      '', '',
+    ];
+    let html = '<section class="sec hub" id="hub-sec" aria-labelledby="hub-h"><div class="hubcard">' +
+      '<h2 class="sec-title hub-title" id="hub-h" tabindex="-1">Your hub</h2>' +
+      '<p class="sec-note">' + esc(HUB_LEDE) + '</p>' + hubStepperHTML(steps, details);
+    if (made && h.private) {
+      html += '<p class="hub-addr"><span class="small">Your hub is private, so it has no address.</span>' +
+        '<a href="' + esc(HUB.links.repo(h.user, h.name)) + '" target="_blank" rel="noopener" data-act="hub-out" data-say="Your hub opened in a new tab.">Open it on GitHub' + NEW_TAB + '</a></p>';
+    } else if (made) {
+      const a = HUB.links.site(h.user, h.name);
+      html += '<p class="hub-addr"><span class="small">Your hub’s address</span>' +
+        '<a href="' + esc(a) + '" target="_blank" rel="noopener" data-act="hub-out" data-say="Your hub opened in a new tab.">' + esc(a) + NEW_TAB + '</a></p>';
+    }
+    if (h.savedAt) html += '<p class="small hub-saved">Last saved ' + esc(hubWhen(h.savedAt)) + '.</p>';
+    else if (made) html += '<p class="small hub-saved">Not saved to your hub yet.</p>';
+    if (changed) html += '<p class="hub-changed">Your seed has changed since you last saved it to your hub.</p>';
+    html += '<div class="row-gap">' +
+      (changed ? '<button type="button" class="btn btn-keep btn-big" id="hub-again" data-act="hub" data-step="2" aria-haspopup="dialog">Save to my hub again</button>' : '') +
+      (nextI >= 0
+        ? '<button type="button" class="btn ' + (changed ? '' : 'btn-keep ') + 'btn-big" id="hub-go" data-act="hub" data-step="' + nextI + '" aria-haspopup="dialog">' + HUB_GO[nextI] + '</button>'
+        : '<button type="button" class="btn btn-big" id="hub-go" data-act="hub" data-step="3" aria-haspopup="dialog">See the four steps</button>') +
+      '</div></div></section>';
+    return html;
+  }
+
+  // Example mode: a finished example hub, clearly marked; nothing in it opens GitHub.
+  function hubExampleHTML() {
+    const user = 'example', name = 'example.github.io';
+    const steps = HUB_KEYS.map((k, i) => {
+      const m = (F.HUB_MILESTONES || []).find((x) => x.key === k);
+      return { key: k, label: m ? m.label : HUB_TITLES[i], done: true, next: false };
+    });
+    return '<section class="sec hub" id="hub-sec" aria-labelledby="hub-h"><div class="hubcard ex">' +
+      '<p class="hub-exmark"><strong>Example hub.</strong> Not yours.</p>' +
+      '<h2 class="sec-title hub-title" id="hub-h" tabindex="-1">Your hub</h2>' +
+      '<p class="sec-note">' + esc(HUB_LEDE) + '</p>' +
+      hubStepperHTML(steps, ['<span class="mono">' + user + '</span>', '<span class="mono">' + name + '</span>', '', '']) +
+      '<p class="hub-addr"><span class="small">Its address</span><span class="mono">' + esc(HUB.links.site(user, name)) + '</span></p>' +
+      '<p class="small hub-saved">Last saved today.</p>' +
+      '<p class="small">Back to yours to make your own hub.</p></div></section>';
+  }
+
+  // Redraw only the card (not the ground) after a hub change.
+  function updateHubCard() {
+    if (view !== 'seed') return;
+    const sec = $('#hub-sec');
+    if (!sec) return;
+    const tmp = doc.createElement('div');
+    tmp.innerHTML = hubCardHTML();
+    if (tmp.firstElementChild) sec.replaceWith(tmp.firstElementChild);
+    // the sheet's opener may be gone (Save to my hub again, once saved): land on the card's own button
+    if (ui.sheet === 'hub' && ui.openerSig) { let o = null; try { o = $(ui.openerSig); } catch (e) { o = null; } if (!o) ui.openerSig = '#hub-go'; }
+  }
+
+  function hubCommit(patch) {
+    commit(F.setHub(S, patch, now()), { noRender: true });
+    updateHubCard();
+  }
+
+  // -- the Hub sheet
+
+  function openHub(step, opener) {
+    if (!HUB || !deck || readOnly()) return;
+    const h = hubOf(S);
+    const hs = ui.hub;
+    hs.step = Math.max(0, Math.min(hubReach(S), step | 0));
+    hs.user = h.user || '';
+    hs.have = !!h.user;
+    hs.choice = h.name && !HUB.isSiteRepo(h.user, h.name) ? 'other' : 'site';
+    hs.other = hs.choice === 'other' ? h.name : '';
+    hs.priv = !!h.private;
+    hs.notes = false; hs.own = false; hs.busy = false; hs.msg = ''; hs.text = null; hs.done = false;
+    hubToken++;
+    openSheet('hub', 'Your hub', hubHTML, opener, { wide: true });
+    hubAfterRender();
+    say('Your hub. Step ' + (hs.step + 1) + ' of 4: ' + HUB_TITLES[hs.step] + '.');
+  }
+
+  function hubRefresh() {
+    if (ui.sheet !== 'hub') return;
+    refreshSheet();
+    hubAfterRender();
+  }
+
+  function hubAfterRender() {
+    const ta = $('#hub-text');
+    if (ta && ui.hub.text != null) ta.value = ui.hub.text;
+    hubSync();
+  }
+
+  function hubGo(i) {
+    if (ui.sheet !== 'hub') return;
+    const hs = ui.hub;
+    hs.step = Math.max(0, Math.min(hubReach(S), i | 0));
+    hs.msg = ''; hs.text = null; hs.busy = false; hs.done = false;
+    hubToken++;
+    hubRefresh();
+    $('#sheet-body').scrollTop = 0;
+    const hd = $('#hub-step-h');
+    if (hd) hd.focus({ preventScroll: true });
+    say('Step ' + (hs.step + 1) + ' of 4: ' + HUB_TITLES[hs.step] + '.');
+  }
+
+  function hubHTML() {
+    const hs = ui.hub;
+    const steps = hubSteps(S);
+    const reach = hubReach(S);
+    const nav = '<nav aria-label="The four steps"><ol class="hubnav">' + steps.map((s, i) => {
+      const word = s.done ? 'Done' : s.next ? 'Next' : 'Not yet';
+      const cls = (s.done ? 'done' : s.next ? 'next' : 'notyet') + (i === hs.step ? ' cur' : '');
+      const seen = '<span class="mk">' + (i + 1) + '</span><span class="t">' + HUB_NAV[i] + '</span><span class="st">' + word + '</span>';
+      const said = 'Step ' + (i + 1) + ', ' + HUB_TITLES[i] + ': ' + word + (i === hs.step ? ', this step' : '');
+      const inner = '<span aria-hidden="true" class="hubnav-in">' + seen + '</span><span class="visually-hidden">' + esc(said) + '</span>';
+      if (i === hs.step) return '<li class="' + cls + '" aria-current="step"><span class="hubnav-b">' + inner + '</span></li>';
+      if (i <= reach) return '<li class="' + cls + '"><button type="button" class="hubnav-b" data-act="hub-step" data-step="' + i + '">' + inner + '</button></li>';
+      return '<li class="' + cls + '"><span class="hubnav-b off">' + inner + '</span></li>';
+    }).join('') + '</ol></nav>';
+    const body = [hubStep1, hubStep2, hubStep3, hubStep4][hs.step]();
+    return nav + '<section class="hubstep" aria-labelledby="hub-step-h">' +
+      '<h3 class="hubstep-h" id="hub-step-h" tabindex="-1" data-autofocus>Step ' + (hs.step + 1) + ' of 4 · ' + HUB_TITLES[hs.step] + '</h3>' + body + '</section>';
+  }
+
+  // A link to one of GitHub's pages, opened in a new tab; data-say is announced when it is pressed.
+  function hubLink(id, cls, href, text, sayText, act) {
+    return '<a class="btn ' + cls + '" id="' + id + '" href="' + esc(href) + '" target="_blank" rel="noopener" data-act="' + (act || 'hub-out') + '"' +
+      (sayText ? ' data-say="' + esc(sayText) + '"' : '') + '>' + text + icon('out') + NEW_TAB + '</a>';
+  }
+
+  // One choice (a radio or a checkbox) with its words beside it; the whole row is the target.
+  function hubOpt(type, name, value, on, title, small) {
+    return '<label class="opt"><input type="' + type + '" ' + (type === 'radio' ? 'name="' + name + '" value="' + value + '"' : 'id="' + name + '"') + (on ? ' checked' : '') + '>' +
+      '<span><b>' + title + '</b><span class="small">' + small + '</span></span></label>';
+  }
+
+  // Step 1: a GitHub account, and the username (checked against GitHub's rules as it is typed).
+  function hubStep1() {
+    const hs = ui.hub;
+    const signup = hubLink('hub-signup', hs.have ? 'btn-quiet' : 'btn-keep btn-big', HUB.links.signup(), 'Make a GitHub account',
+      'GitHub’s sign-up opened in a new tab. Come back here once you’re in.');
+    let html = '<p>Your hub lives in your own GitHub account: free, and yours to keep. 5s fills in everything on GitHub for you; you only press its buttons.</p>';
+    if (!hs.have) {
+      html += '<div class="hubguide">' + signup +
+        '<ol class="guide3"><li>Pick a username you like: it becomes your hub’s address, username.github.io.</li>' +
+        '<li>Use an email you can open now: GitHub sends you a code to type in.</li>' +
+        '<li>Once you’re in, come back to this tab.</li></ol>' +
+        '<div class="actions"><button type="button" class="btn" data-act="hub-have" id="hub-have">I have one</button></div></div>';
+    } else {
+      html += '<div class="row-gap hub-alt"><span class="small">No account yet?</span>' + signup +
+        '<span class="small">Signed out?</span>' + hubLink('hub-login', 'btn-quiet', HUB.links.login(), 'Sign in to GitHub', 'GitHub’s sign-in opened in a new tab.') + '</div>';
+    }
+    return html + '<form class="field hubform" data-form="hub-user">' +
+      '<label for="hub-user">Your GitHub username</label>' +
+      '<input type="text" id="hub-user" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="120" value="' + esc(hs.user) + '" aria-describedby="hub-user-msg hub-user-note">' +
+      '<p class="hubmsg" id="hub-user-msg"></p>' +
+      '<p class="small" id="hub-user-note">It’s public on GitHub already. 5s keeps it only to fill in GitHub’s forms for you; it never goes in your seed.</p>' +
+      '<div class="actions"><button type="submit" class="btn btn-ink btn-big" id="hub-user-go">Use this username</button></div></form>';
+  }
+
+  function hubUserCheck(v) {
+    const t = String(v || '').trim();
+    if (!t) return { ok: false, bad: false, html: 'Letters, numbers and single hyphens, as on GitHub.' };
+    const r = HUB.rules.user(t);
+    if (r.ok) return { ok: true, bad: false, html: '<span>That works. Your hub’s address can be <b class="mono">' + esc(HUB.links.site(r.fixed, '')) + '</b></span>' };
+    return {
+      ok: false, bad: true,
+      html: '<span>' + esc(r.reason) + '</span>' +
+        (r.fixed && r.fixed !== t ? '<button type="button" class="btn btn-quiet" data-act="hub-fix-user" data-fix="' + esc(r.fixed) + '">Use “' + esc(r.fixed) + '”</button>' : ''),
+    };
+  }
+
+  // Step 2: the hub's name and who can see it, then GitHub's "new" page, filled in.
+  function hubStep2() {
+    const hs = ui.hub;
+    const user = hubOf(S).user || '';
+    const n = hubName();
+    return '<p>Your hub is your own place on GitHub, made to hold your seed. 5s fills in GitHub’s form; you press one button there.</p>' +
+      '<fieldset class="hubset"><legend>Your hub’s name</legend>' +
+        hubOpt('radio', 'hub-name', 'site', hs.choice === 'site', '<span class="mono">' + esc(HUB.suggest(user).site) + '</span>', 'Becomes a website by itself.') +
+        hubOpt('radio', 'hub-name', 'other', hs.choice === 'other', 'Another name', 'One more tap at the end makes it a website.') +
+        '<div class="field hub-other" id="hub-other-w"' + (hs.choice === 'other' ? '' : ' hidden') + '><label for="hub-other">Your hub’s other name</label>' +
+          '<input type="text" id="hub-other" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="120" placeholder="' + esc(HUB.suggest(user).plain) + '" value="' + esc(hs.other) + '" aria-describedby="hub-name-msg"></div>' +
+        '<p class="hubmsg" id="hub-name-msg"></p>' +
+      '</fieldset>' +
+      '<fieldset class="hubset"><legend>Who can see it</legend>' +
+        hubOpt('radio', 'hub-vis', 'public', !hs.priv, 'Public', 'Anyone can see it, and it becomes a website.') +
+        hubOpt('radio', 'hub-vis', 'private', hs.priv, 'Private', 'Only you can see it; it won’t be a website.') +
+      '</fieldset>' +
+      '<div class="hubdo">' +
+        hubLink('hub-new', 'btn-keep btn-big', hubNewHref(), 'Make my hub on GitHub',
+          'GitHub opened in a new tab, filled in. Press the green Create repository button there, then come back.', 'hub-new') +
+        '<p class="hubsay">Press the green <q class="gh">Create repository</q> button, then come back.</p>' +
+        '<p class="small hubcopy"><span>GitHub’s form should already say <b class="mono" id="hub-name-text">' + esc(n.fixed) + '</b>. If it doesn’t, copy the name and paste it in.</span>' +
+        '<button type="button" class="btn btn-quiet" data-act="hub-copy-name" id="hub-copy-name">Copy name</button></p>' +
+      '</div>' +
+      '<div class="actions"><button type="button" class="btn btn-ink btn-big" data-act="hub-made" id="hub-made">I made it</button></div>';
+  }
+
+  // The hub's name as chosen now.
+  function hubName() {
+    const hs = ui.hub;
+    const raw = String((hs.choice === 'other' ? hs.other : HUB.suggest(hubOf(S).user || '').site) || '').trim();
+    const r = HUB.rules.repo(raw);
+    return { raw, fixed: r.fixed, ok: r.ok, reason: r.reason };
+  }
+
+  function hubNameCheck() {
+    if (ui.hub.choice !== 'other') return { ok: true, bad: false, html: '' };
+    const n = hubName();
+    const user = hubOf(S).user || '';
+    if (!n.raw) return { ok: false, bad: false, html: 'Letters, numbers, hyphens, underscores and full stops.' };
+    if (n.ok) {
+      return { ok: true, bad: false, html: '<span>That works. ' + (HUB.isSiteRepo(user, n.fixed) ? 'It becomes a website by itself, at ' : 'Once its address is turned on, it will be ') +
+        '<b class="mono">' + esc(HUB.links.site(user, n.fixed)) + '</b></span>' };
+    }
+    return {
+      ok: false, bad: true,
+      html: '<span>' + esc(n.reason) + '</span>' +
+        (n.fixed && n.fixed !== n.raw ? '<button type="button" class="btn btn-quiet" data-act="hub-fix-name" data-fix="' + esc(n.fixed) + '">Use “' + esc(n.fixed) + '”</button>' : ''),
+    };
+  }
+
+  function hubNewHref() { return HUB.links.newRepo({ name: hubName().fixed, description: HUB_DESC, private: ui.hub.priv }); }
+
+  // Step 3: the hub file (built here from the seed), then GitHub's upload page.
+  function hubStep3() {
+    const hs = ui.hub;
+    const h = hubOf(S);
+    let file = '<button type="button" class="btn btn-keep btn-big" data-act="hub-file" id="hub-file"' + (hs.busy ? ' aria-disabled="true"' : '') + '>' +
+      (hs.busy ? 'Making your hub file…' : 'Save my hub file') + '</button>' +
+      (ui.downloads ? '' : '<p class="small">This view can’t save files, so 5s shows the file’s text for you to copy.</p>') +
+      '<p class="hubmsg" id="hub-file-msg">' + esc(hs.msg) + '</p>';
+    let where;
+    if (hs.text != null) {
+      file += '<label class="field hubfile"><span>Your hub file, index.html</span><textarea id="hub-text" readonly spellcheck="false"></textarea></label>' +
+        '<div class="row-gap"><button type="button" class="btn" data-act="hub-copy-file" id="hub-copy-file">Copy</button></div>';
+      // No file to drag: GitHub's own editor takes the text, filled in with the file's name.
+      where = h.savedAt
+        ? hubLink('hub-paste', 'btn-big', HUB.links.repo(h.user, h.name) + '/edit/main/index.html', 'Open my hub file on GitHub', 'GitHub opened in a new tab.') +
+          '<p class="hubsay">Select all of its text, paste yours over it, and press <q class="gh">Commit changes</q>.</p>'
+        : hubLink('hub-paste', 'btn-big', HUB.links.repo(h.user, h.name) + '/new/main?filename=index.html', 'Open a new file in my hub', 'GitHub opened in a new tab.') +
+          '<p class="hubsay">Paste the text in and press <q class="gh">Commit changes</q>.</p>';
+    } else {
+      where = hubLink('hub-upload', 'btn-big', HUB.links.upload(h.user, h.name), 'Open the upload page', 'GitHub’s upload page opened in a new tab.') +
+        '<p class="hubsay">Drag the file in and press <q class="gh">Commit changes</q>.</p>' +
+        '<p class="small">If GitHub shows its quick setup instead, press <q class="gh">uploading an existing file</q>.</p>';
+    }
+    return '<p>5s makes your hub file: one page with your seed code, your philosophy, what you keep and pass, your colours, your rooms and your ground. Then you drop it into your hub.</p>' +
+      '<fieldset class="hubset"><legend>What goes on it</legend>' +
+        hubOpt('checkbox', 'hub-notes', '', hs.notes, 'Include my notes', 'Off: your notes stay private to you.') +
+        hubOpt('checkbox', 'hub-own', '', hs.own, 'Include my own images', 'Off: the pictures you brought in stay private.') +
+      '</fieldset>' +
+      '<ol class="hubdo3">' +
+        '<li><div class="hubdo">' + file + '</div></li>' +
+        '<li><div class="hubdo">' + where + '</div></li>' +
+        '<li><div class="hubdo"><button type="button" class="btn btn-ink btn-big" data-act="hub-saved" id="hub-saved">I saved it</button></div></li>' +
+      '</ol>';
+  }
+
+  // Step 4: the address; for a hub with another name, the one choice on GitHub that turns it on.
+  function hubStep4() {
+    const hs = ui.hub;
+    const h = hubOf(S);
+    let html = '';
+    if (hs.done) {
+      html += '<div class="hubdone" id="hub-done" tabindex="-1"><p><b>Your hub is open.</b> When your seed changes, Seed offers <b>Save to my hub again</b>.</p>' +
+        '<div class="actions"><button type="button" class="btn" data-act="close-sheet">Close</button></div></div>';
+    }
+    if (h.private) {
+      html += '<p>Your hub is private, so it has no address: only you can see it, on GitHub.</p>' +
+        '<div class="actions">' + hubLink('hub-open', 'btn-keep btn-big', HUB.links.repo(h.user, h.name), 'Open my hub on GitHub', 'Your hub opened in a new tab.') + '</div>' +
+        '<p class="small">To give it an address, make it public on GitHub, then come back here.</p>';
+    } else {
+      const addr = HUB.links.site(h.user, h.name);
+      if (!HUB.isSiteRepo(h.user, h.name)) {
+        html += '<div class="hubonce"><p><b>One more tap first.</b> A hub with another name needs its address turned on, once.</p>' +
+          '<div class="actions">' + hubLink('hub-turnon', 'btn-big', HUB.links.pagesSettings(h.user, h.name), 'Turn on my hub’s address', 'GitHub opened in a new tab.') + '</div>' +
+          '<p>On that GitHub page, make one choice:</p>' +
+          '<ol class="guide3"><li>Under <q class="gh">Source</q>, choose <q class="gh">Deploy from a branch</q>.</li>' +
+          '<li>Under <q class="gh">Branch</q>, choose <q class="gh">main</q> and <q class="gh">/ (root)</q>.</li>' +
+          '<li>Press <q class="gh">Save</q>.</li></ol></div>';
+      }
+      html += '<p class="hub-addr big"><span class="small">Your hub’s address</span>' +
+        '<a id="hub-addr" href="' + esc(addr) + '" target="_blank" rel="noopener" data-act="hub-out" data-say="Your hub opened in a new tab.">' + esc(addr) + NEW_TAB + '</a></p>' +
+        '<div class="actions">' + hubLink('hub-open', 'btn-keep btn-big', addr, 'Open my hub', 'Your hub opened in a new tab.') + '</div>' +
+        '<p class="small">It can take a minute to appear. If GitHub says <q class="gh">404</q>, wait a minute and open it again.</p>';
+    }
+    return html + '<div class="actions"><button type="button" class="btn btn-ink btn-big" data-act="hub-opened" id="hub-opened">I opened it</button></div>';
+  }
+
+  // Keep the live parts of the sheet in step with what is typed and chosen, without redrawing it.
+  function hubSync() {
+    if (ui.sheet !== 'hub' || !HUB) return;
+    const hs = ui.hub;
+    const um = $('#hub-user-msg');
+    if (um) {
+      const r = hubUserCheck(hs.user);
+      um.innerHTML = r.html;
+      um.className = 'hubmsg' + (r.bad ? ' bad' : r.ok ? ' good' : '');
+      const i = $('#hub-user');
+      if (i) i.setAttribute('aria-invalid', r.bad ? 'true' : 'false');
+    }
+    const nm = $('#hub-name-msg');
+    if (nm) {
+      const w = $('#hub-other-w');
+      if (w) w.hidden = hs.choice !== 'other';
+      const r = hubNameCheck();
+      nm.innerHTML = r.html;
+      nm.className = 'hubmsg' + (r.bad ? ' bad' : r.ok && hs.choice === 'other' ? ' good' : '');
+      const oi = $('#hub-other');
+      if (oi) oi.setAttribute('aria-invalid', r.bad ? 'true' : 'false');
+      const a = $('#hub-new');
+      if (a) a.setAttribute('href', hubNewHref());
+      const nt = $('#hub-name-text');
+      if (nt) nt.textContent = hubName().fixed || '…';
+    }
+  }
+
+  function hubInput(t) {
+    if (t.id === 'hub-user') ui.hub.user = t.value;
+    else if (t.id === 'hub-other') ui.hub.other = t.value;
+    hubSync();
+  }
+
+  function hubChange(t) {
+    const hs = ui.hub;
+    if (t.name === 'hub-name') {
+      hs.choice = t.value === 'other' ? 'other' : 'site';
+      if (hs.choice === 'other' && !hs.other.trim()) {
+        hs.other = HUB.suggest(hubOf(S).user || '').plain;
+        const i = $('#hub-other');
+        if (i) i.value = hs.other;
+      }
+    } else if (t.name === 'hub-vis') {
+      hs.priv = t.value === 'private';
+    } else if (t.id === 'hub-notes' || t.id === 'hub-own') {
+      if (t.id === 'hub-notes') hs.notes = t.checked; else hs.own = t.checked;
+      // a file already made no longer matches what goes on it
+      if (hs.text != null || hs.msg) { hs.text = null; hs.msg = ''; hubToken++; hs.busy = false; hubRefresh(); }
+      return;
+    }
+    hubSync();
+  }
+
+  function hubFix(sel, v) {
+    const i = $(sel);
+    if (!i || v == null) return;
+    i.value = v;
+    hubInput(i);
+    i.focus();
+    say('Changed to ' + v + '.');
+  }
+
+  function hubOut(t) { const m = t && t.getAttribute('data-say'); if (m) say(m); }
+
+  function hubHave() {
+    ui.hub.have = true;
+    hubRefresh();
+    const i = $('#hub-user');
+    if (i) i.focus();
+    say('Type your GitHub username.');
+  }
+
+  function hubUseUser() {
+    const inp = $('#hub-user');
+    if (!inp || !HUB) return;
+    ui.hub.user = inp.value;
+    hubSync();
+    const r = HUB.rules.user(inp.value);
+    if (!r.ok) {
+      inp.focus();
+      say(r.reason + (r.fixed && r.fixed !== inp.value.trim() ? ' Or use ' + r.fixed + '.' : ''));
+      return;
+    }
+    const h = hubOf(S);
+    const patch = { user: r.fixed, mode: 'links' };
+    if (h.user && h.user.toLowerCase() !== r.fixed.toLowerCase()) {
+      // another account: a hub named after the old username isn't this one's, and nothing is made here yet
+      if (h.name && HUB.isSiteRepo(h.user, h.name)) patch.name = null;
+      if (h.madeAt) { patch.madeAt = null; patch.savedAt = null; patch.savedCode = null; }
+    }
+    hubCommit(patch);
+    hubGo(1);
+  }
+
+  // The name and visibility are kept as soon as GitHub's page is opened, so a reload while the
+  // person is over there loses nothing. A new name means a new hub: it is still to be made and saved.
+  function hubCommitMake() {
+    const n = hubName();
+    const h = hubOf(S);
+    const patch = { private: ui.hub.priv, mode: 'links' };
+    if (n.fixed) patch.name = n.fixed;
+    if (h.madeAt && patch.name && h.name !== patch.name) { patch.madeAt = null; patch.savedAt = null; patch.savedCode = null; }
+    const next = F.setHub(S, patch, now());
+    if (JSON.stringify(next.hub) === JSON.stringify(S.hub)) return;
+    hubCommit(patch);
+    if (patch.madeAt === null) hubRefresh();
+  }
+
+  function hubMade() {
+    const n = hubName();
+    if (!n.ok) {
+      hubSync();
+      const i = ui.hub.choice === 'other' ? $('#hub-other') : null;
+      if (i) i.focus();
+      say(n.reason || 'Give your hub a name.');
+      return;
+    }
+    const h = hubOf(S);
+    const patch = { name: n.fixed, private: ui.hub.priv, mode: 'links', madeAt: true };
+    if (h.madeAt && h.name && h.name !== n.fixed) { patch.savedAt = null; patch.savedCode = null; }
+    hubCommit(patch);
+    hubGo(2);
+  }
+
+  async function hubSaveFile() {
+    const hs = ui.hub;
+    if (hs.busy || readOnly() || !HUBPAGE || ui.sheet !== 'hub') return;
+    const token = ++hubToken;
+    hs.busy = true; hs.msg = ''; hs.text = null;
+    const b = $('#hub-file');
+    if (b) { b.textContent = 'Making your hub file…'; b.setAttribute('aria-disabled', 'true'); }
+    const m = $('#hub-file-msg');
+    if (m) m.textContent = '';
+    say('Making your hub file.');
+    let html = null;
+    try { html = await hubBuildFile(hs.notes, hs.own); } catch (e) { html = null; }
+    if (token !== hubToken || ui.sheet !== 'hub') return;
+    let showText = false;
+    if (!html) {
+      hs.msg = 'Couldn’t make your hub file. Try again.';
+    } else if (!ui.downloads) {
+      showText = true;
+    } else {
+      try {
+        await ui.downloads.save({ filename: 'index.html', data: html });
+        hs.msg = 'Saved your hub file, index.html. Next, open the upload page and drag it in.';
+      } catch (e) {
+        const code = e && e.code;
+        if (code === 'declined') hs.msg = 'Not saved. Press Save my hub file to try again.';
+        else if (code === 'rate_limited') hs.msg = 'Another save is waiting. Try again in a moment.';
+        else {
+          // the file can't be saved in this view: its text, to copy, does the same job
+          if (!code || ['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].indexOf(code) >= 0) ui.downloads = null;
+          showText = true;
+        }
+      }
+      if (token !== hubToken || ui.sheet !== 'hub') return;
+    }
+    hs.busy = false;
+    if (showText) { hs.text = html; hs.msg = 'Here is your hub file. Copy all of it, then paste it into a new file in your hub.'; }
+    hubRefresh();
+    const f = showText ? $('#hub-copy-file') : $('#hub-file');
+    if (f) f.focus({ preventScroll: !showText });
+    say(hs.msg);
+  }
+
+  // The hub page, built from the current seed (FiveSHubPage.build), with the ground drawn here.
+  async function hubBuildFile(includeNotes, includeOwn) {
+    const st = S;
+    const t = now();
+    const P = prof(st);
+    const seed = F.exportSeed(st, deck, t);
+    const ground = await hubGround(st, P, includeOwn);
+    const own = st.own.filter(Boolean);
+    let ownThumbs = null;
+    if (includeOwn && own.length) {
+      // In seed.own order. The page finds a thumbnail by name first; a name two things share (often
+      // "Untitled") is given by position only, so one thing's picture never stands in for another's.
+      const names = own.map((o) => (o.name && o.name.trim()) || 'Untitled');
+      const count = new Map();
+      names.forEach((n) => count.set(n, (count.get(n) || 0) + 1));
+      ownThumbs = await Promise.all(own.map(async (o, i) => {
+        let src = null;
+        if (imgStore) { try { const v = await imgStore.get(o.id); src = v ? v.thumb || null : null; } catch (e) { src = null; } }
+        if (!src) return null;
+        return count.get(names[i]) === 1 ? { name: names[i], src } : src;
+      }));
+    }
+    // Rooms by card id (exact, where a work slug may name more than one card); brought things by what they are.
+    const slotRef = (id) => {
+      const c = id ? cardOf(id, st) : null;
+      if (!c) return null;
+      return c.own ? { own: true, kind: c.kind, title: c.title, colours: c.colours, source: c.source } : id;
+    };
+    const sets = st.sets.map((s) => { const o = { name: s.name || null }; for (const k of SLOTS) o[k] = slotRef(s[k]); return o; });
+    const labelled = (list) => list.map((e) => Object.assign({}, e, { label: chipLabel(e) }));
+    return HUBPAGE.build({
+      seed, deck, sets,
+      profile: Object.assign({}, P, { positive: labelled(P.positive), negative: labelled(P.negative) }),
+      philosophy: F.philosophy(P, deck),
+      groundPng: ground ? ground.png : null, groundAlt: ground ? ground.words : '',
+      includeNotes: !!includeNotes, includeOwnImages: !!includeOwn, ownThumbs, generatedAt: t,
+    });
+  }
+
+  // The ground as a PNG: drawn on a canvas of its own, off the page, from the deck's own images (same
+  // origin, so the canvas stays readable). Brought-in surfaces are drawn only with "Include my own images".
+  async function hubGround(st, P, includeOwn) {
+    if (!G) return null;
+    const surfaces = [];
+    for (const id of P.keptByKind.surface) { const c = cardOf(id, st); if (c && c.img && !c.own) surfaces.push({ src: c.img, crop: null }); }
+    if (includeOwn) {
+      for (const o of st.own) {
+        if (!o || o.let != null || !Array.isArray(o.crop)) continue;
+        let src = null;
+        if (imgStore) { try { const v = await imgStore.get(o.id); src = v && v.img; } catch (e) { src = null; } }
+        if (src) surfaces.push({ src, crop: o.crop });
+      }
+    }
+    const h = latestHouse(st);
+    const cv = doc.createElement('canvas');
+    cv.width = 800; cv.height = 640; // off the page, the renderer keeps this size (the hub page shows it up to 760 px wide)
+    let res = null;
+    try {
+      res = await G.render(cv, {
+        rand: F.prng(F.seedCode(st)), surfaces, kept: P.keptColours, passed: P.passedColours,
+        house: h ? h.house : null, size: groundSize(P.judged), grow: false, theme: 'light',
+      });
+    } catch (e) { res = null; }
+    if (!res) return null;
+    let png = null;
+    try { png = cv.toDataURL('image/png'); } catch (e) { png = null; } // a tainted canvas can't be read: no ground then
+    if (!png || png.length < 200) return null;
+    // the page is read by others too: "surfaces kept", not "surfaces you kept"
+    let words = String(res.description || '').replace(/ you (kept|passed)/g, ' $1');
+    if (h) words += ' The house is the latest set' + (h.set.name ? ', “' + h.set.name + '”' : '') + '.';
+    return { png, words };
+  }
+
+  function hubCopy(text, el, what, btn) {
+    const done = () => {
+      say(what + ' copied.');
+      if (btn) { const was = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => { if (btn.isConnected) btn.textContent = was; }, 2000); }
+    };
+    const fallback = () => {
+      if (!el) return;
+      if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') { el.focus(); el.select(); }
+      else { const r = doc.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+      say('Selected. Copy it from there.');
+    };
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) { fallback(); return; }
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } catch (e) { fallback(); }
+  }
+
+  function hubCopyName() { const n = hubName(); if (n.fixed) hubCopy(n.fixed, $('#hub-name-text'), 'The name ' + n.fixed, $('#hub-copy-name')); }
+  function hubCopyFile() { if (ui.hub.text != null) hubCopy(ui.hub.text, $('#hub-text'), 'Your hub file', $('#hub-copy-file')); }
+
+  function hubSaved() {
+    hubCommit({ savedAt: true });
+    hubGo(3);
+  }
+
+  function hubOpened() {
+    commit(F.markSeen(S, 'hub-opened'), { noRender: true });
+    updateHubCard();
+    ui.hub.done = true;
+    hubRefresh();
+    const d = $('#hub-done');
+    if (d) d.focus();
+    say('Your hub is open.');
+  }
+
   // ================================================================ EXAMPLE MODE
 
   function setExample(on) {
@@ -2029,7 +2662,16 @@
         { const k = $('#btn-keep'); if (k) k.focus({ preventScroll: true }); }
         say('Another five. ' + describeBefore(cardOf(F.currentCard(S), S)));
         break;
-      case 'goto': ui.opener = null; ui.openerSig = null; closeSheet(); showView(t.getAttribute('data-view'), { focus: true }); break;
+      case 'goto': {
+        // data-focus: a part of the view to land on (the Path's hub milestones land on Your hub)
+        const f = t.getAttribute('data-focus');
+        ui.opener = null; ui.openerSig = f ? '#' + f : null;
+        closeSheet();
+        showView(t.getAttribute('data-view'), { focus: true });
+        const el = f ? doc.getElementById(f) : null;
+        if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'start' }); }
+        break;
+      }
       case 'about': openAbout(t); break;
       case 'path': openPath(t); break;
       case 'close-sheet': closeSheet(); break;
@@ -2106,6 +2748,20 @@
       case 'save-seed': saveSeed(); break;
       case 'copy-seed': copySeed(); break;
       case 'copy-code': copyCode(); break;
+      // Your hub
+      case 'hub': openHub(Number(t.getAttribute('data-step')) || 0, t); break;
+      case 'hub-step': hubGo(Number(t.getAttribute('data-step')) || 0); break;
+      case 'hub-have': hubHave(); break;
+      case 'hub-fix-user': hubFix('#hub-user', t.getAttribute('data-fix')); break;
+      case 'hub-fix-name': hubFix('#hub-other', t.getAttribute('data-fix')); break;
+      case 'hub-out': hubOut(t); break;
+      case 'hub-new': hubCommitMake(); hubOut(t); break;
+      case 'hub-copy-name': hubCopyName(); break;
+      case 'hub-made': hubMade(); break;
+      case 'hub-file': hubSaveFile(); break;
+      case 'hub-copy-file': hubCopyFile(); break;
+      case 'hub-saved': hubSaved(); break;
+      case 'hub-opened': hubOpened(); break;
       default: break;
     }
     void e;
@@ -2136,6 +2792,8 @@
       commit(st);
       closeSheet();
       say('Set pinned' + (name ? ': ' + name : '') + '.');
+    } else if (kind === 'hub-user') {
+      hubUseUser();
     }
   }
 
@@ -2149,6 +2807,7 @@
     doc.addEventListener('submit', (e) => { e.preventDefault(); onForm(e.target); });
     doc.addEventListener('input', (e) => {
       const t = e.target;
+      if (t && (t.id === 'hub-user' || t.id === 'hub-other')) { hubInput(t); return; }
       const key = t.getAttribute && t.getAttribute('data-key');
       const field = t.getAttribute && t.getAttribute('data-field');
       if (!key || !field) return;
@@ -2158,6 +2817,7 @@
     doc.addEventListener('change', (e) => {
       const t = e.target;
       if (t.id === 'bring-file') { addFiles(t.files); t.value = ''; return; }
+      if (t.name === 'hub-name' || t.name === 'hub-vis' || t.id === 'hub-notes' || t.id === 'hub-own') { hubChange(t); return; }
       const key = t.getAttribute && t.getAttribute('data-key');
       const field = t.getAttribute && t.getAttribute('data-field');
       if (!key || !field) return;
@@ -2245,7 +2905,7 @@
 
   async function lightUp() {
     use('sample').then((s) => { if (typeof s === 'function') { ui.sample = s; if (view === 'see' && deck) renderSee(); } });
-    use('downloads').then((d) => { if (d && typeof d.save === 'function') { ui.downloads = d; if (view === 'seed' && deck) renderSeed(); } });
+    use('downloads').then((d) => { if (d && typeof d.save === 'function') { ui.downloads = d; if (view === 'seed' && deck) renderSeed(); if (ui.sheet === 'hub') hubRefresh(); } });
     const pair = await Promise.all([use('db'), use('user')]);
     const db = pair[0], user = pair[1];
     if (!db || !user || typeof user.id !== 'function') return;

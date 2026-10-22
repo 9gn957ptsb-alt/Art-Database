@@ -372,6 +372,7 @@ Never: a password typed into 5s, a scraped login, or a browser extension.
     "kind": "object",            // image | object | space | surface | colour
     "work": "joris-laarman-bone-armchair-1",   // Artsy artwork slug
     "url": "https://www.artsy.net/artwork/joris-laarman-bone-armchair-1",
+    "cdn": "https://d32dm0rphc51dk.cloudfront.net/WA3Bfn0gtjXKvX_E_iVdTQ/large.jpg",   // the work's image on Artsy's CDN as artworks.db stores it ('large'), on every card whose work has one; the hub page shows it
     "title": "\"Bone\" Armchair",
     "artist": "Joris Laarman",
     "date": "2007",
@@ -517,6 +518,7 @@ FiveS.path(state, deck, now) -> [{key, step, label, why, done, next}]   // the e
   "format": "5s-seed", "version": 1, "code": "5S-4F2A-9C1E", "made": "2026-10-21",
   "counts": {"judged": 75, "kept": 38, "passed": 37, "turns": 3},
   "kept":   [{"work": "joris-laarman-bone-armchair-1", "kind": "object", "ms": 1840}],
+            // each kept work also carries "image" (its deck "cdn", or null) and "url" (its Artsy page): public addresses for the hub page
   "passed": [{"work": "…", "kind": "colour"}],
   "palette": {"kept": ["#…"], "passed": ["#…"]},
   "surfaces": [{"work": "…", "crop": [0.41, 0.22, 0.25, 0.25]}],

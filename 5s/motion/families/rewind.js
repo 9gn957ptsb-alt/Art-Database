@@ -43,12 +43,36 @@
   function ribbon(c, p, pal, rt, alpha) { if (p.ribbon) M.ribbon(c, rt || 0, { colours: pal.ribbon, alpha: alpha == null ? 1 : alpha }); }
   function still(ctx, p, pal) { ribbon(ctx, p, pal, 0, 1); five(ctx, p, pal); ess(ctx, p, pal); }
 
-  // a ghost's colours: the letters' own, paled toward the background (or one tint)
+  // a ghost: an onion skin (the letters' outline, as an animator's onion-skinned frames), a blur (a pale filled
+  // copy, a motion smear) or a violet onion skin
   function ghostColours(p, pal) {
     const pale = (stops, k) => stops.map((s) => (Array.isArray(s) ? [s[0], M.mix(s[1], pal.bg, k)] : M.mix(s, pal.bg, k)));
-    if (p.ghost === 'violet') { const v = M.mix(pal.iris, pal.bg, 0.15); return { bar: [v], body: [v], s: [v] }; }
-    if (p.ghost === 'ink') { const v = M.mix(pal.ink, pal.bg, 0.25); return { bar: [v], body: [v], s: [v] }; }
-    return { bar: pale(pal.bar, 0.25), body: pale(pal.body, 0.25), s: pale(pal.s, 0.25) };
+    if (p.ghost === 'violet') { const v = pal.name === 'ink' || pal.name === 'paper' ? pal.ink : pal.iris; return { bar: [v], body: [v], s: [v] }; }
+    if (p.ghost === 'blur') return { bar: pale(pal.bar, 0.25), body: pale(pal.body, 0.25), s: pale(pal.s, 0.25) };
+    return { bar: pal.bar, body: pal.body, s: pal.s };
+  }
+  // P: {x, y, r, k} for the 5 and {sx, sy, sr, sk} for the s
+  function ghost(ctx, p, pal, P, alpha) {
+    const gc = ghostColours(p, pal);
+    if (p.ghost === 'blur') {
+      M.layer(ctx, { alpha }, (c) => {
+        place(c, C, P.x, P.y, P.r, P.k, (cc) => five(cc, p, gc));
+        place(c, C, P.sx, P.sy, P.sr, P.sk, (cc) => ess(cc, p, gc));
+      });
+      return;
+    }
+    const line = 9;
+    const thin = { weight: p.weight };
+    M.layer(ctx, { alpha, composite: 'source-over' }, (c) => {
+      place(c, C, P.x, P.y, P.r, P.k, (cc) => five(cc, p, gc));
+      place(c, C, P.sx, P.sy, P.sr, P.sk, (cc) => ess(cc, p, gc));
+      c.globalCompositeOperation = 'destination-out';
+      place(c, C, P.x, P.y, P.r, P.k, (cc) => {
+        M.stroke(cc, PTS.body, { width: M.widths.body * thin.weight - 2 * line / P.k, colours: '#000' });
+        M.stroke(cc, PTS.bar, { width: M.widths.bar * thin.weight - 2 * line / P.k, colours: '#000' });
+      });
+      place(c, C, P.sx, P.sy, P.sr, P.sk, (cc) => M.stroke(cc, PTS.s, { width: M.widths.s * thin.weight - 2 * line / P.sk, colours: '#000' }));
+    });
   }
 
   // the S the gesture rode (as in Swipe): offsets from rest for a gesture to the right; x mirrors for left
@@ -71,92 +95,97 @@
     return { x: dir * x, y, r: dir * ((0.05 + 0.2 * I) * lift + 0.3 * ang * M.smoothstep(0, 0.4, Math.abs(q)) * Math.sign(q)), k: 1 - 0.1 * Math.max(0, lift) };
   }
 
+  // ghosts of the instants just left behind, spaced along the way back and closing up as the mark lands
+  function ghostsAt(ctx, p, pal, n, pose, alphaOf) {
+    for (let g = n; g >= 1; g--) {
+      const P = pose(g);
+      if (!P) continue;
+      const al = alphaOf(g);
+      if (al >= 0.01) ghost(ctx, p, pal, P, al);
+    }
+  }
+
   function retrace(ctx, t, p, env, pal, dir) {
     const I = p.intensity, e = M.easing(p.easing);
     const span = env.view.x1 - env.view.x0;
-    const curve = sCurve(span * (0.55 + 0.35 * I), 50 + 100 * I);
+    const curve = sCurve(span * (0.3 + 0.2 * I), 40 + 80 * I);
     // back from the edge (q = 1) to rest (q = 0); the user's easing shapes the return, overshoot included
-    const q = (tt) => 1 - e(seg(tt, 0, 0.82));
-    const lagS = 0.06;
-    const gc = ghostColours(p, pal);
-    const n = Math.round(p.ghosts);
-    for (let g = n; g >= 1; g--) {   // ghosts of the instants just passed: further out, paler, older
-      const tg = t - g * 0.045;
-      if (tg < -0.2) continue;
-      const qg = q(Math.max(0, tg)) + (tg < 0 ? -tg * 0.6 : 0), now = q(t);
-      const spread = Math.min(1, Math.abs(qg - now) * 5);
-      const al = (0.42 - 0.3 * (g / (n + 1))) * spread * (1 - M.smoothstep(0.7, 0.95, t));
-      if (al < 0.01) continue;
-      const P5 = poseAt(curve, qg, dir, I), PS = poseAt(curve, q(Math.max(0, tg - lagS)) + (tg < lagS ? (lagS - tg) * 0.6 : 0), dir, I);
-      M.layer(ctx, { alpha: al }, (c) => {
-        place(c, C, P5.x, P5.y, P5.r, P5.k, (cc) => five(cc, p, gc));
-        place(c, C, PS.x, PS.y, PS.r, PS.k, (cc) => ess(cc, p, gc));
-      });
-    }
-    const P5 = poseAt(curve, q(t), dir, I), PS = poseAt(curve, q(t - lagS) + (t < lagS ? (lagS - t) * 0.6 : 0), dir, I);
-    const PR = poseAt(curve, q(t - 2 * lagS) + (t < 2 * lagS ? (2 * lagS - t) * 0.6 : 0), dir, I);
-    place(ctx, C, PR.x, PR.y, PR.r, PR.k, (c) => ribbon(c, p, pal, -0.2 * I * (1 - e(seg(t, 0.1, 1))), 1));
+    // the 5 is home by t = 0.8, the s a beat later (0.86), the ribbon last (0.92): then it holds, still
+    const x = seg(t, 0, 0.8), xs = seg(t, 0.06, 0.86), xr = seg(t, 0.12, 0.92);
+    const q = (xx) => 1 - e(M.clamp(xx, 0, 1));
+    const n = Math.round(p.ghosts), gap = 0.15 + 0.05 * I;
+    const close = Math.pow(1 - x, 0.6);
+    ghostsAt(ctx, p, pal, n, (g) => {
+      const qg = q(x) + g * gap * close, qs = q(xs) + g * gap * close;
+      if (qg > 1.25) return null;
+      const P = poseAt(curve, qg, dir, I), S = poseAt(curve, qs, dir, I);
+      return { x: P.x, y: P.y, r: P.r, k: P.k, sx: S.x, sy: S.y, sr: S.r, sk: S.k };
+    }, (g) => (0.7 - 0.5 * (g / (n + 1))) * close);
+    const P5 = poseAt(curve, q(x), dir, I), PS = poseAt(curve, q(xs), dir, I), PR = poseAt(curve, q(xr), dir, I);
+    place(ctx, C, PR.x, PR.y, PR.r, PR.k, (c) => ribbon(c, p, pal, -0.2 * I * (1 - e(xr)), 1));
     place(ctx, C, P5.x, P5.y, P5.r, P5.k, (c) => five(c, p, pal));
     place(ctx, C, PS.x, PS.y, PS.r, PS.k, (c) => ess(c, p, pal));
   }
 
+  // reel: the gesture played back frame by frame, like film wound back by hand: the mark clicks back along
+  // the S in n steps (each a short eased move, then a hold), each frame it leaves stays a moment as a ghost
   function reel(ctx, t, p, env, pal, dir) {
     const I = p.intensity, e = M.easing(p.easing);
     const span = env.view.x1 - env.view.x0;
-    const curve = sCurve(span * (0.5 + 0.3 * I), 40 + 90 * I);
+    const curve = sCurve(span * (0.34 + 0.2 * I), 40 + 80 * I);
     const n = Math.max(2, Math.round(p.ghosts));
-    const gc = ghostColours(p, pal);
-    // frame i sits at q_i = i / n along the gesture; the strip reels in from the far end, each frame
-    // sliding into its neighbour's place, overlapping, until frame 0 (the mark) is all that is left
-    const reelIn = (tt) => M.ease.inOutSine(seg(tt, 0.04, 0.78));
-    const head = reelIn(t) * n;   // how many frames have been reeled in
-    for (let i = n; i >= 1; i--) {
-      const base = i / n;
-      const pull = M.clamp(head - (n - i), 0, 1);           // this frame's slide toward rest
-      const qi = base * (1 - e(M.clamp(head / n, 0, 1)));   // the whole strip shortens as it is reeled
-      const al = (0.55 - 0.35 * base) * (1 - pull) * (1 - M.smoothstep(0.75, 0.95, t));
-      if (al < 0.01) continue;
-      const P = poseAt(curve, qi, dir, I * 0.7);
-      M.layer(ctx, { alpha: al }, (c) => place(c, C, P.x, P.y, P.r, P.k, (cc) => { five(cc, p, gc); ess(cc, p, gc); }));
+    const END = 0.72;
+    const stepOf = (tt) => {   // position after the clicks so far: 1 (the edge) -> 0 (rest)
+      const x = M.clamp(tt / END, 0, 1) * n, k = Math.min(n - 1, Math.floor(x)), f = x - k;
+      const move = M.ease.inOutCubic(M.clamp(f / 0.45, 0, 1));
+      return 1 - (k + (x >= n ? 1 : move)) / n;
+    };
+    const qNow = t < END ? stepOf(t) : 0;
+    // the frames left behind: one at each step already passed, fading over about two steps
+    const stepT = END / n;
+    for (let k = n; k >= 1; k--) {
+      const qk = k / n, leftAt = (n - k) * stepT + 0.45 * stepT * 0.5;
+      const age = (t - leftAt) / (2.2 * stepT);
+      if (age <= 0 || age >= 1 || qk <= qNow + 1e-6) continue;
+      const al = 0.5 * (1 - age) * (1 - age);
+      const P = poseAt(curve, qk, dir, I);
+      ghost(ctx, p, pal, { x: P.x, y: P.y, r: P.r, k: P.k, sx: P.x, sy: P.y, sr: P.r, sk: P.k }, al * 1.4);
     }
-    // the mark itself: present from the start, nudged out along the S, pulled home as the strip reels
-    const qm = 0.18 * (1 - e(seg(t, 0.1, 1)));
-    const P = poseAt(curve, qm, dir, I * 0.7), PS = poseAt(curve, 0.18 * (1 - e(seg(t, 0.16, 1))), dir, I * 0.7);
-    place(ctx, C, P.x, P.y, P.r, P.k, (c) => ribbon(c, p, pal, -0.15 * I * (1 - e(seg(t, 0.2, 1))), M.smoothstep(0.2, 0.7, t) * 0.7 + 0.3));
-    place(ctx, C, P.x, P.y, P.r, P.k, (c) => five(c, p, pal));
-    place(ctx, C, PS.x, PS.y, PS.r, PS.k, (c) => ess(c, p, pal));
+    // after the last click the user's easing settles it (a touch past and back for outBack)
+    const settle = seg(t, END, 1);
+    // the landing: a small bounce in scale shaped by the user's easing (outBack: up a touch and back)
+    const P = poseAt(curve, qNow, dir, I);
+    const land = seg(settle, 0, 0.85);
+    const k5 = t < END ? 1 : 1 + (0.035 + 0.035 * I) * (1 - e(land)) * Math.sin(Math.PI * Math.min(1, land * 2.2));
+    const rt = -0.18 * I * qNow;
+    place(ctx, C, P.x, P.y, P.r, P.k * k5, (c) => { ribbon(c, p, pal, rt, 1); five(c, p, pal); ess(c, p, pal); });
   }
 
   function unwind(ctx, t, p, env, pal, dir) {
     const I = p.intensity, e = M.easing(p.easing);
-    const turn = dir * (0.7 + 1.6 * I);                  // how far the gesture had turned it (clockwise for right)
-    const ang = (tt) => turn * (1 - e(seg(tt, 0, 0.85)));
-    const scl = (tt) => 1 - (0.1 + 0.08 * I) * Math.sin(Math.PI * seg(tt, 0, 0.85));
+    const turn = dir * (0.35 + 0.6 * I);                // how far the gesture had turned it (clockwise for right)
+    const x = seg(t, 0, 0.8), xs = seg(t, 0.05, 0.85), xr = seg(t, 0.1, 0.9);   // the 5, the s, the ribbon
+    const ang = (xx) => turn * (1 - e(M.clamp(xx, 0, 1)));
+    const scl = (xx) => 1 - (0.08 + 0.08 * I) * Math.sin(Math.PI * M.clamp(xx, 0, 1));
     const o = A.letters;
-    const gc = ghostColours(p, pal);
-    const n = Math.round(p.ghosts);
-    for (let g = n; g >= 1; g--) {
-      const tg = t - g * 0.035;
-      const ag = tg < 0 ? turn - tg * turn * 0.5 : ang(tg);
-      const spread = Math.min(1, Math.abs(ag - ang(t)) * 3);
-      const al = (0.36 - 0.26 * (g / (n + 1))) * spread;
-      if (al < 0.01) continue;
-      M.layer(ctx, { alpha: al }, (c) => place(c, o, 0, 0, ag, scl(Math.max(0, tg)), (cc) => { five(cc, p, gc); ess(cc, p, gc); }));
-    }
-    // the undo arc: a bright stroke winding back round the mark, its head where the mark's turn is
-    const a1 = ang(t), arcA = 1 - M.smoothstep(0.55, 0.9, t);
-    if (arcA > 0.01 && Math.abs(turn) > 0.01) {
-      const R = 470 + 30 * I, base = -Math.PI / 2 - 0.4 * dir;
-      const from = base + a1, to = base + a1 + Math.min(Math.abs(turn - a1) + 0.5, 2.6) * dir;
+    const n = Math.round(p.ghosts), gap = dir * (0.12 + 0.06 * I), close = Math.pow(1 - x, 0.6);
+    ghostsAt(ctx, p, pal, n, (g) => {
+      const a = ang(x) + g * gap * close, as = ang(xs) + g * gap * close, k = scl(x);
+      return { x: 0, y: 0, r: a, k, sx: 0, sy: 0, sr: as, sk: k };
+    }, (g) => (0.6 - 0.45 * (g / (n + 1))) * close);
+    // the undo arc: a bright stroke winding back round the mark, its head leading the turn home
+    const a1 = ang(x), arcA = 1 - M.smoothstep(0.5, 0.88, t);
+    if (arcA > 0.01) {
+      const R = 480 + 20 * I, base = -Math.PI / 2 - 0.5 * dir;
+      const from = base + a1, to = base + a1 + (0.9 + 1.2 * I) * dir * (0.4 + 0.6 * close);
       const pts = [];
       for (let i = 0; i <= 48; i++) { const a = M.lerp(from, to, i / 48); pts.push([o[0] + R * Math.cos(a), o[1] + R * Math.sin(a)]); }
       const col = pal.name === 'ink' || pal.name === 'paper' ? pal.ink : pal.iris;
-      M.stroke(ctx, pts.reverse(), { width: 26 + 10 * I, colours: [[0, M.mix(col, pal.bg, 0.9)], [0.6, M.mix(col, pal.bg, 0.4)], [1, col]], alpha: arcA * (0.5 + 0.4 * I) });
+      M.stroke(ctx, pts.reverse(), { width: 24 + 10 * I, colours: [[0, M.mix(col, pal.bg, 0.92)], [0.6, M.mix(col, pal.bg, 0.4)], [1, col]], alpha: arcA * (0.55 + 0.4 * I) });
     }
-    const aS = ang(t - 0.05), aR = ang(t - 0.1);
-    place(ctx, o, 0, 0, aR, scl(Math.max(0, t - 0.1)), (c) => ribbon(c, p, pal, -0.25 * I * (1 - e(seg(t, 0.1, 1))), 1));
-    place(ctx, o, 0, 0, a1, scl(t), (c) => five(c, p, pal));
-    place(ctx, o, 0, 0, aS, scl(Math.max(0, t - 0.05)), (c) => ess(c, p, pal));
+    place(ctx, o, 0, 0, ang(xr), scl(xr), (c) => ribbon(c, p, pal, -0.25 * I * (1 - e(xr)), 1));
+    place(ctx, o, 0, 0, a1, scl(x), (c) => five(c, p, pal));
+    place(ctx, o, 0, 0, ang(xs), scl(xs), (c) => ess(c, p, pal));
   }
 
   Motion.register({
@@ -169,8 +198,8 @@
     params: {
       duration: { default: 520, min: 250, max: 1600, step: 10 },
       style: { default: 'retrace', options: ['retrace', 'reel', 'unwind'] },
-      ghosts: { default: 5, min: 2, max: 8, step: 1 },
-      ghost: { default: 'mark', options: ['mark', 'violet', 'ink'] },
+      ghosts: { default: 4, min: 2, max: 8, step: 1 },
+      ghost: { default: 'onion', options: ['onion', 'blur', 'violet'] },   // outlines, pale smears, or violet outlines
       easing: { default: 'outBack', options: M.EASES.slice() }
     },
     reduced: 'fade',

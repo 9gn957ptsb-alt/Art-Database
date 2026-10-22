@@ -635,20 +635,23 @@ test('setCandidates: only kept things for the slot, three at a time, paging', ()
 
 test('path: milestones flip as the state grows; exactly one is next', () => {
   const keys = ['sort', 'bring', 'kinds', 'set', 'turn', 'note', 'seed', 'habit'];
+  // Your hub (SPEC.md): the four hub milestones follow the eight, which are unchanged.
+  const all = keys.concat(['github', 'hub', 'saved', 'opened']);
   const check = (st, expectDone) => {
     const p = F.path(st, deck, NOW);
-    assert.deepEqual(p.map((m) => m.key), keys);
+    assert.deepEqual(p.slice(0, 8).map((m) => m.key), keys);
+    assert.deepEqual(p.map((m) => m.key), all);
     for (const m of p) for (const f of ['key', 'step', 'label', 'why', 'done', 'next']) assert.ok(f in m, f);
     assert.deepEqual(p.filter((m) => m.done).map((m) => m.key), expectDone);
     const nexts = p.filter((m) => m.next);
-    if (expectDone.length < 8) {
+    if (expectDone.length < all.length) {
       assert.equal(nexts.length, 1);
-      assert.equal(nexts[0].key, keys.find((k) => !expectDone.includes(k)));
+      assert.equal(nexts[0].key, all.find((k) => !expectDone.includes(k)));
     } else assert.equal(nexts.length, 0);
     return p;
   };
   const p0 = check(F.newState(), []);
-  assert.deepEqual(p0.map((m) => m.step), ['Sort', 'Split', 'Split', 'Set', 'See', 'See', 'Seed', 'Sort']);
+  assert.deepEqual(p0.slice(0, 8).map((m) => m.step), ['Sort', 'Split', 'Split', 'Set', 'See', 'See', 'Seed', 'Sort']);
   assert.equal(p0[0].label, 'Sort your first five');
   assert.equal(p0[1].why, 'The artist brought 5,021 works saved on Artsy home into one database.');
   assert.equal(p0[3].label, "Pin a set and say what it's for");
@@ -712,14 +715,17 @@ test('exportSeed: works by slug, brought things by name; no ids, images or accou
   assert.deepEqual(seed.speed, { medianMs: P.medianMs });
   // nothing that identifies a card, an image or a person
   const ids = new Set([...deck.cards.map((c) => c.id), ...ex.own.map((o) => o.id)]);
+  // The one exception (Your hub): a kept work's public Artsy addresses, seed.kept[i].image and .url.
+  const publicAddress = (keyPath) => /^seed\.kept\[\d+\]\.(image|url)$/.test(keyPath);
   const walk = (v, keyPath) => {
     if (typeof v === 'string') {
       assert.ok(!ids.has(v), 'id leaked at ' + keyPath + ': ' + v);
+      if (publicAddress(keyPath)) { assert.match(v, /^https:\/\/[^@\s]+$/); return; }
       assert.ok(!/^data:|^img\/|https?:|@/.test(v), 'leak at ' + keyPath + ': ' + v);
     } else if (Array.isArray(v)) v.forEach((x, i) => walk(x, keyPath + '[' + i + ']'));
     else if (v && typeof v === 'object') {
       for (const [k, x] of Object.entries(v)) {
-        assert.ok(!['id', 'img', 'imgFrom', 'thumb', 'url', 'email', 'user', 'uid', 'account'].includes(k), 'key ' + k);
+        assert.ok(publicAddress(keyPath + '.' + k) || !['id', 'img', 'imgFrom', 'thumb', 'url', 'email', 'user', 'uid', 'account'].includes(k), 'key ' + k);
         walk(x, keyPath + '.' + k);
       }
     }
@@ -863,4 +869,124 @@ test('philosophy: process materials read as things, and one brought thing is "it
   // other materials keep the "works in" form
   const wood = F.philosophy(Object.assign({}, P, { negative: [{ key: 'mat:wood', label: 'Wood', kept: 0, n: 4, lift: -0.5 }] }), deck);
   assert.ok(wood.some((l) => l === 'What you keep least: works in wood (0 of 4).'), wood.join('\n'));
+});
+
+// --------------------------------------------------------------- your hub (SPEC.md "Your hub")
+
+const HUB_KEYS = ['github', 'hub', 'saved', 'opened'];
+
+test('hub API: setHub and the hub milestones are exported; newState stays as it was', () => {
+  assert.equal(typeof F.setHub, 'function');
+  assert.ok(Object.isFrozen(F));
+  assert.equal(F.MILESTONES.length, 8, 'the eight are unchanged');
+  assert.deepEqual(F.HUB_MILESTONES.map((m) => m.key), HUB_KEYS);
+  assert.deepEqual(F.HUB_MODES, ['links', 'api']);
+  assert.ok(Object.isFrozen(F.HUB_MILESTONES) && F.HUB_MILESTONES.every(Object.isFrozen));
+  assert.ok(!('hub' in F.newState()), 'state.hub is absent until the first setHub');
+});
+
+test('setHub: tidies each field, stamps times, records the saved seed code; never mutates', () => {
+  const base = deepFreeze(judgeAll(F.newState(), warmCoolTwenty()).state);
+  const t = NOW + 7000;
+  let st = F.setHub(base, { user: '  @ada-lovelace ', mode: 'links' }, t);
+  assert.notEqual(st, base);
+  assert.equal(base.hub, undefined);
+  assert.deepEqual(st.hub, { user: 'ada-lovelace', name: null, private: false, mode: 'links', madeAt: null, savedAt: null, savedCode: null });
+  // nothing else in the state changes
+  const { hub, ...rest } = st;
+  assert.deepEqual(rest, base);
+  st = F.setHub(deepFreeze(st), { name: ' ada-lovelace.github.io ', private: true, mode: 'api', madeAt: true }, t);
+  assert.equal(st.hub.user, 'ada-lovelace', 'fields the patch leaves out are kept');
+  assert.equal(st.hub.name, 'ada-lovelace.github.io');
+  assert.equal(st.hub.private, true);
+  assert.equal(st.hub.mode, 'api');
+  assert.equal(st.hub.madeAt, S(t));
+  // an unknown mode is ignored; long values are cut to GitHub's limits
+  st = F.setHub(st, { mode: 'git', user: 'x'.repeat(60), name: 'n'.repeat(140) }, t);
+  assert.equal(st.hub.mode, 'api');
+  assert.equal(st.hub.user.length, 39);
+  assert.equal(st.hub.name.length, 100);
+  // savedAt: true records now and the seed code that was saved
+  st = F.setHub(st, { user: 'ada', name: 'ada.github.io', savedAt: true }, t + 1000);
+  assert.equal(st.hub.savedAt, S(t + 1000));
+  assert.equal(st.hub.savedCode, F.seedCode(base));
+  // a millisecond timestamp is taken as milliseconds; seconds as seconds
+  assert.equal(F.setHub(st, { madeAt: NOW }, t).hub.madeAt, S(NOW));
+  assert.equal(F.setHub(st, { madeAt: S(NOW) - 60 }, t).hub.madeAt, S(NOW) - 60);
+  // an explicit savedCode wins; null and '' clear
+  assert.equal(F.setHub(st, { savedAt: true, savedCode: '5S-0000-0001' }, t).hub.savedCode, '5S-0000-0001');
+  const cleared = F.setHub(st, { user: '', name: null, madeAt: null, savedAt: null }, t);
+  assert.deepEqual(cleared.hub, { user: null, name: null, private: true, mode: 'api', madeAt: null, savedAt: null, savedCode: null });
+  // an empty or missing patch changes nothing but still returns a new state
+  const same = F.setHub(st, null, t);
+  assert.notEqual(same, st);
+  assert.deepEqual(same.hub, st.hub);
+  // it survives migrate (saved JSON round trip) and leaves the seed code alone
+  assert.deepEqual(F.migrate(JSON.parse(JSON.stringify(st))).hub, st.hub);
+  assert.equal(F.seedCode(st), F.seedCode(base));
+});
+
+test('path: twelve milestones, the hub four after the eight with their exact words', () => {
+  const p = F.path(F.newState(), deck, NOW);
+  assert.equal(p.length, 12);
+  assert.deepEqual(p.slice(8).map((m) => [m.key, m.step, m.label, m.why]), [
+    ['github', 'Seed', 'Have a GitHub account', 'The artist kept everything in one GitHub repository from the first evening.'],
+    ['hub', 'Seed', 'Make your hub', "The artist's repository was made in four minutes, before the first session."],
+    ['saved', 'Seed', 'Save your seed to your hub', "The artist's database grew by saving to it, every day."],
+    ['opened', 'Seed', "Open your hub's address", "The artist's site went live on GitHub Pages on 14 Sep."],
+  ]);
+  for (const m of p) assert.ok(!/\b(he|she|his|her|him|hers)\b/i.test(m.label + ' ' + m.why), m.key);
+  // the eight are exactly the old eight
+  assert.deepEqual(p.slice(0, 8).map((m) => ({ key: m.key, step: m.step, label: m.label, why: m.why })),
+    F.MILESTONES.map((m) => ({ key: m.key, step: m.step, label: m.label, why: m.why })));
+  // they flip with setHub and markSeen("hub-opened"), in any order, independently of the eight
+  const hubDone = (st) => F.path(st, deck, NOW).slice(8).filter((m) => m.done).map((m) => m.key);
+  let st = F.newState();
+  assert.deepEqual(hubDone(st), []);
+  st = F.setHub(st, { user: 'ada' }, NOW);
+  assert.deepEqual(hubDone(st), ['github']);
+  st = F.setHub(st, { name: 'ada.github.io', madeAt: true }, NOW);
+  assert.deepEqual(hubDone(st), ['github', 'hub']);
+  st = F.markSeen(st, 'hub-opened');
+  assert.deepEqual(hubDone(st), ['github', 'hub', 'opened']);
+  st = F.setHub(st, { savedAt: true }, NOW);
+  assert.deepEqual(hubDone(st), HUB_KEYS);
+  // the next is still the first not done of all twelve: here the eight come first
+  assert.equal(F.path(st, deck, NOW).find((m) => m.next).key, 'sort');
+  st = F.markSeen(st, 'path:saved');
+  assert.equal(F.path(st, deck, NOW).find((m) => m.key === 'saved').announced, true);
+  // clearing the user undoes the first step
+  assert.deepEqual(hubDone(F.setHub(st, { user: null }, NOW)), ['hub', 'saved', 'opened']);
+  // the example taste has no hub: six of twelve done, the seed next, no hub milestone done
+  const ex = F.exampleState(deck, NOW);
+  const pe = F.path(ex, deck, NOW);
+  assert.equal(pe.filter((m) => m.done).length, 6);
+  assert.equal(pe.find((m) => m.next).key, 'seed');
+  assert.ok(pe.slice(8).every((m) => !m.done && !m.next && !m.announced));
+  assert.equal(ex.hub, undefined);
+});
+
+test('exportSeed: kept works carry their Artsy image and page; passed works do not; the hub never goes in', () => {
+  const ex = F.exampleState(deck, NOW);
+  const seed = F.exportSeed(ex, deck, NOW);
+  const byWork = new Map(deck.cards.map((c) => [c.work, c]));
+  assert.ok(seed.kept.length > 10);
+  for (const k of seed.kept) {
+    const c = byWork.get(k.work);
+    assert.deepEqual(Object.keys(k), ['work', 'kind', 'ms', 'image', 'url']);
+    assert.equal(k.image, c.cdn);
+    assert.equal(k.url, c.url);
+    assert.match(k.image, /^https:\/\/images\.example\.org\/fixture\//);
+    assert.match(k.url, /^https:\/\/www\.artsy\.net\/artwork\//);
+  }
+  for (const k of seed.passed) assert.deepEqual(Object.keys(k), ['work', 'kind']);
+  // a deck without image addresses gives null, not a made-up address
+  const bare = { ...deck, cards: deck.cards.map(({ cdn, ...c }) => c) };
+  const s0 = F.exportSeed(ex, bare, NOW);
+  assert.ok(s0.kept.every((k) => k.image === null && /^https:\/\/www\.artsy\.net\//.test(k.url)));
+  // with a hub set (a GitHub username, a hub name), the seed is exactly the same
+  const withHub = F.setHub(F.markSeen(ex, 'hub-opened'), { user: 'secret-handle', name: 'secret-handle.github.io', madeAt: true, savedAt: true }, NOW);
+  const s1 = F.exportSeed(withHub, deck, NOW);
+  assert.deepEqual(s1, seed);
+  assert.ok(!JSON.stringify(s1).includes('secret-handle'));
 });

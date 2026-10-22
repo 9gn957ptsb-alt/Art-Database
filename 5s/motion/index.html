@@ -1,0 +1,188 @@
+<title>5s Motion Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="lab.css" data-inline>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Martian+Mono:wght@400;500&amp;family=Unbounded:wght@500;600&amp;display=swap">
+
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8.5 5.8v12.4c0 .8.9 1.3 1.6.8l9.4-6.2c.6-.4.6-1.2 0-1.6l-9.4-6.2c-.7-.5-1.6 0-1.6.8z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5.5" width="4" height="13" rx="1.2" fill="currentColor"/><rect x="13.5" y="5.5" width="4" height="13" rx="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24"><path d="M5.5 12a6.5 6.5 0 1 0 2-4.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 4.5v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M7 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18 6.8v10.4c0 .7-.8 1.1-1.4.7l-7.3-5.2c-.5-.4-.5-1.1 0-1.4l7.3-5.2c.6-.4 1.4 0 1.4.7z" fill="currentColor"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M17 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 6.8v10.4c0 .7.8 1.1 1.4.7l7.3-5.2c.5-.4.5-1.1 0-1.4L7.4 6.1C6.8 5.7 6 6.1 6 6.8z" fill="currentColor"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.5l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-star-on" viewBox="0 0 24 24"><path d="M12 3.6l2.5 5.3 5.8.7-4.3 4 1.1 5.7L12 16.5l-5.1 2.8 1.1-5.7-4.3-4 5.8-.7z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/><circle cx="15" cy="9" r="1.5" fill="currentColor"/><circle cx="9" cy="15" r="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 5.5v-.2A1.8 1.8 0 0 0 13.7 3.5H6.3a1.8 1.8 0 0 0-1.8 1.8v7.4a1.8 1.8 0 0 0 1.8 1.8h.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4.5v10m-4.2-4.2L12 14.5l4.2-4.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 15.5v2.2c0 1 .8 1.8 1.8 1.8h10.4c1 0 1.8-.8 1.8-1.8v-2.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.6" fill="currentColor"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M5.5 12a6.5 6.5 0 1 0 6.5-6.5H8.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M10.5 3 8 5.5l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="lab" id="lab" data-view="moments">
+  <header class="top">
+    <a class="brand" href="#moments" aria-label="5s Motion Lab: moments">
+      <img class="brand-logo" src="logo.webp" alt="" width="28" height="28">
+      <span class="brand-word">Motion Lab</span>
+    </a>
+    <nav class="modes" aria-label="Lab views">
+      <a class="mode" href="#moments" data-mode="moments">Moments</a>
+      <a class="mode" href="#explore" data-mode="explore">Explore</a>
+      <a class="mode" href="#board" data-mode="board">Board</a>
+    </nav>
+    <div class="top-end">
+      <p class="savestate" id="savestate"></p>
+      <div class="handback handback-top" role="group" aria-label="Hand back">
+        <button type="button" class="btn btn-quiet" data-act="copy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Copy spec</button>
+        <button type="button" class="btn btn-quiet" data-act="save-spec" data-needs="downloads" hidden><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>Save spec</button>
+        <button type="button" class="btn btn-quiet" data-act="record" data-needs="record" hidden><svg class="ic" aria-hidden="true"><use href="#i-rec"/></svg><span class="rec-label">Record</span></button>
+      </div>
+      <button type="button" class="btn pauseall" id="pause-all" data-act="pause-all"><svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg><span>Pause all</span></button>
+    </div>
+  </header>
+
+  <div class="cols" id="cols">
+    <aside class="rail" aria-labelledby="rail-h">
+      <h2 class="rail-h" id="rail-h">Moments <span class="rail-count" id="rail-count"></span></h2>
+      <ol class="moments" id="moment-list"></ol>
+    </aside>
+
+    <main class="centre" id="centre">
+      <div class="moment-pick">
+        <label class="lbl" for="moment-select">Moment</label>
+        <select id="moment-select" class="select"></select>
+      </div>
+
+      <section class="view view-stage" id="view-moments" aria-labelledby="stage-h">
+        <div class="stage-head">
+          <div class="stage-title">
+            <h1 class="h1" id="stage-h">Opening 5s</h1>
+            <p class="moment-meta" id="moment-meta"></p>
+            <p class="stage-note" id="stage-note" hidden></p>
+          </div>
+          <p class="variant-line" id="variant-line"></p>
+        </div>
+
+        <div class="stage" id="stage">
+          <canvas id="stage-canvas" role="img" aria-label="The 5s mark"></canvas>
+        </div>
+
+        <div class="transport" role="group" aria-label="Playback">
+          <div class="transport-row">
+            <button type="button" class="play" id="t-play" data-act="play" aria-label="Pause"><svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg></button>
+            <button type="button" class="icon-btn" data-act="replay" aria-label="Replay from the start" title="Replay"><svg class="ic" aria-hidden="true"><use href="#i-replay"/></svg></button>
+            <button type="button" class="icon-btn" data-act="frame-prev" aria-label="Previous frame" title="Previous frame (←)"><svg class="ic" aria-hidden="true"><use href="#i-prev"/></svg></button>
+            <button type="button" class="icon-btn" data-act="frame-next" aria-label="Next frame" title="Next frame (→)"><svg class="ic" aria-hidden="true"><use href="#i-next"/></svg></button>
+            <input type="range" class="scrub" id="t-scrub" min="0" max="1000" step="1" value="0" aria-label="Scrub: time in the animation">
+            <output class="time" id="t-time" for="t-scrub">0.00 / 0.00 s</output>
+          </div>
+          <div class="transport-row transport-opts">
+            <div class="seg" role="group" aria-label="Speed">
+              <button type="button" data-act="speed" data-value="0.25" aria-pressed="false">0.25×</button>
+              <button type="button" data-act="speed" data-value="0.5" aria-pressed="false">0.5×</button>
+              <button type="button" data-act="speed" data-value="1" aria-pressed="true">1×</button>
+              <button type="button" data-act="speed" data-value="2" aria-pressed="false">2×</button>
+            </div>
+            <button type="button" class="toggle" id="t-loop" data-act="loop" role="switch" aria-checked="true"><span class="knob" aria-hidden="true"></span>Loop</button>
+            <div class="seg" role="group" aria-label="Background">
+              <button type="button" data-act="theme" data-value="light" aria-pressed="true">Light</button>
+              <button type="button" data-act="theme" data-value="dark" aria-pressed="false">Dark</button>
+            </div>
+            <div class="seg" role="group" aria-label="View">
+              <button type="button" data-act="app" data-value="mark" aria-pressed="true">Mark</button>
+              <button type="button" data-act="app" data-value="app" aria-pressed="false">In the app</button>
+            </div>
+            <button type="button" class="toggle" id="t-reduced" data-act="reduced" role="switch" aria-checked="false"><span class="knob" aria-hidden="true"></span>Reduced motion</button>
+          </div>
+          <p class="keys">Space play or pause · ← → one frame · [ ] start or end</p>
+        </div>
+
+        <div class="pick" id="pick">
+          <p class="pick-status" id="pick-status"></p>
+          <div class="pick-row">
+            <label class="visually-hidden" for="pick-note">Why this one? One line, optional</label>
+            <input type="text" class="input pick-note" id="pick-note" maxlength="120" placeholder="Why this one? (one line, optional)" autocomplete="off">
+            <button type="button" class="btn star-btn" data-act="star-stage" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg><span>Star</span></button>
+            <button type="button" class="btn btn-primary" id="pick-btn" data-act="pick">Use for Opening 5s</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="view view-explore" id="view-explore" aria-labelledby="explore-h" hidden>
+        <div class="explore-head">
+          <div>
+            <h1 class="h1" id="explore-h">Explore</h1>
+            <p class="explore-sub" id="explore-sub"></p>
+          </div>
+          <button type="button" class="btn" id="sheet-play" data-act="sheet-play"><svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg><span>Pause</span></button>
+        </div>
+        <div class="explore-bar">
+          <div class="seg" role="group" aria-label="What the sheet shows">
+            <button type="button" data-act="source" data-value="generate" aria-pressed="true">Generated</button>
+            <button type="button" data-act="source" data-value="all" aria-pressed="false">All families</button>
+            <button type="button" data-act="source" data-value="starred" aria-pressed="false">Starred <span class="count" id="star-count">0</span></button>
+          </div>
+          <form class="seedform" id="seedform">
+            <label class="lbl" for="batch-seed">Seed</label>
+            <input type="text" class="input mono" id="batch-seed" maxlength="16" autocomplete="off" spellcheck="false">
+            <button type="submit" class="btn">Use seed</button>
+            <button type="button" class="btn btn-primary" data-act="generate"><svg class="ic" aria-hidden="true"><use href="#i-dice"/></svg>Generate 12</button>
+          </form>
+        </div>
+        <ol class="sheet" id="sheet"></ol>
+        <p class="sheet-empty" id="sheet-empty" hidden></p>
+      </section>
+    </main>
+
+    <aside class="panel" id="panel" aria-labelledby="panel-h">
+      <h2 class="visually-hidden" id="panel-h">Family and parameters</h2>
+      <div class="fam">
+        <label class="lbl" for="family-select">Family</label>
+        <select id="family-select" class="select"></select>
+        <p class="fam-idea" id="fam-idea"></p>
+        <p class="fam-why" id="fam-why"></p>
+        <p class="fam-facts" id="fam-facts"></p>
+      </div>
+      <div class="params" id="params"></div>
+    </aside>
+  </div>
+
+  <section class="view view-board" id="view-board" aria-labelledby="board-h" hidden>
+    <div class="board-head">
+      <div>
+        <h1 class="h1" id="board-h">Board</h1>
+        <p class="board-sub">Every moment's pick playing at once: the app's motion system at a glance.</p>
+      </div>
+      <button type="button" class="btn" id="board-play" data-act="board-play"><svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg><span>Pause</span></button>
+    </div>
+    <ol class="board" id="board-grid"></ol>
+  </section>
+
+  <footer class="foot">
+    <div class="handback handback-foot" role="group" aria-label="Hand back">
+      <button type="button" class="btn btn-quiet" data-act="copy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Copy spec</button>
+      <button type="button" class="btn btn-quiet" data-act="save-spec" data-needs="downloads" hidden><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>Save spec</button>
+      <button type="button" class="btn btn-quiet" data-act="record" data-needs="record" hidden><svg class="ic" aria-hidden="true"><use href="#i-rec"/></svg><span class="rec-label">Record</span></button>
+    </div>
+    <p class="savestate savestate-foot" id="savestate-foot"></p>
+  </footer>
+
+  <div class="dialog-scrim" id="copy-dialog" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="copy-h">
+      <h2 class="dialog-h" id="copy-h">The spec</h2>
+      <p class="dialog-p">Copying isn't available here. The text is selected: copy it with your keyboard or the menu.</p>
+      <label class="visually-hidden" for="copy-text">Spec JSON</label>
+      <textarea class="copy-text mono" id="copy-text" readonly spellcheck="false"></textarea>
+      <div class="dialog-actions"><button type="button" class="btn btn-primary" data-act="copy-close">Done</button></div>
+    </div>
+  </div>
+
+  <p class="visually-hidden" id="live" aria-live="polite"></p>
+</div>
+
+<script src="marks.js"></script>
+<script src="families.js"></script>
+<script src="lab.js"></script>

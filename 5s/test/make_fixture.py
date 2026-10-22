@@ -68,6 +68,7 @@ for kind, letter, category, mats in KINDS:
         w, h = (512, 512) if kind == "surface" else (600, 720 if n % 2 else 520)
         card = {
             "id": cid, "kind": kind, "work": f"fixture-{cid}", "url": f"https://www.artsy.net/artwork/fixture-{cid}",
+            "cdn": f"https://images.example.org/fixture/{cid}/large.jpg",  # stands in for Artsy's CDN address
             "title": f"Fixture {kind} {n + 1}", "artist": f"Fixture Artist {len(cards) + 1}", "date": str(year),
             "year": year, "era": era, "category": category, "medium": ", ".join(mats),
             "materials": mats if warm else (["steel"] if kind == "object" else mats),
