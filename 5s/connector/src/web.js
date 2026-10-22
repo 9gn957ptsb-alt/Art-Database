@@ -166,7 +166,6 @@ export function checkAddress(text) {
   try { u = new URL(s); } catch { throw refusal('bad'); }
   if (u.protocol !== 'https:') throw refusal('not https');
   if (u.username || u.password) throw refusal('credentials');
-  if (u.port !== '') throw refusal('port');
   const host = u.hostname.replace(/\.$/, '');
   if (!host) throw refusal('bad');
   if (host.startsWith('[') || v6(host)) throw refusal(privateIp(host) ? 'private' : 'ip');
@@ -176,6 +175,7 @@ export function checkAddress(text) {
   if (labels.length < 2) throw refusal('host');
   if (!labels.every((l) => /^[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?$/.test(l))) throw refusal('host');
   if (!/^(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})$/.test(labels[labels.length - 1])) throw refusal('host');
+  if (u.port !== '') throw refusal('port');
   u.hash = '';
   return u;
 }
@@ -195,10 +195,9 @@ export const DOH = 'https://cloudflare-dns.com/dns-query';
  * asked: the caller refuses then (it never reads a site it could not check).
  */
 export function dohResolver(doFetch, timeoutMs) {
-  const ask = async (host, type) => {
+  const ask = (host, type) => withTimeout(timeoutMs || 5000, async (signal) => {
     const r = await doFetch(DOH + '?name=' + encodeURIComponent(host) + '&type=' + type, {
-      method: 'GET', headers: { accept: 'application/dns-json' }, redirect: 'manual',
-      signal: AbortSignal.timeout(timeoutMs || 5000),
+      method: 'GET', headers: { accept: 'application/dns-json' }, redirect: 'manual', signal,
     });
     if (!r.ok) throw new Error('DNS answered ' + r.status);
     const j = JSON.parse(await r.text());
@@ -206,7 +205,7 @@ export function dohResolver(doFetch, timeoutMs) {
     if (j.Status !== 0) throw new Error('DNS status ' + j.Status);
     const want = type === 'A' ? 1 : 28;
     return (Array.isArray(j.Answer) ? j.Answer : []).filter((a) => a && a.type === want).map((a) => String(a.data));
-  };
+  });
   return async (host) => {
     const [a, aaaa] = await Promise.all([ask(host, 'A'), ask(host, 'AAAA')]);
     return a.concat(aaaa);
@@ -214,6 +213,17 @@ export function dohResolver(doFetch, timeoutMs) {
 }
 
 // ------------------------------------------------------------------ fetching
+
+/**
+ * Run fn(signal) with a deadline: the signal aborts after ms, and the timer is cleared when fn ends.
+ * (Not AbortSignal.timeout: under Node its timer does not keep the process alive, so a request that
+ * never answers could end a test run instead of timing out.)
+ */
+export async function withTimeout(ms, fn) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(new DOMException('The request timed out', 'TimeoutError')), ms);
+  try { return await fn(ac.signal); } finally { clearTimeout(timer); }
+}
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 
@@ -306,18 +316,31 @@ export function createWeb(opts) {
       await checkName(u.hostname.replace(/\.$/, ''));
       spend(1);
       web.log.push(u.href);
-      let res;
-      const signal = AbortSignal.timeout(timeoutMs);
-      try {
-        res = await doFetch(u.href, { method: 'GET', redirect: 'manual', signal,
-          headers: { accept: opt.accept || '*/*', 'user-agent': USER_AGENT } });
-      } catch (e) {
-        if (signal.aborted || (e && (e.name === 'TimeoutError' || e.name === 'AbortError'))) throw timedOut();
-        throw new WebError('unreachable', 'Couldn\'t reach that site.', 'Check the address in a browser, or try again later.');
-      }
-      if (REDIRECTS.has(res.status)) {
-        await cancel(res);
-        const loc = res.headers.get('location');
+      const got = await withTimeout(timeoutMs, async (signal) => {
+        let res;
+        try {
+          res = await doFetch(u.href, { method: 'GET', redirect: 'manual', signal,
+            headers: { accept: opt.accept || '*/*', 'user-agent': USER_AGENT } });
+        } catch (e) {
+          if (signal.aborted) throw timedOut();
+          throw new WebError('unreachable', 'Couldn\'t reach that site.', 'Check the address in a browser, or try again later.');
+        }
+        if (REDIRECTS.has(res.status)) {
+          await cancel(res);
+          return { redirect: res.headers.get('location') };
+        }
+        if (!res.ok) { await cancel(res); throw statusError(res.status); }
+        try {
+          const body = await readBody(res, maxBytes, !!opt.partial);
+          return { res, body };
+        } catch (e) {
+          if (e instanceof WebError) throw e;
+          if (signal.aborted) throw timedOut();
+          throw new WebError('unreachable', 'That site stopped answering part way.', 'Try again in a moment.');
+        }
+      });
+      if (got.redirect !== undefined) {
+        const loc = got.redirect;
         if (!loc) throw new WebError('unreachable', 'That site sent 5s somewhere without saying where.', 'Open the page in a browser and use the address it ends up at.');
         if (hop >= maxRedirects) throw new WebError('redirects', 'That address sends 5s on through more than ' + maxRedirects + ' other addresses.', 'Open it in a browser and use the address it ends up at.');
         let next;
@@ -325,15 +348,8 @@ export function createWeb(opts) {
         url = next;
         continue;
       }
-      if (!res.ok) { await cancel(res); throw statusError(res.status); }
-      let body;
-      try { body = await readBody(res, maxBytes, !!opt.partial); } catch (e) {
-        if (e instanceof WebError) throw e;
-        if (signal.aborted || (e && (e.name === 'TimeoutError' || e.name === 'AbortError'))) throw timedOut();
-        throw new WebError('unreachable', 'That site stopped answering part way.', 'Try again in a moment.');
-      }
-      const type = String(res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-      return { url: u.href, status: res.status, type, bytes: body.bytes, truncated: body.truncated, redirects: hop };
+      const type = String(got.res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+      return { url: u.href, status: got.res.status, type, bytes: got.body.bytes, truncated: got.body.truncated, redirects: hop };
     }
   };
 

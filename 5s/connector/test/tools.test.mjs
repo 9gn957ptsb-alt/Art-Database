@@ -5,7 +5,8 @@ import { ctxFor, call, playFives, putState, LOGIN, UID, TOKEN, AppEngine as F, a
 import { TOOL_NAMES, TOOLS } from '../src/tools.js';
 import { readRepos } from '../src/store.js';
 
-const SPEC_TOOLS = ['get_taste', 'aesthetic_brief', 'next_five', 'judge', 'get_seed', 'hub_status', 'make_hub', 'save_hub', 'get_state', 'put_state'];
+const SPEC_TOOLS = ['get_taste', 'aesthetic_brief', 'next_five', 'judge', 'get_seed', 'hub_status', 'make_hub', 'save_hub', 'get_state', 'put_state',
+  'read_link', 'bring_in', 'item_image']; // the last three: SPEC "Connect your apps" (Paste a link, Ask Claude)
 const SITE = LOGIN + '.github.io';
 const kindOf = (deck, id) => deck.cards.find((c) => c.id === id).kind;
 const req = (gh) => gh.calls.map((c) => c.method + ' ' + c.path);

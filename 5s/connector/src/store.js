@@ -8,7 +8,8 @@
  * No GitHub token is ever stored here: it lives only in the OAuth provider's encrypted props.
  *
  * Daily caps, per person (UTC days): DAILY_WRITES saves of their state, DAILY_HUB_SAVES saves to
- * GitHub (make_hub and save_hub) and DAILY_NEW_HUBS new repositories. They keep one person (or a
+ * GitHub (make_hub and save_hub), DAILY_NEW_HUBS new repositories and DAILY_BRING pictures read and
+ * brought in from other sites (bring_in; counted as `brought`, whether or not each one was added). They keep one person (or a
  * chat gone round in circles) from filling the store's daily writes or their GitHub account. The
  * counts ride in the same record as the state, so counting costs no extra write. Like everything
  * in KV they are best effort: two writes at the same moment can both pass.
@@ -19,6 +20,7 @@ export const MAX_STATE_BYTES = 1024 * 1024; // a year of daily fives is well und
 export const DAILY_WRITES = 500;            // 5s app saves plus chat judgments: about 80 fives a day
 export const DAILY_HUB_SAVES = 30;
 export const DAILY_NEW_HUBS = 3;
+export const DAILY_BRING = 300;             // pictures bring_in reads from other sites: a few boards a day
 
 const stateKey = (uid) => 'state:' + uid;
 const reposKey = (uid) => 'repos:' + uid;
@@ -58,7 +60,7 @@ export function memoryStore() {
 /** Today's counts from a record's `use` (zero on a new day). */
 export function usage(use, now) {
   const day = utcDay(now);
-  return use && use.day === day ? { day, writes: use.writes | 0, saves: use.saves | 0 } : { day, writes: 0, saves: 0 };
+  return use && use.day === day ? { day, writes: use.writes | 0, saves: use.saves | 0, brought: use.brought | 0 } : { day, writes: 0, saves: 0, brought: 0 };
 }
 
 /** readState(store, uid) -> {rev, at, state, stored, use}; rev 0 and a fresh state when nothing is stored. */
@@ -70,8 +72,9 @@ export async function readState(store, uid) {
 }
 
 /**
- * writeState(store, uid, state, rev, now, {use, hubSave}) -> the record written. The caller decides
- * rev and passes the `use` it read; hubSave counts a save to GitHub. Throws LimitError past a cap.
+ * writeState(store, uid, state, rev, now, {use, hubSave, brought}) -> the record written. The caller
+ * decides rev and passes the `use` it read; hubSave counts a save to GitHub, brought how many pictures
+ * bring_in read. Throws LimitError past a cap.
  */
 export async function writeState(store, uid, state, rev, now, opts) {
   const o = opts || {};
@@ -79,7 +82,7 @@ export async function writeState(store, uid, state, rev, now, opts) {
   if (use.writes >= DAILY_WRITES) {
     throw new LimitError('daily writes', '5s has saved your state ' + use.writes + ' times today, its most in one day.', 'Carry on tomorrow (the count starts again at midnight UTC). Nothing you did today is lost.');
   }
-  const rec = { rev, at: new Date(now).toISOString(), state, use: { day: use.day, writes: use.writes + 1, saves: use.saves + (o.hubSave ? 1 : 0) } };
+  const rec = { rev, at: new Date(now).toISOString(), state, use: { day: use.day, writes: use.writes + 1, saves: use.saves + (o.hubSave ? 1 : 0), brought: use.brought + (Math.max(0, o.brought | 0)) } };
   const text = JSON.stringify(rec);
   if (byteLength(text) > MAX_STATE_BYTES + 4096) {
     throw new LimitError('size', 'Your 5s is full: its state would be over 1 MB, more than 5s keeps.', 'Remove some notes or brought-in things in the 5s app; brought-in images belong in the app, not in the state.');

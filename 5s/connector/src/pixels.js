@@ -2,7 +2,7 @@
  * canvas (5s/src/bring.js, FiveSBring.process): the same three dominant colours (k-means, k = 5, on
  * a 96 px copy), the same surface window (searched on a copy 128 px on its shorter edge) and the same
  * texture scale (edge density of that window at 512 px). The measuring functions are the app's own,
- * imported unchanged from bring.js; only the decoding and resampling are here, because a Worker has
+ * imported unchanged from bring.js (src/bring.js here); only the decoding and resampling are here, because a Worker has
  * no canvas: JPEG through jpeg-js (pure JavaScript, bundled by wrangler), PNG through a small decoder
  * below on the platform's DecompressionStream. GIF, WebP and AVIF are recognised and measured (their
  * size, from the header) but not decoded: those are left to the app.
@@ -12,13 +12,7 @@
  * is counted in pixels, not milliseconds: see bring_in in tools.js.
  */
 import jpeg from 'jpeg-js';
-import FiveSBring from '../../src/bring.js';
-
-const B = FiveSBring && FiveSBring._internals;
-if (!B || typeof B.dominantColours !== 'function' || typeof B.findSurface !== 'function' ||
-    typeof B.edgeDensity !== 'function' || typeof B.textureScale !== 'function') {
-  throw new Error('5s bring.js did not load: expected FiveSBring._internals.{dominantColours, findSurface, edgeDensity, textureScale}');
-}
+import { measures as B } from './bring.js';
 
 // The app's sizes (bring.js): the working copy, the colour copy, the surface search, the texture.
 const MAX_EDGE = 720;

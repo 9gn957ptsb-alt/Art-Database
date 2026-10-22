@@ -26,7 +26,7 @@ export const FAKE_PICTURES = Object.freeze({
   chair: { w: 160, h: 200, type: 'png', bands: ['#6b7f3a', '#d9a23b', '#1d1d2b'], margin: true },
   window: { w: 200, h: 200, type: 'jpeg', bands: ['#2f5d8a', '#e8e4dc', '#8a5a2b'] },
   meadow: { w: 320, h: 200, type: 'jpeg', bands: ['#7aa35a', '#f2d16b', '#3b5f8f'] },
-  stool: { w: 120, h: 160, type: 'jpeg', bands: ['#c9b79c', '#5a3e2b', '#e9e2d5'] },
+  stool: { w: 120, h: 160, type: 'jpeg', bands: ['#c9b79c', '#5a3e2b', '#e9e2d5'], weave: true },
   big: { w: 1400, h: 1000, type: 'jpeg', bands: ['#a33b3b', '#f0e9df', '#264653'] },
 });
 
@@ -41,7 +41,8 @@ function mulberry32(a) {
 
 const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
-/** RGBA pixels: three horizontal bands (3:2:1) with a little grain; `margin` leaves a clear border. */
+/** RGBA pixels: three horizontal bands (3:2:1) with a little grain; `margin` leaves a clear border,
+ *  `weave` a fine check in the first band (a surface with texture). */
 export function paint(spec) {
   const { w, h } = spec;
   const data = new Uint8Array(w * h * 4);
@@ -52,7 +53,8 @@ export function paint(spec) {
     const c = y < cut1 ? cols[0] : y < cut2 ? cols[1] : cols[2];
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
-      const g = Math.round((rnd() - 0.5) * 16);
+      // a little grain everywhere; a woven surface (a fine check) in the first band when asked
+      const g = Math.round((rnd() - 0.5) * 16) + (spec.weave && y < cut1 ? (((x >> 1) + (y >> 1)) & 1 ? 26 : -26) : 0);
       data[i] = Math.max(0, Math.min(255, c[0] + g));
       data[i + 1] = Math.max(0, Math.min(255, c[1] + g));
       data[i + 2] = Math.max(0, Math.min(255, c[2] + g));
@@ -266,7 +268,7 @@ function pictureFor(pathname) {
 
 /**
  * createFakeWeb() -> {fetch, calls, stats, route(host, path, handler), hosts}
- * calls: every request, as {url, method, accept, ua}; stats: per address, bytes a body handed out.
+ * calls: every request, as {url, method, accept, ua, redirect, headers}; stats: per address, bytes a body handed out.
  */
 export function createFakeWeb() {
   const calls = [];
@@ -333,7 +335,7 @@ export function createFakeWeb() {
     const url = typeof input === 'string' ? input : input.url;
     const u = new URL(url);
     const headers = new Headers((init && init.headers) || {});
-    calls.push({ url, method: (init && init.method) || 'GET', accept: headers.get('accept'), ua: headers.get('user-agent'), redirect: init && init.redirect });
+    calls.push({ url, method: (init && init.method) || 'GET', accept: headers.get('accept'), ua: headers.get('user-agent'), redirect: init && init.redirect, headers: Object.fromEntries(headers.entries()) });
     if (init && init.signal && init.signal.aborted) throw init.signal.reason || new DOMException('aborted', 'AbortError');
     if (u.protocol !== 'https:') throw new TypeError('fetch failed (the fake web is https only)');
     if (u.hostname === 'cloudflare-dns.com' && u.pathname === '/dns-query') return dns(u);

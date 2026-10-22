@@ -13,7 +13,7 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 const SLOTS = ['wall', 'window', 'picture', 'floor', 'object'];
 
-export const LIMITS = Object.freeze({ judgments: 50000, sets: 500, own: 1000, notes: 5000, days: 5000, text: 2000, name: 200 });
+export const LIMITS = Object.freeze({ judgments: 50000, sets: 500, own: 1000, notes: 5000, days: 5000, text: 2000, name: 200, url: 2048 });
 
 function judgment(e) {
   if (!Array.isArray(e) || e.length < 4 || e.length > 8) return 'is not [card, keep, ms, time, turn]';
@@ -32,6 +32,11 @@ function own(o) {
   if (o.colours != null && !(Array.isArray(o.colours) && o.colours.length <= 16 && o.colours.every((h) => typeof h === 'string' && HEX.test(h)))) return 'has colours that are not hex colours';
   if (o.crop != null && !(Array.isArray(o.crop) && o.crop.length === 4 && o.crop.every(isNum))) return 'has a crop that is not four numbers';
   for (const k of ['texture', 'w', 'h', 'at', 'let', 'seenAt']) if (!optNum(o[k])) return 'has a ' + k + ' that is not a number';
+  // Brought in through the connector (bring_in): the picture's address, a smaller copy's, the page it
+  // came from, and whether its colours are still to be read. Addresses are checked again before any
+  // tool reads them (web.js), so here they need only be short text.
+  for (const k of ['image', 'thumb', 'link']) if (!optStr(o[k], LIMITS.url)) return 'has a ' + k + ' that is not an address of at most ' + LIMITS.url + ' characters';
+  if (!(o.coloursPending == null || typeof o.coloursPending === 'boolean')) return 'has a coloursPending that is not true or false';
   return '';
 }
 

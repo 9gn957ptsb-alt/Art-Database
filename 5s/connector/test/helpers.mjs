@@ -9,6 +9,8 @@ import { memoryStore } from '../src/store.js';
 import { createFakeGitHub } from '../src/fake-github.js';
 import { api } from '../src/hub.js';
 import { runTool } from '../src/tools.js';
+import { createWeb } from '../src/web.js';
+import { createFakeWeb } from '../src/fake-web.js';
 
 export const here = dirname(fileURLToPath(import.meta.url));
 export const CONNECTOR = join(here, '..');
@@ -45,14 +47,18 @@ export function ctxFor(opts = {}) {
     repos: opts.repos, pagesNeedRepoScope: opts.pagesNeedRepoScope, emptyReads: opts.emptyReads,
   });
   const clock = { t: opts.start || at(2026, 10, 22, 9), step: opts.step == null ? 3000 : opts.step, sleeps: [] };
+  // The public web, for read_link, bring_in and item_image: a fake (src/fake-web.js) behind the real
+  // guard (src/web.js), with a short timeout so a site that never answers ends a test quickly.
+  const web = opts.web || createFakeWeb();
   const ctx = {
     store, deck,
     github: opts.noGithub ? null : api(opts.token || TOKEN, gh.fetch, { base: gh.base }),
     user: { id: opts.uid || UID, login: opts.login || LOGIN },
     now: () => (clock.t += clock.step),
     sleep: async (ms) => { clock.sleeps.push(ms); },
+    web: opts.noWeb ? undefined : (o) => createWeb(Object.assign({ fetch: web.fetch, timeoutMs: opts.timeoutMs || 400 }, o)),
   };
-  return { ctx, gh, store, clock, deck };
+  return { ctx, gh, store, clock, deck, web };
 }
 
 export const call = (ctx, name, args) => runTool(ctx, name, args || {});

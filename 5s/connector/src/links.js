@@ -285,23 +285,29 @@ function notReadable(what) {
  */
 export async function readLink(web, url) {
   const what = whatLink(url);
-  const doc = await web.get(what.fetch, { accept: DOC_ACCEPT, maxBytes: WEB_LIMITS.pageBytes });
+  // Read at most the cap, never more: a page's preview picture is in its head, so a page cut short is
+  // still read; data and feeds cut short can't be, and are refused as too large.
+  const doc = await web.get(what.fetch, { accept: DOC_ACCEPT, maxBytes: WEB_LIMITS.pageBytes, partial: true });
   const text = () => textOf(doc.bytes);
+  const whole = () => { if (doc.truncated) throw tooLargeDoc(); };
   let out;
   const kindOfBytes = sniff(doc.bytes);
   if (kindOfBytes || /^image\//.test(doc.type)) {
     // The address is itself a picture.
     if (!kindOfBytes) throw notReadable('a kind of picture 5s does not read (' + (doc.type || 'unknown') + ')');
     const name = decodeURIComponent((new URL(doc.url).pathname.split('/').pop() || '').replace(/\.[a-z0-9]{2,5}$/i, '')).replace(/[_-]+/g, ' ');
-    out = { title: null, items: [{ image: doc.url, thumb: null, title: plainText(name), link: url.href, w: (dimensions(doc.bytes, kindOfBytes) || {}).w || null }] };
+    out = { title: null, items: [{ image: doc.url, thumb: null, title: plainText(name), link: url.href }] };
   } else if (what.kind === 'arena') {
+    whole();
     let json;
     try { json = JSON.parse(text()); } catch { throw notReadable('an answer from Are.na that 5s could not read'); }
     out = parseArena(json, doc.url);
     if (!out.title) out.title = what.slug.replace(/-+/g, ' ');
   } else if (what.kind === 'flickr-json' || (doc.type === 'application/json' && /flickr\.com$/.test(new URL(doc.url).hostname))) {
+    whole();
     try { out = parseFlickrJson(text(), doc.url); } catch { throw notReadable('an answer from Flickr that 5s could not read'); }
-  } else if (/xml|rss|atom/.test(doc.type) || looksFeed(text())) {
+  } else if (/(rss|atom)\+xml|^(application|text)\/xml$/.test(doc.type) || looksFeed(text().slice(0, 4096))) {
+    whole();
     out = parseFeed(text(), doc.url);
   } else if (/html/.test(doc.type) || /<html\b|<head\b|<meta\b/i.test(text().slice(0, 4096))) {
     const page = parsePage(text(), doc.url);
@@ -310,16 +316,31 @@ export async function readLink(web, url) {
     if ((what.kind === 'flickr-page' || what.source === 'Tumblr') && page.feed) {
       const f = new URL(page.feed);
       if (/flickr\.com$/.test(f.hostname) && /\/services\/feeds\//.test(f.pathname)) { f.searchParams.set('format', 'json'); f.searchParams.set('nojsoncallback', '1'); }
-      const feedDoc = await web.get(f.href, { accept: DOC_ACCEPT, maxBytes: WEB_LIMITS.pageBytes });
+      const feedDoc = await web.get(f.href, { accept: DOC_ACCEPT, maxBytes: WEB_LIMITS.pageBytes });   // refused whole if over the cap
       const ft = textOf(feedDoc.bytes);
-      const fed = looksJson(feedDoc.bytes) ? parseFlickrJson(ft, feedDoc.url) : parseFeed(ft, feedDoc.url);
-      if (fed.items.length) out = { title: fed.title || page.title, items: fed.items };
+      let fed = null;
+      try { fed = looksJson(feedDoc.bytes) ? parseFlickrJson(ft, feedDoc.url) : parseFeed(ft, feedDoc.url); } catch { fed = null; }
+      if (fed && fed.items.length) out = { title: fed.title || page.title, items: fed.items };
     }
   } else if (looksJson(doc.bytes)) {
+    whole();
     throw notReadable('data (JSON) from a site 5s does not know');
   } else {
     throw notReadable(doc.type ? 'a file of type ' + doc.type : 'a file');
   }
+  if (what.source === 'Pinterest') out.items = out.items.map(pinterestSizes);
   const more = out.items.length > MAX_ITEMS;
   return { source: what.source, title: out.title || null, url: doc.url, items: out.items.slice(0, MAX_ITEMS), more };
+}
+
+/** Pinterest's feed gives each pin at 236 px: offer the 736 px picture, and keep the 236 px one as
+ *  the smaller copy bring_in measures. */
+function pinterestSizes(it) {
+  const m = /^https:\/\/i\.pinimg\.com\/(?:236x|474x)\/(.+)$/.exec(it.image);
+  if (!m) return it;
+  return Object.assign({}, it, { image: 'https://i.pinimg.com/736x/' + m[1], thumb: it.thumb || it.image });
+}
+
+function tooLargeDoc() {
+  return new WebError('too large', 'That is bigger than 5s reads (over ' + Math.round(WEB_LIMITS.pageBytes / 1024) + ' KB).', 'Use the address of a single board, channel or page.');
 }

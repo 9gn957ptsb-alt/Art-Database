@@ -72,5 +72,5 @@ test('a tool that throws does not take the server down', async () => {
   assert.equal(r.structuredContent.error, 'internal');
   assert.ok(!JSON.stringify(r).includes('KV is down'), 'internals stay in the log');
   const again = await client.listTools();
-  assert.equal(again.tools.length, 10);
+  assert.equal(again.tools.length, TOOL_NAMES.length);
 });
