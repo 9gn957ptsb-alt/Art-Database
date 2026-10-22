@@ -87,3 +87,11 @@ test('the script takes nothing it does not need: Node\'s own modules only', () =
   const src = readFileSync(new URL('../gameplan/reflect.mjs', import.meta.url), 'utf8');
   for (const [, from] of src.matchAll(/^import .* from '([^']+)'/gm)) assert.match(from, /^node:/);
 });
+
+test('a skill refuses a cut that does not shrink, so its power always stops', () => {
+  const swap = skill(s => s.replace('a', 'b'), () => []);
+  assert.equal(swap('a'), 'a');
+  assert.equal(power(swap, 'aaa').n, 0);
+  const twice = skill(s => s.replace(/ not/, ''), s => s.match(/\bnot\b/g) || []);
+  assert.equal(twice('not not'), 'not not', 'two kept things are two, not one');
+});

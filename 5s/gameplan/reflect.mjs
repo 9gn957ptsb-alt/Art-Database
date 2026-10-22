@@ -125,21 +125,25 @@ function jsonAt(raw, i) {
 // ---------------------------------------------------------------- the law (what ponytail and caveman share)
 
 // A skill (Old Norse skil, "distinction") tells apart what stays from what goes. Ponytail does it to
-// code and caveman to words: each cuts what costs and refuses any cut that loses what counts.
+// code and caveman to words, and both take a cut only when it keeps every kept thing (each fact, each
+// check) and makes the whole smaller: caveman-compress aborts on output that is not smaller, and
+// caveman-learn reverts an edit that does not shrink.
 export const skill = (cut, keep) => x => {
   const y = cut(x);
-  return keep(x).every(k => keep(y).includes(k)) ? y : x; // a cut that drops a kept thing is not taken
+  const left = keep(y);
+  const kept = keep(x).every(k => left.includes(k) && left.splice(left.indexOf(k), 1));
+  return kept && y.length < x.length ? y : x;
 };
 
-// To the power: apply a skill to its own output until it stands still. The exponent it took is how
-// far the first draft stood from done; a second pass that still cuts means the first was not done.
-export function power(f, x, limit = 64) {
-  for (let n = 0; n < limit; n++) {
+// To the power: apply a skill to its own output until it stands still. It always stops, because every
+// cut it takes is shorter than the last. The exponent n is how far the first draft stood from done;
+// a skill that still cuts on a second pass was not done on the first.
+export function power(f, x) {
+  for (let n = 0; ; n++) {
     const y = f(x);
     if (y === x) return { x, n };
     x = y;
   }
-  return { x, n: limit };
 }
 
 // Words: one piece of ceremony at a time (caveman's "Kill ceremony", ponytail's "a reply a busy human
