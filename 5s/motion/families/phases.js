@@ -321,6 +321,12 @@
     for (let j = 1; j < c; j++) fill += ease(span(t, ch(j)[0], ch(j)[1])) / (c - 1);
     fill = clamp01(fill);
 
+    // the ribbon turns once behind the count, dimmer while the digits are hollow (drawn
+    // first: everything after it is composited through scratch layers)
+    if (p.ribbon) {
+      const r = M.ease.inOutSine(span(t, 0.06, 0.94));
+      M.ribbon(ctx, r, { colours: pal.ribbon, alpha: (1 - 0.35 * bump(t, 0.04, 0.98)) * (0.55 + 0.45 * fill) });
+    }
     // the rings: each landing digit's outline (the last, the 5 back home, bigger; with more than five stages the
     // last landing sends a burst of them), growing outward and fading
     const reach = (110 + 300 * p.spread) * (0.45 + 0.75 * I);
@@ -345,11 +351,6 @@
       });
     }
 
-    // the ribbon turns once behind the count, dimmer while the digits are hollow
-    if (p.ribbon) {
-      const r = M.ease.inOutSine(span(t, 0.06, 0.94));
-      M.ribbon(ctx, r, { colours: pal.ribbon, alpha: (1 - 0.35 * bump(t, 0.04, 0.98)) * (0.55 + 0.45 * fill) });
-    }
     // the digit: a beat on each landing (a small gather, then a pop; the last the biggest)
     let beat = 0;
     for (let j = 0; j < c; j++) {
@@ -453,12 +454,14 @@
     };
   }
   // draw Merge's pair: grow widens every stroke (negative narrows), solid: one colour for all
-  function mergeDraw(ctx, G, k, col, grow, solid) {
+  // (tint, tk: pull every colour toward one colour by tk)
+  const toward = (list, c, tk) => (!c || tk <= 0.001 ? list : mixList(list, [[0, c], [1, c]], tk));
+  function mergeDraw(ctx, G, k, col, grow, solid, tint, tk) {
     const wMid = 128 * k, mc = G.m;
     const g2 = 2 * (grow || 0);
     glyph5(ctx, G.five, Math.max(0.5, M.lerp(M.widths.bar * k, wMid, mc) + g2), Math.max(0.5, M.lerp(M.widths.body * k, wMid, mc) + g2),
-      solid || mixList(col.fiveBar, col.sBar, mc), solid || mixList(col.fiveBody, col.sBody, mc));
-    M.stroke(ctx, G.s, { width: Math.max(0.5, M.lerp(M.widths.s * k, wMid, mc) + g2), colours: solid || col.s });
+      solid || toward(mixList(col.fiveBar, col.sBar, mc), tint, tk), solid || toward(mixList(col.fiveBody, col.sBody, mc), tint, tk));
+    M.stroke(ctx, G.s, { width: Math.max(0.5, M.lerp(M.widths.s * k, wMid, mc) + g2), colours: solid || toward(col.s, tint, tk) });
   }
 
   function onion(ctx, t, p, env) {
@@ -478,8 +481,14 @@
     const m = clamp01(q);
     // the hang: the merged s swells a little, a held breath
     const hang = 1 + (0.02 + 0.05 * I) * bump(t, T1 - 0.02, BACK[0] + 0.04);
+    // and a tick as each click lands
+    let tick = 0;
+    for (let j = 0; j < n; j++) { const e = T0 + j * STEP + MOVE; tick = Math.max(tick, bump(t, e - 0.01, e + 0.06)); }
     const live = poseAt(curve, q, dir, I);
-    live.k *= hang;
+    live.k *= hang * (1 + (0.015 + 0.035 * I) * tick);
+    // the skins are coloured by age, like a long exposure: the oldest in the ribbon's violet, the newest in the
+    // letters' own colours (one colour in the flat palettes, where age shows as paleness alone)
+    const tint = flatPal(pal) ? null : M.colourAt(pal.ribbon, logoLike(pal) ? 0.25 : 0.2);
     // when the glide home passes stage j (q = j / n), by the chosen easing: the first time 1 - ease(x) <= j / n
     const passAt = (qj) => {
       let lo = 0, hi = 1;
@@ -502,7 +511,7 @@
       const line = hair(env, (8 + 8 * (j + 1) / n) * k);   // older skins finer as well as paler
       M.layer(ctx, { alpha: al, composite: 'source-over' }, (c) => {
         place(c, P, (cc) => {
-          mergeDraw(cc, G, k, col, 0);
+          mergeDraw(cc, G, k, col, 0, null, tint, 0.9 * (1 - j / Math.max(1, n - 1)));
           cc.globalCompositeOperation = 'destination-out';
           mergeDraw(cc, G, k, col, -line / P.k, '#000000');
         });

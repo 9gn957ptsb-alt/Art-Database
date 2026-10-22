@@ -427,8 +427,11 @@
     const cg = after ? 1 : grow;
     const cx = M.lerp(M.lerp(C0[0], SEAL_C[0], cg), C0[0], back), cy = M.lerp(M.lerp(C0[1], SEAL_C[1], cg), C0[1], back);
     const wob = M.lerp(0.035 + 0.03 * (1 - grow) + (0.07 + 0.08 * I) * squeeze + (0.04 + 0.05 * I) * Math.abs(ring), 0.012, back);
-    const hole = rib ? Math.max(0, R - 46) * Math.max((1 - melt) * (1 - melt), hollow) : 0;
-    const waxA = rib ? (0.35 + 0.65 * melt) * (1 - hollow) : 1;
+    // with the ribbon the wax is a ring on the loop (its band) whose inside fills in, and at the end empties out
+    // again: ring and inside fade separately, so no hole ever opens from a point
+    const band = rib ? Math.max(0, R - 46) : 0;
+    const ringA = rib ? Math.min(1, 2.2 * melt) * (1 - span(hollow, 0.35, 1)) : 1;
+    const innerA = rib ? span(melt, 0.25, 1) * (1 - span(hollow, 0, 0.65)) : 1;
     const wax = waxColour(pal);
     const waxDeep = M.mix(wax, '#000000', dark ? 0.38 : 0.28), waxLight = M.mix(wax, '#FFFFFF', dark ? 0.35 : 0.42);
     const emb = after ? 1 - back : 0;                              // the relief holds while the seal does
@@ -441,8 +444,8 @@
       if (rIn > 0.002) M.ribbon(ctx, 0.08 * melt, { colours: pal.ribbon, alpha: rIn, along: [0.25 * melt, 1] });
       if (rOut > 0.002) M.ribbon(ctx, 0.08 * (1 - rOut), { colours: pal.ribbon, alpha: rOut, along: [0.25 * (1 - rOut), 1] });
     }
-    if (R > 1 && waxA > 0.002) {
-      const body = (cw) => {
+    if (R > 1 && Math.max(ringA, innerA) > 0.002) {
+      const body = (cw, hole) => {
         // a flat drop shadow, the wax's bead (a darker rim), its face, a highlight on the bead upper left
         cw.save();
         cw.globalAlpha *= dark ? 0.55 : 0.16;
@@ -458,7 +461,7 @@
         cw.beginPath(); cw.arc(cx - 0.012 * R, cy - 0.02 * R, fr * 0.95, Math.PI * 1.02, Math.PI * 1.42); cw.stroke();
         cw.restore();
         // the die's impression: a pressed-in circle round the letters (dark edge upper left, light lower right)
-        if (emb > 0.003 && !hole) {
+        if (emb > 0.003) {
           const rd = SEAL_R * 0.86 * (R / Math.max(1, Rhit)), gw = Math.max(1.6 / env.scale, 0.022 * SEAL_R);
           cw.save();
           cw.lineWidth = gw;
@@ -468,11 +471,23 @@
           cw.restore();
         }
       };
-      if (waxA < 0.999) M.layer(ctx, { alpha: waxA }, body); else body(ctx);
+      if (!rib) body(ctx, 0);
+      else {
+        if (ringA > 0.002) M.layer(ctx, { alpha: ringA, composite: 'source-over' }, (cw) => body(cw, band));
+        if (innerA > 0.002 && band > 0.5) {
+          M.layer(ctx, { alpha: innerA, composite: 'source-over' }, (cw) => {
+            cw.beginPath(); cw.arc(cx, cy, band + 0.6, 0, TAU); cw.clip();
+            body(cw, 0);
+          });
+        }
+      }
     }
     const tr = { o: A.letters, s: 1 + L.s };
     shadow(ctx, env, NAMES, k, L.h, shadowLook(c, L.h, Math.max(0, L.s), t, H, { o: A.letters, s: 1 + 0.25 * Math.max(0, L.s) }));
     place(ctx, tr, (cl) => {
+      // in one flat colour the lifted letters are the wax's colour too: a die-cut rim of background keeps them apart
+      const cut = flat(pal) ? M.clamp(Math.min(innerA, R / SEAL_R) * 1.4, 0, 1) * (1 - span(t, H - 0.035, H)) * (1 - back) : 0;
+      if (cut > 0.003) M.layer(cl, { alpha: cut }, (cc) => solid(cc, NAMES, k, pal.bg, Math.max(10, 1.5 / env.scale)));
       if (emb > 0.003) {
         // embossed: a dark edge lower right, a light edge upper left (at least 2 px), then the face
         const off = Math.max(9, 2 / env.scale) * emb;
