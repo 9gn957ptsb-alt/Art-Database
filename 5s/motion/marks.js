@@ -58,9 +58,9 @@
     // the s, from its top terminal (right) round the upper curve, down the spine, round and out to the left
     s: 'M 870 514 C 840 503 802 501 770 507 C 738 513 721 547 720 583 C 720 624 764 646 804 667 ' +
        'C 846 690 862 718 858 752 C 854 802 800 830 740 831 C 690 831 650 826 610 824',
-    // the ribbon's spine: in from the left over the bowl's terminal, under the bowl, up between the bowl
-    // and the s (behind the s), and over the top of the bowl to the foot of the bar
-    ribbon: 'M 72 724 C 150 836 300 892 480 878 C 620 866 676 770 680 624 C 684 476 632 368 534 330 ' +
+    // the ribbon's spine: out from under the bowl's terminal on the left, under the bowl, up between the
+    // bowl and the s (behind the s), and over the top of the bowl to the foot of the bar
+    ribbon: 'M 112 750 C 180 840 310 892 480 878 C 620 866 676 770 680 624 C 684 476 632 368 534 330 ' +
             'C 470 306 396 310 336 334',
     // digits in the same stroke language (lean, width, round caps), in the 5's place
     d1: 'M 352 332 C 406 309 462 274 506 232 C 445 407 383 583 322 758',
