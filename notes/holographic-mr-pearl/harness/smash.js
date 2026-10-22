@@ -106,7 +106,7 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
     say(name + " " + JSON.stringify(res));
     return { res, R };
   };
-  const BEATF = Math.ceil(K.BEAT * 1000 / 25 - 1e-9);   // frames from the tap to the strike at 25 ms a frame
+  const BEATF = Math.ceil(K.SWING * 1000 / 25 - 1e-9);   // frames from the tap to the strike at 25 ms a frame (half a beat since 22 Oct)
   // ---- 1. a block a step ahead at his waist: the keyframes photographed, then the strike timed
   {
     const c = cell(1, 0, 0);
@@ -133,9 +133,43 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
     const { res } = await strikeCase("waist_timed", cell(1, 0, 0));
     check(res.startedSwing, "waist: the tap starts a swing");
     check(res.airFrame === res.strikeFrame && res.strikeFrame === BEATF, "waist: the block breaks at the strike, frame " + res.strikeFrame + " after the tap (a beat is " + BEATF + " frames of 25 ms)");
-    check(res.strikeMs >= K.BEAT * 1000 - 1 && res.strikeMs < K.BEAT * 1000 + 25 + 21, "waist: the strike " + res.strikeMs + " ms after the tap (a beat " + K.BEAT * 1000 + " ms)");
+    check(res.strikeMs >= K.SWING * 1000 - 1 && res.strikeMs < K.SWING * 1000 + 25 + 21, "waist: the strike " + res.strikeMs + " ms after the tap (half a beat " + K.SWING * 1000 + " ms)");
     check(res.uBefore < 1 && res.uAtStrike >= 1, "waist: still standing at u " + (res.uBefore || 0).toFixed(3) + ", gone at u " + (res.uAtStrike || 0).toFixed(3));
     check(res.shardsAfter === 6, "waist: six bars fly (" + res.shardsAfter + ")");
+  }
+  // ---- 1b. the three styles (22 Oct 2026: "3 baseline variations ... randomly used"): each forced (Math.random
+  // stubbed), photographed at its keyframes, its strike timed, its pose checked (the slam's leap, the spin's turn)
+  {
+    results.cases.styles = {};
+    const LEAPm = K.LEAP;
+    for (const [k, st] of [[0.1, "sweep"], [0.5, "slam"], [0.9, "spin"]]) {
+      const c = cell(1, 0, 0);
+      await stand(site); await frames(P, 3);
+      await setB(c, BRICK); await frames(P, 3);
+      await D((k) => { window.__rnd = window.__rnd || Math.random; Math.random = () => k; }, k);
+      await tapAt(faceTo(c));
+      const poses = {};
+      for (const u of [0.25, 0.5, 0.75, 0.95, 1.25, 1.5, 1.75]) {
+        await D((u) => window.Rocket.debug().holdSwing(u), u);
+        await frames(P, 2);
+        poses[u] = await D(() => { const s = window.Rocket.debug().swing(); return s && Object.assign({ style: s.style }, s.pose); });
+        await shot("style_" + st + "_" + String(Math.round(u * 100)).padStart(3, "0"), 1);
+      }
+      await D(() => window.Rocket.debug().holdSwing(null));
+      await P.waitForFunction(() => !window.Rocket.debug().swing());
+      await D(() => { Math.random = window.__rnd; });
+      results.cases.styles[st] = poses;
+      say(st + " " + JSON.stringify(poses));
+      check(poses[0.5] && poses[0.5].style === st, st + ": the style taken (" + (poses[0.5] && poses[0.5].style) + ")");
+      if (st === "slam") { check(Math.abs(poses[0.5].lift - LEAPm) < 1e-6 && poses[1.25].lift === 0 && Math.abs(poses[0.25].lift - 0.75 * LEAPm) < 1e-6, "slam: the leap's top at u 1/2 (" + poses[0.5].lift.toFixed(4) + " m = g SWING^2 / 8), down at the strike"); }
+      else { check(poses[0.5].lift === 0, st + ": no leap"); }
+      if (st === "spin") { check(Math.abs(Math.abs(poses[0.5].spin) - 1.5 * Math.PI) < 1e-6 && poses[1.25].spin === 0, "spin: three quarters of the turn to go at u 1/2 (" + poses[0.5].spin.toFixed(4) + "), none after the strike"); }
+      else { check(poses[0.5].spin === 0, st + ": no spin"); }
+      await D((k) => { window.__rnd = window.__rnd || Math.random; Math.random = () => k; }, k);
+      const { res } = await strikeCase("style_" + st + "_timed", cell(1, 0, 0));
+      await D(() => { Math.random = window.__rnd; });
+      check(res.airFrame === res.strikeFrame && res.strikeFrame === BEATF && res.shardsAfter === 6, st + ": breaks at the strike, frame " + res.strikeFrame + " (" + BEATF + "), six bars");
+    }
   }
   // ---- 2. low (the ground a block ahead) and 3. at his head, each photographed at its strike
   for (const [name, c] of [["low", cell(1, 0, -1)], ["head", cell(1, 0, 1)]]) {
@@ -185,7 +219,7 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
     results.cases.rapid = { kept, fa, fb, fc, sides: [...new Set(R.map((r) => r.side))] };
     say("rapid " + JSON.stringify(results.cases.rapid));
     check(JSON.stringify(kept) === JSON.stringify(C), "rapid: the latest tap is kept (" + JSON.stringify(kept) + ")");
-    check(fa === BEATF && fb === 0 && Math.abs(fc - fa - K.BEAT * 1000 / 25) <= 1.01, "rapid: A at frame " + fa + ", C a beat later at " + fc + ", B never (" + fb + ")");
+    check(fa === BEATF && fb === 0 && Math.abs(fc - fa - K.SWING * 1000 / 25) <= 1.01, "rapid: A at frame " + fa + ", C half a beat later at " + fc + ", B never (" + fb + ")");
     for (const c of [A, Bc, C]) { await setB(c, AIR); }
   }
   // ---- 7. the chain: B tapped after A's strike, before its follow-through ends: a beat after A, swung back
@@ -231,8 +265,8 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
     for (let s = -1; s <= 2; s++) for (let q = -1; q <= 1; q++) for (let k = 0; k < 2; k++) { pool.push(cell(s, 0, k, q)); }
     const c = cell(1, 0, 0);
     const { res } = await strikeCase("water", c, { setup: async () => { for (const p of pool) { await setB(p, WATER); } } });
-    const wf = Math.ceil(K.BEAT * 1000 / 25 * 4.3 / 2.2 - 1e-9);
-    check(res.airFrame === res.strikeFrame && Math.abs(res.strikeFrame - wf) <= 1, "water: breaks at the strike, frame " + res.strikeFrame + " (BEAT x WALK / SWIM is " + wf + " frames)");
+    const wf = Math.ceil(K.SWING * 1000 / 25 * 4.3 / 2.2 - 1e-9);
+    check(res.airFrame === res.strikeFrame && Math.abs(res.strikeFrame - wf) <= 1, "water: breaks at the strike, frame " + res.strikeFrame + " (SWING x WALK / SWIM is " + wf + " frames)");
     for (const p of pool) { await setB(p, AIR); }
     await setB(c, AIR);
   }

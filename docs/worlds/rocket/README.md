@@ -182,20 +182,30 @@ put you out); stepping off, it rises out over his head again, in the time a swit
 you may look up and down as far as they go, as the third figure is looked up at.
 
 **Breaking is a smash with his guitar** (artist, 21 Oct 2026: "He should be using his guitar to smash things when
-using the break function"). A tap or a click to break turns him to the block and starts a swing whose strike falls a
-beat later (the theme song's beat, 0.48 s). His hands hold the guitar, so both arms and it turn as one about the line
-through his shoulders, and his upper body turns about his spine as the walk turns it, made large: he coils a quarter
-turn to his right with the guitar raised as high as his head lets it (78°: no cell of his arms or the guitar ever
-enters the head's sphere), swings down at an even pull so that at the strike his shoulders turn at one turn a beat,
-and the tail of the guitar's body comes onto the line from his feet to the block, at the block's height as seen from
-his shoulders; then the swing carries on up to his left and back to rest, two beats in all. The block breaks at the
-strike, within his reach as before (six blocks from his eye: the guitar itself meets a block a step ahead at his
-waist or his head, and the blow breaks the ground ahead or a block further off at the same strike), and its six bars
-fly out of the face he struck at half the guitar's speed and fall, lying where they land, gone a beat after the
-strike. A tap during a swing is kept, the latest, and struck a beat after, swung back from his left: one block a
-beat. Walking, his legs walk on under the swing; in water it goes at his speed there over his walk. If the block is
-gone or changed by the strike, or he has gone out of reach, nothing breaks; going out as the hologram lets the swing
-go.
+using the break function"; and the same day: "The break animation by Mr Pearl has to be twice as fast and there
+should be 3 baseline variations of the animation that are randomly used. Give the animations more style, look at
+different hand combat styles of fighting (check out the game Mortal Combat)"). A tap or a click to break turns him to
+the block and starts a swing whose strike falls half a beat later (an eighth note of the theme song, 0.24 s). His
+hands hold the guitar, so both arms and it turn as one about the line through his shoulders (as high as 78°: no cell
+of his arms or the guitar ever enters the head's sphere), and his upper body turns about his spine as the walk turns
+it, made large. Each swing takes one of three styles at random, as Mortal Kombat: Deadly Alliance gave each fighter
+three: **the sweep** (Kitana's fan swipe): he coils a quarter turn to his right with the guitar raised and cuts across
+onto the block at an even pull, his shoulders turning at two turns a beat at the strike, then follows through up to
+his left; **the slam** (Jax's ground pound): he springs up as the guitar goes up and comes down on the block as he
+lands, the leap's flight the swing's half beat under the game's own gravity (0.18 m high), the guitar driven on down
+through it; **the spin** (Kung Lao's spin): the guitar out at the block's height, his whole body turns a full turn
+and strikes as it comes round, his head staying on the block as a dancer's does, his shoulders carrying on a quarter
+turn past it. In each the tail of the guitar's body comes onto the line from his feet to the block at the strike, at
+the block's height as seen from his shoulders, and the swing is back at rest a beat after the tap; while the guitar
+goes faster than he walks its path leaves a swoosh in the gold of its rib, fading over half its step (none under
+reduced motion). The block breaks at the strike, within his reach as before (six blocks from his eye: the guitar
+itself meets a block a step ahead at his waist or his head, and the blow breaks the ground ahead or a block further
+off at the same strike), and its six bars fly out of the face he struck at half the guitar's speed and fall, lying
+where they land, gone a beat after the strike. A tap during a swing is kept, the latest, and struck half a beat
+after, swung on from where the last one's follow-through ends (the sweep's other side; under the slam, an uppercut):
+two blocks a beat. Walking, his legs walk on under the swing; in water it goes at his speed there over his walk. If
+the block is gone or changed by the strike, or he has gone out of reach, nothing breaks; going out as the hologram
+lets the swing go.
 
 **The sight, and the pearls he throws** (artist, 20 Oct 2026: "I want you to be able to aim at a target with a
 reflex sight that I can control with my right finger while my left finger allows me to move around the area", and

@@ -1192,25 +1192,37 @@
   /* ---- the smash: he breaks a block with his guitar --------------------------------------------------------------
      The artist, 21 Oct 2026: "He should be using his guitar to smash things when using the break function". His
      hands hold the guitar, so both arms and it turn as one about the line through his shoulder centres (pose()'s
-     act.arms), and the upper body turns about the spine, as the walk turns it, made large (act.twist). A tap to
-     break starts a swing whose strike is a beat later (a beat of the theme song, 125 a minute):
-       the coil, half a beat: a quarter turn to his right, the guitar raised as high as his head lets it;
-       the downswing, half a beat: from rest at the top at an even pull, so that at the strike his shoulders turn
-         at one turn a beat (a quarter turn in half a beat, from rest);
-       the strike: the guitar's far end (the tail of its lower bout) comes onto the line from his feet to the block,
-         at the block's height seen from his shoulders, as near as his arms go; the block breaks, its six bars fly;
-       the follow-through, half a beat: the downswing mirrored, up to the top on his left;
-       back to rest, half a beat.
-     A tap during a swing is kept (the latest only) and struck a beat after this one's strike, swung back from the
-     top on his left: one block a beat. In water the swing goes at his speed there over his walk. Within REACH the
-     blow breaks the block wherever it stands; a block a step ahead at his waist or his head the guitar meets. */
-  var BEAT = BAR / 4;            // a beat of the theme song: the strike falls a beat after the tap
-  var COIL = Math.PI / 2;        // the coil: a quarter turn of the upper body (see above: one turn a beat at the strike)
+     act.arms), and the upper body turns about the spine, as the walk turns it, made large (act.twist). The artist,
+     21 Oct 2026: "The break animation by Mr Pearl has to be twice as fast and there should be 3 baseline variations
+     of the animation that are randomly used. Give the animations more style, look at different hand combat styles
+     of fighting (check out the game Mortal Combat)". So a tap to break starts a swing whose strike is half a beat
+     later (an eighth note of the theme song, 125 a minute: SWING), in one of three styles taken at random, as
+     Mortal Kombat: Deadly Alliance (2002) gave each fighter three styles:
+       the sweep (Kitana's fan swipe, the broadsword's flat cut): the coil, half a SWING, a quarter turn to his right,
+         the guitar raised as high as his head lets it; the downswing, half a SWING, from rest at the top at an even
+         pull, so that at the strike his shoulders turn at two turns a beat;
+       the slam (Jax's ground pound, the hammer fist): he springs up as the guitar goes up and comes down on the
+         block as he lands, the strike the landing, the guitar driven on down to where it hangs;
+       the spin (Kung Lao's spin): the guitar out at the block's height, his whole body turns a full turn from rest
+         at an even pull and strikes as it comes round; his head stays on the block, as a dancer spots, his hips stop
+         there and his shoulders carry on;
+       at the strike the guitar's far end (the tail of its lower bout) comes onto the line from his feet to the
+         block, at the block's height seen from his shoulders, as near as his arms go; the block breaks, its six bars
+         fly; then the follow-through, half a SWING, and back to rest, half a SWING.
+     A tap during a swing is kept (the latest only) and struck half a beat after this one's strike, swung back from
+     where this one's follow-through ends: two blocks a beat. In water the swing goes at his speed there over his
+     walk. Within REACH the blow breaks the block wherever it stands; a block a step ahead at his waist or his head
+     the guitar meets. The guitar's path leaves a swoosh while it goes faster than he walks. */
+  var BEAT = BAR / 4;            // a beat of the theme song
+  var COIL = Math.PI / 2;        // the coil: a quarter turn of the upper body (see above: two turns a beat at the strike)
+  var SWING = BEAT / 2;          // the swing's step: the strike half a beat after the tap ("twice as fast", 21 Oct 2026)
+  var LEAP = 25 * SWING * SWING / 8;   // the slam's leap: up and down in its coil and downswing (SWING) at the game's 25 m/s/s
+  var STYLES = ["sweep", "slam", "spin"];
   // From his form when it has come (smashFrom): the guitar's far end (its cell farthest from the shoulder line, in
   // the guitar's own cells), how far below level it hangs from that line (E0), the line's height over his feet at
   // his centre line (Y_SH), and the arms' highest (ARMS_UP). Until then, the values pearl-body.json gives.
   var FAR_END = null, E0 = 1.15486, Y_SH = 1.00155, ARMS_UP = 1.36101;
-  var swing = null, swingNext = null, shards = [], shardProg = null, SHU = {};
+  var swing = null, swingNext = null, shards = [], shardProg = null, SHU = {}, GUITAR_MID = null, SWOOSH_C = [1, 0.71, 0.45], swoosh = [];
   function smashFrom(body) {
     var part = function (n) { return body.parts.filter(function (p) { return p.name === n && !p.empty; })[0]; };
     var J = body.joints || {};
@@ -1227,6 +1239,10 @@
       if (r > best) { best = r; FAR_END = c; var up = norm([-ax[1] * ax[0], 1 - ax[1] * ax[1], -ax[1] * ax[2]]); E0 = -Math.atan2(q[0] * up[0] + q[1] * up[1] + q[2] * up[2], -q[2]); }
     });
     Y_SH = sR[1] - sR[0] / ax[0] * ax[1];
+    // the swoosh: from the guitar's middle to its far end, in the far end's own colour (the rib's gold)
+    GUITAR_MID = [g.dim[0] / 2, g.dim[1] / 2, g.dim[2] / 2];
+    var fc = body.palette[g.ids[(floor(FAR_END[1]) * g.dim[2] + floor(FAR_END[2])) * g.dim[0] + floor(FAR_END[0])]];
+    if (fc) { SWOOSH_C = [fc[0] / 255, fc[1] / 255, fc[2] / 255]; }
     // the arms' highest: no cell of the arms or the guitar into his head's sphere (a cell's farthest corner at most on
     // it), the first touch found in half degrees, then halved to a ten-thousandth of a radian
     var cells = [part("arm_right"), part("arm_left"), g], hc = body.head.centre, r0 = body.head.radius + half;
@@ -1256,20 +1272,30 @@
     var dx = p[0] - s[0], dz = p[2] - s[2];
     return Math.atan2(-dz, dx) - Math.acos(clampV(-s[0] / hypot(dx, dz), -1, 1));
   }
-  // The swing's pose at u beats, for pose(): { arms, twist } in radians; null at rest.
+  // The swing's pose at u SWINGs, for pose(): { arms, twist, spin } in radians and { lift } in metres; null at rest.
+  // The coil runs from u0 (0, or half way for a kept one, which starts from where the last one's follow-through
+  // ended) to the top at 1/2; the leap and the spin run from u0 to the strike.
   function swingPose(s) {
     s = s || swing;
     if (!s) { return null; }
-    var u = s.u, a;
-    if (s.ret) { a = lerp2(s.from, [0, 0], smooth((u - 1.5) / 0.5)); }
+    var u = s.u, a, spin = 0, lift = 0, q, v = clampV((u - (s.u0 || 0)) / (1 - (s.u0 || 0)), 0, 1);
+    if (s.ret) { q = smooth((u - 1.5) / 0.5); a = lerp2(s.from, [0, 0], q); spin = (s.spin || 0) * (1 - q); lift = (s.lift || 0) * (1 - q); }
     else {
-      var top = s.top || [ARMS_UP, s.hit[1] + s.side * COIL], other = [ARMS_UP, s.hit[1] - s.side * COIL], q;
+      var st = s.style, side = st === "spin" ? 0 : s.side * COIL;
+      // the top: the sweep's a quarter turn to the side, the slam's straight up the line, the spin's the strike's own
+      var top = s.top || (st === "spin" ? s.hit : [ARMS_UP, s.hit[1] + side]);
+      // where the follow-through ends: the sweep's and the spin's up on the other side, the slam's driven down through
+      var other = st === "slam" ? [0, s.hit[1]] : [ARMS_UP, s.hit[1] - (st === "spin" ? s.side * COIL : side)];
       if (u < 0.5) { a = lerp2(s.from, top, smooth(u / 0.5)); }
       else if (u < 1) { q = (u - 0.5) / 0.5; a = lerp2(top, s.hit, q * q); }
       else if (u < 1.5) { q = (u - 1) / 0.5; a = lerp2(s.hit, other, q * (2 - q)); }
       else { a = lerp2(other, [0, 0], smooth((u - 1.5) / 0.5)); }
+      // the leap's flight is the time from its start to the strike, so it lands on it; the spin, a whole turn the way
+      // the downswing goes, from rest at an even pull (a whole turn is none: it starts and ends facing the block)
+      if (st === "slam" && u < 1) { lift = 4 * LEAP * (1 - (s.u0 || 0)) * (1 - (s.u0 || 0)) * v * (1 - v); }
+      if (st === "spin" && u < 1) { spin = s.side * 2 * Math.PI * (1 - v * v); }
     }
-    return u >= 2 ? null : { arms: a[0], twist: a[1] };
+    return u >= 2 ? null : { arms: a[0], twist: a[1], spin: spin, lift: lift };
   }
   // A tap to break: a swing whose strike is a beat away; during a swing (before its follow-through ends) it is kept,
   // the latest only, for a beat after this one's strike; a second tap on what is already to be struck does nothing.
@@ -1285,25 +1311,28 @@
     t.u = 0; t.from = [now.arms, now.twist]; t.side = now.twist < -1e-3 ? -1 : 1;
     begin(t);
   }
+  // (each swing's style at random, as asked; u0 where its clock starts)
   function begin(t) {
     t.struck = false; t.hit = [0, 0]; t.hit[0] = aimArms(t); t.hit[1] = aimTwist(t.hit[0]);
+    t.style = STYLES[floor(Math.random() * STYLES.length)]; t.u0 = t.u;
     swing = t;
   }
-  // The one kept: its downswing begins at this one's top on the other side, so it strikes a beat after this one; and
-  // standing, he goes on facing it after (what he reaches for, as a tap would have set).
+  // The one kept: its downswing begins where this one's follow-through ends (the sweep's top on the other side; the
+  // slam's guitar hanging, so the next comes up from under, an uppercut), so it strikes half a beat after this one;
+  // and standing, he goes on facing it after (what he reaches for, as a tap would have set).
   function chain() {
-    var s = swing, t = swingNext;
+    var s = swing, t = swingNext, p = swingPose();
     swingNext = null;
-    t.u = s.u - 1; t.side = -s.side; t.top = [ARMS_UP, s.hit[1] - s.side * COIL]; t.from = t.top;
+    t.u = s.u - 1; t.side = -s.side; t.top = [p.arms, p.twist]; t.from = t.top;
     P.want = bearingTo(t);
     begin(t);
   }
   // The swing let go (the head leaves, he is put out, the sight is raised): nothing struck, nothing kept; the arms to
-  // rest in half a beat.
+  // rest in half a SWING, and a spin or a leap back (the spin the shorter way round).
   function letGo() {
     var p = swingPose();
     swingNext = null;
-    swing = p ? { ret: true, u: 1.5, from: [p.arms, p.twist] } : null;
+    swing = p ? { ret: true, u: 1.5, from: [p.arms, p.twist], spin: angle(p.spin), lift: p.lift } : null;
   }
   // What he turns to while a swing is on: what it will strike, until it has; then what is kept for the next.
   function swingYaw() {
@@ -1312,12 +1341,12 @@
   }
   // His bearing to a block from where he stands now, so that walking during a swing he still turns to it.
   function bearingTo(s) { return Math.atan2(s.x + 0.5 - P.x, -(s.z + 0.5 - P.z)); }
-  // Each frame: the swing's clock (in beats; in water at SWIM / WALK, as his legs go there), the aim kept on the block
-  // as he moves, the strike, the next kept one or the end.
+  // Each frame: the swing's clock (in SWINGs; in water at SWIM / WALK, as his legs go there), the aim kept on the
+  // block as he moves, the strike, the next kept one or the end.
   function swingStep(dt) {
     if (!swing) { return; }
     var s = swing;
-    s.u = s.hold != null ? s.hold : s.u + dt / BEAT * (P.wet ? SWIM / WALK : 1);
+    s.u = s.hold != null ? s.hold : s.u + dt / SWING * (P.wet ? SWIM / WALK : 1);
     if (!s.ret && !s.struck) {
       s.hit[0] = aimArms(s); s.hit[1] = aimTwist(s.hit[0]);
       if (s.u >= 1) { strike(s); }
@@ -1325,7 +1354,7 @@
     if (!s.ret && s.u >= 1.5 && swingNext) { chain(); }
     else if (s.u >= 2) { swing = null; }
   }
-  // The far end in the world at u beats of the swing (his feet where they are now, facing as he faces).
+  // The far end in the world at u SWINGs of the swing (his feet where they are now, facing as he faces).
   function farEndAt(s, u) {
     var PB = window.PearlBody, u0 = s.u;
     s.u = u; var a = swingPose(s); s.u = u0;
@@ -1346,11 +1375,11 @@
   }
   /* The block's six bars, as the figure has them, fly out of the face he struck, each the way it lies from the block's
      middle, at half the guitar's speed at the strike (the throw's bounce, e = 1/2: the mean of a perfect bounce and a
-     dead stop), turning at half a turn a beat (half his shoulders' turn at the strike); they fall as anything falls
-     here (in water as he sinks), lie where they land on a block's top, and are gone a beat after the strike, when the
-     swing that broke them is over (one flying into a block's side is gone at once). */
+     dead stop), turning at a turn a beat (half his shoulders' turn at the sweep's strike); they fall as anything falls
+     here (in water as he sinks), lie where they land on a block's top, and are gone a beat after the strike, on the
+     song's next beat (one flying into a block's side is gone at once). */
   function burst(s, b) {
-    var e = 1 / 64, p1 = farEndAt(s, 1), p0 = farEndAt(s, 1 - e), dt = e * BEAT / (P.wet ? SWIM / WALK : 1);
+    var e = 1 / 64, p1 = farEndAt(s, 1), p0 = farEndAt(s, 1 - e), dt = e * SWING / (P.wet ? SWIM / WALK : 1);
     var v = hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]) / dt / 2, n = s.n;
     var tn = tonesOf(w.pal[b] || [200, 200, 200]), tones = new Float32Array(9);
     for (var i = 0; i < 3; i += 1) { for (var j = 0; j < 3; j += 1) { tones[i * 3 + j] = tn[i][j] / 255; } }
@@ -1379,7 +1408,7 @@
         return true;
       }
       q.c = c;
-      q.turn += Math.PI / BEAT * dt;
+      q.turn += Math.PI / SWING * dt;
       return true;
     });
   }
@@ -1405,6 +1434,32 @@
       gl.uniform3fv(SHU.uT, q.tones);
       gl.drawArrays(gl.TRIANGLES, 0, 36);
     });
+  }
+  /* The swoosh: the guitar's path over the last half SWING, a band from its middle to its far end in the far end's
+     gold, fading back and to its middle, where the far end goes faster than he walks: the smear of animation (one arc
+     for the frames a blow is too fast for) and the weapon trail of fighting games. None under reduced motion. */
+  function swooshAt(M, now) {
+    if (!swing || !GUITAR_MID || stillMotion.matches) { swoosh.length = 0; return; }
+    var m = window.PearlBody.place(M.guitar, P.x, P.y, P.z, P.face);
+    swoosh.push({ f: apply(m, FAR_END), c: apply(m, GUITAR_MID), t: now });
+    while (swoosh.length && swoosh[0].t < now - SWING * 500) { swoosh.shift(); }
+  }
+  function drawSwoosh(now) {
+    if (swoosh.length < 2 || !trailProg) { return; }
+    var pts = [];
+    for (var i = 1; i < swoosh.length; i += 1) {
+      var a = swoosh[i - 1], b = swoosh[i], dt = max(1e-3, (b.t - a.t) / 1000), sp = hypot(b.f[0] - a.f[0], b.f[1] - a.f[1], b.f[2] - a.f[2]) / dt;
+      var k = smooth((sp - WALK) / WALK) * (1 - (now - b.t) / (SWING * 500)) * 0.6;
+      if (i === 1) { pts.push(a.f[0], a.f[1], a.f[2], 0, a.c[0], a.c[1], a.c[2], 0); }
+      pts.push(b.f[0], b.f[1], b.f[2], max(0, k), b.c[0], b.c[1], b.c[2], 0);
+    }
+    gl.useProgram(trailProg);
+    gl.uniformMatrix4fv(TU.uVP, false, vp); gl.uniform3f(TU.uC, SWOOSH_C[0], SWOOSH_C[1], SWOOSH_C[2]);
+    gl.bindVertexArray(trailVao); gl.bindBuffer(gl.ARRAY_BUFFER, trailBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pts), gl.DYNAMIC_DRAW);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, pts.length / 4);
+    gl.disable(gl.BLEND); gl.depthMask(true);
+    gl.bindVertexArray(null);
   }
 
   /* ---- the sight: his head, the one true sphere, as a reflex sight; and the pearls he throws ----------------------
@@ -1487,7 +1542,7 @@
   function actNow(now) {
     var a = swingPose(), r = sightEase(now), f = flingAt(now) * r;
     if (!a && !r && !f) { return null; }
-    return { arms: a ? a.arms : 0, twist: a ? a.twist : 0, right: r, fling: f };
+    return { arms: a ? a.arms : 0, twist: a ? a.twist : 0, spin: a ? a.spin : 0, lift: a ? a.lift : 0, right: r, fling: f };
   }
   // The window's half-angle, nominal: the head's outline seen from SIGHT_D, and the focal plane's measure of it.
   function sightTan() { return PEARL.headR / Math.sqrt(SIGHT_D * SIGHT_D - PEARL.headR * PEARL.headR); }
@@ -1553,7 +1608,7 @@
   // A touch screen: one touched already, or whose pointer is a finger (the Sight button's press is not a touch of the
   // canvas, so a phone that raised the sight before it had touched the view was told to click; 21 Oct 2026).
   function byTouch() { return touchy || !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches); }
-  // Ready to throw: the sight up, the arm up (the raise done) and a beat since the last (the smash's one block a beat).
+  // Ready to throw: the sight up, the arm up (the raise done) and a beat of the song since the last.
   function sightReady(now) { return sightOn() && sightEase(now) >= 1 && now - sight.thrown >= BEAT * 1000; }
   // A tap, a click, T or Enter with the sight up: the throw, at once if his arm is up and a beat has passed since the
   // last, else kept (the latest only) until it has, as a tap during a swing is kept.
@@ -2175,7 +2230,7 @@
     if (FAR_END) {
       var tw0 = aimTwist(0, body), tw1 = aimTwist(ARMS_UP, body);
       [[ARMS_UP, tw0], [ARMS_UP, tw1]].forEach(function (t) { acts.push({ arms: t[0], twist: t[1] + COIL }, { arms: t[0], twist: t[1] - COIL }); });
-      acts.push({ arms: 0, twist: tw0 }, { arms: ARMS_UP, twist: tw1 });
+      acts.push({ arms: 0, twist: tw0 }, { arms: ARMS_UP, twist: tw1 }, { arms: ARMS_UP, twist: tw1, lift: LEAP });
     }
     // and his right arm raised to throw, and at the end of its fling (the sight)
     acts.push({ right: 1 }, { right: 1, fling: -COIL });
@@ -2213,6 +2268,7 @@
     // where the head is now, on the walk's bob (the sight's window is drawn round it), and the pearl in his raised glove
     sight.head = apply(PB.place(M.head, P.x, P.y, P.z, P.face), body.head.centre);
     sight.inHand = HOLD && drawMe.body ? apply(PB.place(M.arm_right, P.x, P.y, P.z, P.face), HOLD) : null;
+    if (!veil) { swooshAt(M, now); }
     if (drawMe.body) {
       // The same program as the place's blocks, his palette, the pixel's width in his unit; no floor under his grids,
       // and no opening by his own nearness (uNear nought): he closes by the camera alone, as before.
@@ -2433,7 +2489,7 @@
       rocketLift = lift;
     }
     drawPearl(now); drawPearls(now);
-    drawShards();
+    drawShards(); drawSwoosh(now);
     if (skyFig) {
       gl.useProgram(figProg);
       gl.uniformMatrix4fv(FU.uVP, false, vp);
@@ -2521,7 +2577,7 @@
   // to it ended (both are Hd's), and where you woke not his eyes again until you have walked off.
   function lieDown(lines) {
     var at = underTree();
-    swing = swingNext = null; shards = [];
+    swing = swingNext = null; shards = []; swoosh = [];
     dropSight(); pearls = []; carried = THROW.CARRY; drawCarry();   // he comes to with his five pearls, none lying about
     if (Hd) { Hd = null; pov = "third"; delete document.body.dataset.holo; drawViews(); }
     if (skyFig) { skyFig.away = false; }
@@ -3358,10 +3414,10 @@
              homage: function () { return homage; }, wakeYaw: wakeYaw,
              aim: function () { var h = eye && camLast ? pick(lookDir(camLast.yaw, camLast.pitch)) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.r.toFixed(2)) : "nothing"; },
              pov: function () { return pov; }, toggle: toggleHolo, head: function () { return Hd; }, cam: function () { return { eye: eye, last: camLast, camD: camD, blend: blend, drawMe: drawMe }; },
-             swing: function () { return swing && { u: swing.u, side: swing.side, hit: swing.hit, struck: !!swing.struck, broke: !!swing.broke, ret: !!swing.ret, speed: swing.speed, at: [swing.x, swing.y, swing.z], next: swingNext && [swingNext.x, swingNext.y, swingNext.z], pose: swingPose() }; },
+             swing: function () { return swing && { u: swing.u, side: swing.side, hit: swing.hit, struck: !!swing.struck, broke: !!swing.broke, ret: !!swing.ret, speed: swing.speed, style: swing.style, at: [swing.x, swing.y, swing.z], next: swingNext && [swingNext.x, swingNext.y, swingNext.z], pose: swingPose() }; },
              holdSwing: function (u) { if (swing) { swing.hold = u; } }, shards: function () { return shards.map(function (q) { return { c: q.c, v: q.v, t: q.t, lies: !!q.lies }; }); },
              screenOf: function (p) { var r = canvas.getBoundingClientRect(), q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [r.left + (q[0] / q[3] * 0.5 + 0.5) * r.width, r.top + (0.5 - q[1] / q[3] * 0.5) * r.height] : null; },
-             farEnd: function () { return swing && !swing.ret && FAR_END ? farEndAt(swing, swing.u) : null; }, smashConsts: function () { return { BEAT: BEAT, COIL: COIL, ARMS_UP: ARMS_UP, E0: E0, Y_SH: Y_SH, FAR_END: FAR_END }; },
+             farEnd: function () { return swing && !swing.ret && FAR_END ? farEndAt(swing, swing.u) : null; }, smashConsts: function () { return { BEAT: BEAT, SWING: SWING, LEAP: LEAP, COIL: COIL, ARMS_UP: ARMS_UP, E0: E0, Y_SH: Y_SH, FAR_END: FAR_END }; },
              stone: function () { return onStone; }, px: function () { return pxW; }, putOut: putOut,
              bring: bringBody, home: goHome, harm: harmBody, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; },
              pearl: function () { return me3 && { ms: me3.ms, cells: me3.body.cells, parts: me3.parts.length, cell: me3.body.cell, PEARL: PEARL, throwArm: me3.body.throwArm }; },
