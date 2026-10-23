@@ -53,7 +53,7 @@
   // copy, a motion smear) or a violet onion skin
   function ghostColours(p, pal) {
     const pale = (stops, k) => stops.map((s) => (Array.isArray(s) ? [s[0], M.mix(s[1], pal.bg, k)] : M.mix(s, pal.bg, k)));
-    if (p.ghost === 'violet') { const v = pal.name === 'ink' || pal.name === 'paper' ? pal.ink : pal.iris; return { bar: [v], body: [v], s: [v] }; }
+    if (p.ghost === 'violet') { const v = (pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper' ? pal.ink : pal.iris; return { bar: [v], body: [v], s: [v] }; }
     if (p.ghost === 'blur') return { bar: pale(pal.bar, 0.25), body: pale(pal.body, 0.25), s: pale(pal.s, 0.25) };
     return { bar: pal.bar, body: pal.body, s: pal.s };
   }
@@ -186,7 +186,7 @@
       const from = base + a1, to = base + a1 + (0.9 + 1.2 * I) * dir * (0.4 + 0.6 * close);
       const pts = [];
       for (let i = 0; i <= 48; i++) { const a = M.lerp(from, to, i / 48); pts.push([o[0] + R * Math.cos(a), o[1] + R * Math.sin(a)]); }
-      const col = pal.name === 'ink' || pal.name === 'paper' ? pal.ink : pal.iris;
+      const col = (pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper' ? pal.ink : pal.iris;
       M.stroke(ctx, pts.reverse(), { width: 24 + 10 * I, colours: [[0, M.mix(col, pal.bg, 0.92)], [0.6, M.mix(col, pal.bg, 0.4)], [1, col]], alpha: arcA * (0.55 + 0.4 * I) });
     }
     place(ctx, o, 0, 0, ang(xr), scl(xr), (c) => ribbon(c, p, pal, -0.25 * I * (1 - e(xr)), 1));
@@ -199,7 +199,7 @@
    * outBack settle, and make it fit any moment (boomerang starts and ends on the still mark) or show the path
    * itself (spool: the trace becomes the ribbon).
    * ------------------------------------------------------------------------------------------------------- */
-  const flatPal = (pal) => pal.name === 'ink' || pal.name === 'paper';
+  const flatPal = (pal) => (pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper';
   const violetOf = (pal) => (flatPal(pal) ? pal.ink : pal.iris);
   // the homeward ghosts: the same kind of ghost as the param asks for, in violet
   function violetGhosts(p, pal) {
@@ -207,7 +207,7 @@
     return { bar: [c], body: [c], s: [c] };
   }
   // the thread's violet: the ribbon's own (logo, inverse, turn) or the iris; one colour in the flat palettes
-  const threadColour = (pal) => (flatPal(pal) ? pal.ink : pal.name === 'logo' || pal.name === 'inverse' || pal.name === 'turn' ? M.colourAt(pal.ribbon, 0.28) : pal.iris);
+  const threadColour = (pal) => (flatPal(pal) ? pal.ink : (pal.base || pal.name) === 'logo' || (pal.base || pal.name) === 'inverse' || (pal.base || pal.name) === 'turn' ? M.colourAt(pal.ribbon, 0.28) : pal.iris);
 
   // boomerang: from rest, out along the S toward env.direction (a small wind-up first), a hang at the far end,
   // then straight back along the same S with the chosen easing. Onion skins sampled evenly in time, so they

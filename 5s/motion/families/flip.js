@@ -45,8 +45,8 @@
 
   // the mark's other side: the turn's violet (or the logo's colours when the palette is already the turn's)
   function backOf(pal, theme) {
-    if (pal.name === 'ink' || pal.name === 'paper') return one(M.mix(pal.ink, pal.bg, 0.45));
-    return M.palette(pal.name === 'turn' ? 'logo' : 'turn', theme);
+    if ((pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper') return one(M.mix(pal.ink, pal.bg, 0.45));
+    return M.palette((pal.base || pal.name) === 'turn' ? 'logo' : 'turn', theme, pal.iteration);   // (a look palette: the same look's)
   }
 
   /* one letter as a turned slab.

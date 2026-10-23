@@ -9,7 +9,7 @@
  *       one row per registered family (each at its default style unless --param style=... fits it)
  *   node 5s/motion/test/strip.cjs --styles --family <id> [...]
  *       one row per style of the family
- *   node 5s/motion/test/strip.cjs --check [--family <id>]
+ *   node 5s/motion/test/strip.cjs --check [--family <id>] [--param k=v ...]
  *       asserts, per family (every family, or the one named), in both themes and every style:
  *         - no console errors or page errors while loading and rendering
  *         - determinism: the same t renders pixel-identical frames, before and after other frames
@@ -134,7 +134,7 @@ async function main() {
     if (args.check) {
       const ids = args.family ? [args.family] : loaded;
       const loadErrors = errors.splice(0);
-      const report = await page.evaluate(runChecks, { ids, size: args.size || 160 });
+      const report = await page.evaluate(runChecks, { ids, size: args.size || 160, params: args.params });
       const runErrors = errors.splice(0);
       if (loadErrors.length) { failed = true; console.log('FAIL loading families:\n  ' + loadErrors.join('\n  ')); }
       for (const r of report) {
@@ -224,14 +224,14 @@ function drawStrip({ rows, frames, size, theme, params, seed, dpr }) {
   return c.toDataURL('image/png');
 }
 
-function runChecks({ ids, size }) {
+function runChecks({ ids, size, params }) {
   const S = size;
   // Software canvases throughout, and one warm-up render of every family first: Chromium rasterizes a GPU
   // canvas (here Marks' scratch layers) slightly differently until a readback moves it to software, which
   // would look like non-determinism in whichever frame happens to come first.
   const canvas = () => { const c = document.createElement('canvas'); c.width = S; c.height = S; c.getContext('2d', { willReadFrequently: true }); return c; };
   for (const id of ids) for (const theme of ['light', 'dark']) for (const style of Motion.get(id).styles) {
-    try { const c = canvas(); Motion.render(c.getContext('2d'), id, 0.5, { style }, { w: S, h: S, theme, seed: 'warm' }); c.getContext('2d').getImageData(0, 0, 1, 1); } catch (e) { /* reported below */ }
+    try { const c = canvas(); Motion.render(c.getContext('2d'), id, 0.5, Object.assign({}, params, { style }), { w: S, h: S, theme, seed: 'warm' }); c.getContext('2d').getImageData(0, 0, 1, 1); } catch (e) { /* reported below */ }
   }
   const frame = (id, t, p, theme, c) => {
     c = c || canvas();
@@ -248,7 +248,7 @@ function runChecks({ ids, size }) {
     let ink = Infinity;
     for (const theme of ['light', 'dark']) {
       for (const style of fam.styles) {
-        const p = { style };
+        const p = Object.assign({}, params, { style });   // --param (e.g. look=iterations iteration=7) applies to every style
         try {
           const tag = `${style}/${theme}`;
           const a = pixels(frame(id, 0.37, p, theme));
@@ -257,7 +257,7 @@ function runChecks({ ids, size }) {
           const b = pixels(frame(id, 0.37, p, theme, scratch));
           if (!same(a, b)) problems.push(`${tag}: t=0.37 differs between two renders (not deterministic, or state leaks between frames)`);
           const c1 = frame(id, 1, p, theme);
-          const bg = Marks.palette(Motion.resolve(id, p).palette, theme).bg;
+          const bg = Marks.palette(Motion.resolve(id, p).palette, theme, p.look === 'iterations' ? p.iteration || 1 : undefined).bg;
           const bgc = canvas();
           const bx = bgc.getContext('2d'); bx.fillStyle = bg; bx.fillRect(0, 0, S, S);
           const share = diffShare(pixels(c1), pixels(bgc), 24);

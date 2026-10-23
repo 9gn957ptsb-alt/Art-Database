@@ -61,7 +61,7 @@
   function vessel(ctx, p, pal, env, alpha) {
     if (alpha <= 0.002) return;
     const line = 9 / Math.max(0.6, p.weight * 0.5 + 0.5);
-    const tone = pal.name === 'ink' || pal.name === 'paper' ? pal.ink : M.mix(M.colourAt(pal.body, 0.45), pal.bg, 0.25);
+    const tone = (pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper' ? pal.ink : M.mix(M.colourAt(pal.body, 0.45), pal.bg, 0.25);
     if (p.ribbon) M.layer(ctx, { alpha: 0.2 * alpha }, (c) => M.ribbon(c, 0, { colours: pal.ribbon }));
     M.layer(ctx, { alpha: 0.13 * alpha }, (c) => letters(c, p, pal, 0));
     M.layer(ctx, { alpha: 0.75 * alpha, composite: 'source-over' }, (c) => {
@@ -75,7 +75,7 @@
    * surface and a few bubbles rising, both kept inside the letters */
   function liquid(ctx, p, pal, env, o) {
     const pts = surface(env, o.y, o.tilt, o.amp, o.phase);
-    const light = pal.name === 'ink' ? pal.bg : M.mix(M.colourAt(pal.bar, 1), '#FFFFFF', 0.55);
+    const light = (pal.base || pal.name) === 'ink' ? pal.bg : M.mix(M.colourAt(pal.bar, 1), '#FFFFFF', 0.55);
     // composite 'source-over' forces a real scratch layer (alpha 1 alone would draw straight onto ctx)
     M.layer(ctx, { alpha: 1, composite: 'source-over' }, (c) => {
       ribbon(c, p, pal, o.rt || 0, 1);

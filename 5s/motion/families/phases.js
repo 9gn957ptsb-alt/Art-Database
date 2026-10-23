@@ -44,8 +44,8 @@
     const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
     return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) < 0.25;
   };
-  const flatPal = (pal) => pal.name === 'paper' || pal.name === 'ink';
-  const logoLike = (pal) => pal.name === 'logo' || pal.name === 'inverse' || pal.name === 'turn';
+  const flatPal = (pal) => (pal.base || pal.name) === 'paper' || (pal.base || pal.name) === 'ink';
+  const logoLike = (pal) => (pal.base || pal.name) === 'logo' || (pal.base || pal.name) === 'inverse' || (pal.base || pal.name) === 'turn';
   // a hairline in mark units that stays at least about a device pixel at any size
   const hair = (env, units) => Math.max(units, 1.25 / ((env.scale || 1) * (env.dpr || 1)));
   const still = (ctx, p, env) => M.mark(ctx, { palette: env.palette, weight: p.weight, ribbon: p.ribbon });
@@ -310,7 +310,7 @@
   }
   // Ripple's ring colours
   function ringColour(pal, i) {
-    if (pal.name === 'logo' || pal.name === 'inverse') return [pal.iris, pal.cobalt, pal.flare, pal.ember][i % 4];
+    if ((pal.base || pal.name) === 'logo' || (pal.base || pal.name) === 'inverse') return [pal.iris, pal.cobalt, pal.flare, pal.ember][i % 4];
     return M.colourAt(pal.five, 0.2 + 0.15 * (i % 5));
   }
 

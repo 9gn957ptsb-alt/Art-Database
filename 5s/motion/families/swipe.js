@@ -144,7 +144,7 @@
     const warm = { bar: M.mix(pal.ember, '#FFD27A', 0.4), body: pal.ember, s: pal.flare, glow: M.mix(pal.ember, '#FFFFFF', 0.6) };
     const cool = { bar: M.mix(pal.cobalt, '#FFFFFF', 0.35), body: pal.cobalt, s: M.mix(pal.cobalt, pal.iris, 0.45), glow: M.mix(pal.cobalt, '#FFFFFF', 0.7) };
     let mode = p.trail;
-    if (mode === 'auto') mode = (pal.name === 'logo' || pal.name === 'inverse') ? (dir > 0 ? 'letters' : 'cool') : 'letters';
+    if (mode === 'auto') mode = ((pal.base || pal.name) === 'logo' || (pal.base || pal.name) === 'inverse') ? (dir > 0 ? 'letters' : 'cool') : 'letters';
     return mode === 'warm' ? warm : mode === 'cool' ? cool : letters;
   }
 

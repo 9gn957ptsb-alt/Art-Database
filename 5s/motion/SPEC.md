@@ -88,7 +88,30 @@ env → same pixels: never Math.random or the clock) so the lab can scrub, freez
 Shared options every family honours: `palette`, `theme`, `ribbon` (on/off), `weight` (stroke scale
 0.6–1.4; standard 0.75, the artist's choice of 23 Oct 2026), `intensity` (0–1: how big the gesture is), `easing`.
 
-**The library (19 families, three builders; seven more added 22 Oct, 26 in all).** Each family has 2–4 styles so "Generate" has real range.
+**The Iterations look** (23 Oct 2026). The artist, with a sheet of twenty iterations of the mark
+(`reference/iterations.png`): "Use this sheet of iterations to develop the animations in the motionlab. Make sure you
+include everything in these iterations from the characters to the background colors." The sheet arrives as an
+**added** look, beside the classic one, never as a change to what saved params resolve to:
+- A variant opts in with `params.look = 'iterations'` and `params.iteration` (1–20, the sheet's cells in reading
+  order). Both are **pass-through** params: not in `Motion.SHARED`, in no family's params, so `Motion.resolve` copies
+  them unchanged and every saved favorite and pick resolves, renders and keys exactly as before. Any other `look`, or
+  none, is the classic look. `Motion.LOOKS = ['classic', 'iterations']`.
+- In the look, `Motion.render` draws with `Marks.palette(name, theme, iteration)` (its own `name`, `'<name>~i<n>'`, so
+  caches keyed by name never mix the looks; `base` is the palette it came from): the sheet's letters (no frame; a
+  forward-leaning 5 with a bladed bar, yellow-orange to orange, the stem and bowl orange to red to magenta; the s
+  orange to yellow), the translucent glass fold in place of the ribbon (violet, blue, cobalt, cyan, lilac; cloth,
+  sail, crystal or wave), and the sheet's white ground `#FEFEFE` (dark: `#100E18`; Paper keeps its iris ground).
+  Logo takes the iteration's stops, Inverse those on the other theme, Keep/Pass/Turn their own stops with the new
+  letters and glass, Ink/Paper a mono glass in their ink.
+- `Marks.ITERATIONS`: the twenty presets (frozen), each `{n, cell, label ('vivid cloth', 'pastel crystal' …),
+  describe, params}`.
+- A family that builds its own letter shapes (a morph, a part cut from a letter, an offset strand) builds them in the
+  look from `Marks.paths5s` and gives each stroke a `letter` (`'bar' | 'body' | 's'`, a stretch `[name, u0, u1]`, or a
+  morph `[a, b, m]`), so it moves as the sheet's letters, with their weight and blades, and lands on the still mark
+  (Morph, Split, Three and Count do). Palettes are compared by `pal.base || pal.name` (a look palette's own name is
+  `'<name>~i<n>'`). The classic look ignores all of this.
+
+**The library (19 families, three builders; seven more added 22 Oct, three on 23 Oct, 29 in all).** Each family has 2–4 styles so "Generate" has real range.
 
 | Group | Family | The idea | Moments |
 | --- | --- | --- | --- |
@@ -118,6 +141,9 @@ Shared options every family honours: `palette`, `theme`, `ribbon` (on/off), `wei
 | | **Tiles** | the mark printed across a board of cards that a wave turns over until the seams close | tab, five-start, five-done, set-pin, bring |
 | | **Swarm** | a flock of specks along the strokes bursts up, wheels round the frame and settles back into the 5 and the s | split, bring, launch, empty, pass |
 | | **Cast** | the mark stands still like an object in a room; a light crosses over it and its long shadow sweeps round the floor (a loop) | seed, load, empty, launch, five-start |
+| Added 23 Oct, from the sheet of iterations | **Refold** | the mark holds still while its glass refolds through the twenty (cloth, sail, crystal, wave; pastel and vivid) and settles on the chosen one; in the classic look the ribbon turns instead (a loop) | load, empty, turn, tab, launch |
+| | **Wash** | colour washes over the mark: it arrives as the sheet's palest take and a tide of saturation runs along the strokes, the glass deepening last | keep, launch, five-done, streak, seed, pass |
+| | **Prism** | light passes through the glass: a bar of light crosses the mark, splits into cyan, blue and violet fringes, throws caustics on the letters and leaves the glass glowing | turn, launch, set-pin, path, five-start |
 
 ## The moments (what a person passes through in 5s)
 
@@ -155,6 +181,19 @@ One page, desktop-first but working at phone width (the artist will also open it
 - **Family + parameters** (right panel): family select (with its idea and why), style, every param as
   a labelled slider/select with its value, palette, ribbon, weight, intensity, easing (with a small
   curve drawing), seed.
+  - **Look** (in the shared options): Classic | Iterations. With Iterations, the **Iteration** picker: the twenty as
+    40 px still thumbnails of the mark (in the stage's palette and theme, drawn once), in the sheet's 5 × 4 order; a
+    radiogroup (arrows move, Left/Right one, Up/Down a row, Home/End; 24 px targets or more; labels such as
+    "Iteration 7: mid-pastel crystal"). The control writes `params.look` and `params.iteration` into the stage's draft;
+    Classic takes both keys away again, so a favorite toggled to Iterations and back is the same favorite. A change of
+    family, or Defaults, keeps the stage's look.
+  - **The ground** comes from the palette's `bg` through `Motion.render`, so the stage (and the stage box around its
+    canvas), Explore, the Board and For you show the sheet's white wherever a variant is in the look.
+  - **New variants default to the look; saved ones never change.** `genVariant` gives every generated variant the
+    look and an iteration drawn from its seed after every other draw, so an older seed's other fields are as they
+    were; the stage with nothing picked or drafted is in the look at iteration 1; All families, the retuned and leaned
+    variants of For you and the starter sheet are in the look too. Picks, stars, the pool, the Board, Copy spec and
+    Save spec replay exactly as stored, and carry look keys only when the artist saves a variant in the look.
 - **Explore** (a mode over the stage): a **contact sheet** of 12 variants for the selected moment, all
   playing in sync (one shared clock), from the families that fit the moment plus a few that don't
   ("Wildcards"). **Generate** draws 12 new variants (seeded: the variant's seed is shown, so any one can
@@ -178,6 +217,11 @@ One page, desktop-first but working at phone width (the artist will also open it
     Refined) and the hybrid Phases, given the pool's median intensity and weight and its usual palette and
     ribbon. Ranked by affinity (per axis, the share of favorites that agree, averaged) plus how often the
     family was starred; every favored family once, then the best, at most three per family.
+  - **Your favorites in the Iterations look** (after More like your favorites): each favorite in the classic look
+    exactly as starred (its star on), beside its twin: the same family, style, params, seed and direction, plus the
+    look. The twins' iterations take turns through the twenty from a seeded start, so the sheet's range shows; New
+    ideas moves the start. Starring a twin saves it with its look. Once favorites in the look exist, the reading says
+    how many and mostly which iteration (a Look chip).
   - **Something different** (8): the families no favorite belongs to, furthest from the pool on the
     axes, one seeded style each, at the pool's intensity; each says which of its values are new.
   - With no favorites: it says so and offers a starter sheet of twelve families chosen to differ from one
@@ -245,5 +289,7 @@ one polite live region ("Picked Flip for A turn").
 5s/motion/build.py       -> 5s/motion/dist/{index.html (css inlined), marks.js, families.js, lab.js, lab-markup.js, logo.webp}, dist/dev.html
 5s/motion/test/*.cjs     Playwright checks + frame strips; embed.html + embed.smoke.cjs (the lab mounted in a host)
 5s/motion/test/favorites.json  the artist's 15 favorites (22 Oct 2026), a fixture for the smoke tests
+5s/motion/test/iterations.cjs  the twenty presets laid out like the sheet, to hold them up against it
+5s/motion/reference/iterations.png  the artist's sheet of twenty iterations (23 Oct 2026)
 ```
 `marks.js` and the families are written to be lifted into the app later (no lab-specific code in them).

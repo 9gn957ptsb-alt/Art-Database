@@ -43,7 +43,7 @@
   // blurred: no strands needed in a glow, and no nested scratch band inside the blurred layer)
   function glow(ctx, env, pal, o, a) {
     if (a <= 0.01) return;
-    const col = pal.name === 'ink' || pal.name === 'paper' ? pal.ink : pal.iris;
+    const col = (pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper' ? pal.ink : pal.iris;
     const along = o.along || [0, 1];
     M.layer(ctx, { alpha: a * 0.7, blur: 26 * env.scale * env.dpr }, (c) =>
       M.stroke(c, o.pts || SPINE, { width: (o.width || M.widths.ribbon) * 0.8, colours: col, from: along[0], to: along[1] }));
@@ -51,7 +51,7 @@
   // a bright head: a soft round light at a point on the spine
   function head(ctx, pal, pt, r, a) {
     if (a <= 0.01) return;
-    const col = M.mix(pal.name === 'ink' ? pal.ink : pal.iris, '#FFFFFF', 0.55);
+    const col = M.mix((pal.base || pal.name) === 'ink' ? pal.ink : pal.iris, '#FFFFFF', 0.55);
     const g = ctx.createRadialGradient(pt[0], pt[1], 0, pt[0], pt[1], r);
     g.addColorStop(0, M.rgba('#FFFFFF', a)); g.addColorStop(0.35, M.rgba(col, a * 0.7)); g.addColorStop(1, M.rgba(col, 0));
     ctx.save(); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(pt[0], pt[1], r, 0, Math.PI * 2); ctx.fill(); ctx.restore();

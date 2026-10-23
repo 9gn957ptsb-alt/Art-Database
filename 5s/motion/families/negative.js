@@ -53,7 +53,7 @@
   function fieldPaint(c, p, pal, dir) {
     let stops;
     if (p.field === 'judgment') stops = dir < 0 ? [M.mix(pal.cobalt, '#FFFFFF', 0.12), pal.cobalt, M.mix(pal.cobalt, pal.iris, 0.5)] : [M.mix(pal.ember, '#FFD27A', 0.3), pal.ember, pal.flare];
-    else if (p.field === 'ink' || pal.name === 'ink' || pal.name === 'paper') stops = [pal.ink, pal.ink];
+    else if (p.field === 'ink' || (pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper') stops = [pal.ink, pal.ink];
     else stops = [M.colourAt(pal.frame, 0.05), M.colourAt(pal.frame, 0.32), M.colourAt(pal.frame, 0.45), M.colourAt(pal.frame, 0.7)];
     const g = c.createLinearGradient(80, 60, 940, 960);
     stops.forEach((col, i) => g.addColorStop(i / (stops.length - 1), col));
@@ -161,7 +161,7 @@
     const lift = Math.min(1, (dMax - d) / 260);
     M.layer(ctx, { alpha: (0.16 + 0.1 * I) * lift, blur: 16 * env.scale * env.dpr }, (c) => {
       c.save(); c.translate(-n[0] * 26 * lift, -n[1] * 26 * lift + 18 * lift); mirror(c); halfPlane(c, n, d, 1); c.clip();
-      c.fillStyle = pal.name === 'paper' ? '#000' : pal.ink; rounded(c, 0, 0, 1000, 1000, 256); c.fill(); c.restore();
+      c.fillStyle = (pal.base || pal.name) === 'paper' ? '#000' : pal.ink; rounded(c, 0, 0, 1000, 1000, 256); c.fill(); c.restore();
     });
     M.layer(ctx, { alpha: 1, composite: 'source-over' }, (c) => {
       c.save(); mirror(c); halfPlane(c, n, d, 1); c.clip();

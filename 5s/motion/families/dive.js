@@ -88,7 +88,7 @@
     if (!(k > 0.001)) return stops;
     return stops.map((s) => (Array.isArray(s) ? [s[0], M.mix(s[1], colour, k)] : M.mix(s, colour, k)));
   }
-  const flatPal = (pal) => pal.name === 'paper' || pal.name === 'ink';
+  const flatPal = (pal) => (pal.base || pal.name) === 'paper' || (pal.base || pal.name) === 'ink';
   // the colour of the bowl (the flood): the body's gradient where it rounds the bowl
   const bowlColour = (pal) => M.colourAt(pal.body, 0.7);
   // the violet the deep levels sink into (one colour on the flat palettes: the ink, a little toward the ground)

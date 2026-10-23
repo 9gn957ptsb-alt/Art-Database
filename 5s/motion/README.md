@@ -9,7 +9,7 @@ The artist, 21 Oct 2026:
 
 So the mark in motion is the app's second logo, and this lab is where the artist finds it. It covers
 the sixteen moments a person passes through in 5s (opening the app, a keep, a pass, a turn, five
-sorted, a seed growing…) and twenty-six families of ways the 5 and the s can move through them. The
+sorted, a seed growing…) and twenty-nine families of ways the 5 and the s can move through them. The
 artist can play, scrub, compare and tune them, pick one per moment, and hand the picks back so the
 app can use them. `SPEC.md` is the contract; `../CONCEPT.md` (the artist's own words) outranks it.
 
@@ -26,21 +26,23 @@ app can use them. `SPEC.md` is the contract; `../CONCEPT.md` (the artist's own w
 | `test/lab.smoke.cjs` | Playwright smoke test of the built lab at 1440 × 900 and 390 × 844, light and dark, For you included. |
 | `test/embed.html`, `test/embed.smoke.cjs` | A host page with clashing CSS, its own hash router and click handler; the test mounts the lab in it and checks it looks and works as on its own page, leaves the host alone, saves through the db it is given and unmounts cleanly. |
 | `test/favorites.json` | The artist's 15 favorites (22 Oct 2026), the fixture both smoke tests store in a fake db. |
+| `reference/iterations.png`, `test/iterations.cjs` | The artist's sheet of twenty iterations (23 Oct 2026), and a tool that lays the Iterations look's twenty presets out like it, to compare. |
 
-The 26 families: Swipe, Pulse, Fill, Negative, Rewind, Flip (gesture and judgment); Draw, Count, Ring,
+The 29 families: Swipe, Pulse, Fill, Negative, Rewind, Flip (gesture and judgment); Draw, Count, Ring,
 Stack, Echo, Path (time and structure); Split, Collage, Morph, Three, Pin, Grow, Ribbon (decomposition
 and making); and seven added on 22 Oct from the trends in the artist's favorites (`5s/handoff/motion-brief.json`):
-Phases (the hybrid), Stamp, Dive, Neon, Tiles, Swarm and Cast. Each has 3–6 styles. All of them honour the shared options palette, ribbon, weight,
+Phases (the hybrid), Stamp, Dive, Neon, Tiles, Swarm and Cast; and three added on 23 Oct from the artist's sheet of
+iterations: Refold, Wash and Prism. Each has 3–6 styles. All of them honour the shared options palette, ribbon, weight,
 intensity and easing, and each declares what plays under reduced motion.
 
 ## Build and test
 
 ```sh
 python3 5s/motion/build.py                    # -> 5s/motion/dist/{index.html, dev.html, marks.js, families.js, lab.js, logo.webp}
-node 5s/motion/test/marks.test.cjs            # engine: 32 tests
+node 5s/motion/test/marks.test.cjs            # engine: 41 tests
 node 5s/motion/test/strip.cjs --check         # every family, every style, both themes
-node 5s/motion/test/lab.smoke.cjs             # builds, serves dist on 8950-8959 ($LAB_PORT), 160 checks
-node 5s/motion/test/embed.smoke.cjs           # the lab mounted in test/embed.html, served on 8975-8979 ($EMBED_PORT), 58 checks
+node 5s/motion/test/lab.smoke.cjs             # builds, serves dist on 8950-8959 ($LAB_PORT), 220 checks
+node 5s/motion/test/embed.smoke.cjs           # the lab mounted in test/embed.html, served on 8975-8979 ($EMBED_PORT), 70 checks
 node 5s/motion/test/strip.cjs --all --theme dark --out /tmp/all-dark.png   # look at every family
 node 5s/motion/test/strip.cjs --styles --family flip                        # every style of one family
 ```
@@ -91,6 +93,40 @@ on the nine descriptor axes of `5s/handoff/motion-brief.json` and proposes what 
 Every cell plays, loads onto the stage and takes a star; **New ideas** reseeds. The Board shows the pool
 first. To describe a new family on the axes, add one line to `TAGS` in `lab.js` (space, time, change,
 texture, energy, rhythm, dimension, actor, arc, in that order); a family without one still works.
+
+## The Iterations look
+
+The artist, 23 Oct 2026, with a sheet of twenty iterations of the mark (`reference/iterations.png`): "Use this sheet of
+iterations to develop the animations in the motionlab. Make sure you include everything in these iterations from the
+characters to the background colors."
+
+The sheet is a second look beside the classic one. Every family draws in it through the engine:
+- **The letters:** no frame; a forward-leaning 5 with a bladed top bar and an s, in the sheet's gradients.
+- **The glass:** a translucent fold behind the bowl and the s, in place of the ribbon.
+- **The ground:** the sheet's white, `#FEFEFE`.
+
+- **How a variant opts in:** `params.look = 'iterations'` and `params.iteration` (1–20, the sheet's cells in reading
+  order; `Marks.ITERATIONS` holds the twenty). They are pass-through params, not shared options, so a favorite or a
+  pick saved before the look resolves and renders exactly as it was saved.
+- **In the lab:**
+  - The Family panel's shared options have **Look: Classic | Iterations**. With Iterations, a picker shows the twenty
+    as thumbnails in the sheet's order (arrow keys move through them).
+  - Classic removes the look again, so a favorite switched to Iterations and back is the same favorite.
+  - New variants are made in the look: Generate, All families, the stage when nothing is picked, and For you's ideas
+    (each generated variant draws its iteration from its seed).
+  - Saved favorites and picks play as they were saved.
+- **For you, "Your favorites in the Iterations look":** each favorite as it was starred, beside its twin in the look.
+  - The twins take turns through the twenty iterations.
+  - Starring a twin keeps it in the look.
+  - The reading then says how many favorites are in the look, and which iteration most of them use.
+
+- **Families with their own letter shapes** (Morph, Split, Three, Count) build them from the sheet's centrelines in the
+  look and say which letter each stroke is (`Marks.stroke`'s `letter`), so they morph and fly as the sheet's letters.
+
+```sh
+node 5s/motion/test/iterations.cjs --compare   # the twenty beside the sheet's cells
+node 5s/motion/test/strip.cjs --check --param look=iterations --param iteration=7   # the checks, in the look
+```
 
 ## Mounting the lab in another page
 

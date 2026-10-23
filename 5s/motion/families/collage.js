@@ -189,8 +189,8 @@
   }
 
   function looks(pal) {
-    const dark = pal.theme === 'dark' && pal.name !== 'inverse' || (pal.name === 'inverse' && pal.theme === 'light');
-    const onColour = pal.name === 'paper';
+    const dark = pal.theme === 'dark' && (pal.base || pal.name) !== 'inverse' || ((pal.base || pal.name) === 'inverse' && pal.theme === 'light');
+    const onColour = (pal.base || pal.name) === 'paper';
     if (onColour) return { paper: M.mix(pal.bg, '#FFFFFF', 0.14), fibre: M.mix(pal.bg, '#FFFFFF', 0.3), edge: M.rgba('#FFFFFF', 0.25), shade: '#1A0F45', shadow: 0.5 };
     if (dark) return { paper: M.mix(pal.bg, '#FFFFFF', 0.05), fibre: M.mix(pal.bg, '#FFFFFF', 0.34), edge: M.rgba('#FFFFFF', 0.08), shade: '#000000', shadow: 0.85 };
     return { paper: '#FFFFFF', fibre: '#FFFFFF', edge: M.rgba(pal.ink, 0.07), shade: M.mix(pal.ink, '#3A2E6E', 0.5), shadow: 0.3 };

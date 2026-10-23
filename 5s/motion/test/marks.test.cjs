@@ -406,6 +406,30 @@ function suite() {
     if (px(g.c, 690, 500)[0] > 60 || px(g.c, 780, 500)[0] < 200 || px(g.c, 400, 500)[0] > 60) return 'cut';
     return true;
   });
+  check('look: stroke() letter hints: ignored in classic; in the look a family\'s own copy of a letter lands on it, cut and all', () => {
+    // one family, four ways to draw the body: the tagged classic array; the sheet's centreline with a letter hint; that
+    // hinted copy moved by its points (its blade must move with it) against the rest drawing moved by the context
+    Motion.register({
+      id: 'zz-letter', name: 'Letter', idea: 'A body.', why: 'Testing.', moments: ['load'], styles: ['tagged', 'hint', 'moved', 'shifted'],
+      params: { duration: { default: 1000, min: 100, max: 3000, step: 50 } }, reduced: 'still', loop: false,
+      draw(ctx, t, p, env) {
+        const w = M.widths.body * 0.75, look = !!env.palette.look, colours = env.palette.body;
+        const pts = look && p.style !== 'tagged' ? M.points(M.paths5s.body, 160) : M.points('body', 160);
+        if (p.style === 'moved') { M.stroke(ctx, pts.map((q) => [q[0] + 60, q[1] - 40]), { width: w, colours, letter: 'body' }); return; }
+        if (p.style === 'shifted') ctx.translate(60, -40);
+        M.stroke(ctx, pts, { width: w, colours, letter: 'body' });
+      }
+    });
+    const frame = (style, look) => { const c = document.createElement('canvas'); c.width = 240; c.height = 240; const x = c.getContext('2d', { willReadFrequently: true }); Motion.render(x, 'zz-letter', 0.5, Object.assign({ style, ribbon: false }, look ? { look: 'iterations', iteration: 1 } : {}), { w: 240, h: 240 }); return x.getImageData(0, 0, 240, 240).data; };
+    const share = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 24) n++; return n / (a.length / 4); };
+    if (!eq(frame('tagged', false), frame('hint', false))) return 'a letter hint changed a classic frame';
+    const rest = share(frame('tagged', true), frame('hint', true));
+    if (rest > 0.002) return 'the hinted sheet body differs from the engine\'s own at rest on ' + (100 * rest).toFixed(2) + '%';
+    const moved = share(frame('moved', true), frame('shifted', true));
+    if (moved > 0.004) return 'a moved copy does not carry its blade and weight: ' + (100 * moved).toFixed(2) + '%';
+    const bare = share(frame('tagged', true), frame('moved', true));
+    return bare > 0.02 ? true : 'the moved copy did not move';
+  });
   check('look: Marks.mark with a look palette draws the sheet\'s 5s and glass; glass() is deterministic and honours alpha and along', () => {
     const f = fresh(); M.mark(f.x, { palette: M.palette('logo', 'light', 1) });
     const tip = px(f.c, 650, 240), glass = px(f.c, 640, 650), bar = px(f.c, 470, 233);

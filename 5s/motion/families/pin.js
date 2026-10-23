@@ -49,8 +49,8 @@
   const PIN = [500, 500 - SC * (500 - PIN_LOCAL[1])];
 
   function looks(pal) {
-    const dark = pal.theme === 'dark' ? pal.name !== 'inverse' : pal.name === 'inverse';
-    if (pal.name === 'paper') return { dark: false, paper: M.mix(pal.bg, '#FFFFFF', 0.12), shade: '#1A0F45', shadow: 0.3, metal: M.mix(pal.bg, '#FFFFFF', 0.75), wire: M.rgba('#FFFFFF', 0.7) };
+    const dark = pal.theme === 'dark' ? (pal.base || pal.name) !== 'inverse' : (pal.base || pal.name) === 'inverse';
+    if ((pal.base || pal.name) === 'paper') return { dark: false, paper: M.mix(pal.bg, '#FFFFFF', 0.12), shade: '#1A0F45', shadow: 0.3, metal: M.mix(pal.bg, '#FFFFFF', 0.75), wire: M.rgba('#FFFFFF', 0.7) };
     if (dark) return { dark, paper: M.mix(pal.bg, '#FFFFFF', 0.045), shade: '#000000', shadow: 0.6, metal: '#B9B4C8', wire: M.rgba('#D9D4E6', 0.75) };
     return { dark, paper: '#FFFFFF', shade: M.mix(pal.ink, '#3A2E6E', 0.5), shadow: 0.16, metal: '#5D5872', wire: M.rgba(pal.ink, 0.55) };
   }

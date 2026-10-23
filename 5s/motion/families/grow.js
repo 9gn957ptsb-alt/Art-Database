@@ -113,8 +113,8 @@
   }
 
   function looks(pal) {
-    const dark = pal.theme === 'dark' ? pal.name !== 'inverse' : pal.name === 'inverse';
-    const land = pal.name === 'paper' ? '#FFFFFF' : pal.iris;
+    const dark = pal.theme === 'dark' ? (pal.base || pal.name) !== 'inverse' : (pal.base || pal.name) === 'inverse';
+    const land = (pal.base || pal.name) === 'paper' ? '#FFFFFF' : pal.iris;
     const shade = dark ? '#05030B' : '#1E1236';
     return {
       dark, shade,

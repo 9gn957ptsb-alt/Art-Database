@@ -66,7 +66,7 @@
     const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
     return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) < 0.25;
   };
-  const flat = (pal) => pal.name === 'ink' || pal.name === 'paper';
+  const flat = (pal) => (pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper';
   // a gradient's stops, each mixed toward `to` by w (stops may be '#hex' or [u, '#hex'])
   const tint = (stops, to, w) => (w <= 0.001 ? stops : stops.map((s) => (Array.isArray(s) ? [s[0], M.mix(s[1], to, w)] : M.mix(s, to, w))));
 
@@ -421,8 +421,8 @@
   const LOOP_R = 282;
 
   function waxColour(pal) {
-    if (pal.name === 'ink' || pal.name === 'paper') return pal.five[0];
-    if (pal.name === 'turn') return pal.cobalt;
+    if ((pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper') return pal.five[0];
+    if ((pal.base || pal.name) === 'turn') return pal.cobalt;
     return pal.iris;
   }
 

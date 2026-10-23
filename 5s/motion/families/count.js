@@ -31,25 +31,16 @@
 
   /* --- the digits, as single strokes of N points ----------------------------------------------- */
   const PTS = { bar: M.points('bar', 120), body: M.points('body', 260), s: M.points('s', 180) };
-  const FIVE = M.resample(PTS.bar.slice().reverse().concat(PTS.body), N);   // bar backwards, then the body
-  const L_BAR = M.length('bar'), L_BODY = M.length('body');
-  const SHARE_BAR = L_BAR / (L_BAR + L_BODY);
   const dist = (a, b) => a.reduce((s, p, i) => s + Math.hypot(p[0] - b[i][0], p[1] - b[i][1]), 0) / a.length;
-  // 5, 4, 3, 2, 1, 5: each digit turned whichever way lies closest to the one before (less travel in a morph)
-  const SEQ = [FIVE];
-  for (const name of ['d4', 'd3', 'd2', 'd1']) {
-    const f = M.points(name, N), r = f.slice().reverse(), prev = SEQ[SEQ.length - 1];
-    SEQ.push(dist(prev, f) <= dist(prev, r) ? f : r);
-  }
-  SEQ.push(FIVE);
+  // the 5 as one line (FIVE: bar backwards, then the body), and everything made from it, per look: the classic
+  // letters, or the Iterations look's (geometry() below), so the digits morph out of and back into the sheet's 5
+  let FIVE, SHARE_BAR, KB5, SEQ, HAND, BAR_N, BODY_D, QUARTERS, T_PLAN, DIAL;
   // the stroke every digit straightens into on its way to the next (the digits' shared lean): a morph goes
   // A -> line -> B, so a change never passes through a tangle. Each digit has the line turned its own way
   // (whichever way is closer), and the digits' colours are by height, so the two turns look the same.
   const LINE = M.resample([[500, 236], [330, 756]], N);
   const LINE_R = LINE.slice().reverse();
   const lineFor = (d) => (dist(d, LINE) <= dist(d, LINE_R) ? LINE : LINE_R);
-  // the same digits the way a hand writes them (for the write style)
-  const HAND = [FIVE].concat(['d4', 'd3', 'd2', 'd1'].map((n) => M.points(n, N)), [FIVE]);
 
   /* --- colour ------------------------------------------------------------------------------------ */
   function norm(colours) {
@@ -175,22 +166,59 @@
   const UP_BY_K = new Map([[1, UPRIGHTS]]);
   const uprightsFor = (k) => { let u = UP_BY_K.get(k); if (!u) { u = uprightsAt(k); if (UP_BY_K.size > 32) UP_BY_K.clear(); UP_BY_K.set(k, u); } return u; };
   const SLASH = M.resample([[148, 618], [676, 392]], N);
-  const BAR_N = M.points('bar', N), BODY_D = M.points('body', 4 * N);
-  // the five strokes build the 5: the gate becomes the bar and each upright one quarter of the body (the stem,
-  // the turn, the bowl's side, the tail), whichever upright lies nearest its quarter, turned whichever way is closer
-  const QUARTERS = [0, 1, 2, 3].map((q) => M.resample(BODY_D.slice(q * N, (q + 1) * N + (q < 3 ? 1 : 0)), N));
-  const T_PLAN = (() => {
-    const perms = [];
-    const go = (pre, rest) => { if (!rest.length) perms.push(pre); rest.forEach((x, i) => go(pre.concat([x]), rest.slice(0, i).concat(rest.slice(i + 1)))); };
-    go([], [0, 1, 2, 3]);
-    let best = null;
-    for (const pm of perms) {   // pm[i]: the quarter upright i becomes
-      let cost = 0;
-      const ends = pm.map((q, i) => { const a = dist(UPRIGHTS[i], QUARTERS[q]), b = dist(UPRIGHTS[i], rev(QUARTERS[q])); cost += Math.min(a, b); return a <= b ? QUARTERS[q] : rev(QUARTERS[q]); });
-      if (!best || cost < best.cost) best = { cost, pm, ends };
+
+  function geometry(look) {
+    const P = look ? (k) => M.paths5s[k] : (k) => k;
+    const g = { DIAL: new Map() };
+    const bar = look ? M.points(P('bar'), 120) : PTS.bar, body = look ? M.points(P('body'), 260) : PTS.body;
+    g.FIVE = M.resample(bar.slice().reverse().concat(body), N);   // bar backwards, then the body
+    const L_BAR = M.length(P('bar')), L_BODY = M.length(P('body'));
+    g.SHARE_BAR = L_BAR / (L_BAR + L_BODY);
+    g.KB5 = Math.round(g.SHARE_BAR * (N - 1));   // where FIVE's bar ends (the look draws the two as the sheet's)
+    // 5, 4, 3, 2, 1, 5: each digit turned whichever way lies closest to the one before (less travel in a morph)
+    g.SEQ = [g.FIVE];
+    for (const name of ['d4', 'd3', 'd2', 'd1']) {
+      const f = M.points(name, N), r = f.slice().reverse(), prev = g.SEQ[g.SEQ.length - 1];
+      g.SEQ.push(dist(prev, f) <= dist(prev, r) ? f : r);
     }
-    return best;
-  })();
+    g.SEQ.push(g.FIVE);
+    // the same digits the way a hand writes them (for the write style)
+    g.HAND = [g.FIVE].concat(['d4', 'd3', 'd2', 'd1'].map((n) => M.points(n, N)), [g.FIVE]);
+    g.BAR_N = M.points(P('bar'), N); g.BODY_D = M.points(P('body'), 4 * N);
+    // the five strokes build the 5: the gate becomes the bar and each upright one quarter of the body (the stem,
+    // the turn, the bowl's side, the tail), whichever upright lies nearest its quarter, turned whichever way is closer
+    const QUARTERS = g.QUARTERS = [0, 1, 2, 3].map((q) => M.resample(g.BODY_D.slice(q * N, (q + 1) * N + (q < 3 ? 1 : 0)), N));
+    g.T_PLAN = (() => {
+      const perms = [];
+      const go = (pre, rest) => { if (!rest.length) perms.push(pre); rest.forEach((x, i) => go(pre.concat([x]), rest.slice(0, i).concat(rest.slice(i + 1)))); };
+      go([], [0, 1, 2, 3]);
+      let best = null;
+      for (const pm of perms) {   // pm[i]: the quarter upright i becomes
+        let cost = 0;
+        const ends = pm.map((q, i) => { const a = dist(UPRIGHTS[i], QUARTERS[q]), b = dist(UPRIGHTS[i], rev(QUARTERS[q])); cost += Math.min(a, b); return a <= b ? QUARTERS[q] : rev(QUARTERS[q]); });
+        if (!best || cost < best.cost) best = { cost, pm, ends };
+      }
+      return best;
+    })();
+    return g;
+  }
+  const GEO = { classic: geometry(false), look: null };
+  const use = (g) => ({ FIVE, SHARE_BAR, KB5, SEQ, HAND, BAR_N, BODY_D, QUARTERS, T_PLAN, DIAL } = g);
+  use(GEO.classic);
+  const useFor = (pal) => use(pal.look ? GEO.look || (GEO.look = geometry(true)) : GEO.classic);
+
+  // a line that is (partly) the 5: FIVE, or a morph to or from it, w its 5-ness. The look draws it as the sheet's bar
+  // and body (split where FIVE's bar ends), their weight fading into the line's own as it turns into a digit
+  function line5(c, pts, o, w, look) {
+    if (!look || !(w > 0)) { M.stroke(c, pts, o); return; }
+    const f = KB5 / (N - 1), from = o.from == null ? 0 : o.from, to = o.to == null ? 1 : o.to;
+    const piece = (a, b, extra) => {
+      const f0 = M.clamp((from - a) / (b - a), 0, 1), f1 = M.clamp((to - a) / (b - a), 0, 1);
+      if (f1 > f0) M.stroke(c, pts.slice(Math.round(a * (N - 1)), Math.round(b * (N - 1)) + 1), Object.assign({}, o, { colours: part(o.colours, a, b), from: f0, to: f1 }, extra));
+    };
+    piece(f, 1, { letter: [null, ['body', 0, 1], w] });
+    piece(0, f, { width: M.lerp(o.width, o.width * M.widths.bar / M.widths.body, w), letter: [null, ['bar', 1, 0], w] });
+  }
   // the beats: 5 -> one upright, then the second, third and fourth, then the gate; then the five strokes merge
   const T_BEATS = [[0.06, 0.18], [0.21, 0.27], [0.33, 0.39], [0.45, 0.51], [0.57, 0.65]];
   const T_MERGE = [0.69, 0.87], T_LAND = [0.65, 0.89];
@@ -226,7 +254,7 @@
         const L = lineFor(FIVE), U0 = L === LINE ? UPS[0] : rev(UPS[0]);
         const pts = e < 0.5 ? M.morph(FIVE, L, e * 2) : M.morph(L, U0, e * 2 - 1);
         const w = Math.max(0, 1 - 2 * e);
-        M.stroke(c, pts, { width: M.lerp(W, WU, Math.max(0, e * 2 - 1)), colours: tone(pts, w, pal, c5) });
+        line5(c, pts, { width: M.lerp(W, WU, Math.max(0, e * 2 - 1)), colours: tone(pts, w, pal, c5) }, w, pal.look);
         return;
       }
       if (t < T_MERGE[0]) {
@@ -248,11 +276,12 @@
         const m = ease(span(t, s0, s0 + each));
         const pts = lagMorph(UPS[i], T_PLAN.ends[i], m, (f) => f, 0.35);
         const fwd = T_PLAN.ends[i] === QUARTERS[q];
-        M.stroke(c, pts, { width: M.lerp(WU, W, m), colours: mixStops(tone(UPS[i], 0, pal, c5), part(pal.body, fwd ? q / 4 : (q + 1) / 4, fwd ? (q + 1) / 4 : q / 4), m) });
+        M.stroke(c, pts, { width: M.lerp(WU, W, m), colours: mixStops(tone(UPS[i], 0, pal, c5), part(pal.body, fwd ? q / 4 : (q + 1) / 4, fwd ? (q + 1) / 4 : q / 4), m),
+          letter: [null, ['body', fwd ? q / 4 : (q + 1) / 4, fwd ? (q + 1) / 4 : q / 4], m] });
       }
       const m = ease(span(t, T_MERGE[0], T_MERGE[0] + each));
       const bar = lagMorph(SLASH, BAR_N, m, (f) => 1 - f, 0.35);
-      M.stroke(c, bar, { width: M.lerp(WU * 1.08, M.widths.bar * k, m), colours: mixStops(tone(SLASH, 0, pal, c5), pal.bar, m) });
+      M.stroke(c, bar, { width: M.lerp(WU * 1.08, M.widths.bar * k, m), colours: mixStops(tone(SLASH, 0, pal, c5), pal.bar, m), letter: [null, 'bar', m] });
     });
 
     // the s: the ball ticks once per stroke, then a last long hop as the strokes merge, and it opens into the s
@@ -297,7 +326,6 @@
     for (let i = 0; i < N; i++) { const a = gap + GAP / 2 + (i / (N - 1)) * (Math.PI * 2 - GAP); out.push([BOWL[0] + R_RING * Math.cos(a), BOWL[1] + R_RING * Math.sin(a)]); }
     return out;
   };
-  const DIAL = new Map();
   function dialFor(sgn) {   // sgn 1: clockwise (on screen, y down), -1: counter-clockwise
     let d = DIAL.get(sgn);
     if (d) return d;
@@ -361,7 +389,7 @@
       const local = e < 0.5 ? M.morph(A0, rings[a], e * 2) : M.morph(rotAbout(rings[a + 1], BOWL, -sgn * FIFTH), rotAbout(B0, BOWL, -sgn * FIFTH), e * 2 - 1);
       const pts = rotAbout(local, BOWL, sgn * FIFTH * r);
       const w = (A0 === FIVE ? 1 - Math.min(1, 2 * e) : 0) + (B0 === FIVE ? Math.max(0, 2 * e - 1) : 0);
-      M.stroke(c, pts, { width: W, colours: tone(pts, w, pal, c5) });
+      line5(c, pts, { width: W, colours: tone(pts, w, pal, c5) }, w, pal.look);
     });
 
     // the s: the ball rides the dial's rim a stop ahead of the digits, a fifth of the way round per digit, and on
@@ -404,6 +432,7 @@
     loop: false,
 
     draw(ctx, t, p, env) {
+      useFor(env.palette);
       if (p.style === 'tally') { tally(ctx, t, p, env); return; }
       if (p.style === 'dial') { dial(ctx, t, p, env); return; }
       const pal = env.palette;
@@ -431,10 +460,10 @@
       }
 
       // a digit: w is how much of the 5's own colouring it carries (1 for the 5, 0 for 4..1)
-      const digit = (c, pts, from, to, alpha, w) => M.stroke(c, pts, {
-        width: W, colours: tone(pts, w == null ? (pts === FIVE ? 1 : 0) : w, pal, c5),
-        from: from == null ? 0 : from, to: to == null ? 1 : to, alpha: alpha == null ? 1 : alpha
-      });
+      const digit = (c, pts, from, to, alpha, w) => {
+        const five = w == null ? (pts === FIVE ? 1 : 0) : w;
+        line5(c, pts, { width: W, colours: tone(pts, five, pal, c5), from: from == null ? 0 : from, to: to == null ? 1 : to, alpha: alpha == null ? 1 : alpha }, five, pal.look);
+      };
       const five = (c) => {   // the 5 at rest: its real strokes
         M.stroke(c, PTS.body, { width: W, colours: pal.body });
         M.stroke(c, PTS.bar, { width: M.widths.bar * k, colours: pal.bar });

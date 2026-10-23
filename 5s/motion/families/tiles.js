@@ -78,7 +78,7 @@
   function swatchSet(pal, on) {
     const bg = pal.bg, ink = pal.ink, mix = M.mix;
     if (!on) return [mix(bg, ink, 0.07), mix(bg, ink, 0.11), mix(bg, ink, 0.15)];
-    switch (pal.name) {
+    switch (pal.base || pal.name) {   // (base: a look palette's own)
       case 'keep': return [pal.ember, pal.flare, mix(pal.ember, '#FFD27A', 0.5), mix(pal.flare, '#5A1208', 0.28), mix(pal.ember, bg, 0.45)];
       case 'pass': return [pal.cobalt, mix(pal.cobalt, '#FFFFFF', 0.38), mix(pal.cobalt, '#0B1E5C', 0.38), mix(pal.cobalt, pal.iris, 0.45), mix(pal.cobalt, bg, 0.6)];
       case 'turn': return [pal.iris, mix(pal.iris, '#FFFFFF', 0.38), mix(pal.iris, '#2A1170', 0.38), mix(pal.iris, pal.cobalt, 0.5), mix(pal.iris, bg, 0.6)];
@@ -185,7 +185,7 @@
 
   // the negative: a field with the 5s cut out of it (holes, so whatever is beneath shows through); the
   // ribbon runs across the field as a paler glass
-  function fieldColour(pal) { return pal.name === 'ink' || pal.name === 'paper' ? pal.ink : pal.iris; }
+  function fieldColour(pal) { return (pal.base || pal.name) === 'ink' || (pal.base || pal.name) === 'paper' ? pal.ink : pal.iris; }
   function negative(c, p, pal, region) {
     const field = fieldColour(pal);
     c.fillStyle = field;

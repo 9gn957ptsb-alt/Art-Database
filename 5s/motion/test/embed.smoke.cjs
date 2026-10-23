@@ -13,6 +13,8 @@
  *   - the lab adds no document- or window-level click, input, change, keydown, pointerup or hashchange listener
  *   - picks and favorites save to the db it was given (motion/picks), or through claude.use('db') without one;
  *     the db's duplicate favorites read as one pool
+ *   - the Iterations look inside: the stage on the sheet's ground, a preset and its arrow keys, Classic and back;
+ *     For you's "Your favorites in the Iterations look" (each of the favorites beside its twin)
  *   - unmount stops every clock and db listener, still writes a change that was waiting, leaves the host
  *     empty; mounting again works
  * Screenshots go to --shots (default $TMPDIR/5s-motion-embed-shots). Exits 1 when anything fails.
@@ -111,6 +113,7 @@ const INIT = (seedClaudeDoc) => `(() => {
 const SHADOW = "document.querySelector('#motion-host').shadowRoot";
 const inShadow = (page, fn, arg) => page.evaluate(`(${fn})(${SHADOW}, ${JSON.stringify(arg === undefined ? null : arg)})`);
 const click = (page, sel) => page.locator('#motion-host').locator(sel).first().click();
+const PIX = (root, sel) => { const d = root.querySelector(sel).getContext('2d').getImageData(1, 1, 1, 1).data; return '#' + [d[0], d[1], d[2]].map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase(); };
 const INK = (root, sel) => {
   const c = root.querySelector(sel);
   if (!c || !c.width) return 0;
@@ -233,6 +236,21 @@ async function main() {
       await page.waitForTimeout(80);
       ok((await page.evaluate(() => MotionLab.stage.playing)) === p1, scheme + ': with focus on the host, the lab ignores its keys');
 
+      // the Iterations look inside: the stage on the sheet's ground, a preset, its keys, Classic and back
+      const v0 = await page.evaluate(() => MotionLab.stage.variant.params);
+      ok(v0.look === 'iterations' && (await page.evaluate(`(${PIX})(${SHADOW}, '#stage-canvas')`)) === (scheme === 'dark' ? '#100E18' : '#FEFEFE'), scheme + ': the stage is in the Iterations look, on the sheet\'s ground');
+      await click(page, '.iter[data-value="7"]');
+      await page.keyboard.press('ArrowRight');
+      await page.waitForTimeout(100);
+      ok((await page.evaluate(() => MotionLab.stage.variant.params.iteration)) === 8 && (await inShadow(page, (r) => r.activeElement && r.activeElement.dataset.value)) === '8', scheme + ': a preset, then the arrow keys, inside the shadow root');
+      await click(page, '[data-act=look][data-value=classic]');
+      await page.waitForTimeout(100);
+      ok(!('look' in (await page.evaluate(() => MotionLab.stage.variant.params))) && (await inShadow(page, (r) => r.querySelectorAll('.iter').length)) === 0, scheme + ': Classic takes the look away');
+      await click(page, '[data-act=look][data-value=iterations]');
+      await page.waitForTimeout(100);
+      ok((await page.evaluate(() => MotionLab.stage.variant.params.iteration)) === 8, scheme + ': and Iterations brings it back');
+      await page.screenshot({ path: path.join(SHOTS, 'embed-1440-' + scheme + '-look.png') });
+
       // picks and favorites go to the db it was given
       await click(page, '#pick-btn');
       await click(page, '[data-act="star-stage"]');
@@ -280,6 +298,12 @@ async function main() {
       await click(page, '.mode[data-mode="foryou"]');
       await page.waitForTimeout(900);
       ok(/15 favorites/.test(await inShadow(page, (r) => r.querySelector('#trends').textContent)), w + ': For you reads them');
+      const twins = await page.evaluate(() => MotionLab.foryou.twins);
+      ok(twins.length === 2 * FAVORITES.length && twins.every((c, i) => (i % 2 ? c.params.look === 'iterations' : !('look' in c.params))) && (await inShadow(page, (r) => r.querySelectorAll('#fy-twins .cell').length)) === 2 * FAVORITES.length, w + ': Your favorites in the Iterations look: each favorite beside its twin');
+      await inShadow(page, (r) => r.querySelector('#fy-twins-h').scrollIntoView({ block: 'start' }));
+      await page.waitForTimeout(500);
+      ok((await page.evaluate(`(${INK})(${SHADOW}, '#fy-twins .cell:nth-child(2) canvas')`)) > 0.01, w + ': a twin draws');
+      await page.screenshot({ path: path.join(SHOTS, 'embed-' + w + '-foryou-twins.png') });
       ok((await page.evaluate(() => { const h = document.querySelector('#motion-host'); return document.documentElement.scrollWidth <= innerWidth && h.scrollWidth <= h.clientWidth; })), w + ': no horizontal scroll, in the lab or on the host page');
       await page.screenshot({ path: path.join(SHOTS, 'embed-' + w + '-foryou-favorites.png') });
       await click(page, '.mode[data-mode="moments"]');

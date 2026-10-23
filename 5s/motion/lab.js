@@ -1154,7 +1154,7 @@ function createLab(root, opts) {
       '<div class="seg" role="group" aria-labelledby="l-look" style="--cols:2">' +
       '<button type="button" data-act="look" data-value="classic" aria-pressed="' + !on + '">Classic</button>' +
       '<button type="button" data-act="look" data-value="iterations" aria-pressed="' + on + '">Iterations</button></div>' +
-      '<span class="hint">' + (on ? 'the sheet of twenty: its letters, glass and white ground' : 'the first logo: its letters and ribbon') + '</span></div>';
+      '<span class="hint">' + (on ? 'the sheet of twenty: its letters, its glass, its white ground on light' : 'the first logo: its letters and ribbon') + '</span></div>';
     if (!on) return html;
     return html + '<div class="param" data-key="iteration"><span class="plabel" id="l-iteration">Iteration</span><output class="mono" id="o-iteration">' + n + ' · ' + esc(ITER[n - 1].label) + '</output>' +
       '<div class="iters" role="radiogroup" aria-labelledby="l-iteration">' + ITER.map((it) =>
@@ -1172,7 +1172,7 @@ function createLab(root, opts) {
         src = doc.createElement('canvas'); src.width = src.height = 80;
         const x = src.getContext('2d'), pal = M.palette(v.params.palette, ui.theme, +b.dataset.value);
         x.fillStyle = pal.bg; x.fillRect(0, 0, 80, 80);
-        M.fit(x, 80, 80, 4);
+        x.translate(40, 40); x.scale(0.088, 0.088); x.translate(-517, -522);   // the mark and its glass fill the tile, as on the sheet
         M.mark(x, { palette: pal, weight: 0.75 });
         thumbs.set(key, src);
       }

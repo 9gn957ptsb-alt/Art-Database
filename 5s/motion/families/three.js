@@ -41,6 +41,16 @@
     return out;
   }
   const NRM = { body: normals(PTS.body), bar: normals(PTS.bar), s: normals(PTS.s) };
+  // the Iterations look's letters, for the copies (each stroke says which letter it is, so it draws as the sheet's)
+  let LOOK_PTS = null;
+  function lookPts() {
+    if (!LOOK_PTS) {
+      const pts = {}, nrm = {};
+      for (const key of KEYS) { pts[key] = M.points(M.paths5s[key], 160); nrm[key] = normals(pts[key]); }
+      LOOK_PTS = { pts, nrm };
+    }
+    return LOOK_PTS;
+  }
 
   // the chosen one of three (0 left, 1 middle, 2 right)
   function chosen(p, env) {
@@ -62,16 +72,18 @@
         M.ribbon(g, o.ribbonT || 0, { colours: pal.ribbon, alpha: o.ribbon });
         g.restore();
       }
+      const L = pal.look ? lookPts() : null;
       for (const key of KEYS) {
-        const src = PTS[key], nr = NRM[key], n = src.length;
+        const src = L ? L.pts[key] : PTS[key], nr = L ? L.nrm[key] : NRM[key], n = src.length;
         const pts = new Array(n);
         // o.off is in strand widths: a strand of a stroke is a third of that stroke's own width
         const off = o.off * (M.widths[key] * p.weight / 3);
         for (let i = 0; i < n; i++) {
-          const x = src[i][0] + nr[i][0] * off - C[0], y = src[i][1] + nr[i][1] * off - C[1];
+          const w = L ? M.lookWidth(key, i / (n - 1)) : 1;   // the look's letters are heavier, and vary along their length
+          const x = src[i][0] + nr[i][0] * off * w - C[0], y = src[i][1] + nr[i][1] * off * w - C[1];
           pts[i] = [o.pos[0] + (x * cs - y * sn) * o.sc, o.pos[1] + (x * sn + y * cs) * o.sc];
         }
-        M.stroke(g, pts, { width: M.widths[key] * p.weight * o.wk, colours: o.colours ? o.colours(key) : pal[key] });
+        M.stroke(g, pts, { width: M.widths[key] * p.weight * o.wk, colours: o.colours ? o.colours(key) : pal[key], letter: key });
       }
     };
     if (o.alpha < 0.999) M.layer(ctx, { alpha: o.alpha }, draw); else draw(ctx);
@@ -240,10 +252,10 @@
 
   function fan(ctx, t, p, env, I, ease) {
     const pal = env.palette, pick = chosen(p, env);
-    const dark = pal.theme === 'dark' ? pal.name !== 'inverse' : pal.name === 'inverse';
+    const dark = pal.theme === 'dark' ? (pal.base || pal.name) !== 'inverse' : (pal.base || pal.name) === 'inverse';
     const look = {
       dark,
-      card: pal.name === 'paper' ? M.mix(pal.bg, '#FFFFFF', 0.16) : dark ? M.mix(pal.bg, '#FFFFFF', 0.07) : '#FFFFFF',
+      card: (pal.base || pal.name) === 'paper' ? M.mix(pal.bg, '#FFFFFF', 0.16) : dark ? M.mix(pal.bg, '#FFFFFF', 0.07) : '#FFFFFF',
       edge: dark ? M.rgba('#FFFFFF', 0.1) : M.rgba(pal.ink, 0.08), shade: dark ? '#000000' : M.mix(pal.ink, '#3A2E6E', 0.5)
     };
     const spread = 0.24 + 0.22 * I;                           // radians between neighbours

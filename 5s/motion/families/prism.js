@@ -10,9 +10,9 @@
  *            passes; the glass it has crossed keeps glowing, then fades
  *   caustic  light falls through the glass and its folds focus it into a net of bright caustic lines that plays
  *            over the 5 and the s (warm) and over the glass (cool), swells and fades
- *   flare    a glint runs along the bar's top to its blade and flares there: a star, a long streak, ghosts in the
- *            glass's colours along the line through the mark; the light spreads through the glass from the tip
- *            in a spectral ring
+ *   flare    a glint runs along the bar's top to its blade and flares there: a star at the tip, and rays that fan
+ *            from it down through the glass in cyan, blue and violet (the sheet's crystal starburst at the bar's
+ *            tip, cells 9 and 18), turning a little as they fade; the glass glows on from the tip
  *   split    one white beam comes in at the glass's top right corner and divides into three, cyan, blue and violet,
  *            that land one after another on the bar, the bowl and the s (Irwin's three ways); one of them (the
  *            seed's) stays lit longest
@@ -21,7 +21,7 @@
  * in the Iterations look (params.look = 'iterations') the sheet's letters and glass, in the classic look the classic
  * letters and ribbon (the ribbon is the glass then; with ribbon off the light has nothing to split in and stays white).
  * While light is on, the glass and the letters are each drawn into one Marks.layer and the light is put on them
- * source-atop, so it never lands on the ground; light in the air (the beams, the flare) is drawn over the ground in
+ * source-atop, so it never lands on the ground (the glass holds still: the light is what moves); light in the air (the beams, the flare) is drawn over the ground in
  * colour on a light field and added ('lighter') on a dark one. Flat palettes (Ink, Paper) keep their one colour.
  * t = 1 is exactly the still mark (Marks.mark).
  *
@@ -38,7 +38,6 @@
   // the Iterations look's centrelines, for light along the letters (untagged: drawn as they are, with no veil)
   const PTS5S = { body: M.points(M.paths5s.body, N), bar: M.points(M.paths5s.bar, N), s: M.points(M.paths5s.s, N) };
   const seg = (t, a, b) => M.clamp((t - a) / (b - a), 0, 1);
-  const bump = (x) => Math.sin(Math.PI * M.clamp(x, 0, 1)) ** 2;   // 0 -> 1 -> 0, flat at both ends
   const lum = (hex) => { const v = parseInt(String(hex).slice(1, 7), 16); return ((v >> 16) * 0.2126 + ((v >> 8) & 255) * 0.7152 + (v & 255) * 0.0722) / 255; };
 
   const WARM = '#FFF6DE', WHITE = '#FFFFFF', BEAM = '#FFE7A3';   // the light; split's incoming beam on a light field
@@ -50,14 +49,14 @@
   const TARGETS = [[[560, 234], 'bar', 0.3, 0.95], [[470, 640], 'body', 0.42, 0.72], [[790, 600], 's', 0.06, 0.5]];
 
   // a band of light across the plane along `n`: profile [[d, colour, alpha], ...] (d from `centre`, increasing;
-  // alpha 0 at both ends), one gradient fill
+  // alpha 0 at both ends), one gradient fill, wide enough for any stage's aspect
   function band(c, n, centre, profile) {
     const d0 = profile[0][0], d1 = profile[profile.length - 1][0];
     const P = (d) => [500 + n[0] * (centre + d), 500 + n[1] * (centre + d)];
     const a = P(d0), b = P(d1), g = c.createLinearGradient(a[0], a[1], b[0], b[1]);
     for (const [d, col, al] of profile) g.addColorStop(M.clamp((d - d0) / (d1 - d0), 0, 1), M.rgba(col, al));
     c.fillStyle = g;
-    c.fillRect(-1000, -1000, 3000, 3000);
+    c.fillRect(-4000, -4000, 9000, 9000);
   }
   function spot(c, x, y, r, col, a) {
     if (!(a > 0.002) || !(r > 1)) return;
@@ -65,6 +64,19 @@
     g.addColorStop(0, M.rgba(col, a)); g.addColorStop(0.4, M.rgba(col, a * 0.5)); g.addColorStop(1, M.rgba(col, 0));
     c.fillStyle = g;
     c.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+  // a shaft of light from a to b, w0 wide at a and w1 at b, alpha al fading to endA at b
+  function shaft(c, a, b, w0, w1, col, al, endA) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+    if (!(L > 1) || !(al > 0.002)) return;
+    const nx = -dy / L, ny = dx / L;
+    const g = c.createLinearGradient(a[0], a[1], b[0], b[1]);
+    g.addColorStop(0, M.rgba(col, al)); g.addColorStop(0.8, M.rgba(col, al * 0.8)); g.addColorStop(1, M.rgba(col, endA));
+    c.fillStyle = g;
+    c.beginPath();
+    c.moveTo(a[0] + nx * w0 / 2, a[1] + ny * w0 / 2); c.lineTo(b[0] + nx * w1 / 2, b[1] + ny * w1 / 2);
+    c.lineTo(b[0] - nx * w1 / 2, b[1] - ny * w1 / 2); c.lineTo(a[0] - nx * w0 / 2, a[1] - ny * w0 / 2);
+    c.closePath(); c.fill();
   }
   // a four-point spark: two thin crossed rays and a glow
   function spark(c, x, y, r, col, a) {
@@ -82,11 +94,11 @@
   }
 
   // caustics: two crossing families of wavering lines, a wide soft pass and a thin bright one; they drift with t
-  function caustics(c, t, col, a, I) {
+  function caustics(c, t, col, a, I, thin) {
     if (!(a > 0.002)) return;
     c.save();
     c.lineCap = 'round'; c.lineJoin = 'round';
-    for (const [w, k] of [[26, 0.28], [8, 1]]) {
+    for (const [w, k] of thin ? [[8, 1]] : [[26, 0.28], [8, 1]]) {
       c.strokeStyle = M.rgba(col, a * k); c.lineWidth = w * (0.7 + 0.6 * I);
       for (let f = 0; f < 2; f++) {
         const ang = f ? 0.5 : -1.05, dx = Math.cos(ang), dy = Math.sin(ang), nx = -dy, ny = dx;
@@ -106,8 +118,9 @@
     c.restore();
   }
 
-  // the mark as Marks.mark draws it, the glass and the letters each with their light (fx: source-atop, or null)
-  // the glass holds still (the light moves): a still glass also keeps the layer's frames identical however they are reached
+  // the mark as Marks.mark draws it, the glass and the letters each with their light (fx: source-atop, or null).
+  // The glass holds still: its strands drawn at a changing t through a layer rasterize a level or so differently
+  // depending on the frames before (Chromium's GPU scratch), which the purity check catches
   function glassOf(ctx, pal, fx) {
     const draw = (c) => {
       M.ribbon(c, 0, { colours: pal.ribbon });
@@ -166,15 +179,15 @@
         const split = M.smoothstep(-350, 150, c0);             // it splits as it goes into the fold
         const gap = (50 + 130 * p.spread) * (0.7 + 0.3 * I) * split, f0 = -0.3 * w;
         const glowA = afterglow(0.6) * (0.5 + 0.5 * I), G = M.mix(FR[0], WHITE, 0.3);
-        lfx = (c) => band(c, NRM, c0, [[-2.4 * w, light, 0], [-1.1 * w, light, 0.3 * A * on], [-0.25 * w, light, 0.85 * A * on], [0.15 * w, WHITE, A * on], [0.45 * w, light, 0]]);
-        gfx = (c) => {
+        if (on > 0) lfx = (c) => band(c, NRM, c0, [[-2.4 * w, light, 0], [-1.1 * w, light, 0.3 * A * on], [-0.25 * w, light, 0.85 * A * on], [0.15 * w, WHITE, A * on], [0.45 * w, light, 0]]);
+        if (on > 0 || glowA > 0.002) gfx = (c) => {
           if (glowA > 0.002) band(c, NRM, c0, [[-2400, G, 0.8 * glowA], [-0.5 * w, G, 0.8 * glowA], [0.2 * w, G, 0]]);
           const fa = 1.15 * A * on * (0.3 + 0.7 * split);
           band(c, NRM, c0, [[f0 - 3 * gap - 0.9 * w, FR[2], 0], [f0 - 3 * gap, FR[2], fa], [f0 - 2 * gap, FR[1], fa], [f0 - gap, FR[0], fa],
             [f0, WHITE, 0.9 * A * on], [0.2 * w, WHITE, A * on], [0.5 * w, WHITE, 0]]);
         };
         // a spark at the bar's blade as the light passes it
-        const tip = pal.look ? pal.look.cut[0] : [616, 229];
+        const tip = pal.look ? pal.look.cut[0] : [616, 229];   // the blade's top (classic: the bar's end)
         const sT = (tip[0] - 500) * NRM[0] + (tip[1] - 500) * NRM[1];
         const sa = A * Math.exp(-(((c0 - sT) / w) ** 2)) * on;
         airFx = (c) => {
@@ -190,7 +203,7 @@
           gfx = (c) => {
             if (glowA > 0.002) spot(c, 640, 600, 700, G, 0.9 * glowA);
             caustics(c, ct, WHITE, 0.7 * A * L, I);
-            c.save(); c.translate(10 + 26 * p.spread, 6 + 12 * p.spread); caustics(c, ct, FR[0], 0.55 * A * L, I); c.restore();
+            c.save(); c.translate(10 + 26 * p.spread, 6 + 12 * p.spread); caustics(c, ct, FR[0], 0.55 * A * L, I, true); c.restore();
           };
         }
       } else if (p.style === 'flare') {
@@ -206,12 +219,12 @@
           const an = M.lerp(0.32, 2.45, i / (RAYS - 1)) + turn * (i % 2 ? 1 : -1);
           shaft(c, tip, [tip[0] + Math.cos(an) * Lr, tip[1] + Math.sin(an) * Lr], 3, w, col, a, 0);
         };
-        lfx = (c) => {
+        if (glint > 0.002 || F > 0.002) lfx = (c) => {
           spot(c, gx, gy, 110 + 60 * I, light, glint);
           spot(c, tip[0], tip[1], 200 + 160 * I, light, 0.95 * F);
           if (F > 0.002) for (let i = 0; i < RAYS; i++) ray(c, i, light, w1 * 0.5, 0.45 * F);
         };
-        gfx = (c) => {
+        if (glowA > 0.002 || F > 0.002) gfx = (c) => {
           if (glowA > 0.002) spot(c, tip[0], tip[1] + 200, 800, G, 0.9 * glowA);
           if (F > 0.002) for (let i = 0; i < RAYS; i++) { ray(c, i, FR[i % 3], w1, 0.85 * F); ray(c, i, WHITE, w1 * 0.3, 0.9 * F); }
           spot(c, tip[0], tip[1], 260 + 160 * I, WHITE, F);
@@ -239,7 +252,7 @@
           if (inA > 0 && inFade > 0) shaft(a, S0, head, 46, 34, dark ? light : BEAM, (dark ? 0.4 : 0.55) * A * inFade, (dark ? 0.4 : 0.55) * A * inFade);
           for (const b of beams) if (b.go > 0 && b.fade > 0) { beam(a, b, FR[b.i], 1, (dark ? 0.5 : 0.7) * A * b.fade * b.k); beam(a, b, WHITE, 0.35, 0.85 * A * b.fade * b.k); }
         });
-        lfx = (c) => {
+        if (beams.some((b) => b.go > 0 && b.fade > 0)) lfx = (c) => {
           for (const b of beams) {
             if (b.go > 0 && b.fade > 0) beam(c, b, M.mix(FR[b.i], WHITE, 0.6), 1, 0.5 * A * b.fade * b.k);
             if (!(b.land > 0.002)) continue;
@@ -251,7 +264,7 @@
             c.restore();
           }
         };
-        gfx = (c) => {
+        if (glowA > 0.002 || flash > 0.002) gfx = (c) => {
           if (glowA > 0.002) spot(c, E[0], E[1] + 100, 700, G, 0.9 * glowA);
           spot(c, E[0], E[1], 220, WHITE, 0.8 * flash);
         };
@@ -264,18 +277,4 @@
       if (airFx) air(ctx, dark, airFx);
     }
   });
-
-  // a shaft of light from a to b, w0 wide at a and w1 at b, alpha al fading to endA at b
-  function shaft(c, a, b, w0, w1, col, al, endA) {
-    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
-    if (!(L > 1) || !(al > 0.002)) return;
-    const nx = -dy / L, ny = dx / L;
-    const g = c.createLinearGradient(a[0], a[1], b[0], b[1]);
-    g.addColorStop(0, M.rgba(col, al)); g.addColorStop(0.8, M.rgba(col, al * 0.8)); g.addColorStop(1, M.rgba(col, endA));
-    c.fillStyle = g;
-    c.beginPath();
-    c.moveTo(a[0] + nx * w0 / 2, a[1] + ny * w0 / 2); c.lineTo(b[0] + nx * w1 / 2, b[1] + ny * w1 / 2);
-    c.lineTo(b[0] - nx * w1 / 2, b[1] - ny * w1 / 2); c.lineTo(a[0] - nx * w0 / 2, a[1] - ny * w0 / 2);
-    c.closePath(); c.fill();
-  }
 })();

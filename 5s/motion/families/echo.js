@@ -82,8 +82,8 @@
    * mark seen through time as solid, flat, layered copies, landing in five counted beats. Each starts and ends
    * on the still mark (riso starts on its plates out of register), and each holds up in one flat colour.
    * ------------------------------------------------------------------------------------------------------- */
-  const flatPal = (pal) => pal.name === 'paper' || pal.name === 'ink';
-  const VIOLET = (pal) => (pal.name === 'logo' || pal.name === 'inverse' || pal.name === 'turn' ? M.colourAt(pal.ribbon, 0.3) : pal.iris);
+  const flatPal = (pal) => (pal.base || pal.name) === 'paper' || (pal.base || pal.name) === 'ink';
+  const VIOLET = (pal) => ((pal.base || pal.name) === 'logo' || (pal.base || pal.name) === 'inverse' || (pal.base || pal.name) === 'turn' ? M.colourAt(pal.ribbon, 0.3) : pal.iris);
 
   // copies of the letters in one flat colour, one path per stroke for all of them (offsets in mark units)
   function flatCopies(c, offs, k, grow, colour) {
@@ -170,8 +170,8 @@
   function strataTones(pal) {
     if (flatPal(pal)) return [0.12, 0.25, 0.38, 0.51, 0.64].map((x) => M.mix(pal.bg, pal.ink, x));   // band 5 .. band 1
     let stops;
-    if (pal.name === 'pass') stops = [pal.iris, pal.cobalt];
-    else if (pal.name === 'turn') stops = [pal.cobalt, pal.iris];
+    if ((pal.base || pal.name) === 'pass') stops = [pal.iris, pal.cobalt];
+    else if ((pal.base || pal.name) === 'turn') stops = [pal.cobalt, pal.iris];
     else stops = [VIOLET(pal), M.mix('#B64CD6', pal.bg, pal.theme === 'dark' ? 0.08 : 0), pal.flare, M.mix(pal.flare, pal.ember, 0.6)];
     return [0, 1, 2, 3, 4].map((i) => M.colourAt(stops, i / 4));
   }
@@ -217,8 +217,8 @@
     const I = p.intensity, k = p.weight;
     const dark = isDark(pal.bg);
     const inks = flatPal(pal) ? [0.5, 0.68, 0.86].map((x) => M.mix(pal.bg, pal.ink, x))
-      : pal.name === 'pass' ? [M.mix(pal.cobalt, '#FFFFFF', 0.35), pal.cobalt, pal.iris]
-      : pal.name === 'turn' ? [M.mix(pal.iris, '#FFFFFF', 0.35), pal.iris, pal.cobalt]
+      : (pal.base || pal.name) === 'pass' ? [M.mix(pal.cobalt, '#FFFFFF', 0.35), pal.cobalt, pal.iris]
+      : (pal.base || pal.name) === 'turn' ? [M.mix(pal.iris, '#FFFFFF', 0.35), pal.iris, pal.cobalt]
       : dark ? [pal.ember, pal.flare, pal.iris].map((c) => M.mix(c, pal.bg, 0.2))
       : [M.mix(pal.ember, '#FFFFFF', 0.25), M.mix(pal.flare, '#FFFFFF', 0.3), M.mix(pal.iris, '#FFFFFF', 0.35)];
     const rnd = env.rng;

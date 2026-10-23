@@ -26,9 +26,6 @@
   const bump = (x) => Math.sin(Math.PI * clamp01(x));       // 0 -> 1 -> 0
 
   /* --- the parts, computed once ------------------------------------------------------------------ */
-  const STEM_D = 'M 311 231 C 262 318 211 404 160 491';    // the body's first segment: the stem to the foot
-  const U_STEM = M.length(STEM_D) / M.length('body');
-  const BODY = M.points('body', 640);
 
   // the stretch [a, b] (fractions of length) of a polyline, as n points evenly spaced
   function sub(pts, a, b, n) {
@@ -49,17 +46,26 @@
   const centroid = (pts) => { let x = 0, y = 0; for (const p of pts) { x += p[0]; y += p[1]; } return [x / pts.length, y / pts.length]; };
 
   const RIB = M.points('ribbon', 220);   // the same spine Marks.ribbon uses by default
-  // draw order is the mark's: ribbon under, then the 5 (bowl, stem, bar), then the s
-  const PARTS = [
-    { id: 'ribbon', pts: RIB },
-    { id: 'bowl', pts: sub(BODY, U_STEM, 1, 160), key: 'body', a: U_STEM, b: 1 },
-    { id: 'stem', pts: sub(BODY, 0, U_STEM, 70), key: 'body', a: 0, b: U_STEM },
-    { id: 'bar', pts: M.points('bar', 160), key: 'bar', a: 0, b: 1 },
-    { id: 's', pts: M.points('s', 160), key: 's', a: 0, b: 1 }
-  ];
-  for (const p of PARTS) p.c = centroid(p.pts);
-  const BY = {};
-  PARTS.forEach((p) => { BY[p.id] = p; });
+  // draw order is the mark's: ribbon under, then the 5 (bowl, stem, bar), then the s. The classic letters, or (look)
+  // the Iterations look's, cut the same way from the sheet's centrelines; each part says which stretch of which letter
+  // it is (M.stroke's letter), so in the look it flies as the sheet's
+  function partsOf(look) {
+    const P = look ? (k) => M.paths5s[k] : (k) => k;
+    // the body's first segment: the stem to the foot
+    const U_STEM = M.length(look ? 'M 274 233 C 248 309 222 386 190 466' : 'M 311 231 C 262 318 211 404 160 491') / M.length(P('body'));
+    const BODY = M.points(P('body'), 640);
+    const parts = [
+      { id: 'ribbon', pts: RIB },
+      { id: 'bowl', pts: sub(BODY, U_STEM, 1, 160), key: 'body', a: U_STEM, b: 1, letter: ['body', U_STEM, 1] },
+      { id: 'stem', pts: sub(BODY, 0, U_STEM, 70), key: 'body', a: 0, b: U_STEM, letter: ['body', 0, U_STEM] },
+      { id: 'bar', pts: M.points(P('bar'), 160), key: 'bar', a: 0, b: 1, letter: 'bar' },
+      { id: 's', pts: M.points(P('s'), 160), key: 's', a: 0, b: 1, letter: 's' }
+    ];
+    for (const p of parts) p.c = centroid(p.pts);
+    return parts;
+  }
+  const LOOKS = { classic: partsOf(false), look: null };
+  let PARTS = LOOKS.classic;
   const CENTRE = M.anchors.letters;
 
   // a part's own colours: its stretch of the whole stroke's gradient, as positioned stops
@@ -92,7 +98,7 @@
     if (part.id === 'ribbon') {
       M.ribbon(ctx, ribbonT || 0, { colours: pal.ribbon, pts: shape || RIB, alpha: alpha == null ? 1 : alpha, width: xf.ribbonWidth || M.widths.ribbon });
     } else {
-      M.stroke(ctx, shape || part.pts, { width: M.widths[part.key] * k * (xf.thin || 1), colours: partColours(pal, part), alpha: alpha == null ? 1 : alpha });
+      M.stroke(ctx, shape || part.pts, { width: M.widths[part.key] * k * (xf.thin || 1), colours: partColours(pal, part), alpha: alpha == null ? 1 : alpha, letter: xf.letter || part.letter });
     }
     ctx.restore();
   }
@@ -164,10 +170,10 @@
     const line = M.mix(pal.bg, pal.ink, 0.32);
     // composite is given so Marks.layer always uses its scratch canvas (the cut-out must never reach the page)
     M.layer(ctx, { alpha: Math.min(alpha, 0.99), composite: 'source-over' }, (g) => {
-      for (const part of PARTS) if (part.id !== 'ribbon') M.stroke(g, part.pts, { width: M.widths[part.key] * p.weight + 6, colours: line });
+      for (const part of PARTS) if (part.id !== 'ribbon') M.stroke(g, part.pts, { width: M.widths[part.key] * p.weight + 6, colours: line, letter: part.letter });
       g.save();
       g.globalCompositeOperation = 'destination-out';
-      for (const part of PARTS) if (part.id !== 'ribbon') M.stroke(g, part.pts, { width: M.widths[part.key] * p.weight - 6, colours: '#000' });
+      for (const part of PARTS) if (part.id !== 'ribbon') M.stroke(g, part.pts, { width: M.widths[part.key] * p.weight - 6, colours: '#000', letter: part.letter });
       g.restore();
     });
   }
@@ -268,6 +274,7 @@
       }
       const w0 = M.widths[part.key] * p.weight;
       xf.thin = M.lerp(sc, chipW / w0, roll);
+      xf.letter = [part.letter, null, roll];   // the look: the sheet's letter in flight, a plain chip once rolled up
       drawPart(ctx, part, pal, p, xf, shape, 1, 0);
     }
   }
@@ -312,6 +319,9 @@
     draw(ctx, t, p, env) {
       const ease = M.easing(p.easing);
       const I = p.intensity;
+      PARTS = env.palette.look ? LOOKS.look || (LOOKS.look = partsOf(true)) : LOOKS.classic;
+      // in the look, the ends are the still mark itself
+      if (env.palette.look && (t <= 0 || t >= 1)) { M.mark(ctx, { palette: env.palette, weight: p.weight, ribbon: p.ribbon }); return; }
       if (p.style === 'burst') burst(ctx, t, p, env, I, ease);
       else if (p.style === 'exploded') exploded(ctx, t, p, env, I, ease);
       else if (p.style === 'orbit') orbit(ctx, t, p, env, I, ease);

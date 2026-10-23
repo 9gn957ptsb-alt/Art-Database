@@ -33,15 +33,12 @@
   const win = (t, a, len) => clamp01((t - a) / len);
   const bump = (x) => Math.sin(Math.PI * clamp01(x));
 
-  /* --- geometry, computed once ------------------------------------------------------------------- */
+  /* --- geometry, computed once per look --------------------------------------------------------- */
   // the 5 as one line: the bar backwards (tip -> corner, NB points) then the body (NBODY points), each
   // sampled exactly as its own stroke, so at rest the two pieces are the 5's own bar and body
   const NB = 160, NBODY = 160, N = NB + NBODY;                 // each sampled as Marks.mark samples it
-  const L_BAR = M.length('bar'), L_BODY = M.length('body');
-  const FB = L_BAR / (L_BAR + L_BODY);                      // the bar's share of the 5's one line
-  const FIVE = M.points('bar', NB).reverse().concat(M.points('body', NBODY));
   const KB = NB - 1;                                         // the bar is FIVE[0..KB], the body FIVE[KB+1..]
-  const BODY_D = M.points('body', 600), S_D = M.points('s', 600);
+  const MERGE_SCALE = 1.62;
 
   // the stretch [a, b] of a polyline as n points
   function sub(pts, a, b, n) {
@@ -59,20 +56,43 @@
     out.push(at(s1));
     return M.resample(out, n);
   }
-  // a line of N points split like FIVE: its first NB points cover [a, m], the rest [m, b]
-  const splitLike = (pts, a, b) => { const m = a + (b - a) * FB; return sub(pts, a, m, NB).concat(sub(pts, m, b, NBODY)); };
-  const S = splitLike(S_D, 0, 1);                            // the s, point for point with FIVE
   const centre = (pts) => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const p of pts) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); } return [(x0 + x1) / 2, (y0 + y1) / 2]; };
-  const C5 = centre(FIVE), CS = centre(S);
 
-  // merge: one s at the centre, as big as the 5 (both letters land on it)
-  const MERGE_SCALE = 1.62;
-  const S_MID = S.map((p) => [505 + (p[0] - CS[0]) * MERGE_SCALE, 515 + (p[1] - CS[1]) * MERGE_SCALE]);
-  // melt: each letter drains into its own bowl: the 5 onto its bowl past the foot, the s onto its lower bowl
-  const U_FOOT = M.length('M 311 231 C 262 318 211 404 160 491') / L_BODY;
-  const BOWL5 = splitLike(BODY_D, U_FOOT + 0.05, 1);
-  const BOWLS = sub(S_D, 0.4, 1, N);
-  const S_WHOLE = M.points('s', N);                          // the s on its own, evenly sampled (melt drains it)
+  // the classic letters, or (look) the Iterations look's: the same construction from the sheet's centrelines, so the
+  // morphs run between the sheet's letters and land on them (each stroke says which letter it is: M.stroke's letter)
+  let FB, FIVE, S, C5, CS, S_MID, U_FOOT, BOWL5, BOWLS, S_WHOLE, AXIS, MIDY, HALF, S_M, FIVE_M, S_BIG, FIVE_SMALL, PARTS;
+  function geometry(look) {
+    const g = {};
+    const P = look ? (k) => M.paths5s[k] : (k) => k;
+    const L_BAR = M.length(P('bar')), L_BODY = M.length(P('body'));
+    g.FB = L_BAR / (L_BAR + L_BODY);                        // the bar's share of the 5's one line
+    g.FIVE = M.points(P('bar'), NB).reverse().concat(M.points(P('body'), NBODY));
+    const BODY_D = M.points(P('body'), 600), S_D = M.points(P('s'), 600);
+    // a line of N points split like FIVE: its first NB points cover [a, m], the rest [m, b]
+    const splitLike = (pts, a, b) => { const m = a + (b - a) * g.FB; return sub(pts, a, m, NB).concat(sub(pts, m, b, NBODY)); };
+    g.S = splitLike(S_D, 0, 1);                              // the s, point for point with FIVE
+    g.C5 = centre(g.FIVE); g.CS = centre(g.S);
+    // merge: one s at the centre, as big as the 5 (both letters land on it)
+    g.S_MID = g.S.map((p) => [505 + (p[0] - g.CS[0]) * MERGE_SCALE, 515 + (p[1] - g.CS[1]) * MERGE_SCALE]);
+    // melt: each letter drains into its own bowl: the 5 onto its bowl past the foot, the s onto its lower bowl
+    g.U_FOOT = M.length(look ? 'M 274 233 C 248 309 222 386 190 466' : 'M 311 231 C 262 318 211 404 160 491') / L_BODY;
+    g.BOWL5 = splitLike(BODY_D, g.U_FOOT + 0.05, 1);
+    g.BOWLS = sub(S_D, 0.4, 1, N);
+    g.S_WHOLE = M.points(P('s'), N);                          // the s on its own, evenly sampled (melt drains it)
+    // which stretch of which letter each half of a 5-like line is (its bar half, its body half), for M.stroke's letter
+    g.AXIS = (g.C5[0] + g.CS[0]) / 2; g.MIDY = (g.C5[1] + g.CS[1]) / 2; g.HALF = Math.hypot(g.CS[0] - g.C5[0], g.CS[1] - g.C5[1]) / 2;
+    const mirrorX = (pts) => pts.map((q) => [2 * g.AXIS - q[0], q[1]]);
+    g.S_M = mirrorX(g.S); g.FIVE_M = mirrorX(g.FIVE);         // each letter's shape seen from behind, in the other's place
+    const at = (pts, from, to, k) => pts.map((q) => [to[0] + (q[0] - from[0]) * k, to[1] + (q[1] - from[1]) * k]);
+    g.S_BIG = at(g.S, g.CS, g.C5, MERGE_SCALE);              // the s at the 5's size and place
+    g.FIVE_SMALL = at(g.FIVE, g.C5, g.CS, 1 / MERGE_SCALE);  // the 5 at the s's size and place
+    const b0 = g.U_FOOT + 0.05, bm = b0 + (1 - b0) * g.FB;
+    g.PARTS = { five: [['bar', 1, 0], ['body', 0, 1]], s: [['s', 0, g.FB], ['s', g.FB, 1]], bowl: [['body', b0, bm], ['body', bm, 1]] };
+    return g;
+  }
+  const GEO = { classic: geometry(false), look: null };
+  const use = (g) => ({ FB, FIVE, S, C5, CS, S_MID, U_FOOT, BOWL5, BOWLS, S_WHOLE, AXIS, MIDY, HALF, S_M, FIVE_M, S_BIG, FIVE_SMALL, PARTS } = g);
+  use(GEO.classic);
 
   /* --- colour: exact stretches of the logo's gradients, and mixes of two of them ----------------- */
   // the stops of `colours` over [a, b] (a > b runs it backwards), remapped to [0, 1]: the original stops that
@@ -120,9 +140,11 @@
   }
 
   // draw a 5-like glyph (the bar stretch [0, KB] and the body stretch [KB + 1, N)) with its widths and colours
-  function glyph5(ctx, pts, wBar, wBody, colBar, colBody) {
-    M.stroke(ctx, pts.slice(KB + 1), { width: wBody, colours: colBody });
-    M.stroke(ctx, pts.slice(0, KB + 1), { width: wBar, colours: colBar });
+  // (from, to, m: which letters the line is morphing between and how far, PARTS' keys; the look draws them as the sheet's)
+  function glyph5(ctx, pts, wBar, wBody, colBar, colBody, from, to, m) {
+    const a = PARTS[from || 'five'], b = PARTS[to || from || 'five'], k = clamp01(m || 0);
+    M.stroke(ctx, pts.slice(KB + 1), { width: wBody, colours: colBody, letter: [a[1], b[1], k] });
+    M.stroke(ctx, pts.slice(0, KB + 1), { width: wBar, colours: colBar, letter: [a[0], b[0], k] });
   }
 
   /* --- timing ----------------------------------------------------------------------------------- */
@@ -162,11 +184,11 @@
     const five = blend(FIVE, S_MID, m, lag5, 0, 0);
     const mc = clamp01(m);
     glyph5(ctx, five, M.lerp(M.widths.bar * k, wMid, mc), M.lerp(M.widths.body * k, wMid, mc),
-      mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc));
+      mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc), 'five', 's', mc);
     // the s: grows into the centre on an arc
     const arc = 90 * (0.4 + I) * bump(clamp01(mS));
     const sPts = blend(S, S_MID, mS, null, -arc * 0.35 * dir, -arc);
-    M.stroke(ctx, sPts, { width: M.lerp(M.widths.s * k, wMid, clamp01(mS)), colours: col.s });
+    M.stroke(ctx, sPts, { width: M.lerp(M.widths.s * k, wMid, clamp01(mS)), colours: col.s, letter: 's' });
   }
 
   function exchange(ctx, t, p, env, I, ease) {
@@ -203,11 +225,11 @@
     // the 5 turning into an s (its colours into the s's)
     const a = swing(blend(FIVE, S, m5, (f) => 1 - f, 0, 0), C5, CS, m5);
     const drawA = () => glyph5(ctx, a, M.lerp(M.widths.bar * k, M.widths.s * k, mc5), M.lerp(M.widths.body * k, M.widths.s * k, mc5),
-      mixList(col.fiveBar, col.sBar, mc5), mixList(col.fiveBody, col.sBody, mc5));
+      mixList(col.fiveBar, col.sBar, mc5), mixList(col.fiveBody, col.sBody, mc5), 'five', 's', mc5);
     // the s turning into a 5 (bar out first)
     const b = swing(blend(S, FIVE, mS, (f) => f, 0, 0), CS, C5, mS);
     const drawB = () => glyph5(ctx, b, M.lerp(M.widths.s * k, M.widths.bar * k, mcS), M.lerp(M.widths.s * k, M.widths.body * k, mcS),
-      mixList(col.sBar, col.fiveBar, mcS), mixList(col.sBody, col.fiveBody, mcS));
+      mixList(col.sBar, col.fiveBar, mcS), mixList(col.sBody, col.fiveBody, mcS), 's', 'five', mcS);
     // the bigger letter stays behind: the s (b) starts in front and ends behind; the hand-over is a
     // cross-fade of the front copy around the middle, where the two are smallest and farthest apart
     const front = M.smoothstep(0.4, 0.6, (m5 + mS) / 2);
@@ -239,18 +261,12 @@
     };
     const five = slump(blend(FIVE, BOWL5, m, (f) => 1 - f, 0, 0), m, 380);
     glyph5(ctx, five, M.lerp(M.widths.bar * k, M.widths.body * k * swell, mc), M.widths.body * k * M.lerp(1, swell, mc),
-      mixList(col.fiveBar, col.bowlBar, mc), mixList(col.fiveBody, col.bowlBody, mc));
+      mixList(col.fiveBar, col.bowlBar, mc), mixList(col.fiveBody, col.bowlBody, mc), 'five', 'bowl', mc);
     const sPts = slump(blend(S_WHOLE, BOWLS, mS, (f) => 1 - f, 0, 0), mS, 760);
-    M.stroke(ctx, sPts, { width: M.widths.s * k * M.lerp(1, swell, mcs), colours: mixList(col.s, col.sBowl, mcs) });
+    M.stroke(ctx, sPts, { width: M.widths.s * k * M.lerp(1, swell, mcs), colours: mixList(col.s, col.sBowl, mcs), letter: [['s', 0, 1], ['s', 0.4, 1], mcs] });
   }
 
   /* --- revolve, doubles and shell ----------------------------------------------------------------- */
-  const AXIS = (C5[0] + CS[0]) / 2, MIDY = (C5[1] + CS[1]) / 2, HALF = Math.hypot(CS[0] - C5[0], CS[1] - C5[1]) / 2;
-  const mirrorX = (pts) => pts.map((q) => [2 * AXIS - q[0], q[1]]);
-  const S_M = mirrorX(S), FIVE_M = mirrorX(FIVE);           // each letter's shape seen from behind, in the other's place
-  const at = (pts, from, to, k) => pts.map((q) => [to[0] + (q[0] - from[0]) * k, to[1] + (q[1] - from[1]) * k]);
-  const S_BIG = at(S, CS, C5, MERGE_SCALE);                  // the s at the 5's size and place
-  const FIVE_SMALL = at(FIVE, C5, CS, 1 / MERGE_SCALE);      // the 5 at the s's size and place
   const still = (ctx, p, env) => M.mark(ctx, { palette: env.palette, weight: p.weight, ribbon: p.ribbon });
   // a colour list pulled toward one colour by k
   const toward = (list, c, k) => (k <= 0.001 ? list : mixList(list, [[0, c], [1, c]], k));
@@ -263,7 +279,7 @@
   function letter(ctx, pts, m, k, col, tint, tk) {
     const mc = clamp01(m);
     glyph5(ctx, pts, M.lerp(M.widths.bar * k, M.widths.s * k, mc), M.lerp(M.widths.body * k, M.widths.s * k, mc),
-      toward(mixList(col.fiveBar, col.sBar, mc), tint, tk), toward(mixList(col.fiveBody, col.sBody, mc), tint, tk));
+      toward(mixList(col.fiveBar, col.sBar, mc), tint, tk), toward(mixList(col.fiveBody, col.sBody, mc), tint, tk), 'five', 's', mc);
   }
   const aboutPt = (ctx, c, sx, sy, draw) => { ctx.save(); ctx.translate(c[0], c[1]); ctx.scale(sx, sy); ctx.translate(-c[0], -c[1]); draw(); ctx.restore(); };
 
@@ -305,9 +321,12 @@
     for (const w of wings) {
       ctx.save();
       ctx.translate(cam, MIDY); ctx.scale(w.sc, w.sc); ctx.translate(-cam, -MIDY);   // perspective: about the eye
-      ctx.translate(AXIS, 0); ctx.scale(sx, 1); ctx.translate(-AXIS, 0);              // the turn: x about the axis
+      // in the look a wing seen from behind is drawn as its mirror image, the same picture with the sheet's blades and
+      // veil where the letter has them
+      const flip = !!pal.look && sx < 0;
+      ctx.translate(AXIS, 0); ctx.scale(flip ? -sx : sx, 1); ctx.translate(-AXIS, 0);  // the turn: x about the axis
       const m = w.five ? w.sh.m : 1 - w.sh.m;
-      letter(ctx, w.sh.pts, m, k, col, sink, 0.35 * Math.max(0, -w.z));
+      letter(ctx, flip ? w.sh.pts.map((q) => [2 * AXIS - q[0], q[1]]) : w.sh.pts, m, k, col, sink, 0.35 * Math.max(0, -w.z));
       ctx.restore();
     }
   }
@@ -342,11 +361,11 @@
     const bigW = (m) => [M.lerp(M.widths.bar * k, 128 * k, clamp01(m)), M.lerp(M.widths.body * k, 128 * k, clamp01(m))];
     aboutPt(ctx, C5, 1 + bk, 1 + bk, () => {
       const [wb, wy] = bigW(bm), mc = clamp01(bm);
-      glyph5(ctx, big, wb, wy, mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc));
+      glyph5(ctx, big, wb, wy, mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc), 'five', 's', mc);
     });
     aboutPt(ctx, CS, 1 + sk, 1 + sk, () => {
       const mc = clamp01(sm), w5 = M.widths.s * k;
-      glyph5(ctx, small, M.lerp(w5 * 1.05, w5, mc), w5, mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc));
+      glyph5(ctx, small, M.lerp(w5 * 1.05, w5, mc), w5, mixList(col.fiveBar, col.sBar, mc), mixList(col.fiveBody, col.sBody, mc), 'five', 's', mc);
     });
   }
 
@@ -417,6 +436,10 @@
     draw(ctx, t, p, env) {
       const ease = M.easing(p.easing);
       const I = p.intensity;
+      const look = !!env.palette.look;
+      use(look ? GEO.look || (GEO.look = geometry(true)) : GEO.classic);
+      // in the look, the ends are the still mark itself (revolve, doubles and shell already are, in both looks)
+      if (look && (t <= 0 || t >= 1)) { still(ctx, p, env); return; }
       if (p.style === 'revolve') revolve(ctx, t, p, env, I, ease);
       else if (p.style === 'doubles') doubles(ctx, t, p, env, I, ease);
       else if (p.style === 'shell') shell(ctx, t, p, env, I, ease);
