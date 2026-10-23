@@ -573,9 +573,9 @@ python3 scripts/sync_artsy_saves.py --full    # take Artsy's copy of every field
 python3 scripts/sync_artsy_saves.py --verify  # local consistency only, no network
 ```
 
-A run walks the **whole** collection — all fifty-two pages, about half a minute —
-builds the complete set of saved ids, and diffs it against the raw dump in both
-directions. Missing saves are appended; works that are no longer saved are dropped.
+A run walks the **whole** collection — about 580 pages since the saving run, some
+ten minutes — builds the complete set of saved ids, sets the saving run's aside (below),
+and diffs what is left against the raw dump in both directions. Missing saves are appended; works that are no longer saved are dropped.
 Then it rebuilds everything downstream in dependency order (database, thumbnails for
 the new works only, search page, voxels, objects page), re-derives the answer from
 disk, and **exits non-zero unless Artsy, the raw dump, the database and the objects
@@ -590,16 +590,27 @@ both — seventeen saves absent, and four works un-saved long ago still in the d
 The saves endpoint returns a bare JSON list with no total-count field, so there is no
 cheap invariant to check instead. Completeness has to be walked.
 
+**Only the works Matt saved himself.** From 1 to 14 Oct 2026 a run on his account saved
+every work by the artists he follows — 52,816 of them still saved, one block of the
+listing. He chose (22 Oct 2026) to keep them off for now. Their ids are in
+`data/follow_saves/run_ids.json`, which is private: it is gitignored here, copied in from
+the site's `data/` (or from the private repository `art-database-data`), and the script
+refuses to run without it, since the walk would otherwise add some fifty thousand works.
+The walk still reads every page and only then sets them aside, so the diff stays exact
+over what is left; a work he saved by hand while the run was saving sits inside the block
+and is set aside with it.
+
 Two guards, because from here a truncated response and a mass un-save look identical:
 a page that re-serves records already seen aborts the walk **without writing
 anything**, and dropping more than a tenth of the collection in one run needs
 `--allow-shrink`. Records already held keep their bytes and their order, so a run that
 changes nothing writes nothing and the LFS objects stay put.
 
-A daily Routine runs this at 07:23 UTC in the `Artsy` cloud environment, commits and
-pushes anything that changed, and republishes both artifacts. It stays silent on the
-usual "already level" outcome, and reports loudly on a non-zero exit. Manage it in the
-claude.ai Routines UI.
+A daily Routine runs this at 07:23 UTC, fired into Matt's own conversation, which hands
+it to a helper: it commits and pushes anything that changed and republishes both
+artifacts. It stays silent on the usual "already level" outcome, and reports loudly on a
+non-zero exit. It was paused from 14 to 23 Oct 2026, when its first run met the saving
+run's fifty thousand works; it runs again on the works he saved himself.
 
 It is worth saying what went wrong there once, since the Routine reporting SUCCESS is
 not the same as the collection being current: it fired daily for days while pointed at

@@ -5,3 +5,6 @@ __pycache__/
 # Preview renders. Every builder writes these with --preview and they are
 # regenerable from the scripts, so they are output, not source.
 preview_*.png
+
+# The saving run's ids (private): the reconcile reads them, never commits them.
+data/follow_saves/

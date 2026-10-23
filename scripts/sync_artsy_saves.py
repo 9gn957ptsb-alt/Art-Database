@@ -22,9 +22,17 @@ Ordering note the append depends on: the endpoint returns the collection
 ``last_saved_at`` records when *anyone* last saved that work, so popular pieces
 read as saved today and it can never be used to find new saves.
 
-Full chain per run: walk the collection -> diff both directions -> repair the raw
-dump -> normalize -> thumbnails for the new works -> search page -> voxels ->
-objects page -> verify.
+Only the works Matt saved himself. From 1 to 14 Oct 2026 a run saved every work by
+the artists he follows; he chose (22 Oct 2026) to keep those off for now. They are
+one block of the listing, their ids in data/follow_saves/run_ids.json (private,
+gitignored here: copied in from the site's data/, kept in the private repository
+art-database-data). The walk still reads every page, and then sets them aside, so
+the both-ways diff stays exact over what is left. Without the file the walk would
+add some fifty thousand works, so the script refuses to run.
+
+Full chain per run: walk the collection -> set the run's works aside -> diff both
+directions -> repair the raw dump -> normalize -> thumbnails for the new works ->
+search page -> voxels -> objects page -> verify.
 
 Usage:
     python3 scripts/sync_artsy_saves.py            # reconcile, repair, verify
@@ -55,6 +63,7 @@ RAW_PATH = DATA / "artsy_saves_raw.json"
 DB_PATH = DATA / "artworks.db"
 OBJECTS_PATH = DATA / "objects.json"
 THUMBS_PATH = DATA / "thumbs.json"
+RUN_IDS_PATH = DATA / "follow_saves" / "run_ids.json"
 SCRIPTS = ROOT / "scripts"
 
 BASE = "https://api.artsy.net/api/v1"
@@ -145,7 +154,17 @@ def rebuild():
     run("build_objects.py")
 
 
-def verify(remote_ids=None):
+def load_run_ids(path):
+    if not path.exists():
+        sys.exit(
+            f"{path} not found: the ids of the saving run's works, which are kept off.\n"
+            f"Copy it in from the site's data/ (data/follow_saves/run_ids.json there, or "
+            f"follow_saves/run_ids.json in the private repository art-database-data)."
+        )
+    return set(json.loads(path.read_text()))
+
+
+def verify(remote_ids=None, run_ids=None):
     """Prove the repository is level. Returns a list of failures, empty if sound."""
     problems = []
 
@@ -153,6 +172,8 @@ def verify(remote_ids=None):
     raw_ids = {r.get("id") for r in raw}
     if len(raw_ids) != len(raw):
         problems.append(f"raw dump holds {len(raw)} records but only {len(raw_ids)} distinct ids")
+    if run_ids and raw_ids & run_ids:
+        problems.append(f"{len(raw_ids & run_ids)} of the saving run's works are in the raw dump")
 
     if remote_ids is not None:
         missing = remote_ids - raw_ids
@@ -210,10 +231,14 @@ def main():
     parser.add_argument("--allow-shrink", action="store_true",
                         help=f"permit removing more than {SHRINK_LIMIT:.0%} of the collection")
     parser.add_argument("--user-id", default=DEFAULT_USER_ID)
+    parser.add_argument("--run-ids", type=Path, default=RUN_IDS_PATH,
+                        help="the saving run's ids, set aside after the walk")
     args = parser.parse_args()
 
     if args.verify:
-        return report(verify(), "Level: raw dump, database and objects page agree.")
+        run_ids = load_run_ids(args.run_ids) if args.run_ids.exists() else None
+        return report(verify(run_ids=run_ids), "Level: raw dump, database and objects page agree.")
+    run_ids = load_run_ids(args.run_ids)
 
     if not RAW_PATH.exists():
         sys.exit(f"{RAW_PATH} not found. Run scripts/fetch_artsy_saves.py for the first import.")
@@ -224,10 +249,12 @@ def main():
     print(f"Walking the saves collection ({len(known)} held locally)...")
     with requests.Session() as session:
         session.headers.update({"Accept": "application/vnd.artsy-v2+json"})
-        remote = walk_collection(session, args.user_id)
+        walked = walk_collection(session, args.user_id)
 
+    remote = [r for r in walked if r.get("id") not in run_ids]
     remote_ids = {r.get("id") for r in remote}
-    print(f"Artsy holds {len(remote_ids)} saved work(s).")
+    print(f"Artsy holds {len(walked)} saved work(s); {len(walked) - len(remote)} of them the "
+          f"saving run's, set aside; {len(remote_ids)} saved by hand.")
 
     added = [r for r in remote if r.get("id") not in known]
     removed = [r for r in existing if r.get("id") not in remote_ids]
@@ -244,7 +271,7 @@ def main():
         print("\nId sets already match.")
 
     if args.check:
-        problems = verify(remote_ids)
+        problems = verify(remote_ids, run_ids)
         print("\n--check: nothing written.")
         return report(problems, "Level: Artsy, raw dump, database and objects page agree.")
 
@@ -274,7 +301,7 @@ def main():
     else:
         print("\nNothing to repair; verifying anyway.")
 
-    problems = verify(remote_ids)
+    problems = verify(remote_ids, run_ids)
     return report(problems, "Level: Artsy, raw dump, database and objects page agree.")
 
 
