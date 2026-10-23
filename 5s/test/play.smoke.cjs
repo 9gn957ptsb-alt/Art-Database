@@ -326,7 +326,13 @@ test('level 1 by touch at 390: bounce, drag, tap-tap, keys, sound, hint, a casca
   assert.equal(ends[0].won, true);
   if (res.stars === 3) assert.match(end, /You earned a Pass\./);
   const hearts = page.locator('dialog[open] .fp-heart');
-  assert.equal(await hearts.count(), Math.min(6, res.groups.length));
+  // most things first; a group inside one already shown is not shown again
+  const shown = [];
+  for (const g of res.groups.map((g, i) => ({ g, i })).sort((a, b) => b.g.ids.length - a.g.ids.length || a.i - b.i).map((x) => x.g)) {
+    if (shown.length < 6 && !shown.some((x) => g.ids.every((id) => x.ids.includes(id)))) shown.push(g);
+  }
+  assert.equal(await hearts.count(), shown.length);
+  assert.deepEqual(await page.$$eval('dialog[open] .fp-groups p', (ps) => ps.map((p) => p.textContent.split(': ')[0])), shown.map((g) => g.label));
   if (res.groups.length) {
     await hearts.first().click();
     assert.equal(await hearts.first().getAttribute('aria-pressed'), 'true');

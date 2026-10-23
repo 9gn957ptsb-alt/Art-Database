@@ -488,6 +488,27 @@ test('addAssociations: pairs, n up to 99, the cap of 400; hearts', () => {
   assert.equal(M.heart([], ['a', 'b'], false).length, 0);
 });
 
+test('the cap holds when every pairing is hearted (the state stays under the store\'s limit)', () => {
+  const hearted = Array.from({ length: 400 }, (_, i) => ['x' + String(i).padStart(3, '0'), 'y', 1, 1, 1000 + i]);
+  const h = M.heart(hearted, ['p', 'q', 'r'], true);
+  assert.equal(h.length, 400, 'no new pair past 400 hearted ones');
+  assert.ok(hearted.every((e, i) => h[i][0] === e[0] && h[i][3] === 1), 'and none of them goes');
+  const one = hearted.slice(0, 399).concat([['z', 'zz', 3, 0, 1]]);
+  const h2 = M.heart(one, ['p', 'q'], true);
+  assert.equal(h2.length, 400);
+  assert.ok(h2.some((e) => e[0] === 'p' && e[3] === 1) && !h2.some((e) => e[0] === 'z'), 'an unhearted one makes room');
+  assert.equal(M.addAssociations(hearted, ['p', 'q'], 5000).length, 400);
+});
+
+test('an oversized list (a hand-edited state) is capped in one go, not a scan per entry', () => {
+  const big = Array.from({ length: 50000 }, (_, i) => ['a' + i, 'b' + i, 1 + (i % 3), 0, i]);
+  const t0 = Date.now();
+  const c = M.addAssociations(big, ['p', 'q'], 1e6);
+  assert.ok(Date.now() - t0 < 1000, 'took ' + (Date.now() - t0) + ' ms');
+  assert.equal(c.length, 400);
+  assert.deepEqual(c.map((e) => e[4]), big.filter((e) => e[2] === 3).slice(-400).map((e) => e[4]), 'the lowest n go first, then the oldest');
+});
+
 test('clusters: by kind before any associations; merged up to the cap', () => {
   const ex = F.exampleState(deck, NOW), prof = F.profile(ex, deck);
   const kept = [].concat(...F.KINDS.map((k) => prof.keptByKind[k]));
@@ -577,4 +598,18 @@ test('a move and its cascades take well under 2 ms', () => {
     }
   }
   assert.ok(total / n < 2, (total / n).toFixed(3) + ' ms');
+});
+
+test('a brought thing\'s short hex colour (#ABC) still paints six hex digits a cell', () => {
+  const own = ['#ABC', '#F0F', '#0AB', '#DEF', '#B0A', '#AB0'].map((h, i) => ({ id: 'yshort' + i, kind: ['object', 'image', 'space'][i % 3], name: 'Thing ' + i, colours: [h], at: 1761100000 + i, source: 'Somewhere else' }));
+  const st = { ...F.newState(), own };
+  const lv = M.level(6), p = M.pieces(st, deck, lv.suits);
+  assert.ok(p.suits.flatMap((s) => s.firsts).every((h) => h === null || /^#[0-9a-f]{6}$/.test(h)), 'firsts are #rrggbb');
+  let g = M.newGame(lv, p, '5s:6:0');
+  for (let k = 0; k < 80 && g.state === 'play'; k++) { const h = M.hint(g); if (!h) break; g = M.swap(g, h[0], h[1]).game; }
+  const r = M.result(g);
+  assert.ok(r.painting, 'level 6 paints');
+  assert.equal(r.painting.c.length, r.painting.cols * r.painting.rows * 6);
+  assert.match(r.painting.c, /^(?:[0-9a-f]{6}|------)*$/);
+  assert.ok(r.painting.c.includes('aabbcc') || r.painting.c.includes('ff00ff') || r.painting.c.includes('00aabb'), 'the things\' own colours, written out in full');
 });

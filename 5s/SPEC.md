@@ -437,6 +437,7 @@ Never: a password typed into 5s, a scraped login, or a browser extension.
   src/app.css           styles (inlined into index.html at build)
   src/app.js            UI
   src/engine.js         pure logic (no DOM); also loads in Node for tests
+  src/match.js, src/board.js, src/play.js, src/play.css   Set's game and board ("Set: the board and the game")
   test/fixture/deck.json + test/fixture/img/*   synthetic 50-card deck for tests
   test/engine.test.mjs  node --test
   test/ui.smoke.mjs     Playwright smoke test against a served dist/ (or the fixture)
@@ -714,6 +715,17 @@ three ways to go.
 - Example mode: the board shows the example taste; the game plays, and nothing is saved.
 - Nothing kept yet: "Your board fills with what you keep. Sort a five and it starts." with **Sort** and
   **See an example**; Play is still offered (the tiles are colour swatches until things are kept).
+- *As built (23 Oct 2026):* Play level N opens level N's card at once (Candy Crush's "Play" on the next
+  level); the card's close and the level's Back ("Map") open the map, whose Back ("Your board") and the
+  level end's **Your board** return to the board, with the focus on Play. The tab bar hides only while a
+  level is on (the map keeps it). Leaving Set by another way mid-level (the logo, the Path) pauses the
+  level and keeps it for this visit: Set shows it again (but with one of the level's own sheets open, its card, out of moves or
+  its end, nothing is mid-play, so the level goes rather than leave a modal in a hidden view); the map and the room give way to the board
+  ("the board is always what `#set` opens"). See it as a room / See it as a board keep the focus on the
+  button in the same place. Turning Example mode on or off closes a game. The game shows a kept Surface as its texture
+  (the card's own picture), as the board and the room do, not the whole photo it was cut from. A painting tile opens "Your
+  painting": the painting large, "Level 7 · 22 Oct" and Remove behind an in-page confirm (none in
+  Example mode).
 
 ### The board (FiveSBoard)
 - **What is on it**: kept things (deck cards whose latest judgment is a keep, and brought things not
@@ -777,15 +789,19 @@ colour is ≥ 6.2:1 against it.
    kept colours at all, the suit's frame colour at 100 %, 70 % and 40 % toward paper.
 8. Tokens: suits keep their score order (suit 0 is the strongest thread). A hue thread takes its
    family's token (red, rose → flare; orange → ember; yellow, lime → sun; green, teal → fern; cyan,
-   blue, indigo → cobalt; violet, magenta → iris), first come first served; every other suit takes the
-   free tokens in table order.
+   blue, indigo → cobalt; violet, magenta → iris), first come first served; every other suit, in score
+   order, takes the free token farthest in hue from those already taken (ties: table order), so the
+   frames side by side never read as one warm run (the playtest: it was red, orange, yellow, green).
 9. Labels: `FiveS.featureLabel(key)` ("Orange", "Paper", "Abstract Art", "Fine texture"); a swatch
    suit without a thread uses its token's plain word.
 10. Also returned: `passed` (deck cards whose latest judgment is a pass, then let-go brought things,
     newest first: the pictures on pass blockers) and `out` (things in no suit; they sit this level out
     and stay on the board).
 
-On the example taste (37 things) this gives Orange, Neutral, Paper, Acrylic and Fine texture.
+On the example taste (22 Oct 2026, the deck with the artist's bookmarks: 39 things) five suits are
+Orange, Neutral, Textile, Paper and Abstract Art, in orange (petal), blue (square), green (hexagon),
+violet (diamond) and yellow (arch) frames; a sixth takes red (circle). Nothing kept: red, blue, green,
+yellow, violet. (The example taste is the nine days before today, so its threads move with the day.)
 **Why threads, not hue alone**: a match then says something about the person ("these three share
 Paper") and joins different kinds of things; one suit per thing keeps matching as unambiguous as
 candy; suit 0 is always the person's strongest thread, so a collect goal asks for their own taste;
@@ -885,7 +901,7 @@ Paint cells never lie under a pass or a held tile.
 **collect** (n tiles of one suit, or of one kind of thing), **paint** (every paint cell), **clear** (every
 pass, every layer). A level whose only goal is a score plays out all its moves and is won if the score
 reached the first star. Any other level is won the moment its goals are met once the board settles,
-then **the finale**: "All set." Each move left turns a random plain tile into a stripe (+100 each), and
+then **the finale**: "All set." Each move left turns a random plain tile into a stripe (+1,000 each), and
 every special on the board fires in turn, in waves (nothing recorded, nothing repainted). Out of moves
 without the goals: **"Out of moves."** with what is left ("3 cells left to paint"), **Five more** if the
 person has one and has not used it this level, **Try again** and **Map**. Nothing is ever lost.
@@ -898,8 +914,9 @@ max(4, round(n × min(1, share / 0.25))); with share 0 it becomes "collect n of 
 1, and 2 and 3 at s2 and s3, counted after the finale. Best scores are kept.
 
 **Score.** Each tile that leaves: 20 × min(wave, 5). Making a stripe +60, a burst +100, the mark +200.
-Each coat +50, each pass layer +50, each held tile freed +50. The finale: +100 per move left, plus
-what its stripes clear (at wave 1). A "+120" rises from each group.
+Each coat +50, each pass layer +50, each held tile freed +50. The finale: +1,000 per move left, plus
+what its stripes clear, at 20 × min(wave, 5) as in play: finishing with moves to spare is what earns
+stars, as in Candy Crush (the playtest). A "+120" rises from each group.
 
 **Hint.** After 5 s without input (when hints are on), the best swap nudges twice (the swap whose wave 1
 clears the most; combos and the mark count 10; ties: lowest cells), and again every 5 s. On a coach
@@ -926,7 +943,7 @@ moves, or left) counts in `saga.plays`, so the next attempt is a new board (the 
   `state.assoc` entries `[a, b, n, heart, at]`. Cascades, blasts, combos, the mark and the finale
   record nothing: only the person's own swap (or Turn) is a judgment.
 - **The level end** shows "What you put together": up to 6 groups made in the level (most things first,
-  then newest), each its thumbnails, the thread and the short names ("Paper: Bone Armchair, Untitled,
+  then newest; *as built:* a group whose things are all in one already shown is not shown again, since hearts keep pairs), each its thumbnails, the thread and the short names ("Paper: Bone Armchair, Untitled,
   Casa Malaparte"), and a heart button **Keep** (`aria-pressed`) that keeps those pairings explicitly
   (tap again to unkeep). Groups made in a level that ran out of moves are shown too: they still count.
 - **The board** clusters by them: edges weigh n + 2 × heart; strongest edges first (ties: hearted,
@@ -998,8 +1015,8 @@ plays out all its moves (its s1 is the goal); other levels end when their goals 
 | 29 | Another five | 9×9 | 5 | 36 | paint centre 5×5 (25) + clear | 18 passes, bottom; 6 held, scatter | win / 35,000 / 38,000 |  | 43 % | 99 % | 16 % / 57 % |
 | 30 | Another five | the 5 (61) | 4 | 50 | paint all (61) | — | win / 36,000 / 37,000 |  | 38 % | 80 % | 16 % / 55 % |
 
-What the playtest changed, and why (the sections above still read as the brief had them on these
-points; this list is the current behaviour):
+What the playtest changed, and why (folded into the sections above by the integration, 23 Oct 2026;
+this list keeps the why):
 - **The finale pays for moves left.** +1,000 a move left (was +100), and the finale's cascades are
   multiplied like play's (`min(wave, 5)`, was 1). With +100, finishing early scored *less* than slow
   play that farms cascades: on levels 6, 7, 10 and 11 the smart bot got 3 stars on 0–3 % of its
@@ -1058,7 +1075,7 @@ coats, `p` pass, `P` two-layer pass, `h` held), the canonical layout; the cell c
 its tests.
 
 **Coach lines** (once, over the board, with a ghost hand on the hinted swap; under reduced motion an
-arrow): swap "Swap two neighbours to line up three in the same frame. Drag, or tap one then the other." ·
+arrow; the line leaves as the first counted swap starts, out of the way of the row it lands on): swap "Swap two neighbours to line up three in the same frame. Drag, or tap one then the other." ·
 stripe "Line up four for a stripe. It clears its whole row or column." · burst "Make an L or a T for a
 burst. It bursts twice." · paint "A match paints the cells under it in your things' colours. Paint
 them all." · mark "Line up five for the mark. Swap it with any tile to clear every tile in that frame." ·
@@ -1091,7 +1108,7 @@ stars." Out: "Out of moves." Reshuffle: "Shuffled: always three ways to go." Wor
 | the mark | the logo's ribbon (violet, blue, lilac bands) arcs to each target, which lifts and clears | 30 stagger, ≤ 900 |
 | word | 0.6 → 1.05 → 1, hold, fade | 260 + 500 + 200 |
 | score | "+120" rises from the group | 500 |
-| finale | a stripe made every 80 ms, fired every 120 ms; stars fill one by one | 300 a star |
+| finale | each move left becomes a stripe every 80 ms (the moves count down), fired every 120 ms; the meter and the stars fill as the score rises; a tap hurries it | 300 a star |
 | win | the tiles lift away and leave the painting (paint levels) | 600 |
 | hint | the two tiles nudge 3 px toward each other, twice | 2 × 300 |
 
@@ -1144,9 +1161,10 @@ throttles the CPU 4× (CDP) and requires a p95 frame ≤ 20 ms through a cascade
   ring; the mark: the 5s logo tile (Cobalt to Iris frame, "5s" in the Ember to Flare gradient).
 - Text on the table `#EEEBF5` (14.9:1). The level card and level end are sheets in the app's style.
 - **The level end**: "Level 7 done." · the stars (glyphs and "2 of 3 stars") · "Score 8,240 · Best 9,100"
-  · What you put together (hearts) · the painting, with **Keep this painting** (paint levels; when the
-  board already holds 24: "Your board holds 24 paintings. Remove one to keep this.") · any booster
-  earned ("You earned a Pass.") · **Next level**, **Play again**, **Your board**.
+  · any booster earned ("You earned a Pass.") · the painting, with **Keep this painting** (paint levels;
+  when the board already holds 24: "Your board holds 24 paintings. Remove one to keep this.") · What you
+  put together (hearts) · **Next level**, **Play again**, **Your board**, held at the bottom of the sheet
+  (it opens on its stars and score).
 
 ### Accessibility
 - The board is a `role="grid"` labelled "Level 7 board, 8 by 8" with rows of `gridcell`s and a roving
@@ -1177,6 +1195,33 @@ throttles the CPU 4× (CDP) and requires a p95 frame ≤ 20 ms through a cascade
 Limits: `assoc` ≤ 400 entries: past it, the unhearted entry with the lowest n, then the oldest, goes;
 hearted entries never go. `paintings` ≤ 24 (refused past it, never dropped). `saga.stars`/`best` ≤ 999.
 About 15 KB at the caps. The running level is not saved. In example mode nothing is written.
+
+*As built (23 Oct 2026):*
+- `newState()` and `norm()` carry `assoc: []`, `saga: {stars: [], best: [], boost: {pass: 1, turn: 1,
+  more: 1}, plays: 0, day: null}` and `paintings: []` (a missing or wrongly shaped field becomes its
+  default; a saga is kept as it is), so every old state stays valid. `removeOwn` also drops the pairings
+  that name the removed thing. `FiveS.fivePass(state, now)`: a five sorted gives one Pass, once a day
+  (`saga.day`), at most 9; the app calls it on every judgment in Sort. `opts.sound` and `opts.hints`
+  are written by the game's Sound button and Hints switch.
+- *A hand-edited state* is held to the same caps and shapes by `norm()`: at most 400 pairings, each `[a, b, n, heart, at]`
+  with `a < b`, n 1–99 and heart 0 or 1; at most 24 paintings, each cell six lowercase hex digits (or `------`); a saga's
+  bests 0 or more and its day at most 20 characters. So a state read from the store can be put back through the connector,
+  and one bloated by hand comes back under the store's limit. The game writes a brought thing's colour as `#rrggbb`
+  (`FiveS.normHex`; the connector takes 3 to 8 hex digits for brought things), so a painting's cells are always six digits.
+- *When all 400 pairings are hearted* the cap could not hold (hearted entries never go), so
+  `FiveSMatch.heart` adds no new pair then; an unhearted entry still makes room. The cap is a hard 400.
+- *Size:* at the caps (400 pairings of six-letter ids, 24 nine-by-nine paintings, 999 levels with
+  seven-digit bests) the three fields are 37,402 bytes, not 15 KB. The app keeps the rest of the state
+  under `STATE_MAX` (200 KiB, its limit for things brought in), so the whole stays under the store's
+  256 KiB (242,202 bytes at worst); `engine.test.mjs` checks it against `app.js`'s `STATE_MAX`.
+- The connector's `put_state` (`connector/src/validate.js`) takes exactly these fields with these limits:
+  pairings `[a, b, n, heart, at]` with `a < b` (ids), n 1–99, heart 0 or 1; paintings `{at, n, cols, rows,
+  c}` with 1–16 columns and rows and six hex digits (or `------`) a cell; the saga's stars 0–3 and bests
+  (≤ 999 each), boosters 0–9, plays a whole number, day short text; `opts.sound` and `opts.hints` true or
+  false. Anything else in those fields is refused in a sentence, as for the rest of the state.
+- *The taste model* (`FiveS.together`, See's "What you put together", the philosophy, nextFive, the
+  seed's `pairs` and `paintings`) is not built yet: the SPEC calls it "later". Pairings organise the
+  board only.
 
 ### FiveSMatch (`src/match.js`: pure, no DOM, no clock; `window.FiveSMatch` / `module.exports`)
 Uses FiveS (`window.FiveS`, or `require('./engine.js')` in Node). Nothing mutates its input; every
@@ -1290,6 +1335,11 @@ play.js and board.js with the fixture deck); `test/play.smoke.cjs` and `test/boa
 mute button, the level end, the frame-time budget; the masonry's columns and proportions). The
 integration team adds the three scripts to `build_page.py`'s list and `src/index.html` (after
 engine.js, before app.js) and wires Set.
+*As built:* the tests are `test/match.test.mjs` (run by `node --test 5s/test/` through `test/index.js`),
+the harness `test/play.html` and `test/play.smoke.cjs` (the board's checks are in it), and `test/sim.mjs`
+(the playtest). The page loads `match.js`, `board.js` and `play.js` after `connect.js`, before `links.js` and `app.js`;
+`build_page.py` inlines `play.css` as `<style data-fives="play">` (the components then add no `<link>`).
+`ui.smoke.cjs` drives Set through the page at 390 and 1280, light and dark (README, "Test").
 
 ### Decisions, obstacles and their resolutions
 - *Pictures cannot be candy colours.* Each suit is a frame colour and a shape around the thing's own

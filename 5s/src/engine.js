@@ -520,7 +520,27 @@
 
   /** newState() -> an empty State (SPEC.md "State"). */
   function newState() {
-    return { v: 1, j: [], five: null, sets: [], days: [], own: [], notes: [], seen: { path: [] }, opts: { ring: true } };
+    return { v: 1, j: [], five: null, sets: [], days: [], own: [], notes: [], seen: { path: [] }, opts: { ring: true }, assoc: [], saga: newSaga(), paintings: [] };
+  }
+  // Set's game (SPEC "Set: the board and the game", "Data"): the saga's progress; the first play holds one of each booster.
+  const newSaga = () => ({ stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: null });
+  // The game's fields as its modules read them (a hand-edited or foreign state reaches the board, the map's
+  // HTML and the game): a malformed pairing or painting is dropped; a wrong part of the saga is its default.
+  const isObj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
+  const isInt = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi;
+  // As the game writes them and the connector's put_state takes them, so a state read back can be put back.
+  const isPair = (e) => Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'string' && e[0] < e[1] && isInt(e[2], 1, 99) && (e[3] === 0 || e[3] === 1) && Number.isFinite(e[4]);
+  const isPainting = (p) => isObj(p) && isInt(p.n, 1, 1e6) && Number.isFinite(p.at) && isInt(p.cols, 1, 16) && isInt(p.rows, 1, 16) &&
+    typeof p.c === 'string' && p.c.length === p.cols * p.rows * 6 && /^(?:[0-9a-f]{6}|------)*$/.test(p.c);
+  function normSaga(g) {
+    if (!isObj(g)) return newSaga();
+    const b = isObj(g.boost) ? g.boost : {}, held = (x) => (isInt(x, 0, 9) ? x : 1);
+    const list = (xs, ok, d) => (Array.isArray(xs) ? xs.slice(0, 999).map((x) => (ok(x) ? x : d)) : []);
+    return assign(g, {
+      stars: list(g.stars, (x) => isInt(x, 0, 3), 1), best: list(g.best, (x) => Number.isFinite(x) && x >= 0, 0),
+      boost: assign(b, { pass: held(b.pass), turn: held(b.turn), more: held(b.more) }),
+      plays: isInt(g.plays, 0, Number.MAX_SAFE_INTEGER) ? g.plays : 0, day: typeof g.day === 'string' && g.day.length <= 20 ? g.day : null,
+    });
   }
 
   // Fill in whatever an older or partial saved state is missing, without touching it.
@@ -537,6 +557,10 @@
       notes: Array.isArray(x.notes) ? x.notes : [],
       seen: Array.isArray(seen.path) ? seen : assign(seen, { path: [] }),
       opts: x.opts && typeof x.opts === 'object' ? x.opts : { ring: true },
+      // the game's caps (400 pairings, 24 paintings) also hold for a state edited by hand: it stays under the store's limit
+      assoc: Array.isArray(x.assoc) ? x.assoc.filter(isPair).slice(0, 400) : [],
+      saga: normSaga(x.saga),
+      paintings: Array.isArray(x.paintings) ? x.paintings.filter(isPainting).slice(0, 24) : [],
     });
   }
 
@@ -817,6 +841,15 @@
   /** fiveDone(state) -> true when the five in progress has been judged to the end. */
   function fiveDone(state) { return fiveIsDone(norm(state).five); }
 
+  /** fivePass(state, now) -> State: a five sorted gives Set's game one Pass, once a day (at most 9 held). */
+  function fivePass(state, now) {
+    const st = norm(state);
+    const day = dayOf(now);
+    if (!fiveIsDone(st.five) || st.saga.day === day) return st;
+    const boost = assign({ pass: 1, turn: 1, more: 1 }, st.saga.boost);
+    return assign(st, { saga: assign(st.saga, { day, boost: assign(boost, { pass: Math.min(9, (boost.pass | 0) + 1) }) }) });
+  }
+
   /** streak(state, now) -> consecutive days in state.days ending today or yesterday. */
   function streak(state, now) {
     const set = new Set(norm(state).days);
@@ -1035,7 +1068,7 @@
     return assign(st, { own: st.own.concat([ordered]) });
   }
 
-  /** removeOwn(state, id) -> State without the brought thing, its judgments and the notes about it. */
+  /** removeOwn(state, id) -> State without the brought thing, its judgments, the notes about it and the pairings that name it. */
   function removeOwn(state, id) {
     const st = norm(state);
     if (!st.own.some((o) => o && o.id === id)) return assign(st);
@@ -1053,7 +1086,8 @@
       const at = five.ids.indexOf(id);
       five = assign(five, { ids: five.ids.filter((x) => x !== id), i: at < five.i ? five.i - 1 : five.i });
     }
-    return assign(st, { own, j, notes, sets, five });
+    const assoc = st.assoc.filter((e) => !(Array.isArray(e) && (e[0] === id || e[1] === id)));
+    return assign(st, { own, j, notes, sets, five, assoc });
   }
 
   /** addNote(state, {q, text, ref}, now) -> State. q: turn | five | set | bring | free; ref: a card id,
@@ -1677,9 +1711,9 @@
     ERAS, KINDS, SLOTS, SLOT_NAMES, OWN_KINDS, SOURCES, DECK_SOURCE, DECK_SOURCES, deckSource, NOTE_QS, GROUPS, HUES, MILESTONES,
     HUB_MILESTONES, HUB_MODES, setHub,
     DEFINED_BY, OWN_LIMITS, checkOwnFields,
-    hexToHsl, colourName, chord, features, featureLabel, featureGroup,
+    hexToHsl, normHex, colourName, chord, features, featureLabel, featureGroup,
     newState, migrate, setOpt, judge, undo, model, predict,
-    nextFive, isRevisit, startFive, currentCard, fiveDone, streak, dayOf,
+    nextFive, isRevisit, startFive, currentCard, fiveDone, fivePass, streak, dayOf,
     profile, philosophy,
     setCandidates, setPool, pinSet, unpinSet,
     seedCode, prng, exportSeed, exampleState,

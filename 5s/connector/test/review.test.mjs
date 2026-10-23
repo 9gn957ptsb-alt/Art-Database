@@ -6,6 +6,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import FiveS from '../src/engine.js';
+import FiveSMatch from '../../src/match.js';
 import { checkState } from '../src/validate.js';
 import { DAILY_WRITES, DAILY_HUB_SAVES, DAILY_NEW_HUBS, MAX_STATE_BYTES, byteLength } from '../src/store.js';
 import { registerTools, SERVER_INSTRUCTIONS, TOOL_NAMES } from '../src/tools.js';
@@ -26,6 +27,9 @@ const HOSTILE = {
   'a hub that is text': { hub: 'x' },
   'seen that is text': { seen: 'x' },
   'days that are not dates': { days: [5, {}] },
+  'pairings that are not pairs': { assoc: [['i001'], 5] },
+  'a saga that is a list': { saga: [] },
+  'a painting whose cells are not colours': { paintings: [{ at: 1, n: 7, cols: 2, rows: 2, c: 'not hex' }] },
 };
 
 test('put_state refuses states that would break the tools, in a sentence, and writes nothing', async () => {
@@ -59,6 +63,37 @@ test('checkState accepts every state the app and the engine make', () => {
   st = FiveS.markSeen(st, 'intro');
   st = FiveS.setHub(st, { user: LOGIN, name: 'my hub with spaces', mode: 'links', madeAt: t0, savedAt: t0 }, t0);
   assert.equal(checkState(JSON.parse(JSON.stringify(st))), '');
+});
+
+test('checkState takes Set\'s game fields at their caps, and refuses wrong shapes', () => {
+  const id = (i) => 'y' + i.toString(36).padStart(5, '0');
+  let assoc = [];
+  for (let i = 0; i < 420; i++) assoc = FiveSMatch.addAssociations(assoc, [id(i), id(i + 1), 'i001'], 1761100000 + i);
+  assoc = FiveSMatch.heart(assoc, [id(0), id(1)], true);
+  let paintings = [];
+  const painting = { cols: 9, rows: 9, c: 'f28a3c'.repeat(40) + '------' + 'ece5d1'.repeat(40) };
+  for (let i = 0; i < 24; i++) paintings = FiveSMatch.keepPainting(paintings, { n: 7, painting }, 1761100000);
+  let { saga } = FiveSMatch.recordLevel(null, { n: 1, won: true, stars: 3, score: 9000 });
+  saga = FiveSMatch.useBoost(saga, 'turn');
+  const st = { ...FiveS.newState(), assoc, paintings, saga, opts: { ring: true, sound: false, hints: true } };
+  assert.equal(assoc.length, 400);
+  assert.equal(checkState(JSON.parse(JSON.stringify(st))), '');
+  const bad = [
+    [{ assoc: assoc.concat([['i001', 'i002', 1, 0, 1]]) }, /assoc has more than 400/],
+    [{ assoc: [['o001', 'i001', 1, 0, 1]] }, /two things in order/],
+    [{ assoc: [['i001', 'o001', 100, 0, 1]] }, /times, heart or time/],
+    [{ assoc: [['i001', 'o001', 1, 2, 1]] }, /times, heart or time/],
+    [{ paintings: paintings.concat([paintings[0]]) }, /paintings has more than 24/],
+    [{ paintings: [{ ...paintings[0], c: paintings[0].c.slice(6) }] }, /six hex digits/],
+    [{ paintings: [{ ...paintings[0], cols: 40 }] }, /level or size/],
+    [{ saga: { stars: [4] } }, /0 to 3 stars/],
+    [{ saga: { stars: Array(1000).fill(1) } }, /at most 999/],
+    [{ saga: { best: ['a lot'] } }, /scores/],
+    [{ saga: { boost: { pass: 10 } } }, /0 to 9/],
+    [{ saga: { plays: -1 } }, /plays or a day/],
+    [{ opts: { sound: 'yes' } }, /sound and state\.opts\.hints/],
+  ];
+  for (const [x, why] of bad) assert.match(checkState(x), why, JSON.stringify(x).slice(0, 80));
 });
 
 test('hub_status never repeats a stored hub name or username that GitHub would not accept', async () => {

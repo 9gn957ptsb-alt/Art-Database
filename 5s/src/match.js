@@ -311,7 +311,7 @@
       }
       return {
         key: s.key, label: s.key ? FiveS.featureLabel(s.key, deck) : t.word, token: t.name, hex: t.hex, shape: t.shape,
-        ids: mine.map((c) => c.id), kinds: mine.map((c) => c.kind), firsts: mine.map((c) => (c.colours && c.colours[0]) || null), swatches,
+        ids: mine.map((c) => c.id), kinds: mine.map((c) => c.kind), firsts: mine.map((c) => FiveS.normHex((c.colours || [])[0])), swatches,   // #rrggbb: a painting's cells are six hex digits
       };
     });
     // Passed: deck cards whose latest judgment is a pass, then let-go brought things; newest first.
@@ -863,13 +863,13 @@
     for (let i = 0; i < u.length; i++) for (let j = i + 1; j < u.length; j++) out.push([u[i], u[j]]);
     return out;
   }
-  function capAssoc(list) {
-    while (list.length > ASSOC_CAP) {
-      let worst = -1;
-      list.forEach((e, i) => { if (!e[3] && (worst < 0 || e[2] < list[worst][2] || (e[2] === list[worst][2] && e[4] < list[worst][4]))) worst = i; });
-      if (worst < 0) break;   // hearted entries never go
-      list.splice(worst, 1);
-    }
+  function capAssoc(list) { // in place: the unhearted with the lowest n, then the oldest (ties: the first), go; hearted never
+    const over = list.length - ASSOC_CAP;
+    if (over <= 0) return list;
+    const go = new Set(list.map((e, i) => i).filter((i) => !list[i][3]).sort((x, y) => list[x][2] - list[y][2] || list[x][4] - list[y][4] || x - y).slice(0, over));
+    const keep = list.filter((e, i) => !go.has(i));
+    list.length = 0;
+    for (const e of keep) list.push(e);
     return list;
   }
   /** addAssociations(assoc, ids, nowSec) -> assoc: every pair of distinct ids n + 1 (<= 99), at = now; then the cap. */
@@ -887,7 +887,8 @@
     const at = list.reduce((m, e) => Math.max(m, e[4] || 0), 0);
     for (const [a, b] of pairsOf(ids)) {
       const e = list.find((x) => x[0] === a && x[1] === b);
-      if (e) e[3] = on ? 1 : 0; else if (on) list.push([a, b, 1, 1, at]);
+      if (e) e[3] = on ? 1 : 0;
+      else if (on) { list.push([a, b, 1, 1, at]); capAssoc(list); if (list.length > ASSOC_CAP) list.pop(); } // 400 hearted: a new pair is not added (hearted entries never go)
     }
     return capAssoc(list);
   }

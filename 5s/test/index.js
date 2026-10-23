@@ -5,9 +5,11 @@
 // Connect your apps adds connect.test.mjs: reading data files on the device, and the connector client (pure, no browser).
 // Links out and in adds links.test.mjs: where a thing lives, what a pasted link is, defining it (pure).
 // The Game Plan reflection adds reflect.test.mjs: reading transcripts, the laws of ponytail and caveman (pure).
+// Set's game adds match.test.mjs: the match engine, its levels, pieces, pairings and saga (pure).
 'use strict';
 import('./engine.test.mjs');
 import('./hub.test.mjs');
 import('./connect.test.mjs');
 import('./links.test.mjs');
 import('./reflect.test.mjs');
+import('./match.test.mjs');

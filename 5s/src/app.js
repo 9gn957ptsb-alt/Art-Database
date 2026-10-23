@@ -93,6 +93,7 @@
     sheet: null, sheetRender: null, sheetTitle: '', opener: null, noteCtx: null, detailId: null, removeAsk: false, sheetMsg: '',
     detailBack: null, whereLinks: [],
     deckError: '', logoOk: null, drag: null,
+    setMode: 'board', board: null, play: null, playPaused: false, boardWait: false, paintingI: -1,
   };
 
   const profCache = new WeakMap();
@@ -307,6 +308,8 @@
       el.removeAttribute('data-src-crop');
       paintSrc(el, src);
     });
+    // Set's board draws its own tiles: once the brought-in pictures it asked for have all landed, draw it again.
+    if (ui.boardWait && ui.board && !ownLoading.size) { ui.boardWait = false; ui.board.update({}); }
   }
 
   function paintSrc(el, src) {
@@ -553,6 +556,7 @@
   function showView(v, opts) {
     if (VIEWS.indexOf(v) < 0) v = 'sort';
     const changed = v !== view;
+    if (changed && view === 'set') leaveSet();
     view = v;
     for (const x of VIEWS) {
       $('#view-' + x).hidden = x !== v;
@@ -874,7 +878,7 @@
     const rect = top ? top.getBoundingClientRect() : null;
     if (top && how !== 'drag') top._dx = 0;
     flyOff(top, keep);
-    commit(res.state, { noRender: true });
+    commit(F.fivePass(res.state, now()), { noRender: true });   // a five sorted: one Pass for Set's game, once a day
     renderSort();
     showStrip({ id, keep: !!keep, turn: res.turn });
     if (keep && c && !c.own) flyParts(c, rect);
@@ -1248,16 +1252,15 @@
     }).join('');
   }
 
-  function renderSet() {
+  function renderRoom() {
     const el = $('#view-set');
-    if (!deck) { notReady(el); return; }
     const st = active();
     const ro = readOnly();
     ensureRoom(st);
     const filled = SLOTS.some((s) => ui.room[s]);
     let html = '<div class="wrap wrap-narrow"><div class="view-head"><h1 class="h1" tabindex="-1">Set</h1>' +
       '<p class="lede">Put your parts together. Every place in the room offers three; choose one.</p>' +
-      (hasContent(st) ? '' : '<div class="actions">' + exampleButton(st) + '</div>') + '</div>';
+      '<div class="actions"><button type="button" class="btn btn-quiet" data-act="set-board">See it as a board</button>' + exampleButton(st) + '</div></div>';
     if (!filled) html += emptyBox('Your room is built from what you keep: a Colour for the wall, a Space for the window, an Image for the picture, a Surface for the floor and an Object to stand in it.', false);
     html += '<section class="sec" aria-labelledby="room-h"><h2 class="visually-hidden" id="room-h">The room</h2>' + roomHTML(ui.room, st, true) +
       '<ul class="room-key">' + roomWords(ui.room, st) + '</ul></section>';
@@ -1278,6 +1281,131 @@
       : emptyBox('Pin a room you like and say what it’s for. Your pinned sets wait here.'));
     html += '</div>';
     el.innerHTML = html;
+  }
+
+  // ================================================================ SET: the board and the game
+  // (SPEC "Set: the board and the game"). #set opens the board (FiveSBoard); the room is one tap away.
+  // Play opens a level (FiveSPlay) over Set at full height, the tab bar hidden while it is on; the level
+  // runs in memory, never saved. In Example mode the game plays on the example taste and writes nothing.
+
+  const MX = window.FiveSMatch, BD = window.FiveSBoard, PL = window.FiveSPlay;
+  const nowSec = () => Math.floor(now() / 1000);
+
+  function renderSet() {
+    const el = $('#view-set');
+    if (ui.play) {   // a level (or the map) holds Set; a level left for another view comes back as it was
+      if (ui.playPaused && !el.hidden) { ui.playPaused = false; doc.body.classList.add('fives-playing'); ui.play.resume(); }
+      return;
+    }
+    if (ui.board) { ui.board.destroy(); ui.board = null; }
+    if (!deck) { notReady(el); return; }
+    if (ui.setMode === 'room') { renderRoom(); return; }
+    const st = active();
+    const P = prof(st);
+    const kept = F.KINDS.some((k) => P.keptByKind[k].length) || st.paintings.length > 0;
+    let html = '<div class="wrap"><div class="view-head"><h1 class="h1" tabindex="-1">Set</h1>' +
+      '<p class="lede">Your board: what you kept, grouped by what you put together.</p>' +
+      '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-act="set-play">Play level ' + (st.saga.stars.length + 1) + '</button>' +
+      '<button type="button" class="btn btn-quiet" data-act="set-room">See it as a room</button></div></div>';
+    if (!kept) {
+      html += '<div class="empty"><span class="ghosts" aria-hidden="true"><i></i><i></i><i></i></span><p>Your board fills with what you keep. Sort a five and it starts.</p>' +
+        '<button type="button" class="btn" data-act="goto" data-view="sort">Sort</button>' + exampleButton(st) + '</div>';
+    }
+    el.innerHTML = html + '<div class="set-board"></div></div>';
+    if (kept) ui.board = BD.mount($('.set-board', el), { state: st, deck, image: boardImage, name: nameLine, onOpen: (id, b) => openDetail(id, b), onPainting: openPainting });
+  }
+
+  function boardImage(c) {
+    if (!c.own) return c.img || null;
+    const src = ownSrc(c, 'img');
+    if (src === undefined) ui.boardWait = true;   // on its way: hydrate() draws the board again when it lands
+    return src || null;
+  }
+
+  // The game's pictures: an atlas cell, one image, or a Colour card's bands.
+  function playThumb(id) {
+    const c = cardOf(id);
+    if (!c || c.kind === 'colour') return { colours: (c && c.colours) || [] };
+    if (c.own) { const src = ownSrc(c, 'thumb'); return src ? { src } : { colours: c.colours || [] }; }
+    if (c.kind === 'surface' && c.img) return { src: c.img };   // a kept Surface is its texture (as thumbHTML's 'judged'), not the whole photo
+    if (deck.atlas && isFinite(c.thumb)) return { src: deck.atlas.src, cols: deck.atlas.cols, index: c.thumb };
+    return c.img ? { src: c.img } : { colours: c.colours || [] };
+  }
+  const playName = (id) => { const c = cardOf(id); return c ? shortTitle(c.title || 'Untitled', 28) : 'Something'; };
+
+  function playHost(mode) {
+    stopPlay();
+    ui.setMode = mode;
+    const el = $('#view-set');
+    el.textContent = '';
+    el.classList.add('view-play');
+    if (mode === 'level') doc.body.classList.add('fives-playing');
+    return el;
+  }
+  function stopPlay() {
+    if (ui.play) { ui.play.destroy(); ui.play = null; }
+    ui.playPaused = false;
+    doc.body.classList.remove('fives-playing');
+    $('#view-set').classList.remove('view-play');
+  }
+  function backToBoard() {
+    stopPlay();
+    ui.setMode = 'board';
+    renderView();
+    const b = $('#view-set [data-act="set-play"]');
+    if (b) b.focus({ preventScroll: true });
+  }
+  // Leaving Set: a level on is paused and kept for this visit; the map and the room give way to the board.
+  function leaveSet() {
+    // A level's own sheet open (its card, out of moves, its end): nothing is mid-play, and a modal left in a hidden view would make the page inert.
+    if (ui.setMode === 'level' && ui.play && !$('#view-set dialog[open]')) { ui.play.pause(); ui.playPaused = true; doc.body.classList.remove('fives-playing'); return; }
+    stopPlay();
+    ui.setMode = 'board';
+  }
+
+  function openMap() {
+    const ex = example;
+    const el = playHost('map');
+    ui.play = PL.mountMap(el, { saga: (ex ? EX : S).saga, onLevel: openLevel, onBack: backToBoard });
+  }
+
+  function openLevel(n) {
+    const ex = example;
+    const cur = () => (ex ? EX : S);
+    // Example mode keeps its game in memory only; the person's own goes through commit, like every change.
+    const save = (patch) => { if (ex) EX = Object.assign({}, EX, patch); else commit(Object.assign({}, S, patch), { noRender: true }); };
+    const st = cur();
+    const level = MX.level(n);
+    const el = playHost('level');
+    ui.play = PL.mount(el, {
+      n, pieces: MX.pieces(st, deck, level.suits), seed: '5s:' + n + ':' + (st.saga.plays || 0),
+      boost: st.saga.boost || {}, thumb: playThumb, name: playName,
+      opts: { sound: st.opts.sound !== false, hints: st.opts.hints !== false },
+      onAssociate: (a) => save({ assoc: MX.addAssociations(cur().assoc, a.ids, nowSec()) }),
+      onHeart: (a) => save({ assoc: MX.heart(cur().assoc, a.ids, a.on) }),
+      onBoost: (k) => { const g = MX.useBoost(cur().saga, k); if (g) save({ saga: g }); },
+      onEnd: (r) => { const rec = MX.recordLevel(cur().saga, r, nowSec()); save({ saga: rec.saga }); return rec; },
+      onKeepPainting: (p) => { const ps = MX.keepPainting(cur().paintings, { n, painting: p }, nowSec()); if (ps) save({ paintings: ps }); return !!ps; },
+      onOpts: (o) => save({ opts: Object.assign({}, cur().opts, o) }),
+      onNext: openLevel, onMap: openMap, onBoard: backToBoard,
+    });
+  }
+
+  // A painting kept from a paint level: large, its level and day, and Remove behind an in-page confirm.
+  function openPainting(i, opener) {
+    ui.paintingI = i;
+    ui.removeAsk = false;
+    openSheet('painting', 'Your painting', paintingHTML, opener);
+  }
+  function paintingHTML() {
+    const p = active().paintings[ui.paintingI];
+    if (!p) return '<p>This painting is no longer on your board.</p>';
+    const src = BD.drawPainting(doc.createElement('canvas'), p, 24).toDataURL('image/png');
+    return '<img class="painting-big" src="' + src + '" alt="' + esc('The painting you made on level ' + p.n) + '">' +
+      '<p>Level ' + esc(p.n) + ' · ' + esc(fmtDate(p.at)) + '</p>' +
+      (readOnly() ? '' : ui.removeAsk
+        ? '<div class="confirm" role="group" aria-label="Remove this painting?"><span>Remove this painting?</span><button type="button" class="btn btn-quiet" data-act="painting-remove" id="painting-yes">Remove</button><button type="button" class="btn btn-quiet" data-act="painting-keep">Keep it</button></div>'
+        : '<div class="actions"><button type="button" class="btn btn-quiet" data-act="painting-ask" id="painting-ask">Remove</button></div>');
   }
 
   // ================================================================ SEE
@@ -1649,6 +1777,7 @@
   const problemsSeen = new Set();
   function problem(text) {
     try {
+      doc.body.classList.remove('fives-playing');   // a level that broke must not keep the tab bar away, even the second time
       const t = String(text || '').slice(0, 240);
       if (!t || problemsSeen.has(t)) return;
       problemsSeen.add(t);
@@ -3830,6 +3959,7 @@
       const day = F.dayOf(now());
       if (!EX || exDay !== day) { EX = F.exampleState(deck, now()); exDay = day; }
     }
+    if (ui.play) { stopPlay(); ui.setMode = 'board'; }
     example = !!on;
     ui.room = null; ui.roomKey = null; ui.seedKey = null; ui.confirm = null; ui.swatch = null; ui.splitAll = {};
     updateChrome();
@@ -3928,6 +4058,25 @@
         break;
       }
       case 'pin': if (!readOnly()) openPin(t); break;
+      case 'set-play': openLevel(active().saga.stars.length + 1); break;
+      case 'set-room': case 'set-board': {
+        ui.setMode = act === 'set-room' ? 'room' : 'board';
+        renderView();
+        const b = $('#view-set [data-act="' + (act === 'set-room' ? 'set-board' : 'set-room') + '"]');
+        if (b) b.focus({ preventScroll: true });
+        say(act === 'set-room' ? 'Your room.' : 'Your board.');
+        break;
+      }
+      case 'painting-ask': ui.removeAsk = true; refreshSheet(); { const y = $('#painting-yes'); if (y) y.focus(); } break;
+      case 'painting-keep': ui.removeAsk = false; refreshSheet(); { const y = $('#painting-ask'); if (y) y.focus(); } break;
+      case 'painting-remove': {
+        if (readOnly()) break;
+        const i = ui.paintingI;
+        closeSheet();
+        commit(Object.assign({}, S, { paintings: S.paintings.filter((_, k) => k !== i) }));
+        say('Painting removed.');
+        break;
+      }
       case 'open-set': {
         const s = active().sets[Number(t.getAttribute('data-i'))];
         if (s) { ui.room = { wall: s.wall, window: s.window, picture: s.picture, floor: s.floor, object: s.object }; renderView(); $('#main').scrollTop = 0; say('Opened ' + (s.name || 'the set') + ' in the room.'); const b = $('.slot-wall'); if (b) b.focus({ preventScroll: true }); }

@@ -13,7 +13,8 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 const SLOTS = ['wall', 'window', 'picture', 'floor', 'object'];
 
-export const LIMITS = Object.freeze({ judgments: 50000, sets: 500, own: 1000, notes: 5000, days: 5000, text: 2000, name: 200, url: 2048 });
+export const LIMITS = Object.freeze({ judgments: 50000, sets: 500, own: 1000, notes: 5000, days: 5000, text: 2000, name: 200, url: 2048,
+  assoc: 400, levels: 999, paintings: 24 });   // Set's game (SPEC "Set: the board and the game", "Data"): the app's own caps
 
 /**
  * What a brought-in thing may say about itself (SPEC "Connect your apps": a thing defined from a
@@ -99,6 +100,38 @@ function note(n) {
   return '';
 }
 
+const isInt = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi;
+const PAINT = /^(?:[0-9a-f]{6}|------)*$/;
+
+// [a, b (a < b), n 1..99, heart 0|1, last unix seconds]
+function pairing(e) {
+  if (!Array.isArray(e) || e.length !== 5) return 'is not [a, b, times, heart, time]';
+  if (typeof e[0] !== 'string' || typeof e[1] !== 'string' || !ID.test(e[0]) || !ID.test(e[1]) || !(e[0] < e[1])) return 'does not name two things in order';
+  if (!isInt(e[2], 1, 99) || ![0, 1].includes(e[3]) || !isNum(e[4])) return 'has times, heart or time of the wrong kind';
+  return '';
+}
+
+// {at, n (the level), cols, rows, c: 6 hex a cell, "------" outside the painting}
+function painting(p) {
+  if (!isObj(p)) return 'is not an object';
+  if (!isNum(p.at) || !isInt(p.n, 1, 1e6) || !isInt(p.cols, 1, 16) || !isInt(p.rows, 1, 16)) return 'has a time, level or size of the wrong kind';
+  if (typeof p.c !== 'string' || p.c.length !== p.cols * p.rows * 6 || !PAINT.test(p.c)) return 'has cells that are not six hex digits each';
+  return '';
+}
+
+function saga(g) {
+  if (!isObj(g)) return 'state.saga must be an object.';
+  for (const k of ['stars', 'best']) {
+    const xs = g[k];
+    if (xs == null) continue;
+    if (!Array.isArray(xs) || xs.length > LIMITS.levels) return 'state.saga.' + k + ' must be a list of at most ' + LIMITS.levels + '.';
+    if (!xs.every((x) => (k === 'stars' ? isInt(x, 0, 3) : isNum(x) && x >= 0))) return 'state.saga.' + k + (k === 'stars' ? ' must hold 0 to 3 stars a level.' : ' must hold scores.');
+  }
+  if (g.boost != null && !(isObj(g.boost) && ['pass', 'turn', 'more'].every((k) => g.boost[k] == null || isInt(g.boost[k], 0, 9)))) return 'state.saga.boost must hold 0 to 9 of each booster.';
+  if (!(g.plays == null || isInt(g.plays, 0, Number.MAX_SAFE_INTEGER)) || !optStr(g.day, 20)) return 'state.saga has plays or a day of the wrong kind.';
+  return '';
+}
+
 function list(s, key, max, each) {
   const xs = s[key];
   if (xs === undefined) return '';
@@ -122,7 +155,10 @@ export function checkState(s, deck) {
     list(s, 'sets', LIMITS.sets, set) ||
     list(s, 'days', LIMITS.days, (d) => (isStr(d, 20) ? '' : 'is not a date')) ||
     list(s, 'own', LIMITS.own, (o) => own(o, vocab)) ||
-    list(s, 'notes', LIMITS.notes, note);
+    list(s, 'notes', LIMITS.notes, note) ||
+    list(s, 'assoc', LIMITS.assoc, pairing) ||
+    list(s, 'paintings', LIMITS.paintings, painting) ||
+    (s.saga != null ? saga(s.saga) : '');
   if (why) return why;
   if (s.five != null) {
     const f = s.five;
@@ -133,6 +169,7 @@ export function checkState(s, deck) {
   if (s.seen != null && !isObj(s.seen)) return 'state.seen must be an object.';
   if (s.seen && s.seen.path != null && !(Array.isArray(s.seen.path) && s.seen.path.every((k) => isStr(k, 40)))) return 'state.seen.path must be a list of milestone names.';
   if (s.opts != null && !isObj(s.opts)) return 'state.opts must be an object.';
+  if (s.opts && ['sound', 'hints'].some((k) => !(s.opts[k] == null || typeof s.opts[k] === 'boolean'))) return 'state.opts.sound and state.opts.hints must be true or false.';
   if (s.hub != null) {
     const h = s.hub;
     if (!isObj(h)) return 'state.hub must be an object.';

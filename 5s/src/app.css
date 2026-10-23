@@ -537,6 +537,13 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .room-key b { font-weight: 600; }
 .room-key span { color: var(--ink-2); overflow-wrap: anywhere; }
 .set-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+/* Set's board and game (SPEC "Set: the board and the game"; their own styles are play.css). The game
+   takes Set at full height, and the tab bar hides while a level is on. */
+.set-board { min-width: 0; }
+.view.view-play { padding: 0; height: 100%; }
+body.fives-playing { --tabs-h: 0px; }
+body.fives-playing .tabs { display: none; }
+.painting-big { display: block; width: 100%; max-width: 360px; height: auto; border-radius: 16px; image-rendering: pixelated; }
 .pinned { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
 .pinned li { display: grid; gap: 8px; align-content: start; }
 .pinned .name { font-weight: 600; }

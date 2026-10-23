@@ -5,7 +5,7 @@ for a few minutes a day. That month had five moves: gather saved things into one
 them into their parts, make new things from the parts, name and reflect on each one, and keep at
 it. In 5s they become five tabs and a habit: **Sort** five cards a day (an Image, an Object, a Space,
 a Surface and a Colour, all from the artist's database of Artsy saves and the artist's Architectural
-Authority bookmarks of buildings, plus things you bring in from your own photos and pins), **Split** what you kept into its parts, **Set** the parts into a room,
+Authority bookmarks of buildings, plus things you bring in from your own photos and pins), **Split** what you kept into its parts, **Set** them on a mood board, played like Candy Crush Saga (with the room one tap away),
 **See** the positive and negative space of your taste, and grow it into a **Seed**: a ground drawn
 from your judgments and a file you can take with you. Its job, in the system's one line: *how a
 person brings their own information in: quick judgments of what they like become their aesthetic
@@ -20,16 +20,19 @@ build contract) before changing anything.
 | --- | --- |
 | `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp`; then the bookmarks from `buildings.json` + `data/aa/` |
 | `buildings.json` | the artist's Architectural Authority bookmarks as chosen for the deck: each building's hero photo, surface crop, materials and genes (cards b001…, m001…) |
-| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined), the seven scripts in the order the page loads them (`hub.js`, `hubpage.js` and `connect.js` before `app.js`), and `dist/dev.html` |
+| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined, and `play.css` as `<style data-fives="play">`), the eleven scripts in the order the page loads them (`hub.js`, `hubpage.js`, `connect.js`, `match.js`, `board.js`, `play.js` and `links.js` before `app.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
 | `src/app.css`, `src/app.js` | styles and UI (including Your hub: Seed's last section and the Hub sheet, through GitHub's own pages) |
 | `src/engine.js` | pure logic: judgments, the taste model, turns, the five, profile, Path, seed (no DOM, clock or randomness) |
 | `src/bring.js` | turns a person's own images into 5s things in the browser and keeps the images private |
 | `src/connect.js` | Connect your apps (`FiveSConnect`): an app's "download your data" file read on the device (JSON, web pages, spreadsheets, text, .zip), and the one client of the 5s connector through the `mcp` capability (server `"5s"`) |
 | `src/ground.js` | draws Seed's isometric island on a canvas |
+| `src/match.js` | Set's game, pure (`FiveSMatch`): Candy Crush Saga's rules with the person's own things, the 30 levels, the suits (the person's threads), pairings, the saga |
+| `src/board.js` | Set's mood board (`FiveSBoard`): what you keep, in masonry, grouped by what you put together |
+| `src/play.js`, `src/play.css` | Set's game in the page (`FiveSPlay`): the map, a level, its sound, motion and gestures; the game's and the board's styles |
 | `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
 | `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
-| `test/` | engine, bring, ground and UI tests; `test/fixture/` is a synthetic 50-card deck (no real data) |
+| `test/` | engine, match, bring, ground, play and UI tests; `test/play.html` is the game's harness, `test/sim.mjs` its playtest; `test/fixture/` is a synthetic 50-card deck (no real data) |
 | `gameplan/reflect.mjs` | the Game Plan as code: reads Claude Code transcripts, places each session on the plan's seven stages, finds the traps it met, and judges its turns against the laws ponytail and caveman share (each only while that skill is on). `node 5s/gameplan/reflect.mjs <transcripts or folders>` prints the reflection; `--hook` is a Stop hook that prints one line when a turn met a trap or broke a law. Transcripts stay out of the repository |
 | `test/deck.test.py` | checks a built deck: the Artsy cards and the bookmarks' b and m cards (source, url, kinds, images) |
 | `dist/` | built output; gitignored |
@@ -59,7 +62,10 @@ Node 22 and Playwright with Chromium are required for the browser suites; each o
 its own `python3 -m http.server`.
 
 ```sh
-node --test 5s/test/                    # engine and hub (pure logic; runs through test/index.js), connect.test.mjs and reflect.test.mjs
+node --test 5s/test/                    # engine, hub, connect, links, reflect and match (pure logic; runs through test/index.js)
+node --test 5s/test/match.test.mjs      # Set's game engine alone
+node --test 5s/test/play.smoke.cjs      # Set's game and board in their harness (serves 5s/ itself)
+node 5s/test/sim.mjs 200                # the playtest: 200 boards a level, the hint and smart bots
 node --test 5s/test/hub.test.mjs        # the hub drivers and page, against a fake GitHub
 node --test 5s/test/bring.test.cjs      # bring-in: images, colours, crop, texture, stores
 node --test 5s/test/ground.test.cjs     # the ground renderer
@@ -76,14 +82,17 @@ Environment variables:
 
 The UI smoke test runs at 390×844 and 1280×800, in light and dark. It covers a fake `db`, `user`,
 `sample` and `downloads`, including a store that answers slowly and a write that is rejected, and
-Your hub's four steps in links mode (with GitHub's pages answered by a stand-in, so no network).
+Your hub's four steps in links mode (with GitHub's pages answered by a stand-in, so no network), and
+Set: the board, Play opening level 1, a planned swap (touch at 390, the mouse at 1280) whose pairs are
+saved and cluster the board, the tab bar hiding during a level, the room and back, Example mode and
+nothing kept.
 
 ## Publish
 
 Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing and is never
 published. The supporting files go with it at the same relative paths:
 
-- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `links.js`, `app.js`
+- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `match.js`, `board.js`, `play.js`, `links.js`, `app.js`
 - `deck.json`, `logo.webp`, `img/atlas.webp`
 - the 451 card images `img/{i,o,s,u,b,m}NNN.webp` (Colour cards have no image; `b` and `m` are the
   artist's Architectural Authority bookmarks, a building's Space or Object and its Surface)
@@ -107,17 +116,18 @@ and the data file door works without it. Paste a link itself works without it to
 words, Define through `sample`, or a pasted picture); the connector adds the page's own picture and
 facts, and whole boards and channels (SPEC.md, "As built, 22 Oct 2026").
 
-**Two publishes, because of the file count.** The page plus 462 supporting files is 463 files (about
+**Two publishes, because of the file count.** The page plus 465 supporting files is 466 files (about
 18 MB). One publish sends at most 255 files; a version holds up to 511.
 
-1. Publish the page with the eight scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
-   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 252 files.
+1. Publish the page with the eleven scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
+   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 255 files (the most one
+   publish takes).
 2. Publish again to the same URL with the 80 Surface crops (`img/u*.webp`) and the bookmarks' 131
    images (`img/b*.webp`, `img/m*.webp`): 211 files. Files left out of a publish are kept.
 
 Between the two publishes, Surface cards and the bookmarks have no image. Publish the second batch right away.
 
-Size limits are not a concern: the page is about 50 KB, the largest file is the atlas at about
+Size limits are not a concern: the page is about 90 KB, the largest file is the atlas at about
 1 MB, and the whole set is about 18 MB.
 
 ## Not committed
