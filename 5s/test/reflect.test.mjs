@@ -162,7 +162,10 @@ test('the reflection keeps the laws it measures, to the second power', () => {
   assert.equal(rows[0].stage, 3);
   assert.deepEqual(rows[0].traps, [3]);
   assert.deepEqual(rows[0].laws, {}, 'ceremony is judged only once caveman is asked for');
+  rows.push(reflect(session([], 'c'), { title: 'Just fix the photo import', created_at: '2026-10-23T00:00:00Z' }));
   const md = report(rows);
+  assert.match(md, /^# The road, reflected: 2 sessions read, 2026-10-22 to 2026-10-22$/m, 'a session listed but not read is not counted');
+  assert.match(md, /`Just fix the photo import`/, 'a title is kept as written');
   assert.equal(power(words, md).n, 0, 'the report is its own fixed point');
   assert.deepEqual(selfCheck(md), [], 'and breaks none of the laws it counts');
   assert.match(md.trim().split('\n').at(-1), /^Not checked:/, 'it ends with what it did not check');

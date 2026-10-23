@@ -368,7 +368,8 @@ export const NOT_CHECKED = "Not checked: whether each cut was the right one; pon
 export function report(rows) {
   rows = [...rows].sort((a, b) => String(a.start).localeCompare(String(b.start)));
   const read = rows.filter(r => r.turns);
-  const out = [`# The road, reflected: ${rows.length} sessions, ${day(rows[0]?.start)} to ${day(rows.at(-1)?.start)}`, ''];
+  // listed but not read (left out, or a fetch failed): in the table below, not in the count
+  const out = [`# The road, reflected: ${read.length} sessions read, ${day(read[0]?.start)} to ${day(read.at(-1)?.start)}`, ''];
   out.push('| Stage | Sessions | Traps met |', '| --- | --- | --- |');
   for (const r of ROAD) out.push(`| ${r.stage}. ${r.name} | ${rows.filter(x => x.stage === r.stage).length} | ${rows.filter(x => x.traps.includes(r.stage)).length} |`);
   const met = ROAD.map(r => [r, read.filter(x => x.traps.includes(r.stage)).length]).sort((a, b) => b[1] - a[1])[0];
@@ -385,7 +386,8 @@ export function report(rows) {
   out.push('', '| Date | Session | Stage | Turns | Errors | Replies still | Lines + / − | Laws broken | Cost (list price) |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of rows) {
     const n = Object.values(r.laws).reduce((a, b) => a + b, 0);
-    out.push(`| ${day(r.start)} | ${r.title} | ${r.stage || '—'} | ${r.turns ? r.turns + (r.partial ? '+' : '') : '—'} | ${r.turns ? r.errors : '—'} | ${pct(r.still, r.replies)} | ${r.turns ? `${r.added} / ${r.removed}` : '—'} | ${r.turns ? n : '—'} | ${r.cost == null ? '—' : `$${r.cost.toFixed(2)}`} |`);
+    // a title is the person's words: a code span, so no cut touches it
+    out.push(`| ${day(r.start)} | \`${String(r.title).replace(/`/g, "'")}\` | ${r.stage || '—'} | ${r.turns ? r.turns + (r.partial ? '+' : '') : '—'} | ${r.turns ? r.errors : '—'} | ${pct(r.still, r.replies)} | ${r.turns ? `${r.added} / ${r.removed}` : '—'} | ${r.turns ? n : '—'} | ${r.cost == null ? '—' : `$${r.cost.toFixed(2)}`} |`);
   }
   if (rows.some(r => r.partial)) out.push('', 'A + after the turns: the transcript was read from its middle, so only its later turns are counted.');
   out.push('', NOT_CHECKED);
