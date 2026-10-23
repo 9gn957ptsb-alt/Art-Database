@@ -8,9 +8,12 @@
  * pans and never opens a level; a tap opens one; pinch, wheel and Ctrl+wheel; the Zoom buttons, the
  * arrows, Home and Tab; nodes of 24 px or more at zoom 0.5; the cloud's words; no console errors; a
  * p95 frame of at most 20 ms while panning with the CPU slowed 4x. Then reduced motion, nothing judged,
- * and a new area found.
+ * a new area found and the focus kept through a theme change; a short map (a phone on its side); Tab
+ * panning to Your ground and the nodes at 3, 8 and 30 won; touch on the foot (a pinch, a drag, a tap)
+ * and three fingers; the title at 320.
  *   SHOTS   folder for screenshots (default <tmp>/5s-kingdom-shots)
- *   FONTS   optional folder holding css.css and the font files (named by md5 of url + "\n"), for true type in shots
+ *   FONTS   optional folder holding css.css and the font files (named by md5 of url + "\n"), for true type in
+ *           shots and in the title's check (without it the title is measured in a fallback font)
  *   GROUND  optional ground.js to serve in place of src/ground.js
  *   PORT    the port to serve on (default: any free port)
  */
@@ -83,6 +86,12 @@ const zoom = (page) => page.evaluate(() => +document.querySelector('.fk-table').
 const box = (page, sel) => page.locator(sel).boundingBox();
 const mid = (b) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
 async function settle(page) { await sleep(420); }   // an eased move (260 ms) and a frame or two
+// '' when the control is fully in view: inside the map and above the foot's buttons; else where it is.
+const clear = (page, sel) => page.evaluate((s) => {
+  const r = document.querySelector(s).getBoundingClientRect(), m = document.querySelector('.fk-map').getBoundingClientRect(), f = document.querySelector('.fk-foot').getBoundingClientRect();
+  return r.left >= m.left && r.right <= m.right && r.top >= m.top && r.bottom <= f.top ? '' : s + ' at ' + [r.left, r.top, r.right, r.bottom].map(Math.round) + ', the map clear of the foot ' + [m.left, m.top, m.right, f.top].map(Math.round);
+}, sel);
+const view = (page) => page.evaluate(() => { const m = /translate3d\(([-\d.]+)px, ([-\d.]+)px, 0px\) scale\(([\d.]+)\)/.exec(document.querySelector('.fk-table').style.transform); return [+m[1], +m[2], +m[3]]; });
 
 for (const mode of [{ w: 390, h: 844, touch: true }, { w: 1280, h: 800 }]) {
   for (const dark of [false, true]) {
@@ -172,6 +181,11 @@ for (const mode of [{ w: 390, h: 844, touch: true }, { w: 1280, h: 800 }]) {
       assert.ok(Math.abs((await zoom(page)) - Math.max(0.5, zk / 1.25)) < 0.01, '− zooms out');
       await page.keyboard.press('Equal'); await settle(page);
       assert.ok(Math.abs((await zoom(page)) - zk) < 0.01, '+ zooms in');
+      // Two quick presses of a Zoom button each count: the second goes on from where the first is going.
+      const [zb, zf] = zk * 1.5625 <= 1.5 ? ['.fk-zi', 1.5625] : ['.fk-zo', 1 / 1.5625];
+      for (let k = 0; k < 2; k++) await (mode.touch ? page.locator(zb).tap() : page.locator(zb).click());
+      await settle(page);
+      assert.ok(Math.abs((await zoom(page)) - zk * zf) < 0.01, 'two quick presses of ' + zb + ': ' + zk + ' to ' + (await zoom(page)));
 
       // The Zoom buttons, down to 0.5: every node still at least 24 px, the cloud's words still shown.
       for (let k = 0; k < 6; k++) { await page.locator('.fk-zo').click(); await sleep(60); }
@@ -191,14 +205,16 @@ for (const mode of [{ w: 390, h: 844, touch: true }, { w: 1280, h: 800 }]) {
       await sleep(600); await drawn(page); await sleep(400);
       await shot(page, 'kingdom-' + tag + '-in');
 
-      // Tab goes from the map through the nodes in order, and a focused node is panned into view.
+      // Tab goes from the map to the home island's label, then through the nodes in order; each is panned into view, clear of the foot.
       await page.locator('.fk-map').focus();
       await page.keyboard.press('Tab');
-      if (await page.evaluate(() => document.activeElement.classList.contains('fk-homel'))) await page.keyboard.press('Tab');
+      assert.ok(await page.evaluate(() => document.activeElement.classList.contains('fk-homel')), 'Tab from the map lands on Your ground');
+      await settle(page);
+      assert.equal(await clear(page, '.fk-homel'), '');
+      await page.keyboard.press('Tab');
       assert.equal(await page.evaluate(() => document.activeElement.dataset.n), '1');
       await settle(page);
-      const f1 = await box(page, '[data-n="1"]');
-      assert.ok(f1.y > mapB.y && f1.y + f1.height < footB.y && f1.x > mapB.x && f1.x + f1.width < mapB.x + mapB.width, 'the focused node is in view');
+      assert.equal(await clear(page, '[data-n="1"]'), '');
       await page.keyboard.press('Tab');
       assert.equal(await page.evaluate(() => document.activeElement.dataset.n), '2');
 
@@ -252,11 +268,22 @@ test('reduced motion: a move lands at once; nothing judged: no home island; a ne
   await page.waitForFunction(() => document.querySelector('.fk-live').textContent === 'A new area: Set.');
   assert.ok(await page.locator('.fk-home').count() === 1);
   await shot(page, 'kingdom-reveal-390');
-  // update(): a new theme and a won level redraw the kingdom where it is.
+  // update(): a new theme and a won level redraw the kingdom where it is, the focus on the node it was on.
+  await page.locator('[data-n="11"]').focus();
   await page.evaluate(() => { const h = window.harness, s = h.saga; h.k.update({ theme: 'dark', saga: Object.assign({}, s, { stars: s.stars.concat(2), time: s.time.concat(0), built: s.built.concat(null) }) }); });
   assert.equal(await page.locator('.fk').getAttribute('data-theme'), 'dark');
   assert.equal(await page.locator('[data-n="11"]').getAttribute('aria-label'), 'Level 11, Set, 2 of 3 stars. Built: a plain house.');
   assert.equal(await page.locator('.fk-play').textContent(), 'Play level 12');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.n), '11', 'a theme change keeps the focus on its node');
+  // On the home label too; and with the focus panned out of view, the view stays where the person left it.
+  await page.locator('.fk-homel').focus();
+  for (let k = 0; k < 12; k++) await page.keyboard.press('ArrowUp');
+  await sleep(60);
+  const v0 = await view(page);
+  await page.evaluate(() => window.harness.k.update({ theme: 'light' }));
+  await sleep(60);
+  assert.ok(await page.evaluate(() => document.activeElement.classList.contains('fk-homel')), 'a theme change keeps the focus on Your ground');
+  assert.deepEqual(await view(page), v0, 'and does not move the view');
   await drawn(page);
   assert.deepEqual(errors, []);
   await ctx.close();
@@ -270,4 +297,117 @@ test('reduced motion: a move lands at once; nothing judged: no home island; a ne
   await shot(e.page, 'kingdom-empty-390');
   assert.deepEqual(e.errors, []);
   await e.ctx.close();
+});
+
+test('a short map (a phone on its side, under the app bar and the tab bar): the next level opens in full above the foot', async () => {
+  for (const [w, h] of [[568, 200], [844, 220]]) {
+    for (const q of ['', 'focus=3']) {
+      const { ctx, page, errors } = await open({ w, h, touch: true }, q);
+      const mapH = (await box(page, '.fk-map')).height;
+      assert.ok(mapH < 140, 'the map is short: ' + mapH);
+      const sel = q ? '[data-n="3"]' : '.fk-node.is-next button';
+      await sleep(60);
+      assert.equal(await clear(page, sel), '', 'it opens in full at ' + w + 'x' + h + (q ? ', ' + q : ''));
+      if (!q) {   // Home finds it there again, after a pan away
+        await page.locator('.fk-map').focus();
+        for (let k = 0; k < 3; k++) await page.keyboard.press('ArrowRight');
+        await page.keyboard.press('Home'); await settle(page);
+        assert.equal(await clear(page, sel), '', 'Home finds it in full at ' + w + 'x' + h);
+      }
+      assert.deepEqual(errors, []);
+      await ctx.close();
+    }
+  }
+});
+
+test('Tab pans to what it focuses, Your ground too: 3, 8 and 30 won, at the opening zoom, at 1.5 and just after a zoom', async () => {
+  for (const won of [3, 8, 30]) {
+    const { ctx, page, errors } = await open({ reduce: true }, 'won=' + won);
+    for (const how of ['0.675', '1.5', 'zoomed out and focused before a frame draws it']) {
+      await page.locator('.fk-map').focus();
+      await page.keyboard.press('Home');
+      if (how === '1.5') for (let k = 0; k < 4; k++) await page.keyboard.press('Equal');
+      await sleep(60);
+      const at = ', ' + won + ' won, zoom ' + how;
+      if (how.length < 6) assert.ok(Math.abs((await zoom(page)) - +how) < 0.001, 'zoom' + at);
+      if (how.length < 6) await page.keyboard.press('Tab');
+      else await page.evaluate(() => { const m = document.querySelector('.fk-map'); for (let k = 0; k < 2; k++) m.dispatchEvent(new KeyboardEvent('keydown', { key: '-', bubbles: true })); m.querySelector('.fk-homel').focus(); });
+      await sleep(60);
+      assert.ok(await page.evaluate(() => document.activeElement.classList.contains('fk-homel')), 'Tab from the map lands on Your ground' + at);
+      assert.equal(await clear(page, '.fk-homel'), '', 'Your ground in view' + at);
+      await page.keyboard.press('Tab'); await sleep(60);
+      assert.equal(await page.evaluate(() => document.activeElement.dataset.n), '1');
+      assert.equal(await clear(page, '[data-n="1"]'), '', 'level 1 in view' + at);
+    }
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+});
+
+test('touch on the foot: a pinch with a finger on Play or Zoom zooms, a drag from Play pans, a tap still works; three fingers, one lifts: no jump', async () => {
+  const { ctx, page, cdp, errors } = await open({ touch: true, reduce: true });
+  const T = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+  const home = async () => {   // zoom 0.5, on the next level
+    await page.locator('.fk-map').focus();
+    for (let k = 0; k < 6; k++) await page.keyboard.press('Minus');
+    await page.keyboard.press('Home'); await sleep(60);
+  };
+  for (const sel of ['.fk-zi', '.fk-play']) {
+    await home();
+    const p = mid(await box(page, sel)), f = { x: p.x - 120, y: p.y - 140 }, z0 = await zoom(page);
+    await T('touchStart', [{ ...f, id: 1 }]);
+    await T('touchStart', [{ ...f, id: 1 }, { ...p, id: 2 }]);
+    for (let k = 1; k <= 6; k++) await T('touchMove', [{ x: f.x - 8 * k, y: f.y - 8 * k, id: 1 }, { x: p.x + 4 * k, y: p.y + 4 * k, id: 2 }]);
+    await T('touchEnd', []);
+    await sleep(80);
+    const r = (await zoom(page)) / z0;
+    assert.ok(r > 1.3, 'a pinch with one finger on ' + sel + ' zooms: x' + r.toFixed(3));
+  }
+  assert.deepEqual(await calls(page, 'level'), [], 'a pinch opens no level');
+  // A tap on Zoom in or Play still works.
+  await home();
+  const z1 = await zoom(page);
+  await page.locator('.fk-zi').tap(); await sleep(60);
+  assert.ok(Math.abs((await zoom(page)) / z1 - 1.25) < 0.01, 'a tap on Zoom in zooms in');
+  await page.locator('.fk-play').tap();
+  assert.deepEqual(await calls(page, 'level'), [9]);
+  // A drag that starts on Play pans the map and opens nothing.
+  const p = mid(await box(page, '.fk-play')), v0 = await view(page);
+  await T('touchStart', [p]);
+  for (let k = 1; k <= 5; k++) await T('touchMove', [{ x: p.x, y: p.y - 12 * k }]);
+  await T('touchEnd', []);
+  await sleep(80);
+  const v1 = await view(page);
+  assert.ok(Math.abs(v1[1] - v0[1] + 60) < 2 && Math.abs(v1[0] - v0[0]) < 1, 'a drag from Play pans with the finger: ' + v0 + ' to ' + v1);
+  assert.deepEqual(await calls(page, 'level'), [9], 'a drag from Play opens nothing');
+  // Three fingers on the map, one lifts: the pinch goes on from the two left, so a 1 px move barely moves the view.
+  await home();
+  const c = mid(await box(page, '.fk-map')), f1 = { x: c.x - 60, y: c.y - 100, id: 1 }, f2 = { x: c.x + 60, y: c.y - 100, id: 2 }, f3 = { x: c.x, y: c.y + 20, id: 3 };
+  await T('touchStart', [f1]);
+  await T('touchStart', [f1, f2]);
+  await T('touchStart', [f1, f2, f3]);
+  await T('touchEnd', [f1]);   // finger 1 lifts (CDP releases the points named)
+  await sleep(40);
+  const d1 = await view(page);
+  await T('touchMove', [{ ...f2, x: f2.x + 1 }, f3]);
+  await sleep(60);
+  const d2 = await view(page);
+  await T('touchEnd', []);
+  assert.ok(Math.abs(d2[2] / d1[2] - 1) < 0.01 && Math.abs(d2[0] - d1[0]) < 4 && Math.abs(d2[1] - d1[1]) < 4, 'one finger of three lifts, then a 1 px move: ' + d1 + ' to ' + d2);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('the title reads in full at 320 px, the top bar no taller; one line at 375 and 390', async () => {
+  for (const w of [320, 375, 390]) {
+    const { ctx, page, errors } = await open({ w, h: 640, touch: true });
+    await page.evaluate(() => document.fonts.ready);
+    const t = await page.evaluate(() => { const t = document.querySelector('.fk .fp-title'); return { sw: t.scrollWidth, cw: t.clientWidth, h: t.getBoundingClientRect().height, top: document.querySelector('.fk .fp-top').getBoundingClientRect().height, unbounded: [...document.fonts].some((f) => /Unbounded/.test(f.family) && f.status === 'loaded') }; });
+    console.log('# the title at ' + w + ': ' + JSON.stringify(t));
+    assert.ok(t.sw <= t.cw, 'the title is not cut at ' + w + ': ' + t.sw + ' px in ' + t.cw);
+    assert.equal(t.top, 56, 'the top bar stays 56 px at ' + w);
+    if (w >= 375) assert.ok(t.h < 25, 'one line at ' + w + ': ' + t.h);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
 });

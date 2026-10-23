@@ -676,7 +676,7 @@
       if (!clk.saidOut) { clk.saidOut = true; say('Time. Play on.', 2000); tell('Time. Play on: nothing is lost.'); }
     }
     // The result as the app records it: the seconds used (whole, rounded up) and the seconds the clock gave.
-    const resultNow = () => Object.assign(MX.result(game), { secs: pace && clk.begun ? Math.max(1, Math.ceil(clockUsed() / 1000)) : 0, clock: pace ? clockSecs() : 0 });
+    const resultNow = (g = game) => Object.assign(MX.result(g), { secs: pace && clk.begun ? Math.max(1, Math.ceil(clockUsed() / 1000)) : 0, clock: pace ? clockSecs() : 0 });
 
     // ---------------------------------------------------------- legend and boosters
     function legend() {
@@ -889,7 +889,7 @@
     }
 
     // ---------------------------------------------------------- moves
-    let busy = false, sel = null, armed = null, started = false, ended = false, swapsMade = 0;
+    let busy = false, sel = null, armed = null, started = false, ended = false, swapsMade = 0, landing = null;
     const ARMED = { pass: 'Pass: press a tile and it leaves.', turn: 'Turn: swap any two neighbours.' };
     const neighbours = (a, b) => (Math.abs(a - b) === 1 && Math.floor(a / game.cols) === Math.floor(b / game.cols)) || Math.abs(a - b) === game.cols;
     const movable = (i) => { const c = game.cells[i]; return !!(c && !c.hole && c.t && !c.t.held && !c.pass); };
@@ -934,7 +934,9 @@
         return false;
       }
       const prev = game;
+      landing = r.game;   // the board this move lands on, for Back while its tiles still fall
       await playSteps(r.steps);
+      landing = null;
       game = r.game;
       sync();
       report(prev, game);
@@ -1170,7 +1172,11 @@
     }
     $('.fp-snd').addEventListener('click', toggleSound);
     $('.fp-back').addEventListener('click', () => {
-      if (started && !ended) { ended = true; clockSync(); if (o.onEnd) o.onEnd(resultNow()); }
+      if (started && !ended) { // mid-cascade, the move as it lands: a win made by it is recorded with its finale
+        ended = true; clockSync();
+        const g = landing || game;
+        if (o.onEnd) o.onEnd(resultNow(g.state === 'won' ? MX.finale(g).game : g));
+      }
       if (o.onMap) o.onMap();
     });
 
@@ -1288,8 +1294,10 @@
 
     async function finish() {
       ended = true; busy = true; clearHint(); coachOff(); boosts();
+      // recorded now, from the engine: Back during the finale leaves before it ends (the clock stood since the move)
+      const f = MX.finale(game), result = resultNow(f.game);
+      const rec = o.onEnd ? o.onEnd(result) : null;
       await wait(reduce ? 150 : 300);
-      const f = MX.finale(game);
       loop.scale = 0.6;
       const hurry = () => { loop.scale = 0.2; }; // a tap hurries the finale
       box.addEventListener('pointerdown', hurry);
@@ -1298,8 +1306,6 @@
       loop.scale = 1;
       game = f.game;
       sync();
-      const result = resultNow();
-      const rec = o.onEnd ? o.onEnd(result) : null;
       const earned = (rec && (rec.earned || rec)) || {};
       for (const k of ['pass', 'turn', 'more']) held[k] = Math.min(9, held[k] + (earned[k] | 0));
       const saga = rec && rec.saga;

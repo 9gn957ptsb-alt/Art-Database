@@ -30,7 +30,8 @@
  * tab bar hiding and coming back, the board clustered by them, See it as a room and back. A five sorted
  * gives one Pass. The clock and the kingdom: Your kingdom from the board (its levels in order, the list of
  * levels one tap away, the next area under cloud); level 5 won against the clock builds on its plot, Another
- * way changes it, Split is found; the clock off; all of it after a reload.
+ * way changes it, Split is found; the clock off; all of it after a reload. With nothing judged no home island; a
+ * building whose thing names no card, a plain house; Reduce Motion followed live; a win of level 1000 claims nothing.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -2445,6 +2446,7 @@ test('Set: the clock and the kingdom: a win in time builds on its plot, the fift
     await page.waitForSelector('#view-set .fk-node button');
     assert.equal(await page.textContent('#view-set .fk-line'), 'Every level you win builds one of your things. Next: level 5, in Sort.');
     assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="2"]', 'aria-label'), 'Level 2, Sort, 2 of 3 stars. Built: a plain house.', 'won before the kingdom: a plain house');
+    assert.equal(await page.locator('#view-set .fk-homel').count(), 1, 'something judged: Your ground is there');
 
     // Level 5 against the clock: five seconds a move (the default, as the ring is on), 20 moves, 1:40.
     await page.click('#view-set .fk-play');
@@ -2517,6 +2519,90 @@ test('Set: the clock and the kingdom: a win in time builds on its plot, the fift
     assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="5"]', 'aria-label'), label);
     now = await saved();
     assert.deepEqual([now.saga.built[4], now.opts.clock], [builtId, 0]);
+    assert.deepEqual(page.errors(), []);
+  } finally {
+    await ctx.close();
+  }
+});
+
+// The kingdom as the app opens it, at its edges: with nothing judged there is no home island, not for a moment
+// (SPEC "It appears only once something is judged"); a building whose thing names no card is a plain house on the
+// level card as on the map; Reduce Motion turned on while the kingdom is open makes its moves instant at once.
+test('Set: the kingdom with nothing judged has no home; a building that names no card is a plain house; Reduce Motion is followed live', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const st = FiveS.newState();
+    st.seen = Object.assign({}, st.seen, { intro: 1 });
+    st.saga = Object.assign(st.saga, { stars: [3, 2], best: [9000, 6000], time: [0, 40], built: [null, 'x-gone'], plays: 2 });
+    assert.equal(FiveS.card(st, deck, 'x-gone'), null, 'an id that names no card (as a deck that dropped a thing leaves)');
+    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+    await page.goto(BASE + '#set');   // seeded before the page runs: with nothing kept, no board tile shows that the state is in
+    await page.waitForSelector('#view-set [data-act="set-kingdom"]');
+    await page.evaluate(() => { window.__home = false; new MutationObserver(() => { if (document.querySelector('#view-set .fk-home')) window.__home = true; }).observe(document.body, { childList: true, subtree: true }); });
+    await page.click('#view-set [data-act="set-kingdom"]');
+    await page.waitForSelector('#view-set .fk-isle.is-drawn');
+    await sleep(400);
+    assert.equal(await page.evaluate(() => window.__home), false, 'no home island at any moment');
+    assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="2"]', 'aria-label'), 'Level 2, Sort, 2 of 3 stars, in time. Built: a plain house.');
+    // Reduce Motion on while the kingdom is open: Zoom in lands on the next frame, with no ease after it.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const z = () => page.$eval('#view-set .fk-table', (t) => t.style.getPropertyValue('--z'));
+    const z0 = await z();
+    await page.click('#view-set .fk-zi');
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const z1 = await z();
+    await sleep(400);
+    assert.deepEqual([z1 !== z0, z1], [true, await z()], 'Zoom in at once under Reduce Motion: ' + z0 + ' then ' + z1);
+    // The level card names the building as the map does.
+    await page.$eval('#view-set .fk-node button[data-n="2"]', (b) => b.click());
+    await page.waitForSelector('dialog.fp-sheet[open] .fp-builtline');
+    assert.equal(await page.textContent('dialog.fp-sheet[open] .fp-builtline'), 'Your building: a plain house, two storeys. In time: best 0:40.');
+    assert.deepEqual(page.errors(), []);
+  } finally {
+    await ctx.close();
+  }
+});
+
+// At the saga's cap of 999 levels a win of level 1000 is not recorded, so its end claims no building and no clock
+// verdict; its stars, score and ways on stay (SPEC "As fixed").
+test('Set: a win of level 1000, past the 999 the saga keeps, claims nothing it did not record', { timeout: 150000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light' });
+  await page.emulateMedia({ reducedMotion: 'reduce' });   // the finale's hundreds of moves left, without waiting on each
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const ex = FiveS.exampleState(deck, Date.now()), lv = MATCH.level(1000);
+    let plan = null;
+    for (let p = 0; p < 60 && !plan; p++) {
+      const s0 = Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }), saga: { stars: Array(999).fill(1), best: Array(999).fill(100), boost: { pass: 1, turn: 1, more: 1 }, plays: p, day: null, time: [], built: [] } });
+      let g = MATCH.newGame(lv, MATCH.pieces(FiveS.migrate(s0), deck, lv.suits), '5s:1000:' + p);
+      const mv = [];
+      while (g.state === 'play' && mv.length < 40) { const m = MATCH.hint(g); if (!m) break; const r = MATCH.swap(g, m[0], m[1]); mv.push({ a: m[0], b: m[1], moves: r.game.moves, score: Math.round(r.game.score).toLocaleString('en-GB') }); g = r.game; }
+      if (g.state === 'won') plan = { st: s0, mv };
+    }
+    assert.ok(plan, 'a board of level 1000 the hints win in 40 moves');
+    await page.goto(BASE + '#set');
+    await page.evaluate((json) => localStorage.setItem('5s.state.v1', json), JSON.stringify(plan.st));
+    await page.reload();
+    await page.waitForSelector('#view-set .fb-tile[data-id]');
+    assert.match(await page.textContent('#view-set [data-act="set-play"]'), /Play level 1000/);
+    await page.click('#view-set [data-act="set-play"]');
+    await page.click('dialog.fp-sheet[open] [data-play]');
+    await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
+    const key = (a, b) => (b === a + 1 ? 'ArrowRight' : b === a - 1 ? 'ArrowLeft' : b > a ? 'ArrowDown' : 'ArrowUp');
+    for (const [k, m] of plan.mv.entries()) {
+      await page.focus('#view-set .fp-gc[data-i="' + m.a + '"]');
+      await page.keyboard.press('Shift+' + key(m.a, m.b));
+      if (k < plan.mv.length - 1) await page.waitForFunction(([n, sc]) => { const b = document.querySelector('#view-set .fp-moves b'), c = document.querySelector('#view-set .fp-score > b'); return b && c && b.textContent === String(n) && c.textContent === sc; }, [m.moves, m.score], { timeout: 20000 });
+    }
+    await page.waitForSelector('dialog.fp-sheet[open] .fp-endstars', { timeout: 60000 });
+    const end = page.locator('dialog.fp-sheet[open]');
+    assert.match(await end.textContent(), /Level 1000 done\./);
+    assert.equal(await end.locator('.fp-built, .fp-endclock, [data-way], [data-kingdom]').count(), 0, 'no Built and no clock verdict');
+    assert.doesNotMatch(await end.textContent(), /Your kingdom|Built:|to spare|Race it again/);
+    assert.equal(await end.locator('[data-next], [data-again], [data-board]').count(), 3, 'its ways on stay');
+    const sv = await page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1')).saga);
+    assert.deepEqual([sv.stars.length, sv.built.length, sv.time.length, sv.plays], [999, 0, 0, plan.st.saga.plays + 1], 'the play counted, nothing else');
     assert.deepEqual(page.errors(), []);
   } finally {
     await ctx.close();

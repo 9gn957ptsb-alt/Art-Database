@@ -1386,8 +1386,8 @@
       // shortcut: the areas take only the deck's kept Surfaces (a brought photo's crop waits on the image store); add them if islands look bare
       saga: st.saga, palette: { kept: P.keptColours, passed: P.passedColours, surfaces: deckSurfaces(st, P) },
       thing: (id) => { const c = cardOf(id, st); return c ? { name: shortTitle(c.title || 'Untitled', 28), colours: (c.colours || []).filter(isHex) } : null; },
-      drawHome: (cv) => (P.judged ? groundSpec(st).then((x) => G.render(cv, x.spec)) : null),
-      theme: currentTheme(), reduce: reduced(), focus, reveal,
+      drawHome: P.judged ? (cv) => groundSpec(st).then((x) => G.render(cv, x.spec)) : null,   // nothing judged: no home island at all
+      theme: currentTheme(), focus, reveal,   // no reduce: the kingdom follows Reduce Motion live itself
       onLevel: openLevel, onBack: backToBoard, onList: openList,
       onHome: () => showView('seed', { focus: true }),   // leaving Set gives the kingdom way to the board
     });
@@ -1408,7 +1408,7 @@
       boost: st.saga.boost || {}, thumb: playThumb, name: playName,
       // the clock: five seconds a move unless chosen; until then it follows the Five-second ring switch
       clock: st.opts.clock ?? (st.opts.ring !== false ? 5 : 0),
-      built: sg.stars[n - 1] ? { name: was ? playName(was) : null, storeys: sg.stars[n - 1], secs: sg.time[n - 1] || 0 } : null,
+      built: sg.stars[n - 1] ? { name: cardOf(was, st) ? playName(was) : null, storeys: sg.stars[n - 1], secs: sg.time[n - 1] || 0 } : null,
       opts: { sound: st.opts.sound !== false, hints: st.opts.hints !== false },
       onAssociate: (a) => save({ assoc: MX.addAssociations(cur().assoc, a.ids, nowSec()) }),
       onHeart: (a) => save({ assoc: MX.heart(cur().assoc, a.ids, a.on) }),
@@ -1416,6 +1416,7 @@
       onEnd: (r) => {   // a win builds at once: the first of the ways stands; Another way changes it (onBuild)
         const rec = MX.recordLevel(cur().saga, r, nowSec());
         if (!r.won) { save({ saga: rec.saga }); return rec; }
+        if (n > rec.saga.stars.length) { save({ saga: rec.saga }); return null; }   // past the 999 the saga keeps: unrecorded, so the end claims no building and no clock
         const ways = MX.buildChoices(cur(), deck, r, cur().saga.built[n - 1]);
         const saga = MX.build(rec.saga, n, ways[0] ?? null);
         save({ saga });

@@ -1788,6 +1788,26 @@ The app (`app.js`, the integration team):
   100–200 levels back to 16.8 ms in Chrome, but it would make Safari repaint the table on every frame, and
   Safari could not be measured here, so the table stays composited.
 
+*As fixed (23 Oct 2026, the review: the level and the app):*
+- **A win is recorded as its move lands.** The level's Map, tapped while the winning move's tiles still
+  fell, recorded a loss (the board from before the move); tapped during the finale, it recorded nothing.
+  No stars, building, best time, boosters or area. Now the level records from the engine: a win as the
+  finale starts, with the finale's score worked out at once, so the building stands about a second after
+  the winning move. Map mid-cascade records the board the move lands on: a win with its finale, or a
+  loss when the last move runs out. `play.smoke.cjs` taps Map at both moments.
+- **A building whose thing names no card** (a deck that dropped it, or a hand-edited state) is "a plain
+  house" on the level card, as on the map. It said "Something".
+- **A win past the 999 levels the saga keeps** (level 1000) is not recorded, so its level end claims
+  nothing it did not keep: no Your kingdom section and no clock verdict (it said "Built: …" and "Not in
+  time."). Its stars, score and ways on stay, and the play is counted. The board still offers level 1000,
+  and `recordLevel` is unchanged (`match.test.mjs`'s "a level not yet open" still holds).
+- **The kingdom follows Reduce Motion live.** The app passed it once, at opening, so turning it on with
+  the kingdom open left its moves eased. The app now passes none, and the kingdom listens itself.
+- **No home island before anything is judged.** The app always passed a `drawHome`, so the kingdom drew a
+  home island ("Your ground", the ribbon from it) and took it down only once it came to draw it; with 20
+  or more levels won it stayed, and Tab reached it. The app now passes `drawHome` only once something is
+  judged. `ui.smoke.cjs` tests these four.
+
 ### Decisions, obstacles and their resolutions
 - *Royal Kingdom has no clock inside a level* (its levels count moves; its races are events around
   the levels). Resolution: the clock is a race inside each level that the person can win, never a

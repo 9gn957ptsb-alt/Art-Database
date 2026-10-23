@@ -217,8 +217,9 @@
 .fk[data-theme="dark"] { --fk-cloud: rgba(42, 36, 56, 0.92); --fk-cloud-shade: rgba(0, 0, 0, 0.45); --fk-plinth: #2A2636; }
 .fk .fp-top { grid-template-columns: auto minmax(0, 1fr) auto; }
 .fk .fp-top .btn { white-space: nowrap; padding: 0 12px; }
-.fk .fp-title { overflow: hidden; text-overflow: ellipsis; }
+.fk .fp-title { overflow: hidden; text-overflow: ellipsis; white-space: normal; }   /* narrower than 375: "Your / kingdom" on two lines, in the 56 px bar */
 @media (max-width: 400px) { .fk .fp-title { font-size: 16px; } }
+@media (max-width: 340px) { .fk .fp-title { font-size: 15px; } }   /* 320: "kingdom" in Unbounded is 85 px at 16 px, the column 83 */
 .fk-line { width: 100%; max-width: 480px; margin: 0 auto 10px; text-align: center; font-size: 14px; line-height: 1.4; color: var(--ink-2, #57516A); flex: none; }
 .fk-stage { position: relative; flex: 1 1 auto; min-height: 0; margin: 0 calc(-1 * max(16px, env(safe-area-inset-right, 0px))) calc(-1 * env(safe-area-inset-bottom, 0px)) calc(-1 * max(16px, env(safe-area-inset-left, 0px))); }
 .fk-map { position: absolute; inset: 0; overflow: hidden; overflow: clip; background: var(--paper, #FAF9FC); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; border-top: 1px solid var(--line, #E2DEEA); }
@@ -264,6 +265,6 @@
 .fk-homel { position: absolute; transform-origin: 0 0; transform: scale(calc(1 / var(--z))); min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--line-strong, #8C86A0); background: var(--raised, #FFFFFF); color: var(--ink, #16131F); font: 600 14px/1 var(--font-body, system-ui, sans-serif); white-space: nowrap; }
 .fk-homel:focus-visible { outline: 2px solid var(--focus, #7350EE); outline-offset: 3px; }
 .fk-foot { position: absolute; z-index: 2; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; align-items: center; gap: 8px; pointer-events: none; }
-.fk-foot > * { pointer-events: auto; }
+.fk-foot > * { pointer-events: auto; touch-action: none; }   /* a finger on Play or Zoom pinches and drags the map too (kingdom.js) */
 .fk-play { flex: 0 1 320px; box-shadow: 0 6px 18px var(--shadow, rgba(40, 28, 70, 0.2)); }
 .fk-foot .iconbtn { background: var(--raised, #FFFFFF); box-shadow: 0 4px 12px var(--shadow, rgba(40, 28, 70, 0.2)); }

@@ -17,6 +17,7 @@
   const DX = 120, DY = 340;                // area k's centre: x = k even ? -DX : +DX, y = -(k + 1) * DY
   const Z_MIN = 0.5, Z_MAX = 1.5, Z_STEP = 1.25, PAN = 64, TAP = 8, SETTLE_MS = 150, MAX_DRAWN = 8;
   const LIFT = 58;                         // world px from a plot's tile up to its pin's foot: clears three storeys and a flag
+  const PIN = 25;                          // screen px from a pin's foot up to its button's middle (play.css: bottom 7px, 36 px tall)
   const EASE_MS = 260;
   const KEYS = { ArrowLeft: [1, 0], ArrowRight: [-1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
 
@@ -79,6 +80,8 @@
     }
 
     function build() {
+      // A rebuild (a theme change, the home gone) keeps the focus on the control it was on, and the view where it is.
+      const a = document.activeElement, was = table.contains(a) ? (a.dataset.n ? '[data-n="' + a.dataset.n + '"]' : '.fk-homel') : null;
       const saga = o.saga || {};
       const stars = saga.stars || [], time = saga.time || [], built = saga.built || [];
       next = stars.length + 1;
@@ -142,6 +145,8 @@
       isles.forEach((it, q) => { it.el = els[q]; it.cv = els[q].querySelector('canvas'); it.drawn = false; });
       const hb = $('.fk-homel');
       if (hb) hb.addEventListener('click', () => o.onHome && o.onHome());
+      const f = was && table.querySelector(was);
+      if (f) { refocus = true; f.focus({ preventScroll: true }); refocus = false; }
     }
 
     // ---------------------------------------------------------- drawing, lazily: near the view, at most MAX_DRAWN
@@ -207,6 +212,9 @@
         z = anim.z0 + (anim.z1 - anim.z0) * e; tx = anim.x0 + (anim.x1 - anim.x0) * e; ty = anim.y0 + (anim.y1 - anim.y0) * e;
         if (k < 1) raf = requestAnimationFrame(frame); else anim = null;
       }
+      paint();
+    }
+    function paint() {   // the view as it stands; also before measuring what is on screen (a move under reduced motion waits for a frame)
       table.style.transform = 'translate3d(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px,0) scale(' + z.toFixed(4) + ')';
       if (z !== shownZ) { table.style.setProperty('--z', z.toFixed(4)); shownZ = z; }
     }
@@ -239,19 +247,20 @@
     }
     function panBy(dx, dy) { stopAnim(); tx += dx; ty += dy; place(); }
     const nodeOf = (n) => nodes.find((x) => x.n === n);
-    function findNext() { const nd = nodeOf(next); if (nd) centreOn(nd.x, nd.y + LIFT / 2); }
+    function findNext() { const nd = nodeOf(next); if (nd) centreOn(nd.x, nd.y - PIN / z); }
 
     // ---------------------------------------------------------- gestures: drag, pinch, wheel; a press under 8 px is a tap
-    const ptrs = new Map();
+    // On the stage, not the map: a finger on the foot's Play or Zoom is part of a pinch or a drag too.
+    const stage = $('.fk-stage'), ptrs = new Map();
     let press = null, pinch = null, eatClick = false;
     const local = (e) => { const r = map.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     function pinchStart() {
       const [a, b] = Array.from(ptrs.values());
       pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] };
     }
-    map.addEventListener('pointerdown', (e) => {
+    stage.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      stopAnim();
+      if (!foot.contains(e.target)) stopAnim();   // a press on the map stops an eased move; on Zoom, quick presses each count
       ptrs.set(e.pointerId, local(e));
       if (ptrs.size === 1) press = { id: e.pointerId, at: local(e), moved: false };
       else if (ptrs.size === 2) {
@@ -260,7 +269,7 @@
         pinchStart();
       }
     });
-    map.addEventListener('pointermove', (e) => {
+    stage.addEventListener('pointermove', (e) => {
       const prev = ptrs.get(e.pointerId);
       if (!prev) return;
       const p = local(e);
@@ -286,7 +295,7 @@
     });
     function up(e) {
       if (!ptrs.delete(e.pointerId)) return;
-      if (ptrs.size < 2) pinch = null;
+      if (ptrs.size < 2) pinch = null; else pinchStart();   // one of three lifts: go on from the two left
       if (ptrs.size === 1 && press) { const [id, p] = Array.from(ptrs.entries())[0]; press = { id, at: p, moved: true }; }
       if (!ptrs.size) {
         if (press && press.moved) { eatClick = true; setTimeout(() => { eatClick = false; }, 0); }
@@ -294,9 +303,9 @@
         map.classList.remove('is-drag');
       }
     }
-    map.addEventListener('pointerup', up);
-    map.addEventListener('pointercancel', up);
-    map.addEventListener('click', (e) => { if (eatClick) { e.preventDefault(); e.stopPropagation(); } }, true);
+    stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
+    stage.addEventListener('click', (e) => { if (eatClick) { e.preventDefault(); e.stopPropagation(); } }, true);
     map.addEventListener('wheel', (e) => {
       e.preventDefault();
       const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? H : 1;
@@ -319,15 +328,15 @@
       else return;
       e.preventDefault();
     });
-    // A focused node is panned into view (clear of the foot's buttons).
+    // A focused control (a node, Your ground) is panned into view, centred on itself, clear of the foot's buttons.
+    let refocus = false;
     map.addEventListener('focusin', (e) => {
-      const b = e.target.closest('[data-n]');
-      if (!b) return;
+      const b = e.target;
+      if (b === map || refocus) return;
+      paint();
       const r = b.getBoundingClientRect(), m = map.getBoundingClientRect();
-      if (r.left < m.left + 8 || r.right > m.right - 8 || r.top < m.top + 8 || r.bottom > m.bottom - footH()) {
-        const nd = nodeOf(+b.dataset.n);
-        if (nd) centreOn(nd.x, nd.y + LIFT / 2);
-      }
+      if (r.left < m.left + 8 || r.right > m.right - 8 || r.top < m.top + 8 || r.bottom > m.bottom - footH())
+        centreOn((r.left + r.width / 2 - m.left - tx) / z, (r.top + r.height / 2 - m.top - ty) / z);
     });
     map.addEventListener('scroll', () => { map.scrollTop = 0; map.scrollLeft = 0; });   // focus never scrolls the map: it pans
 
@@ -344,7 +353,7 @@
     z = z0;
     // A new area found opens on its first level: on the level that found it, the new island was half off a phone's screen.
     const first = nodeOf(o.reveal != null ? 5 * o.reveal + 1 : o.focus) || nodeOf(next);
-    if (first) { tx = W / 2 - first.x * z; ty = (H - footH()) / 2 - (first.y + LIFT / 2) * z; }
+    if (first) { tx = W / 2 - first.x * z; ty = (H - footH()) / 2 - first.y * z + PIN; }   // on its button: a phone on its side has 42 px above the foot
     place();
     if (ro) ro.observe(map);
     if (o.reveal != null) { const w = 'A new area: ' + areaOf(o.reveal).name + '.'; setTimeout(() => { live.textContent = w; }, 400); }

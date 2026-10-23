@@ -20,7 +20,8 @@
  * and the kingdom"): the card's choice (Off, Ten seconds), the ring standing before the first swap, while
  * tiles move, while hidden and for a sheet; text only under reduced motion; Five more's time; running out
  * (the page's time moved on); the level end's In time and not in time lines, Another way and See it
- * in your kingdom; the list of levels' "in time" and Kingdom.
+ * in your kingdom; the list of levels' "in time" and Kingdom. Map while the winning tiles fall and during the
+ * finale keeps the win; a last move that runs out stays a loss.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -616,6 +617,51 @@ test('the clock runs out: Time, play on; the win is not in time, keeps no time a
   await page.locator('dialog[open] [data-kingdom]').click();
   assert.deepEqual(await calls(page, 'kingdom'), [1]);
   assert.equal(await page.locator('dialog[open]').count(), 0);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+// The level's Map left before the win's sheet: the win is recorded from the engine as the move lands, with its
+// finale's score, stars, time and building (SPEC "A win builds at once"); a last move that runs out stays a loss.
+test('Map while the winning tiles fall or during the finale keeps the win; a last move that runs out stays a loss', async () => {
+  const L = find(10, 'hint', (pl) => pl.length > 1 && pl.length <= 6 && pl[pl.length - 1].r.game.state === 'won');   // a fifth level: an area
+  const res = M.result(M.finale(L.pl[L.pl.length - 1].r.game).game);
+  const ways = M.buildChoices(taste, deck, res, undefined);
+  const saga0 = { stars: Array(9).fill(2), best: Array(9).fill(6000), boost: { pass: 1, turn: 1, more: 1 }, plays: L.p, day: null, time: [], built: [] };
+  // Map tapped: mid-cascade (the board not yet settled on the last move) or once the finale's "All set." shows
+  async function lastMoveThenMap(page, pl, when) {
+    for (const mv of pl.slice(0, -1)) { await swapBy('shift', page, null, mv.a, mv.b, mv.r.game.cols); await settled(page, mv.r.game); }
+    const last = pl[pl.length - 1];
+    await swapBy('shift', page, null, last.a, last.b, last.r.game.cols);
+    if (when === 'finale') await page.waitForFunction(() => [...document.querySelectorAll('.fp-word')].some((e) => e.textContent === 'All set.'), null, { timeout: 20000 });
+    const shown = await page.evaluate(() => { const m = document.querySelector('.fp-moves b').textContent; document.querySelector('.fp-back').click(); return m; });
+    if (when === 'cascade') assert.equal(shown, String(pl[pl.length - 2].r.game.moves), 'tapped while the tiles still fell');
+    await page.waitForSelector('.fp-mapview');
+    await sleep(800);   // nothing more is recorded once the level has gone
+  }
+  for (const when of ['cascade', 'finale']) {
+    const { ctx, page, errors } = await open({ touch: true }, 'stars=' + saga0.stars + '&plays=' + L.p, '#level=10');
+    await page.waitForSelector('dialog[open]');
+    await play(page);
+    await lastMoveThenMap(page, L.pl, when);
+    const ends = await calls(page, 'end');
+    assert.equal(ends.length, 1, when + ': recorded once');
+    assert.deepEqual([ends[0].won, ends[0].stars, ends[0].score], [true, res.stars, res.score], when + ': the win, with its finale score');
+    assert.ok(ends[0].secs >= 1 && ends[0].secs <= ends[0].clock, when + ': in time ' + ends[0].secs);
+    const rec = M.recordLevel(saga0, Object.assign({}, res, { secs: ends[0].secs, clock: ends[0].clock }));
+    assert.deepEqual(await page.evaluate(() => window.harness.state.saga), M.build(rec.saga, 10, ways[0] ?? null), when + ': stars, best, time, boosters and the building saved');
+    assert.equal(await page.locator('.fp-mapview .fp-node.is-next button').getAttribute('data-n'), '11', when + ': the area built, level 11 next');
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+  const O = find(2, 'worst', (pl) => pl.length > 1 && pl[pl.length - 1].r.game.state === 'out');
+  const { ctx, page, errors } = await open({ reduce: true }, 'plays=' + O.p, '#level=2');
+  await page.waitForSelector('dialog[open]');
+  await play(page);
+  await lastMoveThenMap(page, O.pl, 'cascade');
+  const ends = await calls(page, 'end');
+  assert.deepEqual([ends.length, ends[0].won], [1, false], 'out of moves: a loss');
+  assert.deepEqual(await page.evaluate(() => [window.harness.state.saga.stars, window.harness.state.saga.plays]), [[], O.p + 1]);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
