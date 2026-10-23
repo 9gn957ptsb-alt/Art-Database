@@ -169,6 +169,21 @@
     ctx.restore();
   }
 
+  // the 5 in the Iterations look, FIVE's [a, b] (the pen's tip at `tip`): the bar's stretch on the bar (it runs
+  // backwards), the body's on the body, both arrays straight from Marks.points, so the engine draws them as the sheet's
+  // letters at their landed weight; the pen's light on whichever letter the tip is in
+  function lookFive(c, pal, W5, WB, a, b, tip, g, I) {
+    const sw = g.swell == null ? 1 : g.swell;
+    if (!(sw > 0)) return;
+    const blo = Math.max(a, 0), bhi = Math.min(b, SHARE_BAR);
+    if (bhi > blo + 1e-4) M.stroke(c, PTS.bar, { width: WB * sw, colours: pal.bar, from: 1 - bhi / SHARE_BAR, to: 1 - blo / SHARE_BAR });
+    const lo = Math.max(a, SHARE_BAR), hi = Math.min(b, 1), toB = (x) => (x - SHARE_BAR) / (1 - SHARE_BAR);
+    if (hi > lo + 1e-4) M.stroke(c, PTS.body, { width: W5 * sw, colours: pal.body, from: toB(lo), to: toB(hi) });
+    if (!(g.on > 0.002)) return;
+    if (tip < SHARE_BAR) written(c, PTS.bar, pal.bar, WB, 1 - bhi / SHARE_BAR, 1 - blo / SHARE_BAR, 1 - tip / SHARE_BAR, g, I, true);
+    else written(c, PTS.body, pal.body, W5, toB(lo), toB(hi), toB(tip), g, I, true);
+  }
+
   // window of t -> 0..1
   const span = (t, a, b) => M.clamp((t - a) / (b - a), 0, 1);
   // a soft rise and fall inside [a, b] (0 outside): for lights and settles
@@ -237,8 +252,15 @@
             M.stroke(c, PTS.s, { width: 10 * k, to: TS(skS), colours: pal.ink, alpha: inkA });
           }
           // the 5's bar and body flood as the one line FIVE (bar backwards) so the flood runs like the pen did
-          if (q5 > 0 && q5 < 1) flood(FIVE, c5, (u) => M.lerp(WB, W5, M.smoothstep(SHARE_BAR - 0.02, SHARE_BAR + 0.02, u)), q5, 0.28);
-          if (qS > 0 && qS < 1) flood(PTS.s, pal.s, WS, qS, 0.35);
+          // (the Iterations look: along the sheet's own letters at their landed weight, so nothing changes when they land)
+          if (q5 > 0 && q5 < 1) {
+            if (pal.look) lookFive(c, pal, W5, WB, 0, q5, q5, { on: 0, swell: 1 }, I);
+            else flood(FIVE, c5, (u) => M.lerp(WB, W5, M.smoothstep(SHARE_BAR - 0.02, SHARE_BAR + 0.02, u)), q5, 0.28);
+          }
+          if (qS > 0 && qS < 1) {
+            if (pal.look) M.stroke(c, PTS.s, { width: WS, colours: pal.s, to: qS });
+            else flood(PTS.s, pal.s, WS, qS, 0.35);
+          }
           if (q5 >= 1) {   // landed: the real strokes, so the bar keeps its own weight and the rest pose is exact
             M.stroke(c, PTS.body, { width: W5, colours: pal.body });
             M.stroke(c, PTS.bar, { width: WB, colours: pal.bar });
@@ -283,7 +305,12 @@
               const lo = Math.max(a, 0), hi = Math.min(b, SHARE_BAR);
               if (hi > lo + 1e-4) M.stroke(c, PTS.bar, { width: WB * g.swell, colours: pal.bar, from: 1 - hi / SHARE_BAR, to: 1 - lo / SHARE_BAR });
             };
-            if (reverse) { written(c, FIVE, c5, W5, 1 - u5, 1, 1 - u5, Object.assign({}, g, { on: 0 }), I); barPart(1 - u5, 1); written(c, FIVE, c5, W5, 1 - u5, 1, 1 - u5, g, I, true); }
+            if (pal.look) {
+              // the Iterations look: the bar and the body are the sheet's own letters from the first frame, at the
+              // landed weight, so the 5 never changes shape or weight when it lands (the artist, 23 Oct 2026)
+              const a = reverse ? 1 - u5 : 0, b = reverse ? 1 : u5, tip = reverse ? 1 - u5 : u5;
+              lookFive(c, pal, W5, WB, a, b, tip, g, I);
+            } else if (reverse) { written(c, FIVE, c5, W5, 1 - u5, 1, 1 - u5, Object.assign({}, g, { on: 0 }), I); barPart(1 - u5, 1); written(c, FIVE, c5, W5, 1 - u5, 1, 1 - u5, g, I, true); }
             else { written(c, FIVE, c5, W5, 0, u5, u5, Object.assign({}, g, { on: 0 }), I); barPart(0, u5); written(c, FIVE, c5, W5, 0, u5, u5, g, I, true); }
           } else {   // landed: the real strokes (the bar keeps its own weight and colours)
             M.stroke(c, PTS.body, { width: W5, colours: pal.body });

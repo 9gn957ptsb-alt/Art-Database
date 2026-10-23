@@ -491,6 +491,33 @@ function lookSuite(favorites) {
     }
     return bad.length ? 'a classic frame changed after the look: ' + bad.join(', ') : true;
   });
+  // The artist, 23 Oct 2026: "the .75 line weight is consistently the line weight the entire time from beginning to
+  // end". The look's letters are the sheet's shapes at the family's line weight, so at any weight they carry about
+  // the classic letters' ink (they bolded to the sheet's weight before: 1.39 times the ink at 0.75).
+  const S = 240, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+  const cx = cv.getContext('2d', { willReadFrequently: true });
+  const inkOf = (paint) => { cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, S, S); paint(); const d = cx.getImageData(0, 0, S, S).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 128) n++; return n; };
+  check('look: the letters keep the family\'s line weight (the still mark\'s ink against the classic mark\'s, weights 0.6 to 1.4)', () => {
+    const bad = [];
+    for (const w of [0.6, 0.75, 1, 1.4]) {
+      const at = (o) => inkOf(() => { const f = Marks.fit(cx, S, S, 0.04); cx.setTransform(f.scale, 0, 0, f.scale, f.ox, f.oy); Marks.mark(cx, Object.assign({ ribbon: false, weight: w }, o)); });
+      const r = at({ palette: Marks.palette('logo', 'light', 7) }) / at({});
+      if (r < 0.85 || r > 1.1) bad.push('weight ' + w + ': ' + r.toFixed(2));
+    }
+    return bad.length ? 'the look\'s ink over classic: ' + bad.join(', ') : true;
+  });
+  check('look: Draw lands without a jump (the 5\'s ink just before and after it lands, every style, ribbon off)', () => {
+    const bad = [];
+    for (const style of Motion.get('draw').styles) {
+      // transparent: the ground is opaque and would count as ink. A steady draw moves about 1% a hundredth; the old landing jumped 18%
+      const ink = (t) => inkOf(() => Motion.render(cx, 'draw', t, { style, weight: 0.75, ribbon: false, look: 'iterations', iteration: 7 }, { w: S, h: S, seed: 'land', transparent: true }));
+      const last = ink(1);
+      let prev = ink(0), worst = 0;
+      for (let i = 1; i <= 100; i++) { const n = ink(i / 100); worst = Math.max(worst, Math.abs(n - prev) / last); prev = n; }
+      if (worst > 0.08) bad.push(style + ' changes ' + Math.round(worst * 100) + '% of its ink in one hundredth');
+    }
+    return bad.length ? bad.join('; ') : true;
+  });
   return out;
 }
 

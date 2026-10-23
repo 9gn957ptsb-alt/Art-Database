@@ -39,7 +39,6 @@
   // the letters as the look draws them: body and s straight from points() (the look swaps in the sheet's
   // letters), the sheet's bar untagged so its blade can be cut between two iterations' blades
   const PTS = { body: M.points('body', 160), s: M.points('s', 160), bar: M.points(M.paths5s.bar, 160) };
-  const BAR5S = 150;   // the sheet's bar width at the standard weight 0.75 (marks.js LETTERS5S.bar)
   // where each letter's colour stops sit (the sheet's centrelines), for the refold's front to reach them
   const AT = { bar: PTS.bar, body: M.points(M.paths5s.body, 160), s: M.points(M.paths5s.s, 160) };
 
@@ -103,7 +102,8 @@
     const k = p.weight, kc = w(PTS.bar[159]);
     const cut = [lerp2(PA.look.cut[0], PB.look.cut[0], kc), lerp2(PA.look.cut[1], PB.look.cut[1], kc), M.lerp(PA.look.cut[2], PB.look.cut[2], kc)];
     M.stroke(ctx, PTS.body, { width: M.widths.body * k, colours: mixStops(PA.body, PB.body, 'body', w) });
-    M.stroke(ctx, PTS.bar, { width: BAR5S * k / 0.75, colours: mixStops(PA.bar, PB.bar, 'bar', w), caps: ['butt', 'butt'], cut });
+    // the bar at the family's line weight, as the look draws its other letters (its sheet profile is flat)
+    M.stroke(ctx, PTS.bar, { width: M.widths.bar * k, colours: mixStops(PA.bar, PB.bar, 'bar', w), caps: ['butt', 'butt'], cut });
     M.stroke(ctx, PTS.s, { width: M.widths.s * k, colours: mixStops(PA.s, PB.s, 's', w) });
   }
 

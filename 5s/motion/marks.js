@@ -48,8 +48,8 @@
  *                                   them as given, so saved params replay exactly; anything else renders classic.
  *                                   Motion.render then draws with Marks.palette(p.palette, theme, p.iteration), and
  *                                   while the family draws, stroke() draws a tagged bar/body/s (an array straight from
- *                                   Marks.points) as the sheet's letter at the same n (weight 0.75 = the sheet's
- *                                   widths), ribbon() draws the glass, mark() both. Families read env.palette.look.
+ *                                   Marks.points) as the sheet's letter at the same n (the sheet's shape, at the
+ *                                   family's line weight on average), ribbon() draws the glass, mark() both. Families read env.palette.look.
  *   Marks.ITERATIONS                the twenty: {n, cell 'r1c1', label 'vivid cloth', describe, params: {look, iteration,
  *                                   fold cloth|sail|crystal|wave, vivid, cyan, depth, reach, lobe, core, lobeTint,
  *                                   cut: {kind, top, bottom, bow}}}
@@ -63,7 +63,7 @@
  *                                   or a moving part reads as the sheet's letter and lands on it. 'bar'|'body'|'s',
  *                                   [name, u0, u1] (a stretch; u0 > u1 backwards), or [a, b, m]: a morph m of the way from
  *                                   a to b (either may be null: no letter). Build the array from Marks.paths5s.
- *   Marks.lookWidth(name, u)        the sheet's width of a letter at u over the classic standard width (1 outside the look)
+ *   Marks.lookWidth(name, u)        a letter's width at u in the look over the family's line width (1 outside the look)
  *   Marks.glass(ctx, t, {iteration, palette, theme, alpha, along, width, pts, phase, colours, fold, vivid, cyan,
  *                        depth, reach, lobe, core, lobeTint})   the glass alone: the active look's, or an iteration's,
  *                                   any preset field overridden; t breathes it (f(0) = f(1)); colours other than the
@@ -107,7 +107,9 @@
 
   /* The Iterations look (the artist's sheet of twenty, 23 Oct 2026: reference/iterations.png): the same 5 and s
    * redrawn as the sheet draws them, measured in this mark space (IoU 0.88 against the twenty cells' warm letters).
-   * A second set: PATHS above stays the classic mark. Widths are the sheet's, reached at the standard weight 0.75.
+   * A second set: PATHS above stays the classic mark. The widths are the sheet's shape (heavier bowl, tapering
+   * terminal); they are drawn at the family's line weight on average, so a weight is one line weight from the first
+   * frame to the last (the artist, 23 Oct 2026: "the .75 line weight is consistently the line weight the entire time").
    *   bar   a flat-topped slab, its end cut by the preset's blade (straight or bowed)
    *   body  stem, foot, bowl of varying weight, a terminal that tapers to a near-vertical cut
    *   s     heavier on its lower right, its tail cut "/" like the bar's blade
@@ -131,6 +133,11 @@
       profile: [[0, 95], [0.12, 104], [0.28, 118], [0.45, 114], [0.6, 124], [0.75, 110], [0.88, 108], [1, 108]] }
   };
   for (const k of Object.keys(LETTERS5S)) { const g = LETTERS5S[k]; if (g.profile) g.profile = g.profile.map(([u, w]) => [u, w / g.width]); }
+  // a letter's average width along its length (mark units): the look draws it at the family's line width on average
+  function sheetMean(G) {
+    if (G.mean == null) { let s = 0; for (let i = 0; i <= 200; i++) s += G.profile ? profileAt(G.profile, i / 200) : 1; G.mean = G.width * s / 201; }
+    return G.mean;
+  }
   // the letters' stops, sampled along the new centrelines: the vivid cells' median, and the pastel cells'
   const ITER_STOPS = {
     vivid: {
@@ -953,14 +960,14 @@
 
   /* the Iterations look, while it draws (Motion.render, or Marks.mark with a look palette): LOOK is that palette's .look.
    * stroke() then draws a tagged bar, body or s as the sheet's letter at the same n: its profile, caps and cut, its
-   * width scaled by the family's (so weight 0.75 is the sheet's weight), the glass's veil over the bowl's edge after the body */
+   * width scaled so its average is the family's line width, the glass's veil over the bowl's edge after the body */
   let LOOK = null;
   const lookPts = new Map();
   function lookStroke(ctx, tag, o) {
     const G = LETTERS5S[tag.name], key = tag.name + ':' + tag.n;
     let pts = lookPts.get(key);
     if (!pts) { pts = points(PATHS5S[tag.name], tag.n); lookPts.set(key, pts); }
-    const k = num(o.width, 100) / (WIDTHS[tag.name] * 0.75);
+    const k = num(o.width, 100) / sheetMean(G);
     stroke(ctx, pts, Object.assign({}, o, { width: G.width * k, profile: G.profile, caps: G.caps, cut: tag.name === 'bar' ? LOOK.cut : G.cut, letter: null }));
     if (tag.name === 'body') veil(ctx, o, k, 1);
   }
@@ -1006,11 +1013,11 @@
     const off = Math.hypot(here.e[0] - rest.e[0], here.e[1] - rest.e[1]);
     return { here, rest, s, th, off };
   }
-  // the sheet's width of a letter at u over its classic width (at the standard weight): 1 outside the look. For a family
+  // a letter's width at u in the look over the family's line width (its average is 1): 1 outside the look. For a family
   // that places things against a letter's edge (strands side by side, an outline), so they keep to the heavier letter
   function lookWidth(name, u) {
     const G = LOOK && LETTERS5S[name];
-    return G ? G.width * (G.profile ? profileAt(G.profile, clamp01(num(u, 0))) : 1) / (WIDTHS[name] * 0.75) : 1;
+    return G ? G.width * (G.profile ? profileAt(G.profile, clamp01(num(u, 0))) : 1) / sheetMean(G) : 1;
   }
   function letterStroke(ctx, pts, o) {
     const L = o.letter, mixed = Array.isArray(L) && typeof L[1] !== 'number';   // [a, b, m], not [name, u0, u1]
@@ -1021,13 +1028,13 @@
     const ratio = (S, u) => {
       if (!S) return 1;
       const G = LETTERS5S[S[0]], v = S[1] + (S[2] - S[1]) * u;
-      return G.width * (G.profile ? profileAt(G.profile, v) : 1) / (WIDTHS[S[0]] * 0.75);
+      return G.width * (G.profile ? profileAt(G.profile, v) : 1) / sheetMean(G);
     };
     // a whole letter: its own profile; a stretch or a morph: sampled along the array, with every knot of the letters' own
     const only = m <= 0 ? A : m >= 1 ? B : null;
     let profile;
     if (only && only[1] === 0 && only[2] === 1) {
-      const G = LETTERS5S[only[0]], r = G.width / (WIDTHS[only[0]] * 0.75);
+      const G = LETTERS5S[only[0]], r = G.width / sheetMean(G);
       profile = G.profile ? G.profile.map(([v, k]) => [v, k * r]) : [[0, r], [1, r]];
     } else {
       const us = [];
@@ -1057,7 +1064,7 @@
     const f = restFit(V, pts), still = f.off < 0.5 && Math.abs(f.s - 1) < 0.01 && Math.abs(f.th) < 0.01;
     ctx.save();
     if (!still) { ctx.translate(f.here.e[0], f.here.e[1]); ctx.rotate(f.th); ctx.scale(f.s, f.s); ctx.translate(-f.rest.e[0], -f.rest.e[1]); }
-    veil(ctx, o, num(o.width, 100) / (WIDTHS.body * 0.75), V === A ? 1 - smoothstep(0, 0.5, m) : smoothstep(0.5, 1, m));   // gone mid-morph
+    veil(ctx, o, num(o.width, 100) / sheetMean(LETTERS5S.body), V === A ? 1 - smoothstep(0, 0.5, m) : smoothstep(0.5, 1, m));   // gone mid-morph
     ctx.restore();
   }
 
