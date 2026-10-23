@@ -329,10 +329,11 @@
       e.preventDefault();
     });
     // A focused control (a node, Your ground) is panned into view, centred on itself, clear of the foot's buttons.
+    // Not for a press's own focus (a mouse focuses on press): the pan would move the button from under the release.
     let refocus = false;
     map.addEventListener('focusin', (e) => {
       const b = e.target;
-      if (b === map || refocus) return;
+      if (b === map || refocus || ptrs.size) return;
       paint();
       const r = b.getBoundingClientRect(), m = map.getBoundingClientRect();
       if (r.left < m.left + 8 || r.right > m.right - 8 || r.top < m.top + 8 || r.bottom > m.bottom - footH())

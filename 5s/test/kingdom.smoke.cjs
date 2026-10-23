@@ -9,8 +9,8 @@
  * arrows, Home and Tab; nodes of 24 px or more at zoom 0.5; the cloud's words; no console errors; a
  * p95 frame of at most 20 ms while panning with the CPU slowed 4x. Then reduced motion, nothing judged,
  * a new area found and the focus kept through a theme change; a short map (a phone on its side); Tab
- * panning to Your ground and the nodes at 3, 8 and 30 won; touch on the foot (a pinch, a drag, a tap)
- * and three fingers; the title at 320.
+ * panning to Your ground and the nodes at 3, 8 and 30 won; a mouse click on them in the foot's band or at
+ * the map's edge; touch on the foot (a pinch, a drag, a tap) and three fingers; the title at 320.
  *   SHOTS   folder for screenshots (default <tmp>/5s-kingdom-shots)
  *   FONTS   optional folder holding css.css and the font files (named by md5 of url + "\n"), for true type in
  *           shots and in the title's check (without it the title is measured in a fallback font)
@@ -338,6 +338,33 @@ test('Tab pans to what it focuses, Your ground too: 3, 8 and 30 won, at the open
       await page.keyboard.press('Tab'); await sleep(60);
       assert.equal(await page.evaluate(() => document.activeElement.dataset.n), '1');
       assert.equal(await clear(page, '[data-n="1"]'), '', 'level 1 in view' + at);
+    }
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+});
+
+// A mouse press focuses the button before its click (Chromium, Firefox off the Mac): if that focus panned the map,
+// the release would land off the button and the click would be lost.
+test('a mouse click on Your ground or a node in the foot\'s band or cut by the map\'s edge lands on it, eased and under reduced motion', async () => {
+  for (const reduce of [false, true]) {
+    const { ctx, page, errors } = await open({ w: 1280, h: 800, reduce }, 'won=3');
+    for (const [sel, want] of [['.fk-homel', 'home'], ['[data-n="1"]', 'level:1']]) {
+      for (const where of ['foot band', 'left edge']) {
+        // Drag from the map's empty top right until the control sits 30 px above the map's bottom at x 120, or 3 px past its left edge.
+        const m = await box(page, '.fk-map'), b = await box(page, sel), s = { x: m.x + m.width - 60, y: m.y + 40 };
+        const to = where === 'foot band' ? { x: m.x + 120 + b.width / 2, y: m.y + m.height - 30 } : { x: m.x - 3 + b.width / 2, y: m.y + m.height / 2 - 150 };
+        await page.mouse.move(s.x, s.y); await page.mouse.down();
+        await page.mouse.move(s.x + to.x - mid(b).x, s.y + to.y - mid(b).y, { steps: 20 }); await page.mouse.up();
+        await sleep(500);
+        const at = mid(await box(page, sel)), tag = sel + ', ' + where + (reduce ? ', reduced motion' : '');
+        at.x = Math.max(m.x + 2, at.x);
+        assert.ok(await page.evaluate(([x, y, q]) => !!document.elementFromPoint(x, y).closest(q), [at.x, at.y, sel]), 'under the pointer: ' + tag);
+        const n0 = await page.evaluate(() => window.harness.calls.length);
+        await page.mouse.move(at.x, at.y); await page.mouse.down(); await sleep(90); await page.mouse.up();
+        await sleep(100);
+        assert.deepEqual(await page.evaluate((k) => window.harness.calls.slice(k).map((c) => c.join(':')), n0), [want], 'a click on ' + tag);
+      }
     }
     assert.deepEqual(errors, []);
     await ctx.close();
