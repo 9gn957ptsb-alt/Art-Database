@@ -920,6 +920,9 @@
     var dir = dirAt(px, py), hit = pick(dir);
     // a pearl lying within his reach, tapped with the sight lowered, is back in his hand (the throw, 20 Oct 2026)
     if (!Hd && takeTapped(dir, hit)) { return; }
+    // a coin: what it is and where (it is taken by passing through it, not by a tap)
+    var cq = coinAt(dir, hit);
+    if (cq) { say(coinWords(cq)); return; }
     if (!hit) { return; }
     // A block kept for the next swing is turned to at this one's strike, not now.
     var kept = !Hd && !!swing && !swing.ret && swing.u < 1.5 && !hit.painting && hit.b !== B.NOTE && !(forcePlace || mode === "place");
@@ -2230,6 +2233,126 @@
     if (el) { el.textContent = "Pearls " + carried + " of " + THROW.CARRY; el.hidden = !sight.up && !pearls.length; }
   }
 
+  /* ---- the ten coins ---------------------------------------------------------------------------------------------
+     The artist, 21 Oct 2026: "I want you to point coins like sonic the video game all through the space, inside and
+     outside the architecture ... Make sure I am able to collect the coins in [either] the holographic mode or 3rd person
+     mode and that you keep a tally of my coins ... have collecting all 10 coins equivalent to achieving building the
+     rocket ship and blasting off into space—it's an alternative way of beating the game".
+     Where the ten lie is place.js's rule (coins). A coin is his head's outline built of his cells, as a Sonic ring is a
+     ring: flat, coinRO cells out (his head's radius in his unit: round(0.2457 / 0.0344) = 7), its hole a thrown
+     pearl's (THROW.RU, 3, so a pearl passes through it), COIN.T cells thick (2, the step below the pearl's 3 on the
+     ladder 1, 2, 3, 5), in the guitar rib's gold. All ten turn together once in two beats about the upright, edge on four
+     times in two beats (4.2 a second would be a turn a beat, over the three flashes a second of WCAG 2.3.1; this is
+     2.1), and stand still, face to the camera, under reduced motion. The body takes one its box passes through; the
+     hologram one its head's sphere sweeps through (the line from where it was last frame to where it is, so that at
+     22.5 m/s it does not fly past). Nothing is taken while the body follows the head, in the films or at the launch.
+     The tally is page text in the header and in Notes; the tenth builds the rocket (ready, buildRocket). */
+  var COIN = { N: 10, T: 2, SPIN: 2 }, coins = [], got = [], coinCh = null, headWas = null;
+  function coinRO() { return round(PEARL.headR / unitH()); }
+  function coinR() { return coinRO() * unitH(); }
+  function coinGrid() {
+    if (!me3 || !gl) { return; }
+    var RO = coinRO(), RI = THROW.RU, n = 2 * RO, T = COIN.T, ids = new Uint8Array(n * n * T), blocks = [], id = (me3.body.paletteIds.rib || [1])[0];
+    for (var y = 0; y < n; y += 1) {
+      for (var z = 0; z < T; z += 1) {
+        for (var x = 0; x < n; x += 1) {
+          var r = hypot(x + 0.5 - RO, y + 0.5 - RO);
+          if (r > RO || r < RI) { continue; }
+          ids[(y * T + z) * n + x] = id; blocks.push([x, y, z, id]);
+        }
+      }
+    }
+    coinCh = meshBlocks(blocks);
+    coinCh.tex = voxTexture(ids, n, n, T); coinCh.n = n; coinCh.units = blocks.length;
+  }
+  // The pieces found, or the ten coins taken: either builds the rocket.
+  function ready() { return found.length === 4 || (coins.length > 0 && got.length >= COIN.N); }
+  function left() { return coins.filter(function (q) { return got.indexOf(q.id) < 0; }); }
+  // A coin set where a block now stands (the homage's, the studies'): raised onto it.
+  function seatCoins() {
+    coins.forEach(function (q) {
+      var x = floor(q.x), z = floor(q.z), y = q.kind === "pool" ? q.y - PEARL.headR : q.y - PEARL.headY;
+      while (w.SOLID[w.get(x, floor(y), z)] && w.get(x, floor(y), z) !== B.LEAVES && y < w.SY - 3) { y += 1; q.y += 1; }
+    });
+  }
+  function coinsStep() {
+    if (!coins.length || intro || launched || (Hd && Hd.phase === "follow")) { headWas = null; return; }
+    var R = coinR(), now = Hd && Hd.phase === "free" ? [Hd.x, Hd.y, Hd.z] : null, was = headWas || now;
+    left().forEach(function (q) {
+      var take = false;
+      if (now) {
+        // the head's sphere swept from where it was to where it is
+        var d = [now[0] - was[0], now[1] - was[1], now[2] - was[2]], L2 = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+        var t = L2 > 0 ? clampV(((q.x - was[0]) * d[0] + (q.y - was[1]) * d[1] + (q.z - was[2]) * d[2]) / L2, 0, 1) : 0;
+        take = hypot(was[0] + d[0] * t - q.x, was[1] + d[1] * t - q.y, was[2] + d[2] * t - q.z) <= PEARL.headR + R;
+      } else if (!Hd || Hd.phase === "lift") {
+        // his box (boxHits' half width, feet to hat top)
+        take = hypot(q.x - P.x, q.z - P.z) <= 0.3 + R && q.y >= P.y - R && q.y <= P.y + PEARL.top + R;
+      }
+      if (take) { takeCoin(q); }
+    });
+    headWas = now;
+  }
+  function takeCoin(q) {
+    if (got.indexOf(q.id) >= 0) { return; }
+    got.push(q.id);
+    store();
+    drawCoins();
+    drawPieces();
+    var n = got.length, rest = left();
+    if (n < COIN.N) { say("A coin, " + n + " of " + COIN.N + ": " + q.text + "." + (rest.length === 1 ? " One left: " + rest[0].text + "." : ""), true); return; }
+    if (built) { say("Ten coins: the rocket already stands.", true); return; }
+    buildRocket(true);
+    say("The tenth coin: the rocket stands on the wreck's ground. Launch when you are clear." + (Hd ? " Leave the hologram to launch: your body rides it." : ""), true);
+  }
+  // The tally, as page text in the header.
+  function drawCoins() {
+    var el = $("coins");
+    if (el) { el.textContent = "Coins " + got.length + " of " + COIN.N; el.hidden = !coins.length; }
+  }
+  // The coin a ray from the eye meets first, if nothing nearer stands in its way (hit, as pick gives it), within LOOK.
+  function coinAt(dir, hit) {
+    var R = coinR(), best = null;
+    left().forEach(function (q) {
+      var o = [q.x - eye[0], q.y - eye[1], q.z - eye[2]], b = o[0] * dir[0] + o[1] * dir[1] + o[2] * dir[2], c = o[0] * o[0] + o[1] * o[1] + o[2] * o[2] - R * R, h = b * b - c;
+      if (h < 0 || b < 0) { return; }
+      var t = b - Math.sqrt(h), at = reachFrom();
+      if ((hit && hit.t < t) || hypot(q.x - at[0], q.y - at[1], q.z - at[2]) > LOOK) { return; }
+      if (!best || t < best.t) { best = { q: q, t: t }; }
+    });
+    return best && best.q;
+  }
+  function coinsLine() {
+    var pool = coins.some(function (q) { return q.kind === "pool"; });
+    return "Ten coins lie in and round " + setting.name + ": by its largest works, on the way in, on its highest roof, " + (pool ? "over its pool" : "on its grass") +
+      " and on the crown of your tree. Ten build the rocket, as the four pieces do.";
+  }
+  function coinWords(q) { return upper(q.text) + ". A ring of the unit as wide as your head, its hole a pearl's. " + got.length + " of " + COIN.N + " taken."; }
+  function drawCoins3(now) {
+    if (!coinCh || !me3) { return; }
+    var list = left();
+    if (!list.length) { return; }
+    var PB = window.PearlBody, h = unitH(), n = coinCh.n / 2, a = stillMotion.matches ? (camLast ? camLast.yaw : 0) : 2 * Math.PI * now / (COIN.SPIN * BEAT * 1000);
+    gl.useProgram(prog);
+    gl.uniform4fv(U.uPal, me3.pal);
+    gl.uniform1f(U.uPx, pxW / h); gl.uniform2f(U.uNear, 0, 0);
+    gl.uniform3f(U.uOff, 0, 0, 0); gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform1i(U.uFloor, 0);
+    gl.uniform3i(U.uDim, coinCh.n, coinCh.n, COIN.T);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, coinCh.tex); gl.activeTexture(gl.TEXTURE0);
+    gl.bindVertexArray(coinCh.vao);
+    list.forEach(function (q) {
+      if (abs(q.x - eye[0]) > FAR || abs(q.z - eye[2]) > FAR) { return; }
+      var m = PB.mul(PB.T(q.x, q.y, q.z), PB.mul(PB.RY(-a), PB.mul(PB.S(h), PB.T(-n, -n, -COIN.T / 2))));
+      gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
+      gl.drawElements(gl.TRIANGLES, coinCh.count, gl.UNSIGNED_INT, 0);
+    });
+    // the place's own again, as drawPearls leaves them
+    gl.uniform4fv(U.uPal, worldPal); gl.uniformMatrix4fv(U.uM, false, ID4); gl.uniformMatrix4fv(U.uInvM, false, ID4);
+    gl.uniform1f(U.uPx, pxW); gl.uniform2f(U.uNear, NEAR_F[0], NEAR_F[1]); gl.uniform1i(U.uFloor, 1); gl.uniform3i(U.uDim, w.SX, w.SY, w.SZ);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex); gl.activeTexture(gl.TEXTURE0);
+    gl.bindVertexArray(null);
+  }
+
   /* ---- Mr Pearl drawn: his body of the unit through the blocks' own shader, his head the true sphere ------ */
 
   /* His body is the game's own figure seven golden steps down (pearl.js, from pearl-body.json): ten small grids,
@@ -2286,7 +2409,7 @@
     PEARL = { headY: body.head.centre[1], headR: body.head.radius, top: body.top, hatReach: body.hatReach || PEARL.hatReach,
               hatDrop: body.hatDrop || 0, leg: body.walk.L_m || PEARL.leg };
     measure();
-    pearlGrid();
+    pearlGrid(); coinGrid();
   }
   // The hat, with the head gone, falls straight down onto the bare neck as anything falls here (25 m/s/s), the
   // form's own drop (option B: nothing built rides with the one perfect form); the head coming home picks it up.
@@ -2467,7 +2590,7 @@
       else { physics(dt, hand); holoLeft = min(HOLO_T, holoLeft + HOLO_REFILL * dt); }
       swingStep(dt); sightStep(dt, now);
     }
-    shardsStep(dt); if (!intro && !launched) { stepPearls(dt); }
+    shardsStep(dt); if (!intro && !launched) { stepPearls(dt); coinsStep(); }
     pump(intro ? 14 : 6);
     var cw = canvas.width, chh = canvas.height, cam = camera(now, dt, eyeH, cw / chh);
     eye = cam.e;
@@ -2525,7 +2648,7 @@
       if (launched && lift > 300 && !ended) { ended = true; finish(); }
       rocketLift = lift;
     }
-    drawPearl(now); drawPearls(now);
+    drawPearl(now); drawPearls(now); drawCoins3(now);
     drawShards();
     if (skyFig) {
       gl.useProgram(figProg);
@@ -2615,7 +2738,7 @@
   // to it ended (both are Hd's), and where you woke not his eyes again until you have walked off.
   function lieDown(lines) {
     var at = underTree();
-    swing = swingNext = null; shards = []; swoosh = [];
+    swing = swingNext = null; shards = []; swoosh = []; headWas = null;
     dropSight(); pearls = []; carried = THROW.CARRY; drawCarry();   // he comes to with his five pearls, none lying about
     if (Hd) { Hd = null; pov = "third"; delete document.body.dataset.holo; drawViews(); }
     if (skyFig) { skyFig.away = false; }
@@ -2641,10 +2764,13 @@
     var behind = adv.pieces.filter(function (p) { return p.hide.type === "work"; }).length;
     // Straight in, the world first: the notes are a tap away.
     var open = !CFG.play || window.innerWidth >= 1400;
-    say((behind === 4 ? "The four pieces are behind four of the works inside. Your notes say which; there are more notes in the rooms." :
+    var line = ((behind === 4 ? "The four pieces are behind four of the works inside. Your notes say which; there are more notes in the rooms." :
          behind === 1 ? "One piece is behind a work inside. The wreck's log says where the others fell." :
          behind ? behind + " pieces are behind works inside. The wreck's log says where the others fell." :
          "Four pieces of your rocket are somewhere in " + setting.name + ". The notes show where they fell.") + (open ? "" : " Tap Notes to read it."));
+    say(line);
+    // and then the coins, once the first has been read
+    if (coins.length && got.length < COIN.N) { setTimeout(function () { if (!intro) { say(coinsLine()); } }, 2600 + line.length * 35); }
     if (open) { $("notes").hidden = false; }
   }
 
@@ -2726,6 +2852,9 @@
       // (a piece a pearl rang on first)
       else if (lying.length) { lying.sort(function (a, b) { return (marked[b.k] ? 1 : 0) - (marked[a.k] ? 1 : 0) || dist(a) - dist(b); }); target = lying[0]; label = adv.pieces[target.k].name.replace(/^The /, ""); }
       else if (found.length < 4) { text = "Behind which work? Read your notes"; }
+      // a coin nearer than where that points (once the pieces are all found, the wreck first)
+      var cn = left().map(function (q) { return { x: q.x - 0.5, y: q.y - PEARL.headY, z: q.z - 0.5 }; }).sort(function (a, b) { return dist(a) - dist(b); })[0];
+      if (cn && !(found.length === 4 && !built) && (target ? dist(cn) < dist(target) : !text)) { target = cn; label = "A coin"; }
       if (target && inRoom(target.x + 0.5, target.y, target.z + 0.5) && !inBuilding() && place.door) { target = { x: place.door.x - 0.5, y: place.door.y, z: place.door.z - 0.5 }; label = "The way in"; }
       if (target) {
         var dx = target.x + 0.5 - m.x, dz = target.z + 0.5 - m.z, dy = target.y - m.y;
@@ -2740,7 +2869,9 @@
     // What the crosshair is on (on a computer): a work's title, a note.
     if (!touchy && tick % 3 === 0) {
       var tag = $("tag"), hit = !intro && !launched && vp && !sightOn() ? pick(lookDir(camLast.yaw, camLast.pitch)) : null, tt = "";
-      if (hit && hit.painting) { tt = (hit.painting.f.title || "A work") + (looked[hit.painting.f.id] ? " · looked behind" : " · click to read its label"); }
+      var cq = hit !== undefined && vp && !intro && !launched && !sightOn() ? coinAt(lookDir(camLast.yaw, camLast.pitch), hit) : null;
+      if (cq) { tt = "A coin · " + cq.text + " · click to read it"; }
+      else if (hit && hit.painting) { tt = (hit.painting.f.title || "A work") + (looked[hit.painting.f.id] ? " · looked behind" : " · click to read its label"); }
       else if (hit && hit.b === B.NOTE && hit.r <= REACH) { tt = "A note · click to read it"; }
       else if (hit && hit.b !== undefined) { tt = (window.Homage && (Homage.label(homage, hit.x, hit.y, hit.z) || Homage.label(studies, hit.x, hit.y, hit.z))) || partText(Pl.partAt(place, hit.x, hit.y, hit.z)); }
       tag.hidden = !tt;
@@ -2793,7 +2924,7 @@
     return ch;
   }
   function buildRocket(quiet) {
-    if ((built && !quiet) || found.length < 4 || (Hd && !quiet)) { return; }
+    if ((built && !quiet) || !ready() || (Hd && !quiet)) { return; }
     built = true;
     store();
     // The wreck's blocks cleared away, and the rocket stood there in a mesh of its own, so it can rise:
@@ -2841,7 +2972,7 @@
       end.querySelector(".lede").textContent = "The rocket built from the pieces you found in " + setting.name + " is climbing out of the air. Mars is next.";
     } else {
       end.querySelector("h2").textContent = "You found the way out of " + name + ".";
-      end.querySelector(".lede").textContent = "The rocket built from the pieces you found " + (setting.kind === "museum" ? "behind its works" : "in and round it") +
+      end.querySelector(".lede").textContent = (found.length < 4 ? "The rocket your ten coins built" : "The rocket built from the pieces you found " + (setting.kind === "museum" ? "behind its works" : "in and round it")) +
         " is climbing out of the air over " + (setting.city || setting.where) + ". There are more escapes in the site: another museum, another building, " +
         (setting.kind === "form" ? "another new form, " : "") + "the same place by another seed.";
     }
@@ -2880,6 +3011,7 @@
       return '<li data-got="' + got + '"><b>' + esc(p.name) + '</b>' + lines.join("") + (status ? '<span class="more">' + status + '</span>' : '') + '</li>';
     }).join("");
     $("notes-list").innerHTML = '<ol>' + html + '</ol>' + (total ? '<p class="count">Notes read: ' + read + ' of ' + total + '</p>' : '') +
+      (coins.length ? '<p class="count">Coins: ' + got.length + ' of ' + COIN.N + (got.length < COIN.N ? ', and ten build the rocket' : '') + '</p>' : '') +
       (setting.recipe ? '<p class="made"><b>What this building is made of</b>' + esc(setting.recipe) + '</p>' : '');
   }
   function drawHotbar() {
@@ -2899,7 +3031,7 @@
 
   function advKey() { return setting.kind + ":" + setting.slug + ":" + seed; }
   function store() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ key: advKey(), found: found, known: known, looked: looked, alarms: alarms, built: built, done: !!launched, escaped: escaped })); }
+    try { localStorage.setItem(SAVE, JSON.stringify({ key: advKey(), found: found, known: known, looked: looked, alarms: alarms, built: built, done: !!launched, escaped: escaped, coins: got })); }
     catch (e) { /* kept only while the page is open */ }
   }
   function saved() {
@@ -3305,12 +3437,17 @@
       adv = Adv.make(setting, sd, { works: hung.map(function (p) { return p.work; }), pool: !!(place.M && place.M.pool.length) });
       var hidden = Pl.hide(place, adv, hung, sd);
       paintings = hung; pieces = hidden.pieces; notes = hidden.notes;
+      // The ten coins (a building or a new form; a city has none yet), laid before the homage so they are the same
+      // whether it is there or not, then raised onto whatever the homage and the studies set where one lies.
+      coins = place.M && Pl.coins ? Pl.coins(place, hung, { wake: underTree(), headY: PEARL.headY, headR: PEARL.headR, reach: REACH, name: setting.name }) : [];
+      got = []; headWas = null;
       // The homage's blocks, then the place's grid sent for the walk, with the pieces and the notes in it. A world
       // escaped to has none, even come back to.
       var was = saved();
       if (was && was.key === advKey() && was.escaped) { escaped = true; }
       homage = homageData && window.Homage && !escaped ? Homage.plan(place, homageData, { wake: underTree(), yaw: wakeYaw(), eye: EYE, B: B }) : null;
       studies = studiesData && window.Homage && Homage.row ? Homage.row(place, studiesData, { wake: underTree(), eye: EYE, B: B, avoid: homage && homage.box }) : null;
+      seatCoins();
       voxTex = voxTexture(w.data, w.SX, w.SY, w.SZ, voxTex);
       byPlane = {};
       paintings.forEach(function (p) {
@@ -3333,16 +3470,17 @@
       var s = saved();
       if (s && s.key === advKey()) {
         found = s.found || []; known = s.known || {}; looked = s.looked || {}; alarms = s.alarms || 0;
+        got = (s.coins || []).filter(function (id) { return coins.some(function (q) { return q.id === id; }); });
         pieces.forEach(function (pc) { if (found.indexOf(pc.k) >= 0) { w.set(pc.x, pc.y, pc.z, B.AIR); remeshAt(pc.x, pc.z); } });
         notes.forEach(function (n) { if (known[n.k + ":" + n.i]) { w.set(n.x, n.y, n.z, B.AIR); remeshAt(n.x, n.z); } });
-        if (s.built && found.length === 4) { buildRocket(true); }
+        if (s.built && ready()) { buildRocket(true); }
       }
       store();
       $("start").hidden = true;
       $("veil").hidden = true;
       document.title = adv.title + " · " + NAME;
       holoTop = place.crash.y + Math.sqrt(FAR * FAR - (w.SX * w.SX + w.SZ * w.SZ) / 4);
-      drawPieces(); drawHotbar(); setMode("break"); where(); drawViews();
+      drawPieces(); drawCoins(); drawHotbar(); setMode("break"); where(); drawViews();
       lieDown(adv.intro);
       requestAnimationFrame(frame);
     });
@@ -3459,6 +3597,7 @@
              holdSwing: function (u) { if (swing) { swing.hold = u; } }, shards: function () { return shards.map(function (q) { return { c: q.c, v: q.v, t: q.t, lies: !!q.lies }; }); },
              screenOf: function (p) { var r = canvas.getBoundingClientRect(), q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [r.left + (q[0] / q[3] * 0.5 + 0.5) * r.width, r.top + (0.5 - q[1] / q[3] * 0.5) * r.height] : null; },
              farEnd: function () { return swing && !swing.ret && FAR_END ? farEndAt(swing, swing.u) : null; }, smashConsts: function () { return { BEAT: BEAT, SWING: SWING, LEAP: LEAP, COIL: COIL, ARMS_UP: ARMS_UP, E0: E0, Y_SH: Y_SH, FAR_END: FAR_END }; },
+             coins: function () { return { list: coins, got: got.slice(), R: coinR(), RO: coinRO(), units: coinCh && coinCh.units }; }, takeCoin: function (i) { takeCoin(coins[i]); },
              stone: function () { return onStone; }, px: function () { return pxW; }, putOut: putOut,
              bring: bringBody, home: goHome, harm: harmBody, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; },
              pearl: function () { return me3 && { ms: me3.ms, cells: me3.body.cells, parts: me3.parts.length, cell: me3.body.cell, PEARL: PEARL, throwArm: me3.body.throwArm }; },

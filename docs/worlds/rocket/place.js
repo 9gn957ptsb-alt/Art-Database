@@ -377,9 +377,11 @@
 
   /* ---- a city ------------------------------------------------------------------ */
 
-  // The crash: a park near the middle with water and a tall building within reach, if the city has them.
+  // The crash: a park near the middle with water and a tall building within reach, if the city has them. The counts
+  // of buildings asked for were set for a city 384 across; in a smaller one, as much fewer as its window is smaller.
   function cityPark(G, SX) {
     var n = G.n, best = -1, bestS = -1e9, R = floor(SX / 2 / G.c), i, j, di, dj;
+    var R0 = floor(384 / 2 / G.c), share = Math.pow((2 * R - 3) / (2 * R0 - 3), 2), FEW = 40 * share, MANY = 140 * share;
     for (j = 4; j < n - 4; j += 2) {
       for (i = 4; i < n - 4; i += 2) {
         if (G.K(i, j) !== "g") { continue; }
@@ -394,15 +396,20 @@
             if (k2 === "b") { blds += 1; var st = G.storeys(i + di, j + dj); if (st >= 4 && st <= 7 && abs(di) + abs(dj) < R) { mid += 1; } }
           }
         }
-        var sc = min(140, blds) + min(10, water) * 5 + min(6, mid) * 4 + greens - hypot(i - n / 2, j - n / 2) * 0.1;
-        if (greens >= 5 && blds >= 40 && sc > bestS) { bestS = sc; best = j * n + i; }
+        var sc = min(MANY, blds) / share + min(10, water) * 5 + min(6, mid) * 4 + greens - hypot(i - n / 2, j - n / 2) * 0.1;
+        if (greens >= 5 && blds >= FEW && sc > bestS) { bestS = sc; best = j * n + i; }
       }
     }
     return best < 0 ? floor(n / 2) * n + floor(n / 2) : best;
   }
 
+  /* How far the world reaches round what it is made for (artist, 21 Oct 2026: "cut the surrounding space down in half
+     for now to make the development of it more efficient"): a city half its 384, a building's place its model and half
+     the ground it had round it, S0 = 256, or a museum's 320 to 512, to the next 16 (a chunk), never more than before. */
+  var CITY = 192;
+  function halfSurround(S0, span) { return min(S0, ceil((S0 + span) / 2 / 16) * 16); }
   function makeCity(g, forms) {
-    var w = new World(384, 384), SX = w.SX, SZ = w.SZ, G = readGround(g);
+    var w = new World(CITY, CITY), SX = w.SX, SZ = w.SZ, G = readGround(g);
     var best = cityPark(G, SX), ci = best % G.n, cj = floor(best / G.n);
     var ox = (ci + 0.5) * G.c - G.half - SX / 2, oz = (cj + 0.5) * G.c - G.half - SZ / 2;
     var hAt = fillGround(w, G, function (x, z) { return [x + ox, z + oz]; }, G.soft[best],
@@ -970,7 +977,7 @@
     if (d.kind === "form") { spec = { site: [d.form.nx, d.form.ny], ground: d.form.ground, blocks: d.form, built: root.Forms.built(d.form) }; it = null; }
     var turn = it && it.grid ? it.grid.turn || 0 : 0, s = spec.site || [30, 30], a = turn * Math.PI / 180;
     var spanX = abs(Math.cos(a)) * s[0] + abs(Math.sin(a)) * s[1], spanZ = abs(Math.sin(a)) * s[0] + abs(Math.cos(a)) * s[1];
-    var size = d.kind === "museum" ? max(320, min(512, ceil((max(spanX, spanZ) + 200) / 16) * 16)) : 256;
+    var span = max(spanX, spanZ), size = halfSurround(d.kind === "museum" ? max(320, min(512, ceil((span + 200) / 16) * 16)) : 256, span);
     var w = new World(size, size), F = frame(w, turn), G = readGround(d.ground), ex = s[0] / 2 + 15, ey = s[1] / 2 + 15;
     var hAt = fillGround(w, G, F.model, G.h(0, 0), { forms: d.forms, keepOut: function (x, z) { var m = F.model(x, z); return abs(m[0]) <= ex && abs(m[1]) <= ey; } });
     var M = placeModel(w, spec, F, hAt);
@@ -1228,7 +1235,7 @@
         for (x = 6; x < SX - 6; x += 1) {
           c = z * SX + x;
           var dc = hypot(x - cx, z - cz);
-          if (M ? (M.foot[c] || !M.plot[c] || dc < 8) : (dc < 35 || dc > 130)) { continue; }
+          if (M ? (M.foot[c] || !M.plot[c] || dc < 8) : (dc < 35 || dc > 130 * SX / 384)) { continue; }
           t = top[c];
           if (w.get(x, t, z) === B.GRASS && w.get(x, t + 1, z) === B.AIR && free(x, z)) { cand.push(c); }
         }
@@ -1255,7 +1262,7 @@
         for (x = 8; x < SX - 8; x += 2) {
           t = top[z * SX + x];
           var dp = hypot(x - cx, z - cz);
-          if (dp > 30 && dp < 120 && w.get(x, t, z) === B.PAVE && t - place.hAt(x, z) <= 0 && w.get(x, t + 1, z) === B.AIR && free(x, z)) { sq.push(z * SX + x); }
+          if (dp > 30 && dp < 120 * SX / 384 && w.get(x, t, z) === B.PAVE && t - place.hAt(x, z) <= 0 && w.get(x, t + 1, z) === B.AIR && free(x, z)) { sq.push(z * SX + x); }
         }
       }
       c = sq.length ? sq[floor(r() * sq.length)] : (cz - 50) * SX + cx - 60;
@@ -1264,7 +1271,7 @@
       return put(px, pt - 2, pz, "paving");
     }
     // The top of a tree out from the crash.
-    var trees = place.trees.filter(function (tr) { var d3 = hypot(tr.x - cx, tr.z - cz); return d3 > 40 && d3 < 140 && free(tr.x, tr.z); });
+    var trees = place.trees.filter(function (tr) { var d3 = hypot(tr.x - cx, tr.z - cz); return d3 > 40 && d3 < 140 * SX / 384 && free(tr.x, tr.z); });
     for (tries = 0; tries < 1 && !trees.length; tries += 1) { trees = place.trees.filter(function (tr) { return free(tr.x, tr.z); }); }
     var tr2 = trees[floor(r() * trees.length)] || place.tree;
     return put(tr2.x, tr2.top + 1, tr2.z, "tree");
@@ -1421,7 +1428,119 @@
     return null;
   }
 
+  /* ---- the ten coins ----------------------------------------------------------------
+     The artist, 21 Oct 2026: "I want you to point coins like sonic the video game all through the space, inside and
+     outside the architecture". Ten, by rule, no draw: the same place and the same works hung give the same ten.
+       inside, five: before the five largest works hung, where one stands to read a label (a step and a half out from
+         the wall at the work's middle), no two nearer than his reach; short of five, on the floors of the largest
+         rooms, as far as can be from the coins laid; no rooms, outside on the grass of the plot, as far again;
+       outside, five: at a third and two thirds of the way from where you wake to the door (Sonic's line of rings
+         leading in); on the highest roof of the building; over the middle of its pool, or with none on the grass of
+         its plot as far as can be from the coins laid; on the crown of the tree you wake under.
+     Each at the height of his head's centre over where he would stand (opt.headY), over water at the water's top
+     and his head's radius (opt.headR). Each says where it is and why (text). opt: wake, headY, headR, reach, name. */
+  function coins(place, paintings, opt) {
+    var w = place.w, SX = w.SX, SZ = w.SZ, M = place.M, out = [], reach = opt.reach || 6, hy = opt.headY, hr = opt.headR;
+    // (in three dimensions: a coin on the roof is not near one in the room under it)
+    var free = function (x, y, z) { return out.every(function (q) { return hypot(q.x - x, q.y - y, q.z - z) >= reach; }); };
+    var far = function (x, y, z) { return out.reduce(function (m, q) { return min(m, hypot(q.x - x, q.y - y, q.z - z)); }, 1e9); };
+    // where he would stand in a column, from y up: the first open cell with something solid under it
+    var stand = function (x, y, z) {
+      y = max(1, floor(y));
+      while (y > 1 && !w.SOLID[w.get(x, y - 1, z)]) { y -= 1; }
+      while (y < w.SY - 2 && w.SOLID[w.get(x, y, z)]) { y += 1; }
+      return y;
+    };
+    var inn = function () { return out.filter(function (q) { return q.kind === "work" || q.kind === "room" || q.kind === "grass"; }).length; };
+    var add = function (kind, x, y, z, text) { out.push({ id: kind + "@" + x + "," + z, kind: kind, x: x + 0.5, y: y, z: z + 0.5, text: text }); };
+    // the grass of the plot (or, in a city, round the crash), as far as can be from the coins laid
+    var grass = function (kind, text) {
+      var best = null, cx = place.crash.x, cz = place.crash.z;
+      for (var z = 4; z < SZ - 4; z += 2) {
+        for (var x = 4; x < SX - 4; x += 2) {
+          var c = z * SX + x;
+          if (M ? (M.foot[c] || !M.plot[c]) : hypot(x - cx, z - cz) > 40) { continue; }
+          if (hypot(x - cx, z - cz) < 8) { continue; }
+          var t = w.top[c];
+          if (w.get(x, t, z) !== B.GRASS || w.get(x, t + 1, z) !== B.AIR) { continue; }
+          var d = far(x + 0.5, t + 1 + hy, z + 0.5);
+          if (!best || d > best.d) { best = { d: d, x: x, z: z, y: t + 1 }; }
+        }
+      }
+      if (best) { add(kind, best.x, best.y + hy, best.z, text); }
+    };
+    // outside first, so the inside ones keep clear of them: the way in
+    var wk = opt.wake, door = place.door || (M ? { x: M.mid[0], z: M.mid[1] } : place.crash);
+    [1, 2].forEach(function (k) {
+      var px = wk.x + (door.x - wk.x) * k / 3, pz = wk.z + (door.z - wk.z) * k / 3, x = floor(px), z = floor(pz);
+      if (x < 1 || z < 1 || x >= SX - 1 || z >= SZ - 1) { return; }
+      add("way", x, w.top[z * SX + x] + 1 + hy, z, (k === 1 ? "a third" : "two thirds") + " of the way in, from your tree to the door");
+    });
+    // the highest roof
+    if (M) {
+      var roof = null, cx = place.crash.x, cz = place.crash.z;
+      for (var z = M.z0; z <= M.z1; z += 1) {
+        for (var x = M.x0; x <= M.x1; x += 1) {
+          var c = z * SX + x;
+          if (!M.foot[c]) { continue; }
+          var t = w.top[c], tb = w.get(x, t, z);
+          if (!w.SOLID[tb] || tb === B.GLASS || w.style[tb] === 3 || w.get(x, t + 1, z) !== B.AIR) { continue; }
+          var dd = hypot(x - cx, z - cz);
+          if (!roof || t > roof.t || (t === roof.t && dd < roof.d)) { roof = { t: t, d: dd, x: x, z: z }; }
+        }
+      }
+      if (roof) { add("roof", roof.x, roof.t + 1 + hy, roof.z, "on the highest roof of " + (opt.name || "the building") + ", " + (roof.t + 1 - M.base) + " m up"); }
+    }
+    // the pool's middle, or the grass
+    if (M && M.pool && M.pool.length) {
+      var mx = 0, mz = 0;
+      M.pool.forEach(function (c) { var x = c % SX; mx += x; mz += (c - x) / SX; });
+      mx /= M.pool.length; mz /= M.pool.length;
+      var pc = M.pool.reduce(function (b, c) { var x = c % SX, z = (c - x) / SX, d = hypot(x - mx, z - mz); return !b || d < b.d ? { d: d, x: x, z: z } : b; }, null);
+      var yw = min(SY - 2, w.top[pc.z * SX + pc.x] + 2);
+      while (yw > 0 && w.get(pc.x, yw, pc.z) !== B.WATER) { yw -= 1; }
+      add("pool", pc.x, yw + 1 + hr, pc.z, "over the middle of the pool");
+    }
+    // the crown of your tree
+    var tr = place.tree;
+    if (tr) { add("tree", tr.x, tr.top + 1 + hy, tr.z, "on the crown of the tree you woke under"); }
+    // inside: before the largest works
+    var hung = paintings.filter(function (p) { return p.room && p.f; }).slice().sort(function (a, b) { return (b.u1 - b.u0) * (b.y1 - b.y0) - (a.u1 - a.u0) * (a.y1 - a.y0); });
+    hung.forEach(function (p, i) {
+      if (inn() >= 5) { return; }
+      var u = floor((p.u0 + p.u1) / 2), FL = place.floors[p.room.floor];
+      for (var k = 1; k >= 0; k -= 1) {
+        var a = p.dir > 0 ? p.plane + k : p.plane - 1 - k, x = p.axis === "x" ? a : u, z = p.axis === "x" ? u : a;
+        if (x < 1 || z < 1 || x >= SX - 1 || z >= SZ - 1 || FL.cols[z * SX + x] !== p.room.idx) { continue; }
+        var y = stand(x, p.y0, z), f = p.f;
+        if (!free(x + 0.5, y + hy, z + 0.5)) { continue; }
+        var cm = f.wcm && f.hcm ? Math.round(f.hcm) + " × " + Math.round(f.wcm) + " cm" : "";
+        add("work", x, y + hy, z, "before " + (f.title || "a work") + " (" + [f.artist, f.year].filter(Boolean).join(", ") + ")" +
+            (i === 0 ? ", the largest work hung here" : ", the " + ["", "second", "third", "fourth", "fifth"][i] + " largest work hung here") + (cm ? ", " + cm : ""));
+        return;
+      }
+    });
+    var rooms = place.rooms.slice().sort(function (a, b) { return b.blocks.length - a.blocks.length; });
+    for (var r = 0; inn() < 5 && rooms.length && r < 20; r += 1) {
+      var rm = rooms[r % rooms.length], best = null;
+      rm.blocks.forEach(function (c, n) {
+        var x = c % SX, z = (c - x) / SX, d = far(x + 0.5, rm.fzs[n] + 1 + hy, z + 0.5);
+        if (!best || d > best.d) { best = { d: d, x: x, z: z, y: rm.fzs[n] + 1 }; }
+      });
+      if (best && best.d >= reach) { add("room", best.x, best.y + hy, best.z, "on the floor of " + (rm.name || "a room") + ", as far as it goes from the coins before it"); }
+      else if (r >= rooms.length) { break; }
+    }
+    while (inn() < 5) { var n0 = out.length; grass("grass", "on the grass round " + (opt.name || "the building") + ", as far as it goes from the coins before it"); if (out.length === n0) { break; } }
+    if (!out.some(function (q) { return q.kind === "pool"; })) { grass("garden", "on the grass round " + (opt.name || "the building") + ", as far as it goes from the coins before it"); }
+    var ORDER = ["work", "room", "grass", "way", "roof", "pool", "garden", "tree"];
+    out.sort(function (p, q) { return ORDER.indexOf(p.kind) - ORDER.indexOf(q.kind); });
+    // ids unique (two coins in one column take the second's height)
+    var seen = {};
+    out.forEach(function (q) { while (seen[q.id]) { q.id += "'"; } seen[q.id] = 1; });
+    return out;
+  }
+
   var api = { B: B, PIECE_IDS: PIECE_IDS, SY: SY, World: World, city: makeCity, place: makePlace, hangable: hangable,
-              hang: hang, hide: hide, roomAt: roomAt, partAt: partAt, rng: rng, hash: hash, sizeIn: sizeIn };
+              hang: hang, hide: hide, roomAt: roomAt, partAt: partAt, rng: rng, hash: hash, sizeIn: sizeIn, coins: coins };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.RocketPlace = api; }
 })(typeof window !== "undefined" ? window : this);

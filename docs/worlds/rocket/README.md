@@ -357,6 +357,34 @@ to three blocks), there without the sphere if it alone does not fit, and only th
 and of the homage. It stands in every world, not only the first. `node scripts/check_homage.js --studies` plans it
 with the homage in every place and checks each figure against its drawing from its stone.
 
+## Ten coins, and half the space
+
+The artist, 21 Oct 2026: "I want you to point coins like sonic the video game all through the space, inside and
+outside the architecture, also cut the surrounding space down in half for now to make the development of it more
+efficient. Make sure I am able to collect the coins in [either] the holographic mode or 3rd person mode and that you
+keep a tally of my coins ... For now have collecting all 10 coins equivalent to achieving building the rocket ship and
+blasting off into space—it's an alternative way of beating the game."
+
+**Half the space.** A building's or a new form's place is its model and half the ground it had round it
+(`place.js` `halfSurround`: 256 before, now (256 + the model's span) / 2 to the next 16, so 144 to 192 m across; a
+museum's 320–512 the same way); a city is 192 m, its crash park found by building counts scaled to the smaller
+window and its pieces' outer limits halved. The model's plot, the crash site, the homage and the studies' row are
+kept whole (`node scripts/check_coins.js` builds all 51 escapes and, with `--cities`, the 28 cities).
+
+**The coins** (`place.js` `coins`, by rule, no draw: the same place and works give the same ten): five inside, before
+the five largest works hung, where one stands to read a label, no two nearer than his reach (6 m), and short of five
+on the floors of the largest rooms, then the grass of the plot, each as far as can be from the coins before it; five
+outside, at a third and two thirds of the way from where you wake to the door (Sonic's line of rings leading in), on
+the building's highest roof, over the middle of its pool (or on its grass), and on the crown of your tree. Each is at
+his head's height over where he would stand and says where it is and why. A coin is his head's outline built of his
+cells, as a Sonic ring is a ring: 7 cells out (his head's radius in his unit), its hole a thrown pearl's (3), 2
+thick, in the guitar rib's gold; all ten turn once in two beats, still under reduced motion. The body takes one its
+box passes through; the hologram one its head's sphere sweeps through (from where it was the frame before, so it is
+not flown past); nothing is taken while the body follows the head. The tally is in the header ("Coins 3 of 10") and in
+Notes, the toast says each, the direction line points to a coin nearer than where it would point, a tap or the
+crosshair says what one is; the save keeps them. The tenth builds the rocket at the wreck, as the four pieces do
+(`ready`), and Launch is offered; the end says your ten coins built it.
+
 ## Escapes made from what the site holds
 
 Every adventure is generated, by a seed, from the art database the site has put together on
@@ -476,7 +504,7 @@ aiming; Escape lowers it.
   (`clueSet`), the adventure for a place and a seed (`make`).
 - `place.js` — the place in blocks, no DOM: the ground and its lots, the model, the rooms carved
   or hollowed and named, the crash site, the works hung (`hang`), the pieces hidden and the notes
-  left (`hide`), which section a block came from (`partAt`). Both run in Node, so a test can
+  left (`hide`), which section a block came from (`partAt`), the ten coins (`coins`). Both run in Node, so a test can
   build every place without a page.
 - `forms.js` — the new forms, no DOM: the sections sorted by what each can be (`load`), a
   section's blocks (`stampOf`), a roof drawn again at a new size (`roofOver`), a house of new
@@ -494,7 +522,7 @@ aiming; Escape lowers it.
   page's marks (`blockMark()`, the model seen down its diagonal), the figure in the sky
   (`figureBeams`, `drawnIn`, `placeSky`), the homage's figures (`HOM_VS`, `homageUpload`), the works'
   pictures, the hand, the opening, the labels and the notes, the sight (`raiseSight`, `sightCam`, `drawSight`) and
-  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the rocket, the start screen.
+  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the coins (`coinGrid`, `coinsStep`, `takeCoin`, `drawCoins3`), the rocket, the start screen.
 - `pearl.js` — Mr Pearl, no DOM: his body built of the unit from his form (`build`), the walk (`pose`, with the
   throwing arm, `act.right`, `act.fling`, and `build`'s `throwArm`; `phaseStep`), his place in the world (`place`),
   and his head's own program (`HEAD_FS`, the true sphere). `rocket.js` draws them (`drawPearl`) and holds the views
@@ -509,7 +537,7 @@ aiming; Escape lowers it.
   `python3 scripts/build_adventures.py`.
 
 Where you had got to in an adventure (the pieces found, the notes read, the works looked behind,
-the alarms) is kept in the browser, and comes back when you open the same adventure again.
+the alarms, the coins) is kept in the browser, and comes back when you open the same adventure again.
 
 ## Straight in: Rocket as an Artifact
 
