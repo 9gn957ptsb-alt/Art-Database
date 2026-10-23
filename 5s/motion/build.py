@@ -10,13 +10,18 @@ Writes
   dist/families.js  every families/*.js, pulse first (the reference family), then alphabetical; each file
                     is wrapped so a family that throws while registering cannot stop the ones after it
   dist/lab.js       the lab (copied)
+  dist/lab-markup.js  the lab's markup and lab.css as one script (window.MotionLabMarkup = {css, html}), for
+                    MotionLab.mount(host, {db}) to render the lab into a shadow root inside another page:
+                    the css with :root turned into :host and html/body into ":host, .lab", the html without the title, metas, links
+                    and scripts (the host page loads marks.js, families.js, lab-markup.js and lab.js itself)
   dist/logo.webp    copied from 5s/dist/logo.webp (the app's cropped logo) when it is there
   dist/dev.html     the page wrapped in the skeleton the Artifact platform adds at publish, for local testing
 
-Publish dist/index.html with files {marks.js, families.js, lab.js, logo.webp} and
+Publish dist/index.html with files {marks.js, families.js, lab.js, logo.webp} (lab-markup.js is for hosts) and
 capabilities {db: {}, user: {}, downloads: true}.
 """
 import argparse
+import json
 import os
 import re
 import shutil
@@ -65,6 +70,22 @@ def build_page():
     cut = m.end() if m else 0
     head = html[:cut].rstrip() + '\n'
     return head + '<style>\n' + css.rstrip() + '\n</style>\n' + html[cut:]
+
+
+def build_markup():
+    """The lab for a shadow root: lab.css scoped to :host, and index.html's markup alone."""
+    css = read(os.path.join(HERE, 'lab.css'))
+    css = css.replace(':root:not([data-theme="light"])', ':host(:not([data-theme="light"]))')
+    css = css.replace(':root[data-theme="dark"]', ':host([data-theme="dark"])').replace(':root', ':host')
+    # the page's html and body rules style the host and the lab's own root, so rules the host page puts on
+    # the host element (box-sizing, fonts from a * reset) stop there instead of being inherited inside
+    css = re.sub(r'(^|[\s}])(?:html|body)(\s*\{)', r'\1:host, .lab\2', css)
+    # the host page's inherited styles stop at the host; outer rules on the host element (its size) still win
+    css = ':host { all: initial; display: block; }\n' + css
+    html = read(os.path.join(HERE, 'index.html'))
+    html = re.sub(r'<title>.*?</title>|<meta[^>]*>|<link[^>]*>|<script[^>]*>\s*</script>', '', html, flags=re.S).strip()
+    return ('/* 5s Motion Lab: lab-markup.js, built by build.py from index.html and lab.css, for MotionLab.mount. */\n'
+            'window.MotionLabMarkup = Object.freeze(%s);\n' % json.dumps({'css': css, 'html': html}, ensure_ascii=False))
 
 
 def syntax_ok(path):
@@ -122,6 +143,7 @@ def main(argv=None):
     write(os.path.join(out, 'dev.html'), SKELETON_HEAD + page + SKELETON_TAIL)
     for name in ('marks.js', 'lab.js'):
         shutil.copyfile(os.path.join(HERE, name), os.path.join(out, name))
+    write(os.path.join(out, 'lab-markup.js'), build_markup())
     fams, included, skipped = build_families()
     write(os.path.join(out, 'families.js'), fams)
     logo = 'missing'
@@ -132,7 +154,7 @@ def main(argv=None):
     print('built %s' % out)
     print('  index.html  %6d bytes (lab.css inlined)' % len(page.encode('utf-8')))
     print('  dev.html    for local testing (the platform skeleton around the page)')
-    print('  marks.js, lab.js copied; logo.webp %s' % logo)
+    print('  marks.js, lab.js copied; lab-markup.js for hosts; logo.webp %s' % logo)
     print('  families.js %d families: %s' % (len(included), ', '.join(n[:-3] for n in included)))
     for name, err in skipped:
         print('  SKIPPED families/%s: %s' % (name, err), file=sys.stderr)

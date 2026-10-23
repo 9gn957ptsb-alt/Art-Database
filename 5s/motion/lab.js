@@ -13,19 +13,27 @@
  *  - Frames are pure functions of t (Motion.render), so the scrubber is frame-accurate.
  *  - Picks and stars are one db document `motion/picks` = {picks, stars, v: 1}, mirrored into
  *    localStorage so a view without db still works.
+ *  - For you reads the favorites (one pool, every moment's stars) on the brief's descriptor axes and
+ *    proposes variants like them and unlike them.
+ *  - The lab runs on its own page (root = document, views in location.hash) or mounted into a host's
+ *    shadow root by MotionLab.mount(host, {db}) (views kept inside, listeners on the shadow root only).
  */
 (function () {
-  'use strict';
+'use strict';
 
-  const doc = document;
-  const $ = (s, r) => (r || doc).querySelector(s);
-  const $$ = (s, r) => Array.from((r || doc).querySelectorAll(s));
+const doc = document;
+
+function createLab(root, opts) {
+  opts = opts || {};
+  const embedded = !!opts.embedded;
+  const $ = (s, r) => (r || root).querySelector(s);
+  const $$ = (s, r) => Array.from((r || root).querySelectorAll(s));
   const M = window.Marks, MO = window.Motion;
   const lab = $('#lab');
-  if (!lab) return;
+  if (!lab) return null;
   if (!M || !MO) {
     lab.innerHTML = '<p style="padding:24px">The motion engine did not load (marks.js). Reload the page to try again.</p>';
-    return;
+    return null;
   }
 
   /* ============================================================== constants */
@@ -33,8 +41,8 @@
   const STORE_KEY = '5s.motion.v1';
   const UI_KEY = '5s.motion.ui.v1';
   const DOC_PATH = 'motion/picks';
-  const VIEWS = ['moments', 'explore', 'board'];
-  const GROUPS = ['stage', 'sheet', 'rail', 'board'];
+  const VIEWS = ['moments', 'explore', 'board', 'foryou'];
+  const GROUPS = ['stage', 'sheet', 'rail', 'board', 'foryou'];
   const LEAD = 260;          // ms of rest before a one-shot starts, when it repeats
   const HOLD = 1000;         // ms the finished mark holds before a one-shot repeats
   const FRAME = 1000 / 60;
@@ -138,9 +146,10 @@
     reduced: false,
     source: 'generate',
     batch: saved.batch && typeof saved.batch === 'object' ? saved.batch : {},
+    forSeed: typeof saved.forSeed === 'string' ? saved.forSeed : '',
     recording: false
   };
-  function saveUi() { lsSet(UI_KEY, { moment: ui.moment, theme: ui.theme, speed: ui.speed, loop: ui.loop, app: ui.app, batch: ui.batch }); }
+  function saveUi() { lsSet(UI_KEY, { moment: ui.moment, theme: ui.theme, speed: ui.speed, loop: ui.loop, app: ui.app, batch: ui.batch, forSeed: ui.forSeed }); }
 
   /* ============================================================== variants */
 
@@ -308,7 +317,8 @@
   }
   function dirtyGroup(g) { for (const p of players) if (!g || p.group === g) p.dirty = true; wake(); }
 
-  function wake() { if (!raf) raf = requestAnimationFrame(tick); }
+  let dead = false;          // set by unmount: nothing wakes the clock again
+  function wake() { if (!raf && !dead) raf = requestAnimationFrame(tick); }
 
   function tick(now) {
     raf = 0;
@@ -383,7 +393,8 @@
     const dur = v.params.duration;
     const looping = ui.loop || ui.recording;
     if (!looping) return clamp01(G.pos / dur);
-    if (fam.loop) return (G.pos % dur) / dur;
+    // a loop paused exactly on its end (] or the scrubber's far end) shows its end, not its start again
+    if (fam.loop) return !G.playing && G.pos > 0 && G.pos % dur === 0 ? 1 : (G.pos % dur) / dur;
     const local = G.pos % (LEAD + dur + HOLD);
     return clamp01((local - LEAD) / dur);
   }
@@ -889,7 +900,10 @@
     famSelect: $('#family-select'), famIdea: $('#fam-idea'), famWhy: $('#fam-why'), famFacts: $('#fam-facts'), params: $('#params'),
     sheet: $('#sheet'), sheetEmpty: $('#sheet-empty'), exploreH: $('#explore-h'), exploreSub: $('#explore-sub'), batchSeed: $('#batch-seed'), starCount: $('#star-count'),
     sheetPlay: $('#sheet-play'), board: $('#board-grid'), boardPlay: $('#board-play'), pauseAll: $('#pause-all'),
-    live: $('#live'), save1: $('#savestate'), save2: $('#savestate-foot'), dialog: $('#copy-dialog'), copyText: $('#copy-text')
+    live: $('#live'), save1: $('#savestate'), save2: $('#savestate-foot'), dialog: $('#copy-dialog'), copyText: $('#copy-text'),
+    pool: $('#board-pool'), poolCount: $('#pool-count'), poolEmpty: $('#pool-empty'),
+    trends: $('#trends'), fyLike: $('#fy-like'), fyLikeH: $('#fy-like-h'), fyLikeSub: $('#fy-like-sub'), fyFar: $('#fy-far'), fyFarWrap: $('#fy-far-wrap'),
+    fySeed: $('#fy-seed'), fyPlay: $('#foryou-play')
   };
 
   let liveTimer = 0;
@@ -988,7 +1002,7 @@
     const v = cur(); if (!v) return;
     const fam = MO.get(v.family); if (!fam) return;
     const t = stageT(v, fam);
-    if (doc.activeElement !== els.scrub || !scrubbing) els.scrub.value = String(Math.round(t * 1000));
+    if (root.activeElement !== els.scrub || !scrubbing) els.scrub.value = String(Math.round(t * 1000));
     const s = (t * v.params.duration / 1000).toFixed(2), total = (v.params.duration / 1000).toFixed(2);
     const text = s + ' / ' + total + ' s';
     if (els.time.textContent !== text) els.time.textContent = text;
@@ -999,7 +1013,7 @@
     const st = groups.stage.playing;
     els.play.setAttribute('aria-label', st ? 'Pause' : 'Play');
     $('use', els.play).setAttribute('href', st ? '#i-pause' : '#i-play');
-    for (const [btn, g] of [[els.sheetPlay, 'sheet'], [els.boardPlay, 'board']]) {
+    for (const [btn, g] of [[els.sheetPlay, 'sheet'], [els.boardPlay, 'board'], [els.fyPlay, 'foryou']]) {
       const on = groups[g].playing;
       $('use', btn).setAttribute('href', on ? '#i-pause' : '#i-play');
       $('span', btn).textContent = on ? 'Pause' : 'Play';
@@ -1122,7 +1136,7 @@
     const cv = $('#curve'); if (!cv) return;
     const v = cur(); if (!v) return;
     const c = cv.getContext('2d'), W = cv.width, H = cv.height;
-    const cs = getComputedStyle(doc.documentElement);
+    const cs = getComputedStyle(lab);
     const ink = cs.getPropertyValue('--ink-3').trim() || '#888', iris = cs.getPropertyValue('--iris').trim() || '#7350EE', line = cs.getPropertyValue('--line').trim() || '#ddd';
     c.clearRect(0, 0, W, H);
     const f = M.easing(v.params.easing);
@@ -1199,6 +1213,7 @@
     renderPickStatus();
     renderStarCount();
     if (ui.view === 'board') buildBoard();
+    liveForYou(false);
     setSaveState();
   }
   function pickNow() {
@@ -1296,7 +1311,12 @@
       return d && famOk(d.family) ? d : f ? baseVariant(m.id, f) : null;
     });
     const shownV = vs.map((v, i) => v || ghosts[i]);
-    syncCycle('board', shownV.filter(Boolean));
+    // the pool first: every favorite, which 5s uses at any moment
+    const pool = allStars().filter((s) => famOk(s.family)).map((s) => ({ v: { family: s.family, params: MO.resolve(s.family, s.params), seed: s.seed, direction: s.direction }, why: MOMENT[s.found] ? 'Starred on ' + MOMENT[s.found].name : '' }));
+    els.poolCount.textContent = String(pool.length);
+    els.poolEmpty.hidden = pool.length > 0;
+    boardPlayers = fyCells(els.pool, 'pool', pool, 'board');
+    syncCycle('board', shownV.filter(Boolean).concat(pool.map((c) => c.v)));
     els.board.innerHTML = MOMENTS.map((m, i) => {
       const p = data.picks[m.id], v = vs[i], fam = v && MO.get(v.family), g = ghosts[i], gf = g && MO.get(g.family);
       const label = fam ? 'Open ' + m.name + ' on the stage: ' + fam.name + ', ' + v.params.style + ', ' + v.params.duration + ' ms, seed ' + v.seed + '. ' + fam.idea
@@ -1314,6 +1334,260 @@
     groups.board.pos = groups.board.playing ? 0 : null;
   }
 
+  /* ============================================================== for you: the favorites read, and what they suggest */
+
+  // The descriptor axes of 5s/handoff/motion-brief.json, each value as a phrase that follows "Most of them",
+  // and every family's value on each axis, in the axes' order. A family missing here still works: it
+  // counts as halfway on every axis (and its favorites are left out of the axis counts).
+  const AXES = [
+    ['space', 'Where', { 'in-place': "stay inside the mark's own footprint", travel: 'send the mark away and bring it back', field: 'fill the whole frame around the mark' }],
+    ['time', 'Time', { trace: 'show several instants of the mark at once', sequence: 'step through states one at a time', single: 'are one body in one gesture' }],
+    ['change', 'Change', { transform: 'turn one shape into another', multiply: 'multiply the mark, then resolve into one', build: 'make the mark', break: 'take it apart and back', reveal: 'uncover, fill or light it where it stands', move: 'move it with its shape intact', modulate: 'change only its light, scale or surround', impact: 'hit' }],
+    ['texture', 'Texture', { line: 'are made of outlines', solid: 'are full-weight flat bodies', particle: 'are made of specks', paper: 'are cards and die-cut layers', light: 'are glow and shadow', liquid: 'pour and melt' }],
+    ['energy', 'Energy', { calm: 'are calm', lively: 'are lively', explosive: 'are explosive' }],
+    ['rhythm', 'Rhythm', { beats: 'count in beats', continuous: 'move in one smooth curve', snap: 'hit once, then settle' }],
+    ['dimension', 'Depth', { flat: 'are flat', layered: 'overlap and stack', volume: 'have real depth' }],
+    ['actor', 'Who moves', { whole: 'move the mark as one', letters: 'move the 5 and the s separately', parts: 'move its pieces', copies: 'multiply it into copies', surround: 'move what is around the letters' }],
+    ['arc', 'Ends', { return: 'start and end on the still mark', arrive: 'arrive and end on the still mark', stage: 'end on their own staging' }]
+  ];
+  const TAGS = {
+    swipe: 'travel single move solid lively snap flat whole return',
+    pulse: 'in-place single modulate light calm continuous flat whole return',
+    fill: 'in-place single reveal liquid calm continuous flat whole arrive',
+    negative: 'field single reveal paper lively continuous layered surround arrive',
+    rewind: 'travel trace move line lively continuous flat copies arrive',
+    flip: 'in-place single move solid lively continuous volume whole return',
+    draw: 'in-place single build line calm continuous flat letters arrive',
+    count: 'in-place sequence transform solid lively beats flat letters return',
+    ring: 'in-place single transform line lively continuous flat parts return',
+    stack: 'in-place sequence build paper lively beats layered parts arrive',
+    echo: 'in-place trace multiply line lively beats layered copies arrive',
+    path: 'field sequence move particle calm beats flat whole stage',
+    split: 'travel single break particle explosive continuous flat parts return',
+    collage: 'in-place sequence build paper lively beats layered parts stage',
+    morph: 'in-place single transform solid lively continuous flat letters return',
+    three: 'travel single multiply solid lively continuous flat copies return',
+    pin: 'field single move paper lively continuous layered whole stage',
+    grow: 'field single build solid lively continuous volume whole arrive',
+    ribbon: 'in-place single modulate light calm continuous layered surround return',
+    phases: 'in-place trace transform paper lively beats layered copies return',
+    stamp: 'in-place single impact paper explosive snap volume whole return',
+    dive: 'field single move solid explosive continuous volume whole return',
+    neon: 'field single reveal light lively beats flat whole arrive',
+    tiles: 'field sequence reveal paper lively continuous layered parts arrive',
+    swarm: 'field single break particle explosive continuous flat parts return',
+    cast: 'field single modulate light calm continuous volume surround return'
+  };
+  // the styles refined from the favorites' trends (the brief's refinements); Phases is the hybrid of both
+  const REFINED = ['echo/extrude', 'echo/strata', 'echo/riso', 'rewind/boomerang', 'rewind/spool', 'count/tally', 'count/dial', 'morph/revolve', 'morph/doubles', 'morph/shell'];
+  const tagsOf = (id) => (TAGS[id] ? TAGS[id].split(' ') : null);
+  const styleOf = (f) => f.style || (f.params && f.params.style) || '';
+  const famName = (id) => (MO.get(id) ? MO.get(id).name : id);
+  const tally = (list, f) => { const m = new Map(); for (const x of list) { const k = f(x); m.set(k, (m.get(k) || 0) + 1); } return Array.from(m).sort((a, b) => b[1] - a[1]); };
+  const median = (xs) => { const s = xs.slice().sort((a, b) => a - b); return s.length ? s[Math.floor((s.length - 1) / 2)] : null; };
+  const andList = (xs) => (xs.length > 1 ? xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1] : xs[0] || '');
+
+  // how many favorites take each value on each axis
+  function profile(pool) {
+    const prof = AXES.map(() => ({}));
+    let n = 0;
+    for (const f of pool) { const t = tagsOf(f.family); if (!t) continue; n++; t.forEach((v, i) => { prof[i][v] = (prof[i][v] || 0) + 1; }); }
+    return { prof, n };
+  }
+  // 0..1: on average over the axes, the share of the favorites that agree with this family
+  function affinity(id, P) {
+    const t = tagsOf(id);
+    if (!t || !P.n) return 0.5;
+    return t.reduce((s, v, i) => s + (P.prof[i][v] || 0) / P.n, 0) / t.length;
+  }
+  // the pool's leanings on the shared options, given to the variants made for it
+  function leanings(pool) {
+    const nums = (k) => pool.map((f) => f.params && f.params[k]).filter((x) => typeof x === 'number');
+    const top = (k) => { const t = tally(pool.filter((f) => f.params && f.params[k] != null), (f) => f.params[k]); return t.length ? t[0][0] : null; };
+    return { intensity: median(nums('intensity')), weight: median(nums('weight')), palette: top('palette'), ribbon: top('ribbon') };
+  }
+  function leaned(id, style, L, seed) {
+    const p = Object.assign(MO.defaults(id), { style });
+    for (const k of ['intensity', 'weight', 'palette', 'ribbon']) if (L[k] != null) p[k] = L[k];
+    return { family: id, params: MO.resolve(id, p), seed: String(seed), direction: 'right' };
+  }
+  // a favorite retuned: its family and style, its params nudged by the seed, and another tempo
+  // (the favorites' durations follow the moments they were starred on, so tempo is not read as taste)
+  function retune(f, seed) {
+    const fam = MO.get(f.family), r = M.rng('retune|' + seed);
+    const p = MO.resolve(f.family, f.params);
+    for (const key of Object.keys(fam.params)) {
+      const spec = fam.params[key];
+      if (key === 'style' || key === 'palette' || key === 'ribbon') continue;
+      const roll = r(), val = r();
+      if (key === 'duration') { const lo = Math.max(spec.min, 400), hi = Math.min(spec.max, 2000); if (lo <= hi) p.duration = snap(lo + val * (hi - lo), spec); }
+      else if (Array.isArray(spec.options)) { const o = key === 'easing' ? EASE_POOL.filter((e) => spec.options.includes(e)) : spec.options; if (roll < 0.3 && o.length) p[key] = o[Math.floor(val * o.length)]; }
+      else if (typeof spec.default === 'number') { if (roll < 0.6) p[key] = snap(p[key] + (val * 2 - 1) * 0.25 * (spec.max - spec.min), spec); }
+      else if (typeof spec.default === 'boolean') { if (roll < 0.2) p[key] = !p[key]; }
+    }
+    return { family: f.family, params: MO.resolve(f.family, p), seed: String(seed), direction: f.direction === 'left' ? 'left' : 'right' };
+  }
+
+  // More like your favorites: each favorite retuned, the favored families' other styles (the refined
+  // ones among them) and the hybrid Phases, ranked by affinity on the axes and by how often the family
+  // was starred; every favored family once, then the best, at most three per family
+  function likeList(pool, seed) {
+    const P = profile(pool), L = leanings(pool), r = M.rng('like|' + seed);
+    const share = (id) => pool.filter((f) => f.family === id).length / pool.length;
+    const own = new Set(pool.map((f) => f.family + '/' + styleOf(f)));
+    const all = [];
+    let k = 0;
+    const add = (v, badge, why, bonus) => all.push({ v, badge, why, score: affinity(v.family, P) + 0.3 * share(v.family) + bonus + 0.02 * r() });
+    for (const f of pool) {
+      const v = retune(f, seed + '-' + pad2(++k));
+      add(v, 'Retuned', 'Your ' + famName(f.family) + ' · ' + styleOf(f) + ', at ' + v.params.duration + ' ms', 0.03);
+    }
+    for (const id of Array.from(new Set(pool.map((f) => f.family).concat('phases'))).filter(famOk)) {
+      for (const s of MO.get(id).styles) {
+        if (own.has(id + '/' + s)) continue;
+        const refined = REFINED.includes(id + '/' + s), hybrid = id === 'phases';
+        add(leaned(id, s, L, seed + '-' + pad2(++k)), hybrid ? 'Hybrid' : refined ? 'Refined' : 'Other style',
+          hybrid ? 'Traces and transformation at once' : refined ? 'Refined from your favorites' : 'Another ' + famName(id), refined ? 0.03 : 0.01);
+      }
+    }
+    all.sort((a, b) => b.score - a.score);
+    const out = [], per = {};
+    for (const c of all) if (!per[c.v.family]) { per[c.v.family] = 1; out.push(c); }
+    for (const c of all) { if (out.length >= 12) break; if (!out.includes(c) && per[c.v.family] < 3) { per[c.v.family]++; out.push(c); } }
+    return out.sort((a, b) => b.score - a.score).slice(0, 12);
+  }
+  // Something different: the families furthest from the pool on the axes, at the pool's intensity
+  function farList(pool, seed) {
+    const P = profile(pool), L = leanings(pool), r = M.rng('far|' + seed);
+    const have = new Set(pool.map((f) => f.family));
+    return MO.families.filter((f) => !have.has(f.id)).map((f, i) => {
+      const s = f.styles[Math.floor(r() * f.styles.length)], t = tagsOf(f.id);
+      const fresh = t ? t.filter((v, j) => !P.prof[j][v]) : [];
+      return { v: leaned(f.id, s, L, seed + '-d' + pad2(i + 1)), why: fresh.length ? 'New to you: ' + fresh.slice(0, 4).join(', ') : t ? 'Unlike most of your favorites' : 'Not yet described on the axes', score: 1 - affinity(f.id, P) + 0.01 * r() };
+    }).sort((a, b) => b.score - a.score).slice(0, 8);
+  }
+  // with no favorites yet: twelve families as unlike one another as the axes allow
+  function starterList(seed) {
+    const r = M.rng('start|' + seed);
+    const ids = shuffle(MO.families.map((f) => f.id), r);
+    const diff = (a, b) => { const x = tagsOf(a), y = tagsOf(b); return x && y ? x.filter((v, i) => v !== y[i]).length : AXES.length / 2; };
+    const chosen = ids.slice(0, 1);
+    while (chosen.length < Math.min(12, ids.length)) {
+      let best = null, far = -1;
+      for (const id of ids) if (!chosen.includes(id)) { const d = Math.min(...chosen.map((c) => diff(id, c))); if (d > far) { far = d; best = id; } }
+      chosen.push(best);
+    }
+    return chosen.map((id, i) => {
+      const f = MO.get(id), t = tagsOf(id);
+      return { v: { family: id, params: MO.resolve(id, { style: f.styles[Math.floor(r() * f.styles.length)] }), seed: seed + '-' + pad2(i + 1), direction: 'right' }, why: t ? [t[2], t[3], t[4]].join(' · ') : '' };
+    });
+  }
+
+  function chip(label, n, of, cls) {
+    return '<span class="chip' + (cls ? ' ' + cls : '') + '" style="--s:' + (of ? n / of : 0).toFixed(3) + '">' + esc(label) + ' <b>' + n + '</b></span>';
+  }
+  function chips(rows, of) { return rows.map(([k, n], i) => chip(String(k), n, of, i === 0 ? 'lead' : '')).join(''); }
+
+  // the reading, computed from the pool as it is now
+  function renderTrends() {
+    const pool = allStars(), n = pool.length;
+    if (!n) {
+      els.trends.innerHTML = '<p class="fy-read">No favorites yet. Star any animation (here, in Explore or on the stage) and this page reads them: the families and styles, what they share on the axes, the options you leaned on, and what is missing. Until then, a sheet as varied as the axes allow.</p>';
+      return;
+    }
+    const P = profile(pool);
+    const fams = tally(pool, (f) => f.family);
+    const famText = fams.map(([id, c]) => famName(id) + ' ' + c + ' (' + tally(pool.filter((f) => f.family === id), styleOf).map(([s, k]) => s + (k > 1 ? ' ' + k : '')).join(', ') + ')');
+    const most = [], split = [];
+    AXES.forEach(([, , words], i) => {
+      const top = Object.entries(P.prof[i]).sort((a, b) => b[1] - a[1]);
+      if (!top.length) return;
+      if (top[0][1] >= 0.6 * P.n) most.push(words[top[0][0]] + ' (' + top[0][1] + ' of ' + P.n + ')');
+      else if (top[1]) split.push([top[0][1] + top[1][1], top[0][1] + ' ' + words[top[0][0]] + ' and ' + top[1][1] + ' ' + words[top[1][0]]]);
+    });
+    split.sort((a, b) => b[0] - a[0]);
+    const missing = [];
+    AXES.forEach(([, , words], i) => { for (const v of Object.keys(words)) if (!P.prof[i][v]) missing.push(v); });
+    let read = '<b>' + n + (n === 1 ? ' favorite' : ' favorites') + '</b> in ' + fams.length + (fams.length === 1 ? ' family' : ' families') + ': ' + esc(andList(famText)) + '.';
+    if (P.n >= 3 && most.length) read += ' Most of them ' + esc(andList(most)) + '.';
+    if (P.n >= 3 && split.length) read += ' Elsewhere they split: ' + esc(split.slice(0, 3).map((s) => s[1]).join('; ')) + '.';
+    if (P.n < n) read += ' ' + (n - P.n) + ' of them ' + (n - P.n === 1 ? 'is' : 'are') + ' in a family not yet described on the axes.';
+    if (P.n && missing.length) read += ' Not in the pool yet: ' + esc(andList(missing)) + '. Something different starts there.';
+
+    const nums = (k) => pool.map((f) => f.params && f.params[k]).filter((x) => typeof x === 'number');
+    const opt = (k) => tally(pool.filter((f) => f.params && f.params[k] != null), (f) => f.params[k]);
+    const ins = nums('intensity'), durs = nums('duration');
+    const rib = pool.filter((f) => f.params && f.params.ribbon !== false).length;
+    const found = tally(pool, (f) => f.found).map(([m, c]) => (MOMENT[m] ? MOMENT[m].name : m) + ' ' + c);
+    let rows = '<dt>Families</dt><dd>' + chips(fams.map(([id, c]) => [famName(id), c]), n) + '</dd>';
+    rows += '<dt>Styles</dt><dd>' + chips(tally(pool, (f) => famName(f.family) + ' · ' + styleOf(f)), n) + '</dd>';
+    let axes = '';
+    AXES.forEach(([, label, words], i) => {
+      const vals = Object.keys(words).map((v) => [v, P.prof[i][v] || 0]).sort((a, b) => b[1] - a[1]);
+      axes += '<dt>' + esc(label) + '</dt><dd>' + vals.map(([v, c], j) => chip(v, c, P.n, c ? (j === 0 ? 'lead' : '') : 'none')).join('') + '</dd>';
+    });
+    if (ins.length) axes += '<dt>Intensity</dt><dd><span class="fy-note">median ' + median(ins) + ' · ' + ins.filter((x) => x >= 1).length + ' of ' + ins.length + ' at full · lowest ' + Math.min(...ins) + '</span></dd>';
+    axes += '<dt>Palette</dt><dd>' + chips(opt('palette'), n) + '</dd>';
+    axes += '<dt>Ribbon</dt><dd><span class="fy-note">on in ' + rib + ' of ' + n + '</span></dd>';
+    axes += '<dt>Weight</dt><dd>' + chips(opt('weight'), n) + '</dd>';
+    axes += '<dt>Easing</dt><dd>' + chips(opt('easing'), n) + '</dd>';
+    let tempo = '';
+    if (durs.length) {
+      tempo = '<dt>Tempo</dt><dd><span class="fy-note">' + Math.min(...durs) + '–' + Math.max(...durs) + ' ms, median ' + median(durs) +
+        '. This follows the moments you were on when you starred them (' + esc(found.join(', ')) + '): the lab fits each animation to its moment\'s length, so it says where you browsed, not what you like. The retuned variants below try other tempos.</span></dd>';
+    }
+    els.trends.innerHTML = '<p class="fy-read">' + read + '</p><dl class="fy-facts">' + rows + '</dl><dl class="fy-facts fy-axes">' + axes + '</dl>' + (tempo ? '<dl class="fy-facts">' + tempo + '</dl>' : '');
+  }
+
+  // a cell of For you or of the Board's pool: plays on its group's clock, loads onto the stage, takes a star
+  const fyLists = { like: [], far: [], pool: [] };
+  function fyCells(el, key, items, group) {
+    fyLists[key] = items;
+    el.innerHTML = items.map((c, i) => {
+      const v = c.v, fam = MO.get(v.family);
+      return '<li class="cell">' +
+        '<button type="button" class="cell-load" data-act="fy-load" data-list="' + key + '" data-i="' + i + '" aria-label="Load into the stage: ' + esc(fam.name) + ', ' + esc(v.params.style) + ', seed ' + esc(v.seed) + (c.why ? '. ' + esc(c.why) : '') + '. ' + esc(fam.idea) + '"><canvas aria-hidden="true"></canvas>' + (c.badge ? '<span class="wild" aria-hidden="true">' + esc(c.badge) + '</span>' : '') + '</button>' +
+        '<div class="cell-meta"><p class="cell-name">' + esc(fam.name) + ' <span class="style">· ' + esc(v.params.style) + '</span></p>' +
+        '<button type="button" class="cell-star" data-act="fy-star" data-list="' + key + '" data-i="' + i + '" aria-pressed="false" aria-label="Star ' + esc(fam.name) + ', ' + esc(v.params.style) + ', seed ' + esc(v.seed) + '"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg></button>' +
+        '<p class="cell-seed"><span>' + esc(v.seed) + '</span><span>' + esc(v.params.duration) + ' ms</span></p>' +
+        (c.why ? '<p class="cell-why">' + esc(c.why) + '</p>' : '') + '</div></li>';
+    }).join('');
+    return $$('.cell', el).map((li, i) => {
+      setStar($('.cell-star', li), isStarred(items[i].v));
+      return addPlayer($('canvas', li), group, () => ({ variant: fyLists[key][i] && fyLists[key][i].v, theme: ui.theme }), { pad: 0.1, maxDpr: 1.5 });
+    });
+  }
+  function refreshStars() {
+    for (const b of $$('[data-act="fy-star"]')) { const c = fyLists[b.dataset.list][+b.dataset.i]; if (c) setStar(b, isStarred(c.v)); }
+  }
+
+  let fyPlayers = [], fyNone = null;
+  function buildForYou() {
+    for (const p of fyPlayers) removePlayer(p);
+    if (!ui.forSeed) { ui.forSeed = newBatchSeed(); saveUi(); }
+    const pool = allStars().filter((f) => famOk(f.family));
+    fyNone = !pool.length;
+    renderTrends();
+    els.fyLikeH.textContent = fyNone ? 'A varied starter sheet' : 'More like your favorites';
+    els.fyLikeSub.textContent = fyNone
+      ? 'Twelve families, each as unlike the others as the axes allow. Star the ones that move you.'
+      : 'Your favorites retuned (other tempos and settings), the other styles of the families you starred, the styles refined from your trends, and the hybrid Phases, ranked by how much they share with your favorites.';
+    const like = fyNone ? starterList(ui.forSeed) : likeList(pool, ui.forSeed);
+    const far = fyNone ? [] : farList(pool, ui.forSeed);
+    els.fyFarWrap.hidden = fyNone;
+    fyPlayers = fyCells(els.fyLike, 'like', like, 'foryou').concat(fyCells(els.fyFar, 'far', far, 'foryou'));
+    els.fySeed.textContent = ui.forSeed;
+    syncCycle('foryou', like.concat(far).map((c) => c.v));
+    groups.foryou.pos = groups.foryou.playing ? 0 : null;
+  }
+  // as the pool changes: the reading and the stars follow; the sheets stay put unless the db brought new data
+  // or the pool went from empty to not
+  function liveForYou(rebuild) {
+    if (ui.view !== 'foryou') return;
+    if (rebuild || fyNone !== !allStars().some((f) => famOk(f.family))) buildForYou();
+    else { renderTrends(); refreshStars(); }
+  }
+
   /* ============================================================== views */
 
   function setView(v) {
@@ -1323,13 +1597,17 @@
     $('#view-moments').hidden = v !== 'moments';
     $('#view-explore').hidden = v !== 'explore';
     $('#view-board').hidden = v !== 'board';
+    $('#view-foryou').hidden = v !== 'foryou';
     for (const a of $$('.mode')) { if (a.dataset.mode === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
-    doc.title = (v === 'moments' ? '' : v === 'explore' ? 'Explore · ' : 'Board · ') + '5s Motion Lab';
+    if (!embedded) doc.title = (v === 'moments' ? '' : v === 'explore' ? 'Explore · ' : v === 'board' ? 'Board · ' : 'For you · ') + '5s Motion Lab';
     if (v === 'explore') buildSheet();
     if (v === 'board') buildBoard();
+    if (v === 'foryou') buildForYou();
     dirtyGroup();
   }
   function route() { setView((location.hash || '').replace(/^#/, '')); }
+  // on its own page a view is a hash; mounted in a host, the host's hash is left alone
+  function go(v) { if (!embedded) location.hash = '#' + v; setView(v); }
 
   /* ============================================================== hand back: copy, save, record */
 
@@ -1416,6 +1694,7 @@
     delete lab.dataset.recording;
     for (const l of $$('.rec-label')) l.textContent = 'Record';
     for (const b of $$('[data-act="record"]')) b.disabled = false;
+    if (dead) return;   // unmounted while recording: no file to offer
     const blob = new Blob(chunks, { type: 'video/webm' });
     if (!blob.size) { say('The recording came out empty.'); return; }
     try {
@@ -1462,7 +1741,10 @@
       else { localOnly = true; tellOnce('local', 'Saved in this browser only.'); }
     } finally {
       inflight = false;
-      if (dirty && !localOnly && !readOnly && !saveTimer) saveTimer = setTimeout(flush, retries ? 1200 + 600 * retries : 700);
+      if (dirty && !localOnly && !readOnly && !saveTimer) {
+        if (dead) flush();   // unmounted while a write was out: the change made meanwhile goes now
+        else saveTimer = setTimeout(flush, retries ? 1200 + 600 * retries : 700);
+      }
       setSaveState();
     }
   }
@@ -1472,9 +1754,11 @@
     renderRail(); renderPickStatus(); renderStarCount();
     if (ui.view === 'board') buildBoard();
     if (ui.view === 'explore' && ui.source === 'starred') buildSheet();
+    liveForYou(true);
     setSaveState();
   }
   function onSnap(snap) {
+    if (dead) return;
     const remote = snap && snap.exists ? cleanData(snap.data()) : null;
     if (firstSnap) {
       firstSnap = false;
@@ -1500,23 +1784,44 @@
       return Promise.resolve(c.use(name)).catch(() => null);
     } catch (e) { return Promise.resolve(null); }
   }
+  let unsub = null;
   async function lightUp() {
-    use('downloads').then((d) => { if (d && typeof d.save === 'function') { caps.downloads = d; refreshNeeds(); } });
-    const pair = await Promise.all([use('db'), use('user')]);
+    use('downloads').then((d) => { if (!dead && d && typeof d.save === 'function') { caps.downloads = d; refreshNeeds(); } });
+    // mounted in a host: the db it was given, else the page's own (the same doc either way)
+    const pair = await Promise.all([opts.db ? Promise.resolve(opts.db) : use('db'), use('user')]);
     const db = pair[0], user = pair[1];
+    if (dead) return;
     if (!db || typeof db.doc !== 'function') { setSaveState(); return; }
     let can = null;
     if (user && typeof user.can === 'function') { try { can = await user.can('data.write'); } catch (e) { can = null; } }
+    if (dead) return;
     readOnly = can === false;
     try { dbRef = db.doc(DOC_PATH); } catch (e) { dbRef = null; return; }
-    try { dbRef.onSnapshot(onSnap, onSnapErr); } catch (e) { dbRef = null; }
+    try { unsub = dbRef.onSnapshot(onSnap, onSnapErr); } catch (e) { dbRef = null; }
     setSaveState();
+  }
+
+  // stops every clock, observer, timer and listener; a change still waiting is written first
+  function unmount() {
+    if (dead) return;
+    dead = true;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    if (io) io.disconnect();
+    if (ro) ro.disconnect();
+    players.clear();
+    clearTimeout(liveTimer); clearTimeout(infoTimer);
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = 0; flush(); }
+    try { if (typeof unsub === 'function') unsub(); } catch (e) { /* already gone */ }
+    listening.abort();
   }
 
   /* ============================================================== events */
 
   let scrubbing = false;
   function onClick(e) {
+    const a = embedded && e.target.closest('a[href^="#"]');
+    if (a) { e.preventDefault(); setView(a.getAttribute('href').slice(1)); return; }
     const el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
     const act = el.dataset.act, val = el.dataset.value;
@@ -1541,8 +1846,7 @@
       case 'generate': ui.source = 'generate'; ui.batch[ui.moment] = newBatchSeed(); saveUi(); buildSheet(); say('Twelve new variants from seed ' + ui.batch[ui.moment]); break;
       case 'load': {
         const v = sheetVariants[+el.dataset.i]; if (!v) break;
-        location.hash = '#moments';
-        setView('moments');
+        go('moments');
         loadVariant(v, 'Loaded ' + MO.get(v.family).name + ' · ' + v.params.style + ', seed ' + v.seed + ', into the stage');
         els.play.focus();
         break;
@@ -1550,7 +1854,17 @@
       case 'star': { const v = sheetVariants[+el.dataset.i]; if (v) setStar(el, toggleStar(v, ui.moment)); if (ui.source === 'starred') buildSheet(); break; }
       case 'sheet-play': setPlaying('sheet', !groups.sheet.playing); break;
       case 'board-play': setPlaying('board', !groups.board.playing); break;
-      case 'open-moment': location.hash = '#moments'; setView('moments'); selectMoment(el.dataset.moment, { announce: true }); els.play.focus(); break;
+      case 'foryou-play': setPlaying('foryou', !groups.foryou.playing); break;
+      case 'foryou-more': ui.forSeed = newBatchSeed(); saveUi(); buildForYou(); say('New ideas from seed ' + ui.forSeed); break;
+      case 'fy-load': {
+        const c = fyLists[el.dataset.list][+el.dataset.i]; if (!c) break;
+        go('moments');
+        loadVariant(c.v, 'Loaded ' + MO.get(c.v.family).name + ' · ' + c.v.params.style + ', seed ' + c.v.seed + ', into the stage');
+        els.play.focus();
+        break;
+      }
+      case 'fy-star': { const c = fyLists[el.dataset.list][+el.dataset.i]; if (c) setStar(el, toggleStar(c.v, ui.moment)); break; }
+      case 'open-moment': go('moments'); selectMoment(el.dataset.moment, { announce: true }); els.play.focus(); break;
       case 'pause-all': {
         const any = GROUPS.some((g) => groups[g].playing);
         for (const g of GROUPS) { const G = groups[g]; if (!any && G.pos == null) G.pos = 0; G.playing = !any; }
@@ -1637,7 +1951,7 @@
       if (e.key === 'Escape') { e.preventDefault(); closeCopy(); }
       else if (e.key === 'Tab') {
         const items = [els.copyText, $('[data-act="copy-close"]', els.dialog)];
-        const i = items.indexOf(doc.activeElement);
+        const i = items.indexOf(root.activeElement);
         e.preventDefault();
         items[(i + (e.shiftKey ? items.length - 1 : 1)) % items.length].focus();
       }
@@ -1652,7 +1966,7 @@
     if (key === ' ' || key === 'Spacebar') {
       if (onControl) return;
       e.preventDefault();
-      const g = ui.view === 'explore' ? 'sheet' : ui.view === 'board' ? 'board' : 'stage';
+      const g = ui.view === 'explore' ? 'sheet' : ui.view === 'board' ? 'board' : ui.view === 'foryou' ? 'foryou' : 'stage';
       setPlaying(g, !groups[g].playing);
       return;
     }
@@ -1686,12 +2000,17 @@
       el.textContent = 'Not loaded: ' + failed.map((f) => f.file + ' (' + f.error + ')').join('; ');
       el.hidden = false;
     }
-    route();
-    doc.addEventListener('click', onClick);
-    doc.addEventListener('input', onInput);
-    doc.addEventListener('change', onChange);
-    doc.addEventListener('keydown', onKey);
-    doc.addEventListener('pointerup', () => { scrubbing = false; });
+    if (embedded) setView(VIEWS.includes(opts.view) ? opts.view : 'moments');
+    else route();
+    // on its own page the lab listens on the document; mounted, on its shadow root only, so keys reach it
+    // only while focus is inside it (the lab itself takes focus on a click anywhere in it)
+    if (embedded) lab.tabIndex = -1;
+    const on = (target, type, fn) => target.addEventListener(type, fn, { signal: listening.signal });
+    on(root, 'click', onClick);
+    on(root, 'input', onInput);
+    on(root, 'change', onChange);
+    on(root, 'keydown', onKey);
+    on(root, 'pointerup', () => { scrubbing = false; });
     $('#seedform').addEventListener('submit', (e) => {
       e.preventDefault();
       const raw = els.batchSeed.value.trim().toLowerCase();
@@ -1708,16 +2027,20 @@
         say('Variant ' + v.seed + ': ' + MO.get(v.family).name + ' · ' + v.params.style + ', number ' + n + ' of the twelve from seed ' + s);
       } else say('Twelve variants from seed ' + s);
     });
-    window.addEventListener('hashchange', route);
-    if (reduceMQ && reduceMQ.addEventListener) reduceMQ.addEventListener('change', (e) => { if (e.matches) { for (const g of GROUPS) groups[g].playing = false; renderPlayStates(); dirtyGroup(); } });
-    if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(() => { dirtyGroup('stage'); drawCurve(); });
+    if (!embedded) on(window, 'hashchange', route);
+    if (reduceMQ && reduceMQ.addEventListener) on(reduceMQ, 'change', (e) => { if (e.matches) { for (const g of GROUPS) groups[g].playing = false; renderPlayStates(); dirtyGroup(); } });
+    if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(() => { if (!dead) { dirtyGroup('stage'); drawCurve(); } });
     const logo = $('.brand-logo');
     if (logo) logo.addEventListener('load', () => dirtyGroup('stage'));
     lightUp();
   }
 
-  // the lab, for tests and for Claude reading it back
-  window.MotionLab = Object.freeze({
+  const listening = new AbortController();
+  boot(opts.snapshot || {});
+
+  // the lab, for tests and for Claude reading it back (window.MotionLab hands these on)
+  const asCell = (c) => Object.assign(clone(c.v), { badge: c.badge || '', why: c.why || '' });
+  return {
     get frames() { return frames; },
     get draws() { return draws; },
     get running() { return !!raf; },
@@ -1725,13 +2048,59 @@
     get ui() { return { view: ui.view, moment: ui.moment, theme: ui.theme, speed: ui.speed, loop: ui.loop, app: ui.app, reduced: ui.reduced, source: ui.source, batch: ui.batch[ui.moment] }; },
     get stage() { const v = cur(); return { playing: groups.stage.playing, t: stageTNow(), variant: v && clone(v) }; },
     get sheet() { return sheetVariants.map((v) => clone(v)); },
+    get pool() { return clone(allStars()); },
+    get foryou() { return { seed: ui.forSeed, like: fyLists.like.map(asCell), far: fyLists.far.map(asCell), pool: fyLists.pool.map(asCell) }; },
     groups: () => clone(groups),
     batchFor: (moment, seed) => batchFor(moment, seed),
-    spec: specJson
-  });
+    spec: specJson,
+    hot: () => ({ moment: ui.moment, drafts: clone(drafts) }),
+    unmount
+  };
+}
 
+/* ================================================================ the page's own lab, or one mounted in a host */
+
+let inst = null, mounted = null;
+const pageLab = doc.getElementById('lab');
+
+// MotionLab.mount(host, {embedded: true, db, view}): the lab in a shadow root on host, styled by its own
+// lab.css (built into lab-markup.js with the markup), its views kept inside, db the database to keep
+// motion/picks in (default: claude.use('db')). The page provides the fonts, and logo.webp beside it.
+function mount(host, o) {
+  if (pageLab) throw new Error('MotionLab.mount: this page runs its own lab');
+  const mk = window.MotionLabMarkup;
+  if (!host || typeof host.attachShadow !== 'function' || !mk) throw new Error('MotionLab.mount(host, {db}) needs an element and lab-markup.js');
+  unmount();
+  const root = host.shadowRoot || host.attachShadow({ mode: 'open' });
+  root.innerHTML = '<style>' + mk.css + '</style>' + mk.html;
+  // the lab's chrome follows the page's data-theme, as on its own page (its colour tokens are on :host)
+  const mirror = () => { const t = doc.documentElement.getAttribute('data-theme'); if (t) host.setAttribute('data-theme', t); else host.removeAttribute('data-theme'); };
+  mirror();
+  const watch = typeof MutationObserver === 'function' ? new MutationObserver(mirror) : null;
+  if (watch) watch.observe(doc.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  inst = createLab(root, Object.assign({}, o, { embedded: true }));
+  mounted = { root, watch, lab: inst };
+  return Object.freeze({ unmount });
+}
+function unmount() {
+  if (!mounted) return;
+  const m = mounted;
+  mounted = null;
+  if (m.lab) m.lab.unmount();
+  if (m.watch) m.watch.disconnect();
+  m.root.innerHTML = '';
+  if (inst === m.lab) inst = null;
+}
+
+if (pageLab) {
   const hot = window.claude && window.claude.hot;
-  try { if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => ({ moment: ui.moment, drafts: clone(drafts) })); } catch (e) { /* no hot updates here */ }
-  if (hot && typeof hot.ready === 'function') { try { hot.ready(boot); } catch (e) { boot({}); } }
-  else boot((hot && hot.data) || {});
+  const start = (snapshot) => { inst = createLab(doc, { snapshot: snapshot || {} }); };
+  try { if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => (inst ? inst.hot() : {})); } catch (e) { /* no hot updates here */ }
+  if (hot && typeof hot.ready === 'function') { try { hot.ready(start); } catch (e) { start({}); } }
+  else start((hot && hot.data) || {});
+}
+
+const api = { mount, unmount, groups: () => (inst ? inst.groups() : undefined), batchFor: (m, s) => (inst ? inst.batchFor(m, s) : []), spec: () => (inst ? inst.spec() : '') };
+for (const k of ['frames', 'draws', 'running', 'data', 'ui', 'stage', 'sheet', 'pool', 'foryou']) Object.defineProperty(api, k, { enumerable: true, get: () => (inst ? inst[k] : undefined) });
+window.MotionLab = Object.freeze(api);
 })();

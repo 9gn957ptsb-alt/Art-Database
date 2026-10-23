@@ -32,7 +32,7 @@
  * Params: sweep (turns of the light, sundial), height (how tall the mark stands: the shadow's length; the
  * lamp's reach), soft (blur of the shadow's far end; for the window, of the sunbeam's edges). Shared:
  * palette, ribbon, weight (the letters and their shadow), intensity (how low the light goes and how strong
- * it is), easing (the light's travel through the cycle; linear by default: a clock keeps even time),
+ * it is), easing (the light's travel, shaping each half of the cycle; linear by default: a clock keeps even time),
  * duration (one cycle). env.rng (the seed) picks where the sundial's light starts and the lamp's swing.
  */
 (function () {
@@ -165,11 +165,14 @@
   const reach = (p) => (80 + 360 * p.height) * (0.5 + 0.8 * p.intensity);
   const shadowAlpha = (env, I) => (0.16 + 0.12 * I) * (lum(env.palette.bg) < 0.75 ? 1.5 : 1);
   const blurPx = (env, p, len) => p.soft * len * 0.1 * env.scale * env.dpr;
+  // the light's travel: a loop's easing shapes each half (out to the peak, then back), so an ease-out lingers
+  // at the peak instead of reaching rest early and sitting still for most of the cycle (linear is unchanged)
+  const travel = (p, t) => p.easing === 'linear' ? t : t < 0.5 ? M.easing(p.easing)(2 * t) / 2 : 1 - M.easing(p.easing)(2 - 2 * t) / 2;
 
   function still(ctx, p, env) { M.mark(ctx, { palette: env.palette, weight: p.weight, ribbon: p.ribbon }); }
 
   function sundial(ctx, t, p, env) {
-    const u = M.easing(p.easing)(t), I = p.intensity;
+    const u = travel(p, t), I = p.intensity;
     const low = Math.abs(Math.sin(Math.PI * u)) ** 1.5;   // 0 with the light overhead (t = 0 and 1), 1 at its lowest
     if (low < 1e-4) return still(ctx, p, env);
     const a = env.rng() * TAU + TAU * p.sweep * u;
@@ -189,7 +192,7 @@
   }
 
   function windowLight(ctx, t, p, env) {
-    const u = M.easing(p.easing)(t), I = p.intensity, v = env.view, pal = env.palette;
+    const u = travel(p, t), I = p.intensity, v = env.view, pal = env.palette;
     // the sun crosses: the shadow, up and to the right into the open corner of the mark, swings a little
     // while the patch slides left to right
     const a = -0.85 + 0.45 * (u - 0.5);
@@ -234,7 +237,7 @@
   }
 
   function lamp(ctx, t, p, env) {
-    const u = M.easing(p.easing)(t), I = p.intensity, v = env.view, pal = env.palette;
+    const u = travel(p, t), I = p.intensity, v = env.view, pal = env.palette;
     // the lamp drops in close and swings (a damped pendulum, two and a half swings), then settles and rises
     const close = M.smoothstep(0, 0.16, u) * (1 - M.smoothstep(0.58, 1, u));
     if (close < 1e-4) return still(ctx, p, env);

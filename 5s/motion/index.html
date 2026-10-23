@@ -32,6 +32,7 @@
       <a class="mode" href="#moments" data-mode="moments">Moments</a>
       <a class="mode" href="#explore" data-mode="explore">Explore</a>
       <a class="mode" href="#board" data-mode="board">Board</a>
+      <a class="mode" href="#foryou" data-mode="foryou">For you</a>
     </nav>
     <div class="top-end">
       <p class="savestate" id="savestate"></p>
@@ -155,11 +156,40 @@
     <div class="board-head">
       <div>
         <h1 class="h1" id="board-h">Board</h1>
-        <p class="board-sub">Every moment's pick playing at once: the app's motion system at a glance.</p>
+        <p class="board-sub">Every moment's pick playing at once: the app's motion system at a glance. Your favorites come first: they are the pool 5s uses, any of them at any moment.</p>
       </div>
       <button type="button" class="btn" id="board-play" data-act="board-play"><svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg><span>Pause</span></button>
     </div>
-    <ol class="board" id="board-grid"></ol>
+    <h2 class="fy-h" id="pool-h">The pool <span class="count" id="pool-count">0</span></h2>
+    <ol class="board" id="board-pool" aria-labelledby="pool-h"></ol>
+    <p class="sheet-empty" id="pool-empty" hidden>No favorites yet. Star anything on the stage, in Explore or in For you, and it joins the pool.</p>
+    <h2 class="fy-h" id="picks-h">A pick per moment</h2>
+    <ol class="board" id="board-grid" aria-labelledby="picks-h"></ol>
+  </section>
+
+  <section class="view view-foryou" id="view-foryou" aria-labelledby="foryou-h" hidden>
+    <div class="board-head">
+      <div>
+        <h1 class="h1" id="foryou-h">For you</h1>
+        <p class="board-sub">Your favorites read as they are now, and what they suggest: more like them, and some very unlike them. Star anything here and the reading follows.</p>
+      </div>
+      <div class="fy-actions">
+        <button type="button" class="btn" data-act="foryou-more"><svg class="ic" aria-hidden="true"><use href="#i-dice"/></svg>New ideas</button>
+        <button type="button" class="btn" id="foryou-play" data-act="foryou-play"><svg class="ic" aria-hidden="true"><use href="#i-pause"/></svg><span>Pause</span></button>
+      </div>
+    </div>
+    <div class="trends" id="trends"></div>
+    <div class="fy-part">
+      <h2 class="fy-h" id="fy-like-h">More like your favorites</h2>
+      <p class="fy-sub" id="fy-like-sub"></p>
+      <ol class="sheet" id="fy-like" aria-labelledby="fy-like-h"></ol>
+    </div>
+    <div class="fy-part" id="fy-far-wrap">
+      <h2 class="fy-h" id="fy-far-h">Something different</h2>
+      <p class="fy-sub">The families furthest from your favorites on the axes, each played at your favorites' intensity.</p>
+      <ol class="sheet sheet-far" id="fy-far" aria-labelledby="fy-far-h"></ol>
+    </div>
+    <p class="fy-seed">Ideas from seed <span class="mono" id="fy-seed"></span></p>
   </section>
 
   <footer class="foot">

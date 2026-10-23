@@ -9,7 +9,7 @@ The artist, 21 Oct 2026:
 
 So the mark in motion is the app's second logo, and this lab is where the artist finds it. It covers
 the sixteen moments a person passes through in 5s (opening the app, a keep, a pass, a turn, five
-sorted, a seed growing…) and nineteen families of ways the 5 and the s can move through them. The
+sorted, a seed growing…) and twenty-six families of ways the 5 and the s can move through them. The
 artist can play, scrub, compare and tune them, pick one per moment, and hand the picks back so the
 app can use them. `SPEC.md` is the contract; `../CONCEPT.md` (the artist's own words) outranks it.
 
@@ -19,15 +19,18 @@ app can use them. `SPEC.md` is the contract; `../CONCEPT.md` (the artist's own w
 | --- | --- |
 | `marks.js` | The mark and the engine, global `Marks` (frozen). It holds the 5, the s, the ribbon, digits 1–4 and the frame as centreline strokes in a 1000 × 1000 space; strokes with the gradient running along them; palettes; easings; seeded rng; layers. It also holds the `Motion` registry and `Motion.render`. |
 | `families/*.js` | One family per file. Each calls `Motion.register({...})` with id, name, idea, why, moments, styles, params, reduced, loop and a pure `draw(ctx, t, p, env)`. |
-| `index.html`, `lab.css`, `lab.js` | The lab: Moments + Stage + Family panel, Explore (contact sheets), Board, picks and hand-back. |
-| `build.py` | Builds `dist/`. |
+| `index.html`, `lab.css`, `lab.js` | The lab: Moments + Stage + Family panel, Explore (contact sheets), Board (with the pool of favorites), For you, picks and hand-back. `lab.js` also holds `MotionLab.mount` and the descriptor table For you reads (`AXES`, `TAGS`). |
+| `build.py` | Builds `dist/`, including `lab-markup.js` (the markup and lab.css for a shadow root, for `MotionLab.mount`). |
 | `test/marks.test.cjs` | Engine tests (no browser). |
 | `test/strip.cjs` | Frame strips of any family, and `--check` (determinism, final frame, loop seams, context restored). |
-| `test/lab.smoke.cjs` | Playwright smoke test of the built lab at 1440 × 900 and 390 × 844, light and dark. |
+| `test/lab.smoke.cjs` | Playwright smoke test of the built lab at 1440 × 900 and 390 × 844, light and dark, For you included. |
+| `test/embed.html`, `test/embed.smoke.cjs` | A host page with clashing CSS, its own hash router and click handler; the test mounts the lab in it and checks it looks and works as on its own page, leaves the host alone, saves through the db it is given and unmounts cleanly. |
+| `test/favorites.json` | The artist's 15 favorites (22 Oct 2026), the fixture both smoke tests store in a fake db. |
 
-The 19 families: Swipe, Pulse, Fill, Negative, Rewind, Flip (gesture and judgment); Draw, Count, Ring,
+The 26 families: Swipe, Pulse, Fill, Negative, Rewind, Flip (gesture and judgment); Draw, Count, Ring,
 Stack, Echo, Path (time and structure); Split, Collage, Morph, Three, Pin, Grow, Ribbon (decomposition
-and making). Each has 3–4 styles. All of them honour the shared options palette, ribbon, weight,
+and making); and seven added on 22 Oct from the trends in the artist's favorites (`5s/handoff/motion-brief.json`):
+Phases (the hybrid), Stamp, Dive, Neon, Tiles, Swarm and Cast. Each has 3–6 styles. All of them honour the shared options palette, ribbon, weight,
 intensity and easing, and each declares what plays under reduced motion.
 
 ## Build and test
@@ -36,7 +39,8 @@ intensity and easing, and each declares what plays under reduced motion.
 python3 5s/motion/build.py                    # -> 5s/motion/dist/{index.html, dev.html, marks.js, families.js, lab.js, logo.webp}
 node 5s/motion/test/marks.test.cjs            # engine: 32 tests
 node 5s/motion/test/strip.cjs --check         # every family, every style, both themes
-node 5s/motion/test/lab.smoke.cjs             # builds, serves dist on 8950-8959 ($LAB_PORT), 109 checks
+node 5s/motion/test/lab.smoke.cjs             # builds, serves dist on 8950-8959 ($LAB_PORT), 160 checks
+node 5s/motion/test/embed.smoke.cjs           # the lab mounted in test/embed.html, served on 8975-8979 ($EMBED_PORT), 58 checks
 node 5s/motion/test/strip.cjs --all --theme dark --out /tmp/all-dark.png   # look at every family
 node 5s/motion/test/strip.cjs --styles --family flip                        # every style of one family
 ```
@@ -63,6 +67,53 @@ node 5s/motion/test/strip.cjs --styles --family flip                        # ev
 - Capabilities: `{db: {}, user: {}, downloads: true}`.
 - The page follows the Artifact contract: no doctype/html/head/body; `<title>` and the
   viewport-fit meta come first, then the inlined CSS; it loads nothing external except Google Fonts.
+
+## For you: what the favorites say
+
+The artist, 22 Oct 2026: "I want the animations that I favorite in the motions lab to be the ones used in
+the app … pay attention to trends in my favorite animations so you can further refine those types, as well
+as explore new ones that are very different, but just as potent and exciting."
+
+The favorites are one pool: every moment's stars, read once each. **For you** (`#foryou`) reads that pool
+on the nine descriptor axes of `5s/handoff/motion-brief.json` and proposes what to try next:
+
+- **The reading** says, in sentences and then in counted chips, which families and styles were starred,
+  what most of them share on the axes, where they split, which values none of them has, and how they lean
+  on intensity, palette, ribbon, weight and easing. Tempo comes with a caveat: the lab fits each animation
+  to the moment it was browsed on, so durations say where the artist browsed, not what the artist likes.
+  The reading follows every star.
+- **More like your favorites**: each favorite retuned (other params and another tempo, by seed), the other
+  styles of the families starred (Refined marks the styles made from the trends) and the hybrid Phases,
+  ranked by how much they share with the pool.
+- **Something different**: the families furthest from the pool, each at the pool's intensity.
+- **No favorites yet**: a starter sheet of twelve families as unlike one another as the axes allow.
+
+Every cell plays, loads onto the stage and takes a star; **New ideas** reseeds. The Board shows the pool
+first. To describe a new family on the axes, add one line to `TAGS` in `lab.js` (space, time, change,
+texture, energy, rhythm, dimension, actor, arc, in that order); a family without one still works.
+
+## Mounting the lab in another page
+
+The lab can run inside the 5s app as a view only the artist sees. The standalone page is unchanged.
+
+```js
+// the page loads marks.js, families.js, lab-markup.js and lab.js (and has no #lab of its own)
+const handle = MotionLab.mount(host, { embedded: true, db, view: 'foryou' });   // db, view optional
+handle.unmount();                                                           // or MotionLab.unmount()
+```
+
+- **Where it draws:** a shadow root on `host`, styled by its own lab.css (inside `lab-markup.js`), so the
+  page's CSS and the lab's never meet. The host decides its size; the page provides the fonts and
+  `logo.webp` beside it.
+- **What it listens to:** only its shadow root. Keys work while focus is inside the lab; views switch
+  inside it and never touch `location.hash`.
+- **Where picks go:** `db.doc('motion/picks')`, the same document and shape as on the lab's own page;
+  without `db`, `claude.use('db')`. In the app that is the app's database, not the published lab's: the
+  favorites have to be carried over once (read the lab's with `ArtifactData`, write them to the app's),
+  and the lab's own database is never overwritten.
+- **Theme:** the chrome follows the page's `data-theme`; the stage keeps its own Light/Dark switch.
+- **`unmount()`** stops every clock, observer, timer, db subscription and listener, still writes a change
+  that was waiting, and empties the shadow root. `mount` again starts afresh.
 
 ## Picks: where they live and how to read them back
 

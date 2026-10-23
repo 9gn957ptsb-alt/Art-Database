@@ -88,7 +88,7 @@ env → same pixels: never Math.random or the clock) so the lab can scrub, freez
 Shared options every family honours: `palette`, `theme`, `ribbon` (on/off), `weight` (stroke scale
 0.6–1.4), `intensity` (0–1: how big the gesture is), `easing`.
 
-**The library (19 families, three builders).** Each family has 2–4 styles so "Generate" has real range.
+**The library (19 families, three builders; seven more added 22 Oct, 26 in all).** Each family has 2–4 styles so "Generate" has real range.
 
 | Group | Family | The idea | Moments |
 | --- | --- | --- | --- |
@@ -111,6 +111,13 @@ Shared options every family honours: `palette`, `theme`, `ribbon` (on/off), `wei
 | | **Pin** | the mark drops into a frame like a picture being hung, swings and settles | set-pin |
 | | **Grow** | the mark is extruded in true isometry (30°) and rises from a ground plane like a building; a seed of the s sprouts first | seed |
 | | **Ribbon** | only the ribbon moves: it sweeps through the still 5 and s, tightening, in the turn's violet | turn, tab, launch |
+| Added 22 Oct, from the favorites' trends (`5s/handoff/motion-brief.json`) | **Phases** | the hybrid: the mark changes form and every stage it passes through stays behind as a trace, then the traces fold back | turn, five-done, tab, undo, streak |
+| | **Stamp** | a rubber stamp: it lifts toward you, slams down, ink squeezes out, the frame jolts, the print dries crisp | keep, five-done, set-pin, streak |
+| | **Dive** | the view dives into the 5's bowl until it fills the screen, passes through, and the same 5s comes forward to rest | tab, launch, split, path, turn |
+| | **Neon** | a neon sign: the tubes buzz, stutter and catch, light blooms across the field, the sign holds, humming | launch, load, empty, turn, five-start |
+| | **Tiles** | the mark printed across a board of cards that a wave turns over until the seams close | tab, five-start, five-done, set-pin, bring |
+| | **Swarm** | a flock of specks along the strokes bursts up, wheels round the frame and settles back into the 5 and the s | split, bring, launch, empty, pass |
+| | **Cast** | the mark stands still like an object in a room; a light crosses over it and its long shadow sweeps round the floor (a loop) | seed, load, empty, launch, five-start |
 
 ## The moments (what a person passes through in 5s)
 
@@ -154,7 +161,30 @@ One page, desktop-first but working at phone width (the artist will also open it
   be reproduced). **All families** shows one of every family for this moment. Clicking a variant loads
   it into the stage. Each has a star.
 - **Board** (a mode): every moment's current pick playing at once in a grid, labelled: the app's motion
-  system at a glance; a single Play/Pause for all.
+  system at a glance; a single Play/Pause for all. Above the picks, **the pool**: every favorite playing,
+  since the favorites are what 5s uses, any of them at any moment (22 Oct: "I want the animations that I
+  favorite in the motions lab to be the ones used in the app"). Each loads onto the stage and can be
+  unstarred there.
+- **For you** (a mode, `#foryou`): the favorites read, live, and what they suggest. One pool: every
+  moment's stars, de-duplicated (canonical keys), whatever moment they were starred on.
+  - **The reading**: plain sentences, then chips with counts. The families and styles; the brief's nine
+    descriptor axes (`5s/handoff/motion-brief.json`: space, time, change, texture, energy, rhythm,
+    dimension, actor, arc) with what most of the favorites share, where they split, and the values no
+    favorite has yet; intensity, palette, ribbon, weight, easing. Tempo only with its caveat: the lab fits
+    each animation to the moment it was browsed on, so durations say where the artist browsed, not taste.
+    It updates as stars come and go.
+  - **More like your favorites** (12): each favorite retuned (its family and style, its params nudged by
+    the seed, a tempo between 0.4 and 2 s), the favored families' other styles (the refined ones marked
+    Refined) and the hybrid Phases, given the pool's median intensity and weight and its usual palette and
+    ribbon. Ranked by affinity (per axis, the share of favorites that agree, averaged) plus how often the
+    family was starred; every favored family once, then the best, at most three per family.
+  - **Something different** (8): the families no favorite belongs to, furthest from the pool on the
+    axes, one seeded style each, at the pool's intensity; each says which of its values are new.
+  - With no favorites: it says so and offers a starter sheet of twelve families chosen to differ from one
+    another on the axes (farthest first). The first star turns it into More like your favorites.
+  - Every cell plays on the view's own clock (one Play/Pause), loads onto the stage, takes a star. **New
+    ideas** reseeds both sheets (the seed is shown and kept). The axes and every family's values are one
+    table in `lab.js` (`AXES`, `TAGS`); a family missing from it still works (halfway on every axis).
 - **Pick**: "Use for <moment>" saves the current family + params + seed (+ an optional note, one line:
   "why this one") as that moment's pick. Starred variants are kept per moment for later.
 - **Hand back**: **Copy spec** (JSON of every pick: moment → {family, style, params, seed, note}), and
@@ -174,7 +204,31 @@ No doctype/html/head/body; `<title>5s Motion Lab</title>` and
 body background from a token; `height: 100%` not `100vh`; scripts are the page's own files
 (`marks.js`, `families/*.js` concatenated into `families.js` at build, `lab.js`); Google Fonts only
 (Unbounded, Figtree, Martian Mono, as the app); no alert/confirm/prompt/print/`<a download>`;
-localStorage in try/catch; hash views `#moments`, `#explore`, `#board` as bare tokens.
+localStorage in try/catch; hash views `#moments`, `#explore`, `#board`, `#foryou` as bare tokens (on its own page; mounted, views stay inside).
+
+**Mounted in the app** (22 Oct: the lab becomes a view of 5s that only the artist sees). The same lab
+renders into a shadow root on any element, without changing the standalone page:
+
+```js
+const handle = MotionLab.mount(host, { embedded: true, db, view: 'foryou' });   // db and view optional
+handle.unmount();                       // or MotionLab.unmount()
+```
+- The host page loads `marks.js`, `families.js`, `lab-markup.js` and `lab.js` (no `#lab` on the page), and
+  provides the fonts (Figtree, Unbounded, Martian Mono) and `logo.webp` beside it, as the app does.
+- `lab-markup.js` (built) is `window.MotionLabMarkup = {css, html}`: lab.css with `:root` turned into
+  `:host` (`html`/`body` rules into `:host, .lab`, and `:host {all: initial}` first, so the host page's
+  inherited styles stop at the host) and index.html's markup without its title, metas, links and scripts.
+- Every query and listener is scoped to the shadow root: no document- or window-level click, input,
+  change, keydown, pointerup or hashchange listener. Keys reach the lab only while focus is inside it (the
+  lab takes focus on a click anywhere in it). Views are routed inside (the mode links never touch the
+  host's `location.hash`); `view` picks the first one.
+- `db` is the database to keep `motion/picks` in, the same document and shape as on the lab's own page;
+  without it, `claude.use('db')`. `user` and `downloads` still come from `claude.use`.
+- The chrome follows the page's `data-theme` (mirrored onto the host); the stage keeps its own Light/Dark.
+- `unmount()` stops the clock, the observers, the timers, the db subscription and every listener, writes
+  a change still waiting to be saved, and empties the shadow root. Mounting again starts afresh.
+- `window.MotionLab` keeps its read-only getters (`frames`, `draws`, `running`, `data`, `ui`, `stage`,
+  `sheet`, `groups()`, `batchFor()`, `spec()`), now also `pool` and `foryou`, for whichever lab runs.
 
 Accessibility (the site's DISPLAY.md checklist): everything that moves can be paused (one global
 **Pause all** too, and nothing autoplays under prefers-reduced-motion until Play is pressed); every
@@ -188,7 +242,8 @@ one polite live region ("Picked Flip for A turn").
 5s/motion/marks.js       the mark and the engine
 5s/motion/families/*.js  one file per family (or per group)
 5s/motion/index.html, lab.js, lab.css
-5s/motion/build.py       -> 5s/motion/dist/{index.html (css inlined), marks.js, families.js, lab.js, logo.webp}, dist/dev.html
-5s/motion/test/*.cjs     Playwright checks + frame strips
+5s/motion/build.py       -> 5s/motion/dist/{index.html (css inlined), marks.js, families.js, lab.js, lab-markup.js, logo.webp}, dist/dev.html
+5s/motion/test/*.cjs     Playwright checks + frame strips; embed.html + embed.smoke.cjs (the lab mounted in a host)
+5s/motion/test/favorites.json  the artist's 15 favorites (22 Oct 2026), a fixture for the smoke tests
 ```
 `marks.js` and the families are written to be lifted into the app later (no lab-specific code in them).

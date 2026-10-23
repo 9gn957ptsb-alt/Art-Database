@@ -15,6 +15,7 @@
  *         - determinism: the same t renders pixel-identical frames, before and after other frames
  *         - the frame at t = 1 is not blank (something differs from the background)
  *         - loops are seamless: t = 0 and t = 1 match (families with loop: true)
+ *           and stay so under outElastic easing, still moving mid-cycle (not parked at rest)
  *         - Motion.render leaves the context as it found it (transform, alpha)
  *       exits 1 if anything fails.
  *
@@ -265,6 +266,10 @@ function runChecks({ ids, size }) {
           if (fam.loop) {
             const seam = diffShare(pixels(frame(id, 0, p, theme)), pixels(c1), 24);
             if (seam > 0.002) problems.push(`${tag}: loop seam: t=0 and t=1 differ on ${(seam * 100).toFixed(1)}% of pixels`);
+            // under an ease-out (Generate hands loops these too) a loop stays seamless and still moves mid-cycle
+            const pe = Object.assign({}, p, { easing: 'outElastic' }), e0 = pixels(frame(id, 0, pe, theme));
+            if (diffShare(e0, pixels(frame(id, 1, pe, theme)), 24) > 0.002) problems.push(`${tag}: loop seam breaks under outElastic`);
+            if (Math.max(...[0.25, 0.5, 0.75].map((t) => diffShare(e0, pixels(frame(id, t, pe, theme)), 24))) < 0.005) problems.push(`${tag}: under outElastic the loop sits still mid-cycle`);
           }
           const cc = canvas(), ctx = cc.getContext('2d');
           ctx.globalAlpha = 0.8;

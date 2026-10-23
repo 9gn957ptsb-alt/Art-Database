@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Host for the Motion Lab</title>
+<!-- A host page for test/embed.smoke.cjs: it styles the lab's own class names, the body and the
+     buttons on purpose, runs its own hash router and a document click handler, and mounts the lab with
+     MotionLab.mount(host, {embedded: true, db}). Served beside dist/ (marks.js, families.js,
+     lab-markup.js, lab.js, logo.webp). Add ?mount to mount it without the test (localStorage only). -->
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; background: #fffbe6; color: #0a7a00; font: italic 21px/2.6 Georgia, serif; letter-spacing: 2px; text-transform: uppercase; text-align: center; }
+  .top { display: flex; gap: 18px; align-items: center; height: 54px; padding: 0 14px; background: #c40000; color: #fff; overflow: hidden; white-space: nowrap; }
+  .brand { font-size: 30px; color: #ff0; }
+  .mode { color: #0ff; border: 3px dotted #0ff; padding: 0 6px; }
+  .sheet { display: block; border: 6px solid lime; }
+  .cell { padding: 40px; background: yellow; }
+  .panel { display: none; }
+  button { background: hotpink; border-radius: 0; font-size: 26px; }
+  canvas { outline: 5px dashed blue; }
+  * { box-sizing: content-box; }
+  #motion-host { height: calc(100% - 54px); }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#home">Host</a>
+  <a class="mode" href="#home">Home</a>
+  <a class="mode" href="#lab">Lab</a>
+  <span id="route">#</span>
+  <span>clicks <span id="clicks">0</span></span>
+</header>
+<div id="motion-host"></div>
+<script>
+  // the host's own router and click handler, which the lab must leave alone
+  window.hostClicks = 0;
+  document.addEventListener('click', () => { document.getElementById('clicks').textContent = String(++window.hostClicks); });
+  const route = () => { document.getElementById('route').textContent = location.hash || '#'; };
+  window.addEventListener('hashchange', route);
+  route();
+</script>
+<script src="marks.js"></script>
+<script src="families.js"></script>
+<script src="lab-markup.js"></script>
+<script src="lab.js"></script>
+<script>
+  if (/[?&]mount\b/.test(location.search)) MotionLab.mount(document.getElementById('motion-host'), { embedded: true });
+</script>
+</body>
+</html>

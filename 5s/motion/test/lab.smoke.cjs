@@ -15,6 +15,11 @@
  *     Save spec and Record go through downloads
  *   - Pause all stops the clock; under prefers-reduced-motion nothing plays until Play
  *   - keyboard: Space, Left/Right (one frame), [ and ]
+ *   - For you, at both sizes and themes, with a faked db holding the artist's 15 favorites (test/favorites.json)
+ *     saved twice in two key orders: one pool of 15, the reading, More like your favorites (only the favored
+ *     families and Phases), Something different (none of them; the new families high), every cell draws;
+ *     a star from For you joins the pool, the reading follows and the db gets it; a cell loads onto the stage;
+ *     with no favorites, a starter sheet of twelve families; the Board's pool
  * Screenshots go to --shots (default $TMPDIR/5s-motion-lab-shots). Exits 1 when anything fails.
  * Google Fonts requests are answered with an empty stylesheet (the sandbox has no route to them).
  */
@@ -67,6 +72,17 @@ function waitFor(url, ms) {
   });
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const FAVORITES = require('./favorites.json').favorites;
+const NEW_FAMILIES = ['stamp', 'dive', 'neon', 'tiles', 'swarm', 'cast'];
+// the artist's 15 favorites as the db held them: under the moments they were starred on, each moment's
+// list saved again in the db's own key order (reversed here), so the lab must read 26 as one pool of 15
+function storedFavorites() {
+  const stars = {};
+  const rev = (o) => Object.keys(o).reverse().reduce((x, k) => { x[k] = o[k]; return x; }, {});
+  for (const f of FAVORITES) { const { found, ...v } = f; (stars[found] = stars[found] || []).push(v); }
+  for (const m of Object.keys(stars)) stars[m] = stars[m].concat(stars[m].slice(0, 6).map((v) => Object.assign(rev(v), { params: rev(v.params) })));
+  return { picks: {}, stars, v: 1 };
+}
 
 // a fake window.claude (db + user + downloads) for the capability paths; state kept on window.__fake
 function fakeClaude(o) {
@@ -292,7 +308,12 @@ async function main() {
       const cells = await page.$$eval('#sheet .cell', (c) => c.length);
       ok(cells === 12, 'the contact sheet shows 12');
       const inks = [];
-      for (let i = 1; i <= 12; i++) inks.push((await page.evaluate(CANVAS_INFO, '#sheet .cell:nth-child(' + i + ') canvas')).ink);
+      // a frame can be one colour mid-gesture (Dive inside the bowl), so a blank cell is looked at again
+      for (let i = 1; i <= 12; i++) {
+        let ink = 0;
+        for (let k = 0; k < 5 && ink <= 0.01; k++) { if (k) await page.waitForTimeout(250); ink = (await page.evaluate(CANVAS_INFO, '#sheet .cell:nth-child(' + i + ') canvas')).ink; }
+        inks.push(ink);
+      }
       ok(inks.every((x) => x > 0.01), 'every variant in the sheet draws', inks.map((x) => x.toFixed(2)).join(' '));
       ok(sheet1.filter((v) => v.wild).length === 3 || (await lab(page, () => Motion.forMoment('turn').length)) === 0, 'three of them are wildcards', sheet1.filter((v) => v.wild).map((v) => v.family).join(' '));
       await shot(page, 'lab-explore-turn');
@@ -346,7 +367,9 @@ async function main() {
       ok(/The turn, literally/.test(await page.textContent('#pick-status')), 'the stage says what is picked');
       ok(/turn|Flip|·/.test(await page.textContent('.mo[data-moment="turn"] .mo-pick')) && !(await page.$eval('.mo[data-moment="turn"] .mo-thumb', (e) => e.classList.contains('empty'))), 'the rail shows the pick as a live thumbnail');
       await page.waitForTimeout(200);
-      ok((await page.evaluate(CANVAS_INFO, '.mo[data-moment="turn"] canvas')).ink > 0.01, 'the rail thumbnail draws');
+      let railInk = 0;   // looked at again when the frame is one colour mid-gesture (Dive inside the bowl)
+      for (let k = 0; k < 6 && railInk <= 0.01; k++) { if (k) await page.waitForTimeout(250); railInk = (await page.evaluate(CANVAS_INFO, '.mo[data-moment="turn"] canvas')).ink; }
+      ok(railInk > 0.01, 'the rail thumbnail draws', v5.family);
       await shot(page, 'lab-picked');
 
       // copy spec
@@ -451,6 +474,105 @@ async function main() {
       await page.click('#t-play');
       await page.waitForTimeout(150);
       ok(await lab(page, () => MotionLab.running && MotionLab.stage.playing), 'Play starts the stage');
+      ok(errs.length === 0, 'no console errors', errs.join(' | '));
+      await ctx.close();
+    }
+
+    /* ---------------------------------------------------------------- For you and the pool */
+    console.log('\nFor you, with the artist\'s favorites stored twice over (a faked db)');
+    // every cell of a list draws once it is on screen (looked at again when a frame is one colour mid-gesture)
+    const cellsDraw = async (page, list, n) => {
+      const blank = [];
+      for (let i = 1; i <= n; i++) {
+        const sel = list + ' .cell:nth-child(' + i + ') canvas';
+        await page.$eval(sel, (c) => c.scrollIntoView({ block: 'center' }));
+        let ink = 0;
+        for (let k = 0; k < 6 && ink <= 0.01; k++) { await page.waitForTimeout(k ? 250 : 120); ink = (await page.evaluate(CANVAS_INFO, sel)).ink; }
+        if (ink <= 0.01) blank.push(i);
+      }
+      return blank;
+    };
+    const favFams = new Set(FAVORITES.map((f) => f.family));
+    for (const [w, h] of [[1440, 900], [390, 844]]) {
+      for (const scheme of ['light', 'dark']) {
+        const tag = 'for-you-' + w + '-' + scheme;
+        const errs = [];
+        const ctx = await newContext(browser, { viewport: { width: w, height: h }, scheme, claude: { seedDoc: storedFavorites() } });
+        const page = await open(ctx, base, '#foryou', errs);
+        await page.waitForFunction(() => MotionLab.pool.length > 0);
+        await page.waitForTimeout(400);
+        ok((await lab(page, () => MotionLab.pool.length)) === 15, tag + ': 26 stored favorites read as one pool of 15');
+        const read = await page.textContent('#trends');
+        ok(/15 favorites in 6 families: Echo 6/.test(read) && /Most of them/.test(read) && /Not in the pool yet/.test(read), tag + ': the reading names the families and what they share', read.slice(0, 90));
+        ok(/follows the moments you were on/.test(read) && /Intensity/.test(read) && /Palette/.test(read) && /Easing/.test(read), tag + ': it reads the options, and tempo only with its caveat');
+        const fy = await lab(page, () => MotionLab.foryou);
+        ok(fy.like.length === 12 && fy.far.length === 8, tag + ': twelve more like them, eight different', fy.like.length + ' + ' + fy.far.length);
+        ok(fy.like.every((c) => favFams.has(c.family) || c.family === 'phases') && [...favFams].every((f) => fy.like.some((c) => c.family === f)), tag + ': More like holds every favored family (and Phases), nothing else', fy.like.map((c) => c.family + '/' + c.params.style).join(' '));
+        ok(fy.far.every((c) => !favFams.has(c.family)) && fy.far.filter((c) => NEW_FAMILIES.includes(c.family)).length >= 3, tag + ': Something different holds none of them, and the new families rank high', fy.far.map((c) => c.family).join(' '));
+        ok(await noHScroll(page), tag + ': no horizontal scroll');
+        await shot(page, tag, w < 800);
+        const blank = (await cellsDraw(page, '#fy-like', 12)).concat((await cellsDraw(page, '#fy-far', 8)).map((i) => 'far ' + i));
+        ok(blank.length === 0, tag + ': every cell draws', blank.join(', '));
+        if (w === 1440) await page.evaluate(() => { document.querySelector('#view-foryou').scrollTop = 1e5; });
+        await page.waitForTimeout(300);
+        if (w === 1440) await shot(page, tag + '-sheets');
+        if (w === 1440 && scheme === 'light') {
+          // a star from For you joins the pool; the reading follows; the db gets it
+          const writes0 = await lab(page, () => window.__fake.writes.length);
+          await page.$eval('#fy-like .cell:nth-child(1) .cell-star', (b) => b.scrollIntoView({ block: 'center' }));
+          await page.click('#fy-like .cell:nth-child(1) .cell-star');
+          await page.waitForTimeout(100);
+          ok((await page.getAttribute('#fy-like .cell:nth-child(1) .cell-star', 'aria-pressed')) === 'true', 'a variant in For you can be starred');
+          ok((await lab(page, () => MotionLab.pool.length)) === 16 && /16 favorites/.test(await page.textContent('#trends')), 'it joins the pool and the reading follows at once');
+          await page.waitForTimeout(1200);
+          const last = await lab(page, () => window.__fake.writes.slice(-1)[0]);
+          ok(last && (await lab(page, () => window.__fake.writes.length)) > writes0 && Object.values(last.data.stars).flat().length === 16, 'the db gets the pool of 16, without the duplicates');
+          // new ideas
+          const seed0 = fy.seed;
+          await page.click('[data-act="foryou-more"]');
+          await page.waitForTimeout(300);
+          const fy2 = await lab(page, () => MotionLab.foryou);
+          ok(fy2.seed !== seed0 && fy2.like.map((c) => c.seed).join() !== fy.like.map((c) => c.seed).join(), 'New ideas draws another set', seed0 + ' -> ' + fy2.seed);
+          // a cell loads onto the stage
+          const far0 = fy2.far[0];
+          await page.$eval('#fy-far .cell:nth-child(1) .cell-load', (b) => b.scrollIntoView({ block: 'center' }));
+          await page.click('#fy-far .cell:nth-child(1) .cell-load');
+          await page.waitForTimeout(250);
+          const st = await lab(page, () => ({ view: MotionLab.ui.view, v: MotionLab.stage.variant }));
+          ok(st.view === 'moments' && st.v.family === far0.family && st.v.seed === far0.seed, 'a cell of For you loads onto the stage', far0.family + ' ' + far0.seed);
+          // the Board's pool
+          await page.click('.mode[data-mode="board"]');
+          await page.waitForTimeout(500);
+          ok((await page.$$eval('#board-pool .cell', (c) => c.length)) === 16 && (await page.textContent('#pool-count')) === '16', 'the Board shows the pool first, every favorite');
+          ok((await page.evaluate(CANVAS_INFO, '#board-pool .cell:nth-child(1) canvas')).ink > 0.01, 'the pool plays');
+          await shot(page, 'board-pool');
+          await page.click('#board-pool .cell:nth-child(1) .cell-star');
+          await page.waitForTimeout(150);
+          ok((await page.$$eval('#board-pool .cell', (c) => c.length)) === 15 && (await lab(page, () => MotionLab.pool.length)) === 15, 'unstarring in the pool takes it out');
+        }
+        ok(errs.length === 0, tag + ': no console errors', errs.slice(0, 3).join(' | '));
+        await ctx.close();
+      }
+    }
+    {
+      console.log('\nFor you with no favorites');
+      const errs = [];
+      const ctx = await newContext(browser, { claude: { seedDoc: { picks: {}, stars: {}, v: 1 } } });
+      const page = await open(ctx, base, '#foryou', errs);
+      await page.waitForTimeout(500);
+      ok(/No favorites yet/.test(await page.textContent('#trends')), 'For you says there are no favorites yet');
+      const like = await lab(page, () => MotionLab.foryou.like);
+      ok(like.length === 12 && new Set(like.map((c) => c.family)).size === 12, 'and offers a starter sheet of twelve different families', like.map((c) => c.family).join(' '));
+      ok(!(await page.isVisible('#fy-far-wrap')) && /starter/.test(await page.textContent('#fy-like-h')), 'with no Something different yet');
+      ok((await cellsDraw(page, '#fy-like', 12)).length === 0, 'every starter cell draws');
+      await page.evaluate(() => { document.querySelector('#view-foryou').scrollTop = 0; });
+      await shot(page, 'for-you-none');
+      await page.click('#fy-like .cell:nth-child(3) .cell-star');
+      await page.waitForTimeout(150);
+      ok(/More like/.test(await page.textContent('#fy-like-h')) && /1 favorite in 1 family/.test(await page.textContent('#trends')), 'the first star turns the starter sheet into More like your favorites');
+      await page.click('.mode[data-mode="board"]');
+      await page.waitForTimeout(300);
+      ok((await page.$$eval('#board-pool .cell', (c) => c.length)) === 1, 'and the Board\'s pool holds it');
       ok(errs.length === 0, 'no console errors', errs.join(' | '));
       await ctx.close();
     }
