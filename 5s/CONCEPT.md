@@ -75,6 +75,14 @@ Said over a screenshot of Set's room (wall, window, picture, floor, object):
   associations should be the same gestures you find in Candy Crush Saga. That part of the app perhaps
   should be the most game-like and should be able to be played just like Candy Crush Saga."
 
+With a screenshot of the App Store listing of Royal Kingdom ("King Richard's Match 3 Puzzles"),
+23 Oct 2026:
+
+- "Look at the game app to inform the Set game. You can use YouTube to watch gameplay for it and do
+  research on why it's successful. The basic idea that your racing against the clock should be
+  implemented into the Set game, as well as, the idea that you are building a kingdom by playing this
+  game and having a map view of your kingdom that you roam to find new levels in new areas"
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
