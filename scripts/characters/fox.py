@@ -16,14 +16,27 @@ import json
 import math
 import os
 
-from draw import Part, capsule, ellipse, limb, path, ramp, raster, triangle, turned, two_bone, union
+from draw import Part, bayer, capsule, ellipse, limb, path, ramp, raster, triangle, turned, two_bone, union
 
 W, H = 40, 26
 GROUND = 24.6                  # the soles stand on this line
 CELL = 2                       # CSS pixels a cell, on the page
 
-COAT = ramp("Rrg")
-COAT_SOFT = ramp("Rrg")
+def blocks(steps):
+    """A ramp dithered in blocks of two cells, not one: soft patches of the coat, as the fox the page draws has, not
+    a speckle of single cells (and the dark steps lie in clumps, as the graphic's do)."""
+    def paint(x, y, light, i, j):
+        n = len(steps)
+        v = light * n - 0.5
+        k = int(math.floor(v))
+        if v - k > bayer(i // 2, j // 2):
+            k += 1
+        return steps[max(0, min(n - 1, k))]
+    return paint
+
+
+COAT = blocks("Rrg")
+COAT_SOFT = blocks("Rrg")
 WHITE = ramp("Ww")
 BLACK = ramp("kK")
 FAR_COAT = ramp("dR")
@@ -35,6 +48,8 @@ def coat_with_white(white_below):
     def paint(x, y, light, i, j):
         if white_below(x, y):
             return WHITE(x, y, light, i, j)
+        if y < 12.9:
+            return "R" if light < 0.8 else COAT(x, y, light, i, j)       # the saddle: the back a step deeper than the flank
         return COAT(x, y, light, i, j)
     return paint
 
@@ -51,7 +66,7 @@ def stocking(top, near=True):
 def leg(joint, foot, l1, l2, bend, r0, r1, near, group):
     knee = two_bone(joint, foot, l1, l2, bend)
     sdf = union(capsule(joint, knee, r0, (r0 + r1) / 2), capsule(knee, foot, (r0 + r1) / 2 * 0.8, r1))
-    top = knee[1] - 0.6
+    top = knee[1] - 1.7                  # the black stocking starts above the knee, at the elbow or the hock
     paw = ellipse(foot[0] + 0.5, foot[1] - 0.1, 1.1, 0.7)
     return [Part(sdf, stocking(top, near), group),
             Part(paw, BLACK if near else FAR_BLACK, group)]
@@ -77,14 +92,18 @@ def body_parts(dy=0.0, tail_lift=0.0, head=None):
     # The brush, behind everything: level, a little down, white at the tip.
     # The brush is narrow where it leaves the rump, fullest a little past its middle, and
     # tapers to a point: not a bar of the body's own thickness.
-    tail = [(12.6, 13.0 + dy), (8.6, 14.0 + dy - tail_lift * 0.5), (4.8, 14.9 + dy - tail_lift), (1.7, 15.2 + dy - tail_lift)]
+    tail = [(12.8, 13.0 + dy), (9.4, 14.0 + dy - tail_lift * 0.4), (6.0, 14.9 + dy - tail_lift * 0.8), (3.0, 15.6 + dy - tail_lift), (0.8, 16.0 + dy - tail_lift)]
     tip = tail[-1]
 
     def tail_paint(x, y, light, i, j):
-        if math.hypot(x - tip[0], y - tip[1]) < 2.4:
+        # the white tip is the last quarter of the brush, a flame with a ragged edge, not a ball on its end
+        if x < tip[0] + 3.6 + 0.7 * math.sin(y * 1.9):
             return WHITE(x, y, light, i, j)
+        if y < 14.2 + dy - tail_lift * 0.5 and x < 9.0 and light < 0.55:
+            return "R"                              # the dusky line of black-tipped guard hairs along the top
         return COAT_SOFT(x, y, light, i, j)
-    parts.append(Part(union(path(tail[:2], 1.3, 2.7), path(tail[1:3], 2.7, 3.0), path(tail[2:], 3.0, 1.0)), tail_paint, 1))
+    # a brush is narrow where it leaves the rump, fullest at three fifths of its length, and tapers to its point
+    parts.append(Part(union(path(tail[:2], 1.4, 2.7), path(tail[1:3], 2.7, 3.4), path(tail[2:4], 3.4, 2.4), path(tail[3:], 2.4, 0.6)), tail_paint, 1))
     # Haunch, barrel and chest, one long low body.
     # (The belly tucks up behind the ribs: a fox's chest is its deepest part.)
     torso = union(ellipse(18.6, 14.5 + dy, 8.4, 2.95),
@@ -109,14 +128,14 @@ def head_profile(cx, cy, facing=1, ear=0.0):
         if y > cy + 1.2 + 0.18 * (x - cx) * f:
             return WHITE(x, y, light, i, j)
         return COAT(x, y, light, i, j)
-    near_ear = triangle((cx - f * 2.0, cy - 1.0), (cx + f * 0.4, cy - 2.0), (cx - f * (1.3 + ear), cy - 6.4 + ear * 0.5))
-    far_ear = triangle((cx + f * 0.3, cy - 1.8), (cx + f * 2.2, cy - 1.0), (cx + f * 1.5, cy - 5.8))
+    near_ear = triangle((cx - f * 2.1, cy - 1.0), (cx + f * 0.5, cy - 2.0), (cx - f * (1.3 + ear), cy - 7.3 + ear * 0.5))
+    far_ear = triangle((cx + f * 0.3, cy - 1.8), (cx + f * 2.3, cy - 1.0), (cx + f * 1.5, cy - 6.6))
 
     def ear_paint(x, y, light, i, j):
-        return BLACK(x, y, light, i, j) if y < cy - 3.6 else COAT(x, y, light, i, j)
+        return BLACK(x, y, light, i, j) if y < cy - 3.9 else COAT(x, y, light, i, j)
 
     def far_ear_paint(x, y, light, i, j):
-        return "k" if y < cy - 3.4 else FAR_COAT(x, y, light, i, j)
+        return "k" if y < cy - 3.7 else FAR_COAT(x, y, light, i, j)
     # The eye is amber, the colour of the coat's light step, so it is set in a dark rim (a fox's
     # eye is lined in black, the line running on toward the muzzle): without it, it vanished.
     rim = union(ellipse(cx + f * 1.7, cy - 0.1, 1.05, 0.8), capsule((cx + f * 2.2, cy + 0.15), (cx + f * 3.3, cy + 0.55), 0.35, 0.3))
@@ -155,10 +174,10 @@ def legs_at(phases, dy=0.0, reach=3.0, lift=2.2):
     ff, fh, nf, nh = phases
     sh = (SHOULDER[0], SHOULDER[1] + dy)
     hp = (HIP[0], HIP[1] + dy)
-    far = (leg((sh[0] + 1.0, sh[1]), stride(ff, (sh[0] + 1.0, 0), reach, lift), 4.4, 4.7, 1, 1.0, 0.65, False, 0) +
-           leg((hp[0] + 1.0, hp[1]), stride(fh, (hp[0] + 1.0, 0), reach, lift), 4.4, 5.2, -1, 1.5, 0.65, False, 0))
-    near = (leg(hp, stride(nh, hp, reach, lift), 4.4, 5.2, -1, 1.8, 0.7, True, 7) +
-            leg(sh, stride(nf, sh, reach, lift), 4.4, 4.7, 1, 1.2, 0.7, True, 7))
+    far = (leg((sh[0] + 1.0, sh[1]), stride(ff, (sh[0] + 1.0, 0), reach, lift), 4.4, 4.7, 1, 0.9, 0.6, False, 0) +
+           leg((hp[0] + 1.0, hp[1]), stride(fh, (hp[0] + 1.0, 0), reach, lift), 4.4, 5.2, -1, 1.3, 0.6, False, 0))
+    near = (leg(hp, stride(nh, hp, reach, lift), 4.4, 5.2, -1, 1.6, 0.65, True, 7) +
+            leg(sh, stride(nf, sh, reach, lift), 4.4, 4.7, 1, 1.05, 0.65, True, 7))
     limb(far[:2], "body"), limb(far[2:], "hind"), limb(near[:2], "hind"), limb(near[2:], "body")
     return far, near
 

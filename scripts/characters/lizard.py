@@ -58,6 +58,7 @@ HIP = (60.0, 20.6)          # where the hind legs hang from
 SHO = (75.5, 20.2)          # and the forelegs
 FOOT_Y = GROUND - 0.6       # the row a foot stands in
 HEAD_K = 1.0                # a chimera's head is a little grown (rig, slot "head")
+WHOLE_HEAD_K = 1.12         # and the whole animal's, a male's, a little broader than the base drawing
 TAIL_K = 1.0                # a chimera's hindquarters have a shorter tail (rig, slot "hind")
 
 
@@ -169,10 +170,10 @@ def legs(feet, lift=0.0, front=0.0, hind=0.0, flat=0.0, fold=1.0):
     sh = (SHO[0], SHO[1] - lift - front + flat)
     hp = (HIP[0], HIP[1] - lift - hind + flat)
     a, b = 6.0 * fold, 7.4 * fold
-    far = [leg((sh[0] + 1.6, sh[1]), feet["ff"], a, a + 0.1, -1, 1.9, 1.1, 4.6, 0, far=True),
-           leg((hp[0] + 1.6, hp[1]), feet["fh"], b, b + 0.1, 1, 2.4, 1.2, 5.6, 0, far=True)]
-    near = [leg(hp, feet["nh"], b, b + 0.1, 1, 2.9, 1.3, 5.8, 7),
-            leg(sh, feet["nf"], a, a + 0.1, -1, 2.3, 1.2, 4.8, 7)]
+    far = [leg((sh[0] + 1.6, sh[1]), feet["ff"], a, a + 0.1, -1, 2.3, 1.3, 5.2, 0, far=True),
+           leg((hp[0] + 1.6, hp[1]), feet["fh"], b, b + 0.1, 1, 2.9, 1.4, 6.2, 0, far=True)]
+    near = [leg(hp, feet["nh"], b, b + 0.1, 1, 3.5, 1.6, 6.6, 7),
+            leg(sh, feet["nf"], a, a + 0.1, -1, 2.9, 1.5, 5.6, 7)]
     limb(far[:1], "body"), limb(far[1:], "hind"), limb(near[:1], "hind"), limb(near[1:], "body")
     return far, near
 
@@ -197,7 +198,8 @@ def tail_parts(wave=0.0, lift=0.0, hind=0.0, flat=0.0, curl=0.0):
     pts = [(60.0, yh + 0.4), (49.0, yh + 1.8 + 0.6 * wave), (39.0, 24.6 + 1.0 * wave - 0.7 * flat), (29.0, 26.9 - 0.4 * wave),
            (19.0, 27.4 - 1.8 * wave + 0.8 * flat), (10.0, 26.0 - 2.6 * wave - 1.2 * curl), (4.0, 22.6 - 3.4 * wave - 3.0 * curl)]
     if flat:
-        pts = [pts[0]] + [(x, min(y, 27.2)) for x, y in pts[1:]]
+        # basking: the tail lies along the ground, a continuation of the flat body, not a ramp up to it
+        pts = [pts[0], (49.0, 25.8 + 0.4 * wave), (39.0, 26.5), (29.0, 27.0), (19.0, 27.1), (10.0, 26.8), (4.0, 26.2 - 0.8 * curl)]
     if TAIL_K < 1.0:
         # a chimera's hindquarters: the same tail, cut shorter toward the hip so it does not run the picture's length
         pts = [(60.0 + (x - 60.0) * TAIL_K, y) for x, y in pts]
@@ -341,19 +343,24 @@ def shot(parts):
 
 
 def poses():
-    return {
-        "trot": [shot(figure(feet=gait_feet(p), lift=(0.6 if p in (0.25, 0.75) else 0.0), wave=math.sin(p * 6.283)))
-                 for p in (0.0, 0.25, 0.5, 0.75)],
-        "stand": [shot(figure())],
-        "back": [shot(figure(front=5.0, head_up=4.0, feet=PUSH))],
-        "look": [shot(figure(front_on=True))],
-        "sit": [shot(basking())],
-        # The ethogram (characters.json): its instinct (a male holding his ground: up on his forelegs, the mouth
-        # open), its idle (the tongue tasting the air) and its ritual (the gape, the bite).
-        "act": [shot(figure(front=f, head_up=h, mouth=m, feet=PUSH)) for f, h, m in ACT],
-        "play": [shot(figure(tongue=t)) for t in (0.0, 1.0)],
-        "ritual": [shot(figure(front=f, head_up=h, mouth=m, feet=PUSH)) for f, h, m in RITUAL],
-    }
+    global HEAD_K
+    HEAD_K = WHOLE_HEAD_K          # the whole animal is a male: the broad head, swollen at the cheeks
+    try:
+        return {
+            "trot": [shot(figure(feet=gait_feet(p), lift=(0.6 if p in (0.25, 0.75) else 0.0), wave=math.sin(p * 6.283)))
+                     for p in (0.0, 0.25, 0.5, 0.75)],
+            "stand": [shot(figure())],
+            "back": [shot(figure(front=5.0, head_up=4.0, feet=PUSH))],
+            "look": [shot(figure(front_on=True))],
+            "sit": [shot(basking())],
+            # The ethogram (characters.json): its instinct (a male holding his ground: up on his forelegs, the mouth
+            # open), its idle (the tongue tasting the air) and its ritual (the gape, the bite).
+            "act": [shot(figure(front=f, head_up=h, mouth=m, feet=PUSH)) for f, h, m in ACT],
+            "play": [shot(figure(tongue=t)) for t in (0.0, 1.0)],
+            "ritual": [shot(figure(front=f, head_up=h, mouth=m, feet=PUSH)) for f, h, m in RITUAL],
+        }
+    finally:
+        HEAD_K = 1.0
 
 
 # ---- in three parts, for a chimera (scripts/characters/chimera.py) ---------------

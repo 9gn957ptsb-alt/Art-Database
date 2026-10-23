@@ -7,11 +7,12 @@ markings, with its source: the English Wikipedia article on the species (its
 description; `wiki` is the article's title). Nothing here is the artist's:
 the hand and the inks come from the native artist (hands.py).
 
-Left out of the natives on purpose: the eight drawn by hand (`CAST`: the red
+Left out of the natives on purpose: the nine drawn by hand (`CAST`: the red
 fox, the American bison, the red squirrel, the bald eagle, the banana slug,
-the red deer, the starling murmuration, the ocellated lizard — each lives only in its artist's home
-town, characters.json's `native`; the slug is no place's). The ninth, Frankenthaler's Anna's
-hummingbird, is native to no birthplace and is deliberately NOT in `CAST`: the generator still
+the red deer, the starling murmuration, the ocellated lizard, Caponigro's common eastern
+firefly — each lives only in its artist's home
+town, characters.json's `native`; the slug is no place's). Frankenthaler's Anna's
+hummingbird is native to no birthplace and is deliberately NOT in `CAST`: the generator still
 draws Berkeley's and Santa Monica's hummingbirds, after Mary Corse and Mark Bradford, so that no
 other place's choice shifts, and the artist's choice (characters.json's `chosen`, 21 Oct 2026:
 "Give Berkeley and Santa Monica the hummingbird") puts Frankenthaler's drawn one in those two
@@ -24,7 +25,7 @@ adds it (REFINE.md).
 """
 
 CAST = {"red foxes", "American bison", "red squirrels", "bald eagle", "banana slugs", "red deer", "starling murmurations",
-        "ocellated lizards"}
+        "ocellated lizards", "fireflies"}
 KINDS = {"herds": 1.0, "hunters": 1.0, "troops": 0.95, "colonies": 0.85, "eagles": 0.85, "waders": 0.85,
          "macaws": 0.8, "soarers": 0.75, "vees": 0.75, "flocks": 0.75, "hummers": 0.75, "frogs": 0.7,
          "snakes": 0.65, "morphos": 0.6, "fireflies": 0.45, "ants": 0.4, "swarms": 0.4}

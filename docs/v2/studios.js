@@ -29,9 +29,11 @@
   var D = null, loading = null;
   var CAST = { "Cy Twombly": "fox", "Elaine de Kooning": "bison", "Henri Matisse": "squirrel",
                "Andy Warhol": "eagle", "Anish Kapoor": "slug", "David Hockney": "deer",
-               "Jackson Pollock": "starling", "Salvador Dalí": "lizard", "Helen Frankenthaler": "hummingbird" };
+               "Jackson Pollock": "starling", "Salvador Dalí": "lizard", "Helen Frankenthaler": "hummingbird",
+               "Paul Caponigro": "firefly" };
   var ANIMAL = { fox: "red fox", bison: "bison", squirrel: "red squirrel", eagle: "bald eagle", slug: "banana slug", deer: "red deer",
-                 starling: "starling murmuration", lizard: "ocellated lizard", hummingbird: "Anna's hummingbird" };
+                 starling: "starling murmuration", lizard: "ocellated lizard", hummingbird: "Anna's hummingbird",
+                 firefly: "common eastern firefly" };
   var KIND = { studio: "Studio", house: "House", worked: "Worked here", lived: "Lived here", "lived and worked": "Lived and worked here" };
   var HOW = {
     record: "its own record says it was made in this town",

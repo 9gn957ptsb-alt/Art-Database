@@ -33,6 +33,10 @@
      hummingbird  the display dive (Clark & Feo 2008, Clark 2009): a climb,
                then a fall — the leg's second stop is far from its first,
                the third drops back to within 400 km of it
+     firefly   the J (Wikipedia, Photinus pyralis: a male's path traces a J,
+               lighting on the upswing): a short drop, then a long climb,
+               and so on — the next stop within 300 km of the last, then one
+               600 km or more from it
      deer      the antler cycle, by the real month: its part changes with
                the month; it freezes when the pointer comes near
 
@@ -197,6 +201,7 @@
       case "starling": return "the starlings follow their nearest: the next stops are the cities next door";
       case "lizard": return "the lizard holds its ground: its stops keep within 400 km of where it began";
       case "hummingbird": return "the hummingbird climbs, then dives: a far stop, then a fall back to where it began";
+      case "firefly": return "the firefly flies a J: a short drop, then a long climb, lighting on the upswing";
       case "deer":
         return { rut: "the stag is in rut: it goes where the crowds are",
                  cast: "the stag has cast its antlers: a short leg",
@@ -424,6 +429,17 @@
         } else if (perch) {
           keep(function (x) { return km(perch, ll(x.to)) <= 400; });
           cand.forEach(function (x) { x.score = km(perch, ll(x.to)) / 200 + x.score * 0.3; });
+        }
+      } else if (a === "firefly" && e.w) {
+        // The J (Wikipedia, Photinus pyralis): a male's path drops a little and climbs a long way, lighting on the upswing.
+        // Once its leg has begun, the stops alternate: the drop (offered within 300 km of the last, the nearest first),
+        // then the climb (offered 600 km or more from the last, the nearest of those first).
+        if (leg.stops.length % 2 === 1) {
+          keep(function (x) { return x.km <= 300; });
+          cand.forEach(function (x) { x.score = x.km / 150 + x.score * 0.3; });
+        } else if (leg.stops.length) {
+          keep(function (x) { return x.km >= 600; });
+          cand.forEach(function (x) { x.score = x.km / 800 + x.score * 0.3; });
         }
       } else if (a === "deer" && e.w) {
         cand.forEach(function (x) {
