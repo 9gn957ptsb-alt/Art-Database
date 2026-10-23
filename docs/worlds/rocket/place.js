@@ -1525,7 +1525,7 @@
         if (!free(x + 0.5, y + hy, z + 0.5)) { continue; }
         var cm = f.wcm && f.hcm ? Math.round(f.hcm) + " × " + Math.round(f.wcm) + " cm" : "";
         add("work", x, y + hy, z, "before " + (f.title || "a work") + " (" + [f.artist, f.year].filter(Boolean).join(", ") + ")" +
-            (i === 0 ? ", the largest work hung here" : ", the " + ["", "second", "third", "fourth", "fifth"][i] + " largest work hung here") + (cm ? ", " + cm : ""));
+            (i === 0 ? ", the largest work hung here" : ", the " + (NTH[i] || (i + 1) + "th") + " largest work hung here") + (cm ? ", " + cm : ""));
         return;
       }
     });
@@ -1583,8 +1583,11 @@
       for (var i = 0; i < 8; i += 1) {
         var d = STEP8[i], X = x + d[0], Z = z + d[1], C = Z * SX + X;
         if (X < 0 || Z < 0 || X >= SX || Z >= place.w.SZ || F[C] >= 0 || S[C] < 0 || abs(S[C] - S[c]) > 1) { continue; }
-        // a corner only when both sides are open
-        if (d[0] && d[1] && (S[z * SX + X] < 0 || S[Z * SX + x] < 0)) { continue; }
+        // a corner only when both sides are open and within a block of both ends (else the step cuts across a rise)
+        if (d[0] && d[1]) {
+          var s1 = S[z * SX + X], s2 = S[Z * SX + x];
+          if (s1 < 0 || s2 < 0 || abs(s1 - S[c]) > 1 || abs(s2 - S[c]) > 1 || abs(s1 - S[C]) > 1 || abs(s2 - S[C]) > 1) { continue; }
+        }
         F[C] = F[c] + 1; q[t++] = C;
       }
     }

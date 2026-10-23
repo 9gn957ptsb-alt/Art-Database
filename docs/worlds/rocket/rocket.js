@@ -2269,7 +2269,7 @@
     coinCh.tex = voxTexture(ids, n, n, T); coinCh.n = n; coinCh.units = blocks.length;
   }
   // The pieces found, or the ten coins taken: either builds the rocket.
-  function ready() { return found.length === 4 || (coins.length > 0 && got.length >= COIN.N); }
+  function ready() { return found.length === 4 || (coins.length > 0 && got.length >= coins.length); }
   function left() { return coins.filter(function (q) { return got.indexOf(q.id) < 0; }); }
   // A coin set where a block now stands (the homage's, the studies'): raised onto it.
   function seatCoins() {
@@ -2303,15 +2303,15 @@
     drawCoins();
     drawPieces();
     var n = got.length, rest = left();
-    if (n < COIN.N) { say("A coin, " + n + " of " + COIN.N + ": " + q.text + "." + (rest.length === 1 ? " One left: " + rest[0].text + "." : ""), true); return; }
-    if (built) { say("Ten coins: the rocket already stands.", true); return; }
+    if (n < coins.length) { say("A coin, " + n + " of " + coins.length + ": " + q.text + "." + (rest.length === 1 ? " One left: " + rest[0].text + "." : ""), true); return; }
+    if (built) { say("Every coin: the rocket already stands.", true); return; }
     buildRocket(true);
-    say("The tenth coin: the rocket stands on the wreck's ground. Launch when you are clear." + (Hd ? " Leave the hologram to launch: your body rides it." : ""), true);
+    say("The " + (coins.length === COIN.N ? "tenth" : "last") + " coin: the rocket stands on the wreck's ground. Launch when you are clear." + (Hd ? " Leave the hologram to launch: your body rides it." : ""), true);
   }
   // The tally, as page text in the header.
   function drawCoins() {
     var el = $("coins");
-    if (el) { el.textContent = "Coins " + got.length + " of " + COIN.N; el.hidden = !coins.length; }
+    if (el) { el.textContent = "Coins " + got.length + " of " + coins.length; el.hidden = !coins.length; }
   }
   // The coin a ray from the eye meets first, if nothing nearer stands in its way (hit, as pick gives it), within LOOK.
   function coinAt(dir, hit) {
@@ -2327,10 +2327,11 @@
   }
   function coinsLine() {
     var pool = coins.some(function (q) { return q.kind === "pool"; });
-    return "Ten coins lie in and round " + setting.name + ": by its largest works, on the way in, on its highest roof, " + (pool ? "over its pool" : "on its grass") +
-      " and on the crown of your tree. Ten build the rocket, as the four pieces do.";
+    var N = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"][coins.length] || String(coins.length);
+    return N + " coins lie in and round " + setting.name + ": by its largest works, on the way in, on its highest roof, " + (pool ? "over its pool" : "on its grass") +
+      " and on the crown of your tree. " + N + " build the rocket, as the four pieces do.";
   }
-  function coinWords(q) { return upper(q.text) + ". A ring of the unit as wide as your head, its hole a pearl's. " + got.length + " of " + COIN.N + " taken."; }
+  function coinWords(q) { return upper(q.text) + ". A ring of the unit as wide as your head, its hole a pearl's. " + got.length + " of " + coins.length + " taken."; }
   function drawCoins3(now) {
     if (!coinCh || !me3) { return; }
     var list = left();
@@ -2380,7 +2381,7 @@
   function guardReach() { return 0.3 + PEARL.leg + 0.3; }
   function initGuards() {
     guards = []; gStand = null; gFields = {};
-    if (!place.M || !Pl.guards) { return; }
+    if (!me3 || !place.M || !Pl.guards) { return; }
     gStand = Pl.stands(place);
     guards = Pl.guards(place, paintings, gStand).map(function (g, i) { return { i: i, room: g.round[0].work.room, round: g.round }; });
     homeGuards();
@@ -2401,7 +2402,8 @@
   // A block broken or set: the column's stand again, and every way worked out again.
   function guardsRemesh(x, z) {
     if (!gStand || x < 0 || z < 0 || x >= w.SX || z >= w.SZ) { return; }
-    gStand[z * w.SX + x] = Pl.standIn(place, x, z); gFields = {};
+    var c = z * w.SX + x, y = Pl.standIn(place, x, z);
+    if (gStand[c] !== y) { gStand[c] = y; gFields = {}; }
   }
   // A step toward (tx, tz) at speed v: to the next column one step nearer, not one another guard stands in; true there.
   function walkTo(g, tx, tz, v, dt) {
@@ -2412,7 +2414,8 @@
     if (F[c] > 0) {
       for (var i = 0; i < 8; i += 1) {
         var d = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]][i], X = cx + d[0], Z = cz + d[1], C = Z * SX + X;
-        if (F[C] !== F[c] - 1 || abs(gStand[C] - gStand[c]) > 1 || (d[0] && d[1] && (gStand[cz * SX + X] < 0 || gStand[Z * SX + cx] < 0))) { continue; }
+        var s1 = gStand[cz * SX + X], s2 = gStand[Z * SX + cx];
+        if (F[C] !== F[c] - 1 || abs(gStand[C] - gStand[c]) > 1 || (d[0] && d[1] && (s1 < 0 || s2 < 0 || abs(s1 - gStand[c]) > 1 || abs(s2 - gStand[c]) > 1 || abs(s1 - gStand[C]) > 1 || abs(s2 - gStand[C]) > 1))) { continue; }
         if (guards.some(function (o) { return o !== g && hypot(o.x - X - 0.5, o.z - Z - 0.5) < 0.9; })) { continue; }
         nx = X; nz = Z; break;
       }
@@ -2434,11 +2437,10 @@
       if (g.mode === "hold") { g.holdT -= dt; g.amount -= g.amount * (1 - Math.exp(-dt / STEP_T)); if (g.holdT <= 0) { g.mode = "round"; } return; }
       if (g.mode === "chase") {
         if (now - g.seenAt > GUARD.HOLD * 1000) { g.mode = "round"; return; }
-        if (walkable) { g.to = { x: hx, z: hz }; }
         if (!walkable && hypot(g.x - P.x, g.z - P.z) < 3) { g.face = turnTo(g.face, Math.atan2(P.x - g.x, -(P.z - g.z)), TURN * dt); g.amount -= g.amount * (1 - Math.exp(-dt / STEP_T)); }
         else if (g.to) { walkTo(g, g.to.x, g.to.z, GUARD.CHASE, dt); }
         // the grab: a beat in reach, the arms rising
-        var reach = hypot(g.x - P.x, g.z - P.z) <= guardReach() && abs(g.y - P.y) <= PEARL.top && !(Hd && Hd.phase === "follow") && now >= graceUntil;
+        var reach = hypot(g.x - P.x, g.z - P.z) <= guardReach() && abs(g.y - P.y) <= PEARL.top && !(Hd && Hd.phase === "follow") && now >= graceUntil && alarms < 3;
         if (reach) { g.tellT += dt; g.tell = min(1, g.tellT / GUARD.TELL); if (g.tellT >= GUARD.TELL) { grab(g, now); } }
         else { g.tellT = 0; g.tell = max(0, g.tell - dt / GUARD.TELL); }
         return;
@@ -2461,15 +2463,19 @@
     if (!guards.length || intro || launched) { return; }
     guards.forEach(function (g) {
       if (g.mode === "hold" || !sees(g)) { return; }
-      if (g.mode !== "chase" && now >= graceUntil) { say("A guard has seen you."); }
+      if (g.mode !== "chase") { g.to = null; if (now >= graceUntil) { say("A guard has seen you."); } }
       g.mode = "chase"; g.seenAt = now;
+      // where he is, if they can walk there (the way worked out at most four times a second)
+      var hx = floor(P.x), hz = floor(P.z), S0 = gStand[hz * w.SX + hx];
+      if (S0 >= 0 && abs(S0 - P.y) < 0.6 && !(Hd && Hd.phase === "follow")) { g.to = { x: hx, z: hz }; }
     });
     if (Hd && !warnedBody && guards.some(function (g) { return hypot(g.x - P.x, g.z - P.z) < LOOK; })) { warnedBody = true; say("A guard is nearing your body: Holo, and it follows your head."); }
     if (!Hd) { warnedBody = false; }
   }
   function grab(g, now) {
     g.mode = "hold"; g.holdT = GUARD.HOLD; g.tellT = 0; graceUntil = now + GUARD.GRACE * 1000;
-    var back = got.length ? coins.filter(function (q) { return q.id === got[got.length - 1]; })[0] : null;
+    // (once the rocket stands, the coins that built it are spent: none goes back)
+    var back = !built && got.length ? coins.filter(function (q) { return q.id === got[got.length - 1]; })[0] : null;
     if (back) { got.pop(); drawCoins(); }
     if (Hd) {
       // the body, headless, taken: the head pulled home, and he comes to under his tree
@@ -2678,7 +2684,7 @@
     store();
     say(line || "Found " + lower(adv.pieces[k].name) + ".", true);
     drawPieces();
-    if (found.length === 4) { setTimeout(function () { say("Every piece. Back to the wreck to build the rocket.", true); }, 2200); }
+    if (found.length === 4) { setTimeout(function () { say(built ? "Every piece: the rocket already stands." : "Every piece. Back to the wreck to build the rocket.", true); }, 2200); }
   }
 
   var current = null;
@@ -2961,7 +2967,7 @@
          "Four pieces of your rocket are somewhere in " + setting.name + ". The notes show where they fell.") + (open ? "" : " Tap Notes to read it."));
     say(line);
     // and then the coins, once the first has been read
-    if (coins.length && got.length < COIN.N) { setTimeout(function () { if (!intro) { say(coinsLine()); } }, 2600 + line.length * 35); }
+    if (coins.length && got.length < coins.length) { setTimeout(function () { if (!intro) { say(coinsLine()); } }, 2600 + line.length * 35); }
     if (open) { $("notes").hidden = false; }
   }
 
@@ -3126,6 +3132,7 @@
     var rx = place.wreck.x, rz = place.wreck.z, ry = place.wreck.y, x, y, z, list = [];
     for (y = ry; y < ry + 14; y += 1) { for (z = rz - 2; z <= rz + 2; z += 1) { for (x = rx - 2; x <= rx + 2; x += 1) { if (!(place.M && place.M.has(x, y, z))) { w.set(x, y, z, B.AIR); } } } }
     refresh(rx - 2, rz - 2, rx + 2, rz + 2);
+    for (z = rz - 2; z <= rz + 2; z += 1) { for (x = rx - 2; x <= rx + 2; x += 1) { guardsRemesh(x, z); } }
     remeshAt(rx, rz); remeshAt(rx - 2, rz - 2); remeshAt(rx + 2, rz + 2);
     for (y = ry; y < ry + 12; y += 1) {
       var r = y > ry + 9 ? 0 : 1;
@@ -3205,7 +3212,7 @@
       return '<li data-got="' + got + '"><b>' + esc(p.name) + '</b>' + lines.join("") + (status ? '<span class="more">' + status + '</span>' : '') + '</li>';
     }).join("");
     $("notes-list").innerHTML = '<ol>' + html + '</ol>' + (total ? '<p class="count">Notes read: ' + read + ' of ' + total + '</p>' : '') +
-      (coins.length ? '<p class="count">Coins: ' + got.length + ' of ' + COIN.N + (got.length < COIN.N ? ', and ten build the rocket' : '') + '</p>' : '') +
+      (coins.length ? '<p class="count">Coins: ' + got.length + ' of ' + coins.length + (got.length < coins.length ? ', and all of them build the rocket' : '') + '</p>' : '') +
       (setting.recipe ? '<p class="made"><b>What this building is made of</b>' + esc(setting.recipe) + '</p>' : '');
   }
   function drawHotbar() {
@@ -3633,7 +3640,7 @@
       paintings = hung; pieces = hidden.pieces; notes = hidden.notes;
       // The ten coins (a building or a new form; a city has none yet), laid before the homage so they are the same
       // whether it is there or not, then raised onto whatever the homage and the studies set where one lies.
-      coins = place.M && Pl.coins ? Pl.coins(place, hung, { wake: underTree(), headY: PEARL.headY, headR: PEARL.headR, reach: REACH, name: setting.name }) : [];
+      coins = me3 && place.M && Pl.coins ? Pl.coins(place, hung, { wake: underTree(), headY: PEARL.headY, headR: PEARL.headR, reach: REACH, name: setting.name }) : [];
       got = []; headWas = null;
       // The homage's blocks, then the place's grid sent for the walk, with the pieces and the notes in it. A world
       // escaped to has none, even come back to.
