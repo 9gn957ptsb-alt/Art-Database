@@ -58,6 +58,15 @@ function createLab(root, opts) {
     cut: 'the first frame, then the last, no motion between',
     still: 'the rest pose, held still'
   };
+  // the Iterations look (the artist's sheet of twenty, 23 Oct 2026): look and iteration are pass-through params, never
+  // SHARED, so a saved favorite or pick resolves (and keys) exactly as saved; the variants the lab makes get the look
+  const ITER = M.ITERATIONS;
+  const lookOn = (p) => !!p && p.look === 'iterations';
+  const iterOf = (p) => Math.min(ITER.length, Math.max(1, Math.round(+p.iteration || 1)));
+  const palOf = (p, theme) => (lookOn(p) ? M.palette(p.palette, theme, iterOf(p)) : M.palette(p.palette, theme));
+  const inLook = (p, n) => Object.assign(p, { look: 'iterations', iteration: n });
+  // the stage's look goes with it when its family changes or resets
+  function carryLook(from, to) { delete to.look; delete to.iteration; if (lookOn(from)) inLook(to, iterOf(from)); return to; }
   const HINTS = {
     duration: 'one run, in milliseconds',
     weight: 'stroke weight',
@@ -172,7 +181,7 @@ function createLab(root, opts) {
     return p;
   }
   function baseVariant(moment, famId) {
-    return { family: famId, params: tuned(famId, moment), seed: famId, direction: directionFor(moment) };
+    return { family: famId, params: inLook(tuned(famId, moment), 1), seed: famId, direction: directionFor(moment) };
   }
   function defaultFamily(moment) {
     const fits = MO.forMoment(moment);
@@ -212,6 +221,7 @@ function createLab(root, opts) {
       else if (typeof spec.default === 'number') { if (roll < 0.55) p[key] = snap(spec.min + val * (spec.max - spec.min), spec); }
       else if (typeof spec.default === 'boolean') { if (roll < 0.3) p[key] = !spec.default; }
     }
+    inLook(p, 1 + Math.floor(r() * ITER.length));   // drawn last, so every other field of an older seed is as it was
     return { family: famId, params: MO.resolve(famId, p), seed: String(seed), direction: directionFor(moment) };
   }
 
@@ -448,7 +458,7 @@ function createLab(root, opts) {
       const key = v.family + ':' + (e && e.message);
       if (!warned.has(key)) { warned.add(key); console.warn('[Motion Lab] ' + v.family + ' could not draw: ' + (e && e.message)); }
       ctx.setTransform(p.dpr, 0, 0, p.dpr, 0, 0);
-      ctx.fillStyle = M.palette('logo', spec.theme).bg;
+      ctx.fillStyle = palOf(v.params, spec.theme).bg;
       ctx.fillRect(0, 0, p.w, p.h);
       ctx.fillStyle = M.palette('logo', spec.theme).ink;
       ctx.font = '500 12px Figtree, system-ui, sans-serif';
@@ -868,8 +878,9 @@ function createLab(root, opts) {
 
   // the mark, rendered into a box twice its size and feathered at the edges so motion leaving the box fades
   function markAt(ctx, v, t, spec, at, pxPerPt) {
-    const pal = M.palette(v.params.palette, spec.theme);
-    if (pal.name === 'paper' || pal.name === 'inverse') {   // marks made for another ground sit on a tile of it
+    const pal = palOf(v.params, spec.theme);
+    const base = pal.base || pal.name;
+    if (base === 'paper' || base === 'inverse') {   // marks made for another ground sit on a tile of it
       fillRR(ctx, at.x - at.size * 0.56, at.y - at.size * 0.56, at.size * 1.12, at.size * 1.12, at.size * 0.26, pal.bg);
     }
     const B = at.size * 2, side = Math.max(2, Math.ceil(B * pxPerPt));
@@ -903,7 +914,7 @@ function createLab(root, opts) {
     live: $('#live'), save1: $('#savestate'), save2: $('#savestate-foot'), dialog: $('#copy-dialog'), copyText: $('#copy-text'),
     pool: $('#board-pool'), poolCount: $('#pool-count'), poolEmpty: $('#pool-empty'),
     trends: $('#trends'), fyLike: $('#fy-like'), fyLikeH: $('#fy-like-h'), fyLikeSub: $('#fy-like-sub'), fyFar: $('#fy-far'), fyFarWrap: $('#fy-far-wrap'),
-    fySeed: $('#fy-seed'), fyPlay: $('#foryou-play')
+    fySeed: $('#fy-seed'), fyPlay: $('#foryou-play'), fyTwins: $('#fy-twins'), fyTwinsWrap: $('#fy-twins-wrap')
   };
 
   let liveTimer = 0;
@@ -952,7 +963,8 @@ function createLab(root, opts) {
   function describe(v, m) {
     const fam = v && MO.get(v.family);
     if (!fam) return 'No family is loaded for ' + m.name + '.';
-    return m.name + ' (' + m.feel + '): ' + fam.name + ', ' + v.params.style + '. ' + fam.idea + (ui.app ? ' Shown in the app: ' + SCENE_WORDS[m.id] + '.' : '') + (ui.reduced ? ' Reduced motion: ' + REDUCED_WORDS[fam.reduced] + '.' : '');
+    const look = lookOn(v.params) ? ', in the Iterations look (iteration ' + iterOf(v.params) + ', ' + ITER[iterOf(v.params) - 1].label + ')' : '';
+    return m.name + ' (' + m.feel + '): ' + fam.name + ', ' + v.params.style + look + '. ' + fam.idea + (ui.app ? ' Shown in the app: ' + SCENE_WORDS[m.id] + '.' : '') + (ui.reduced ? ' Reduced motion: ' + REDUCED_WORDS[fam.reduced] + '.' : '');
   }
 
   function renderStageInfo() {
@@ -960,10 +972,10 @@ function createLab(root, opts) {
     els.stageH.textContent = m.name;
     els.meta.innerHTML = esc(m.feel) + ' · ' + esc(m.where) + ' · <span class="len">' + esc(m.length) + '</span>';
     els.vline.innerHTML = fam
-      ? '<b>' + esc(fam.name) + '</b> · ' + esc(v.params.style) + ' · ' + esc(v.params.duration) + ' ms · seed ' + esc(v.seed)
+      ? '<b>' + esc(fam.name) + '</b> · ' + esc(v.params.style) + (lookOn(v.params) ? ' · iteration ' + iterOf(v.params) : '') + ' · ' + esc(v.params.duration) + ' ms · seed ' + esc(v.seed)
       : 'No family yet';
     els.stageCanvas.setAttribute('aria-label', describe(v, m));
-    els.stage.style.background = v ? (ui.app ? APP[ui.theme].surround : M.palette(v.params.palette, ui.theme).bg) : '';
+    els.stage.style.background = v ? (ui.app ? APP[ui.theme].surround : palOf(v.params, ui.theme).bg) : '';
     const note = [];
     if (ui.reduced && fam) note.push('Reduced motion: ' + REDUCED_WORDS[fam.reduced]);
     if (fam && ui.app) note.push('In the app: ' + SCENE_WORDS[m.id]);
@@ -1067,7 +1079,8 @@ function createLab(root, opts) {
 
   function paramControl(key, spec, value, fam) {
     const id = 'p-' + key;
-    const hint = HINTS[key] ? '<span class="hint">' + esc(key === 'duration' && fam.loop ? 'one loop, in milliseconds' : HINTS[key]) + '</span>' : '';
+    const said = key === 'duration' && fam.loop ? 'one loop, in milliseconds' : key === 'ribbon' && lookOn(cur().params) ? 'the glass behind the bowl and the s' : HINTS[key];
+    const hint = said ? '<span class="hint">' + esc(said) + '</span>' : '';
     if (Array.isArray(spec.options)) {
       if (key === 'easing') {
         return '<div class="param" data-key="easing"><label for="' + id + '">Easing</label><output class="mono" id="o-easing">' + esc(value) + '</output>' +
@@ -1117,6 +1130,7 @@ function createLab(root, opts) {
     html += paramControl('duration', fam.params.duration, v.params.duration, fam);
     for (const k of own) html += paramControl(k, fam.params[k], v.params[k], fam);
     html += '</div><div class="group"><p class="group-h">Shared</p>';
+    html += lookControl(v.params);
     html += paramControl('palette', fam.params.palette, v.params.palette, fam);
     html += paramControl('ribbon', fam.params.ribbon, v.params.ribbon, fam);
     html += paramControl('weight', fam.params.weight, v.params.weight, fam);
@@ -1130,6 +1144,61 @@ function createLab(root, opts) {
     html += '</div>';
     els.params.innerHTML = html;
     drawCurve();
+    drawIters();
+  }
+
+  // Look: Classic | Iterations; with Iterations, the twenty in the sheet's 5 x 4 order as a radiogroup of thumbnails
+  function lookControl(p) {
+    const on = lookOn(p), n = iterOf(p);
+    let html = '<div class="param" data-key="look"><span class="plabel" id="l-look">Look</span>' +
+      '<div class="seg" role="group" aria-labelledby="l-look" style="--cols:2">' +
+      '<button type="button" data-act="look" data-value="classic" aria-pressed="' + !on + '">Classic</button>' +
+      '<button type="button" data-act="look" data-value="iterations" aria-pressed="' + on + '">Iterations</button></div>' +
+      '<span class="hint">' + (on ? 'the sheet of twenty: its letters, glass and white ground' : 'the first logo: its letters and ribbon') + '</span></div>';
+    if (!on) return html;
+    return html + '<div class="param" data-key="iteration"><span class="plabel" id="l-iteration">Iteration</span><output class="mono" id="o-iteration">' + n + ' · ' + esc(ITER[n - 1].label) + '</output>' +
+      '<div class="iters" role="radiogroup" aria-labelledby="l-iteration">' + ITER.map((it) =>
+        '<button type="button" class="iter" role="radio" data-act="iteration" data-value="' + it.n + '" aria-checked="' + (it.n === n) + '" tabindex="' + (it.n === n ? 0 : -1) +
+        '" aria-label="Iteration ' + it.n + ': ' + esc(it.label) + '" title="' + it.n + ' · ' + esc(it.label) + '"><canvas aria-hidden="true" width="80" height="80"></canvas></button>').join('') + '</div></div>';
+  }
+  // each thumbnail is the still mark in its iteration, in the stage's palette and theme, drawn once
+  const thumbs = new Map();
+  function drawIters() {
+    const v = cur(); if (!v) return;
+    for (const b of $$('.iter')) {
+      const key = v.params.palette + '|' + ui.theme + '|' + b.dataset.value;
+      let src = thumbs.get(key);
+      if (!src) {
+        src = doc.createElement('canvas'); src.width = src.height = 80;
+        const x = src.getContext('2d'), pal = M.palette(v.params.palette, ui.theme, +b.dataset.value);
+        x.fillStyle = pal.bg; x.fillRect(0, 0, 80, 80);
+        M.fit(x, 80, 80, 4);
+        M.mark(x, { palette: pal, weight: 0.75 });
+        thumbs.set(key, src);
+      }
+      const c = $('canvas', b).getContext('2d');
+      c.clearRect(0, 0, 80, 80); c.drawImage(src, 0, 0);
+    }
+  }
+  let lastIter = 1;
+  function setLook(on) {
+    const v = cur(); if (!v || lookOn(v.params) === on) return;
+    if (!on) lastIter = iterOf(v.params);
+    // Classic takes the keys away again, so a favorite toggled there and back is the same favorite
+    v.params = MO.resolve(v.family, carryLook(on ? { look: 'iterations', iteration: lastIter } : {}, Object.assign({}, v.params)));
+    buildPanel();
+    const b = $('[data-act="look"][data-value="' + (on ? 'iterations' : 'classic') + '"]'); if (b) b.focus();
+    renderStageInfo();
+    dirtyGroup('stage');
+    say(on ? 'The Iterations look, iteration ' + lastIter + ': ' + ITER[lastIter - 1].label : 'The classic look');
+  }
+  function setIteration(n, focus) {
+    const v = cur(); if (!v || !lookOn(v.params)) return;
+    n = ((n - 1 + ITER.length) % ITER.length) + 1;
+    lastIter = n;
+    setParam('iteration', n);
+    for (const b of $$('.iter')) { const on = +b.dataset.value === n; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); }
+    const o = $('#o-iteration'); if (o) o.textContent = n + ' · ' + ITER[n - 1].label;
   }
 
   function drawCurve() {
@@ -1156,7 +1225,7 @@ function createLab(root, opts) {
     const next = Object.assign({}, v.params, { [key]: value });
     v.params = MO.resolve(v.family, next);
     if (key === 'easing') { drawCurve(); const o = $('#o-easing'); if (o) o.textContent = v.params.easing; }
-    if (key === 'palette') { for (const b of $$('[data-act="palette"]')) b.setAttribute('aria-pressed', String(b.dataset.value === v.params.palette)); const o = $('#o-palette'); if (o) o.textContent = v.params.palette; }
+    if (key === 'palette') { for (const b of $$('[data-act="palette"]')) b.setAttribute('aria-pressed', String(b.dataset.value === v.params.palette)); const o = $('#o-palette'); if (o) o.textContent = v.params.palette; drawIters(); }
     if (!(opts && opts.quiet)) renderStageInfo();
     dirtyGroup('stage');
   }
@@ -1165,7 +1234,7 @@ function createLab(root, opts) {
     if (!famOk(famId)) return;
     const old = cur();
     const v = baseVariant(ui.moment, famId);
-    if (old) { v.seed = old.seed === old.family ? famId : old.seed; v.direction = old.direction; }
+    if (old) { v.seed = old.seed === old.family ? famId : old.seed; v.direction = old.direction; carryLook(old.params, v.params); }
     drafts[ui.moment] = v;
     buildPanel();
     renderStageInfo();
@@ -1268,13 +1337,13 @@ function createLab(root, opts) {
     if (ui.source === 'all') {
       const all = fits.concat(MO.families.filter((f) => !fits.includes(f)));
       list = all.map((f) => Object.assign(baseVariant(ui.moment, f.id), { wild: !fits.includes(f) }));
-      els.exploreSub.textContent = 'One of every family, at its defaults, for ' + m.name + ' (' + m.feel + '). ' + (fits.length ? 'Families made for other moments are marked Wildcard.' : 'No family was made for this moment yet: every one is a wildcard.');
+      els.exploreSub.textContent = 'One of every family, at its defaults in the Iterations look, for ' + m.name + ' (' + m.feel + '). ' + (fits.length ? 'Families made for other moments are marked Wildcard.' : 'No family was made for this moment yet: every one is a wildcard.');
     } else if (ui.source === 'starred') {
       list = allStars().filter((s) => famOk(s.family)).map((s) => ({ family: s.family, params: MO.resolve(s.family, s.params), seed: s.seed, direction: s.direction, wild: !fits.some((f) => f.id === s.family) }));
       els.exploreSub.textContent = 'All your favorites, from every moment, newest first. They are the ones 5s will use, anywhere.';
     } else {
       list = batchFor(ui.moment, ui.batch[ui.moment]);
-      els.exploreSub.textContent = 'Twelve variants for ' + m.name + ' (' + m.feel + ') from seed ' + ui.batch[ui.moment] + ': ' + (fits.length ? 'nine from the families made for it and three wildcards.' : 'no family was made for this moment yet, so all twelve are wildcards.') + ' All play on one clock.';
+      els.exploreSub.textContent = 'Twelve variants for ' + m.name + ' (' + m.feel + ') from seed ' + ui.batch[ui.moment] + ': ' + (fits.length ? 'nine from the families made for it and three wildcards.' : 'no family was made for this moment yet, so all twelve are wildcards.') + ' Each in one of the twenty iterations; all play on one clock.';
     }
     sheetVariants = list;
     syncCycle('sheet', list);
@@ -1286,7 +1355,7 @@ function createLab(root, opts) {
         '<button type="button" class="cell-load" data-act="load" data-i="' + i + '" aria-label="Load into the stage: ' + esc(fam.name) + ', ' + esc(v.params.style) + ', seed ' + esc(v.seed) + (v.wild ? ', a wildcard' : '') + '. ' + esc(fam.idea) + '"><canvas aria-hidden="true"></canvas>' + (v.wild ? '<span class="wild" aria-hidden="true">Wildcard</span>' : '') + '</button>' +
         '<div class="cell-meta"><p class="cell-name">' + esc(fam.name) + ' <span class="style">· ' + esc(v.params.style) + '</span></p>' +
         '<button type="button" class="cell-star" data-act="star" data-i="' + i + '" aria-pressed="false" aria-label="Star ' + esc(fam.name) + ', ' + esc(v.params.style) + ', seed ' + esc(v.seed) + '"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg></button>' +
-        '<p class="cell-seed"><span>' + esc(v.seed) + '</span><span>' + esc(v.params.duration) + ' ms</span></p></div></li>';
+        '<p class="cell-seed"><span>' + esc(v.seed) + '</span><span>' + esc(v.params.duration) + ' ms</span>' + (lookOn(v.params) ? '<span>i' + iterOf(v.params) + '</span>' : '') + '</p></div></li>';
     }).join('');
     $$('.cell', els.sheet).forEach((li, i) => {
       sheetPlayers.push(addPlayer($('canvas', li), 'sheet', () => ({ variant: sheetVariants[i], theme: ui.theme }), { pad: 0.1, maxDpr: 1.5 }));
@@ -1376,7 +1445,10 @@ function createLab(root, opts) {
     neon: 'field single reveal light lively beats flat whole arrive',
     tiles: 'field sequence reveal paper lively continuous layered parts arrive',
     swarm: 'field single break particle explosive continuous flat parts return',
-    cast: 'field single modulate light calm continuous volume surround return'
+    cast: 'field single modulate light calm continuous volume surround return',
+    refold: 'in-place sequence transform light calm continuous layered surround return',
+    wash: 'in-place single reveal liquid calm continuous layered whole arrive',
+    prism: 'field single reveal light lively continuous layered surround arrive'
   };
   // the styles refined from the favorites' trends (the brief's refinements); Phases is the hybrid of both
   const REFINED = ['echo/extrude', 'echo/strata', 'echo/riso', 'rewind/boomerang', 'rewind/spool', 'count/tally', 'count/dial', 'morph/revolve', 'morph/doubles', 'morph/shell'];
@@ -1409,6 +1481,7 @@ function createLab(root, opts) {
   function leaned(id, style, L, seed) {
     const p = Object.assign(MO.defaults(id), { style });
     for (const k of ['intensity', 'weight', 'palette', 'ribbon']) if (L[k] != null) p[k] = L[k];
+    inLook(p, 1 + Math.floor(M.rng('look|' + seed)() * ITER.length));
     return { family: id, params: MO.resolve(id, p), seed: String(seed), direction: 'right' };
   }
   // a favorite retuned: its family and style, its params nudged by the seed, and another tempo
@@ -1425,6 +1498,7 @@ function createLab(root, opts) {
       else if (typeof spec.default === 'number') { if (roll < 0.6) p[key] = snap(p[key] + (val * 2 - 1) * 0.25 * (spec.max - spec.min), spec); }
       else if (typeof spec.default === 'boolean') { if (roll < 0.2) p[key] = !p[key]; }
     }
+    inLook(p, lookOn(p) ? iterOf(p) : 1 + Math.floor(r() * ITER.length));   // a favorite in the look keeps its iteration
     return { family: f.family, params: MO.resolve(f.family, p), seed: String(seed), direction: f.direction === 'left' ? 'left' : 'right' };
   }
 
@@ -1466,6 +1540,18 @@ function createLab(root, opts) {
       return { v: leaned(f.id, s, L, seed + '-d' + pad2(i + 1)), why: fresh.length ? 'New to you: ' + fresh.slice(0, 4).join(', ') : t ? 'Unlike most of your favorites' : 'Not yet described on the axes', score: 1 - affinity(f.id, P) + 0.01 * r() };
     }).sort((a, b) => b.score - a.score).slice(0, 8);
   }
+  // Your favorites in the Iterations look: each classic favorite exactly as starred, beside its twin in the look (same
+  // family, style, params, seed and direction); the twins' iterations take turns through the twenty from a seeded start
+  function twinList(pool, seed) {
+    const k0 = Math.floor(M.rng('twins|' + seed)() * ITER.length), out = [];
+    pool.filter((f) => !lookOn(f.params)).forEach((f, i) => {
+      const v = { family: f.family, params: MO.resolve(f.family, f.params), seed: f.seed, direction: f.direction === 'left' ? 'left' : 'right' };
+      const n = ((k0 + i) % ITER.length) + 1;
+      out.push({ v, badge: 'As starred', why: 'Your favorite' + (MOMENT[f.found] ? ', starred on ' + MOMENT[f.found].name : '') });
+      out.push({ v: Object.assign({}, v, { params: inLook(Object.assign({}, v.params), n) }), badge: 'Iteration ' + n, why: 'Its twin in the Iterations look: ' + ITER[n - 1].label });
+    });
+    return out;
+  }
   // with no favorites yet: twelve families as unlike one another as the axes allow
   function starterList(seed) {
     const r = M.rng('start|' + seed);
@@ -1479,7 +1565,7 @@ function createLab(root, opts) {
     }
     return chosen.map((id, i) => {
       const f = MO.get(id), t = tagsOf(id);
-      return { v: { family: id, params: MO.resolve(id, { style: f.styles[Math.floor(r() * f.styles.length)] }), seed: seed + '-' + pad2(i + 1), direction: 'right' }, why: t ? [t[2], t[3], t[4]].join(' · ') : '' };
+      return { v: { family: id, params: MO.resolve(id, inLook({ style: f.styles[Math.floor(r() * f.styles.length)] }, 1 + (i % ITER.length))), seed: seed + '-' + pad2(i + 1), direction: 'right' }, why: t ? [t[2], t[3], t[4]].join(' · ') : '' };
     });
   }
 
@@ -1513,6 +1599,8 @@ function createLab(root, opts) {
     if (P.n >= 3 && split.length) read += ' Elsewhere they split: ' + esc(split.slice(0, 3).map((s) => s[1]).join('; ')) + '.';
     if (P.n < n) read += ' ' + (n - P.n) + ' of them ' + (n - P.n === 1 ? 'is' : 'are') + ' in a family not yet described on the axes.';
     if (P.n && missing.length) read += ' Not in the pool yet: ' + esc(andList(missing)) + '. Something different starts there.';
+    const looks = pool.filter((f) => lookOn(f.params)), top = looks.length ? tally(looks, (f) => iterOf(f.params))[0] : null;
+    if (top) read += ' ' + looks.length + ' of them ' + (looks.length === 1 ? 'is' : 'are') + ' in the Iterations look, mostly iteration ' + top[0] + ' (' + esc(ITER[top[0] - 1].label) + ').';
 
     const nums = (k) => pool.map((f) => f.params && f.params[k]).filter((x) => typeof x === 'number');
     const opt = (k) => tally(pool.filter((f) => f.params && f.params[k] != null), (f) => f.params[k]);
@@ -1531,6 +1619,7 @@ function createLab(root, opts) {
     axes += '<dt>Ribbon</dt><dd><span class="fy-note">on in ' + rib + ' of ' + n + '</span></dd>';
     axes += '<dt>Weight</dt><dd>' + chips(opt('weight'), n) + '</dd>';
     axes += '<dt>Easing</dt><dd>' + chips(opt('easing'), n) + '</dd>';
+    if (top) axes += '<dt>Look</dt><dd>' + chip('Iterations look', looks.length, n, 'lead') + chip('mostly iteration ' + top[0] + ' · ' + ITER[top[0] - 1].label, top[1], looks.length) + '</dd>';
     let tempo = '';
     if (durs.length) {
       tempo = '<dt>Tempo</dt><dd><span class="fy-note">' + Math.min(...durs) + '–' + Math.max(...durs) + ' ms, median ' + median(durs) +
@@ -1540,7 +1629,7 @@ function createLab(root, opts) {
   }
 
   // a cell of For you or of the Board's pool: plays on its group's clock, loads onto the stage, takes a star
-  const fyLists = { like: [], far: [], pool: [] };
+  const fyLists = { like: [], twins: [], far: [], pool: [] };
   function fyCells(el, key, items, group) {
     fyLists[key] = items;
     el.innerHTML = items.map((c, i) => {
@@ -1549,7 +1638,7 @@ function createLab(root, opts) {
         '<button type="button" class="cell-load" data-act="fy-load" data-list="' + key + '" data-i="' + i + '" aria-label="Load into the stage: ' + esc(fam.name) + ', ' + esc(v.params.style) + ', seed ' + esc(v.seed) + (c.why ? '. ' + esc(c.why) : '') + '. ' + esc(fam.idea) + '"><canvas aria-hidden="true"></canvas>' + (c.badge ? '<span class="wild" aria-hidden="true">' + esc(c.badge) + '</span>' : '') + '</button>' +
         '<div class="cell-meta"><p class="cell-name">' + esc(fam.name) + ' <span class="style">· ' + esc(v.params.style) + '</span></p>' +
         '<button type="button" class="cell-star" data-act="fy-star" data-list="' + key + '" data-i="' + i + '" aria-pressed="false" aria-label="Star ' + esc(fam.name) + ', ' + esc(v.params.style) + ', seed ' + esc(v.seed) + '"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg></button>' +
-        '<p class="cell-seed"><span>' + esc(v.seed) + '</span><span>' + esc(v.params.duration) + ' ms</span></p>' +
+        '<p class="cell-seed"><span>' + esc(v.seed) + '</span><span>' + esc(v.params.duration) + ' ms</span>' + (lookOn(v.params) ? '<span>i' + iterOf(v.params) + '</span>' : '') + '</p>' +
         (c.why ? '<p class="cell-why">' + esc(c.why) + '</p>' : '') + '</div></li>';
     }).join('');
     return $$('.cell', el).map((li, i) => {
@@ -1570,14 +1659,16 @@ function createLab(root, opts) {
     renderTrends();
     els.fyLikeH.textContent = fyNone ? 'A varied starter sheet' : 'More like your favorites';
     els.fyLikeSub.textContent = fyNone
-      ? 'Twelve families, each as unlike the others as the axes allow. Star the ones that move you.'
-      : 'Your favorites retuned (other tempos and settings), the other styles of the families you starred, the styles refined from your trends, and the hybrid Phases, ranked by how much they share with your favorites.';
+      ? 'Twelve families, each as unlike the others as the axes allow, in the Iterations look. Star the ones that move you.'
+      : 'Your favorites retuned (other tempos and settings), the other styles of the families you starred, the styles refined from your trends, and the hybrid Phases, ranked by how much they share with your favorites, all in the Iterations look.';
     const like = fyNone ? starterList(ui.forSeed) : likeList(pool, ui.forSeed);
     const far = fyNone ? [] : farList(pool, ui.forSeed);
+    const twins = fyNone ? [] : twinList(pool, ui.forSeed);
     els.fyFarWrap.hidden = fyNone;
-    fyPlayers = fyCells(els.fyLike, 'like', like, 'foryou').concat(fyCells(els.fyFar, 'far', far, 'foryou'));
+    els.fyTwinsWrap.hidden = !twins.length;
+    fyPlayers = fyCells(els.fyLike, 'like', like, 'foryou').concat(fyCells(els.fyTwins, 'twins', twins, 'foryou'), fyCells(els.fyFar, 'far', far, 'foryou'));
     els.fySeed.textContent = ui.forSeed;
-    syncCycle('foryou', like.concat(far).map((c) => c.v));
+    syncCycle('foryou', like.concat(twins, far).map((c) => c.v));
     groups.foryou.pos = groups.foryou.playing ? 0 : null;
   }
   // as the pool changes: the reading and the stars follow; the sheets stay put unless the db brought new data
@@ -1879,14 +1970,17 @@ function createLab(root, opts) {
       case 'opt': setParam(el.dataset.key, val); for (const b of $$('[data-act="opt"][data-key="' + el.dataset.key + '"]')) b.setAttribute('aria-pressed', String(b.dataset.value === val)); if (el.dataset.key === 'style') restartStage(); break;
       case 'bool': { const v = cur(); const on = !v.params[el.dataset.key]; setParam(el.dataset.key, on); el.setAttribute('aria-checked', String(on)); $('.tv', el).textContent = on ? 'On' : 'Off'; break; }
       case 'palette': setParam('palette', val); break;
+      case 'look': setLook(val === 'iterations'); break;
+      case 'iteration': setIteration(+val); break;
       case 'direction': { const v = cur(); v.direction = val === 'left' ? 'left' : 'right'; for (const b of $$('[data-act="direction"]')) b.setAttribute('aria-pressed', String(b.dataset.value === v.direction)); renderStageInfo(); restartStage(); break; }
       case 'new-seed': { const v = cur(); v.seed = newBatchSeed(); $('#p-seed').value = v.seed; renderStageInfo(); dirtyGroup('stage'); break; }
-      case 'reset': { const v = cur(); const nv = baseVariant(ui.moment, v.family); nv.seed = v.seed; nv.direction = v.direction; drafts[ui.moment] = nv; buildPanel(); renderStageInfo(); restartStage(); say('Back to the defaults for ' + MO.get(v.family).name); break; }
+      case 'reset': { const v = cur(); const nv = baseVariant(ui.moment, v.family); nv.seed = v.seed; nv.direction = v.direction; carryLook(v.params, nv.params); drafts[ui.moment] = nv; buildPanel(); renderStageInfo(); restartStage(); say('Back to the defaults for ' + MO.get(v.family).name); break; }
       default: break;
     }
   }
   function buildPanelSwatches() {
     for (const b of $$('[data-act="palette"]')) { const s = $('span', b); if (s) s.setAttribute('style', paletteSwatch(b.dataset.value)); }
+    drawIters();
   }
   function clearPickAsk(el) {
     const m = MOMENT[ui.moment];
@@ -1963,6 +2057,13 @@ function createLab(root, opts) {
     if (tag === 'INPUT' && !isScrub) return;
     const onControl = tag === 'BUTTON' || tag === 'A';
     const key = e.key;
+    const it = el && el.closest && el.closest('.iter');
+    if (it && /^(Arrow(Left|Right|Up|Down)|Home|End)$/.test(key)) {   // the iteration picker: a 5 x 4 radiogroup
+      e.preventDefault();
+      const n = +it.dataset.value;
+      setIteration(key === 'Home' ? 1 : key === 'End' ? ITER.length : n + { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -5, ArrowDown: 5 }[key], true);
+      return;
+    }
     if (key === ' ' || key === 'Spacebar') {
       if (onControl) return;
       e.preventDefault();
@@ -2049,7 +2150,7 @@ function createLab(root, opts) {
     get stage() { const v = cur(); return { playing: groups.stage.playing, t: stageTNow(), variant: v && clone(v) }; },
     get sheet() { return sheetVariants.map((v) => clone(v)); },
     get pool() { return clone(allStars()); },
-    get foryou() { return { seed: ui.forSeed, like: fyLists.like.map(asCell), far: fyLists.far.map(asCell), pool: fyLists.pool.map(asCell) }; },
+    get foryou() { return { seed: ui.forSeed, like: fyLists.like.map(asCell), twins: fyLists.twins.map(asCell), far: fyLists.far.map(asCell), pool: fyLists.pool.map(asCell) }; },
     groups: () => clone(groups),
     batchFor: (moment, seed) => batchFor(moment, seed),
     spec: specJson,

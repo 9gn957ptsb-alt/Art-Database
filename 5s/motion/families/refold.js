@@ -112,7 +112,7 @@
   const LEAN = [-84 / 247.7, 233 / 247.7], NORM = [LEAN[1], -LEAN[0]];   // along the stem, and across it (to the right)
   function crease(ctx, PA, PB, m, dir, p, env) {
     if (m <= 0 || m >= 1) { still(ctx, m <= 0 ? PA : PB, p); return; }
-    const d = dir > 0 ? M.lerp(1120, 230, m) : M.lerp(230, 1120, m);   // the crease's offset across the mark
+    const d = dir > 0 ? M.lerp(1180, 200, m) : M.lerp(200, 1180, m);   // the crease's offset across the mark (just off it at both ends)
     const o = [NORM[0] * d, NORM[1] * d], e0 = [o[0] - 2000 * LEAN[0], o[1] - 2000 * LEAN[1]], e1 = [o[0] + 2000 * LEAN[0], o[1] + 2000 * LEAN[1]];
     const part = (c, pal, side) => {   // the half-plane on one side of the crease
       c.save(); c.beginPath(); c.moveTo(e0[0], e0[1]); c.lineTo(e1[0], e1[1]);

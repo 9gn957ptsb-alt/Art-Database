@@ -35,16 +35,19 @@
   const TAU = Math.PI * 2;
   const N = 160;   // as Marks.mark: the same letters at rest
   const PTS = { body: M.points('body', N), bar: M.points('bar', N), s: M.points('s', N) };
+  // the Iterations look's centrelines, for light along the letters (untagged: drawn as they are, with no veil)
+  const PTS5S = { body: M.points(M.paths5s.body, N), bar: M.points(M.paths5s.bar, N), s: M.points(M.paths5s.s, N) };
   const seg = (t, a, b) => M.clamp((t - a) / (b - a), 0, 1);
   const bump = (x) => Math.sin(Math.PI * M.clamp(x, 0, 1)) ** 2;   // 0 -> 1 -> 0, flat at both ends
   const lum = (hex) => { const v = parseInt(String(hex).slice(1, 7), 16); return ((v >> 16) * 0.2126 + ((v >> 8) & 255) * 0.7152 + (v & 255) * 0.0722) / 255; };
 
-  const WARM = '#FFF6DE', WHITE = '#FFFFFF';
+  const WARM = '#FFF6DE', WHITE = '#FFFFFF', BEAM = '#FFE7A3';   // the light; split's incoming beam on a light field
   const SPECTRUM = ['#5CE1FF', '#3D7BFF', '#9B5CFF'];   // cyan, blue, violet
   const LEAN = 0.36;                                   // the bar of light leans with the 5 (radians from vertical)
   const NRM = [Math.cos(LEAN), Math.sin(LEAN)];        // across the bar, left to right
   const E = [872, 304];                                // where split's beam enters the glass (its top right)
-  const TARGETS = [[470, 236], [300, 724], [800, 700]]; // the bar, the bowl, the s
+  // split's three landings: the bar, the bowl, the s (a point, and the stretch of the stroke that catches the light)
+  const TARGETS = [[[560, 234], 'bar', 0.3, 0.95], [[470, 640], 'body', 0.42, 0.72], [[790, 600], 's', 0.06, 0.5]];
 
   // a band of light across the plane along `n`: profile [[d, colour, alpha], ...] (d from `centre`, increasing;
   // alpha 0 at both ends), one gradient fill
@@ -90,8 +93,8 @@
         c.beginPath();
         for (let i = 0; i < 6; i++) {
           const off = -520 + i * 190 + 80 * f + 120 * t;
-          for (let j = 0; j <= 26; j++) {
-            const u = -650 + j * 50;
+          for (let j = 0; j <= 52; j++) {
+            const u = -650 + j * 25;
             const wv = 46 * Math.sin(u * 0.0105 + TAU * 0.9 * t + i * 1.7 + 2 * f) + 20 * Math.sin(u * 0.026 - TAU * 1.3 * t + i * 2.3);
             const x = 500 + dx * u + nx * (off + wv), y = 500 + dy * u + ny * (off + wv);
             if (j) c.lineTo(x, y); else c.moveTo(x, y);
@@ -104,9 +107,10 @@
   }
 
   // the mark as Marks.mark draws it, the glass and the letters each with their light (fx: source-atop, or null)
-  function glassOf(ctx, pal, gt, fx) {
+  // the glass holds still (the light moves): a still glass also keeps the layer's frames identical however they are reached
+  function glassOf(ctx, pal, fx) {
     const draw = (c) => {
-      M.ribbon(c, gt, { colours: pal.ribbon });
+      M.ribbon(c, 0, { colours: pal.ribbon });
       if (fx) { c.save(); c.globalCompositeOperation = 'source-atop'; fx(c); c.restore(); }
     };
     if (fx) M.layer(ctx, { composite: 'source-over' }, draw); else draw(ctx);
@@ -154,137 +158,120 @@
       const k = p.weight, A = 0.45 + 0.5 * I;   // the light's strength
       // the glass's glow after the light: up to t0, then fading out by the end (later with more glow)
       const afterglow = (t0) => p.glow * M.smoothstep(t0 - 0.3, t0, t) * (1 - M.smoothstep(t0, M.lerp(0.85, 1, p.glow), t));
-      let gfx = null, lfx = null, airFx = null, between = null, gt = 0;
+      let gfx = null, lfx = null, airFx = null, between = null;
 
       if (p.style === 'sweep') {
-        const run = ease(seg(t, 0.02, 0.8)), c0 = -760 + 1520 * run, w = 60 + 70 * I;
-        const on = 1 - seg(t, 0.8, 0.86);                      // the bar of light leaves the frame
-        const split = M.smoothstep(-420, 160, c0);             // it splits as it goes into the fold
-        const gap = (24 + 120 * p.spread) * split * (0.6 + 0.4 * I);
-        const glowA = afterglow(0.55) * (0.5 + 0.5 * I);
-        gt = 0.08 * I * bump(seg(t, 0.1, 1));
-        lfx = (c) => {
-          band(c, NRM, c0, [[-2.6 * w, light, 0], [-w, light, 0.22 * A * on], [-0.3 * w, light, 0.85 * A * on], [0.25 * w, WHITE, A * on], [0.55 * w, light, 0]]);
-        };
+        const run = ease(seg(t, 0.04, 0.74)), c0 = -620 + 1300 * run, w = 80 + 80 * I;
+        const on = seg(t, 0, 0.08) * (1 - seg(t, 0.72, 0.8));  // the bar of light comes in and leaves
+        const split = M.smoothstep(-350, 150, c0);             // it splits as it goes into the fold
+        const gap = (50 + 130 * p.spread) * (0.7 + 0.3 * I) * split, f0 = -0.3 * w;
+        const glowA = afterglow(0.6) * (0.5 + 0.5 * I), G = M.mix(FR[0], WHITE, 0.3);
+        lfx = (c) => band(c, NRM, c0, [[-2.4 * w, light, 0], [-1.1 * w, light, 0.3 * A * on], [-0.25 * w, light, 0.85 * A * on], [0.15 * w, WHITE, A * on], [0.45 * w, light, 0]]);
         gfx = (c) => {
-          if (glowA > 0.002) band(c, NRM, c0, [[-1800, FR[0], 0], [-900, FR[0], 0.28 * glowA], [-0.6 * w, FR[0], 0.4 * glowA], [0, FR[0], 0]]);
-          const g = [[-0.35 * w - 4 * gap - 0.8 * w, FR[2], 0]];
-          for (let i = 2; i >= 0; i--) g.push([-0.35 * w - (i + 1) * gap, FR[i], 0.8 * A * on * Math.max(split, 0.25)]);
-          g.push([-0.3 * w, WHITE, 0.9 * A * on], [0.25 * w, WHITE, A * on], [0.6 * w, WHITE, 0]);
-          band(c, NRM, c0, g);
+          if (glowA > 0.002) band(c, NRM, c0, [[-2400, G, 0.8 * glowA], [-0.5 * w, G, 0.8 * glowA], [0.2 * w, G, 0]]);
+          const fa = 1.15 * A * on * (0.3 + 0.7 * split);
+          band(c, NRM, c0, [[f0 - 3 * gap - 0.9 * w, FR[2], 0], [f0 - 3 * gap, FR[2], fa], [f0 - 2 * gap, FR[1], fa], [f0 - gap, FR[0], fa],
+            [f0, WHITE, 0.9 * A * on], [0.2 * w, WHITE, A * on], [0.5 * w, WHITE, 0]]);
         };
         // a spark at the bar's blade as the light passes it
         const tip = pal.look ? pal.look.cut[0] : [616, 229];
         const sT = (tip[0] - 500) * NRM[0] + (tip[1] - 500) * NRM[1];
-        const sa = A * Math.exp(-(((c0 - sT) / (w * 1.2)) ** 2)) * on;
-        if (sa > 0.01) airFx = (c) => spark(c, tip[0], tip[1], 120 + 90 * I, dark ? light : WHITE, sa);
-        if (dark && on > 0) {
-          const air0 = airFx;
-          airFx = (c) => { band(c, NRM, c0, [[-1.8 * w, light, 0], [0, light, 0.07 * A * on], [0.5 * w, light, 0]]); if (air0) air0(c); };
-        }
+        const sa = A * Math.exp(-(((c0 - sT) / w) ** 2)) * on;
+        airFx = (c) => {
+          if (dark && on > 0) band(c, NRM, c0, [[-1.8 * w, light, 0], [0, light, 0.08 * A * on], [0.5 * w, light, 0]]);
+          spark(c, tip[0], tip[1], 120 + 90 * I, dark ? light : WHITE, sa);
+        };
       } else if (p.style === 'caustic') {
         const L = M.smoothstep(0, 0.28, t) * (1 - M.smoothstep(0.6, 0.97, t));
         const ct = ease(seg(t, 0, 1));
-        const glowA = afterglow(0.5) * (0.5 + 0.5 * I) * (1 - L);
-        gt = 0.12 * I * bump(seg(t, 0.05, 1));
+        const glowA = afterglow(0.55) * (0.5 + 0.5 * I), G = M.mix(FR[0], WHITE, 0.3);
         if (L > 0.002) lfx = (c) => caustics(c, ct, light, 0.75 * A * L, I);
         if (L > 0.002 || glowA > 0.002) {
           gfx = (c) => {
-            if (glowA > 0.002) { c.fillStyle = M.rgba(FR[0], 0.3 * glowA); c.fillRect(-1000, -1000, 3000, 3000); }
+            if (glowA > 0.002) spot(c, 640, 600, 700, G, 0.9 * glowA);
             caustics(c, ct, WHITE, 0.7 * A * L, I);
             c.save(); c.translate(10 + 26 * p.spread, 6 + 12 * p.spread); caustics(c, ct, FR[0], 0.55 * A * L, I); c.restore();
           };
         }
       } else if (p.style === 'flare') {
+        // a glint runs along the bar's top to its blade, which flares: rays of light fan from the tip through the glass
         const tip = pal.look ? pal.look.cut[0] : [616, 229];
-        const run = ease(seg(t, 0, 0.32)), gx = M.lerp(250, tip[0], run), gy = M.lerp(tip[1] + 20, tip[1], run);
-        const glint = A * seg(t, 0, 0.08) * (1 - seg(t, 0.3, 0.4));
-        const F = A * seg(t, 0.26, 0.36) * Math.exp(-3.2 * seg(t, 0.36, 1)) * (1 - seg(t, 0.85, 0.98));
-        const r = 1150 * ease(seg(t, 0.3, 0.9)), ring = (1 - seg(t, 0.72, 0.95)) * seg(t, 0.3, 0.36);
-        const glowA = afterglow(0.6) * (0.5 + 0.5 * I);
-        gt = 0.1 * I * bump(seg(t, 0.3, 1));
+        const run = ease(seg(t, 0, 0.3)), gx = M.lerp(250, tip[0], run), gy = M.lerp(tip[1] + 30, tip[1] + 6, run);
+        const glint = A * seg(t, 0, 0.06) * (1 - seg(t, 0.28, 0.36));
+        const F = A * seg(t, 0.26, 0.34) * (1 - M.smoothstep(0.4, 0.9, t));
+        const grow = M.ease.outCubic(seg(t, 0.27, 0.6)), turn = 0.12 * (seg(t, 0.27, 1) - 0.5);
+        const glowA = afterglow(0.6) * (0.5 + 0.5 * I), G = M.mix(FR[0], WHITE, 0.3);
+        const RAYS = 7, Lr = 1000 * grow, w1 = (50 + 40 * I) * (0.6 + 0.8 * p.spread);
+        const ray = (c, i, col, w, a) => {
+          const an = M.lerp(0.32, 2.45, i / (RAYS - 1)) + turn * (i % 2 ? 1 : -1);
+          shaft(c, tip, [tip[0] + Math.cos(an) * Lr, tip[1] + Math.sin(an) * Lr], 3, w, col, a, 0);
+        };
         lfx = (c) => {
           spot(c, gx, gy, 110 + 60 * I, light, glint);
-          spot(c, tip[0], tip[1], 260 + 200 * I, light, 0.9 * F);
+          spot(c, tip[0], tip[1], 200 + 160 * I, light, 0.95 * F);
+          if (F > 0.002) for (let i = 0; i < RAYS; i++) ray(c, i, light, w1 * 0.5, 0.45 * F);
         };
         gfx = (c) => {
-          if (glowA > 0.002) spot(c, tip[0], tip[1], 900, FR[0], 0.45 * glowA);
-          if (ring > 0.002 && r > 40) {
-            const sp = 40 + 90 * p.spread, g = c.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], r);
-            const at = (d) => M.clamp(1 - d / r, 0, 1);
-            g.addColorStop(0, M.rgba(WHITE, 0));
-            g.addColorStop(at(3 * sp + 160), M.rgba(WHITE, 0.15 * ring * A));
-            g.addColorStop(at(3 * sp), M.rgba(FR[0], 0.7 * ring * A));
-            g.addColorStop(at(2 * sp), M.rgba(FR[1], 0.7 * ring * A));
-            g.addColorStop(at(sp), M.rgba(FR[2], 0.6 * ring * A));
-            g.addColorStop(1, M.rgba(FR[2], 0));
-            c.fillStyle = g; c.fillRect(tip[0] - r, tip[1] - r, 2 * r, 2 * r);
-          }
-          spot(c, tip[0], tip[1], 300 + 200 * I, WHITE, F);
+          if (glowA > 0.002) spot(c, tip[0], tip[1] + 200, 800, G, 0.9 * glowA);
+          if (F > 0.002) for (let i = 0; i < RAYS; i++) { ray(c, i, FR[i % 3], w1, 0.85 * F); ray(c, i, WHITE, w1 * 0.3, 0.9 * F); }
+          spot(c, tip[0], tip[1], 260 + 160 * I, WHITE, F);
         };
-        if (F > 0.002) {
-          airFx = (c) => {
-            spark(c, tip[0], tip[1], 260 + 260 * I, dark ? light : WHITE, F);
-            // the streak: long and thin, along the bar
-            const g = c.createLinearGradient(tip[0] - 700, 0, tip[0] + 700, 0);
-            g.addColorStop(0, M.rgba(FR[0], 0)); g.addColorStop(0.5, M.rgba(dark ? WHITE : FR[0], 0.7 * F)); g.addColorStop(1, M.rgba(FR[0], 0));
-            c.fillStyle = g; c.fillRect(tip[0] - 700, tip[1] - 4, 1400, 8);
-            // ghosts down the line from the tip through the mark's centre
-            const cx = 505 - tip[0], cy = 495 - tip[1], drift = 0.12 * (t - 0.4);
-            [[0.55, 46, 2], [0.95, 26, 0], [1.3, 70, 1], [1.62, 36, 2]].forEach(([f, rad, ci]) => {
-              const q = f + drift * f;
-              spot(c, tip[0] + cx * q, tip[1] + cy * q, rad * (0.8 + 0.6 * I), FR[ci], (dark ? 0.35 : 0.28) * F);
-            });
-          };
-        }
+        airFx = (c) => spark(c, tip[0], tip[1], 220 + 200 * I, dark ? light : WHITE, F);
       } else {   // split
         const chosen = Math.floor(env.rng() * 3);
-        const inA = ease(seg(t, 0.02, 0.22));                  // the white beam comes in to the corner
-        const S0 = [E[0] + 520, E[1] - 520 * 0.7];
+        const inA = ease(seg(t, 0.02, 0.2));                   // the white beam comes in to the corner
+        const S0 = [E[0] + 560, E[1] - 400];
         const head = [M.lerp(S0[0], E[0], inA), M.lerp(S0[1], E[1], inA)];
         const inFade = 1 - seg(t, 0.62, 0.8);
-        const beams = TARGETS.map((q, i) => {
-          const go = ease(seg(t, 0.2 + 0.07 * i, 0.42 + 0.07 * i));
-          const land = seg(t, 0.36 + 0.07 * i, 0.46 + 0.07 * i);
-          const end = i === chosen ? [0.82, 0.97] : [0.6, 0.78];
+        const beams = TARGETS.map(([q, name, u0, u1], i) => {
+          const go = ease(seg(t, 0.18 + 0.08 * i, 0.38 + 0.08 * i));
+          const land = seg(t, 0.32 + 0.08 * i, 0.42 + 0.08 * i);
+          const end = i === chosen ? [0.82, 0.97] : [0.62, 0.8];
           const fade = 1 - seg(t, end[0], end[1]);
-          return { q, i, go, land: land * fade, fade };
+          return { q, i, name, u0, u1, go, land: land * fade, fade, k: i === chosen ? 1 : 0.8, tip: [M.lerp(E[0], q[0], go), M.lerp(E[1], q[1], go)] };
         });
-        const flash = A * seg(t, 0.17, 0.22) * (1 - seg(t, 0.22, 0.5));
-        const glowA = afterglow(0.55) * (0.5 + 0.5 * I);
-        gt = 0.08 * I * bump(seg(t, 0.15, 1));
-        const w0 = 14, w1 = 70 + 60 * I + 40 * p.spread;
-        // the beams, between the glass and the letters: coloured shafts that pass behind the letters to land on them
+        const flash = A * seg(t, 0.16, 0.2) * (1 - seg(t, 0.2, 0.5));
+        const glowA = afterglow(0.55) * (0.5 + 0.5 * I), G = M.mix(FR[0], WHITE, 0.3);
+        const w1 = 90 + 60 * I + 60 * p.spread;
+        const beam = (c, b, col, k, a) => shaft(c, E, b.tip, 16 * k, M.lerp(16, w1, b.go) * k, col, a, b.go >= 1 ? a * 0.7 : 0);
+        // the beams in the air, between the glass and the letters (and lighter where they cross the letters)
         between = (c) => air(c, dark, (a) => {
-          if (inA > 0 && inFade > 0) shaft(a, S0, head, 30, 22, light, (dark ? 0.35 : 0.5) * A * inFade, 1);
-          for (const b of beams) {
-            if (!(b.go > 0) || !(b.fade > 0)) continue;
-            const tipq = [M.lerp(E[0], b.q[0], b.go), M.lerp(E[1], b.q[1], b.go)];
-            shaft(a, E, tipq, w0, M.lerp(w0, w1, b.go), FR[b.i], (dark ? 0.45 : 0.42) * A * b.fade * (b.i === chosen ? 1 : 0.85), b.go);
-          }
+          if (inA > 0 && inFade > 0) shaft(a, S0, head, 46, 34, dark ? light : BEAM, (dark ? 0.4 : 0.55) * A * inFade, (dark ? 0.4 : 0.55) * A * inFade);
+          for (const b of beams) if (b.go > 0 && b.fade > 0) { beam(a, b, FR[b.i], 1, (dark ? 0.5 : 0.7) * A * b.fade * b.k); beam(a, b, WHITE, 0.35, 0.85 * A * b.fade * b.k); }
         });
-        lfx = (c) => { for (const b of beams) spot(c, b.q[0], b.q[1], 120 + 70 * I, light, 0.85 * A * b.land * (b.i === chosen ? 1 : 0.8)); };
+        lfx = (c) => {
+          for (const b of beams) {
+            if (b.go > 0 && b.fade > 0) beam(c, b, M.mix(FR[b.i], WHITE, 0.6), 1, 0.5 * A * b.fade * b.k);
+            if (!(b.land > 0.002)) continue;
+            // where it lands the stroke catches the light: a glow, and a rim on the side the light comes from
+            const a = A * b.land * b.k, wl = M.widths[b.name] * k;
+            spot(c, b.q[0], b.q[1], 100 + 50 * I, light, 0.9 * a);
+            c.save(); c.translate(0.2 * wl, -0.24 * wl);
+            for (const [ww, aa] of [[0.8, 0.16], [0.52, 0.2], [0.26, 0.3]]) M.stroke(c, (pal.look ? PTS5S : PTS)[b.name], { width: ww * wl, from: b.u0, to: b.u1, colours: light, alpha: aa * a });
+            c.restore();
+          }
+        };
         gfx = (c) => {
-          if (glowA > 0.002) spot(c, E[0], E[1], 700, FR[0], 0.5 * glowA);
+          if (glowA > 0.002) spot(c, E[0], E[1] + 100, 700, G, 0.9 * glowA);
           spot(c, E[0], E[1], 220, WHITE, 0.8 * flash);
         };
-        if (flash > 0.01) airFx = (c) => spark(c, E[0], E[1], 150 + 100 * I, dark ? light : WHITE, flash);
+        airFx = (c) => spark(c, E[0], E[1], 150 + 100 * I, dark ? light : WHITE, flash);
       }
 
-      if (p.ribbon) glassOf(ctx, pal, gt, gfx);
+      if (p.ribbon) glassOf(ctx, pal, gfx);
       if (between) between(ctx);
       lettersOf(ctx, pal, k, lfx);
       if (airFx) air(ctx, dark, airFx);
     }
   });
 
-  // a shaft of light from a to b, w0 wide at a and w1 at b, fading toward its soft tip (go: how far it has come)
-  function shaft(c, a, b, w0, w1, col, al, go) {
+  // a shaft of light from a to b, w0 wide at a and w1 at b, alpha al fading to endA at b
+  function shaft(c, a, b, w0, w1, col, al, endA) {
     const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
     if (!(L > 1) || !(al > 0.002)) return;
     const nx = -dy / L, ny = dx / L;
     const g = c.createLinearGradient(a[0], a[1], b[0], b[1]);
-    g.addColorStop(0, M.rgba(col, al)); g.addColorStop(0.8, M.rgba(col, al * 0.8)); g.addColorStop(1, M.rgba(col, al * (go >= 1 ? 0.6 : 0)));
+    g.addColorStop(0, M.rgba(col, al)); g.addColorStop(0.8, M.rgba(col, al * 0.8)); g.addColorStop(1, M.rgba(col, endA));
     c.fillStyle = g;
     c.beginPath();
     c.moveTo(a[0] + nx * w0 / 2, a[1] + ny * w0 / 2); c.lineTo(b[0] + nx * w1 / 2, b[1] + ny * w1 / 2);
