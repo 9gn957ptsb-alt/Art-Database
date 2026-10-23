@@ -16,7 +16,7 @@ button, select { font: inherit; color: inherit; }
 #view { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
 #hud { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-.where, .alarms, .pearls, .pieces, .pill, .eyebrow, .near, .tag, .toast, .status, label, .hotbar, .jump, .l-room, .notes .more, .notes .count {
+.where, .alarms, .pearls, .coins, .pieces, .pill, .eyebrow, .near, .tag, .toast, .status, label, .hotbar, .jump, .l-room, .notes .more, .notes .count {
   font-family: var(--mono); font-size: 10.2px; letter-spacing: 0.08em; text-transform: uppercase;
 }
 .top { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); display: grid; gap: 8px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9); pointer-events: none; }
@@ -24,6 +24,8 @@ button, select { font: inherit; color: inherit; }
 .alarms { margin: -4px 0 0; color: var(--glow); letter-spacing: 0.16em; }
 /* the pearls in his glove, a line under the alarms (the sight's throw) */
 .pearls { margin: -4px 0 0; letter-spacing: 0.16em; }
+/* the coins taken, the tally (the toast says each as it is taken) */
+.coins { margin: -4px 0 0; letter-spacing: 0.16em; color: var(--glow); }
 .pieces { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .pieces li { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .pieces li i { width: 14px; height: 12px; background: center / contain no-repeat; opacity: 0.3; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8)); }
@@ -144,6 +146,9 @@ select { min-height: 40px; padding: 8px 12px; border: 1px solid var(--hair); bor
 /* While you come to, everything else steps back. */
 .top, .corner, .notes, .near, .foot, .jump, .label { transition: opacity 0.6s steps(6); }
 body[data-film] .views, body[data-film] .top, body[data-film] .corner, body[data-film] .notes, body[data-film] .near, body[data-film] .foot, body[data-film] .jump, body[data-film] .label, body[data-film] .tag, body[data-film] .sight-tag, body[data-film] .toast { opacity: 0; pointer-events: none; }
+/* space: the stick, the jump (Fire) and the header's line (the tally) only; the rest is the planet's */
+body[data-ride] .views, body[data-ride] .foot, body[data-ride] .corner, body[data-ride] .notes, body[data-ride] .near, body[data-ride] .label, body[data-ride] .tag, body[data-ride] .sight-tag,
+body[data-space] .views, body[data-space] .foot, body[data-space] .corner, body[data-space] .notes, body[data-space] .near, body[data-space] .label, body[data-space] .tag, body[data-space] .sight-tag, body[data-space] .alarms, body[data-space] .pearls, body[data-space] .coins, body[data-space] .pieces { display: none; }
 @media (max-width: 560px) {
   .near { top: calc(136px + env(safe-area-inset-top, 0px)); }
   .label { left: 12px; right: 12px; width: auto; grid-template-columns: 76px 1fr; gap: 12px; }

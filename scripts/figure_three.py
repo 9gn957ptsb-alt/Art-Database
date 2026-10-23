@@ -267,6 +267,45 @@ def first_boxes():
     return [[*map(float, np.minimum(b["a"], b["b"]) - H), *map(float, np.maximum(b["a"], b["b"]) + H)] for b in beams()]
 
 
+def second():
+    """The second figure, the third study of the figure (the figure and Bent, figure_studies.py): the first's nine beams,
+    every point moved along the line of sight by a bow across the drawing and a lean up it (fs.bend), as lofts of 17
+    stations a beam, closed at their ends. Moved only along the line of sight, it is the drawing exactly from its eye,
+    and from anywhere else its beams curve away; it is looked at level, from the stone before its plinth. A mesh:
+    positions, each vertex's tone by its face's normal in the figure's own axes (as the third's), triangles."""
+    lofts = [st for st in fs.studies() if st["key"] == "bent"][0]["lofts"]
+    V, N, T = [], [], []
+
+    def quad(a, b, c, d):
+        n = np.cross(np.subtract(b, a), np.subtract(d, a))
+        n = n / (np.linalg.norm(n) or 1)
+        k = len(V)
+        for p in (a, b, c, d):
+            V.append(p)
+            N.append(n)
+        T.extend([k, k + 1, k + 2, k, k + 2, k + 3])
+    for lf in lofts:
+        st = [np.array(ring, float) for ring in lf["stations"]]
+        for s0, s1 in zip(st[:-1], st[1:]):
+            for i in range(4):
+                j = (i + 1) % 4
+                quad(s0[i], s0[j], s1[j], s1[i])
+        quad(*st[0][::-1])
+        quad(*st[-1])
+    return np.array(V), np.array(N), np.array(T)
+
+
+def two_data(q):
+    V, N, T = second()
+    lo, hi = V.min(0), V.max(0)
+    return {"name": "The second figure", "eye": [round(float(x), 6) for x in NH], "up": [round(float(x), 6) for x in fs.UPV], "look": 0,
+            "v": q(V, 1000), "w": q(N ** 2, 255), "t": [int(i) for i in T.flatten()],
+            "box": [round(float(x), 4) for x in [*lo, *hi]],
+            "said": "The same nine beams, every point moved along the line of sight by a bow across the drawing: from this "
+                    "stone they are straight and it is the drawing; a step aside and they curve away. The third study of "
+                    "the figure, after the figure and Bent."}
+
+
 def export(path):
     V, N, T, K = mesh(closed=True)
     V, N = turned(V, N)
@@ -283,13 +322,13 @@ def export(path):
                 "step; negative: looked up at, hung in a gate; about 0: level, on a plinth); said, what the site "
                 "says of it from its stone. one: the first, as boxes [x0, y0, z0, x1, y1, z1], each face's tone "
                 "by its axis (x grey, y black, z white). three: the third, a mesh: v positions x1000, w each "
-                "vertex's tone weights (grey, black, white) x255, t triangles. two: the second, being made in "
-                "the game's own session; null until it is given (boxes or a mesh, as one or three).",
+                "vertex's tone weights (grey, black, white) x255, t triangles. two: the second, the third study of the "
+                "figure (the figure and Bent: its beams bowed along the line of sight), a mesh as three.",
         "one": {"name": "The first figure", "boxes": [[round(v, 4) for v in b] for b in first_boxes()],
                 "eye": [round(float(x), 6) for x in NH], "up": [round(float(x), 6) for x in fs.UPV],
                 "look": round(math.degrees(math.atan(1 / math.sqrt(2))), 4),
                 "said": "Six bars whose ends meet only down the diagonal: it closes from above, as the site draws its buildings."},
-        "two": None,
+        "two": two_data(q),
         "three": {"name": "The third figure", "eye": [round(float(x), 6) for x in TURN @ NH],
                   "up": [round(float(x), 6) for x in TURN @ fs.UPV],
                   "look": -round(math.degrees(math.atan(1 / math.sqrt(2))), 4),
