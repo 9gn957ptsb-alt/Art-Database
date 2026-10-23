@@ -1,0 +1,1671 @@
+{
+ "plot": {
+  "slug": "paradise",
+  "note": "paradise",
+  "name": "The walled garden",
+  "sub": "After Pasargadae · from about 546 BCE",
+  "box": [
+   0,
+   0,
+   300,
+   225
+  ],
+  "hit": [
+   0,
+   0,
+   300,
+   225
+  ]
+ },
+ "model": {
+  "spec": {
+   "slug": "paradise",
+   "name": "The walled garden",
+   "voxel": 0.8,
+   "site": [
+    96,
+    96
+   ],
+   "ground": "soil",
+   "parts": [
+    {
+     "box": [
+      -2,
+      -42,
+      0,
+      1,
+      37,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      1,
+      -42,
+      0,
+      1,
+      37,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -2,
+      5,
+      0,
+      1,
+      37,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      1,
+      5,
+      0,
+      1,
+      37,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -42,
+      -2,
+      0,
+      37,
+      1,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -42,
+      1,
+      0,
+      37,
+      1,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      5,
+      -2,
+      0,
+      37,
+      1,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      5,
+      1,
+      0,
+      37,
+      1,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -5,
+      -5,
+      0,
+      10,
+      1,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -5,
+      4,
+      0,
+      10,
+      1,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -5,
+      -4,
+      0,
+      1,
+      8,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      4,
+      -4,
+      0,
+      1,
+      8,
+      0.5
+     ],
+     "m": "limestone"
+    },
+    {
+     "pool": [
+      -1,
+      -42,
+      2,
+      38
+     ]
+    },
+    {
+     "pool": [
+      -1,
+      4,
+      2,
+      38
+     ]
+    },
+    {
+     "pool": [
+      -42,
+      -1,
+      38,
+      2
+     ]
+    },
+    {
+     "pool": [
+      4,
+      -1,
+      38,
+      2
+     ]
+    },
+    {
+     "pool": [
+      -4,
+      -4,
+      8,
+      8
+     ]
+    },
+    {
+     "box": [
+      -2,
+      -2,
+      0,
+      4,
+      4,
+      1
+     ],
+     "m": "limestone"
+    },
+    {
+     "tree": [
+      0,
+      0,
+      8.5,
+      3.8,
+      1
+     ],
+     "m": "rose"
+    },
+    {
+     "tree": [
+      -35,
+      -35,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -35,
+      -27,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -35,
+      -19,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -35,
+      -11,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -35,
+      11,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -35,
+      19,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -35,
+      27,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -35,
+      35,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -27,
+      -35,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -27,
+      -27,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -27,
+      -19,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -27,
+      -11,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -27,
+      11,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -27,
+      35,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -19,
+      -35,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -19,
+      -27,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -19,
+      -19,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -19,
+      -11,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -19,
+      11,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -19,
+      35,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -11,
+      -35,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -11,
+      -27,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -11,
+      -19,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -11,
+      -11,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -11,
+      11,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -11,
+      19,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      -11,
+      27,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      -11,
+      35,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      11,
+      -35,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      11,
+      -27,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      11,
+      -19,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      11,
+      -11,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      11,
+      11,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      11,
+      19,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      11,
+      27,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      11,
+      35,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      19,
+      -35,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      19,
+      -27,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      19,
+      -19,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      19,
+      -11,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      19,
+      11,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      19,
+      19,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      19,
+      27,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      19,
+      35,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      27,
+      -35,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      27,
+      -27,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      27,
+      -19,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      27,
+      -11,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      27,
+      11,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      27,
+      19,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      27,
+      27,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      27,
+      35,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      35,
+      -35,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      35,
+      -27,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      35,
+      -19,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      35,
+      -11,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      35,
+      11,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      35,
+      19,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "tree": [
+      35,
+      27,
+      5,
+      2.2
+     ],
+     "m": "sage"
+    },
+    {
+     "tree": [
+      35,
+      35,
+      9,
+      1.5
+     ],
+     "m": "plant",
+     "shape": "poplar"
+    },
+    {
+     "box": [
+      -29.5,
+      17.0,
+      0,
+      13,
+      12,
+      1.6
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -28.5,
+      18.0,
+      1.6,
+      11,
+      10,
+      1.0
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -27.7,
+      18.8,
+      2.6,
+      9.4,
+      8.4,
+      1.0
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -27.0,
+      19.5,
+      3.6,
+      8,
+      7,
+      0.6
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -26.6,
+      19.8,
+      4.2,
+      7.2,
+      6.4,
+      0.6
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -26.2,
+      20.2,
+      4.8,
+      6.4,
+      5.6,
+      0.6
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -25.6,
+      20.9,
+      5.4,
+      5.2,
+      4.2,
+      2.4
+     ],
+     "m": "limestone"
+    },
+    {
+     "gable": [
+      -25.6,
+      20.9,
+      7.8,
+      5.2,
+      4.2,
+      1.6
+     ],
+     "m": "limestone",
+     "axis": "x"
+    },
+    {
+     "box": [
+      -41,
+      -8,
+      0,
+      5,
+      16,
+      0.8
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -42,
+      -8,
+      0.8,
+      1,
+      16,
+      4.8
+     ],
+     "m": "earth"
+    },
+    {
+     "cyl": [
+      -37.6,
+      -6.4,
+      0.8,
+      0.45,
+      4.8
+     ],
+     "m": "limestone"
+    },
+    {
+     "cyl": [
+      -37.6,
+      -3.2,
+      0.8,
+      0.45,
+      4.8
+     ],
+     "m": "limestone"
+    },
+    {
+     "cyl": [
+      -37.6,
+      0,
+      0.8,
+      0.45,
+      4.8
+     ],
+     "m": "limestone"
+    },
+    {
+     "cyl": [
+      -37.6,
+      3.2,
+      0.8,
+      0.45,
+      4.8
+     ],
+     "m": "limestone"
+    },
+    {
+     "cyl": [
+      -37.6,
+      6.4,
+      0.8,
+      0.45,
+      4.8
+     ],
+     "m": "limestone"
+    },
+    {
+     "box": [
+      -42,
+      -8.4,
+      5.6,
+      6.4,
+      16.8,
+      0.8
+     ],
+     "m": "timber"
+    },
+    {
+     "box": [
+      -44,
+      -44,
+      0,
+      88,
+      2,
+      4.2
+     ],
+     "m": "earth"
+    },
+    {
+     "box": [
+      -44,
+      42,
+      0,
+      88,
+      2,
+      4.2
+     ],
+     "m": "earth"
+    },
+    {
+     "box": [
+      -44,
+      -42,
+      0,
+      2,
+      84,
+      4.2
+     ],
+     "m": "earth"
+    },
+    {
+     "box": [
+      42,
+      -42,
+      0,
+      2,
+      39,
+      4.2
+     ],
+     "m": "earth"
+    },
+    {
+     "box": [
+      42,
+      3,
+      0,
+      2,
+      39,
+      4.2
+     ],
+     "m": "earth"
+    },
+    {
+     "box": [
+      41.5,
+      -4.5,
+      0,
+      3,
+      1.5,
+      6.4
+     ],
+     "m": "earth"
+    },
+    {
+     "box": [
+      41.5,
+      3,
+      0,
+      3,
+      1.5,
+      6.4
+     ],
+     "m": "earth"
+    },
+    {
+     "box": [
+      41.5,
+      -4.5,
+      6.4,
+      3,
+      9,
+      0.8
+     ],
+     "m": "earth"
+    }
+   ]
+  },
+  "lat": 30.194,
+  "lon": 53.168,
+  "rest": [
+   49,
+   119,
+   853,
+   614
+  ]
+ },
+ "note": {
+  "name": "The walled garden",
+  "sub": "After Pasargadae, Fars · Cyrus II, from about 546 BCE · made for this book in the site’s model format",
+  "body": "A garden after the royal garden Cyrus the Great laid out at Pasargadae: a wall of earth with one gate, to the east; stone channels meeting in four at a basin (David Stronach’s reading of the channels he dug in 1961–63; later surveys doubt the fourfold plan, contested); trees in straight rows, as Xenophon saw them at Sardis; and in the south-west quarter the tomb of Cyrus, which Arrian sets inside the royal park. It is built of Pasargadae’s own soil, DIRT’s at 30.19° N, 53.17° E. In the middle, where Genesis puts the tree of life, a crepe myrtle in flower: Aries’s tree, an allusion, not a reconstruction.",
+  "why": "Paradise is Avestan pairi-daēza: pairi, around (the Indo-European base of Greek peri and Latin per, the per- of perception), and daēza, a wall, from a root meaning to knead clay, which also gives dough, figure and fiction. The first paradise was a wall kneaded out of the ground around a field. Swipe it to turn it; its chronicle is on the leaves after it."
+ },
+ "book": {
+  "name": "Paradise",
+  "title": "Paradise",
+  "from": "A chronicle of paradise",
+  "byline": "After Shakespeare’s histories. Written by Claude, for DRIFT Poetry, 23 October 2026",
+  "paper": "#efe6d2",
+  "ink": "#3d3125",
+  "rule": "#a68e66",
+  "scenes": [
+   {
+    "act": "Prologue",
+    "place": "A walled garden",
+    "title": "The Gardener",
+    "names": [
+     "Pairi",
+     "daēza"
+    ],
+    "speech": [
+     {
+      "sd": "Enter the GARDENER, with shears."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Old Adam’s likeness, so a queen once called me,",
+       "Set in a play to dress a garden, keep it.",
+       "I speak a law that’s older than the wall:",
+       "“Superfluous branches",
+       "We lop away, that bearing boughs may live.”",
+       "So every scene that’s played here, I will prune.",
+       "I’ll cut what’s sung, and leave you what was so,",
+       "The names, the dates, the nots; and cut, and cut,",
+       "Until the scene stands still, and nothing’s left",
+       "That I could cut and keep the rest alive.",
+       "What stands I’ll lay for bricks, and with the bricks",
+       "I’ll build the thing the word was named for. Hear it:",
+       "Pairi, around; daēza, wall: a word",
+       "Whose root is kneading, as of clay or dough.",
+       "A paradise was kneaded, then was planted.",
+       "Turn, then. The scenes are leaves, and as they fall",
+       "I’ll gather what was so, and build the wall."
+      ]
+     }
+    ],
+    "note": "The Gardener is Shakespeare’s, from Richard II (about 1595), 3.4, where the Queen calls him “old Adam’s likeness, set to dress this garden” and he says “Superfluous branches / We lop away, that bearing boughs may live.” His law is the skill’s: a cut is taken only if what must stay stays. What stays is history’s: “one relates what has happened, the other what may happen … poetry tends to express the universal, history the particular” (Aristotle, Poetics 9, tr. S. H. Butcher)."
+   },
+   {
+    "act": "Act I, scene 1",
+    "place": "Sardis, about 407 BCE",
+    "title": "The rows",
+    "names": [
+     "Sardis",
+     "BCE",
+     "Cyrus",
+     "Lysander",
+     "Sparta",
+     "Mithres",
+     "Dardas",
+     "Belesys",
+     "Xenophon",
+     "paradeisos",
+     "Latin"
+    ],
+    "speech": [
+     {
+      "sd": "Cyrus the Younger’s paradise. Enter CYRUS, in purple and gold, and LYSANDER of Sparta."
+     },
+     {
+      "who": "LYSANDER",
+      "verse": [
+       "These trees stand all at equal intervals;",
+       "The rows run straight as spears; the angles true.",
+       "What artist mapped and measured this for you?"
+      ]
+     },
+     {
+      "who": "CYRUS",
+      "verse": [
+       "I measured it. I laid it out myself,",
+       "And some I planted with my own two hands."
+      ]
+     },
+     {
+      "who": "LYSANDER",
+      "verse": [
+       "With those? In purple, with those chains and rings?"
+      ]
+     },
+     {
+      "who": "CYRUS",
+      "verse": [
+       "By Mithres, I don’t sit to supper till",
+       "I’ve sweated, at some work of war or field."
+      ]
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "A row of trees, in Latin, is a verse.",
+       "Six years from then, beside the Dardas’ springs,",
+       "He came upon the park of Belesys,",
+       "Full of the fruits of all the seasons’ course,",
+       "And cut it down, and burnt the palace. So:",
+       "The planter and the feller were one man.",
+       "And Xenophon, who marched with him, set down",
+       "The Persian word in Greek: paradeisos."
+      ]
+     }
+    ],
+    "note": "Xenophon, Oeconomicus 4.20–25 (tr. H. G. Dakyns): the trees “all planted at equal intervals, the long straight rows”; “Some of the trees,” he added, “I planted with my own hands”; and “I swear to you by Mithres” that he never sups without “some exercise of war or husbandry in the sweat of my brow.” The park of Belesys: Anabasis 1.4.10. Xenophon is the earliest Greek writer whose use of the word survives. Latin versus is a furrow, and a row of trees. “The separation of objects in space is a unique quality of the third dimension.” (Aries)"
+   },
+   {
+    "act": "Act I, scene 2",
+    "place": "Pasargadae, 324 BCE",
+    "title": "A little earth",
+    "names": [
+     "Pasargadae",
+     "BCE",
+     "Cyrus",
+     "Polymachus",
+     "Alexander",
+     "Plutarch",
+     "Greek",
+     "Persian"
+    ],
+    "speech": [
+     {
+      "sd": "The royal park: a grove of every kind of tree, water running, deep grass. The tomb of Cyrus, broken open. Enter ALEXANDER."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Here Cyrus laid his garden out, and here,",
+       "Two hundred years ago, they laid him down.",
+       "The grove had grown, the streams still ran, the grass",
+       "Stood deep about the tomb; and it was robbed.",
+       "He put the thief, Polymachus, to death,",
+       "And had the words that Cyrus left cut new",
+       "In Greek, below the old ones. Now he reads:"
+      ]
+     },
+     {
+      "who": "ALEXANDER",
+      "prose": "“O man, whosoever thou art, and from whencesoever thou comest (for I know thou wilt come), I am Cyrus, the founder of the Persian empire; do not grudge me this little earth which covers my body.”"
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "It touched him, Plutarch says: how all things change.",
+       "The founder of an empire asks for dirt.",
+       "Within two years the reader too was earth."
+      ]
+     }
+    ],
+    "note": "Plutarch, Life of Alexander 69 (tr. Dryden, revised by A. H. Clough), quoted exactly; Plutarch, in North’s English, was Shakespeare’s chronicle for Rome. Arrian (Anabasis of Alexander 6.29) sets the tomb in the royal park, in a watered grove with deep grass. Cyrus founded Pasargadae about 546 BCE and was buried there in 530; Alexander died in 323."
+   },
+   {
+    "act": "Act II, scene 1",
+    "place": "Alexandria, the third century BCE",
+    "title": "The turn",
+    "names": [
+     "Alexandria",
+     "BCE",
+     "Ptolemy",
+     "Genesis",
+     "Eden",
+     "Gan",
+     "b’Eden",
+     "Kēpos",
+     "Persians",
+     "Nehemiah",
+     "pardēs",
+     "Persia’s",
+     "paradeisos",
+     "Lord",
+     "God",
+     "God’s",
+     "Hebrew",
+     "Greek",
+     "Law"
+    ],
+    "speech": [
+     {
+      "sd": "Translators of the Law into Greek (by legend seventy-two, for King Ptolemy), at a Hebrew scroll of Genesis."
+     },
+     {
+      "who": "FIRST TRANSLATOR",
+      "verse": [
+       "Gan-b’Eden miqqedem: a garden, eastward,",
+       "In Eden. Gan’s a place that’s fenced and guarded.",
+       "What Greek will hold it? Kēpos is a plot",
+       "Of leeks and cabbages behind a house."
+      ]
+     },
+     {
+      "who": "SECOND TRANSLATOR",
+      "verse": [
+       "The Persians had a word for kings’ walled parks.",
+       "Our Nehemiah asked the Persian king",
+       "For timber from his pardēs, for the wall.",
+       "In Greek it’s paradeisos."
+      ]
+     },
+     {
+      "who": "FIRST TRANSLATOR",
+      "verse": [
+       "A king’s word, for God’s garden?"
+      ]
+     },
+     {
+      "who": "SECOND TRANSLATOR",
+      "verse": [
+       "God is king."
+      ]
+     },
+     {
+      "who": "GARDENER",
+      "prose": "They wrote it so: “And the Lord God planted a paradise in Eden, toward the east.”"
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "The king’s walled park became God’s garden. Here",
+       "The chronicle turns. Persia’s wall went round",
+       "The second chapter, and it’s standing still."
+      ]
+     }
+    ],
+    "note": "The Septuagint, the Greek Law of the third century BCE (the Letter of Aristeas tells of seventy-two translators for Ptolemy II: a legend), gives Genesis 2:8’s gan, “garden”, from a Hebrew root for covering and protecting, as paradeisos; the English of the Greek is mine. Hebrew had already taken the Persian word as pardēs: Nehemiah 2:8 asks for “a letter unto Asaph the keeper of the king’s forest” for timber “for the wall of the city.” Eden is Hebrew for “delight”, or from Sumerian eden, “steppe” (contested). The translators’ talk is invented; their choice is the record."
+   },
+   {
+    "act": "Act II, scene 2: another history",
+    "place": "The same room, the same day: it did not happen",
+    "title": "The garden of friends",
+    "alt": true,
+    "names": [],
+    "speech": [
+     {
+      "sd": "This scene is invented. Here the chronicle forks."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Here history forks. What follows is not so:",
+       "I graft it, as a gardener grafts a branch,",
+       "To see what fruit it bears."
+      ]
+     },
+     {
+      "who": "FIRST TRANSLATOR",
+      "verse": [
+       "Not paradise.",
+       "Write kēpos: garden, plainly, as it’s said."
+      ]
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "So God, in Greek, had planted a kēpos,",
+       "A garden, as had Epicurus, forty",
+       "Years earlier, in Athens, for his friends.",
+       "Over its gate it said:"
+      ]
+     },
+     {
+      "who": "THE GATE",
+      "prose": "Hospes, hic bene manebis, hic summum bonum voluptas est."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Stranger, you will do well to tarry here;",
+       "Our highest good is pleasure. So the Book",
+       "Began: no hunting park, and no king’s wall.",
+       "Its fruit was use, as frui means: enjoyment;",
+       "And what we need by nature’s easily had.",
+       "No sword turned every way; no one was driven",
+       "Out; and two thousand years from then, no one",
+       "Wrote “Out of paradise with man!”: there was none.",
+       "I cut it now. It never stood. And yet",
+       "The word for what I’ve grafted, fiction, comes",
+       "From fingere, to knead: the root the wall",
+       "Was kneaded from."
+      ]
+     }
+    ],
+    "note": "Invented. The fork is real: Greek had kēpos, its plain word for a garden, and the school Epicurus founded in Athens about 306 BCE was called the Garden. Seneca (Letters 21.10) gives the words over its gate (the Latin as he gives it, not checked against a text this session; the English is mine). Epicurus held that what nature needs is easily got (Letter to Menoeceus). Nothing in this scene was so, so the Gardener keeps nothing of it but its nots. “The quality of simultaneity (non-hierarchically organized) is non-intrusive in its welcoming.” (Aries)"
+   },
+   {
+    "act": "Act II, scene 3",
+    "place": "Golgotha, about 30 CE",
+    "title": "To day",
+    "names": [
+     "Golgotha",
+     "CE",
+     "Jesus",
+     "Lord",
+     "Paul",
+     "John",
+     "God"
+    ],
+    "speech": [
+     {
+      "sd": "Three crosses: two thieves, and between them JESUS."
+     },
+     {
+      "who": "A THIEF",
+      "prose": "Lord, remember me when thou comest into thy kingdom."
+     },
+     {
+      "who": "JESUS",
+      "prose": "Verily I say unto thee, To day shalt thou be with me in paradise."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "To day. The garden that was east, and once,",
+       "Is now ahead, and soon. It’s moved from where",
+       "To when: it left the map and went in time.",
+       "Paul writes a man was “caught up into paradise”;",
+       "And John saw “the tree of life, which is in the midst",
+       "Of the paradise of God.” A wall that went",
+       "Around a field went round a life, and then",
+       "Around its end, and what comes after it."
+      ]
+     }
+    ],
+    "note": "Luke 23:42–43, 2 Corinthians 12:4, Revelation 2:7, in the King James Version (1611). From here on paradise is a time as well as a place: behind, in Eden, and ahead. “Time is a dimension of space.” (Aries)"
+   },
+   {
+    "act": "Act III",
+    "place": "The top of the mountain of Purgatory, Easter 1300",
+    "title": "The divine forest",
+    "names": [
+     "Purgatory",
+     "Easter",
+     "Dante",
+     "Eden",
+     "Lethe",
+     "Eunoë",
+     "Matelda",
+     "Parnassus",
+     "Beatrice",
+     "Christ"
+    ],
+    "speech": [
+     {
+      "sd": "The Earthly Paradise. Enter DANTE; a lady, MATELDA, gathering flowers; two streams from one spring."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Dante set Eden on the mountain’s top:",
+       "“The heavenly forest, dense and living-green”;",
+       "One spring, two rivers: Lethe, that forgets,",
+       "And Eunoë, Good Mind, a name he made,",
+       "That gives the good back. And a lady there,",
+       "Matelda, culling flowers, tells him this:"
+      ]
+     },
+     {
+      "who": "MATELDA",
+      "verse": [
+       "“Those who in ancient times have feigned in song",
+       "The Age of Gold and its felicity,",
+       "Dreamed of this place perhaps upon Parnassus.",
+       "Here was the human race in innocence;”"
+      ]
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Feigned: fingere, to knead. The pagans’ age",
+       "Of gold, their other history, he makes",
+       "A dream of this. And higher, in the light,",
+       "Beatrice turns him from her face to it:"
+      ]
+     },
+     {
+      "who": "BEATRICE",
+      "verse": [
+       "“Why doth my face so much enamour thee,",
+       "That to the garden fair thou turnest not,",
+       "Which under the rays of Christ is blossoming?”"
+      ]
+     }
+    ],
+    "note": "Dante, Purgatorio XXVIII and Paradiso XXIII (written about 1308–1321; tr. H. W. Longfellow, 1867), quoted exactly. Eunoë, “good mind”, is Dante’s own coinage. Here was the human race in innocence: one of the poems on DRIFT’s ground is “Innocence as an Act”. “The electromagnetic spectrum (featuring visible light) is the second dimension of space.” (Aries)"
+   },
+   {
+    "act": "Act IV, scene 1",
+    "place": "London, about 1595",
+    "title": "This blessed plot",
+    "names": [
+     "London",
+     "Holinshed",
+     "Shakespeare",
+     "Richard",
+     "Bolingbroke",
+     "York",
+     "Gaunt",
+     "Eden",
+     "England"
+    ],
+    "speech": [
+     {
+      "sd": "A playhouse. The GARDENER, alone."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "And here is where I’m made. No chronicle",
+       "Had any garden in it. Holinshed",
+       "Gave Shakespeare Richard, Bolingbroke and York;",
+       "He made the gardener up, and so made me.",
+       "He gave old Gaunt the island for an Eden:"
+      ]
+     },
+     {
+      "who": "GAUNT",
+      "verse": [
+       "“This other Eden, demi-paradise,",
+       "This fortress built by Nature for herself …",
+       "This precious stone set in the silver sea,",
+       "Which serves it in the office of a wall …",
+       "This blessed plot, this earth, this realm, this England,”"
+      ]
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "A plot. And then my man, beside me, asks:"
+      ]
+     },
+     {
+      "who": "SERVANT",
+      "verse": [
+       "“Why should we, in the compass of a pale,",
+       "Keep law and form and due proportion,",
+       "Showing, as in a model, our firm estate,”"
+      ]
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "A model, and a form: the bed I prune",
+       "Shows how the realm is pruned. I cut the heads",
+       "Of sprays that “look too lofty”, to keep all even;",
+       "And all that evenness kept one man high."
+      ]
+     }
+    ],
+    "note": "Shakespeare, Richard II (about 1595) 2.1 and 3.4, quoted exactly. The garden scene has no source in Holinshed’s Chronicles (1587), the play’s source: an invented scene that tells the history. “power is one sign for one thing. the essence of hierarchical organization is the skill power exponent” (Aries, 23 Oct 2026)."
+   },
+   {
+    "act": "Act IV, scene 2",
+    "place": "Eden’s wall, 1667; an English park, about 1730",
+    "title": "Over the wall",
+    "names": [
+     "Eden’s",
+     "English",
+     "Milton",
+     "Eden",
+     "Cyrus’s",
+     "Kent",
+     "Walpole"
+    ],
+    "speech": [
+     {
+      "sd": "MILTON, blind, dictating; and, a lifetime later, a park."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Then Milton, blind, dictated Eden’s wall,",
+       "“One Gate there onely was, and that look’d East”,",
+       "And how the fiend, “in contempt,",
+       "At one slight bound high overleap’d all bound",
+       "Of Hill or highest Wall”. Inside, no rows,",
+       "Not Cyrus’s: “not nice Art",
+       "In Beds and curious Knots, but Nature boon",
+       "Powrd forth profuse”. And out, at last, the two,",
+       "“with wandring steps and slow”.",
+       "A lifetime on, an English painter, Kent,",
+       "Says Walpole, “leaped the fence, and saw that all",
+       "nature was a garden.” They sank the walls in ditches,",
+       "Ha-has, the people called them, from surprise;",
+       "And act by act, as long, the wall the garden",
+       "Had lost went up around the common fields."
+      ]
+     }
+    ],
+    "note": "Milton, Paradise Lost (1667) IV and XII, quoted exactly from the 1674 text. Horace Walpole on William Kent, in The History of the Modern Taste in Gardening (1780), quoted as it is usually given, not checked against his text this session; he gives the sunk fence, the ha-ha, to Charles Bridgeman. That the open landscape came with Parliament’s enclosure of the commons is Raymond Williams’s argument (The Country and the City, 1973). “Space is non-hierarchical (not dimensions of space).” (Aries)"
+   },
+   {
+    "act": "Act V, scene 1",
+    "place": "Nietzsche, 1884–1888",
+    "title": "The serpents",
+    "names": [
+     "Nietzsche",
+     "German",
+     "Paradise",
+     "God",
+     "Zarathustra",
+     "Book"
+    ],
+    "speech": [
+     {
+      "sd": "ZARATHUSTRA, sick seven days in his cave, an apple in his hand; his animals."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Last came a German, a philologist,",
+       "Who read the Book against its grain, and heard",
+       "What serpents say:"
+      ]
+     },
+     {
+      "who": "NIETZSCHE",
+      "prose": "“Where there is the tree of knowledge, there is always Paradise”: so say the most ancient and the most modern serpents."
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "His God is bored, “promenading his garden”,",
+       "Makes man, then fears that man will come to know:",
+       "“Thou shall not know”; and so, “Out of paradise with man!”",
+       "But Zarathustra, sick for seven days,",
+       "Is told this by his animals:"
+      ]
+     },
+     {
+      "who": "THE ANIMALS",
+      "prose": "“Step out of thy cave: the world waiteth for thee as a garden.” … “Like leavened dough layest thou, thy soul arose and swelled beyond all its bounds.”"
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "Dough: the wall’s own root. The soul,",
+       "Kneaded as walls are, rises past its bounds;",
+       "And no one drives it out of any garden:",
+       "The world is waiting for it, as a garden."
+      ]
+     }
+    ],
+    "note": "Nietzsche: Beyond Good and Evil §152 (tr. Helen Zimmern), The Antichrist §48 (tr. H. L. Mencken) and Thus Spake Zarathustra III, The Convalescent (tr. Thomas Common), each checked against its translation. Dough (German Teig) is from the same Indo-European root as paradise’s daēza, “wall”. “Knowledge is subjection to the intersubjectivity of perception in addition to instigating objects.” (Aries)"
+   },
+   {
+    "act": "Act V, scene 2",
+    "place": "A backyard, 24 September 2026, 12:58",
+    "title": "The return to the garden",
+    "names": [
+     "Aries",
+     "September",
+     "Book",
+     "Isaiah",
+     "South",
+     "Genesis"
+    ],
+    "speech": [
+     {
+      "sd": "ARIES, before their painting of a crepe myrtle."
+     },
+     {
+      "who": "ARIES",
+      "prose": "What is the return to the garden in the biblical sense in relation to nature being good enough or a return to nature? Because if you satisfied everyone's once in desires with produced objects. And everyone is satisfied. What do people then look for? What's left, what can't we make that has already been made? And if we were to consider in such return to nature, Impressionist painting, like the painting I'm looking at before me right now in my backyard, When I look at the... way that I rendered the top of the crepe myrtle tree. I find it's extremely beautiful, not because of its necessarily pictorial quality, even though it is such to a degree where I could name the object for what it is. But it also refers or suggests gives light to an abstract composition that sparks my curiosity. So in that return to nature, it's not just a return to nature as the nature that we built ourselves from. It is a return to a new nature. And it's not a new nature because of its necessarily new objects, that's my point. It's not formalism in that regard. But a new nature in what is taken from it. So it seems we return yet again. And to grab something new, a new fruit, what have you, and some cheesy biblical reference. But what is there left to grab?",
+      "held": true
+     },
+     {
+      "who": "GARDENER",
+      "verse": [
+       "The Book has one return, and not to the garden:",
+       "“till thou return unto the ground; for out of it",
+       "wast thou taken.” There, the man is what was taken;",
+       "In yours, the taking’s what is new. Your tree",
+       "Is called a myrtle for its likeness only;",
+       "Crape is crêpe, from crispus, curled, for its petals.",
+       "In the South they top it, every winter, to the knuckle,",
+       "And call it crape murder. Isaiah had a myrtle",
+       "For “an everlasting sign that shall not be cut off”.",
+       "I lift the shears, and leave it."
+      ]
+     }
+    ],
+    "note": "Aries, in their Dimensionalism chat, 24 Sep 2026, 12:58, quoted exactly, and not cut. Genesis 3:19 and Isaiah 55:13, King James Version. The crepe (crape) myrtle, Lagerstroemia indica, is not a myrtle but of the loosestrife family, named for its leaves’ likeness; Linnaeus named the genus for Magnus Lagerström. “Novelty is the absolute strictest presentation of nature.” (Aries)"
+   }
+  ],
+  "wall": {
+   "title": "Pairi-daēza",
+   "act": "Epilogue",
+   "held": "It is a return to a new nature. And it's not a new nature because of its necessarily new objects, that's my point. It's not formalism in that regard. But a new nature in what is taken from it.",
+   "by": "Aries, 24 September 2026",
+   "couplet": [
+    "What was, I’ve pruned to bricks, and walled it round;",
+    "What may be grows inside, on its own ground."
+   ],
+   "note": "Each brick is a scene taken to the power at which the skill stands still: the number is how many cuts that took, the words what it could not cut (the scene’s names, places and dates, and its nots, held as Morphology Web holds them). The invented scene stands in the wall as its gate. Aries’s words are not cut: they stand as said."
+  }
+ }
+}

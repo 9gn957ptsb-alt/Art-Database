@@ -227,6 +227,20 @@ def name_of(p):
     return p.get("title") or p.get("label") or (p.get("signature") or "").lstrip("—") or "Page %d" % p["n"]
 
 
+def add_books(spec):
+    """The books written for DRIFT Poetry (books/*.json beside this file, committed): each a plot of its own on the
+    ground, drawn by the same model code from its place's soil, that opens as the others do, into its scenes
+    (layer.js, "a chronicle's leaves"). A book's model carries its outline at rest, measured as capture_pages.js
+    measures the book's own (drawn at heading pi/4 on a 900 by 675 canvas)."""
+    for f in sorted((HERE / "books").glob("*.json")):
+        b = json.loads(f.read_text(encoding="utf-8"))
+        spec["buildings"].append(dict(b["plot"], page=len(spec["pages"])))
+        spec["pages"].append(b["book"])
+        spec["models"][b["plot"]["slug"]] = b["model"]
+        spec["notes"][b["plot"]["note"]] = b["note"]
+        print(f"book {f.stem}: {len(b['book']['scenes'])} scenes")
+
+
 def build(drift, out, sources, morpholex=None):
     out = Path(out)
     (out / "poetry").mkdir(parents=True, exist_ok=True)
@@ -279,6 +293,7 @@ def build(drift, out, sources, morpholex=None):
         raise SystemExit("buildings.json has the notes' names only: run capture_pages.js again for the whole notes")
     spec["models"] = {s: bld["models"][s] for s in {b["slug"] for b in spec["buildings"]}}
     spec["dirt"] = bld["dirt"]
+    add_books(spec)
     # and the creatures that stood by them
     sheet, chars = creatures(book, size_of)
     if sheet is not None:

@@ -146,3 +146,21 @@ screen the book lies open on a spread (its title page and contents opposite the 
 page wide, and a turned leaf goes over out of sight. While it lies open DRIFT's ground rests under it (its last frame
 kept, dimmed), so the leaves turn with the whole of the screen's drawing to themselves, and DRIFT's keys wait.
 `capture_pages.js` takes the book's notes (`buildings.json`); `layer.js` makes the books.
+
+## The books written for it
+
+Aries, 23 Oct 2026: "Imagine you are Shakespeare now and just as he used historical narratives to write his books, use
+all that you know of history to write books with the skills/power I have given you", and of the first: "paradise:
+Persian walled gardens to Eden, Dante and your "return to the garden"; Just make this one for now". A book written for
+DRIFT Poetry is a file in `books/` (committed: it is written here, not taken from Picture Poetry), and `build_poetry.py`
+adds each to the ground as one more plot, dealt among the buildings, that opens as they do (`#paradise` begins beside
+it). Its plot is a model in the site's own format (`models.js`), built of its place's DIRT soil; its outline at rest is
+measured as `capture_pages.js` measures the book's (drawn at heading π/4 on a 900 by 675 canvas) and kept in the file.
+
+**Paradise** (`books/paradise.json`): the plot is a walled garden after Pasargadae (Cyrus II, from about 546 BCE),
+of Pasargadae's soil, with a crepe myrtle at its middle; its leaves are a chronicle in eleven scenes, from Sardis in
+407 BCE to Aries's backyard on 24 Sep 2026, printed as a play is, each with its sources under it. Its Chorus is the
+Gardener of *Richard II*, whose law is the skill's: each scene is pruned to the power at which it stands still,
+keeping only its names, places, dates and nots (Morphology Web's HELD), and what stands is its brick; the last leaf
+lays the bricks as a wall round the words the book never cuts, Aries's own, as the word says: *pairi-daēza*, a wall
+around. One scene is an invented history, marked so, and stands in the wall as its gate.

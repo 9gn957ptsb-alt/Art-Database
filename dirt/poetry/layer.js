@@ -22,6 +22,8 @@
      open on its spine, and the leaves are its page of Picture Poetry: the building, large and turned by a swipe, with
      the book's note on it; the poem, set as the page sets it; the photograph and the creatures, with their notes.
    - A label names the poem a swimmer begins near the middle of the view.
+   - The books written for DRIFT Poetry (books/*.json, beside this file) lie on the ground among the buildings, each on a
+     plot of its own drawn by the same model code, and open as the plots do, into scenes (below: "a chronicle's leaves").
 
    #nowords leaves DRIFT's lines and swimmers as they are; #nopoetry is DRIFT alone. */
 (function () {
@@ -68,11 +70,12 @@
   }
   /** Which building a square holds: dealt along the rows two apart, so that no two neighbours hold the same one. */
   const bldOf = (cx, cy) => { const v = cx - anchor[0] + 2 * (cy - anchor[1]) + first; return v - NB * Math.floor(v / NB); };
-  /** The square the visit begins in holds a building (the one from page N, with #pageN), standing right of the middle of
-   *  the view and a little below it (in the middle, on a narrow screen), clear of the caption. */
+  /** The square the visit begins in holds a building (the one from page N, with #pageN; a book's plot, with its name, as
+   *  #paradise), standing right of the middle of the view and a little below it (in the middle, on a narrow screen),
+   *  clear of the caption. */
   function anchorAt(v) {
-    const want = location.hash.match(/(?:^|[#&])page(\d+)(?:&|$)/);
-    const byPage = want ? BLD.findIndex((b) => SPEC.pages[b.page].n === +want[1]) : -1;
+    const want = location.hash.match(/(?:^|[#&])page(\d+)(?:&|$)/), asked = location.hash.slice(1).split("&");
+    const byPage = want ? BLD.findIndex((b) => SPEC.pages[b.page].n === +want[1]) : BLD.findIndex((b) => asked.includes(b.slug));
     first = byPage >= 0 ? byPage : Math.floor(Math.random() * Math.max(1, NB));
     anchor = [Math.floor((Math.random() - 0.5) * 120), Math.floor((Math.random() - 0.5) * 120)];
     shift = [0, 0];
@@ -254,7 +257,7 @@
       if (!(src && src.poetry) && !(o && o.quiet)) viewerAt = performance.now();
       return putIn.apply(this, arguments);
     };
-    Promise.all((SPEC.pages || []).map((p) => loadImage(p.photo).catch(() => null)))
+    Promise.all((SPEC.pages || []).filter((p) => p.photo).map((p) => loadImage(p.photo).catch(() => null)))
       .then((ims) => ims.forEach((im) => { if (im) { im.poetry = true; photoImgs.push(im); } }));
   }
   let groundAt = -1;
@@ -320,6 +323,7 @@
   const EASE = "cubic-bezier(0.645, 0.045, 0.355, 1)";                  // (the book's own easing: a cubic, in and out)
   const POPPINS = '"Poppins", "Avenir Next", "Helvetica Neue", Arial, sans-serif';
   const NOTES = SPEC.notes || {};
+  const whence = (P) => P.from || "Picture Poetry, page " + P.n;       // (where a book's page is from)
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const mixc = (a, b, t) => { const p = rgb(a), q = rgb(b); return "rgb(" + p.map((v, i) => Math.round(v + (q[i] - v) * t)).join(",") + ")"; };
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -387,7 +391,20 @@
     ".pb-nav{position:absolute;display:flex;justify-content:space-between;align-items:center;gap:8px;opacity:0;transition:opacity .38s ease}" +
     ".pb-nav.on{opacity:1}.pb-nav button{background:rgba(15,10,7,.56);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}" +
     ".pb-nav button:first-child,.pb-nav button:last-child{flex:0 1 auto;max-width:calc(50% - 44px)}.pb-nav button:nth-child(2){flex:none}" +
-    ".pb-nav .off{visibility:hidden}@media (prefers-reduced-motion:reduce){.pb-nav{transition:none}}";
+    ".pb-nav .off{visibility:hidden}@media (prefers-reduced-motion:reduce){.pb-nav{transition:none}}" +
+    // a chronicle's leaves: a scene as a play is printed, its brick at its head and its sources under it; the wall
+    ".pb-scene{font:400 var(--fs)/1.42 var(--serif)}.pb-scene .pb-name{margin-bottom:.15em}" +
+    ".pb-sd{font-style:italic;color:var(--soft);margin:0 0 .5em}.pb-sp{margin:0 0 .5em}" +
+    ".pb-who{display:block;font-size:.78em;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}" +
+    ".pb-vl{display:block;padding-left:1.2em;text-indent:-1.2em}.pb-pr{display:block;text-align:justify;hyphens:auto;-webkit-hyphens:auto}" +
+    ".pb-gloss{font-size:.8em;line-height:1.4;color:var(--soft);border-top:1px solid var(--rule);padding-top:.5em;margin:.8em 0 .6em}" +
+    ".pb-brick{font:9.5px/1.5 var(--mono);letter-spacing:.05em;text-transform:uppercase;margin:0 0 1em}.pb-brick b{font-weight:400;color:var(--soft)}" +
+    ".pb-wall{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:3px;margin:.6em 0}" +
+    ".pb-wall .pb-brick{border:1px solid var(--rule);background:var(--cover);padding:2px 3px;margin:0;font-size:7px;line-height:1.3;letter-spacing:0;overflow-wrap:anywhere}" +
+    ".pb-wall .pb-brick.gate{background:none;border-style:dashed;color:var(--soft)}" +
+    ".pb-garden{display:flex;flex-direction:column;justify-content:center;padding:6px 8px}" +
+    ".pb-held{font:italic 400 var(--fs)/1.4 var(--serif);margin:0 0 .5em}.pb-garden .pb-sub{margin:0}" +
+    ".pb-couplet{font-style:italic;margin:.4em 0 0}";
 
   /** The book's measures in DRIFT's stage (CSS pixels): a page about 1 by phi, as the book's portrait pages nearly
    *  are; two to a spread where they fit side by side, else one, as wide as the stage lets it be. */
@@ -404,6 +421,7 @@
    *  tapped (its turn the plot's own), the poem, the photograph, the creatures, any other building on the page. */
   function contents(t) {
     const pi = t.b.page, P = SPEC.pages[pi], out = [{ kind: "model", b: t.b, note: t.b.note, turn: { heading: t.heading } }];
+    if (P.scenes) return out.concat(P.scenes.map((s) => ({ kind: "scene", s })), [{ kind: "wall" }]);   // (a chronicle)
     out.push({ kind: "poem" }, { kind: "photo", note: P.photoNote });
     for (const c of SPEC.chars || []) if (c.page === pi) out.push({ kind: "char", note: c.note, r: c.sheet });
     for (const o of BLD) if (o.page === pi && o !== t.b) out.push({ kind: "model", b: o, note: o.note, turn: { heading: REST } });
@@ -412,6 +430,8 @@
   function nameOf(pg) {
     if (!pg) return "";
     if (pg.kind === "poem" || pg.kind === "title") return bk.P.name;
+    if (pg.kind === "scene") return pg.s.title;
+    if (pg.kind === "wall") return bk.P.wall.title;
     const n = NOTES[pg.note];
     return n ? n.name : pg.kind === "photo" ? "The photograph" : pg.b ? pg.b.name : "";
   }
@@ -486,10 +506,75 @@
   }
   /** The book's note on a thing: its name, the line under it, what it is and why it is there. */
   function noteText(box, pg) {
-    const n = NOTES[pg.note] || { name: nameOf(pg), sub: "Picture Poetry, page " + bk.P.n };
+    const n = NOTES[pg.note] || { name: nameOf(pg), sub: whence(bk.P) };
     box.append(el("h3", "pb-name", n.name), el("p", "pb-sub", n.sub));
     if (n.body) box.append(el("p", "pb-body", n.body));
     if (n.why) box.append(el("p", "pb-body pb-why", n.why));
+  }
+  // ---- a chronicle's leaves ----------------------------------------------------------------------------------------
+  // Aries, 23 Oct 2026: "use all that you know of history to write books with the skills/power I have given you". A book
+  // written for DRIFT Poetry (books/*.json) opens from its plot as the others do; its leaves are scenes, printed as a play
+  // is, each with its sources under it, and each pruned by its Gardener with the law Morphology Web cuts its spirits by
+  // (ponytail and caveman's, 5s/gameplan/reflect.mjs on the photos branch): a cut is taken only if what must stay stays
+  // and the whole gets smaller, and the skill is taken to the power at which it stands still; n, the exponent, is how
+  // many cuts that took. What must stay is what history keeps (Aristotle, Poetics 9: "history the particular"): the
+  // scene's names, places and dates (its "names") and its nots, held as Morphology Web holds them (HELD, there; here
+  // unto, which is not a not, goes too). What stands is the scene's brick; the last leaf lays the bricks round the words
+  // the book never cuts (a speech marked "held": they stand as said), as the word paradise says: pairi-daēza, a wall
+  // around.
+  const HELD = /\b(?:not|no|non|never|without|cannot|only|except|sole|unique|both|one|two|three|four|five|first|second|secondary|third|fourth|fifth|highest|squared|exponent\w*|un(?!i|til|der|to\b)\w+|inseparable|independen\w*|infinit\w*)\b|n't\b|\d+(?:st|nd|rd|th)?/i;
+  const skill = (keep) => (ws) => { const i = ws.findIndex((w) => !keep(w)); return i < 0 ? ws : ws.slice(0, i).concat(ws.slice(i + 1)); };
+  function power(f, x) { let n = 0; for (let y = f(x); y.length < x.length; y = f(x)) { x = y; n++; } return { x, n }; }
+  const bricks = new Map();
+  function brickOf(s) {
+    if (bricks.has(s)) return bricks.get(s);
+    const names = new Set((s.names || []).map((w) => w.toLowerCase()));
+    const said = [s.place].concat(...(s.speech || []).filter((p) => !p.held).map((p) => [p.who, p.sd, p.prose].concat(p.verse || [])));
+    const ws = said.filter(Boolean).join(" ").match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)*/gu) || [];
+    const { x, n } = power(skill((w) => names.has(w.toLowerCase()) || HELD.test(w)), ws);
+    const b = { n, words: [...new Set(x.map((w) => w.toUpperCase()))] };
+    bricks.set(s, b);
+    return b;
+  }
+  const sup = (n) => String(n).replace(/\d/g, (d) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[d]);
+  function brickEl(s, inWall) {
+    const b = brickOf(s), e = el("p", "pb-brick" + (s.alt ? " gate" : ""));
+    e.append(el("b", "", (inWall ? "" : "skill") + sup(b.n) + " · "), b.words.join(" · ") || "—");
+    return e;
+  }
+  /** A scene, as a play is printed: where and when, its title, and its brick at its head (as Milton heads each book of
+   *  Paradise Lost with its Argument); its stage directions, who speaks and what (verse a line to a line, prose run on);
+   *  and its sources and a word of Aries's under it. */
+  function sceneText(box, s) {
+    box.append(el("p", "pb-sub", s.act + " · " + s.place), el("h3", "pb-name", s.title), brickEl(s));
+    for (const p of s.speech) {
+      if (p.sd) { box.append(el("p", "pb-sd", p.sd)); continue; }
+      const sp = el("p", "pb-sp");
+      sp.append(el("span", "pb-who", p.who));
+      for (const l of p.verse || []) sp.append(el("span", "pb-vl", l));
+      if (p.prose) sp.append(el("span", "pb-pr", p.prose));
+      box.append(sp);
+    }
+    box.append(el("p", "pb-gloss", s.note));
+  }
+  /** The last leaf: the bricks laid round the held words, clockwise from the top left, three to the top and the bottom
+   *  and the rest down the sides (the right taking the odd one), the invented scene among them as the gate. */
+  function wallText(box, P) {
+    const w = P.wall, ss = P.scenes, k = Math.ceil((ss.length - 6) / 2), wall = el("div", "pb-wall");
+    box.append(el("p", "pb-sub", w.act), el("h3", "pb-name", w.title), wall);
+    const at = (e, r0, r1, c) => { e.style.gridRow = r0 + " / " + (r1 + 1); e.style.gridColumn = String(c); wall.append(e); };
+    ss.forEach((s, i) => {
+      const e = brickEl(s, true);
+      if (i < 3) at(e, 1, 1, i + 1);
+      else if (i < 3 + k) at(e, i - 1, i - 1, 3);
+      else if (i < 6 + k) at(e, k + 2, k + 2, 6 + k - i);
+      else { const r = k + 1 - (i - 6 - k); at(e, i === ss.length - 1 ? 2 : r, r, 1); }
+    });
+    const garden = el("div", "pb-garden");
+    garden.append(el("p", "pb-held", "“" + w.held + "”"), el("p", "pb-sub", w.by));
+    at(garden, 2, k + 1, 2);
+    for (const l of w.couplet) box.append(el("span", "pb-vl pb-couplet", l));
+    box.append(el("p", "pb-gloss", w.note + " In all, skill" + sup(ss.reduce((a, s) => a + brickOf(s).n, 0)) + "."));
   }
   /** A page of the book, a recto (right of the spine) or a verso (left of it). */
   function makePage(pg, side) {
@@ -498,7 +583,8 @@
     if (pg.kind === "title") {
       page.classList.add("pb-titlepage");
       page.style.setProperty("--fp", Math.max(11.5, Math.min(14, bk.g.pw / 27)) + "px");
-      page.append(el("div", "pb-pt", P.title || P.name), el("p", "pb-cname", "Picture Poetry, page " + P.n));
+      page.append(el("div", "pb-pt", P.title || P.name), el("p", "pb-cname", whence(P)));
+      if (P.byline) page.append(el("p", "pb-sub", P.byline));
       const toc = el("div", "pb-toc");
       for (const c of bk.items) toc.append(el("div", "", nameOf(c)));
       page.append(toc);
@@ -519,6 +605,10 @@
       }
       if (pg.last && P.signature) box.append(el("span", "pb-sig", P.signature));
       if (pg.scroll) box.classList.add("scroll");
+      page.append(box);
+    } else if (pg.kind === "scene" || pg.kind === "wall") {
+      const box = el("div", "pb-text all pb-scene");
+      if (pg.kind === "scene") sceneText(box, pg.s); else wallText(box, P);
       page.append(box);
     } else if (pg.kind !== "blank") {
       const pic = el("div", "pb-pic"), text = el("div", "pb-text");
@@ -561,7 +651,7 @@
     const ct = el("div", "pb-ctitle"), foot = el("div", "pb-cfoot");
     ct.style.setProperty("--fp", Math.max(11.5, Math.min(14, g.pw / 27)) + "px");
     ct.append(el("div", "pb-pt", P.title || P.name));
-    foot.append(el("p", "pb-cname", nameOf(bk.items[0])), el("p", "pb-sub", "Picture Poetry · page " + P.n));
+    foot.append(el("p", "pb-cname", nameOf(bk.items[0])), el("p", "pb-sub", P.from || "Picture Poetry · page " + P.n));
     board.append(ct, foot);
     const art = el("canvas", "pb-art"), aw = Math.round(g.pw * 0.86), ah = Math.round(aw * 0.75);   // (the plane's 900 by 675)
     Object.assign(art.style, { top: Math.round((g.ph - ah) / 2) + "px", height: ah + "px" });
@@ -712,7 +802,7 @@
     const P = SPEC.pages[t.b.page], root = el("div", "pb"), scrim = el("div", "pb-scrim"), book = el("div", "pb-book");
     const cs = el("div", "pb-case"), verso = el("div", "pb-slot"), recto = el("div", "pb-slot"), nav = el("nav", "pb-nav");
     root.setAttribute("role", "dialog"); root.setAttribute("aria-modal", "true");
-    root.setAttribute("aria-label", P.name + ", Picture Poetry, page " + P.n);
+    root.setAttribute("aria-label", P.name + ", " + whence(P));
     nav.setAttribute("aria-label", "The book's leaves");
     const navBtns = [el("button", "", "‹"), el("button", "", "Close"), el("button", "", "›")];
     navBtns.forEach((x) => { x.type = "button"; nav.append(x); });
