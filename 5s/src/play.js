@@ -1088,8 +1088,17 @@
     });
 
     // ---------------------------------------------------------- start: the level card
+    // Up to 6, most things first (then the order made). A group whose things are all in one already shown adds no
+    // pairing (hearts keep pairs), so it is not shown again: its Keep would disagree with the bigger group's.
+    function endGroups(groups) {
+      const out = [];
+      for (const { g } of groups.map((g, i) => ({ g, i })).sort((a, b) => b.g.ids.length - a.g.ids.length || a.i - b.i)) {
+        if (out.length < 6 && !out.some((x) => g.ids.every((id) => x.ids.includes(id)))) out.push(g);
+      }
+      return out;
+    }
     function groupsHTML(groups) {
-      const gs = groups.map((g, i) => ({ g, i })).sort((a, b) => b.g.ids.length - a.g.ids.length || a.i - b.i).slice(0, 6).map((x) => x.g);
+      const gs = endGroups(groups);
       if (!gs.length) return '';
       return '<section class="fp-sec"><h3>What you put together</h3><ul class="fp-groups">' + gs.map((g, i) => {
         const suit = game.suits.find((s) => s.key === g.key && s.label === g.label) || game.suits.find((s) => s.label === g.label);
@@ -1099,7 +1108,7 @@
       }).join('') + '</ul></section>';
     }
     function wireHearts(d, groups) {
-      const gs = groups.map((g, i) => ({ g, i })).sort((a, b) => b.g.ids.length - a.g.ids.length || a.i - b.i).slice(0, 6).map((x) => x.g);
+      const gs = endGroups(groups);
       d.querySelectorAll('.fp-heart').forEach((b) => b.addEventListener('click', () => {
         const on = b.getAttribute('aria-pressed') !== 'true';
         b.setAttribute('aria-pressed', on);

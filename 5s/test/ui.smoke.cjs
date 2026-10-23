@@ -24,6 +24,11 @@
  * name, the one choice that turns it on), the states advancing, Save to my hub again, reload, the Path's
  * twelve with at most one Next, focus, the live region, 24 px targets, measured contrast and no GitHub
  * words in 5s's own copy; Example mode's example hub; the file's text to copy when there is no downloads.
+ * Set, at every size and theme: the board with nothing kept (Sort, See an example, Play level 1), Example
+ * mode's board and game (nothing saved), the person's own board by kind, a tile's detail sheet, Play opening
+ * level 1, a swap planned in Node (touch at 390, mouse at 1280) whose pairs land in the saved state, the
+ * tab bar hiding and coming back, the board clustered by them, See it as a room and back. A five sorted
+ * gives one Pass.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -88,7 +93,7 @@ after(async () => {
 async function newPage(cfg) {
   const ctx = await browser.newContext({
     viewport: { width: cfg.w, height: cfg.h }, colorScheme: cfg.scheme,
-    permissions: ['clipboard-read', 'clipboard-write'],
+    permissions: ['clipboard-read', 'clipboard-write'], hasTouch: !!cfg.touch,
   });
   const page = await ctx.newPage();
   // No network in tests: the Google Fonts stylesheet answers empty, so the fallback stacks are used.
@@ -184,7 +189,8 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, and Links out and in\'s links.js) load before app.js');
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'board.js', 'play.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js and Set\'s game) load before app.js');
+  assert.equal((html.match(/<style data-fives="play">/g) || []).length, 1, 'play.css is inlined where the game and the board look for it');
   const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
   assert.match(css, /:root\[data-theme="dark"\] \{/);
@@ -235,6 +241,8 @@ for (const cfg of CONFIGS) {
         await shot('03-seed-example');
         await tab(page, 'set');
         await page.waitForSelector('#exbanner:not([hidden])');
+        await page.click('#view-set [data-act="set-room"]');   // Set opens on the board; the room is one tap away
+        await page.waitForSelector('#view-set .room');
         await shot('03-set-example');
         // the chooser: three, and a pick changes the room
         const before = await page.$eval('.slot-picture img', (i) => i.getAttribute('src'));
@@ -302,6 +310,8 @@ for (const cfg of CONFIGS) {
         assert.equal(await page.textContent('#summary h2'), 'Five sorted');
         assert.equal(await page.locator('#summary .tile5').count(), 5);
         assert.equal(await page.locator('#summary .tile5.kept').count(), 3);
+        // a five sorted gives Set's game one Pass, once a day (one held from the start, so two)
+        assert.deepEqual((await page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1')).saga)).boost, { pass: 2, turn: 1, more: 1 });
         await page.waitForTimeout(400);
         await shot('07-five-sorted');
         // the one word
@@ -419,6 +429,7 @@ for (const cfg of CONFIGS) {
 
       await t.test('Set: pin a set with a name', async () => {
         await tab(page, 'set');
+        await page.click('#view-set [data-act="set-room"]');
         await page.waitForSelector('#view-set .room');
         await noHScroll(page, 'set');
         await shot('13-set-mine');
@@ -1638,6 +1649,7 @@ test('Your data file: JSON, HTML, a spreadsheet and a zip; Sources; Still yours?
     assert.ok(seen, 'a thing from a data file came back as Still yours?');
     // the Set chooser offers things from files, with the placeholder
     await tab(page, 'set');
+    await page.click('#view-set [data-act="set-room"]');
     await page.waitForSelector('#view-set .slot-picture');
     await page.click('#view-set .slot-picture');
     await page.waitForSelector('#sheet[open] .choices');
@@ -2089,6 +2101,7 @@ test('Paste a link without Define: no sample (the address\'s words), a declined 
     assert.ok(seen, 'the pasted thing came back as Still yours?');
     // the Set chooser: each choice offers Where it lives, and the detail leads back to the three
     await tab(page, 'set');
+    await page.click('#view-set [data-act="set-room"]');
     await page.click('#view-set .slot-object');
     await page.waitForSelector('#sheet[open] .choices');
     await page.click('#sheet .choices [data-act="where"]');
@@ -2236,3 +2249,186 @@ for (const cfg of CONFIGS) {
     } finally { await ctx.close(); }
   });
 }
+
+// ---------------------------------------------------------------- Set: the board and the game
+
+// The game's boards are deterministic (the seed is '5s:' + level + ':' + plays), so the swap is planned
+// in Node with the page's own engine and checked against what the page saved.
+const MATCH = require(path.join(ROOT, 'src', 'match.js'));
+
+for (const cfg of CONFIGS) {
+  test('Set at ' + cfg.w + 'x' + cfg.h + ' ' + cfg.scheme + ': nothing kept, Example mode, the board, Play, a swap that puts things together, the room and back', { timeout: 120000 }, async () => {
+    const touch = cfg.w < 600;
+    const { ctx, page } = await newPage(Object.assign({}, cfg, { touch }));
+    const shot = shooter(page, cfg);
+    const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1') || 'null'));
+    const tabsShown = () => page.$eval('.tabs', (n) => getComputedStyle(n).display !== 'none');
+    try {
+      // Nothing kept: the board's empty state, with Sort, See an example and Play still offered.
+      await page.goto(BASE + '#set');
+      await page.waitForSelector('#view-set [data-act="set-play"]');
+      assert.deepEqual(await visibleH1s(page), ['Set']);
+      assert.match(await page.textContent('#view-set .lede'), /^Your board: what you kept, grouped by what you put together\.$/);
+      assert.equal((await page.textContent('#view-set [data-act="set-play"]')).trim(), 'Play level 1');
+      assert.match(await page.textContent('#view-set .empty'), /Your board fills with what you keep\. Sort a five and it starts\./);
+      assert.equal(await page.locator('#view-set .empty [data-act="goto"][data-view="sort"]').count(), 1);
+      assert.equal(await page.locator('#view-set .empty [data-act="example-on"]').count(), 1);
+      assert.equal(await page.locator('#view-set .fb-tile').count(), 0);
+      await noHScroll(page, 'set board empty');
+      await shot('40-set-board-empty');
+
+      // Example mode: the example's board; its game plays and nothing is saved.
+      const before = await page.evaluate(() => localStorage.getItem('5s.state.v1'));
+      await page.click('#view-set [data-act="example-on"]');
+      await page.waitForSelector('#exbanner:not([hidden])');
+      await page.waitForSelector('#view-set .fb-tile[data-id]');
+      assert.equal((await page.locator('#view-set .fb-head').allTextContents())[0], 'Images', 'before any pairings: by kind');
+      await noHScroll(page, 'set board example');
+      await shot('41-set-board-example');
+      await page.click('#view-set [data-act="set-play"]');
+      await page.waitForSelector('#view-set dialog[open] [data-play]');
+      await page.click('#view-set dialog[open] [data-play]');
+      await page.waitForSelector('#view-set .fp-gc');
+      assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
+      await page.click('#view-set .fp-level .fp-back');   // leaving a level costs nothing
+      await page.waitForSelector('#view-set .fp-mapview');
+      assert.equal(await tabsShown(), true, 'and comes back with the map');
+      await page.click('#view-set .fp-mapview .fp-back');
+      await page.waitForSelector('#view-set .fb-tile[data-id]');
+      assert.equal(await page.evaluate(() => localStorage.getItem('5s.state.v1')), before, 'Example mode saved nothing');
+      await page.click('#exbanner [data-act="example-off"]');
+      await page.waitForSelector('#view-set .empty [data-act="example-on"]');
+
+      // The person's own: an example-sized history, saved as theirs.
+      const deck = await (await fetch(new URL('deck.json', BASE))).json();
+      let st = FiveS.exampleState(deck, Date.now());
+      st = Object.assign({}, st, { seen: Object.assign({}, st.seen, { intro: 1 }) });
+      await page.evaluate((json) => localStorage.setItem('5s.state.v1', json), JSON.stringify(st));
+      await page.reload();
+      await page.waitForSelector('#view-set .fb-tile[data-id]');
+      assert.deepEqual(await visibleH1s(page), ['Set']);
+      // A tile opens the detail sheet.
+      await page.click('#view-set .fb-tile[data-id]');
+      await page.waitForSelector('#sheet[open]');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.getElementById('sheet').open);
+
+      // Plan level 1 in Node: the first counted swap whose own match puts two or more things together.
+      const lv = MATCH.level(1);
+      const game = MATCH.newGame(lv, MATCH.pieces(FiveS.migrate(st), deck, lv.suits), '5s:1:0');
+      let mv = null, res = null;
+      for (const [a, b] of MATCH.moves(game)) { const r = MATCH.swap(game, a, b); if (r.valid && r.game.groups.length > game.groups.length) { mv = [a, b]; res = r; break; } }
+      assert.ok(mv, 'level 1 offers a swap that puts things together');
+      const made = res.game.groups.slice(game.groups.length);
+      let want = [];
+      for (const g of made) want = MATCH.addAssociations(want, g.ids, 1);
+
+      await page.click('#view-set [data-act="set-play"]');
+      await page.waitForSelector('#view-set dialog[open] [data-play]');
+      assert.match(await page.textContent('#view-set dialog[open]'), /Level 1/);
+      await page.click('#view-set dialog[open] [data-play]');
+      await page.waitForFunction(() => !document.querySelector('#view-set dialog[open]'));
+      assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
+      await noHScroll(page, 'set level');
+      await shot('42-set-level-1');
+      const centre = async (i) => { const r = await page.locator('#view-set .fp-gc[data-i="' + i + '"]').boundingBox(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
+      const A = await centre(mv[0]), Bc = await centre(mv[1]);
+      if (touch) {
+        const cdp = await ctx.newCDPSession(page);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: A.x, y: A.y }] });
+        for (let k = 1; k <= 6; k++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: A.x + (Bc.x - A.x) * k / 6, y: A.y + (Bc.y - A.y) * k / 6 }] });
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      } else {
+        await page.mouse.move(A.x, A.y); await page.mouse.down();
+        await page.mouse.move(Bc.x, Bc.y, { steps: 6 }); await page.mouse.up();
+      }
+      await page.waitForFunction((m) => { const b = document.querySelector('#view-set .fp-moves b'); return b && b.textContent === String(m); }, res.game.moves, { timeout: 20000 });
+      // The juxtaposition is in the state (saved through the app's own save path).
+      await page.waitForFunction(() => { const s = JSON.parse(localStorage.getItem('5s.state.v1') || '{}'); return s.assoc && s.assoc.length > 0; });
+      const after = await saved();
+      assert.deepEqual(after.assoc.map((e) => e.slice(0, 4)), want.map((e) => e.slice(0, 4)), 'the pairs your swap made');
+      await shot('43-set-level-1-swapped');
+
+      // Back: the map (the tab bar returns), then Your board, clustered by what you put together.
+      await page.click('#view-set .fp-level .fp-back');
+      await page.waitForSelector('#view-set .fp-mapview');
+      assert.equal(await tabsShown(), true, 'the tab bar comes back');
+      await shot('44-set-map');
+      await page.click('#view-set .fp-mapview .fp-back');
+      await page.waitForSelector('#view-set .fb-tile[data-id]');
+      const now = await saved();
+      assert.equal(now.saga.plays, 1, 'a level left counts as a play (the next board is new)');
+      const cl = MATCH.clusters(now, deck).clusters;
+      assert.ok(cl.length >= 1, 'a cluster');
+      assert.equal((await page.locator('#view-set .fb-head').allTextContents())[0], cl[0].label);
+      assert.match(await page.locator('#view-set .fb-meta').first().textContent(), /put together \d+ times?/);
+      const firstIds = await page.$$eval('#view-set .fb-sec:first-child .fb-tile[data-id]', (ns) => ns.map((n) => n.dataset.id));
+      assert.deepEqual(firstIds, cl[0].ids);
+      assert.ok((await page.locator('#view-set .fb-head').allTextContents()).includes('Not put together yet'));
+      await noHScroll(page, 'set board clustered');
+      await shot('45-set-board-clustered');
+
+      // See it as a room, and back; the focus stays where the button was.
+      await page.click('#view-set [data-act="set-room"]');
+      await page.waitForSelector('#view-set .room');
+      assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-act')), 'set-board');
+      assert.equal(await page.locator('#view-set [data-act="pin"]').count(), 1, 'the room keeps Pin this set');
+      await shot('46-set-room');
+      await page.click('#view-set [data-act="set-board"]');
+      await page.waitForSelector('#view-set .fb-tile[data-id]');
+      assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-act')), 'set-room');
+      // Set always opens on the board.
+      await page.click('#view-set [data-act="set-room"]');
+      await tab(page, 'see');
+      await tab(page, 'set');
+      await page.waitForSelector('#view-set .fb-tile[data-id]');
+      assert.deepEqual(page.errors(), []);
+    } finally {
+      await ctx.close();
+    }
+  });
+}
+
+// A level that breaks must not keep the tab bar away, the second time too (the problem note shows a message once).
+test('Set: an error inside a level brings the tab bar back, even the same error in the next level; a level card left by the address bar goes', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light' });
+  const tabsShown = () => page.$eval('.tabs', (n) => getComputedStyle(n).display !== 'none');
+  const play = async () => {
+    await page.click('#view-set [data-act="set-play"]');
+    await page.waitForSelector('#view-set dialog[open] [data-play]');
+    await page.click('#view-set dialog[open] [data-play]');
+    await page.waitForSelector('#view-set .fp-gc');
+    assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
+  };
+  const breakIt = async () => {
+    await page.evaluate(() => setTimeout(() => { throw new Error('a level broke'); }));
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.tabs')).display !== 'none', null, { timeout: 3000 });
+  };
+  try {
+    await page.goto(BASE + '#set');
+    await page.waitForSelector('#view-set [data-act="set-play"]');
+    await play();
+    await breakIt();
+    assert.match(await page.textContent('#problem'), /a level broke/);
+    await page.click('#view-set .fp-level .fp-back');
+    await page.waitForSelector('#view-set .fp-mapview');
+    await page.click('#view-set .fp-mapview .fp-back');
+    await page.waitForSelector('#view-set [data-act="set-play"]');
+    await play();
+    await breakIt();
+    // The level card open and the address changed by hand: the card goes with the level, the page stays usable.
+    await page.click('#view-set .fp-level .fp-back');
+    await page.waitForSelector('#view-set .fp-mapview');
+    await page.click('#view-set .fp-mapview .fp-back');
+    await page.click('#view-set [data-act="set-play"]');
+    await page.waitForSelector('#view-set dialog[open] [data-play]');
+    await page.evaluate(() => { location.hash = 'split'; });
+    await page.waitForFunction(() => !document.getElementById('view-split').hidden);
+    assert.equal(await page.locator('dialog[open]').count(), 0, 'no modal left open in the hidden view');
+    await tab(page, 'see');
+    await tab(page, 'set');
+    await page.waitForSelector('#view-set [data-act="set-play"]');
+  } finally {
+    await ctx.close();
+  }
+});

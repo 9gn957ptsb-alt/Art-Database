@@ -95,7 +95,8 @@ test('engine source: no clock, no Math.random, no DOM, no network', () => {
 
 test('newState matches the State shape', () => {
   const s = F.newState();
-  assert.deepEqual(s, { v: 1, j: [], five: null, sets: [], days: [], own: [], notes: [], seen: { path: [] }, opts: { ring: true } });
+  assert.deepEqual(s, { v: 1, j: [], five: null, sets: [], days: [], own: [], notes: [], seen: { path: [] }, opts: { ring: true },
+    assoc: [], saga: { stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: null }, paintings: [] });
   assert.notEqual(F.newState(), F.newState());
 });
 
@@ -1132,4 +1133,64 @@ test('Sources: deck cards counted by their source; a card with no source counts 
   const seed = F.exportSeed(st, d, NOW);
   assert.deepEqual(seed.kept.filter((k) => k.work === 'fixture-building').map((k) => k.kind + ' ' + k.url).sort(),
     ['space', 'surface'].map((k) => k + ' https://www.thearchitecturalauthority.com/article/fixture-building'));
+});
+
+// Set's game (SPEC "Set: the board and the game", "Data"): its state fields, added by the engine.
+test('Set\'s game: old states gain its fields, removeOwn drops its pairs, a five sorted gives one Pass a day, the caps fit the store', () => {
+  const old = F.migrate({ v: 1, j: [['i001', 1, 900, S(NOW), 0]], opts: { ring: false } });
+  assert.deepEqual([old.assoc, old.paintings, old.saga.boost, old.saga.plays, old.opts.ring], [[], [], { pass: 1, turn: 1, more: 1 }, 0, false]);
+  const odd = F.migrate({ assoc: 'x', saga: [1], paintings: {} });
+  assert.deepEqual([odd.assoc, odd.paintings, odd.saga.stars], [[], [], []], 'wrong shapes become the defaults');
+  const kept = { stars: [3], best: [9000], boost: { pass: 0, turn: 2, more: 0 }, plays: 4, day: null };
+  assert.deepEqual(F.migrate({ saga: kept }).saga, kept, 'a saga is kept as it is');
+  // A hand-edited state: what the board, the map's HTML and the game would trip on is dropped or defaulted.
+  const good = ['i001', 'o001', 2, 1, 5], pic = { at: 1, n: 6, cols: 2, rows: 1, c: 'ff8800------' };
+  const bad = F.migrate({
+    assoc: [null, 7, ['a'], good, ['i001', 'o002', 'x', 0, 1]],
+    paintings: [null, pic, { ...pic, n: '<img>' }, { ...pic, cols: 3000, rows: 3000 }],
+    saga: { stars: ['<img>', 2], best: null, boost: 'x', plays: -1, day: '2026-10-22' },
+  });
+  assert.deepEqual([bad.assoc, bad.paintings], [[good], [pic]]);
+  assert.deepEqual(bad.saga, { stars: [1, 2], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: '2026-10-22' });
+  assert.deepEqual(F.migrate({ saga: {} }).saga, F.newState().saga);
+  assert.equal(F.migrate({ saga: { stars: Array(5000).fill(3) } }).saga.stars.length, 999, 'at most 999 levels');
+
+  let st = F.bring(F.newState(), { id: 'yabc12', kind: 'object', name: 'Bowl', source: 'Your photos', colours: ['#aa3311'] }, NOW);
+  st = { ...st, assoc: [['i001', 'yabc12', 2, 1, 1], ['i001', 'o001', 1, 0, 1]] };
+  assert.deepEqual(F.removeOwn(st, 'yabc12').assoc, [['i001', 'o001', 1, 0, 1]]);
+
+  let s = F.startFive(F.newState(), deck, NOW);
+  assert.equal(F.fivePass(s, NOW).saga.boost.pass, 1, 'nothing before the five is sorted');
+  for (const cid of s.five.ids) s = F.judge(s, deck, cid, true, 900, NOW).state;
+  const p1 = F.fivePass(s, NOW);
+  assert.deepEqual([p1.saga.boost, p1.saga.day], [{ pass: 2, turn: 1, more: 1 }, TODAY]);
+  assert.equal(F.fivePass(p1, NOW + 60000).saga.boost.pass, 2, 'once a day');
+  assert.equal(F.fivePass(p1, NOW + DAY_MS).saga.boost.pass, 3, 'the next day, another');
+  assert.equal(F.fivePass({ ...p1, saga: { ...p1.saga, day: null, boost: { pass: 9, turn: 0, more: 0 } } }, NOW).saga.boost.pass, 9, 'at most 9');
+
+  // At their caps (400 pairings of the longest ids the app makes, 24 nine-by-nine paintings, 999 levels)
+  // the game's fields fit beside the most the app lets the rest of the state hold (STATE_MAX).
+  const yid = (i) => 'y' + i.toString(36).padStart(5, '0');
+  const game = {
+    assoc: Array.from({ length: 400 }, (_, i) => [yid(i), yid(i + 400), 99, 1, 1761100000]),
+    saga: { stars: Array(999).fill(3), best: Array(999).fill(9999999), boost: { pass: 9, turn: 9, more: 9 }, plays: 999999, day: TODAY },
+    paintings: Array.from({ length: 24 }, () => ({ at: 1761100000, n: 999, cols: 9, rows: 9, c: 'f28a3c'.repeat(81) })),
+  };
+  const bytes = Buffer.byteLength(JSON.stringify(game));
+  const max = /const STATE_MAX = (\d+) \* 1024;/.exec(readFileSync(join(here, '..', 'src', 'app.js'), 'utf8'));
+  assert.ok(max, 'app.js says STATE_MAX');
+  assert.ok(Number(max[1]) * 1024 + bytes <= 256 * 1024, 'STATE_MAX + ' + bytes + ' bytes is over the store\'s 256 KiB');
+});
+
+test('Set\'s game: norm holds a hand-edited state to the game\'s caps and the connector\'s shapes', () => {
+  const pair = (i) => ['a' + String(i).padStart(4, '0'), 'b', 1, 1, i];
+  const pic = { at: 1, n: 6, cols: 2, rows: 1, c: 'ff8800------' };
+  const st = F.migrate({
+    assoc: Array.from({ length: 5000 }, (_, i) => pair(i)).concat([['o001', 'i001', 1, 0, 1], ['i001', 'o001', 0, 0, 1], ['i001', 'o001', 1, 2, 1]]),
+    paintings: [{ ...pic, c: 'f'.repeat(500000) }, { ...pic, c: 'FF8800------' }].concat(Array.from({ length: 200 }, () => pic)),
+    saga: { best: [-5, 10], day: 'x'.repeat(10000) },
+  });
+  assert.deepEqual(st.assoc, Array.from({ length: 400 }, (_, i) => pair(i)), 'at most 400; out of order, n 0 or a heart of 2 is dropped');
+  assert.deepEqual(st.paintings, Array(24).fill(pic), 'at most 24; cells that are not six lowercase hex digits each are dropped');
+  assert.deepEqual([st.saga.best, st.saga.day], [[0, 10], null]);
 });

@@ -4,8 +4,9 @@
     python3 5s/build_page.py [--deck DIR] [--out DIR]
 
 Writes OUT/index.html (src/index.html with app.css inlined in a <style> right after the <title> and
-<meta> at the top, as the Artifact page contract asks), copies engine.js, bring.js, ground.js, the
-hub's hub.js and hubpage.js, connect.js, links.js and app.js into OUT (the page loads them in that order, and the build
+<meta> at the top, as the Artifact page contract asks, and play.css inlined as <style data-fives="play">),
+copies engine.js, bring.js, ground.js, the hub's hub.js and hubpage.js, connect.js, Set's game (match.js,
+board.js, play.js), links.js and app.js into OUT (the page loads them in that order, and the build
 stops if src/index.html loads any other list), copies DECK/deck.json and DECK/img/ (and
 DECK/logo.webp when present) into OUT when DECK is not OUT, and writes OUT/dev.html: the same page
 wrapped in the skeleton the Artifact platform adds at publish, for local testing.
@@ -21,7 +22,8 @@ SRC = os.path.join(HERE, 'src')
 # In the order src/index.html loads them: the hub's drivers (hub.js, hubpage.js) before app.js.
 # Connect your apps adds connect.js (FiveSConnect: data files read on the device, the 5s connector), also before app.js.
 # Links out and in adds links.js (FiveSLinks: where a thing lives, what a pasted link is), also before app.js.
-SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'links.js', 'app.js']
+# Set's game adds match.js (FiveSMatch), board.js (FiveSBoard) and play.js (FiveSPlay), also before app.js.
+SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'board.js', 'play.js', 'links.js', 'app.js']
 SCRIPT_RE = re.compile(r'<script\s+src="([^"]+)"')
 
 SKELETON_HEAD = (
@@ -34,6 +36,8 @@ SKELETON_HEAD = (
 SKELETON_TAIL = '</body></html>'
 
 LINK_RE = re.compile(r'<link\s+rel="stylesheet"\s+href="app\.css"[^>]*>\s*\n?')
+# The game's and the board's styles: inlined under the attribute play.js and board.js look for, so they add no <link>.
+PLAY_RE = re.compile(r'<link\s+rel="stylesheet"\s+href="play\.css"\s+data-fives="play"\s*>\s*\n?')
 
 
 def build_page():
@@ -41,8 +45,13 @@ def build_page():
         html = f.read()
     with open(os.path.join(SRC, 'app.css'), encoding='utf-8') as f:
         css = f.read()
-    if '</style' in css.lower():
-        sys.exit('app.css must not contain "</style"')
+    with open(os.path.join(SRC, 'play.css'), encoding='utf-8') as f:
+        play_css = f.read()
+    if '</style' in css.lower() or '</style' in play_css.lower():
+        sys.exit('app.css and play.css must not contain "</style"')
+    if not PLAY_RE.search(html):
+        sys.exit('src/index.html must link play.css with data-fives="play"')
+    html = PLAY_RE.sub(lambda m: '<style data-fives="play">\n' + play_css.rstrip() + '\n</style>\n', html, count=1)
     style = '<style>\n' + css.rstrip() + '\n</style>\n'
     if LINK_RE.search(html):
         html = LINK_RE.sub(lambda m: style, html, count=1)
