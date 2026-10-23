@@ -201,12 +201,35 @@
     const cancel = () => { if (d.open) d.close(); d.remove(); if (onCancel) onCancel(); };
     d.addEventListener('cancel', (e) => { e.preventDefault(); cancel(); });
     d.querySelector('[data-x]').addEventListener('click', cancel);
-    host.appendChild(d);
-    try { d.showModal(); } catch (e) { d.setAttribute('open', ''); }
+    // At the top of the page, not inside the game's scrolling box: a phone browser placed a modal panel
+    // there out of sight, leaving only the dimmed page (an iPhone, 23 Oct 2026).
+    (host.ownerDocument || document).body.appendChild(d);
+    try { d.showModal(); } catch (e) { d.setAttribute('open', ''); d.classList.add('fallback'); }
+    // A tap on the dimmed page closes the panel, so no one is ever stuck behind it.
+    d.addEventListener('click', (e) => {
+      if (e.target !== d) return;
+      const r = d.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) cancel();
+    });
     const af = d.querySelector('[data-autofocus]');
     if (af) af.focus();
+    requestAnimationFrame(() => keepOnScreen(d));
     d.done = () => { if (d.open) d.close(); d.remove(); };
     return d;
+  }
+
+  // Out of sight: pinned to the bottom of the screen (the app's dialog.sheet.fallback), and said if even that fails.
+  function keepOnScreen(d) {
+    if (!d.open) return;
+    const vh = innerHeight || document.documentElement.clientHeight;
+    const off = (r) => r.height < 40 || r.bottom <= 8 || r.top >= vh - 8;
+    const r = d.getBoundingClientRect();
+    if (!off(r)) return;
+    d.classList.add('fallback');
+    const r2 = d.getBoundingClientRect();
+    if (off(r2) && typeof reportError === 'function') {
+      reportError(new Error('The level panel opened out of sight (' + [r.top, r.bottom, r.height, vh].map(Math.round).join(', ') + '). Tap the dimmed page to close it.'));
+    }
   }
 
   // ================================================================ the saga map
@@ -1267,7 +1290,7 @@
         loop.stop(); snd.close(); clearHint(); ro.disconnect();
         document.removeEventListener('visibilitychange', onVis);
         if (mq && mq.removeEventListener) mq.removeEventListener('change', onMq);
-        box.querySelectorAll('dialog').forEach((d) => { if (d.open) d.close(); });
+        document.querySelectorAll('dialog.fp-sheet').forEach((d) => { if (d.open) d.close(); d.remove(); });
         box.remove();
       },
     };

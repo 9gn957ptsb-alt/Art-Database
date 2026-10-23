@@ -2286,8 +2286,8 @@ for (const cfg of CONFIGS) {
       await noHScroll(page, 'set board example');
       await shot('41-set-board-example');
       await page.click('#view-set [data-act="set-play"]');
-      await page.waitForSelector('#view-set dialog[open] [data-play]');
-      await page.click('#view-set dialog[open] [data-play]');
+      await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+      await page.click('dialog.fp-sheet[open] [data-play]');
       await page.waitForSelector('#view-set .fp-gc');
       assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
       await page.click('#view-set .fp-level .fp-back');   // leaving a level costs nothing
@@ -2324,10 +2324,10 @@ for (const cfg of CONFIGS) {
       for (const g of made) want = MATCH.addAssociations(want, g.ids, 1);
 
       await page.click('#view-set [data-act="set-play"]');
-      await page.waitForSelector('#view-set dialog[open] [data-play]');
-      assert.match(await page.textContent('#view-set dialog[open]'), /Level 1/);
-      await page.click('#view-set dialog[open] [data-play]');
-      await page.waitForFunction(() => !document.querySelector('#view-set dialog[open]'));
+      await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+      assert.match(await page.textContent('dialog.fp-sheet[open]'), /Level 1/);
+      await page.click('dialog.fp-sheet[open] [data-play]');
+      await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
       assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
       await noHScroll(page, 'set level');
       await shot('42-set-level-1');
@@ -2395,8 +2395,8 @@ test('Set: an error inside a level brings the tab bar back, even the same error 
   const tabsShown = () => page.$eval('.tabs', (n) => getComputedStyle(n).display !== 'none');
   const play = async () => {
     await page.click('#view-set [data-act="set-play"]');
-    await page.waitForSelector('#view-set dialog[open] [data-play]');
-    await page.click('#view-set dialog[open] [data-play]');
+    await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+    await page.click('dialog.fp-sheet[open] [data-play]');
     await page.waitForSelector('#view-set .fp-gc');
     assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
   };
@@ -2421,13 +2421,49 @@ test('Set: an error inside a level brings the tab bar back, even the same error 
     await page.waitForSelector('#view-set .fp-mapview');
     await page.click('#view-set .fp-mapview .fp-back');
     await page.click('#view-set [data-act="set-play"]');
-    await page.waitForSelector('#view-set dialog[open] [data-play]');
+    await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
     await page.evaluate(() => { location.hash = 'split'; });
     await page.waitForFunction(() => !document.getElementById('view-split').hidden);
     assert.equal(await page.locator('dialog[open]').count(), 0, 'no modal left open in the hidden view');
     await tab(page, 'see');
     await tab(page, 'set');
     await page.waitForSelector('#view-set [data-act="set-play"]');
+  } finally {
+    await ctx.close();
+  }
+});
+
+// An iPhone opened the level card out of sight, leaving only the dimmed page (23 Oct 2026). A game panel
+// lives at the top of the page, is pinned into view when it lands out of sight, and a tap on the dimmed
+// page closes it.
+test('Set: a level panel that lands out of sight is pinned into view, and a tap on the dimmed page closes it', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
+  try {
+    await page.goto(BASE + '#set');
+    await page.waitForSelector('#view-set [data-act="set-play"]');
+    // what the phone did: the panel placed far below the screen (the pinned panel is left alone)
+    await page.addStyleTag({ content: 'dialog.fp-sheet:not(.fallback) { margin-top: 4000px !important; }' });
+    await page.click('#view-set [data-act="set-play"]');
+    await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+    await page.waitForFunction(() => document.querySelector('dialog.fp-sheet[open]').classList.contains('fallback'));
+    const where = await page.evaluate(() => {
+      const d = document.querySelector('dialog.fp-sheet[open]'), r = d.getBoundingClientRect();
+      return { parent: d.parentElement.tagName, top: r.top, bottom: r.bottom, vh: innerHeight };
+    });
+    assert.equal(where.parent, 'BODY', 'the panel lives at the top of the page, outside the scrolling Set view');
+    assert.ok(where.top >= 0 && where.bottom <= where.vh + 1 && where.bottom > where.top + 40, 'pinned into view: ' + JSON.stringify(where));
+    await page.tap('dialog.fp-sheet[open] [data-play]');   // and it works: Play starts the level
+    await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
+    await page.click('#view-set .fp-level .fp-back');
+    await page.waitForSelector('#view-set .fp-mapview');
+    // a tap on the dimmed page, above the panel, closes it and leaves the page usable (the map)
+    await page.click('#view-set .fp-mapview .fp-back');
+    await page.click('#view-set [data-act="set-play"]');
+    await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+    await page.mouse.click(195, 40);
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'));
+    await page.waitForSelector('#view-set .fp-mapview');
+    assert.equal(await page.locator('dialog.fp-sheet').count(), 0, 'no panel left behind');
   } finally {
     await ctx.close();
   }

@@ -1358,7 +1358,7 @@
   // Leaving Set: a level on is paused and kept for this visit; the map and the room give way to the board.
   function leaveSet() {
     // A level's own sheet open (its card, out of moves, its end): nothing is mid-play, and a modal left in a hidden view would make the page inert.
-    if (ui.setMode === 'level' && ui.play && !$('#view-set dialog[open]')) { ui.play.pause(); ui.playPaused = true; doc.body.classList.remove('fives-playing'); return; }
+    if (ui.setMode === 'level' && ui.play && !$('dialog.fp-sheet[open]')) { ui.play.pause(); ui.playPaused = true; doc.body.classList.remove('fives-playing'); return; }
     stopPlay();
     ui.setMode = 'board';
   }
