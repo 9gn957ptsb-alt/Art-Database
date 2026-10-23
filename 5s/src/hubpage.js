@@ -527,7 +527,7 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
     }
 
     put('</main>\n<footer class="wrap">\n');
-    put('<p>' + (made ? 'Made in 5s on ' + esc(made) + '. ' : 'Made in 5s. ') + 'Five quick judgments a day build an aesthetic database; this page grew from one.</p>\n');
+    put('<p>' + (made ? 'Made in 5s on ' + esc(made) + '. ' : 'Made in 5s. ') + 'Entertain it All.</p>\n');
     put('<p>The works come from an artist’s database of saved works. Images and pages on ' + esc(sitesOf(kept)) + '.</p>\n');
     put('<p>This page holds no name, no email and no account details: only what was kept, passed and set. The seed is in its source (format 5s-seed).</p>\n');
     put('</footer>\n');
@@ -543,7 +543,7 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
     const title = text(o.title) || 'A 5s hub';
     const site = https(o.site);
     return '# ' + title.replace(/[\r\n]+/g, ' ') + '\n\n' +
-      'Made with 5s: five quick judgments a day build an aesthetic database, and this hub grew from one.\n\n' +
+      'Made with 5s. Entertain it All.\n\n' +
       (site ? 'Open it at ' + site + '\n\n' : '') +
       '- `index.html` is the hub page.\n' +
       '- `seed.json` is the 5s seed (format `5s-seed`): what was kept, passed and set. It holds no name, no email and no account details.\n\n' +

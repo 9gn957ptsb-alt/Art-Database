@@ -357,7 +357,7 @@ The connector's address is then `https://fives-connector.YOUR-SUBDOMAIN.workers.
 2. Fill in exactly:
    - **Application name:** `5s`
    - **Homepage URL:** `https://fives-connector.YOUR-SUBDOMAIN.workers.dev`
-   - **Application description:** `Five quick judgments a day become your aesthetic database.`
+   - **Application description:** `Entertain it All`
    - **Authorization callback URL:** `https://fives-connector.YOUR-SUBDOMAIN.workers.dev/callback`
    - **Enable Device Flow:** leave unticked.
 3. Press **Register application**. Copy the **Client ID**.

@@ -599,7 +599,7 @@ function createLab(root, opts) {
   // each scene draws the app around the moment and says where the mark plays: {x, y, size} in points
   const SCENES = {
     launch(c, C, t) {
-      return { x: 195, y: 392, size: 230, after() { txt(c, 'Five quick judgments a day', 195, 560, { size: 15, color: C.ink2, align: 'center', alpha: sm(0.55, 1, t) }); } };
+      return { x: 195, y: 392, size: 230, after() { txt(c, 'Entertain it All', 195, 560, { size: 15, color: C.ink2, align: 'center', alpha: sm(0.55, 1, t) }); } };
     },
     load(c, C) {
       topBar(c, C, { counter: 'Getting the deck' });

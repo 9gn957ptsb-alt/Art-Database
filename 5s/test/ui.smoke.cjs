@@ -216,6 +216,11 @@ for (const cfg of CONFIGS) {
         await page.waitForSelector('#intro:not([hidden]) #btn-start');
         assert.equal(await page.title(), 'Sort · 5s');
         assert.deepEqual(await visibleH1s(page), ['Today’s five']);
+        // the artist's slogan beside the logo, on one line inside the bar; the old line is gone (23 Oct 2026)
+        const slogan = await page.$eval('#bar-slogan', (n) => { const r = n.getBoundingClientRect(), b = n.closest('.bar').getBoundingClientRect(), l = document.getElementById('brand').getBoundingClientRect(); return { text: n.textContent, h: r.height, inBar: r.top >= b.top && r.bottom <= b.bottom && r.right <= b.right, afterLogo: r.left >= l.right, full: n.scrollWidth <= n.clientWidth + 1 }; });
+        assert.deepEqual(slogan, { text: 'Entertain it All', h: slogan.h, inBar: true, afterLogo: true, full: true });
+        assert.ok(slogan.h < 24, 'one line');
+        assert.ok(!/quick judgments a day/i.test(await page.textContent('#app')));
         await noHScroll(page, 'intro');
         await shot('01-intro');
         assert.deepEqual(page.errors(), []);

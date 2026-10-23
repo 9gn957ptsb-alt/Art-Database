@@ -691,7 +691,6 @@
       ? '<span class="brand-mark" style="width:72px;height:72px;font-size:30px;border-radius:18px;border-width:3px" aria-hidden="true">5s</span>'
       : '<img class="intro-logo" src="logo.webp" alt="" width="72" height="72">';
     $('#intro').innerHTML = logo +
-      '<h2 class="h1">Five quick judgments a day build your own aesthetic database.</h2>' +
       '<ul>' +
         '<li>' + icon('keep', 'k') + '<span>Drag right or press <b>Keep</b> for what you like.</span></li>' +
         '<li>' + icon('pass', 'p') + '<span>Drag left or press <b>Pass</b> for the rest. The arrow keys work too.</span></li>' +
@@ -1926,7 +1925,7 @@
     openSheet('about', 'About 5s', () => {
       const on = S.opts.ring !== false;
       return '<div class="about" style="display:grid;gap:14px">' +
-        '<p>5s is five quick judgments a day. They build your own aesthetic database, which you split into parts, set into rooms, see as a whole and grow into a world.</p>' +
+        '<p>5s builds your own aesthetic database, which you split into parts, set into rooms, see as a whole and grow into a world.</p>' +
         '<p>The cards come from an artist’s database of saved works and bookmarked architecture. What you bring in is yours.</p>' +
         '<ul><li>Drag right or press Keep (→) for what you like; drag left or press Pass (←) for the rest.</li>' +
         '<li>Names come after you decide. Enter or Space looks closer; U undoes.</li>' +
