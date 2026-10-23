@@ -41,7 +41,27 @@
  *   Motion.families                 the registered families, in the spec's order
  *   Motion.get(id) / Motion.defaults(id) / Motion.resolve(id, params) / Motion.forMoment(moment)
  *   Motion.render(ctx, id, t, params, env)   one frame, deterministic
- *   Motion.MOMENTS, Motion.ORDER, Motion.SHARED
+ *   Motion.MOMENTS, Motion.ORDER, Motion.SHARED, Motion.LOOKS
+ *
+ * The Iterations look (the artist's sheet of twenty, 23 Oct 2026: reference/iterations.png), added beside the classic:
+ *   params.look = 'iterations', params.iteration = 1..20 (default 1)   pass-through params, not SHARED: resolve copies
+ *                                   them as given, so saved params replay exactly; anything else renders classic.
+ *                                   Motion.render then draws with Marks.palette(p.palette, theme, p.iteration), and
+ *                                   while the family draws, stroke() draws a tagged bar/body/s (an array straight from
+ *                                   Marks.points) as the sheet's letter at the same n (weight 0.75 = the sheet's
+ *                                   widths), ribbon() draws the glass, mark() both. Families read env.palette.look.
+ *   Marks.ITERATIONS                the twenty: {n, cell 'r1c1', label 'vivid cloth', describe, params: {look, iteration,
+ *                                   fold cloth|sail|crystal|wave, vivid, cyan, depth, reach, lobe, core, lobeTint,
+ *                                   cut: {kind, top, bottom, bow}}}
+ *   Marks.palette(name, theme, n)   the look's palette: name '<name>~i<n>', base, iteration, .look; ground #FEFEFE on
+ *                                   light (paper keeps iris), #100E18 on dark; logo/inverse: the iteration's letters
+ *   Marks.paths5s                   {bar, body, s, glass}: the sheet's centrelines and the glass's envelope
+ *   Marks.stroke(..., {profile: [[u, k]], caps: [start, end], cut: [[x, y], [x, y], bow]})   width along the stroke,
+ *                                   a cap per end, a blade cut at the end (all optional: without them, as before)
+ *   Marks.glass(ctx, t, {iteration, palette, theme, alpha, along, width, pts, phase, colours, fold, vivid, cyan,
+ *                        depth, reach, lobe, core, lobeTint})   the glass alone: the active look's, or an iteration's,
+ *                                   any preset field overridden; t breathes it (f(0) = f(1)); colours other than the
+ *                                   look palette's own ribbon draw it mono in their middle colour
  */
 (function (root) {
   'use strict';
@@ -78,6 +98,80 @@
   };
 
   const WIDTHS = { bar: 138, body: 130, s: 102, ribbon: 190, d1: 130, d2: 130, d3: 130, d4: 130, frame: 42 };
+
+  /* The Iterations look (the artist's sheet of twenty, 23 Oct 2026: reference/iterations.png): the same 5 and s
+   * redrawn as the sheet draws them, measured in this mark space (IoU 0.88 against the twenty cells' warm letters).
+   * A second set: PATHS above stays the classic mark. Widths are the sheet's, reached at the standard weight 0.75.
+   *   bar   a flat-topped slab, its end cut by the preset's blade (straight or bowed)
+   *   body  stem, foot, bowl of varying weight, a terminal that tapers to a near-vertical cut
+   *   s     heavier on its lower right, its tail cut "/" like the bar's blade
+   *   glass the envelope every glass layer is clipped to: one soft pebble round the mark */
+  const PATHS5S = {
+    bar: 'M 290 233 L 700 233',
+    body: 'M 274 233 C 248 309 222 386 190 466 C 240 450 290 442 341 442 C 420 442 472 470 502 512 C 527 548 528 610 512 656 ' +
+          'C 488 722 414 764 343 768 C 268 772 186 750 104 676',
+    s: 'M 885 510 C 852 509 824 507 796 510 C 756 514 727 541 727 584 C 727 618 758 634 804 650 C 850 666 872 692 870 734 ' +
+       'C 868 782 834 813 782 815 C 732 817 680 818 620 818',
+    glass: 'M 500 306 L 640 157 C 770 176 884 262 931 362 L 931 482 L 900 545 L 790 562 L 742 600 L 760 690 L 792 760 L 700 796 ' +
+           'L 652 876 L 420 884 C 330 882 236 862 150 792 C 230 828 300 836 356 832 C 470 812 560 740 600 650 C 620 560 590 470 500 418 ' +
+           'C 430 384 360 382 300 392 L 322 318 Z'
+  };
+  // per letter: width (mark units), weight profile [[u, width]], caps [start, end], end cut [[x, y], [x, y]] (bar: the preset's)
+  const LETTERS5S = {
+    bar: { width: 150, profile: null, caps: ['butt', 'butt'], cut: null },
+    body: { width: 184, caps: ['round', 'butt'], cut: [[100, 656], [108, 706]],
+      profile: [[0, 150], [0.27, 150], [0.3, 150], [0.34, 124], [0.45, 156], [0.58, 184], [0.66, 182], [0.78, 156], [0.86, 146], [0.92, 118], [0.96, 92], [1, 62]] },
+    s: { width: 124, caps: ['round', 'butt'], cut: [[660, 776], [600, 866]],
+      profile: [[0, 95], [0.12, 104], [0.28, 118], [0.45, 114], [0.6, 124], [0.75, 110], [0.88, 108], [1, 108]] }
+  };
+  for (const k of Object.keys(LETTERS5S)) { const g = LETTERS5S[k]; if (g.profile) g.profile = g.profile.map(([u, w]) => [u, w / g.width]); }
+  // the letters' stops, sampled along the new centrelines: the vivid cells' median, and the pastel cells'
+  const ITER_STOPS = {
+    vivid: {
+      bar: [[0, '#FD8902'], [0.2, '#FD8C03'], [0.37, '#FD9B13'], [0.54, '#FDAD2D'], [0.7, '#FDC547'], [0.85, '#FDD163'], [1, '#FEDC74']],
+      body: [[0, '#FD8902'], [0.06, '#FD7C08'], [0.1, '#FC650C'], [0.2, '#FD3928'], [0.3, '#FC3B2A'], [0.4, '#FD5A1E'], [0.5, '#FD5C26'], [0.6, '#FD3A3F'],
+             [0.7, '#FC0355'], [0.8, '#FB017E'], [0.9, '#EF10BC'], [1, '#E070F0']],
+      s: [[0, '#FDE383'], [0.1, '#FDCB62'], [0.2, '#FD9C2C'], [0.3, '#FC6817'], [0.4, '#FD8C1D'], [0.5, '#FEA928'], [0.6, '#FD901F'], [0.7, '#FD661C'],
+          [0.8, '#FD4229'], [0.9, '#FA225E'], [1, '#E2287E']]
+    },
+    pastel: {
+      bar: [[0, '#FDA242'], [0.37, '#FDB24D'], [0.54, '#FDC462'], [0.7, '#FDD779'], [1, '#FEE08E']],
+      body: [[0, '#FD9E40'], [0.1, '#FD8247'], [0.2, '#FC5F6C'], [0.3, '#FC646A'], [0.4, '#FD805F'], [0.5, '#FD915C'], [0.6, '#FD7063'], [0.7, '#FC4785'],
+             [0.8, '#FA42B9'], [0.9, '#E96BE4'], [1, '#E09EFB']],
+      s: [[0, '#FDEA9D'], [0.1, '#FDD987'], [0.2, '#FDB55D'], [0.3, '#FC8D36'], [0.4, '#FDA231'], [0.5, '#FDB940'], [0.6, '#FDAD37'], [0.7, '#FD9531'],
+          [0.8, '#FD7D3C'], [0.9, '#FD6F6D'], [1, '#E0A0E8']]
+    }
+  };
+  // the twenty, in the sheet's order (rows of five): fold, vivid, cyan, depth, reach, lobe, core, lobe tint, blade top x, bottom x, bow
+  const ITER_ROWS = [
+    ['cloth', 1, 0.62, 0.7, 0, 0.4, '#4705CA', '#98CBFC', 672, 563, 0, 'Vivid letters. Soft cloth glass with an indigo core and a cyan rim. Shortest reach; straight blade at 36 degrees.'],
+    ['sail', 0.83, 0.51, 0.8, 0.39, 0.36, '#4402C7', '#A4D2FD', 661, 545, 0, 'Vivid with a pinker bowl. Pale-blue sail lobe with one crisp ridge from the bar tip to the right corner; straight cut.'],
+    ['cloth', 0.93, 0.1, 0.65, 0.77, 0.25, '#4001D4', '#BED0FD', 657, 540, 0, 'Vivid letters. Washed lavender lobe, almost no cyan, deep violet core. Soft; straight cut.'],
+    ['wave', 0.92, 0.59, 0.5, 0.55, 0.53, '#7607E1', '#79A8FD', 649, 529, 0, 'Vivid. One big saturated wave sweeping up from violet to royal blue with a crisp curved edge; the most saturated glass. Straight cut.'],
+    ['cloth', 0.36, 0.95, 0, 0.93, 0.31, '#7448F6', '#AFDFFD', 665, 546, 0, 'Pastel: peach-yellow bar, salmon-pink stem, lilac terminal. Soft sky-cyan glass with a long reach; straight cut.'],
+    ['sail', 0.91, 0.81, 0.4, 0.89, 0.61, '#2602EC', '#65ADFD', 646, 464, 10, 'Vivid. Deep cobalt glass with a strong sky lobe. Sail fold; curved blade.'],
+    ['crystal', 0.5, 0.65, 0, 0.68, 0.33, '#7D37EB', '#ABD5FD', 642, 472, 10, 'Pastel. Crystal facets, a star-like kite from the bar tip, in lilac-violet and sky; curved blade.'],
+    ['sail', 0.91, 0.46, 0.75, 0.62, 0.41, '#4100CD', '#96C8FD', 642, 474, 14, 'Vivid. A folded-paper sail with a crisp corner at the right and a violet core; curved blade.'],
+    ['crystal', 0.85, 0.4, 0.35, 0.15, 0.35, '#3301F2', '#A5CCFD', 640, 515, 0, 'Vivid. A cobalt crystal starburst at the bar tip; the glass sits lowest with little reach. Straight cut.'],
+    ['wave', 0.35, 0.14, 0, 0.57, 0.31, '#A52DEC', '#B7BDFD', 643, 452, 17, 'Pastel and warm. Violet-magenta glass with no cyan, a smooth wave, the roundest silhouette; curved blade.'],
+    ['cloth', 0.04, 0.5, 0, 0.77, 0.2, '#A061F3', '#CDE0FD', 636, 500, 2, 'The most washed-out: peach and pink letters, faint lilac cloth glass; near-straight cut.'],
+    ['sail', 0.89, 0.75, 0.8, 0.35, 0.53, '#3F01C6', '#77BFFD', 641, 516, 0, 'Vivid. A crisp sail with a cyan corner and a deep indigo core; straight cut.'],
+    ['crystal', 0.75, 0.96, 0.5, 0.72, 0.48, '#4702E2', '#85CFFD', 636, 408, 21, 'Vivid. A sky-cyan lobe (the most cyan) with a pentagonal crystal corner; strongly curved blade.'],
+    ['crystal', 0.83, 0.04, 0.65, 0.81, 0.23, '#6F02D5', '#C4CFFC', 659, 408, 25, "Vivid letters. A pale lavender crystal 'cube' with facet lines and no cyan; the most curved blade."],
+    ['crystal', 0.55, 0.56, 0.1, 1, 0.46, '#7C20F0', '#8CBCFD', 655, 457, 12, 'Mid-pastel. Cobalt-cyan gem facets (a pyramid) that reach furthest; curved blade.'],
+    ['sail', 0.91, 0.49, 0.6, 0.58, 0.49, '#4E00DA', '#82B6FD', 660, 496, 5, 'Vivid. A cobalt sail with fold lines and a vertical facet; nearly straight cut.'],
+    ['cloth', 0.51, 0.38, 0.35, 0.68, 0.39, '#7F15DF', '#9BC7FD', 641, 455, 12, 'Soft, mid-pastel letters. Soft violet cloth folds; curved blade.'],
+    ['crystal', 0.94, 0.5, 1, 0.62, 0.54, '#1F01A9', '#76AFFD', 648, 510, 0, 'Vivid. The darkest glass (indigo) with crisp crystal planes radiating from the bar tip; straight cut.'],
+    ['cloth', 0.15, 0.79, 0, 0.82, 0.25, '#884CF5', '#BFDFFD', 646, 511, 0, 'Pastel. Pale sky-lilac cloth with pink letters; straight cut.'],
+    ['sail', 0.84, 0.95, 0.65, 0.72, 0.54, '#4202D6', '#74C9FD', 651, 517, 2, 'Vivid. A bright, crisp cyan sail; straight cut.']
+  ];
+  const ITERATIONS = ITER_ROWS.map((r, i) => ({
+    n: i + 1, cell: 'r' + (Math.floor(i / 5) + 1) + 'c' + ((i % 5) + 1),
+    label: (r[1] >= 0.7 ? 'vivid ' : r[1] >= 0.45 ? 'mid-pastel ' : 'pastel ') + r[0], describe: r[11],
+    params: { look: 'iterations', iteration: i + 1, fold: r[0], vivid: r[1], cyan: r[2], depth: r[3], reach: r[4], lobe: r[5], core: r[6], lobeTint: r[7],
+      cut: { kind: r[10] >= 10 ? 'curved' : 'straight', top: [r[8], 158], bottom: [r[9], 306], bow: r[10] } }
+  }));
+  const LOOKS = ['classic', 'iterations'];
 
   // useful centres (mark units): scale or turn parts about these
   const ANCHORS = {
@@ -202,11 +296,17 @@
     return out;
   }
 
+  // the letter arrays points() hands out, by identity -> {name, n, ends}: under the Iterations look stroke() draws the
+  // look's letter in their place (a family's own concat, resample or morph is untagged and stays classic; so is one
+  // reversed or cut in place, which the ends catch)
+  const TAGGED = new WeakMap();
   function points(name, n) {
     n = Math.max(1, Math.round(num(n, 128)));
     const f = flatten(pathData(name));
     if (f.xs.length < 2) { const out = []; for (let i = 0; i < n; i++) out.push([f.xs[0], f.ys[0]]); return out; }
-    return sampleEven(f.xs, f.ys, f.cum, n);
+    const out = sampleEven(f.xs, f.ys, f.cum, n);
+    if (name === 'bar' || name === 'body' || name === 's') TAGGED.set(out, { name, n, a: out[0], z: out[n - 1] });
+    return out;
   }
 
   function length(name) { return flatten(pathData(name)).L; }
@@ -405,12 +505,56 @@
     return o;
   }
 
-  function palette(name, theme) {
+  function palette(name, theme, iteration) {
     if (!PALETTES.includes(name)) name = 'logo';
     theme = theme === 'dark' ? 'dark' : 'light';
+    if (iteration != null) return lookPalette(name, theme, iterationOf(iteration));
     const key = name + ':' + theme;
     let p = palCache.get(key);
     if (!p) { p = freezeDeep(buildPalette(name, theme)); palCache.set(key, p); }
+    return p;
+  }
+
+  /* the Iterations look's palettes: palette(name, theme, n). name is '<name>~i<n>' (families cache by name), base the
+   * palette it came from; .look is what the strokes and the glass read while the look draws. logo: the iteration's
+   * letters; inverse: those on the other theme; keep, pass, turn: their own letters; ink, paper: mono glass in their ink.
+   * The light ground is the sheet's white #FEFEFE (paper keeps its iris ground); dark is the app's #100E18. */
+  const WHITE = '#FEFEFE';
+  const iterationOf = (v) => clamp(Math.round(num(typeof v === 'string' ? parseFloat(v) : v, 1)), 1, ITERATIONS.length);
+  const mixStops = (a, b, k) => a.map(([u]) => [u, mix(colourAt(a, u), colourAt(b, u), k)]);
+  // what the strokes and the glass read: the preset P, the glass's theme, mono ink (or null) and the band colours,
+  // outer to inner, as the twenty measure them (cyan swings the outer bands; vivid washes them toward white)
+  function lookOf(P, theme, mono) {
+    // pastel cells keep their glass more saturated than their letters: the wash eases in (0.42 at the palest)
+    const dark = theme === 'dark', wash = dark ? 0 : 0.45 * Math.pow(1 - P.vivid, 1.5), cy = P.cyan;
+    const band = [mix('#78B2FD', '#62D6FD', cy), mix('#4F86FC', '#3EA6FD', cy), mix('#4D4FF8', '#3D62FC', 0.6 * cy), mix(P.core, '#6A2EEC', 0.45), P.core]
+      .map((c) => mix(c, '#FFFFFF', dark ? 0.08 : wash));
+    return { P, theme, mono, wash, band, cut: [P.cut.top, P.cut.bottom, P.cut.bow] };
+  }
+  function lookPalette(name, theme, n) {
+    const key = name + ':' + theme + ':i' + n;
+    let p = palCache.get(key);
+    if (p) return p;
+    const P = ITERATIONS[n - 1].params;
+    const other = theme === 'dark' ? 'light' : 'dark';
+    const glassTheme = name === 'inverse' ? other : theme, gdark = glassTheme === 'dark';
+    p = Object.assign({}, palette(name, theme), { name: name + '~i' + n, base: name, iteration: n });
+    if (name === 'logo' || name === 'inverse') {
+      // the pastel stops are the median of cells whose vivid averages 0.35: reach them there, and wash on below 0.6
+      const kp = clamp((1 - P.vivid) / 0.65, 0, 1), kw = 0.3 * clamp((0.6 - P.vivid) / 0.6, 0, 1);
+      const at = (k) => lift(mixStops(ITER_STOPS.vivid[k], ITER_STOPS.pastel[k], kp), kw + (gdark ? 0.05 : 0));
+      const s = at('s');
+      // where the glass crosses the s's tail it reads violet
+      s.splice(s.length - 1, 1, [0.93, colourAt(s, 0.93)], [1, mix(colourAt(s, 1), '#A054ED', 0.5)]);
+      Object.assign(p, { bar: at('bar'), body: at('body'), s, five: [colourAt(at('bar'), 1), colourAt(at('bar'), 0.3), colourAt(at('body'), 0.25), colourAt(at('body'), 0.75)] });
+    }
+    if (!gdark && name !== 'paper') { p.bg = WHITE; p.paper = WHITE; }
+    const mono = name === 'ink' || name === 'paper' ? p.five[0] : null;
+    const look = lookOf(P, glassTheme, mono);
+    p.ribbon = mono ? [mono] : [look.band[3], look.band[2], look.band[1], look.band[0]];
+    p.look = Object.assign(look, { n, ribbon: p.ribbon });
+    p = freezeDeep(p);
+    palCache.set(key, p);
     return p;
   }
 
@@ -595,8 +739,9 @@
   // of the bend between runs is filled with a wedge, and the ends get caps. So every point of the stroke takes
   // the colour of the nearest place on its centerline (round caps per piece would smear colours forward), in
   // a few dozen draw calls per stroke. colourAt(u) returns [r, g, b].
-  function paint(c, X, Y, U, widthAt, colourAt, cap, solid, px) {
+  function paint(c, X, Y, U, widthAt, colourAt, caps, solid, px) {
     const m = X.length;
+    const cap = Array.isArray(caps) ? caps[0] : caps, capEnd = Array.isArray(caps) ? caps[1] : caps;
     c.lineJoin = 'round';
     if (solid) {
       c.strokeStyle = solid; c.lineWidth = widthAt(0.5); c.lineCap = cap;
@@ -615,10 +760,9 @@
     if (!P.length) return;
     X = X.slice(); Y = Y.slice();
     const f0 = P[0], f1 = P[P.length - 1];
-    if (cap === 'square') {   // square caps: extend the ends, then paint as butt
-      X[f0.i] -= f0.dx * f0.w / 2; Y[f0.i] -= f0.dy * f0.w / 2;
-      X[f1.i + 1] += f1.dx * f1.w / 2; Y[f1.i + 1] += f1.dy * f1.w / 2;
-    }
+    // square caps: extend the ends, then paint as butt
+    if (cap === 'square') { X[f0.i] -= f0.dx * f0.w / 2; Y[f0.i] -= f0.dy * f0.w / 2; }
+    if (capEnd === 'square') { X[f1.i + 1] += f1.dx * f1.w / 2; Y[f1.i + 1] += f1.dy * f1.w / 2; }
     const tolW = Math.max(ext * 0.4, 0);
     const near = (a, b) => Math.abs(a[0] - b[0]) <= 2 && Math.abs(a[1] - b[1]) <= 2 && Math.abs(a[2] - b[2]) <= 2;
     const capAt = (i, dx, dy, sign) => {   // a half disc beyond point i, facing sign * (dx, dy)
@@ -661,17 +805,19 @@
       c.stroke();
       g = h;
     }
-    if (cap === 'round') capAt(f1.i + 1, f1.dx, f1.dy, 1);
+    if (capEnd === 'round') capAt(f1.i + 1, f1.dx, f1.dy, 1);
   }
 
   // draw a prepared band (X/Y/U arrays) at alpha, through a scratch layer clipped to its bounds when translucent
-  function drawBand(ctx, X, Y, U, widthAt, colourAt, cap, solid, alpha, maxW) {
+  // clip(c), if given, sets a clip in mark space on whichever context paints (a blade cut)
+  function drawBand(ctx, X, Y, U, widthAt, colourAt, cap, solid, alpha, maxW, clip) {
     const eff = ctx.globalAlpha * alpha;
     const m = getT(ctx);
     const sc = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1, px = 1 / sc;
+    const run = (c) => { if (clip) { c.save(); clip(c); } paint(c, X, Y, U, widthAt, colourAt, cap, solid, px); if (clip) c.restore(); };
     if (solid || eff >= 0.999) {
       ctx.save(); ctx.globalAlpha = eff;
-      paint(ctx, X, Y, U, widthAt, colourAt, cap, solid, px);
+      run(ctx);
       ctx.restore();
       return;
     }
@@ -688,7 +834,7 @@
     if (bw <= 0 || bh <= 0) return;
     const can = scratch(bw, bh);
     if (!can) {   // no canvas to layer on: paint directly (overlaps show)
-      ctx.save(); ctx.globalAlpha = eff; paint(ctx, X, Y, U, widthAt, colourAt, cap, solid, px); ctx.restore();
+      ctx.save(); ctx.globalAlpha = eff; run(ctx); ctx.restore();
       return;
     }
     const s = can.getContext('2d');
@@ -696,7 +842,7 @@
     s.clearRect(0, 0, bw, bh);
     s.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
     depth++;
-    try { paint(s, X, Y, U, widthAt, colourAt, cap, solid, px); } finally { depth--; }
+    try { run(s); } finally { depth--; }
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = eff;
@@ -734,20 +880,26 @@
     return cum;
   }
 
+  const capOf = (c) => (c === 'butt' || c === 'square' ? c : 'round');
   function stroke(ctx, pts, o) {
     o = o || {};
     if (!ctx || !pts || !pts.length) return;
     if (typeof pts === 'string') pts = points(pts, 160);
+    const tag = LOOK && TAGGED.get(pts);
+    if (tag && pts.length === tag.n && pts[0] === tag.a && pts[tag.n - 1] === tag.z) { lookStroke(ctx, tag, o); return; }
     const width = num(o.width, 100);
     const from = clamp01(num(o.from, 0)), to = clamp01(num(o.to, 1));
     const alpha = clamp01(num(o.alpha, 1));
     if (!(to > from) || !(width > 0) || alpha <= 0) return;
-    const cap = o.cap === 'butt' || o.cap === 'square' ? o.cap : 'round';
+    const cap = capOf(o.cap);
+    // the look's options: profile [[u, k]] multiplies width along the stroke; caps [start, end]; cut [[x, y], [x, y], bow]
+    const profile = Array.isArray(o.profile) && o.profile.length ? o.profile : null;
+    const caps = Array.isArray(o.caps) ? [capOf(o.caps[0]), capOf(o.caps[1])] : cap;
     const stops = parseStops(o.colours != null ? o.colours : o.colors);
     const shift = num(o.shift, 0);
-    const solid = isSolid(stops) ? css(stops[0][1]) : null;
+    const solid = isSolid(stops) && !profile && caps === cap ? css(stops[0][1]) : null;
     const colourAt = (u) => stopsAt(stops, u - shift);   // stopsAt clamps: end colours extend
-    const widthAt = () => width;
+    const widthAt = profile ? (u) => width * profileAt(profile, u) : () => width;
     const cum = cumulative(pts), L = cum[cum.length - 1];
     if (pts.length < 2 || L < 1e-9) {   // a collapsed stroke is a dot
       if (cap !== 'round') return;
@@ -756,7 +908,58 @@
       return;
     }
     const { X, Y, U } = cut(pts, cum, L, from * L, to * L, solid ? 0 : Math.max(2, L / 160));
-    drawBand(ctx, X, Y, U, widthAt, colourAt, cap, solid, alpha, width);
+    const maxW = profile ? width * Math.max(...profile.map((q) => q[1])) : width;
+    drawBand(ctx, X, Y, U, widthAt, colourAt, caps, solid, alpha, maxW, Array.isArray(o.cut) ? cutClip(pts, o.cut) : null);
+  }
+
+  function profileAt(pr, u) {
+    if (u <= pr[0][0]) return pr[0][1];
+    for (let i = 1; i < pr.length; i++) if (u <= pr[i][0]) { const a = pr[i - 1], b = pr[i]; return a[1] + (b[1] - a[1]) * (u - a[0]) / ((b[0] - a[0]) || 1); }
+    return pr[pr.length - 1][1];
+  }
+
+  // a blade cut at a stroke's end: clips away a quad on the outer side of the segment p -> q (bowed out by `bow`),
+  // 30 units past each end (more past p for a long blade) and 160 deep, so it never reaches the rest of the letter
+  function cutClip(pts, seg) {
+    const p = seg[0], q = seg[1], bow = num(seg[2], 0);
+    const end = pts[pts.length - 1], prev = pts[Math.max(0, pts.length - 4)];
+    const dl = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, ux = (q[0] - p[0]) / dl, uy = (q[1] - p[1]) / dl;
+    let nx = -uy, ny = ux;
+    if (nx * (end[0] - prev[0]) + ny * (end[1] - prev[1]) < 0) { nx = -nx; ny = -ny; }   // outward: the way the stroke runs out
+    const m0 = 30 + Math.max(0, dl - 120) / 2;   // a long shallow blade (the bar's) reaches further past its top end
+    const a0 = [p[0] - ux * m0, p[1] - uy * m0], a1 = [q[0] + ux * 30, q[1] + uy * 30];
+    return (c) => {
+      c.beginPath(); c.rect(-W, -W, 3 * W, 3 * W);
+      c.moveTo(a0[0], a0[1]); c.lineTo(p[0], p[1]);
+      c.quadraticCurveTo((p[0] + q[0]) / 2 + nx * 2 * bow, (p[1] + q[1]) / 2 + ny * 2 * bow, q[0], q[1]);
+      c.lineTo(a1[0], a1[1]); c.lineTo(a1[0] + nx * 160, a1[1] + ny * 160); c.lineTo(a0[0] + nx * 160, a0[1] + ny * 160);
+      c.closePath(); c.clip('evenodd');
+    };
+  }
+
+  /* the Iterations look, while it draws (Motion.render, or Marks.mark with a look palette): LOOK is that palette's .look.
+   * stroke() then draws a tagged bar, body or s as the sheet's letter at the same n: its profile, caps and cut, its
+   * width scaled by the family's (so weight 0.75 is the sheet's weight), the glass's veil over the bowl's edge after the body */
+  let LOOK = null;
+  const lookPts = new Map();
+  function lookStroke(ctx, tag, o) {
+    const G = LETTERS5S[tag.name], key = tag.name + ':' + tag.n;
+    let pts = lookPts.get(key);
+    if (!pts) { pts = points(PATHS5S[tag.name], tag.n); lookPts.set(key, pts); }
+    const k = num(o.width, 100) / (WIDTHS[tag.name] * 0.75);
+    stroke(ctx, pts, Object.assign({}, o, { width: G.width * k, profile: G.profile, caps: G.caps, cut: tag.name === 'bar' ? LOOK.cut : G.cut }));
+    if (tag.name !== 'body' || LOOK.mono) return;
+    // the glass passing in front of the bowl's outer edge: the red seen through pale glass reads pink
+    const a = clamp01(num(o.alpha, 1)) * smoothstep(0.5, 0.8, clamp01(num(o.to, 1))) * (1 - smoothstep(0.4, 0.6, clamp01(num(o.from, 0))));
+    if (a <= 0.002 || !(k > 0)) return;
+    ctx.save();
+    ctx.strokeStyle = mix('#FFD0EC', '#E050F8', 0.75); ctx.lineCap = 'round';
+    const ga = ctx.globalAlpha;
+    for (const [w, al] of [[56, 0.24], [30, 0.28]]) {   // two strokes: a soft-edged film, not an outline
+      ctx.globalAlpha = ga * a * al * (LOOK.theme === 'dark' ? 0.75 : 1); ctx.lineWidth = w * k;
+      ctx.beginPath(); ctx.arc(340, 610, 168 + 92 * k, -0.55, 0.95); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   /* ------------------------------------------------------------------------------------------
@@ -775,6 +978,7 @@
 
   function ribbon(ctx, t, o) {
     o = o || {};
+    if (LOOK) { drawGlass(ctx, t, LOOK, o); return; }
     t = num(t, 0);
     let pts = o.pts;
     if (!pts) { if (!ribbonBase) ribbonBase = points('ribbon', 220); pts = ribbonBase; }
@@ -854,6 +1058,187 @@
   }
 
   /* ------------------------------------------------------------------------------------------
+   * the glass: the Iterations look's fold of translucent sheets behind the bowl and the s, in place of the ribbon.
+   * All in mark space, clipped to the envelope (PATHS5S.glass): a film (pale at the bar's tip, the lobe's tint at the
+   * right rim, lilac under the bowl); the main sheet under the lobe (lilac at the notch under the bar, blue-violet,
+   * blue, the cyan rim); four arches over the bowl's shoulder falling away behind the s, deepening to the indigo core
+   * in the gap; a violet glow on the bowl's edge; the notch's light; the fold's own lines (cloth: soft, blurred; sail:
+   * a ridge; crystal: a kite of facets, faceted arches; wave: S-curved tops) and a rim of light. Measured against the
+   * twenty cells (test/iterations.cjs --compare). t breathes the sheets (a loop: f(0) = f(1)).
+   * ---------------------------------------------------------------------------------------- */
+  const GV = [640, 157], GC = [931, 362];   // the bar's tip, the top-right corner
+  let envPts = null;
+  function envelope(c) {
+    if (!envPts) envPts = points(PATHS5S.glass, 420);
+    c.beginPath(); c.moveTo(envPts[0][0], envPts[0][1]);
+    for (let i = 1; i < envPts.length; i++) c.lineTo(envPts[i][0], envPts[i][1]);
+    c.closePath();
+  }
+  function drawGlass(ctx, t, look, o) {
+    const P = look.P, dark = look.theme === 'dark', alpha = clamp01(num(o.alpha, 1));
+    let a0 = 0, a1 = 1;
+    if (Array.isArray(o.along)) { a0 = clamp01(num(o.along[0], 0)); a1 = clamp01(num(o.along[1], 1)); }
+    else if (o.along != null) a1 = clamp01(num(o.along, 1));
+    if (!(a1 > a0) || alpha <= 0) return;
+    // the given colours, when they are not the look palette's own: mono glass in their middle colour (an echo, a print)
+    const given = o.colours != null ? o.colours : o.colors;
+    const mono = look.mono || (given == null || given === look.ribbon ? null : colourAt(given, 0.5));
+    t = num(t, 0) + num(o.phase, 0);
+    ctx.save();
+    try {
+      ctx.globalAlpha *= alpha;
+      // width scales the glass about the bowl; pts (a family's own spine) moves and stretches it as the spine moves
+      let sx = num(o.width, WIDTHS.ribbon) / WIDTHS.ribbon, sy = sx, tx = 0, ty = 0;
+      if (Array.isArray(o.pts) && o.pts.length > 1) {
+        if (!ribbonBase) ribbonBase = points('ribbon', 220);
+        const A = bbox(o.pts, 0), B = bbox(ribbonBase, 0), mean = (q) => q.reduce((m, v) => [m[0] + v[0] / q.length, m[1] + v[1] / q.length], [0, 0]);
+        const ca = mean(o.pts), cb = mean(ribbonBase);
+        tx = ca[0] - cb[0]; ty = ca[1] - cb[1];
+        sx *= clamp((A[2] - A[0]) / (B[2] - B[0]), 0.05, 3); sy *= clamp((A[3] - A[1]) / (B[3] - B[1]), 0.05, 3);
+      }
+      if (sx !== 1 || sy !== 1 || tx || ty) {
+        const b = ANCHORS.bowl;
+        ctx.translate(b[0] + tx, b[1] + ty); ctx.scale(sx, sy); ctx.translate(-b[0], -b[1]);
+      }
+      // along: a wipe round the bowl, from under its terminal, round the gap to the s, up to the lobe
+      if (a0 > 0 || a1 < 1) {
+        const c = ANCHORS.bowl, A0 = 2.6, S = 4.6;
+        ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.arc(c[0], c[1], 2000, A0 - S * a0, A0 - S * a1, true); ctx.closePath(); ctx.clip();
+      }
+      sheets(ctx, P, look, t, dark, mono);
+    } finally { ctx.restore(); }
+  }
+
+  // Marks.glass(ctx, t, {iteration, palette, theme, alpha, along, width, pts, phase, colours, fold, vivid, cyan, depth,
+  // reach, lobe, core, lobeTint}): the glass on its own (the active look's, or an iteration's), any preset field overridden
+  const GLASS_KEYS = ['fold', 'vivid', 'cyan', 'depth', 'reach', 'lobe', 'core', 'lobeTint'];
+  function glass(ctx, t, o) {
+    o = o || {};
+    let look = o.palette && o.palette.look ? o.palette.look
+      : o.iteration != null || !LOOK ? palette(typeof o.palette === 'string' ? o.palette : 'logo', o.theme, o.iteration == null ? 1 : o.iteration).look : LOOK;
+    if (GLASS_KEYS.some((k) => o[k] != null)) {
+      const P = Object.assign({}, look.P);
+      for (const k of GLASS_KEYS) if (o[k] != null) P[k] = o[k];
+      look = Object.assign(lookOf(P, look.theme, look.mono), { ribbon: look.ribbon });
+    }
+    drawGlass(ctx, t, look, o);
+  }
+
+  function sheets(ctx, P, look, t, dark, mono) {
+    const white = (a) => rgba('#FFFFFF', a);
+    const fold = P.fold, crisp = fold === 'sail' || fold === 'crystal';
+    const band = mono ? look.band.map(() => mono) : look.band;
+    const wash = (c, k) => (dark ? c : mix(c, '#FFFFFF', look.wash * (k == null ? 1 : k)));
+    ctx.save();
+    envelope(ctx); ctx.clip();
+    // 1. the film: the lobe from the bar's tip to the right rim, and lilac low down
+    const rim = ctx.createLinearGradient(GV[0], GV[1], 931, 430), low = ctx.createLinearGradient(700, 300, 420, 884);
+    if (mono) {
+      rim.addColorStop(0, rgba(mono, 0.04)); rim.addColorStop(1, rgba(mono, 0.14 + 0.2 * P.lobe));
+      low.addColorStop(0, rgba(mono, 0)); low.addColorStop(1, rgba(mono, 0.16));
+    } else if (dark) {
+      rim.addColorStop(0, rgba(mix('#8C9BFF', P.lobeTint, 0.5), 0.16 + 0.2 * P.lobe)); rim.addColorStop(0.65, rgba(mix('#3F7DFF', '#30C4FF', P.cyan), 0.28 + 0.2 * P.lobe));
+      rim.addColorStop(1, rgba(mix('#5594FF', '#4ED8FF', P.cyan), 0.55));
+      low.addColorStop(0, rgba('#8A68FF', 0)); low.addColorStop(0.8, rgba('#7258FF', 0.28)); low.addColorStop(1, rgba('#8A68FF', 0.4));
+    } else {
+      // a strong lobe is sky-blue right up to the bar's tip; a faint one stays white there
+      const L0 = smoothstep(0.2, 0.55, P.lobe);
+      rim.addColorStop(0, rgba(wash(mix('#F6F8FE', P.lobeTint, L0)), 0.45 + 0.4 * L0));
+      rim.addColorStop(0.45, rgba(wash(mix(P.lobeTint, '#F2F6FE', 0.4 * (1 - P.lobe))), 0.45 + 0.6 * P.lobe));
+      rim.addColorStop(1, rgba(wash(mix(P.lobeTint, '#7DE2FD', 0.5 * P.cyan)), Math.min(0.92, P.lobe + 0.42)));
+      low.addColorStop(0, rgba('#FFFFFF', 0)); low.addColorStop(0.8, rgba(wash('#D4CFFB', 0.5), 0.55)); low.addColorStop(1, rgba(wash('#C3BDFA', 0.5), 0.7));
+    }
+    ctx.fillStyle = rim; ctx.fillRect(96, 150, 840, 740);
+    ctx.fillStyle = low; ctx.fillRect(96, 150, 840, 740);
+    // 2. the sheets: the main one under the lobe (its top edge runs from the notch under the bar to the corner), then
+    // nested domes deepening into the core between the bowl and the s; each breathes a little out of step with the next
+    const reach = (P.reach - 0.5) * 40, br = (i) => Math.sin(TAU * (t + 0.13 * i));
+    // each shape traces its top edge (the fold's ridge) first; ridge = true stops there, for the edge's light
+    const main = (c, ridge) => {
+      const y0 = 318 + 6 * br(0), yc = GC[1] + 6 * br(1);
+      c.beginPath(); c.moveTo(240, ridge ? y0 + 30 : 884); c.lineTo(240, y0 + 30); c.quadraticCurveTo(240, y0, 290, y0);
+      if (fold === 'wave') c.bezierCurveTo(420, y0 - 34, 700, y0 - 26, 960, yc + 120);
+      else if (fold === 'cloth') c.quadraticCurveTo(640, y0 - 22, 960, yc + 8);
+      else c.lineTo(960, yc + 6);
+      if (!ridge) { c.lineTo(960, 884); c.closePath(); }
+    };
+    // the arches: apex over the bowl's shoulder, the top edge falling away to the right behind the s, the left leg down
+    // the bowl's outer edge into the gap (apex x, y, where the top edge meets the s or the rim x, y)
+    const ARCH = [[548, 334, 931, 440], [556, 352, 866, 478], [566, 374, 800, 512], [580, 404, 724, 556]];
+    const dome = (c, i, ridge) => {
+      const [ax, ay0, rx0, ry0] = ARCH[i], ay = ay0 + 8 * br(i + 1), rx = Math.min(940, rx0 + (i < 3 ? reach : 0) + 9 * br(i + 2)), ry = ry0 + 6 * br(i + 2);
+      const lx = ax - 70 + 10 * i;
+      c.beginPath(); c.moveTo(lx + 20, ridge ? ay + 160 : 884); c.lineTo(lx, ay + 120);
+      if (fold === 'crystal') {
+        c.lineTo(ax - 10, ay); c.lineTo(ax + (rx - ax) * 0.55, ay + (ry - ay) * 0.18); c.lineTo(rx, ry);
+      } else {
+        c.quadraticCurveTo(lx, ay, ax, ay);
+        if (fold === 'wave') c.bezierCurveTo(ax + (rx - ax) * 0.3, ay - 34, ax + (rx - ax) * 0.62, ay + (ry - ay) * 0.75 + 30, rx, ry);
+        else c.bezierCurveTo(ax + (rx - ax) * 0.45, ay - 8, rx - (rx - ax) * 0.12, ry - (ry - ay) * 0.55, rx, ry);
+      }
+      if (!ridge) { c.quadraticCurveTo(rx + 10, 760, 690, 884); c.closePath(); }
+    };
+    const edge = (c, k) => { c.strokeStyle = white((fold === 'cloth' ? 0.3 : dark ? 0.32 : 0.55) * k); c.lineWidth = fold === 'cloth' ? 6 : 2.2; c.stroke(); };
+    const deep = 0.74 + 0.22 * P.depth;
+    const draw = (c) => {
+      // the main sheet: lilac where it comes out under the bar, blue-violet, blue, then the cyan rim
+      const g = c.createLinearGradient(330, 330, 931, 400);
+      if (mono) { g.addColorStop(0, rgba(mono, 0.04)); g.addColorStop(1, rgba(mono, 0.12)); }
+      else {
+        g.addColorStop(0, dark ? rgba(band[2], 0.22) : rgba(wash('#E3BEFC', 0.4), 0.5));
+        const w = fold === 'wave' ? 0.2 : 0;   // a wave is one big deep sheet, the core's violet under its edge
+        if (w) g.addColorStop(0.08, rgba(band[4], 0.8));
+        g.addColorStop(0.22 - w / 2, rgba(band[3], 0.62 + w)); g.addColorStop(0.45 + w / 4, rgba(band[2], 0.78 + w / 2));
+        g.addColorStop(0.68 + 0.6 * w, rgba(band[1], 0.92)); g.addColorStop(1, rgba(band[0], 0.9));
+      }
+      c.fillStyle = g; main(c); c.fill(); main(c, true); edge(c, 1);
+      // the domes, outer to inner, deepening to the core in the gap between the bowl and the s
+      for (let i = fold === 'wave' ? 3 : 0; i < 4; i++) {
+        const col = band[i + 1], d = c.createLinearGradient(600, 340, 700, 800);
+        if (mono) { d.addColorStop(0, rgba(mono, 0.05)); d.addColorStop(1, rgba(mono, 0.1 + 0.03 * i)); }
+        else { d.addColorStop(0, rgba(col, 0.55 + 0.08 * i)); d.addColorStop(0.45, rgba(col, deep)); d.addColorStop(1, rgba(col, deep * 0.6)); }
+        c.fillStyle = d; dome(c, i); c.fill();
+        if (fold === 'cloth' || (fold !== 'wave' && i < 2)) { dome(c, i, true); edge(c, fold === 'cloth' ? 0.8 - 0.15 * i : 0.8 - 0.4 * i); }
+      }
+      if (!mono) {
+        // a violet glow hugging the bowl's outer edge (three strokes: a soft edge without a blur)
+        for (const [w, a] of [[80, 0.16], [52, 0.22], [26, 0.3]]) {
+          c.strokeStyle = rgba(mix(band[3], '#C23BEA', 0.35), a * (dark ? 0.9 : 1)); c.lineWidth = w;
+          c.beginPath(); c.arc(340, 610, 296, -0.75, 1.05); c.stroke();
+        }
+        // light caught in the fold showing through the s's lower counter
+        const h = c.createRadialGradient(742, 742, 6, 742, 742, 64);
+        h.addColorStop(0, dark ? rgba('#B9A8FF', 0.3) : rgba('#F4EEFE', 0.5)); h.addColorStop(1, rgba('#F4EEFE', 0));
+        c.fillStyle = h; c.fillRect(660, 660, 170, 170);
+        // and the lilac skirt under the bowl
+        const k = c.createRadialGradient(330, 900, 40, 330, 900, 330);
+        k.addColorStop(0, dark ? rgba('#8A68FF', 0.5) : rgba(wash('#C9C2FB', 0.5), 0.95)); k.addColorStop(1, rgba(dark ? '#8A68FF' : '#D4CFFB', 0));
+        c.fillStyle = k; c.fillRect(96, 560, 600, 330);
+      }
+    };
+    if (fold === 'cloth') { const m = getT(ctx); layer(ctx, { blur: 9 * Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) }, draw); } else draw(ctx);
+    // 3. the notch under the bar: lilac-white light
+    const ng = ctx.createRadialGradient(360, 332, 0, 360, 332, 130);
+    ng.addColorStop(0, mono ? white(dark ? 0.12 : 0.5) : dark ? rgba('#C9A8FF', 0.35) : rgba('#F6E6FD', 0.55)); ng.addColorStop(1, rgba('#F8E8FD', 0));
+    ctx.fillStyle = ng; ctx.fillRect(260, 210, 300, 280);
+    // 4. the fold's lines: a sail's ridge, a crystal's kite (it turns a little about the bar's tip)
+    if (crisp) {
+      const turn = fold === 'crystal' ? 0.1 * Math.sin(TAU * t) : 0, cs = Math.cos(turn), sn = Math.sin(turn);
+      const rot = (q) => [GV[0] + (q[0] - GV[0]) * cs - (q[1] - GV[1]) * sn, GV[1] + (q[0] - GV[0]) * sn + (q[1] - GV[1]) * cs];
+      const K = rot([700, 420]), C = rot(GC), B = fold === 'crystal' ? K : [500, 306];
+      ctx.fillStyle = white(dark ? 0.06 : 0.12);
+      ctx.beginPath(); ctx.moveTo(GV[0], GV[1]); ctx.lineTo(C[0], C[1]); ctx.lineTo(B[0], B[1]); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = white(dark ? 0.45 : 0.75); ctx.lineWidth = 2.2;
+      const lines = fold === 'crystal' ? [[GV, C], [GV, K], [K, C], [K, rot([760, 620])]] : [[GV, C], [[500, 306], C]];
+      for (const [a, b] of lines) { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+    }
+    ctx.restore();
+    // 5. a rim of light along the lobe's top edge
+    ctx.strokeStyle = white(dark ? 0.3 : 0.7); ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(GV[0], GV[1]); ctx.bezierCurveTo(770, 176, 884, 262, 931, 362); ctx.stroke();
+  }
+
+  /* ------------------------------------------------------------------------------------------
    * the whole still mark
    * ---------------------------------------------------------------------------------------- */
   const markPts = new Map();
@@ -865,8 +1250,14 @@
   }
   function mark(ctx, o) {
     o = o || {};
-    const pal = o.palette && typeof o.palette === 'object' ? o.palette : palette(o.palette || 'logo', o.theme);
+    const pal = o.palette && typeof o.palette === 'object' ? o.palette : palette(o.palette || 'logo', o.theme, o.iteration);
     const k = num(o.weight, 1), n = Math.round(num(o.n, 160)), alpha = clamp01(num(o.alpha, 1));
+    if (pal.look && LOOK !== pal.look) {   // a look palette draws the look's letters and glass
+      const prev = LOOK;
+      LOOK = pal.look;
+      try { mark(ctx, Object.assign({}, o, { palette: pal })); } finally { LOOK = prev; }
+      return;
+    }
     const draw = (c) => {
       if (o.frame) stroke(c, cachedPoints('frame', 256), { width: WIDTHS.frame * k, colours: pal.frame });
       if (o.ribbon !== false) ribbon(c, num(o.t, 0), { colours: pal.ribbon, alpha: num(o.ribbonAlpha, 1) });
@@ -885,6 +1276,7 @@
     points, length, resample, morph, at, transform, bbox,
     stroke, ribbon, mark, layer,
     palette, PALETTES: Object.freeze(PALETTES.slice()),
+    paths5s: Object.freeze(Object.assign({}, PATHS5S)), ITERATIONS: freezeDeep(ITERATIONS), glass,
     ease: Object.freeze(ease), EASES: Object.freeze(EASES.slice()), easing,
     rng, mix, rgba, colourAt, fit,
     clamp, lerp, smoothstep
@@ -1020,7 +1412,8 @@
     const dpr = num(env.dpr, 1);
     const w = num(env.w, ctx.canvas.width / dpr), h = num(env.h, ctx.canvas.height / dpr);
     const theme = env.theme === 'dark' ? 'dark' : 'light';
-    const pal = palette(p.palette, theme);
+    // look and iteration pass through resolve untouched (not SHARED), so saved params replay exactly as they were
+    const pal = p.look === 'iterations' ? palette(p.palette, theme, p.iteration == null ? 1 : p.iteration) : palette(p.palette, theme);
     t = clamp01(num(t, 0));
     const seed = env.seed == null ? id : env.seed;
     const pad = num(env.pad, Math.round(Math.min(w, h) * 0.04));
@@ -1040,10 +1433,14 @@
         else if (fam.reduced === 'cut') tt = t < 0.5 ? 0 : 1;
         else { tt = 1; a = ease.inOutSine(t); }
       }
-      if (a > 0) {
-        if (a < 1) layer(ctx, { alpha: a }, (c) => fam.draw(c, tt, p, e));
-        else fam.draw(ctx, tt, p, e);
-      }
+      const prev = LOOK;
+      LOOK = pal.look || null;
+      try {
+        if (a > 0) {
+          if (a < 1) layer(ctx, { alpha: a }, (c) => fam.draw(c, tt, p, e));
+          else fam.draw(ctx, tt, p, e);
+        }
+      } finally { LOOK = prev; }
     } finally {
       ctx.restore();
     }
@@ -1052,7 +1449,7 @@
   const Motion = {
     register, get, defaults, resolve, forMoment, render,
     get families() { return ordered; },
-    MOMENTS, ORDER, SHARED, REDUCED: Object.freeze(REDUCED.slice())
+    MOMENTS, ORDER, SHARED, REDUCED: Object.freeze(REDUCED.slice()), LOOKS: Object.freeze(LOOKS.slice())
   };
   Object.freeze(Motion);
 

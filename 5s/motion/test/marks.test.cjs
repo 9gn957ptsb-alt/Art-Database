@@ -7,9 +7,12 @@
  * end points and even spacing; length(); resample(); morph(); stroke() drawing partial strokes with the
  * gradient spread along the whole stroke and even translucency; ribbon(); rng determinism; palettes in
  * both themes; easing end points; mix(); fit(); Motion.register validation; Motion.render clamping,
- * restoring the context, determinism and reduced motion. Exits 1 on any failure.
+ * restoring the context, determinism and reduced motion; the Iterations look (presets, palettes, the stroke's
+ * profile/caps/cut, the glass, render's look param). Then, with the families loaded: the 15 favorites resolve to
+ * exactly their saved params, no defaults carry a look, and no family's cache leaks between looks. Exits 1 on any failure.
  */
 'use strict';
+const fs = require('fs');
 const path = require('path');
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 
@@ -365,9 +368,104 @@ function suite() {
   check('Motion.render(): env.reduced plays the reduced version (still: the end frame)', () => {
     return eq(shot(0.1, {}, { reduced: true }).d, shot(1).d) ? true : 'reduced still is not the end frame';
   });
+  // --- the Iterations look (23 Oct 2026) ---------------------------------------------------------
+  check('look: Marks.ITERATIONS holds the twenty presets in the sheet\'s order, frozen; Motion.LOOKS; Marks.paths5s', () => {
+    const I = M.ITERATIONS;
+    if (!Array.isArray(I) || I.length !== 20 || !Object.isFrozen(I) || !Object.isFrozen(I[0].params)) return 'ITERATIONS';
+    if (I.some((x, i) => x.n !== i + 1 || x.params.iteration !== i + 1 || x.params.look !== 'iterations' || !['cloth', 'sail', 'crystal', 'wave'].includes(x.params.fold))) return 'a preset';
+    if (I[6].cell !== 'r2c2' || !/crystal/.test(I[6].label)) return 'cell 7 ' + I[6].cell + ' ' + I[6].label;
+    if (Motion.LOOKS.join() !== 'classic,iterations' || !Object.isFrozen(Motion.LOOKS)) return 'LOOKS';
+    return ['bar', 'body', 's', 'glass'].every((k) => /^M /.test(M.paths5s[k])) && /^M 3/.test(M.paths.bar) ? true : 'paths5s';
+  });
+  check('look: palette(name, theme, n) is its own palette (name~in, white ground); palette(name, theme) is untouched', () => {
+    const L = M.palette('logo', 'light'), I7 = M.palette('logo', 'light', 7);
+    if (L !== M.palette('logo', 'light') || L.bg !== '#FAF9FC' || L.look || L.name !== 'logo') return 'classic logo changed';
+    if (I7.name !== 'logo~i7' || I7.base !== 'logo' || I7.bg !== '#FEFEFE' || !I7.look || I7.look.n !== 7 || !Object.isFrozen(I7)) return 'logo~i7 ' + I7.name + ' ' + I7.bg;
+    if (M.palette('logo', 'light', 7) !== I7 || M.palette('logo', 'light', '7') !== I7) return 'not cached';
+    if (M.palette('logo', 'light', 0).look.n !== 1 || M.palette('logo', 'light', 99).look.n !== 20) return 'iteration not clamped';
+    if (M.palette('logo', 'dark', 7).bg !== '#100E18' || M.palette('paper', 'light', 7).bg !== '#7350EE') return 'dark / paper ground';
+    if (M.palette('inverse', 'light', 7).bg !== '#100E18' || M.palette('inverse', 'dark', 7).bg !== '#FEFEFE') return 'inverse ground';
+    if (!M.palette('ink', 'light', 7).look.mono || M.palette('keep', 'light', 7).body !== M.palette('keep', 'light').body) return 'ink mono / keep keeps its letters';
+    const v = M.palette('logo', 'light', 1), p = M.palette('logo', 'light', 11);   // vivid 1 vs vivid 0.04
+    const sat = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); return Math.max(...c) - Math.min(...c); };
+    return sat(M.colourAt(v.body, 0.2)) > sat(M.colourAt(p.body, 0.2)) + 40 ? true : 'pastel is not paler';
+  });
+  check('look: points() tags make no difference outside the look (a tagged and an untagged bar draw the same pixels)', () => {
+    const a = fresh(), b = fresh(), bar = M.points('bar', 100);
+    M.stroke(a.x, bar, { width: M.widths.bar, colours: M.palette('logo', 'light').bar, alpha: 0.7 });
+    M.stroke(b.x, bar.map((q) => q.slice()), { width: M.widths.bar, colours: M.palette('logo', 'light').bar, alpha: 0.7 });
+    const da = a.c.getContext('2d').getImageData(0, 0, S, S).data, db = b.c.getContext('2d').getImageData(0, 0, S, S).data;
+    return da.every((x, i) => x === db[i]) ? true : 'differ';
+  });
+  check('look: stroke() profile, caps and cut', () => {
+    const line = M.resample([[200, 500], [800, 500]], 60);
+    const f = fresh(); M.stroke(f.x, line, { width: 100, colours: ['#000', '#010101'], profile: [[0, 1], [1, 0.4]], caps: ['round', 'butt'] });
+    if (px(f.c, 250, 545)[0] > 60 || px(f.c, 750, 545)[0] < 200 || px(f.c, 750, 515)[0] > 60) return 'profile';
+    if (px(f.c, 160, 500)[0] > 60 || px(f.c, 812, 500)[0] < 200) return 'caps';
+    const g = fresh(); M.stroke(g.x, line, { width: 100, colours: '#000', cut: [[760, 450], [700, 550]] });
+    if (px(g.c, 690, 500)[0] > 60 || px(g.c, 780, 500)[0] < 200 || px(g.c, 400, 500)[0] > 60) return 'cut';
+    return true;
+  });
+  check('look: Marks.mark with a look palette draws the sheet\'s 5s and glass; glass() is deterministic and honours alpha and along', () => {
+    const f = fresh(); M.mark(f.x, { palette: M.palette('logo', 'light', 1) });
+    const tip = px(f.c, 650, 240), glass = px(f.c, 640, 650), bar = px(f.c, 470, 233);
+    if (!(tip[2] > tip[0])) return 'no blade: past the cut is not glass ' + tip;   // the classic bar's round cap covers (650, 240)
+    if (!(glass[2] > 150 && glass[2] > glass[0] + 50)) return 'no glass core ' + glass;
+    if (!(bar[0] > 240 && bar[2] < 120)) return 'bar ' + bar;
+    const g = (o) => { const c = fresh(); M.glass(c.x, 0.3, Object.assign({ iteration: 6 }, o)); return c.c.getContext('2d').getImageData(0, 0, S, S).data; };
+    const a = g(), b = g(), n = g({ alpha: 0 }), h = g({ along: 0.4 });
+    let same = true, ink = 0, none = 0, part = 0;
+    for (let i = 0; i < a.length; i += 4) { if (a[i] !== b[i]) same = false; if (a[i] < 250) ink++; if (n[i] < 255) none++; if (h[i] < 250) part++; }
+    if (!same) return 'not deterministic';
+    if (none) return 'alpha 0 drew';
+    return part > ink * 0.1 && part < ink * 0.8 ? true : 'along 0.4 drew ' + (part / ink).toFixed(2);
+  });
+  check('look: Motion.render with look: iterations draws the look; resolve passes look and iteration through', () => {
+    const r = Motion.resolve('zz-test', { look: 'iterations', iteration: 7 });
+    if (r.look !== 'iterations' || r.iteration !== 7 || 'look' in Motion.defaults('zz-test') || 'look' in Motion.SHARED) return 'resolve';
+    const c = shot(0.5, { look: 'iterations', iteration: 7 }).x.getImageData(1, 1, 1, 1).data;
+    if (c[0] !== 254 || c[1] !== 254 || c[2] !== 254) return 'ground ' + Array.from(c);
+    const k = shot(0.5, { look: 'classic' }).x.getImageData(1, 1, 1, 1).data;
+    return k[0] === 0xFA && k[1] === 0xF9 && k[2] === 0xFC ? true : 'classic ground ' + Array.from(k);
+  });
   check('Motion.MOMENTS lists the sixteen moments of the spec', () => {
     const ids = Motion.MOMENTS.map((m) => m.id).join(',');
     return ids === 'launch,load,five-start,keep,pass,undo,turn,five-done,streak,split,bring,set-pin,tab,path,seed,empty' ? true : ids;
+  });
+  return out;
+}
+
+// with the families loaded: saved params replay exactly, and the look leaves no trace in a classic frame
+function lookSuite(favorites) {
+  const out = [];
+  const check = (name, fn) => {
+    try { const r = fn(); out.push(r === true ? { name, ok: true } : { name, ok: false, detail: typeof r === 'string' ? r : JSON.stringify(r) }); }
+    catch (e) { out.push({ name, ok: false, detail: String(e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e) }); }
+  };
+  const canon = (o) => JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]]));
+  check('look: each of the 15 favorites resolves to exactly its saved params (no look key)', () => {
+    if (favorites.length !== 15) return favorites.length + ' favorites';
+    const bad = favorites.filter((f) => { const r = Motion.resolve(f.family, f.params); return canon(r) !== canon(f.params) || 'look' in r || 'iteration' in r; });
+    return bad.length ? 'changed: ' + bad.map((f) => f.family + '/' + f.params.style).join(', ') : true;
+  });
+  check('look: no family\'s defaults carry look or iteration; the shared options are as before', () => {
+    const bad = Motion.families.filter((f) => { const d = Motion.defaults(f.id); return 'look' in d || 'iteration' in d; }).map((f) => f.id);
+    if (bad.length) return 'look in defaults: ' + bad;
+    return Object.keys(Motion.SHARED).join() === 'palette,ribbon,weight,intensity,easing' ? true : 'SHARED ' + Object.keys(Motion.SHARED);
+  });
+  check('look: no cache leaks between looks (every family and style: classic, iterations 7 and 14, classic again, at t = 0.5 and 1)', () => {
+    const S = 72, c = document.createElement('canvas'); c.width = S; c.height = S;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    const frame = (id, t, p) => { x.setTransform(1, 0, 0, 1, 0, 0); Motion.render(x, id, t, p, { w: S, h: S, seed: 'leak' }); return x.getImageData(0, 0, S, S).data; };
+    const bad = [];
+    for (const f of Motion.families) for (const style of f.styles) for (const t of [0.5, 1]) {
+      frame(f.id, t, { style });   // warm up: a scratch layer's first use rasterizes slightly differently (see strip.cjs)
+      const a = frame(f.id, t, { style });
+      frame(f.id, t, { style, look: 'iterations', iteration: 7 }); frame(f.id, t, { style, look: 'iterations', iteration: 14, palette: 'keep' });
+      const b = frame(f.id, t, { style });
+      if (!a.every((v, i) => v === b[i])) bad.push(f.id + '/' + style + '@' + t);
+    }
+    return bad.length ? 'a classic frame changed after the look: ' + bad.join(', ') : true;
   });
   return out;
 }
@@ -383,6 +481,10 @@ function suite() {
     await page.setContent('<!doctype html><meta charset="utf-8"><body></body>');
     await page.addScriptTag({ path: MARKS });
     const results = await page.evaluate(suite);
+    const fams = fs.readdirSync(path.join(path.dirname(MARKS), 'families')).filter((f) => f.endsWith('.js') && f !== 'zz-test.js').sort();
+    for (const f of fams) await page.addScriptTag({ path: path.join(path.dirname(MARKS), 'families', f) });
+    const favorites = JSON.parse(fs.readFileSync(path.join(__dirname, 'favorites.json'), 'utf8')).favorites;
+    results.push(...await page.evaluate(lookSuite, favorites));
     for (const r of results) {
       if (!r.ok) failed++;
       console.log(`${r.ok ? 'ok  ' : 'FAIL'} ${r.name}${r.ok ? '' : '\n       ' + r.detail}`);
