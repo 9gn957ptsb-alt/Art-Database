@@ -404,23 +404,49 @@ chasing; a tap on one says what it is.
 
 ## The ride, and space
 
-The rocket built (by the four pieces or the ten coins), Launch puts him in it: the camera behind its nose as far as
-the rocket is tall, it climbs as it always has, and the stick moves it across at his walk within the crash site's
-clearing (14 m), until it passes the height of the figure in the sky over the wreck ("a certain threshold in the
+**The fire.** The rocket built (by the four pieces or the ten coins), Launch asks for its engine's fire to be
+struck (the artist, 21 Oct 2026: "There should be a really unique animation of when Mr. Pearl needs to start a
+fire, similar to the animation in which the NASA pictures from the artist website come to be animated ... sparks
+made of galaxies that are animated and fade out very quickly. Nonetheless shine from a bright light that builds as
+you swing more and more your finger or cursor around, and eventually, with enough movement from the finger, there
+generates enough friction in the game where a fire is started"). Every swing of a finger or the cursor over the
+view is friction: its length in screen heights adds to the heat, which cools by itself over a bar, so only a swing
+kept up gets there (φ³, 4.24). Sparks made of galaxies fly off the finger, each a little two-armed spiral of the
+deep-space photographs' own lights (the remains' stars, a CSS pixel, two where they bloom, warm gold and blue white,
+added as light adds), and are gone in a beat; a light gathers where the finger swings, as large and as bright as
+the heat is near the fire. A tap, Space or Enter strikes too (φ⁻² a time), for a hand that cannot swing. Struck,
+the flame leaves the engine in triangles and he rides it.
+
+**The ride.** The camera behind its nose as far as the rocket is tall, it climbs as it always has, and the stick
+moves it across at his walk within the crash site's clearing (14 m round the crash, 20 in a city), until it passes the height of the figure in the sky over the wreck ("a certain threshold in the
 sky"): there control goes, the camera stops and watches it go, and at twice that height and the rocket's own, space.
 
-Space (the artist, 21 Oct 2026, in the scoping note `notes/holographic-mr-pearl/specs/COINS-AND-SPACE.md`): third
-person behind him in the pilot seat, his head AIM below the centre as the hologram's camera holds it, the rocket he
-built lying along his way under him, the windshield's frame in the figure's three tones, and the sight's mark (its
+Space (the artist, 21 Oct 2026, in the scoping note `notes/holographic-mr-pearl/specs/COINS-AND-SPACE.md`): he comes to there as he did under the tree, the eyes
+opening, before the stick is his; then third person behind him in the pilot seat, the camera as far behind his head
+as the third person's is at rest, his head AIM below the centre, the rocket he built lying along his way under him,
+its two guns' red tips either side of him, the windshield's frame in the figure's three tones, and the sight's mark (its
 figure and holding circles, at the sight's size) slightly below the centre (AIM / φ², 7.4°). The stick flies the ship
 (at his turn over φ³; it flies at the hologram's speed, 22.5 m/s); a tap, the jump or Space fires both guns, whose
 shots converge on the mark's line at FAR / φ³ (99 m) and cross the far plane in a beat, one a half beat. The enemies
 are the unit's block made the sphere study's size (3 m), coming in at the ship and across it at its speed over φ, two
-at a time from FAR / φ ahead; a shot within a block's half diagonal brings one down, its six bars flying. The header
-counts them ("Space · 3 of 10 down"). The tenth down, one comes head on and fires; hit, the ship tumbles for a bar and
+at a time from FAR / φ ahead, each held in a triangle on the windshield; a shot within a block's half diagonal brings
+one down, its six bars flying. The header counts them ("Space · 3 of 10 down"). The tenth down, one comes head on
+(not to be brought down) and fires; hit, the ship tumbles for a bar and
 he comes down hard again: the place built anew, the pieces and the coins where they lay, the rocket to build again by
 either way; what he read is kept. The stars and three galaxies are drawn as the unit, triangles: the deep-space
 photographs the site shows cannot come into an Artifact.
+
+## Painted as Cézanne paints (a first pass)
+
+CLAUDE.md: "It is rendered as Cézanne paints" (the artist, 15 Oct 2026, sending two Cézanne-like paintings: a
+watercolour of overlapping translucent diamond washes, an oil of short dabs with warm lights and blue-violet shades).
+The blocks' shader (`FS`, `paint`) models form by warm and cool, not by dark and light alone: the faces the drawing
+makes white are warmed toward his light, those it makes black cooled toward blue-violet. Over every face, anchored to
+it so they move with the world and not the screen, three washes of translucent diamonds (φ⁻¹, 1 and φ² m across, one
+turned 36°), each diamond its own tint between the warm and the cool, mixing into new colours where they overlap, and
+over them short dabs; a wash fades where its diamonds would be under four pixels. His body is painted the same way;
+his head alone is left unpainted. `Rocket.debug().paint(0)` shows the drawing alone. It is quiet still: the washes
+are a tint over the drawing's tones, not yet the paintings' strokes.
 
 ## Escapes made from what the site holds
 
