@@ -277,14 +277,18 @@ is matched to. See "Matching the reference design — SUPERSEDED" in `WIX.md`.
   14 Oct**: its first run here found 52,924 saves against the 5,021 it holds — the saving run of every work by the
   artists he follows — and stopped before writing, its page would be ~105 MB against an artifact's 16; he chose on 22 Oct
   to keep the run's works off the site for now, and the buildings pass's museums intake resumed on 23 Oct on the works
-  he saved himself (`fetch_artsy_saves.py`); the reconcile waits on his word to change its branch and its routine), buildings 08:52, characters 09:47, cities 11:16, network research 13:41, kaleidoscope 16:07. **Every other day since 21 Oct
+  he saved himself (`fetch_artsy_saves.py`); on 23 Oct, at his word ("complete the other tasks"), the reconcile was made to
+  walk every page and set the run's works aside by their ids (`data/follow_saves/run_ids.json`, copied in, never committed;
+  `--allow-growth` only on his word): 57,881 saved, 52,809 the run's, 5,072 his own, the site's same set, 134 added and 83
+  removed, pushed as 05f25677; its routine, made again in his conversation, runs the fifty-minute walk itself in a scratch
+  worktree, not through a helper; its two artifacts do not open from this account), buildings 08:52, characters 09:47, cities 11:16, network research 13:41, kaleidoscope 16:07. **Every other day since 21 Oct
   2026** (artist, after six helpers in one evening spent a five-hour usage window in three and the week's in two days: "Run
   the pass every other day then"): buildings and cities on even days of the month, characters and the kaleidoscope
   on odd days ("Make the kaleidoscope routine the same as the characters routine"), each "… (every other day, here)",
   so no day carries more than two heavy passes; network research stays daily (the same day: "Make sure the routine for
   you to find relevant websites to add to the environment is daily"), "Artist Website — network research (daily, here)". A fire that lands a day after its pass last ran (a pass resumed late) is skipped.
   None does its pass in the
-  conversation: each hands it to one helper (the Agent tool: Sonnet, its own git worktree under `.claude/worktrees/`,
+  conversation but the reconcile (one command and a wait): each hands it to one helper (the Agent tool: Sonnet, its own git worktree under `.claude/worktrees/`,
   in the background) with the brief written in the routine's prompt, relays its report in a few lines and removes the
   worktree. A helper starts from the pushed branch, copies `data/` in from the main checkout and its new caches back at
   the end (`cp -au`), runs `scripts/needs.py`, runs Node with the literal `NODE_PATH=/opt/node22/lib/node_modules` (a
