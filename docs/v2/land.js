@@ -16173,6 +16173,7 @@
       var t = towns[n];
       var knot = !!(t.mark && t.mark.knot);
       if (t.museums.length && !knot) { continue; }          // a diamond is its own mark
+      if (!t.n && !t.museums.length) { continue; }          // a town only a life or a studio leads into
       var p = project(t.lat, t.lon);
       if (p.z < 0.08 || p.x < S.x0 || p.y < S.y0 || p.x > S.x1 || p.y > S.y1 || inAvoid(p.x, p.y, 7)) { continue; }
       // A tile under a name is let go while the name is there, as a dot is.

@@ -12,6 +12,8 @@ Reads only public files, all in docs/v2/:
   places.json          every place a work has been (build_artwork_histories.py)
   places/<p>.json      one place's venues and works; a site museum's venue carries its slug in m
   histories/<id>.json  each work's events, for the points of the venues
+  lives/<id>.json      a life's periods, and studios.json the studios: a town one of them leads into stays a
+                       town when no saved work or museum makes it one any more (Asheville since 23 Oct 2026)
 
 and writes docs/v2/cities.json:
 
@@ -57,7 +59,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "docs" / "v2"
 OUT = SITE / "cities.json"
 NOTE = ("Written by scripts/build_cities.py from museums.json, places.json, places/ and histories/"
-        " — public files only.")
+        " (and lives/ and studios.json, for the towns they lead into) — public files only.")
 
 NEAR_KM, NEAR_MAX = 500, 8      # "Near here": the nearest towns, within a day's drive
 STRAY_KM = 25                   # a museum no history places joins a town of its country this close
@@ -182,6 +184,23 @@ def rank(t):
     return (1 + 0.5 * len(t[6]) if t[6] else 0) + 0.5 * math.log10(1 + t[5])
 
 
+def kept(keys):
+    """The towns a life's period or a studio leads into (lives/<id>.json, studios.json) that no saved work or
+    museum makes a town now, as places.json rows with no works: they stay towns, so those doors never fall dead.
+    On 23 Oct 2026 Black Mountain College left the Museums layer with the saving run's works, and Albers's,
+    Twombly's, Rauschenberg's and Motherwell's studios there, and Donald Sultan's birth, still lead into Asheville."""
+    rows = [r for f in sorted((SITE / "lives").glob("*.json"))
+            for r in json.loads(f.read_text(encoding="utf-8")).get("periods", [])]
+    if (SITE / "studios.json").exists():
+        rows += json.loads((SITE / "studios.json").read_text(encoding="utf-8")).get("studios", [])
+    out = {}
+    for r in rows:
+        k = r.get("key")
+        if k and k not in keys and k not in out and r.get("ll") and r.get("place"):
+            out[k] = [k, r["place"], k.rsplit("-", 1)[1].upper(), r["ll"][0], r["ll"][1], 0]
+    return [out[k] for k in sorted(out)]
+
+
 def main():
     if not (SITE / "places.json").exists():
         print("No docs/v2/places.json yet: run scripts/build_artwork_histories.py first.")
@@ -195,7 +214,8 @@ def main():
     for s, key in homes.items():
         inside.setdefault(key, []).append(s)
     towns = []
-    for p in [list(p) for p in places] + made:
+    rows = [list(p) for p in places] + made
+    for p in rows + kept({p[0] for p in rows}):
         key = p[0]
         ms = sorted(inside.get(key, []), key=lambda s: (-by_slug[s]["held"], by_slug[s]["name"]))
         d = files.get(key)

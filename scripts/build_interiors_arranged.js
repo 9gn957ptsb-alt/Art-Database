@@ -45,7 +45,7 @@
      node scripts/build_interiors_arranged.js --dry           say what it would write
      node scripts/build_interiors_arranged.js --to DIR        write into DIR instead
 
-   Public files only (museums.json, models/, interiors/, histories/, places/, cities.json); never
+   Public files only (museums.json, finding.json, models/, interiors/, histories/, places/, cities.json); never
    data/. A museum whose rooms a source gives (documented or reconstructed), or that the
    museums' own data draws (the National Gallery of Art, the Met, the Art Institute), or whose
    rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan), is never
@@ -125,6 +125,16 @@ function readJSON(p, dflt) {
   try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch (e) { return dflt; }
 }
 function r2(v) { return Math.round(v * 100) / 100; }
+// The saved works the site knows (museums.json's and finding.json's): a work hung that is no longer among
+// them (unsaved on Artsy, or one of the saving run's, which the site leaves out) comes down.
+let SAVED = null;
+function savedWorks() {
+  if (!SAVED) {
+    SAVED = new Set(((readJSON(path.join(V2, "finding.json"), {}) || {}).w || []).map(r => r[0]));
+    ((readJSON(path.join(V2, "museums.json"), {}) || {}).museums || []).forEach(m => (m.works || []).forEach(w => SAVED.add(w.id)));
+  }
+  return SAVED;
+}
 
 // The page's own code, in a context of its own (as scripts/check_interior.js has it).
 function pageCode() {
@@ -694,6 +704,8 @@ function arrange(W, m, opts) {
   const doc = readJSON(file, null);
   const model = readJSON(path.join(V2, "models", slug + ".json"), null);
   if (!doc || !model) { return { slug, skip: "no interior file or no model" }; }
+  // A work no longer saved comes down; a work shown here ("Also here") is found again each run.
+  doc.works = (doc.works || []).filter(w => w.also || savedWorks().has(w.id));
   // Rooms OpenStreetMap's indoor mapping draws (build_interiors.py --osm took its plan): never laid
   // out again; only the works no record places are hung in its galleries, by the same rule — beside
   // the museum's own, where its records place some in its rooms.
