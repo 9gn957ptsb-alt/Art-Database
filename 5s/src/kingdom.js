@@ -272,6 +272,7 @@
     stage.addEventListener('pointermove', (e) => {
       const prev = ptrs.get(e.pointerId);
       if (!prev) return;
+      if (e.pointerType === 'mouse' && !e.buttons) { up(e); return; }   // released somewhere no pointerup reached us
       const p = local(e);
       ptrs.set(e.pointerId, p);
       if (ptrs.size >= 2 && pinch) {
@@ -303,8 +304,9 @@
         map.classList.remove('is-drag');
       }
     }
-    stage.addEventListener('pointerup', up);
-    stage.addEventListener('pointercancel', up);
+    // on the window: a press released outside the stage (over the top bar) still ends; up() ignores a pointer it does not hold
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', up, true);
     stage.addEventListener('click', (e) => { if (eatClick) { e.preventDefault(); e.stopPropagation(); } }, true);
     map.addEventListener('wheel', (e) => {
       e.preventDefault();
@@ -369,6 +371,8 @@
         clearTimeout(settleT);
         if (raf) cancelAnimationFrame(raf);
         if (ro) ro.disconnect();
+        window.removeEventListener('pointerup', up, true);
+        window.removeEventListener('pointercancel', up, true);
         box.remove();
       },
     };

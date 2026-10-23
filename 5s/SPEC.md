@@ -1807,6 +1807,11 @@ The app (`app.js`, the integration team):
   home island ("Your ground", the ribbon from it) and took it down only once it came to draw it; with 20
   or more levels won it stayed, and Tab reached it. The app now passes `drawHome` only once something is
   judged. `ui.smoke.cjs` tests these four.
+- **Nothing of a landing move is lost** (the lead, after the verify): Map mid-cascade also records that
+  move's pairings, and a level closed while a winning move still lands (the app's `stopPlay`, as Example
+  mode switching does) keeps the win, as Map does. A mouse press released outside the kingdom's stage
+  (over the top bar) now ends there, so it no longer drags on hover or stops Tab panning to what it
+  focuses. `play.smoke.cjs` and `kingdom.smoke.cjs` test both.
 
 ### Decisions, obstacles and their resolutions
 - *Royal Kingdom has no clock inside a level* (its levels count moves; its races are events around

@@ -1174,6 +1174,7 @@
     $('.fp-back').addEventListener('click', () => {
       if (started && !ended) { // mid-cascade, the move as it lands: a win made by it is recorded with its finale
         ended = true; clockSync();
+        if (landing) report(game, landing);   // the landing move's pairings count, as when it settles
         const g = landing || game;
         if (o.onEnd) o.onEnd(resultNow(g.state === 'won' ? MX.finale(g).game : g));
       }
@@ -1402,6 +1403,11 @@
       pause() { appPaused = true; halt(); },
       resume() { appPaused = false; go(); },
       destroy() {
+        // closed while a winning move still lands (the app's stopPlay: Example mode switched): the win is kept, as by Back
+        if (started && !ended && landing && landing.state === 'won') {
+          ended = true; clockSync(); report(game, landing);
+          if (o.onEnd) o.onEnd(resultNow(MX.finale(landing).game));
+        }
         loop.stop(); snd.close(); clearHint(); ro.disconnect(); clearTimeout(clk.t);
         document.removeEventListener('visibilitychange', onVis);
         if (mq && mq.removeEventListener) mq.removeEventListener('change', onMq);

@@ -624,22 +624,24 @@ test('the clock runs out: Time, play on; the win is not in time, keeps no time a
 // The level's Map left before the win's sheet: the win is recorded from the engine as the move lands, with its
 // finale's score, stars, time and building (SPEC "A win builds at once"); a last move that runs out stays a loss.
 test('Map while the winning tiles fall or during the finale keeps the win; a last move that runs out stays a loss', async () => {
-  const L = find(10, 'hint', (pl) => pl.length > 1 && pl.length <= 6 && pl[pl.length - 1].r.game.state === 'won');   // a fifth level: an area
+  const L = find(10, 'hint', (pl) => pl.length > 1 && pl.length <= 6 && pl[pl.length - 1].r.game.state === 'won'   // a fifth level: an area
+    && pl[pl.length - 1].r.game.groups.length > pl[pl.length - 2].r.game.groups.length);   // whose winning move puts things together too
   const res = M.result(M.finale(L.pl[L.pl.length - 1].r.game).game);
   const ways = M.buildChoices(taste, deck, res, undefined);
   const saga0 = { stars: Array(9).fill(2), best: Array(9).fill(6000), boost: { pass: 1, turn: 1, more: 1 }, plays: L.p, day: null, time: [], built: [] };
-  // Map tapped: mid-cascade (the board not yet settled on the last move) or once the finale's "All set." shows
+  // Map tapped: mid-cascade (the board not yet settled on the last move) or once the finale's "All set." shows;
+  // or the level closed mid-cascade without Back (the app's stopPlay, as Example mode switching does)
   async function lastMoveThenMap(page, pl, when) {
     for (const mv of pl.slice(0, -1)) { await swapBy('shift', page, null, mv.a, mv.b, mv.r.game.cols); await settled(page, mv.r.game); }
     const last = pl[pl.length - 1];
     await swapBy('shift', page, null, last.a, last.b, last.r.game.cols);
     if (when === 'finale') await page.waitForFunction(() => [...document.querySelectorAll('.fp-word')].some((e) => e.textContent === 'All set.'), null, { timeout: 20000 });
-    const shown = await page.evaluate(() => { const m = document.querySelector('.fp-moves b').textContent; document.querySelector('.fp-back').click(); return m; });
-    if (when === 'cascade') assert.equal(shown, String(pl[pl.length - 2].r.game.moves), 'tapped while the tiles still fell');
-    await page.waitForSelector('.fp-mapview');
+    const shown = await page.evaluate((closed) => { const m = document.querySelector('.fp-moves b').textContent; if (closed) location.hash = 'board'; else document.querySelector('.fp-back').click(); return m; }, when === 'closed');
+    if (when !== 'finale') assert.equal(shown, String(pl[pl.length - 2].r.game.moves), 'tapped while the tiles still fell');
+    await page.waitForSelector(when === 'closed' ? '#h-play' : '.fp-mapview');
     await sleep(800);   // nothing more is recorded once the level has gone
   }
-  for (const when of ['cascade', 'finale']) {
+  for (const when of ['cascade', 'finale', 'closed']) {
     const { ctx, page, errors } = await open({ touch: true }, 'stars=' + saga0.stars + '&plays=' + L.p, '#level=10');
     await page.waitForSelector('dialog[open]');
     await play(page);
@@ -650,7 +652,9 @@ test('Map while the winning tiles fall or during the finale keeps the win; a las
     assert.ok(ends[0].secs >= 1 && ends[0].secs <= ends[0].clock, when + ': in time ' + ends[0].secs);
     const rec = M.recordLevel(saga0, Object.assign({}, res, { secs: ends[0].secs, clock: ends[0].clock }));
     assert.deepEqual(await page.evaluate(() => window.harness.state.saga), M.build(rec.saga, 10, ways[0] ?? null), when + ': stars, best, time, boosters and the building saved');
-    assert.equal(await page.locator('.fp-mapview .fp-node.is-next button').getAttribute('data-n'), '11', when + ': the area built, level 11 next');
+    assert.equal((await calls(page, 'associate')).length, L.pl[L.pl.length - 1].r.game.groups.length, when + ': every pairing the moves made, the last one too');
+    if (when === 'closed') assert.equal(await page.textContent('#h-play'), 'Play level 11', when + ': level 11 next');
+    else assert.equal(await page.locator('.fp-mapview .fp-node.is-next button').getAttribute('data-n'), '11', when + ': the area built, level 11 next');
     assert.deepEqual(errors, []);
     await ctx.close();
   }

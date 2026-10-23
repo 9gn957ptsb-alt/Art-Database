@@ -371,6 +371,26 @@ test('a mouse click on Your ground or a node in the foot\'s band or cut by the m
   }
 });
 
+test('a mouse press released outside the map leaves nothing behind: Tab still pans to what it focuses, and a plain hover does not drag', async () => {
+  const { ctx, page, errors } = await open({ w: 1280, h: 800, reduce: true }, 'won=8');
+  const m = await box(page, '.fk-map'), top = await box(page, '.fp-top');
+  // press 30 px below the map's top, leave the stage in one move (no 8 px move inside it), release over the top bar
+  await page.mouse.move(m.x + m.width / 2, m.y + 30); await page.mouse.down();
+  await page.mouse.move(m.x + m.width / 2, top.y + top.height / 2); await page.mouse.up();
+  const t0 = await page.evaluate(() => getComputedStyle(document.querySelector('.fk-table')).transform);
+  await page.mouse.move(m.x + m.width / 2 - 200, m.y + m.height / 2, { steps: 10 });
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.fk-table')).transform), t0, 'a hover with no button pressed does not drag');
+  await page.locator('.fk-map').focus();
+  await page.keyboard.press('Home'); await sleep(60);
+  for (let k = 0; k < 2; k++) {
+    await page.keyboard.press('Tab'); await sleep(60);
+    const r = await page.evaluate(() => { const b = document.activeElement.getBoundingClientRect(); return { y0: b.top, y1: b.bottom, x0: b.left, x1: b.right, what: document.activeElement.className || document.activeElement.dataset.n }; });
+    assert.ok(r.y0 >= m.y && r.y1 <= m.y + m.height && r.x0 >= m.x && r.x1 <= m.x + m.width, 'Tab ' + (k + 1) + ' (' + r.what + ') is in view: ' + JSON.stringify(r));
+  }
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 test('touch on the foot: a pinch with a finger on Play or Zoom zooms, a drag from Play pans, a tap still works; three fingers, one lifts: no jump', async () => {
   const { ctx, page, cdp, errors } = await open({ touch: true, reduce: true });
   const T = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
