@@ -23,6 +23,11 @@ def same(a, b):
     # the same view: under 0.5% of pixels changed (a hovered button or the faded hint may differ)
     d = ImageChops.difference(Image.open(a).convert('L'), Image.open(b).convert('L')).point(lambda v: 255 if v > 30 else 0)
     return d.histogram()[255] < 0.005 * d.size[0] * d.size[1]
+def skin(path):
+    # share of the stage (top bar and dock left out) in the hand's clay colour; the camera may move, the colour does not
+    import numpy as np
+    a = np.asarray(Image.open(path).convert('RGB'), dtype=int)[60:-150]
+    return float(((a[..., 0] - a[..., 2] > 12) & (a[..., 1] - a[..., 2] > 5) & (a[..., 0] > 120)).mean())
 def setv(pg, id_, v): pg.evaluate(f"s=document.getElementById('{id_}'); s.value={v}; s.dispatchEvent(new Event('input'))")
 mode = sys.argv[1]
 with sync_playwright() as p:
@@ -47,6 +52,11 @@ with sync_playwright() as p:
         setv(d, "clench", 0); d.wait_for_timeout(800); d.screenshot(path="v_hand_open.png"); print("fingers open:", diff("v_hand.png", "v_hand_open.png"), d.inner_text("#clenchOut"))
         setv(d, "clench", 100); setv(d, "ring", 8); d.wait_for_timeout(800); d.screenshot(path="v_hand_ring8.png"); print("ring finger follows:", diff("v_hand.png", "v_hand_ring8.png"))
         setv(d, "ring", 0); setv(d, "slide", 20); d.wait_for_timeout(300); print("arm kept clear of the phone with the hand:", d.inner_text("#slideOut"))
+        print("hand drawn:", round(skin("v_hand.png"), 3) > 0.03)
+        setv(d, "fold", 45); d.wait_for_timeout(800); d.screenshot(path="v_hand_fold.png"); print("hand lets go away from the hold:", skin("v_hand_fold.png") < 0.002)
+        setv(d, "fold", 90); d.click("#inside"); d.wait_for_timeout(1500); d.screenshot(path="v_hand_inside.png"); print("hand hidden in the inside view:", skin("v_hand_inside.png") < 0.002)
+        d.uncheck("#hand"); setv(d, "fold", -180); d.check("#hand"); d.wait_for_timeout(6000); d.screenshot(path="v_hand_back.png")
+        print("checking Hand turns the grip back to the hold and closes the inside view:", d.input_value("#fold") == "90", d.get_attribute("#inside", "aria-pressed") == "false", skin("v_hand_back.png") > 0.03)
         setv(d, "slide", 45); d.uncheck("#hand"); d.wait_for_timeout(6000); d.screenshot(path="v_hand_off.png"); print("hand hides:", same("v_reset.png", "v_hand_off.png"), "| fingers slider hidden:", not d.is_visible("#clench"))
         ctx = b.new_context(viewport={"width": 400, "height": 860}, has_touch=True, is_mobile=True, color_scheme="dark"); m = ctx.new_page()
         m.on("pageerror", lambda e: errs.append(str(e))); m.route("**/three.min.js", serve)

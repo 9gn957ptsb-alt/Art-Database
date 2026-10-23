@@ -70,9 +70,9 @@ body {
   padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
 }
-.dock.hand-on { grid-template-columns: repeat(4, minmax(0, 1fr)) auto auto; width: min(100%, 940px); }
-@media (max-width: 640px) {
-  .dock, .dock.hand-on { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; }
+#clenchCtl { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  .dock { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; }
 }
 .ctl { display: grid; gap: 4px; min-width: 0; }
 .ctl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -91,6 +91,7 @@ input[type="range"] { width: 100%; margin: 4px 0 0; accent-color: var(--accent);
 .chk { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; white-space: nowrap; }
 .chk input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .hint, .tgl i, .tgl i::after { transition: none; } }
 </style>
 
@@ -107,6 +108,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     <div class="bottom">
       <span class="hint" id="hint">Drag to orbit · pinch or scroll to zoom · two fingers to move</span>
       <div class="dock" role="group" aria-label="Product controls">
+        <div class="ctl" id="clenchCtl" hidden>
+          <div class="ctl-top"><label for="clench">Fingers</label><output id="clenchOut" for="clench">closed</output></div>
+          <input id="clench" type="range" min="0" max="100" step="1" value="100">
+        </div>
         <div class="ctl">
           <div class="ctl-top"><label for="slide">Slide arm</label><output id="slideOut" for="slide">45 mm</output></div>
           <input id="slide" type="range" min="0" max="50" step="1" value="45">
@@ -118,10 +123,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         <div class="ctl">
           <div class="ctl-top"><label for="ring">Ring slide</label><output id="ringOut" for="ring">0 mm</output></div>
           <input id="ring" type="range" min="0" max="8" step="2" value="0">
-        </div>
-        <div class="ctl" id="clenchCtl" hidden>
-          <div class="ctl-top"><label for="clench">Fingers</label><output id="clenchOut" for="clench">closed</output></div>
-          <input id="clench" type="range" min="0" max="100" step="1" value="100">
         </div>
         <button class="tgl" id="inside" type="button" aria-pressed="false">Show inside <i></i></button>
         <label class="chk" id="handBox" hidden><input type="checkbox" id="hand"> Hand</label>
@@ -159,20 +160,24 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
                       m[2], m[6], m[10], -(m[2] * m[3] + m[6] * m[7] + m[10] * m[11]), 0, 0, 0, 1];
     const B = HAND.bones, REST = B.map(b => b.rest), IBM = REST.map(inv);
     const LOC = B.map((b, i) => b.parent < 0 ? REST[i] : mul(inv(REST[b.parent]), REST[i]));
-    const ANG = B.map(b => [HAND.open[b.name], HAND.fist[b.name], HAND.slide[b.name]]);
+    const ANG = B.map(b => [HAND.open[b.name], HAND.fist[b.name], HAND.slideOpen[b.name], HAND.slideFist[b.name]]);
     // a joint rolls about its bone, swings sideways, then curls toward the palm (degrees), as joint() in hand_fit.py
     function joint(f, a, r) {
       const R = Math.PI / 180, cf = Math.cos(-f * R), sf = Math.sin(-f * R), ca = Math.cos(a * R), sa = Math.sin(a * R), cr = Math.cos(r * R), sr = Math.sin(r * R);
       return mul(mul([1, 0, 0, 0, 0, cf, -sf, 0, 0, sf, cf, 0, 0, 0, 0, 1], [ca, 0, sa, 0, 0, 1, 0, 0, -sa, 0, ca, 0, 0, 0, 0, 1]), [cr, -sr, 0, 0, sr, cr, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     }
     const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
-    // c: 0 open … 1 closed around the grip; slide: the ring finger's ring, 0–8 mm
+    // c: 0 open … 1 closed around the grip; slide: the ring finger's ring, 0–8 mm (the tables hold each 2 mm click)
     function pose(c, slide) {
-      const W = [], S = [], k = slide / 8;
+      const W = [], S = [], t = Math.max(0, Math.min(4, slide / 2)), n0 = Math.min(3, Math.floor(t)), fr = t - n0;
+      const at = (tab, j) => tab[n0][j] + (tab[n0 + 1][j] - tab[n0][j]) * fr;
       for (let i = 0; i < B.length; i++) {
         let m = B[i].parent < 0 ? mul(HAND.root, REST[i]) : mul(W[B[i].parent], LOC[i]);
-        const [o, f, s] = ANG[i];
-        if (o) m = mul(m, joint(o[0] + (f[0] - o[0]) * c + (s ? s[0] * k : 0), o[1] + (f[1] - o[1]) * c + (s ? s[1] * k : 0), o[2] + (f[2] - o[2]) * c));
+        const [o, f, so, sf] = ANG[i];
+        if (o) {
+          const d = so ? [0, 1].map(j => at(so, j) + (at(sf, j) - at(so, j)) * c) : [0, 0];
+          m = mul(m, joint(o[0] + (f[0] - o[0]) * c + d[0], o[1] + (f[1] - o[1]) * c + d[1], o[2] + (f[2] - o[2]) * c));
+        }
         W.push(m); S.push(mul(m, IBM[i]));
       }
       for (let v = 0, o3 = 0, o4 = 0; v < n; v++, o3 += 3, o4 += 4) {
@@ -198,8 +203,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   const LIFT = { rotor: 0, stator: 10, battery: 20, board: 30, shell: 44, stage1: 44, stage2: 44, knuckle: 44, ringT: 44, ringB: 44, hand: 44 };
   const RING_OUT = 16;   // inside view: the rings lift out of the track by this much
   const state = { E: 45, grip: 90, ring: 0, inside: 0, insideTarget: 0, hand: false, clench: 1 };
-  // the hand holds the grip, so it moves with it; it is hidden while the inside view pulls the rings out
-  const handShown = () => !!hand && state.hand && state.inside === 0;
+  // the hand holds the grip at the hold angle; turned anywhere else it lets go, and the inside view pulls the rings out of it
+  const handShown = () => !!hand && state.hand && state.inside === 0 && state.grip === POSE_GRIP;
   // 3×4 row-major transform per group
   function knuckleMatrix(dz) {
     const d = (state.grip - POSE_GRIP) * Math.PI / 180, c = Math.cos(d), s = Math.sin(d);
@@ -248,7 +253,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) corners.push([x, y, z]);
     return { c, corners, lo, hi, r: Math.hypot(hi[0] - c[0], hi[1] - c[1], hi[2] - c[2]) };
   }
-  const B0 = bounds(false), B1 = hand ? bounds(true) : B0;
+  const B0 = bounds(false), B1 = hand ? (() => {
+    let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const [c, sl] of [[0, 0], [1, 0], [0, 8], [1, 8]]) {
+      hand.pose(c, sl); const b = bounds(true);
+      for (let i = 0; i < 3; i++) { lo[i] = Math.min(lo[i], b.lo[i]); hi[i] = Math.max(hi[i], b.hi[i]); }
+    }
+    hand.pose(1, 0);
+    const c = [0, 1, 2].map(i => (lo[i] + hi[i]) / 2), corners = [];
+    for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) corners.push([x, y, z]);
+    return { c, corners, lo, hi, r: Math.hypot(hi[0] - c[0], hi[1] - c[1], hi[2] - c[2]) };
+  })() : B0;
   const frame = () => state.hand ? B1 : B0;          // what the home view fits: the product, or the product and the hand
   // screen layout: the product is framed in the space between the top bar and the dock
   const layout = { w: 1, h: 1, cx: 0.5, cy: 0.5, f: 1 };
@@ -349,7 +364,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   function gripLabel(a) { return a === 90 ? "90° hold" : a === 0 ? "0° flat" : a === -180 ? "stowed" : (a < 0 ? "−" + -a : a) + "°"; }
   // turned toward the phone, the grip needs the arm out far enough to clear the phone's edge; a hand in it needs more
-  const eMin = a => a <= 30 ? 0 : Math.ceil((state.hand ? HAND.minE : 20) * (a - 30) / 60);
+  const eMin = a => a <= 30 ? 0 : state.hand && a === POSE_GRIP ? HAND.minE : Math.ceil(20 * (a - 30) / 60);
   function setE(v) { state.E = Math.max(v, eMin(state.grip)); $("slide").value = state.E; $("slideOut").textContent = state.E + " mm"; }
   $("slide").addEventListener("input", e => { setE(+e.target.value); applyPose(); invalidate(); });
   $("fold").addEventListener("input", e => {
@@ -359,13 +374,22 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
   $("ring").addEventListener("input", e => { state.ring = +e.target.value; $("ringOut").textContent = state.ring + " mm"; poseHand(); applyPose(); invalidate(); });
   let handDirty = false;
-  function poseHand() { if (hand && state.hand) { hand.pose(state.clench, state.ring); handDirty = true; } }
   const DESC = $("stage").getAttribute("aria-label");
+  function poseHand() {
+    if (!hand) return;
+    if (state.hand) { hand.pose(state.clench, state.ring); handDirty = true; }
+    const grip = state.clench === 1 ? "fingers closed around its lower half" : state.clench === 0 ? "fingers open" : "fingers partly closed";
+    $("stage").setAttribute("aria-label", state.hand ? DESC.replace(" Drag to orbit", ` A left hand holds it: index and ring fingers through the rings, middle finger in the gap over the hinge, the palm's little-finger edge on the grip, ${grip}, the fin between the ring and little fingers, the little finger straight along the grip. Drag to orbit`) : DESC);
+  }
   if (hand) {
     $("handBox").hidden = false;
     $("hand").addEventListener("change", e => {
-      state.hand = e.target.checked; $("clenchCtl").hidden = !state.hand; document.querySelector(".dock").classList.toggle("hand-on", state.hand);
-      $("stage").setAttribute("aria-label", state.hand ? DESC.replace(" Drag to orbit", " A left hand holds it: index and ring fingers through the rings, middle finger in the gap over the hinge, palm against the grip, fingers closed around its lower half, the fin between the ring and little fingers. Drag to orbit") : DESC);
+      state.hand = e.target.checked; $("clenchCtl").hidden = !state.hand;
+      if (state.hand) {
+        // a hand can only hold the grip turned to the hold, with the rings in the track
+        state.grip = POSE_GRIP; $("fold").value = POSE_GRIP; $("foldOut").textContent = gripLabel(POSE_GRIP);
+        state.insideTarget = 0; $("inside").setAttribute("aria-pressed", "false"); if (reduce) state.inside = 0;
+      }
       if (state.E < eMin(state.grip)) setE(state.E);
       poseHand(); applyPose();
       const before = fitDist; measure(); view.dist *= fitDist / before;
