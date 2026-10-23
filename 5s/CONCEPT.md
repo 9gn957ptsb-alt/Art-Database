@@ -105,6 +105,19 @@ With the full painting (van Gogh's pine trees in the garden of Saint-Paul Hospit
   game, people should be swiping because they see similarities across compositions like the one I just
   shared with you"
 
+Asked what a pairing should cost when the two things do not rhyme, 23 Oct 2026 (with the plan for Set
+in front of them: six whole pictures, one carried onto another; the shape game retired, five seconds
+a move):
+
+- "So what if it doesn’t rhyme, someone saw a relationship between those two things and it is worth
+  learning about. Moments like that are going to be far more useful to us than people aligning what is
+  expected of them. What we have to figure out isn’t how to take these structures and implement them
+  into a certain game structure. It’s more so about understanding the different objects and things we
+  are bringing to the table and showing them to compare and contrast and establish relationships
+  between and using those objects and those relationships to develop a new game. So I want you to
+  think inversely going forward regarding this game then how you were currently thinking about it. We
+  are looking for inside out processes of informing rather than outside in processes of informing."
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
