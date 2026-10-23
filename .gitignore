@@ -8,3 +8,5 @@ preview_*.png
 
 # The saving run's ids (private): the reconcile reads them, never commits them.
 data/follow_saves/
+data/*/
+run_ids.json

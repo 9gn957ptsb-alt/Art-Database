@@ -77,6 +77,12 @@ MAX_PAGES = 1000
 # being told to. Unsaving is legitimate; a truncated API response is not, and the
 # two look identical from here.
 SHRINK_LIMIT = 0.10
+# And to add more than this fraction without being told to: the saving run's works
+# are set aside only by their ids, so a stale or wrong id file would let fifty
+# thousand of them in, and nothing after the write could tell.
+GROWTH_LIMIT = 0.10
+# A walk of ~580 pages meets a dropped connection or a 5xx now and then.
+RETRIES = 4
 
 
 def request_page(session, user_id, page, size):
@@ -84,10 +90,23 @@ def request_page(session, user_id, page, size):
         "size": size, "page": page, "user_id": user_id,
         "private": "true", "sort": "-created_at",
     }
-    try:
-        response = session.get(f"{BASE}/{PATH}", params=params, timeout=60)
-    except requests.exceptions.ProxyError as exc:
-        sys.exit(f"Egress proxy refused api.artsy.net. Detail: {exc}")
+    for attempt in range(RETRIES):
+        wait = 2 ** (attempt + 1)
+        try:
+            response = session.get(f"{BASE}/{PATH}", params=params, timeout=60)
+        except requests.exceptions.ProxyError as exc:
+            sys.exit(f"Egress proxy refused api.artsy.net. Detail: {exc}")
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+            if attempt == RETRIES - 1:
+                sys.exit(f"Page {page}: {exc}")
+            print(f"  page {page}: {type(exc).__name__}, again in {wait}s", flush=True)
+            time.sleep(wait)
+            continue
+        if (response.status_code == 429 or response.status_code >= 500) and attempt < RETRIES - 1:
+            print(f"  page {page}: HTTP {response.status_code}, again in {wait}s", flush=True)
+            time.sleep(wait)
+            continue
+        break
     if response.status_code in (401, 403):
         sys.exit(
             f"Artsy returned {response.status_code}. The proxy attached no valid "
@@ -121,7 +140,7 @@ def walk_collection(session, user_id):
         seen.update(r.get("id") for r in fresh)
         records.extend(fresh)
         if page % 10 == 0 or page == 1:
-            print(f"  page {page}: {len(records)} records")
+            print(f"  page {page}: {len(records)} records", flush=True)
         page += 1
         time.sleep(DELAY_SECONDS)
     sys.exit(f"Walked {MAX_PAGES} pages without reaching the end. Refusing to guess.")
@@ -161,7 +180,10 @@ def load_run_ids(path):
             f"Copy it in from the site's data/ (data/follow_saves/run_ids.json there, or "
             f"follow_saves/run_ids.json in the private repository art-database-data)."
         )
-    return set(json.loads(path.read_text()))
+    ids = json.loads(path.read_text())
+    if not isinstance(ids, list) or not ids or not all(isinstance(i, str) and len(i) == 24 for i in ids):
+        sys.exit(f"{path} is not a list of Artsy _ids; refusing to guess which works to set aside.")
+    return set(ids)
 
 
 def verify(remote_ids=None, run_ids=None):
@@ -172,8 +194,9 @@ def verify(remote_ids=None, run_ids=None):
     raw_ids = {r.get("id") for r in raw}
     if len(raw_ids) != len(raw):
         problems.append(f"raw dump holds {len(raw)} records but only {len(raw_ids)} distinct ids")
-    if run_ids and raw_ids & run_ids:
-        problems.append(f"{len(raw_ids & run_ids)} of the saving run's works are in the raw dump")
+    leaked = {r.get("_id") for r in raw} & (run_ids or set())
+    if leaked:
+        problems.append(f"{len(leaked)} of the saving run's works are in the raw dump")
 
     if remote_ids is not None:
         missing = remote_ids - raw_ids
@@ -231,12 +254,16 @@ def main():
     parser.add_argument("--allow-shrink", action="store_true",
                         help=f"permit removing more than {SHRINK_LIMIT:.0%} of the collection")
     parser.add_argument("--user-id", default=DEFAULT_USER_ID)
+    parser.add_argument("--allow-growth", action="store_true",
+                        help=f"permit adding more than {GROWTH_LIMIT:.0%} of the collection")
     parser.add_argument("--run-ids", type=Path, default=RUN_IDS_PATH,
                         help="the saving run's ids, set aside after the walk")
     args = parser.parse_args()
 
     if args.verify:
         run_ids = load_run_ids(args.run_ids) if args.run_ids.exists() else None
+        if run_ids is None:
+            print(f"{args.run_ids} not found: not checking for the saving run's works.")
         return report(verify(run_ids=run_ids), "Level: raw dump, database and objects page agree.")
     run_ids = load_run_ids(args.run_ids)
 
@@ -251,7 +278,8 @@ def main():
         session.headers.update({"Accept": "application/vnd.artsy-v2+json"})
         walked = walk_collection(session, args.user_id)
 
-    remote = [r for r in walked if r.get("id") not in run_ids]
+    # Set aside by Artsy's _id (the run's file holds _ids; "id" is the slug).
+    remote = [r for r in walked if r.get("_id") not in run_ids]
     remote_ids = {r.get("id") for r in remote}
     print(f"Artsy holds {len(walked)} saved work(s); {len(walked) - len(remote)} of them the "
           f"saving run's, set aside; {len(remote_ids)} saved by hand.")
@@ -282,6 +310,16 @@ def main():
                 f"\nRefusing to drop {len(removed)} of {len(known)} records ({share:.0%}) in "
                 f"one run — a truncated response looks exactly like a mass un-save from here. "
                 f"Re-run and confirm with --allow-shrink if the removals are real."
+            )
+
+    if added and not args.allow_growth:
+        share = len(added) / max(len(known), 1)
+        if share > GROWTH_LIMIT:
+            sys.exit(
+                f"\nRefusing to add {len(added)} to {len(known)} records ({share:.0%}) in one "
+                f"run — the saving run's works are set aside only by their ids, and a stale or "
+                f"wrong id file looks exactly like this. Re-run with --allow-growth if he really "
+                f"saved them."
             )
 
     if args.full:

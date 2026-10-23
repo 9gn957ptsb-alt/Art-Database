@@ -574,7 +574,7 @@ python3 scripts/sync_artsy_saves.py --verify  # local consistency only, no netwo
 ```
 
 A run walks the **whole** collection — about 580 pages since the saving run, some
-ten minutes — builds the complete set of saved ids, sets the saving run's aside (below),
+fifty minutes (Artsy answers a deep page in about five seconds) — builds the complete set of saved ids, sets the saving run's aside (below),
 and diffs what is left against the raw dump in both directions. Missing saves are appended; works that are no longer saved are dropped.
 Then it rebuilds everything downstream in dependency order (database, thumbnails for
 the new works only, search page, voxels, objects page), re-derives the answer from
@@ -596,13 +596,17 @@ listing. He chose (22 Oct 2026) to keep them off for now. Their ids are in
 `data/follow_saves/run_ids.json`, which is private: it is gitignored here, copied in from
 the site's `data/` (or from the private repository `art-database-data`), and the script
 refuses to run without it, since the walk would otherwise add some fifty thousand works.
+The run's works are set aside by Artsy's `_id` (the slug `id` is what the raw dump is
+keyed on), and adding more than a tenth of the collection in one run needs
+`--allow-growth`, so a stale or wrong id file fails closed instead of letting them in.
 The walk still reads every page and only then sets them aside, so the diff stays exact
 over what is left; a work he saved by hand while the run was saving sits inside the block
 and is set aside with it.
 
-Two guards, because from here a truncated response and a mass un-save look identical:
+Two guards (three with the growth guard above), because from here a truncated response and a mass un-save look identical:
 a page that re-serves records already seen aborts the walk **without writing
-anything**, and dropping more than a tenth of the collection in one run needs
+anything** (a dropped connection, a timeout or a 5xx is tried again up to four times
+first), and dropping more than a tenth of the collection in one run needs
 `--allow-shrink`. Records already held keep their bytes and their order, so a run that
 changes nothing writes nothing and the LFS objects stay put.
 
