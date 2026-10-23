@@ -57,7 +57,9 @@
 
     // ---------------------------------------------------------- the world: islands, the path, the cloud, the nodes
     let isles = [], nodes = [], next = 1, bounds = null, homeOn = false, noHome = false;
-    const z0 = clamp(0.9 * (el.clientWidth || 390) / BOX_W, Z_MIN, 1.2);   // the opening zoom
+    // The opening zoom: an island fits the map's width and its height above the foot (a phone on its side, a short
+    // window: by width alone it opened at 1.2, the island cut off and the next level under Play).
+    const z0 = clamp(0.9 * Math.min((map.clientWidth || 390) / BOX_W, ((map.clientHeight || 760) - foot.offsetHeight - 16) / BOX_H), Z_MIN, 1.2);
     const layouts = new Map();   // k -> FiveSGround.layout: the area's shape never changes
 
     function specOf(k) {
@@ -339,8 +341,9 @@
     // ---------------------------------------------------------- open: centred on the level just played, else the next
     build();
     W = map.clientWidth || 1; H = map.clientHeight || 1;
-    z = clamp(0.9 * W / BOX_W, Z_MIN, 1.2);   // as z0, from the map's own width
-    const first = nodeOf(o.focus) || nodeOf(next);
+    z = z0;
+    // A new area found opens on its first level: on the level that found it, the new island was half off a phone's screen.
+    const first = nodeOf(o.reveal != null ? 5 * o.reveal + 1 : o.focus) || nodeOf(next);
     if (first) { tx = W / 2 - first.x * z; ty = (H - footH()) / 2 - (first.y + LIFT / 2) * z; }
     place();
     if (ro) ro.observe(map);

@@ -1785,6 +1785,8 @@
       ui.opener = opener || doc.activeElement;
       ui.openerSig = sigOf(ui.opener);
     }
+    // A panel over a level (the Path, from the top bar) holds the level, as the page hiding does: its clock and hints wait.
+    if (!wasOpen && ui.setMode === 'level' && ui.play && !ui.playPaused) { ui.play.pause(); ui.sheetPaused = true; }
     $('#sheet-title').textContent = title;
     $('#sheet-body').innerHTML = safeRender(render, title);
     dlg.classList.toggle('wide', !!(opts && opts.wide));
@@ -1869,6 +1871,7 @@
   dlg.addEventListener('close', () => {
     // The close event comes a task later; if another sheet opened in between, it is that sheet's now.
     if (dlg.open) return;
+    if (ui.sheetPaused) { ui.sheetPaused = false; if (ui.setMode === 'level' && ui.play && !ui.playPaused) ui.play.resume(); }
     const kind = ui.sheet;
     ui.sheet = null; ui.sheetRender = null; ui.noteCtx = null; ui.removeAsk = false; ui.sheetMsg = ''; ui.detailBack = null;
     $('#sheet-body').innerHTML = '';

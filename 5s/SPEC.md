@@ -1767,6 +1767,16 @@ The app (`app.js`, the integration team):
   under cloud, and level 5 in words, in time. Finally it turns the clock off on the next card, and
   everything holds after a reload.
 
+*As verified (23 Oct 2026, the hardening):*
+- **A panel over a level holds it.** The Path, from the top bar, can open over a level; the clock ran
+  on behind it (3 s open, 3 s gone). Now any of the app's panels pauses the level, as the page hiding
+  does, and closing it resumes the level unless Set was left meanwhile. `ui.smoke.cjs` tests it.
+- **A new area found opens on its first level**, not on the level that found it: on a phone the new
+  island was half off the screen. `kingdom.smoke.cjs` tests it.
+- **The opening zoom fits the island both ways**: clamp(0.9 × min(the map's width / 520, its height
+  above the foot / 380), 0.5, 1.2). At 390 × 844 and 1280 × 800 nothing changes; a phone on its side
+  (844 × 390) opened at 1.2, with the island cut off and the next level under Play, and now opens at 0.5.
+
 ### Decisions, obstacles and their resolutions
 - *Royal Kingdom has no clock inside a level* (its levels count moves; its races are events around
   the levels). Resolution: the clock is a race inside each level that the person can win, never a

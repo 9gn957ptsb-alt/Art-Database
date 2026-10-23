@@ -244,6 +244,7 @@ test('reduced motion: a move lands at once; nothing judged: no home island; a ne
   const { ctx, page, errors } = await open({ reduce: true }, 'won=10&reveal=2&focus=10');
   await drawn(page);
   const mapB = await box(page, '.fk-map');
+  assert.ok(Math.abs(mid(await box(page, '[data-n="11"]')).x - (mapB.x + mapB.width / 2)) < 3, 'a new area found opens on its first level, not on the level that found it');
   await page.locator('.fk-map').focus();
   await page.keyboard.press('ArrowRight'); await page.keyboard.press('Home'); await sleep(50);
   assert.ok(Math.abs(mid(await box(page, '[data-n="11"]')).x - (mapB.x + mapB.width / 2)) < 3, 'Home lands at once');

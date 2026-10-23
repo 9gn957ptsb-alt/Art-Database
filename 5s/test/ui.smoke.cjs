@@ -2519,6 +2519,42 @@ test('Set: the clock and the kingdom: a win in time builds on its plot, the fift
   }
 });
 
+// A panel over a level (the Path, from the top bar) holds it, as the page hiding does: the clock stands while it
+// is open and runs again once it closes (SPEC "The clock": it stops while a sheet is open).
+test('Set: the Path panel opened over a level holds the clock', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
+  const secs = async () => { const m = /(\d+):(\d\d)/.exec(await page.getAttribute('#view-set .fp-time', 'aria-label')); return +m[1] * 60 + +m[2]; };
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const ex = FiveS.exampleState(deck, Date.now());
+    const st = Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }) });
+    const lv = MATCH.level(1), m = MATCH.hint(MATCH.newGame(lv, MATCH.pieces(FiveS.migrate(st), deck, lv.suits), '5s:1:' + (st.saga.plays || 0)));
+    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+    await page.goto(BASE + '#set');
+    await page.waitForSelector('#view-set .fb-tile[data-id]');
+    await page.click('#view-set [data-act="set-play"]');
+    await page.click('dialog.fp-sheet[open] [data-play]');
+    await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
+    await page.focus('#view-set .fp-gc[data-i="' + m[0] + '"]');   // the first counted swap starts the clock
+    await page.keyboard.press('Shift+' + (m[1] === m[0] + 1 ? 'ArrowRight' : m[1] === m[0] - 1 ? 'ArrowLeft' : m[1] > m[0] ? 'ArrowDown' : 'ArrowUp'));
+    await page.waitForFunction(() => document.querySelector('#view-set .fp-moves b').textContent === '14');
+    await sleep(1500);
+    const t0 = await secs();
+    await page.tap('[data-act="path"]');
+    await page.waitForSelector('#sheet[open]');
+    await sleep(3200);
+    await page.click('#sheet .sheet-head .iconbtn');
+    await page.waitForFunction(() => !document.querySelector('#sheet[open]'));
+    const t1 = await secs();
+    assert.ok(t0 - t1 <= 1, 'the clock stood while the Path was open: ' + t0 + ' then ' + t1);
+    await sleep(2200);
+    assert.ok(t1 - (await secs()) >= 1, 'and runs again once it closes');
+    assert.deepEqual(page.errors(), []);
+  } finally {
+    await ctx.close();
+  }
+});
+
 // A level that breaks must not keep the tab bar away, the second time too (the problem note shows a message once).
 test('Set: an error inside a level brings the tab bar back, even the same error in the next level; a level card left by the address bar goes', { timeout: 60000 }, async () => {
   const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light' });
