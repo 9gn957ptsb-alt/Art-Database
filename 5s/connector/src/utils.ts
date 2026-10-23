@@ -77,7 +77,7 @@ export async function fetchUpstreamAuthToken({
 	const data = (await resp.json()) as { access_token?: string; scope?: string; error?: string };
 	if (!data.access_token) {
 		console.log("GitHub token exchange error:", data.error);
-		return [null, null, new Response("GitHub did not give 5s access. Start again from Claude.", { status: 400 })];
+		return [null, null, new Response("GitHub did not give access. Start again from Claude.", { status: 400 })];
 	}
 	const scopes = String(data.scope || "").split(/[,\s]+/).filter(Boolean);
 	return [data.access_token, scopes, null];

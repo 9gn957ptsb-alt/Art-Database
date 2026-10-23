@@ -283,6 +283,6 @@ test('bringItem, dataUrlBlob, words', async () => {
   assert.equal(C.sourceInitial('The web'), 'W');
   assert.equal(C.sourceInitial('Your file'), 'F');
   assert.equal(C.sourceInitial('Are.na'), 'A');
-  assert.match(C.askSentence(''), /my 5s: \[paste your link\]$/);
-  assert.match(C.askSentence('https://are.na/me/rooms'), /my 5s: https:\/\/are\.na\/me\/rooms$/);
+  assert.match(C.askSentence(''), /my aesthetic database: \[paste your link\]$/);
+  assert.match(C.askSentence('https://are.na/me/rooms'), /my aesthetic database: https:\/\/are\.na\/me\/rooms$/);
 });

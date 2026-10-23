@@ -28,7 +28,7 @@
   'use strict';
 
   const SERVER = '5s';
-  const CONNECT_LINE = 'Connect 5s to Claude (Settings → Connectors → Add custom connector) to open this door.';
+  const CONNECT_LINE = 'To open this door, add a connector named 5s in Claude (Settings → Connectors → Add custom connector).';
 
   // What one file may cost this device: plenty for any app's export of saves, never the whole of a
   // multi-gigabyte archive (only its list of contents and the files that hold saves are read).
@@ -550,7 +550,7 @@
       try { ds = new DecompressionStream('deflate-raw'); } catch (err) { throw new FileError('no unpack', 'This browser can’t open this kind of file. Open it on your computer first and drop what’s inside.'); }
       return readCapped(raw.stream().pipeThrough(ds), max);
     }
-    throw new FileError('method', 'Part of this file is packed in a way 5s can’t open.');
+    throw new FileError('method', 'Part of this file is packed in a way that can’t be opened here.');
   }
 
   const isZipHead = (b) => b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b && (b[2] === 3 || b[2] === 5) && (b[3] === 4 || b[3] === 6);
@@ -560,7 +560,7 @@
   /** Read an app's "download your data" file on this device: Found (see the top of this file). */
   async function readFile(file) {
     const name = (file && file.name) || 'Your file';
-    if (!file || typeof file.slice !== 'function') throw new FileError('unreadable', 'That isn’t a file 5s can read.');
+    if (!file || typeof file.slice !== 'function') throw new FileError('unreadable', 'That isn’t a readable file.');
     const head = await bytesOf(file.slice(0, 4));
     if (isZipHead(head)) {
       const entries = await unzip(file);
@@ -593,7 +593,7 @@
     }
     if (file.size > LIMITS.fileText) throw new FileError('too large', 'This file is too large to read here. If the app offers a smaller download (only your saves), use that.');
     const text = utf8(await bytesOf(file));
-    if (looksBinary(text)) throw new FileError('unreadable', 'This isn’t a file 5s can read. Drop the file the app gave you, as it is.');
+    if (looksBinary(text)) throw new FileError('unreadable', 'This isn’t a readable file. Drop the file the app gave you, as it is.');
     return harvestText(name, text);
   }
 
@@ -614,12 +614,12 @@
     not_granted: [CONNECT_LINE, true],
     capability_disabled: [CONNECT_LINE, true],
     capability_removed: [CONNECT_LINE, true],
-    not_in_manifest: ['This page isn’t allowed to use 5s in Claude. Allow it when Claude asks, then try again.', false],
-    needs_reauth: ['Reconnect 5s in Claude (Settings → Connectors), then try again.', false],
-    selection_required: ['Claude has more than one 5s. Choose one when it asks, then try again.', false],
-    blocked_by_policy: ['Your organisation doesn’t allow 5s here.', false],
-    approval_required: ['Allow 5s for this page when Claude asks, then try again.', false],
-    consent_required: ['Allow 5s for this page when Claude asks, then try again.', false],
+    not_in_manifest: ['This page isn’t allowed to use the connector in Claude. Allow it when Claude asks, then try again.', false],
+    needs_reauth: ['Reconnect in Claude (Settings → Connectors → 5s → Connect), then try again.', false],
+    selection_required: ['Claude has this app connected more than once. Choose one when it asks, then try again.', false],
+    blocked_by_policy: ['Your organisation doesn’t allow this connection.', false],
+    approval_required: ['Allow this page to connect when Claude asks, then try again.', false],
+    consent_required: ['Allow this page to connect when Claude asks, then try again.', false],
   };
 
   function structuredOf(result) {
@@ -642,16 +642,16 @@
     if (code === 'tool_error') {
       const s = structuredOf(e.result);
       if (s && s.ok === false && (s.why || s.error)) {
-        return new ConnectError('refused', s.code || s.error || 'refused', s.why || '5s couldn’t do that.', s.resolution || '', { data: s, error: s.error || null });
+        return new ConnectError('refused', s.code || s.error || 'refused', s.why || 'That couldn’t be done.', s.resolution || '', { data: s, error: s.error || null });
       }
-      return new ConnectError('failed', code, '5s in Claude didn’t answer as expected.', 'Try again in a moment.');
+      return new ConnectError('failed', code, 'The answer from Claude wasn’t as expected.', 'Try again in a moment.');
     }
     if (code === 'server_unavailable' || code === 'rate_limited' || (e && e.retryable)) {
-      return new ConnectError('busy', code, '5s in Claude didn’t answer just now.', 'Try again in a moment.', { retryAfterMs: e && e.retryAfterMs });
+      return new ConnectError('busy', code, 'No answer came from Claude just now.', 'Try again in a moment.', { retryAfterMs: e && e.retryAfterMs });
     }
     if (code === 'cancelled') return new ConnectError('busy', code, 'That was stopped before it finished.', 'Try again.');
     if (code === 'user_changed') return new ConnectError('closed', code, 'Someone else is signed in now.', 'Reload the page.');
-    return new ConnectError('failed', code, '5s in Claude didn’t answer as expected.', 'Try again in a moment.');
+    return new ConnectError('failed', code, 'The answer from Claude wasn’t as expected.', 'Try again in a moment.');
   }
 
   /** The tool's JSON from a call's result (`payload`, else structuredContent, else its text as JSON). */
@@ -659,7 +659,7 @@
     if (r && r.payload && typeof r.payload === 'object') return r.payload;
     const s = structuredOf(r);
     if (s) return s;
-    throw new ConnectError('failed', 'no payload', '5s in Claude didn’t answer as expected.', 'Try again in a moment.');
+    throw new ConnectError('failed', 'no payload', 'The answer from Claude wasn’t as expected.', 'Try again in a moment.');
   }
 
   /** The 5s connector through the artifact's mcp capability (null: this view has none). */
@@ -729,7 +729,7 @@
   /** What to say to Claude, in any chat with 5s connected. */
   function askSentence(link) {
     const l = String(link || '').trim();
-    return 'Show me the pictures at this link, then add the ones I pick to my 5s: ' + (l || '[paste your link]');
+    return 'Show me the pictures at this link, then add the ones I pick to my aesthetic database: ' + (l || '[paste your link]');
   }
 
   const FiveSConnect = Object.freeze({

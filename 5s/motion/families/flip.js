@@ -179,7 +179,7 @@
   Motion.register({
     id: 'flip',
     name: 'Flip',
-    idea: 'The mark turns over in 3-D about the 5\'s leaning axis: its back is the turn\'s violet, and the ribbon passes through the letters as they turn.',
+    idea: 'The mark turns over in 3-D about the leaning axis of the 5: its back is the turn\'s violet, and the ribbon passes through the letters as they turn.',
     why: 'A turn is where a person goes against their own pattern, the moment the app exists for. The mark does what they did: it turns over, shows its other side for an instant, and comes back itself.',
     moments: ['turn'],
     styles: ['turn', 'reveal', 'tumble'],

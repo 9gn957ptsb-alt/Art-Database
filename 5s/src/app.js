@@ -565,7 +565,7 @@
       tab.setAttribute('aria-selected', x === v ? 'true' : 'false');
       tab.tabIndex = x === v ? 0 : -1;
     }
-    doc.title = TITLES[v] + ' · 5s';
+    doc.title = TITLES[v];
     if (location.hash !== '#' + v) {
       try { history.replaceState(null, '', '#' + v); } catch (e) { try { location.hash = v; } catch (e2) { /* no hash here */ } }
     }
@@ -620,7 +620,7 @@
           '<div class="sort-head">' +
             '<h1 class="h1" id="sort-h1" tabindex="-1">Today’s five</h1>' +
             '<p class="counter" id="counter"></p>' +
-            '<button type="button" class="iconbtn info" data-act="about" aria-haspopup="dialog" aria-label="About 5s">i</button>' +
+            '<button type="button" class="iconbtn info" data-act="about" aria-haspopup="dialog" aria-label="About">i</button>' +
             '<p class="sort-sub"><span>Keep what you like. Names come after.</span><span class="streak" id="streak"></span></p>' +
           '</div>' +
           '<p class="revisit" id="revisit" hidden></p>' +
@@ -667,7 +667,7 @@
     const done = F.fiveDone(S);
     const i = five ? (done ? n : five.i + 1) : 0;
     const ringOn = S.opts.ring !== false && !reduced() && !done && S.seen.intro;
-    const label = S.opts.ring !== false && reduced() ? '<span class="fivesec" aria-hidden="true">5 s</span>' : '';
+    const label = S.opts.ring !== false && reduced() ? '<span class="fivesec" aria-hidden="true">5 sec</span>' : '';
     const key = i + '/' + n + '|' + ringOn + '|' + label + '|' + (ui.topId || '');
     const c = $('#counter');
     if (!c || key === ui.counterKey) return;
@@ -1837,7 +1837,7 @@
         bar.querySelector('button').addEventListener('click', () => { bar.hidden = true; });
         doc.body.appendChild(bar);
       }
-      bar.querySelector('p').textContent = '5s hit a problem: ' + t + ' A screenshot of this helps fix it.';
+      bar.querySelector('p').textContent = 'Something went wrong: ' + t + ' A screenshot of this helps fix it.';
       bar.hidden = false;
     } catch (e) { /* the note itself must never break the page */ }
   }
@@ -1922,10 +1922,10 @@
   // -- About
 
   function openAbout(opener) {
-    openSheet('about', 'About 5s', () => {
+    openSheet('about', 'About', () => {
       const on = S.opts.ring !== false;
       return '<div class="about" style="display:grid;gap:14px">' +
-        '<p>5s builds your own aesthetic database, which you split into parts, set into rooms, see as a whole and grow into a world.</p>' +
+        '<p>Build your own aesthetic database: split it into parts, set it into rooms, see it as a whole and grow it into a world.</p>' +
         '<p>The cards come from an artist’s database of saved works and bookmarked architecture. What you bring in is yours.</p>' +
         '<ul><li>Drag right or press Keep (→) for what you like; drag left or press Pass (←) for the rest.</li>' +
         '<li>Names come after you decide. Enter or Space looks closer; U undoes.</li>' +
@@ -2304,12 +2304,12 @@
   const PICS_PER_VISIT = 24;         // pictures fetched without asking, a visit (the connector reads 30 a minute)
   const FILE_SOURCES = ['Instagram', 'Pinterest', 'Google Takeout', 'X', 'TikTok', 'Are.na', 'Flickr', 'Tumblr', 'Your file'];
   const FILE_ACCEPT = '.json,.js,.html,.htm,.csv,.tsv,.txt,.zip,application/json,text/html,text/csv,text/plain,application/zip';
-  const CX_LINE = CX ? CX.CONNECT_LINE : 'Connect 5s to Claude (Settings → Connectors → Add custom connector) to open this door.';
+  const CX_LINE = CX ? CX.CONNECT_LINE : 'To open this door, add a connector named 5s in Claude (Settings → Connectors → Add custom connector).';
 
   // The doors that work today come first; nothing here asks anyone to add a connector to use 5s.
   const DOORS = [
     { key: 'link', icon: 'link', name: 'Paste a link',
-      does: 'A link to one thing you found, or its picture: 5s works out what it is, and you add it to your database.',
+      does: 'A link to one thing you found, or its picture: it’s identified for you, and you add it to your database.',
       works: 'Artsy, museums, shops, Pinterest, Instagram, Are.na, any web page' },
     { key: 'file', icon: 'file', name: 'Your data file',
       does: 'The “download your data” file an app gives you, read on this device. Nothing is uploaded.',
@@ -2318,10 +2318,10 @@
       does: 'Photos, screenshots and pins as pictures. Their colours are read on this device.',
       works: 'Everything' },
     { key: 'signin', icon: 'signin', name: 'Sign in to the app', needs: true,
-      does: 'Sign in once, read-only, and 5s brings in your saves.',
+      does: 'Sign in once, read-only, and your saves come in.',
       works: 'Pinterest, Are.na, Spotify (album covers), Flickr' },
     { key: 'ask', icon: 'chat', name: 'Ask Claude', needs: true,
-      does: 'In any chat with 5s connected, ask in your own words.',
+      does: 'Once Claude is connected, ask in your own words in any chat.',
       works: 'Anything Claude can reach: web pages, other connectors' },
   ];
   const DOOR_BY = {};
@@ -2383,8 +2383,8 @@
     if (!rec) return '';
     if (!rec.image) return 'A link you saved, with no picture.';
     if (rec.noPicture) return 'Its picture couldn’t be brought over.';
-    if (cx.status === 'connected') return rec.cid ? 'Its picture is on its way through 5s.' : 'Its picture comes through 5s: open Connect your apps to bring it over.';
-    return 'Its picture comes when 5s is connected in Claude.';
+    if (cx.status === 'connected') return rec.cid ? 'Its picture is on its way.' : 'Open Connect your apps to bring its picture over.';
+    return 'Its picture comes once Claude is connected.';
   }
   function waitTag(rec) {
     if (!fromApps(rec)) return '';
@@ -2452,14 +2452,14 @@
   }
   function opensLine(d) {
     if (!d.needs) return '';
-    if (cx.status === 'reauth') return 'Reconnect 5s in Claude (Settings → Connectors) to open this door.';
-    if (d.key === 'signin') return 'Coming with 5s’s own website: sign in to each app right here, with nothing to add anywhere. Until then, use your data file.';
+    if (cx.status === 'reauth') return 'Reconnect in Claude (Settings → Connectors → 5s → Connect) to open this door.';
+    if (d.key === 'signin') return 'Coming when this app has its own website: sign in to each app right here, with nothing to add anywhere. Until then, use your data file.';
     if (cx.status === 'connected') return '';
-    if (d.key === 'ask') return 'Only if you use Claude: add 5s there (Settings → Connectors → Add custom connector), then ask in any chat. Nothing else in 5s needs it.';
+    if (d.key === 'ask') return 'Only if you use Claude: add a connector named 5s there (Settings → Connectors → Add custom connector), then ask in any chat. Nothing else here needs it.';
     return '';
   }
   // What the 5s connector adds to Paste a link, said only where it is there.
-  const PASTE_MORE = 'With 5s connected, it also reads the page’s own picture and facts, and whole boards and channels.';
+  const PASTE_MORE = 'While connected, it also reads the page’s own picture and facts, and whole boards and channels.';
 
   function doorRow(d) {
     const [cls, word] = doorState(d);
@@ -2482,8 +2482,8 @@
   }
 
   function doorsHTML() {
-    let h = '<p class="lede">Bring in what you’ve already saved in other apps. Nothing to install, and 5s never asks for a password.</p>';
-    if (cx.status === 'connected') h += '<p class="cx-on">' + icon('keep') + '<span>5s is connected in Claude.</span></p>';
+    let h = '<p class="lede">Bring in what you’ve already saved in other apps. Nothing to install, and no password is ever asked for.</p>';
+    if (cx.status === 'connected') h += '<p class="cx-on">' + icon('keep') + '<span>Claude is connected.</span></p>';
     h += overHTML();
     h += '<ol class="doors">' + DOORS.map(doorRow).join('') + '</ol>';
     return h;
@@ -2545,11 +2545,11 @@
   // channel goes to the pictures list below, as before.
   function linkDoorHTML() {
     const L = cx.link;
-    let h = backHTML(false) + '<p class="lede">Paste a link to something you found, or its picture. 5s works out what it is; you check it and add it to your database.</p>';
+    let h = backHTML(false) + '<p class="lede">Paste a link to something you found, or its picture. It’s identified for you; you check it and add it to your database.</p>';
     h += '<form class="linkform" data-form="connect-link" novalidate><label class="field" for="cx-url"><span>A link</span></label>' +
       '<div class="row"><input type="text" id="cx-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…" value="' + esc(L.url) + '" data-autofocus>' +
       '<button type="submit" class="btn btn-ink" id="cx-read"' + (L.busy ? ' disabled' : '') + '>' + (L.busy === 'read' ? 'Looking…' : 'Look it up') + '</button></div></form>' +
-      '<p class="small">Public links only: 5s never signs in to other sites.</p>';
+      '<p class="small">Public links only: nothing here signs in to other sites.</p>';
     if (!L.def && !L.deckId && !L.found && !L.done) h += pasteDropHTML();
     if (cx.status === 'connected' && cx.conn) h += '<p class="small">' + esc(PASTE_MORE) + '</p>';
     if (L.err) h += errHTML(L.err);
@@ -2573,8 +2573,8 @@
   function deckOfferHTML() {
     const id = cx.link.deckId, c = cardOf(id, S), e = lastJudgment(id);
     if (!c) return '';
-    return '<div class="cx-done" role="status"><h3 class="found-h" id="def-h" tabindex="-1">Already in 5s</h3>' +
-      '<p><b>' + esc(nameLine(c)) + '</b></p><p>' + (e && e[1] ? 'It’s one of 5s’s own cards, and it’s in your database.' : 'It’s one of 5s’s own cards, so it has everything already: keep it, and it’s in your database.') + '</p>' +
+    return '<div class="cx-done" role="status"><h3 class="found-h" id="def-h" tabindex="-1">Already one of the cards</h3>' +
+      '<p><b>' + esc(nameLine(c)) + '</b></p><p>' + (e && e[1] ? 'It’s in your database.' : 'It has everything already: keep it, and it’s in your database.') + '</p>' +
       (e ? '<p>' + esc((e[1] ? 'You kept it' : 'You passed it') + ' · ' + fmtDate(e[3]) + '.') + '</p>' : '') + '</div>' +
       '<div class="actions">' + (e && e[1] ? '' : '<button type="button" class="btn btn-keep btn-big" data-act="def-keep-card" data-id="' + esc(id) + '" id="def-keep">Keep this card</button>') +
       '<button type="button" class="btn' + (e && e[1] ? ' btn-big' : '') + '" data-act="detail" data-id="' + esc(id) + '" aria-haspopup="dialog" id="def-open">Open it</button></div>';
@@ -2593,9 +2593,9 @@
   function sureWords(d) {
     if (d.by === 'picture') return 'From your picture. Give it a name, and add it.';
     if (d.by === 'claude') {
-      const w = d.recognised && d.confidence === 'high' ? '5s knows this one.' : d.recognised && d.confidence === 'medium' ? '5s is fairly sure what this is.'
-        : 'A best guess: 5s doesn’t know this exact thing, so it keeps to what the address says.';
-      return w + (d.dropped.length ? ' Some of what came back didn’t fit 5s’s words and was left out.' : '');
+      const w = d.recognised && d.confidence === 'high' ? 'This one is recognised.' : d.recognised && d.confidence === 'medium' ? 'Recognised, though not for certain.'
+        : 'A best guess: this exact thing isn’t recognised, so only what the address says is used.';
+      return w + (d.dropped.length ? ' Some of what came back didn’t fit the words the cards use and was left out.' : '');
     }
     if (d.by === 'page') return 'What its page says about itself. Check it before you add it.';
     return (d.fields.name ? 'Only what the address says, so check the name.' : 'The address doesn’t say what this is, so give it a name.') + (canDefine() ? ' Define fills in more.' : '');
@@ -2627,7 +2627,7 @@
     if (f.medium || f.place || f.about) h += '<dl class="facts">' + [['Medium', 'medium'], ['Place', 'place'], ['About', 'about']].filter((x) => f[x[1]]).map(([label, k]) => '<dt>' + label + '</dt><dd>' + esc(f[k]) +
       ' <button type="button" class="chip-x" data-act="def-drop" data-k="' + k + '" data-v="' + esc(f[k]) + '" aria-label="Remove ' + label + '">' + icon('close') + '</button></dd>').join('') + '</dl>';
     if (chips.length) {
-      h += '<div class="def-words"><p class="small" id="def-words-h">What it is, in 5s’s words. Remove any that are wrong.</p><ul class="chips" aria-labelledby="def-words-h">' + chips.map(([k, v, label]) =>
+      h += '<div class="def-words"><p class="small" id="def-words-h">What it is, in the words the cards use. Remove any that are wrong.</p><ul class="chips" aria-labelledby="def-words-h">' + chips.map(([k, v, label]) =>
         '<li class="chip def-chip">' + esc(label) + '<button type="button" class="chip-x" data-act="def-drop" data-k="' + k + '" data-v="' + esc(v) + '" aria-label="' + esc('Remove ' + label) + '">' + icon('close') + '</button></li>').join('') + '</ul></div>';
     }
     if (cols.length) {
@@ -2646,14 +2646,14 @@
   function linkFoundHTML() {
     const L = cx.link, f = L.found, n = f.items.length;
     if (!n) {
-      return '<div class="cx-err" role="alert"><p class="err">' + esc(f.why || 'Nothing at that link offers a picture 5s can read.') + '</p>' + (f.resolution ? '<p>' + esc(f.resolution) + '</p>' : '') + '</div>';
+      return '<div class="cx-err" role="alert"><p class="err">' + esc(f.why || 'Nothing at that link offers a readable picture.') + '</p>' + (f.resolution ? '<p>' + esc(f.resolution) + '</p>' : '') + '</div>';
     }
     const k = L.sel.size;
     return '<h3 class="found-h" id="cx-found-h" tabindex="-1">' + esc(plural(n, 'picture') + ' from ' + f.source) + '</h3>' +
       (f.title || f.more ? '<p class="small">' + esc((f.title ? '“' + f.title + '”' : '') + (f.title && f.more ? ' · ' : '') + (f.more ? 'the first ' + n + '; there are more' : '')) + '</p>' : '') +
       kindSeg('link', L.kind) + selbar('link', k, n) +
       '<ul class="found">' + f.items.map((it, i) => pickRow('link', String(i), it, L.sel.has(String(i)), f.source)).join('') + '</ul>' +
-      '<p class="small">Their pictures come over through 5s after you add them, and their colours are read here.</p>' +
+      '<p class="small">Their pictures come over after you add them, and their colours are read here.</p>' +
       '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-act="cx-link-add" id="cx-link-add"' + (k && !L.busy ? '' : ' disabled') + '>' +
         (L.busy === 'add' ? 'Adding…' : 'Add to my database (' + k + ')') + '</button></div>';
   }
@@ -2714,7 +2714,7 @@
     };
     if (!rec.ok) { L.err = { why: rec.why }; done(rec.why, 'cx-url'); return; }
     L.rec = rec;
-    if (rec.deckCard && cardOf(rec.deckCard.id, S)) { L.deckId = rec.deckCard.id; done('Already in 5s: ' + nameLine(cardOf(L.deckId, S)) + '.'); return; }
+    if (rec.deckCard && cardOf(rec.deckCard.id, S)) { L.deckId = rec.deckCard.id; done('Already one of the cards: ' + nameLine(cardOf(L.deckId, S)) + '.'); return; }
     const have = S.own.find((o) => o && LK.cleanUrl(o.link) === rec.url);
     if (have) {
       say('Already in your database: ' + (have.name || 'Untitled') + '.');
@@ -2763,7 +2763,7 @@
       say('Picture read. Its colours: ' + listWords(uniq(d.colours.map((x) => F.colourName(x)))) + '.');
     }, (e) => {
       L.picBusy = false;
-      L.picErr = (e && e.message) || 'That file isn’t a picture 5s can read.';
+      L.picErr = (e && e.message) || 'That file isn’t a readable picture.';
       refreshSheet();
       say(L.picErr);
     });
@@ -2820,7 +2820,7 @@
     const added = () => { const st = F.bring(S, item, t, deck); return item.image && !item.colours.length ? withOwn(st, id, { coloursPending: true }) : st; };
     try {
       // Over the store's document limit nothing would be saved beyond this browser.
-      if (stateBytes(added()) > STATE_MAX) { refuse({ why: 'Your 5s has no room for more things.', resolution: 'Let some go on a “Still yours?” card, or remove some in Split, then add again.' }); return; }
+      if (stateBytes(added()) > STATE_MAX) { refuse({ why: 'Your database has no room for more things.', resolution: 'Let some go on a “Still yours?” card, or remove some in Split, then add again.' }); return; }
       if (L.pic) {
         const at = Math.floor(t / 1000);
         await imgStore.put(id, { img: L.pic.img, thumb: L.pic.thumb, at });
@@ -2971,7 +2971,7 @@
 
   function fileDoorHTML() {
     const D = cx.file;
-    let h = backHTML(!D.found) + '<p class="lede">Most apps let you download your data. Drop the file they give you here, as it is: 5s reads it on this device and shows you what it found before adding anything.</p>' +
+    let h = backHTML(!D.found) + '<p class="lede">Most apps let you download your data. Drop the file they give you here, as it is: it’s read on this device, and you see what’s in it before anything is added.</p>' +
       '<div class="drop" id="cx-drop"><p>Drop the file here, or</p>' +
         '<input type="file" id="cx-file" class="visually-hidden" accept="' + FILE_ACCEPT + '">' +
         '<label class="btn btn-ink" for="cx-file" id="cx-pick">' + icon('file') + 'Choose a file</label>' +
@@ -2989,10 +2989,10 @@
     let h = '<h3 class="found-h" id="cx-found-h" tabindex="-1">' + esc(f.name) + '</h3>' +
       '<p class="found-sum" id="cx-found-sum">' + esc(foundWords(f)) + '</p>';
     const notes = [];
-    if (D.have.size) notes.push(D.have.size === 1 ? 'One is already in your 5s.' : D.have.size + ' are already in your 5s.');
+    if (D.have.size) notes.push(D.have.size === 1 ? 'One is already in your database.' : D.have.size + ' are already in your database.');
     if (fresh.length > D.room) {
       notes.push(D.room < PER_FILE
-        ? 'Your 5s has room for ' + D.room + ' more, so the first ' + D.room + ' are chosen.'
+        ? 'Your database has room for ' + D.room + ' more, so the first ' + D.room + ' are chosen.'
         : 'One file adds up to ' + PER_FILE + ' at a time, so the first ' + PER_FILE + ' are chosen. Add the same file again for the next ones.');
     }
     notes.push(...(f.notes || []));
@@ -3000,15 +3000,15 @@
     if (!f.items.length) {
       return h + '<p>Nothing in this file links to a post, a pin or a picture. Try another file from the same download.</p>';
     }
-    if (!fresh.length) return h + '<p>Everything in it is already in your 5s.</p>';
+    if (!fresh.length) return h + '<p>Everything in it is already in your database.</p>';
     const k = Math.min(D.sel.size, D.room);
     const shown = f.items.slice(0, D.shown);
     h += '<label class="field cx-from"><span>From</span><select id="cx-file-source">' + uniq(FILE_SOURCES.concat([D.source])).map((s) => '<option' + (s === D.source ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select></label>' +
       kindSeg('file', D.kind) + selbar('file', D.sel.size, fresh.length) +
-      '<ul class="found">' + shown.map((it) => pickRow('file', it.key, it, D.sel.has(it.key), D.source, D.have.has(it.key) ? 'Already in your 5s' : '')).join('') + '</ul>' +
+      '<ul class="found">' + shown.map((it) => pickRow('file', it.key, it, D.sel.has(it.key), D.source, D.have.has(it.key) ? 'Already in your database' : '')).join('') + '</ul>' +
       (f.items.length > D.shown ? '<button type="button" class="btn btn-quiet" data-act="cx-more" id="cx-more">Show ' + Math.min(50, f.items.length - D.shown) + ' more</button>' : '') +
       '<p class="small">' + esc(f.pictures
-        ? (cx.status === 'connected' ? 'Pictures come over through 5s after you add them. ' : '5s can’t show pictures from other sites here: they come over once 5s is connected in Claude. ') + 'Links without pictures stay links.'
+        ? (cx.status === 'connected' ? 'Pictures come over after you add them. ' : 'Pictures from other sites can’t be shown here: they come over once Claude is connected. ') + 'Links without pictures stay links.'
         : 'These are links without pictures: they stay links, with the source’s letter where a picture would be.') + '</p>' +
       '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-act="cx-file-add" id="cx-file-add"' + (k ? '' : ' disabled') + '>' + esc(fileAddLabel()) + '</button></div>';
     return h;
@@ -3070,7 +3070,7 @@
     const room = roomLeft(chosen, D.source);
     const take = chosen.slice(0, room);
     if (!take.length) {
-      D.err = { why: 'Your 5s has no room for more things from files.', resolution: 'Let some go on a “Still yours?” card, or remove some in Split, then add again.' };
+      D.err = { why: 'Your database has no room for more things from files.', resolution: 'Let some go on a “Still yours?” card, or remove some in Split, then add again.' };
       refreshSheet();
       return;
     }
@@ -3096,7 +3096,7 @@
     const h = $('#sec-brought-in');
     if (h) h.scrollIntoView({ block: 'start' });
     say('Added ' + plural(ids.length, 'thing') + ' from ' + src + '. They’re in Split under Brought in.' +
-      (pics ? (cx.status === 'connected' ? ' Their pictures are on their way.' : ' Their pictures come once 5s is connected in Claude.') : '') +
+      (pics ? (cx.status === 'connected' ? ' Their pictures are on their way.' : ' Their pictures come once Claude is connected.') : '') +
       (left ? ' ' + left + ' more didn’t fit this time: add the same file again for them.' : ''));
     if (pics && cx.status === 'connected') cxBringOver(ids);
   }
@@ -3254,7 +3254,7 @@
     const on = cx.status === 'connected';
     const s = CX ? CX.askSentence(cx.ask.link) : '';
     return backHTML(false) +
-      '<p class="lede">' + (on ? 'In any chat with Claude, say:' : 'Once 5s is connected in Claude, say this in any chat:') + '</p>' +
+      '<p class="lede">' + (on ? 'In any chat with Claude, say:' : 'Once Claude is connected, say this in any chat:') + '</p>' +
       '<p class="ask-line" id="cx-ask-line">' + esc(s) + '</p>' +
       '<div class="actions"><button type="button" class="btn btn-ink" data-act="cx-copy" id="cx-copy" data-autofocus>Copy</button></div>' +
       '<label class="field"><span>Your link (optional)</span><input type="text" id="cx-ask-link" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…" value="' + esc(cx.ask.link) + '"></label>' +
@@ -3383,9 +3383,9 @@
   const HUB_TITLES = ['Your GitHub account', 'Make your hub', 'Save your seed to your hub', 'Your hub’s address'];
   const HUB_NAV = ['Account', 'Make', 'Save', 'Address'];
   const HUB_GO = ['Start my hub', 'Make my hub', 'Save my seed to my hub', 'Go to my hub’s address'];
-  const HUB_DESC = 'My taste, sorted five at a time in 5s.';
+  const HUB_DESC = 'My taste, sorted five at a time.';
   const HUB_LEDE = 'Your taste as a page of its own, at your own web address, kept in your own GitHub account. ' +
-    '5s fills everything in; on GitHub you only press a couple of buttons.';
+    'Everything is filled in for you; on GitHub you only press a couple of buttons.';
   const NEW_TAB = '<span class="visually-hidden"> (opens in a new tab)</span>';
   ui.hub = { step: 0, have: false, user: '', choice: 'site', other: '', priv: false, notes: false, own: false, busy: false, msg: '', text: null, done: false };
   let hubToken = 0;
@@ -3572,7 +3572,7 @@
     const hs = ui.hub;
     const signup = hubLink('hub-signup', hs.have ? 'btn-quiet' : 'btn-keep btn-big', HUB.links.signup(), 'Make a GitHub account',
       'GitHub’s sign-up opened in a new tab. Come back here once you’re in.');
-    let html = '<p>Your hub lives in your own GitHub account: free, and yours to keep. 5s fills in everything on GitHub for you; you only press its buttons.</p>';
+    let html = '<p>Your hub lives in your own GitHub account: free, and yours to keep. Everything on GitHub is filled in for you; you only press its buttons.</p>';
     if (!hs.have) {
       html += '<div class="hubguide">' + signup +
         '<ol class="guide3"><li>Pick a username you like: it becomes your hub’s address, username.github.io.</li>' +
@@ -3587,7 +3587,7 @@
       '<label for="hub-user">Your GitHub username</label>' +
       '<input type="text" id="hub-user" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="120" value="' + esc(hs.user) + '" aria-describedby="hub-user-msg hub-user-note">' +
       '<p class="hubmsg" id="hub-user-msg"></p>' +
-      '<p class="small" id="hub-user-note">It’s public on GitHub already. 5s keeps it only to fill in GitHub’s forms for you; it never goes in your seed.</p>' +
+      '<p class="small" id="hub-user-note">It’s public on GitHub already. It’s kept here only to fill in GitHub’s forms for you; it never goes in your seed.</p>' +
       '<div class="actions"><button type="submit" class="btn btn-ink btn-big" id="hub-user-go">Use this username</button></div></form>';
   }
 
@@ -3608,7 +3608,7 @@
     const hs = ui.hub;
     const user = hubOf(S).user || '';
     const n = hubName();
-    return '<p>Your hub is your own place on GitHub, made to hold your seed. 5s fills in GitHub’s form; you press one button there.</p>' +
+    return '<p>Your hub is your own place on GitHub, made to hold your seed. GitHub’s form is filled in for you; you press one button there.</p>' +
       '<fieldset class="hubset"><legend>Your hub’s name</legend>' +
         hubOpt('radio', 'hub-name', 'site', hs.choice === 'site', '<span class="mono">' + esc(HUB.suggest(user).site) + '</span>', 'Becomes a website by itself.') +
         hubOpt('radio', 'hub-name', 'other', hs.choice === 'other', 'Another name', 'One more tap at the end makes it a website.') +
@@ -3662,7 +3662,7 @@
     const h = hubOf(S);
     let file = '<button type="button" class="btn btn-keep btn-big" data-act="hub-file" id="hub-file"' + (hs.busy ? ' aria-disabled="true"' : '') + '>' +
       (hs.busy ? 'Making your hub file…' : 'Save my hub file') + '</button>' +
-      (ui.downloads ? '' : '<p class="small">This view can’t save files, so 5s shows the file’s text for you to copy.</p>') +
+      (ui.downloads ? '' : '<p class="small">This view can’t save files, so the file’s text is shown for you to copy.</p>') +
       '<p class="hubmsg" id="hub-file-msg">' + esc(hs.msg) + '</p>';
     let where;
     if (hs.text != null) {
@@ -3679,7 +3679,7 @@
         '<p class="hubsay">Drag the file in and press <q class="gh">Commit changes</q>.</p>' +
         '<p class="small">If GitHub shows its quick setup instead, press <q class="gh">uploading an existing file</q>.</p>';
     }
-    return '<p>5s makes your hub file: one page with your seed code, your philosophy, what you keep and pass, your colours, your rooms and your ground. Then you drop it into your hub.</p>' +
+    return '<p>Your hub file is made for you: one page with your seed code, your philosophy, what you keep and pass, your colours, your rooms and your ground. Then you drop it into your hub.</p>' +
       '<fieldset class="hubset"><legend>What goes on it</legend>' +
         hubOpt('checkbox', 'hub-notes', '', hs.notes, 'Include my notes', 'Off: your notes stay private to you.') +
         hubOpt('checkbox', 'hub-own', '', hs.own, 'Include my own images', 'Off: the pictures you brought in stay private.') +

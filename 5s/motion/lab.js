@@ -1310,7 +1310,7 @@ function createLab(root, opts) {
         d.stars[moment] = list;
       }
     });
-    say((was ? 'Unstarred ' : 'Starred ') + MO.get(v.family).name + ' · ' + v.params.style + (was ? '' : ': a favorite, used anywhere in 5s'));
+    say((was ? 'Unstarred ' : 'Starred ') + MO.get(v.family).name + ' · ' + v.params.style + (was ? '' : ': a favorite, used anywhere in the app'));
     return !was;
   }
   function allStars() {
@@ -1340,7 +1340,7 @@ function createLab(root, opts) {
       els.exploreSub.textContent = 'One of every family, at its defaults in the Iterations look, for ' + m.name + ' (' + m.feel + '). ' + (fits.length ? 'Families made for other moments are marked Wildcard.' : 'No family was made for this moment yet: every one is a wildcard.');
     } else if (ui.source === 'starred') {
       list = allStars().filter((s) => famOk(s.family)).map((s) => ({ family: s.family, params: MO.resolve(s.family, s.params), seed: s.seed, direction: s.direction, wild: !fits.some((f) => f.id === s.family) }));
-      els.exploreSub.textContent = 'All your favorites, from every moment, newest first. They are the ones 5s will use, anywhere.';
+      els.exploreSub.textContent = 'All your favorites, from every moment, newest first. They are the ones the app will use, anywhere.';
     } else {
       list = batchFor(ui.moment, ui.batch[ui.moment]);
       els.exploreSub.textContent = 'Twelve variants for ' + m.name + ' (' + m.feel + ') from seed ' + ui.batch[ui.moment] + ': ' + (fits.length ? 'nine from the families made for it and three wildcards.' : 'no family was made for this moment yet, so all twelve are wildcards.') + ' Each in one of the twenty iterations; all play on one clock.';
@@ -1690,7 +1690,7 @@ function createLab(root, opts) {
     $('#view-board').hidden = v !== 'board';
     $('#view-foryou').hidden = v !== 'foryou';
     for (const a of $$('.mode')) { if (a.dataset.mode === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
-    if (!embedded) doc.title = (v === 'moments' ? '' : v === 'explore' ? 'Explore · ' : v === 'board' ? 'Board · ' : 'For you · ') + '5s Motion Lab';
+    if (!embedded) doc.title = (v === 'moments' ? '' : v === 'explore' ? 'Explore · ' : v === 'board' ? 'Board · ' : 'For you · ') + 'Motion Lab';
     if (v === 'explore') buildSheet();
     if (v === 'board') buildBoard();
     if (v === 'foryou') buildForYou();

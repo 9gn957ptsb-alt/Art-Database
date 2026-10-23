@@ -155,7 +155,7 @@
     id: 'refold',
     name: 'Refold',
     idea: 'The mark holds still while its glass refolds through the sheet\'s twenty iterations: soft cloth tightens into a sail, the sail breaks into crystal facets, the facets melt into a wave, and the colours wash between pastel and vivid before it settles back on the chosen iteration.',
-    why: 'Twenty takes on one mark is what the artist did with the sheet, and what 5s asks of everyone: look at many versions, judge, keep yours. Each time it folds it is familiar and new at once.',
+    why: 'Twenty takes on one mark is what the artist did with the sheet, and what the app asks of everyone: look at many versions, judge, keep yours. Each time it folds it is familiar and new at once.',
     moments: ['load', 'empty', 'turn', 'tab', 'launch'],
     styles: ['cycle', 'flipbook', 'pair', 'breathe'],
     params: {

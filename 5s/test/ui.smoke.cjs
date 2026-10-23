@@ -222,7 +222,7 @@ for (const cfg of CONFIGS) {
       await t.test('loads with the intro, no console errors', async () => {
         await page.goto(BASE + '#sort');
         await page.waitForSelector('#intro:not([hidden]) #btn-start');
-        assert.equal(await page.title(), 'Sort · 5s');
+        assert.equal(await page.title(), 'Sort');
         assert.deepEqual(await visibleH1s(page), ['Today’s five']);
         // the artist's slogan beside the logo, on one line inside the bar; the old line is gone (23 Oct 2026)
         const slogan = await page.$eval('#bar-slogan', (n) => { const r = n.getBoundingClientRect(), b = n.closest('.bar').getBoundingClientRect(), l = document.getElementById('brand').getBoundingClientRect(); return { text: n.textContent, h: r.height, inBar: r.top >= b.top && r.bottom <= b.bottom && r.right <= b.right, afterLogo: r.left >= l.right, full: n.scrollWidth <= n.clientWidth + 1 }; });
@@ -285,10 +285,10 @@ for (const cfg of CONFIGS) {
         await page.keyboard.press('ArrowRight');
         await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'tab-set');
         assert.equal(await page.getAttribute('#tab-set', 'aria-selected'), 'true');
-        assert.equal(await page.title(), 'Set · 5s');
+        assert.equal(await page.title(), 'Set');
         await page.keyboard.press('Home');
         await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'tab-sort');
-        assert.equal(await page.title(), 'Sort · 5s');
+        assert.equal(await page.title(), 'Sort');
       });
 
       await t.test('Start, then a five by buttons with Undo', async () => {
@@ -693,7 +693,7 @@ test('reduced motion: no ring, parts appear in the strip', { timeout: 60000 }, a
     await page.click('#btn-start');
     await page.waitForSelector('#stack .card.is-top');
     assert.equal(await page.locator('#counter svg.ring').count(), 0, 'no moving ring');
-    assert.match(await page.textContent('#counter'), /5 s/);
+    assert.match(await page.textContent('#counter'), /5 sec/);
     let kept = false;
     for (let i = 0; i < 5 && !kept; i++) {
       const id = await topId(page);
@@ -911,7 +911,7 @@ test('a rejected write says "Saved in this browser only." once; no capabilities 
 // ---------------------------------------------------------------- Your hub (links mode)
 
 const HUB = require(path.join(ROOT, 'src', 'hub.js'));
-const HUB_DESC = 'My taste, sorted five at a time in 5s.'; // app.js HUB_DESC: the description GitHub's form is given
+const HUB_DESC = 'My taste, sorted five at a time.'; // app.js HUB_DESC: the description GitHub's form is given
 
 // The words 5s never says in its own copy (SPEC "Your hub", Words). GitHub's own labels, which the
 // person must press, are quoted in <q class="gh"> and left out of the check, as is the file's text.
@@ -1099,7 +1099,7 @@ for (const cfg of CONFIGS) {
       if (other) {
         await page.check('#sheet input[name="hub-name"][value="other"]');
         await page.waitForSelector('#hub-other:visible');
-        assert.equal(await page.inputValue('#hub-other'), '5s-hub', 'the second suggestion');
+        assert.equal(await page.inputValue('#hub-other'), 'my-hub', 'the second suggestion');
         await page.fill('#hub-other', 'My hub');
         await page.waitForSelector('#hub-name-msg [data-act="hub-fix-name"]');
         assert.equal(await page.getAttribute('#hub-other', 'aria-invalid'), 'true');
@@ -1299,7 +1299,7 @@ test('Your hub without downloads: the file\'s text to copy, and GitHub\'s editor
         if (fake.none) { await sleep(400); } else { await page.waitForSelector('[data-act="save-seed"]'); }
         await page.click('#hub-go');
         await stepIs(page, 3);
-        if (fake.none) assert.match(await page.textContent('#sheet-body'), /This view can’t save files, so 5s shows the file’s text for you to copy\./);
+        if (fake.none) assert.match(await page.textContent('#sheet-body'), /This view can’t save files, so the file’s text is shown for you to copy\./);
         await page.click('#hub-file');
         await page.waitForSelector('#hub-text', { timeout: 30000 });
         assert.equal(await page.evaluate(() => document.activeElement.id), 'hub-copy-file', 'focus on Copy');
@@ -1427,7 +1427,7 @@ function fakeConnector(opts) {
           { image: 'https://museum.example.org/images/blue-vase.jpg', thumb: null, title: 'Blue Vase', link: input.url, source: 'The web' }],
           page: { title: 'Blue Vase | The Museum', description: 'A stoneware vase with a cobalt glaze.', site: 'The Museum', type: 'website', image: 'https://museum.example.org/images/blue-vase.jpg',
             author: null, maker: 'Lucie Rie', name: 'Blue Vase', date: '1960', material: 'stoneware', medium: 'Stoneware with cobalt glaze' } });
-        if (/empty/.test(input.url)) return ok({ source: 'The web', title: null, url: input.url, count: 0, more: false, items: [], why: 'Nothing at that link offers a picture 5s can read.', resolution: 'Try the board, channel or page that shows the pictures.' });
+        if (/empty/.test(input.url)) return ok({ source: 'The web', title: null, url: input.url, count: 0, more: false, items: [], why: 'Nothing at that link offers a readable picture.', resolution: 'Try the board, channel or page that shows the pictures.' });
         return ok({ source: 'Are.na', title: 'Rooms', url: 'https://api.are.na/v2/channels/rooms', count: 3, more: false, next: 'ask first', items: [
           { image: 'https://images.are.na/1/linen.jpg', thumb: 'https://images.are.na/1/linen_thumb.jpg', title: 'Linen weave', link: 'https://www.are.na/block/101', source: 'Are.na' },
           { image: 'https://images.are.na/2/stair.jpg', thumb: null, title: null, link: null, source: 'Are.na' },
@@ -1438,7 +1438,7 @@ function fakeConnector(opts) {
         for (const it of input.items) for (const k of Object.keys(it)) if (it[k] === null || KEYS.indexOf(k) < 0) throw refuse({ error: 'bad input', why: 'items.' + k + ': not accepted' });
         const added = [], skipped = [];
         input.items.forEach((it, i) => {
-          if (own.some((o) => o.image === it.image)) { skipped.push({ item: i, image: it.image, why: 'Already in their 5s.' }); return; }
+          if (own.some((o) => o.image === it.image)) { skipped.push({ item: i, image: it.image, why: 'Already in their database.' }); return; }
           n++;
           const id = 'yf' + n.toString(36).padStart(4, '0');
           const measured = n % 2 === 1;
@@ -1478,8 +1478,8 @@ function fakeConnector(opts) {
 }
 
 const DOOR_NAMES = ['Paste a link', 'Your data file', 'Bring in images', 'Sign in to the app', 'Ask Claude'];
-const PASTE_MORE = 'With 5s connected, it also reads the page’s own picture and facts, and whole boards and channels.';
-const OPENS = { signin: 'Coming with 5s’s own website: sign in to each app right here', ask: 'Only if you use Claude: add 5s there' };
+const PASTE_MORE = 'While connected, it also reads the page’s own picture and facts, and whole boards and channels.';
+const OPENS = { signin: 'Coming when this app has its own website: sign in to each app right here', ask: 'Only if you use Claude: add a connector named 5s there' };
 const doorText = (page, key) => page.$eval('#door-' + key, (n) => n.textContent.replace(/\s+/g, ' ').trim());
 const doorState = (page, key) => page.$eval('#door-' + key + ' .state', (n) => n.textContent.trim());
 const sheetGone = (page) => page.waitForFunction(() => !document.getElementById('sheet').open, null, { timeout: 15000 });
@@ -1535,7 +1535,7 @@ for (const cfg of CONFIGS) {
       assert.equal(await page.evaluate(() => document.activeElement.id), 'cx-copy', 'focus on Copy');
       await page.fill('#cx-ask-link', 'https://www.are.na/me/rooms');
       const sentence = (await page.textContent('#cx-ask-line')).trim();
-      assert.equal(sentence, 'Show me the pictures at this link, then add the ones I pick to my 5s: https://www.are.na/me/rooms');
+      assert.equal(sentence, 'Show me the pictures at this link, then add the ones I pick to my aesthetic database: https://www.are.na/me/rooms');
       await page.click('#cx-copy');
       await liveSays(page, /The sentence copied/);
       assert.equal(await page.evaluate(() => navigator.clipboard.readText()), sentence);
@@ -1561,7 +1561,7 @@ for (const cfg of CONFIGS) {
       assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (6)');
       await page.locator('#sheet .found label', { hasText: 'Woven basket' }).click();
       assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (5)');
-      assert.match(await page.textContent('#sheet-body'), /they come over once 5s is connected in Claude\. Links without pictures stay links\./);
+      assert.match(await page.textContent('#sheet-body'), /they come over once Claude is connected\. Links without pictures stay links\./);
       await sheetChecks(page, 'file found');
       await shot('63-connect-file-found');
       await page.click('#cx-file-add');
@@ -1629,8 +1629,8 @@ test('Your data file: JSON, HTML, a spreadsheet and a zip; Sources; Still yours?
     await page.click('[data-act="door"][data-door="file"]');
     await page.setInputFiles('#cx-file', SAMPLE.json);
     await page.waitForSelector('#cx-found-sum');
-    assert.match(await page.textContent('#cx-file-notes'), /6 are already in your 5s\./);
-    assert.match(await page.textContent('#sheet-body'), /Everything in it is already in your 5s\./);
+    assert.match(await page.textContent('#cx-file-notes'), /6 are already in your database\./);
+    assert.match(await page.textContent('#sheet-body'), /Everything in it is already in your database\./);
     await page.keyboard.press('Escape');
     await sheetGone(page);
     await shot('67-split-four-files');
@@ -1652,7 +1652,7 @@ test('Your data file: JSON, HTML, a spreadsheet and a zip; Sources; Still yours?
           await page.waitForSelector('#stack .card.is-top .ph-art .ph-i');
           await page.waitForSelector('#stack .card.is-top .ownmissing:not([hidden])');
           const words = await page.$eval('#stack .card.is-top .ownmissing', (n) => n.textContent);
-          assert.match(words, /^(A link you saved, with no picture\.|Its picture comes when 5s is connected in Claude\.)$/);
+          assert.match(words, /^(A link you saved, with no picture\.|Its picture comes once Claude is connected\.)$/);
           assert.match(await page.getAttribute('#stack .card.is-top', 'aria-label'), /^Still yours\? /);
           await shot('68-still-yours-placeholder');
           await page.click('#btn-keep');
@@ -1695,11 +1695,11 @@ for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') ||
       await page.waitForSelector('#view-split [data-act="connect"]');
       await page.click('#view-split [data-act="connect"]');
       await page.waitForSelector('#sheet .cx-on');
-      assert.match(await page.textContent('#sheet .cx-on'), /5s is connected in Claude\./);
+      assert.match(await page.textContent('#sheet .cx-on'), /Claude is connected\./);
       assert.equal(await doorState(page, 'link'), 'Open');
       assert.equal(await doorState(page, 'ask'), 'Open');
       assert.equal(await doorState(page, 'signin'), 'Coming soon');
-      assert.match(await doorText(page, 'signin'), /Coming with 5s’s own website/);
+      assert.match(await doorText(page, 'signin'), /Coming when this app has its own website/);
       assert.ok((await doorText(page, 'link')).indexOf(PASTE_MORE) >= 0, 'connected: the door says what the connector adds');
       await shot('70-connected-doors');
       await page.click('[data-act="door"][data-door="link"]');
@@ -1752,7 +1752,7 @@ for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') ||
       await page.click('[data-act="door"][data-door="file"]');
       await page.setInputFiles('#cx-file', SAMPLE.json);
       await page.waitForSelector('#cx-found-sum');
-      assert.match(await page.textContent('#sheet-body'), /Pictures come over through 5s after you add them\./);
+      assert.match(await page.textContent('#sheet-body'), /Pictures come over after you add them\./);
       await page.click('#cx-file-add');
       await sheetGone(page);
       await page.waitForFunction(() => { const s = JSON.parse(localStorage.getItem('5s.state.v1')); return s.own.filter((o) => o.source === 'Pinterest' && o.image && o.colours.length === 3 && !o.coloursPending).length === 4; }, null, { timeout: 40000 });
@@ -1839,7 +1839,7 @@ test('Your data file: a file holding more than one file adds says so; the rest c
     await page.click('[data-act="door"][data-door="file"]');
     await page.setInputFiles('#cx-file', big);
     await page.waitForSelector('#cx-found-sum');
-    assert.match(await page.textContent('#cx-file-notes'), /^200 are already in your 5s\./);
+    assert.match(await page.textContent('#cx-file-notes'), /^200 are already in your database\./);
     assert.equal((await page.textContent('#cx-file-add')).trim(), 'Add to my database (50)');
     await page.click('#cx-file-add');
     await sheetGone(page);
@@ -1964,7 +1964,7 @@ for (const cfg of CONFIGS) {
       await page.fill('#cx-url', 'Look at this ' + other.url + '?utm_source=newsletter&fbclid=abc123');
       await page.click('#cx-read');
       await page.waitForSelector('#def-h');
-      assert.equal(await page.textContent('#def-h'), 'Already in 5s');
+      assert.equal(await page.textContent('#def-h'), 'Already one of the cards');
       assert.equal(await page.evaluate(() => document.activeElement.id), 'def-h');
       await shot('83-paste-deck-card');
       await page.click('#def-keep');
@@ -1994,7 +1994,7 @@ for (const cfg of CONFIGS) {
       assert.equal(await page.inputValue('#def-name'), 'The Harvesters');
       assert.equal(await page.inputValue('#def-maker'), 'Pieter Bruegel the Elder');
       assert.equal(await page.inputValue('#def-date'), '1565');
-      assert.equal(await page.textContent('#def-sure'), '5s knows this one.');
+      assert.equal(await page.textContent('#def-sure'), 'This one is recognised.');
       const chips = await page.$$eval('#sheet .def-chip', (cs) => cs.map((c) => c.textContent.trim()));
       const styleNames = STYLE.map((g) => DECK.genes[g].name);
       assert.ok(['Painting', 'Before 1800'].concat(styleNames).every((w) => chips.indexOf(w) >= 0), 'the deck\'s words as chips: ' + chips);
@@ -2143,7 +2143,7 @@ test('Paste a link without Define: no sample (the address\'s words), a declined 
     await page.waitForSelector('#def-add');
     await page.click('#def-add');
     await page.waitForSelector('#sheet .cx-err');
-    assert.match(await page.textContent('#sheet .cx-err'), /^Your 5s has no room for more things\.Let some go/);
+    assert.match(await page.textContent('#sheet .cx-err'), /^Your database has no room for more things\.Let some go/);
     assert.ok(await page.evaluate(() => { const e = document.querySelector('#sheet .cx-err').getBoundingClientRect(), b = document.getElementById('sheet-body').getBoundingClientRect(); return e.top >= b.top && e.top < b.bottom; }), 'the refusal is scrolled into view');
     assert.equal((await stored(page)).own.length, full.own.length, 'nothing added');
     assert.deepEqual(page.errors(), []);
@@ -2168,7 +2168,7 @@ test('Paste a link without Define: no sample (the address\'s words), a declined 
         await shot('93-define-declined');
       } else {
         await page.waitForFunction(() => !document.getElementById('def-define'));
-        assert.match(await page.textContent('#def-sure'), /^A best guess: .* Some of what came back didn’t fit 5s’s words and was left out\.$/);
+        assert.match(await page.textContent('#def-sure'), /^A best guess: .* Some of what came back didn’t fit the words the cards use and was left out\.$/);
         assert.equal(await page.inputValue('#def-maker'), '', 'a maker the address doesn\'t say is dropped');
         assert.equal(await page.inputValue('#def-date'), '');
         assert.equal(await page.inputValue('#def-name'), 'Blue Chair', 'not recognised: the address\'s own name, not the answer\'s');

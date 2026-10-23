@@ -86,7 +86,7 @@
   Motion.register({
     id: 'stack',
     name: 'Stack',
-    idea: 'Five cards fall into a stack that is the 5s, fan open once like a riffled deck, and close into the mark.',
+    idea: 'Five cards fall into a stack that is the mark, fan open once like a riffled deck, and close up again.',
     why: 'Five sorted: the five cards a person just judged come together and are the 5, a small, complete thing.',
     moments: ['five-done'],
     styles: ['fall', 'deal', 'pile'],

@@ -108,6 +108,7 @@
 .fp-mark > .fp-fr::after { content: ""; position: absolute; inset: 12%; border-radius: 20%; background: #FAF9FC; }
 .fp-mark > b { position: absolute; inset: 0; display: grid; place-items: center; font: 700 calc(var(--cell) * 0.4)/1 var(--font-display, system-ui, sans-serif); letter-spacing: -0.04em;
   background: linear-gradient(120deg, #FF9B55 20%, #FF6B4D 70%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fp-mark > .fp-logo { position: absolute; inset: 2%; width: 96%; height: 96%; border-radius: 26%; pointer-events: none; }
 /* held: two straps, an X */
 .fp-strap { inset: 4%; }
 .fp-strap::before, .fp-strap::after { content: ""; position: absolute; left: -6%; right: -6%; top: 50%; height: 18%; margin-top: -9%; background: rgba(27, 23, 38, 0.8); box-shadow: 0 0 0 1px rgba(238, 235, 245, 0.55); transform: rotate(45deg); border-radius: 3px; }

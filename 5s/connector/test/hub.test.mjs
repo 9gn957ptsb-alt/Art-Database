@@ -18,14 +18,14 @@ test('the connector uses the app\'s own hub driver and hub page, not copies', ()
 test('names: GitHub\'s rules, the two extra guards, and a fix for each', () => {
   for (const ok of ['ada.github.io', '5s-hub', 'my_hub.v2', 'a'.repeat(100)]) assert.deepEqual(checkName(ok), { ok: true, name: ok }, ok);
   assert.equal(checkName('  my-hub ').name, 'my-hub', 'trimmed');
-  for (const [bad, fix] of [['my hub', 'my-hub'], ['.github', 'github'], ['site.git', 'site'], ['', '5s-hub'], ['..', '5s-hub'], ['naïve hub!', 'naive-hub']]) {
+  for (const [bad, fix] of [['my hub', 'my-hub'], ['.github', 'github'], ['site.git', 'site'], ['', 'my-hub'], ['..', 'my-hub'], ['naïve hub!', 'naive-hub']]) {
     const r = checkName(bad);
     assert.equal(r.ok, false, bad);
     assert.ok(r.why, bad + ' says why');
     assert.equal(r.fix, fix, bad);
     assert.equal(checkName(r.fix).ok, true, 'the fix for ' + JSON.stringify(bad) + ' is itself a good name');
   }
-  assert.equal(fixName('###'), '5s-hub');
+  assert.equal(fixName('###'), 'my-hub');
 });
 
 test('addresses: the site repository is a website by itself; other hubs live under it', () => {

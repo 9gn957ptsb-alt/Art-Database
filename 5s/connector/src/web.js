@@ -64,14 +64,14 @@ export const typeWord = (t) => (NAMED_TYPES.has(t) ? t : null);
 const PUBLIC_ADDRESS = 'Use the public address of the board, channel or page: the one you would send a friend.';
 
 const REFUSALS = {
-  'not https': ['5s only reads secure (https://) addresses.', 'Use the https:// address of the page; nearly every site has one.'],
-  credentials: ['That address has a sign-in written into it, and 5s never signs in to other sites.', 'Share the public address, without a name or password in it.'],
-  port: ['That address names a special port, which 5s does not read.', PUBLIC_ADDRESS],
-  ip: ['That address is a bare number (an IP address), and 5s reads sites only by their name.', PUBLIC_ADDRESS],
-  private: ['That address points inside a private network or at this computer, which 5s never reads.', PUBLIC_ADDRESS],
+  'not https': ['Only secure (https://) addresses are read.', 'Use the https:// address of the page; nearly every site has one.'],
+  credentials: ['That address has a sign-in written into it, and sites are always read signed out.', 'Share the public address, without a name or password in it.'],
+  port: ['That address names a special port, and those are not read.', PUBLIC_ADDRESS],
+  ip: ['That address is a bare number (an IP address), and sites are read only by their name.', PUBLIC_ADDRESS],
+  private: ['That address points inside a private network or at this computer, and those are never read.', PUBLIC_ADDRESS],
   host: ['That is not the name of a public website.', PUBLIC_ADDRESS],
-  'too long': ['That address is longer than 5s reads.', 'Use the short address of the page (the one in the browser bar, without tracking codes).'],
-  bad: ['That is not a web address 5s can read.', 'Copy the address from the browser bar: it starts with https://.'],
+  'too long': ['That address is too long to read.', 'Use the short address of the page (the one in the browser bar, without tracking codes).'],
+  bad: ['That is not a readable web address.', 'Copy the address from the browser bar: it starts with https://.'],
 };
 
 function refusal(code) {
@@ -284,10 +284,10 @@ async function cancel(res) {
 }
 
 function statusError(status) {
-  if (status === 401 || status === 403) return new WebError('forbidden', 'That page is private or needs a sign-in, so 5s can\'t read it.', 'Make the board, channel or page public (or share its public link), then try again. Or save the pictures and bring them in from your photos in the 5s app.', status);
+  if (status === 401 || status === 403) return new WebError('forbidden', 'That page is private or needs a sign-in, so it can\'t be read.', 'Make the board, channel or page public (or share its public link), then try again. Or save the pictures and bring them in from your photos in the app (Split → Bring in your own).', status);
   if (status === 404 || status === 410) return new WebError('not found', 'Nothing is at that address (the site says it was not found).', 'Check the address: open it in a browser, copy it from the address bar and try again.', status);
   if (status === 429 || status >= 500) return new WebError('busy', 'That site is busy or not answering properly right now.', 'Try again in a few minutes.', status);
-  return new WebError('unreachable', 'That site did not give 5s the page (it answered ' + status + ').', 'Check the address in a browser, or try again later.', status);
+  return new WebError('unreachable', 'That site did not send the page (it answered ' + status + ').', 'Check the address in a browser, or try again later.', status);
 }
 
 /**
@@ -309,7 +309,7 @@ export function createWeb(opts) {
 
   const spend = (n) => {
     if (web.requests + n > web.budget) {
-      throw new WebError('budget', '5s has read as much as it reads in one go.', 'Ask again with fewer things at a time.');
+      throw new WebError('budget', 'That is as much as can be read in one go.', 'Ask again with fewer things at a time.');
     }
     web.requests += n;
   };
@@ -362,8 +362,8 @@ export function createWeb(opts) {
       });
       if (got.redirect !== undefined) {
         const loc = got.redirect;
-        if (!loc) throw new WebError('unreachable', 'That site sent 5s somewhere without saying where.', 'Open the page in a browser and use the address it ends up at.');
-        if (hop >= maxRedirects) throw new WebError('redirects', 'That address sends 5s on through more than ' + maxRedirects + ' other addresses.', 'Open it in a browser and use the address it ends up at.');
+        if (!loc) throw new WebError('unreachable', 'That site pointed somewhere else without saying where.', 'Open the page in a browser and use the address it ends up at.');
+        if (hop >= maxRedirects) throw new WebError('redirects', 'That address leads on through more than ' + maxRedirects + ' other addresses.', 'Open it in a browser and use the address it ends up at.');
         let next;
         try { next = new URL(loc, u.href).href; } catch { throw refusal('bad'); }
         url = next;
@@ -378,7 +378,7 @@ export function createWeb(opts) {
 }
 
 function tooLarge(max) {
-  return new WebError('too large', 'That is bigger than 5s reads (over ' + Math.round(max / 1024) + ' KB).', 'Use the address of the board, channel or page itself, or of a smaller picture.');
+  return new WebError('too large', 'That is too big to read (over ' + Math.round(max / 1024) + ' KB).', 'Use the address of the board, channel or page itself, or of a smaller picture.');
 }
 
 function timedOut() {

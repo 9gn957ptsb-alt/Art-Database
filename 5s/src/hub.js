@@ -69,18 +69,18 @@
   }
 
   const MSG = Object.freeze({
-    offline: "5s couldn't reach GitHub. Check your connection and try again.",
+    offline: "Couldn't reach GitHub. Check your connection and try again.",
     'signed-out': "GitHub didn't accept your sign-in. Sign in again.",
-    'not-allowed': "GitHub didn't let 5s do that. Sign in again and allow 5s to make and save your hub.",
-    busy: 'GitHub asked 5s to slow down. Try again in a few minutes.',
+    'not-allowed': "GitHub didn't allow that. Sign in again and give permission to make and save your hub.",
+    busy: 'GitHub says to slow down. Try again in a few minutes.',
     'not-found': "GitHub couldn't find your hub. Check your username and your hub's name.",
-    conflict: 'Your hub changed while 5s was saving. Try again.',
+    conflict: 'Your hub changed while it was being saved. Try again.',
     exists: 'You already have a hub with that name. Pick another name, or use that one.',
     plan: "A private hub can't have an address on a free GitHub account. Make your hub public to give it an address.",
     invalid: "GitHub didn't accept that. A hub's name has only letters, numbers, hyphens, underscores and full stops.",
     'github-down': 'GitHub is having trouble right now. Try again in a minute.',
     failed: 'Something went wrong talking to GitHub. Try again.',
-    setup: "Sign-in with GitHub isn't set up in this 5s yet.",
+    setup: "Sign-in with GitHub isn't set up here yet.",
     expired: 'The code ran out of time. Start again for a new code.',
     denied: 'Sign-in was turned down on GitHub. Start again if that was a mistake.',
     cancelled: 'Sign-in stopped.',
@@ -177,11 +177,11 @@
 
   const rules = Object.freeze({ user: checkUser, repo: checkRepo });
 
-  /** suggest(user) -> {site: user + '.github.io', plain: '5s-hub'}: the two names step 2 offers.
+  /** suggest(user) -> {site: user + '.github.io', plain: 'my-hub'}: the two names step 2 offers.
    *  `site` is '' when there is no usable username yet. */
   function suggest(user) {
     const u = checkUser(user).fixed;
-    return { site: u ? u + '.github.io' : '', plain: '5s-hub' };
+    return { site: u ? u + '.github.io' : '', plain: 'my-hub' };
   }
 
   /** isSiteRepo(user, repo) -> true when the hub is named <user>.github.io (any case): GitHub then
@@ -339,7 +339,7 @@
         if (old && typeof old.content === 'string' && old.encoding === 'base64' && old.content.replace(/\s+/g, '') === content) {
           return { path: toText(p.path), sha: old.sha || null, commit: null, url: old.html_url || null, created: false, unchanged: true };
         }
-        const body = { message: toText(p.message).trim() || 'Save from 5s', content };
+        const body = { message: toText(p.message).trim() || 'Save my hub', content };
         if (old && old.sha) body.sha = old.sha;
         if (p.branch) body.branch = toText(p.branch);
         try {

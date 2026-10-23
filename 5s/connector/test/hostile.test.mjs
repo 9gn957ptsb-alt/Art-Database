@@ -159,13 +159,13 @@ test('a site\'s Content-Type header never reaches a summary: only types 5s knows
     assert.equal(r.data.code, 'not readable');
     const text = toMcpResult(r).content.map((c) => c.text).join('\n');
     assert.doesNotMatch(text, /make_hub|make-hub|assistant|approved|x-5s/, p + ': ' + r.summary);
-    assert.match(r.summary, p === '/a' ? /^That address is a kind of picture 5s does not read, not a page/ : /^That address is a file, not a page/);
+    assert.match(r.summary, p === '/a' ? /^That address is a kind of picture that is not supported, not a readable page/ : /^That address is a file, not a readable page/);
   }
   // A type 5s knows is still named, as before.
   const pdf = await call(ctx, 'read_link', { url: 'https://studio.example.com/d' });
   assert.match(pdf.summary, /a file of type application\/pdf/);
   const svg = await call(ctx, 'read_link', { url: 'https://studio.example.com/drawing.svg' });
-  assert.match(svg.summary, /a kind of picture 5s does not read \(image\/svg\+xml\)/);
+  assert.match(svg.summary, /a kind of picture that is not supported \(image\/svg\+xml\)/);
   // bring_in's skipped[].why (data only, but the same rule).
   const b = await call(ctx, 'bring_in', { items: [{ image: 'https://img.example.com/notapic.jpg', source: 'The web' }, { image: 'https://studio.example.com/fake.jpg', source: 'The web' }] });
   assert.equal(b.data.skipped[0].why, 'That address is not a picture (it gives something else).');

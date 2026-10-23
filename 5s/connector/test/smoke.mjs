@@ -278,7 +278,7 @@ async function devBypass() {
     });
     check('the bypass is refused for a host other than localhost (403)', () => {
       assert.equal(foreign.status, 403);
-      assert.match(foreign.body, /refuses the dev bypass/);
+      assert.match(foreign.body, /the dev bypass is refused/);
     });
   } finally {
     await w.stop();
@@ -358,7 +358,7 @@ async function realSignIn() {
     const handle = (/name="handle" value="([^"]+)"/.exec(html) || [])[1];
     check('/authorize shows "Connect 5s": the client, where access goes, unframeable', () => {
       assert.equal(page.status, 200);
-      assert.match(html, /<h1>Connect 5s<\/h1>/);
+      assert.match(html, /<h1>Connect your aesthetic database<\/h1>/);
       assert.match(html, /Claude \(smoke\)/);
       assert.match(html, /This sends access to an app on this computer/);
       assert.match(page.headers.get('content-security-policy') || '', /frame-ancestors 'none'/);

@@ -343,7 +343,7 @@ test('make_hub: one call makes <login>.github.io with the hub page, seed and REA
   const puts = gh.calls.filter((c) => c.method === 'PUT');
   assert.equal(puts[0].body.sha, undefined, 'a new index.html needs no sha');
   assert.ok(puts[2].body.sha, 'the README made by auto_init is replaced with its sha');
-  assert.match(puts[0].body.message, /^Save my 5s hub page \(5S-/);
+  assert.match(puts[0].body.message, /^Save my hub page \(5S-/);
   const seed = JSON.parse(puts[1].body.text);
   assert.equal(seed.format, '5s-seed');
   assert.match(puts[0].body.text, /^<!doctype html>/);
@@ -360,7 +360,7 @@ test('make_hub: one call makes <login>.github.io with the hub page, seed and REA
   assert.deepEqual((await readRepos(store, UID)).made.map((r) => r.name), [SITE]);
   const h = await call(ctx, 'hub_status');
   assert.equal(h.data.has_hub, true);
-  assert.equal(h.data.made_by, '5s connector');
+  assert.equal(h.data.made_by, 'this connector');
   assert.equal(h.data.needs_save, false);
   assert.equal(h.data.on_github, true);
 });
@@ -380,7 +380,7 @@ test('privacy: notes stay off the hub unless asked; the hub never holds an accou
   const withNotes = await call(ctx, 'save_hub', { include_notes: true, include_own_images: true });
   assert.equal(withNotes.data.ok, true);
   assert.equal(withNotes.data.notes_included, true);
-  assert.match(withNotes.data.own_images, /stay private in the 5s app/);
+  assert.match(withNotes.data.own_images, /stay private in the app/);
   const after = gh.repos[(LOGIN + '/' + SITE).toLowerCase()].files;
   assert.ok(after['index.html'].text.includes('landlord'), 'notes appear only when asked');
   assert.equal(JSON.parse(after['seed.json'].text).notes.length, 1);
@@ -390,7 +390,7 @@ test('privacy: notes stay off the hub unless asked; the hub never holds an accou
 
 test('make_hub refuses names that break GitHub\'s rules, with a fix, and asks nothing of GitHub', async () => {
   const { ctx, gh } = ctxFor();
-  const cases = [['my hub', 'my-hub'], ['café-hub', 'cafe-hub'], ['.github', 'github'], ['hub.git', 'hub'], ['a'.repeat(101), 'a'.repeat(100)], ['..', '5s-hub'], ['emoji🌀hub', 'emoji-hub']];
+  const cases = [['my hub', 'my-hub'], ['café-hub', 'cafe-hub'], ['.github', 'github'], ['hub.git', 'hub'], ['a'.repeat(101), 'a'.repeat(100)], ['..', 'my-hub'], ['emoji🌀hub', 'emoji-hub']];
   for (const [name, fix] of cases) {
     const r = await call(ctx, 'make_hub', { name });
     assert.equal(r.isError, true, name);
@@ -529,8 +529,8 @@ test('a hub made in the app (links mode) at <login>.github.io can be saved by th
 
 test('without GitHub the hub tools say how to reconnect', async () => {
   const { ctx } = ctxFor({ noGithub: true });
-  assert.match((await call(ctx, 'make_hub')).summary, /Reconnect 5s/);
-  assert.match((await call(ctx, 'save_hub')).summary, /Reconnect 5s/);
+  assert.match((await call(ctx, 'make_hub')).summary, /Reconnect in Claude/);
+  assert.match((await call(ctx, 'save_hub')).summary, /Reconnect in Claude/);
 });
 
 // ------------------------------------------------------------------ get_state / put_state

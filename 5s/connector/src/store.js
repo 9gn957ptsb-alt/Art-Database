@@ -50,12 +50,12 @@ function checkUid(uid) {
 /** A failure of the store itself (not a cap 5s sets): the tools answer it in plain words, never "something went wrong". */
 export class StoreError extends Error {
   constructor(when, cause) {
-    const why = when === 'put' ? '5s couldn\'t save your 5s just now.' : '5s couldn\'t open your saved 5s just now.';
+    const why = when === 'put' ? 'Your database couldn\'t be saved just now.' : 'Your saved database couldn\'t be opened just now.';
     super(why);
     this.name = 'StoreError';
     this.why = why;
     // On the free plan the likeliest cause is the day's allowance, which comes back at midnight UTC.
-    this.resolution = 'Try again in a minute. If it keeps happening, 5s has used its free allowance for today: it comes back at midnight UTC, and nothing you saved before is lost (the 5s app keeps working on its own meanwhile).';
+    this.resolution = 'Try again in a minute. If it keeps happening, today\'s free allowance is used up: it comes back at midnight UTC, and nothing you saved before is lost (the app keeps working on its own meanwhile).';
     this.cause = cause;
   }
 }
@@ -97,12 +97,12 @@ export async function writeState(store, uid, state, rev, now, opts) {
   const o = opts || {};
   const use = usage(o.use, now);
   if (use.writes >= DAILY_WRITES) {
-    throw new LimitError('daily writes', '5s has saved your state ' + use.writes + ' times today, its most in one day.', 'Carry on tomorrow (the count starts again at midnight UTC). Nothing you did today is lost.');
+    throw new LimitError('daily writes', 'Your state has been saved ' + use.writes + ' times today, the most allowed in one day.', 'Carry on tomorrow (the count starts again at midnight UTC). Nothing you did today is lost.');
   }
   const rec = { rev, at: new Date(now).toISOString(), state, use: { day: use.day, writes: use.writes + 1, saves: use.saves + (o.hubSave ? 1 : 0), brought: use.brought + (Math.max(0, o.brought | 0)) } };
   const text = JSON.stringify(rec);
   if (byteLength(text) > MAX_STATE_BYTES + 4096) {
-    throw new LimitError('size', 'Your 5s is full: its state would be over 1 MB, more than 5s keeps.', 'Remove some notes or brought-in things in the 5s app; brought-in images belong in the app, not in the state.');
+    throw new LimitError('size', 'Your database is full: its state would be over 1 MB, more than can be kept.', 'Remove some notes or brought-in things in the app; brought-in images belong there, not in the state.');
   }
   await store.put(stateKey(checkUid(uid)), text);
   return rec;

@@ -547,7 +547,7 @@
     id: 'tiles',
     name: 'Tiles',
     idea: 'The mark is printed across a board of cards: a wave turns them over one by one, each showing its piece of the mark, until the seams close and the board is the plain mark.',
-    why: 'A board of cards is 5s itself (five cards a day, a mood board, a way of organising space); every turn flashes the app\'s colours, and the mark assembling from its squares says your pieces make a whole.',
+    why: 'A board of cards is the app itself (five cards a day, a mood board, a way of organising space); every turn flashes the app\'s colours, and the mark assembling from its squares says your pieces make a whole.',
     moments: ['tab', 'five-start', 'five-done', 'set-pin', 'bring'],
     styles: ['wave', 'shuffle', 'blinds'],
     params: {

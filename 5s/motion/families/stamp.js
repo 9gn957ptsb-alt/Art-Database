@@ -552,7 +552,7 @@
     id: 'stamp',
     name: 'Stamp',
     idea: 'The mark is a rubber stamp: it lifts toward you, slams down onto the screen as if it were paper, ink squeezes out round its edges and the frame jolts; then it lifts away and leaves the print, which dries crisp.',
-    why: 'A stamp is a verdict, and 5s is a judgment app: keep, pass, approved, done. Where the other families build up through time, Stamp decides in one blow.',
+    why: 'A stamp is a verdict, and the app is for judging: keep, pass, approved, done. Where the other families build up through time, Stamp decides in one blow.',
     moments: ['keep', 'five-done', 'set-pin', 'streak'],
     styles: ['press', 'double', 'seal'],
     params: {

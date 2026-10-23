@@ -39,7 +39,7 @@ function page(title: string, body: string) {
 }
 
 function htmlError(message: string, status = 400) {
-	return new Response(page("5s", `<h1>Connecting 5s didn't work</h1><p>${escape(message)}</p><p class="quiet">Start again from Claude: Settings → Connectors → 5s → Connect.</p>`), {
+	return new Response(page("Connecting didn't work", `<h1>Connecting didn't work</h1><p>${escape(message)}</p><p class="quiet">Start again from Claude: Settings → Connectors → 5s → Connect.</p>`), {
 		status,
 		headers: { "Content-Type": "text/html; charset=utf-8" },
 	});
@@ -50,14 +50,14 @@ function consentPage(d: ConsentDescription, handle: string) {
 		? `<strong>${escape(d.clientName)}</strong>, published by <strong>${escape(d.clientDomain)}</strong>,`
 		: `<strong>${escape(d.clientName)}</strong> (an app that registered itself; its name is not verified)`;
 	return page(
-		"Connect 5s",
-		`<h1>Connect 5s</h1>
-<p>${who} wants to use 5s for you: your taste, your fives, your seed and your hub.</p>
-<div class="box"><p>Next, GitHub's own page asks you to sign in (or make a free account). 5s asks GitHub for two things only:</p>
-<ul><li><strong>who you are</strong> (your public username), so your 5s is yours;</li>
-<li><strong>making and saving public repositories</strong>, so 5s can make your hub when you ask. 5s never reads your other repositories.</li></ul></div>
+		"Connect your aesthetic database",
+		`<h1>Connect your aesthetic database</h1>
+<p>${who} wants to use it for you: your taste, your rounds of five, your seed and your hub.</p>
+<div class="box"><p>Next, GitHub's own page asks you to sign in (or make a free account). GitHub is asked for two things only:</p>
+<ul><li><strong>who you are</strong> (your public username), so your database is yours;</li>
+<li><strong>making and saving public repositories</strong>, so your hub can be made when you ask. Your other repositories are never read.</li></ul></div>
 <p class="quiet">Access will be sent to <strong>${escape(d.redirectHost)}</strong>.</p>
-${d.redirectIsLoopback ? `<div class="box warn"><p><strong>This sends access to an app on this computer.</strong> Continue only if you just started connecting 5s from it.</p></div>` : ""}
+${d.redirectIsLoopback ? `<div class="box warn"><p><strong>This sends access to an app on this computer.</strong> Continue only if you just started connecting from it.</p></div>` : ""}
 <form method="post" action="/authorize">
 <input type="hidden" name="handle" value="${escape(handle)}">
 <div class="row"><button class="go" name="decision" value="approve">Continue to GitHub</button><button class="no" name="decision" value="deny">Cancel</button></div>
@@ -99,9 +99,9 @@ app.get("/", (c) => {
 	const mcp = new URL("/mcp", c.req.url).href;
 	return c.html(
 		page(
-			"5s connector",
-			`<h1>5s</h1><p>Five quick judgments a day become your aesthetic database. This is 5s as a connector for Claude.</p>
-<div class="box"><p>To add it: in Claude, open <strong>Settings → Connectors → Add custom connector</strong>, paste</p><p><code>${escape(mcp)}</code></p><p>then press <strong>Connect</strong> and sign in with GitHub.</p></div>`,
+			"A connector for Claude",
+			`<h1>A connector for Claude</h1><p>Your own aesthetic database, in Claude: your taste, your seed and your hub.</p>
+<div class="box"><p>To add it: in Claude, open <strong>Settings → Connectors → Add custom connector</strong>, name it <strong>5s</strong>, paste</p><p><code>${escape(mcp)}</code></p><p>then press <strong>Connect</strong> and sign in with GitHub.</p></div>`,
 		),
 	);
 });
@@ -185,7 +185,7 @@ app.get("/callback", async (c) => {
 app.onError((error) => {
 	console.log("5s sign-in failed:", error instanceof Error ? error.message : error);
 	return htmlError(
-		"5s couldn't finish connecting just now. Try again in a minute; if it keeps happening, 5s has used today's free allowance for sign-ins, which comes back at midnight UTC. Nothing in your 5s is affected, and the 5s app keeps working meanwhile.",
+		"Connecting couldn't finish just now. Try again in a minute; if it keeps happening, today's free allowance for sign-ins is used up: it comes back at midnight UTC. Nothing in your database is affected, and the app keeps working meanwhile.",
 		503,
 	);
 });

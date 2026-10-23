@@ -247,7 +247,7 @@
     id: 'negative',
     name: 'Negative',
     idea: 'The mark is cut out of a field of colour; the field slides away and leaves the hole, and the letters take their colour where it has been.',
-    why: 'A pass is subtraction, and 5s is "a game of subtraction and negation": what you let go of shapes you as much as what you keep, the way the negative space shows the room.',
+    why: 'A pass is subtraction, and the app is "a game of subtraction and negation": what you let go of shapes you as much as what you keep, the way the negative space shows the room.',
     moments: ['pass', 'empty'],
     styles: ['slide', 'peel', 'iris', 'sweep'],
     params: {

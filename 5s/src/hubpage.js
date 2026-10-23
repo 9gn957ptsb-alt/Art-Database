@@ -419,7 +419,7 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
     const F = root.FiveS;
     const nameOf = typeof o.colourName === 'function' ? o.colourName : F && typeof F.colourName === 'function' ? F.colourName : null;
     const resolve = resolver(seed, deck, o);
-    const title = text(o.title) || 'A 5s hub';
+    const title = text(o.title) || 'My hub';
     const made = dayWords(o.generatedAt != null ? o.generatedAt : seed.made);
     const counts = seed.counts && typeof seed.counts === 'object' ? seed.counts : {};
     const n = (x) => (typeof x === 'number' && isFinite(x) ? Math.max(0, Math.round(x)) : 0);
@@ -429,7 +429,7 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
     put('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n');
     put('<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n');
     put('<title>' + esc(title) + '</title>\n');
-    put('<meta name="description" content="A taste sorted five at a time in 5s: what was kept and passed, its colours, its rooms and its ground.">\n');
+    put('<meta name="description" content="A taste sorted five at a time: what was kept and passed, its colours, its rooms and its ground.">\n');
     put('<meta name="generator" content="5s">\n<meta name="color-scheme" content="light dark">\n');
     put('<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n');
     put('<link rel="stylesheet" href="' + esc(FONTS) + '">\n');
@@ -437,7 +437,7 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
 
     // the seed code
     const code = text(seed.code);
-    put('<header class="top wrap">\n<p class="mark">5s</p>\n<h1>' + esc(title) + '</h1>\n');
+    put('<header class="top wrap">\n<p class="mark">Entertain it All</p>\n<h1>' + esc(title) + '</h1>\n');
     put('<p class="lede">A taste, sorted five quick judgments at a time: what was kept, what was passed, and what grew from it.</p>\n');
     if (code) put('<p class="code">Seed <b>' + esc(code) + '</b></p>\n');
     put('<p class="counts">Judged ' + n(counts.judged) + ' · kept ' + n(counts.kept) + ' · passed ' + n(counts.passed) + ' · ' +
@@ -447,7 +447,7 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
     const lines = (Array.isArray(o.philosophy) ? o.philosophy : []).map(text).filter(Boolean).slice(0, 8);
     if (lines.length) {
       put('<section id="philosophy" aria-labelledby="philosophy-h">\n<h2 id="philosophy-h">Philosophy</h2>\n');
-      put('<p class="lede">How this taste goes about things, in the lines 5s wrote from the judgments.</p>\n');
+      put('<p class="lede">How this taste goes about things, in lines written from the judgments.</p>\n');
       put('<ul class="lines">' + lines.map((l) => '<li>' + esc(l) + '</li>').join('') + '</ul>\n</section>\n');
     }
 
@@ -520,14 +520,14 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
         .map(({ x, i }) => ({ name: text(x.name) || 'Untitled', source: text(x.source), src: ownThumbOf(o.ownThumbs, x.name, i) }))
         .filter((t) => t.src).slice(0, MAX_OWN);
       if (own.length) {
-        put('<section id="own" aria-labelledby="own-h">\n<h2 id="own-h">Brought in</h2>\n<p class="lede">Things saved elsewhere and brought into 5s.</p>\n<ul class="own">');
+        put('<section id="own" aria-labelledby="own-h">\n<h2 id="own-h">Brought in</h2>\n<p class="lede">Things saved elsewhere and brought in.</p>\n<ul class="own">');
         put(own.map((t) => '<li><figure><img src="' + esc(t.src) + '" alt="' + esc(t.name) + '" loading="lazy" decoding="async"><figcaption><b>' + esc(t.name) + '</b>' + esc(t.source) + '</figcaption></figure></li>').join(''));
         put('</ul>\n</section>\n');
       }
     }
 
     put('</main>\n<footer class="wrap">\n');
-    put('<p>' + (made ? 'Made in 5s on ' + esc(made) + '. ' : 'Made in 5s. ') + 'Entertain it All.</p>\n');
+    put('<p>' + (made ? 'Made on ' + esc(made) + '. ' : '') + 'Entertain it All.</p>\n');
     put('<p>The works come from an artist’s database of saved works. Images and pages on ' + esc(sitesOf(kept)) + '.</p>\n');
     put('<p>This page holds no name, no email and no account details: only what was kept, passed and set. The seed is in its source (format 5s-seed).</p>\n');
     put('</footer>\n');
@@ -540,13 +540,13 @@ footer p { margin: 0 0 8px; max-width: 68ch; }
   function readme(opts) {
     const o = opts || {};
     const kept = o.seed && typeof o.seed === 'object' ? keptWorks(o.seed, resolver(o.seed, o.deck || null, o)) : [];
-    const title = text(o.title) || 'A 5s hub';
+    const title = text(o.title) || 'My hub';
     const site = https(o.site);
     return '# ' + title.replace(/[\r\n]+/g, ' ') + '\n\n' +
-      'Made with 5s. Entertain it All.\n\n' +
+      'Entertain it All.\n\n' +
       (site ? 'Open it at ' + site + '\n\n' : '') +
       '- `index.html` is the hub page.\n' +
-      '- `seed.json` is the 5s seed (format `5s-seed`): what was kept, passed and set. It holds no name, no email and no account details.\n\n' +
+      '- `seed.json` is the seed (format `5s-seed`): what was kept, passed and set. It holds no name, no email and no account details.\n\n' +
       'Images and pages of the works are on ' + sitesOf(kept) + '.\n';
   }
 

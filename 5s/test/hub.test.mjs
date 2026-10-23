@@ -92,10 +92,10 @@ test('rules.repo: a hub\'s name (letters, digits, - _ ., 1–100, not . or ..), 
 });
 
 test('suggest and isSiteRepo', () => {
-  assert.deepEqual(H.suggest('ada'), { site: 'ada.github.io', plain: '5s-hub' });
-  assert.deepEqual(H.suggest('Ada'), { site: 'Ada.github.io', plain: '5s-hub' });
-  assert.deepEqual(H.suggest('@ada '), { site: 'ada.github.io', plain: '5s-hub' });
-  assert.deepEqual(H.suggest(''), { site: '', plain: '5s-hub' });
+  assert.deepEqual(H.suggest('ada'), { site: 'ada.github.io', plain: 'my-hub' });
+  assert.deepEqual(H.suggest('Ada'), { site: 'Ada.github.io', plain: 'my-hub' });
+  assert.deepEqual(H.suggest('@ada '), { site: 'ada.github.io', plain: 'my-hub' });
+  assert.deepEqual(H.suggest(''), { site: '', plain: 'my-hub' });
   assert.equal(H.rules.repo(H.suggest('ada-lovelace').site).ok, true);
   assert.equal(H.isSiteRepo('ada', 'ada.github.io'), true);
   assert.equal(H.isSiteRepo('Ada', 'ada.GITHUB.io'), true);
@@ -278,7 +278,7 @@ test('api.putFile and getFile: sha looked up first, passed on update, base64 of 
   gh.requests.length = 0;
   const r2 = await api.putFile({ owner: 'ada', repo: 'ada.github.io', path: 'index.html', text: UNICODE + 'again\n' });
   assert.equal(gh.requests[1].body.sha, r1.sha);
-  assert.equal(gh.requests[1].body.message, 'Save from 5s');
+  assert.equal(gh.requests[1].body.message, 'Save my hub');
   assert.equal(r2.created, false);
   assert.notEqual(r2.sha, r1.sha);
   // the same text again: nothing to save, no PUT
@@ -353,7 +353,7 @@ test('api errors: 401, 403, 404, 409, 422, 429, 5xx and no network, each in plai
   const cases = [
     [401, {}, 'signed-out', /Sign in again/],
     [403, { 'x-ratelimit-remaining': '0' }, 'busy', /slow down/],
-    [403, {}, 'not-allowed', /allow 5s/],
+    [403, {}, 'not-allowed', /give permission to make and save your hub/],
     [404, {}, 'not-found', /couldn't find your hub/],
     [409, {}, 'conflict', /changed while/],
     [422, {}, 'invalid', /letters, numbers/],
@@ -528,7 +528,7 @@ test('hubpage.build: a complete standalone document with the seed riding along',
   assert.ok(html.endsWith('</body>\n</html>\n'));
   assert.equal(count(html, '<title>'), 1);
   assert.equal(count(html, '</title>'), 1);
-  assert.ok(html.includes('<title>A 5s hub</title>'), 'the default title');
+  assert.ok(html.includes('<title>My hub</title>'), 'the default title');
   assert.ok(html.includes('<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'));
   // the connector recognises a 5s page by this marker and the seed tag before saving over it
   assert.equal(count(html, '<meta name="generator" content="5s">'), 1);
@@ -568,7 +568,7 @@ test('hubpage.build: a complete standalone document with the seed riding along',
   assert.ok(!/\b(he|she|his|her|him|hers)\b/i.test(html.replace(/<script[\s\S]*?<\/script>/, '').replace(/<style>[\s\S]*?<\/style>/, '')));
   // deterministic
   assert.equal(Page.build({ seed, profile, philosophy, deck, generatedAt: NOW, colourName: F.colourName }), html);
-  assert.ok(html.includes('Made in 5s on 22 October 2026.'));
+  assert.ok(html.includes('Made on 22 October 2026.'));
 });
 
 test('hubpage.build: other people\'s text is escaped everywhere; addresses and colours are checked', () => {
@@ -661,7 +661,7 @@ test('hubpage.files and readme: the hub\'s files, with the seed as published', (
   assert.equal(files[0].text, Page.build({ seed, deck, generatedAt: NOW, site: 'https://ada.github.io/' }));
   assert.deepEqual(JSON.parse(files[1].text), { ...seed, notes: [] });
   assert.deepEqual(JSON.parse(Page.files({ seed, includeNotes: true })[1].text), seed);
-  assert.ok(files[2].text.startsWith('# A 5s hub\n') && files[2].text.includes('https://ada.github.io/'));
+  assert.ok(files[2].text.startsWith('# My hub\n') && files[2].text.includes('https://ada.github.io/'));
   assert.ok(!GITHUB_WORDS.test(files[2].text.replace(/https?:\/\/\S+/g, '')));
   assert.equal(files[3].text, '');
   assert.equal(Page.readme({ site: 'javascript:alert(1)' }).includes('javascript'), false);

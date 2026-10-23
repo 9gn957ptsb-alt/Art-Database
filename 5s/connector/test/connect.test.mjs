@@ -352,7 +352,7 @@ test('bring_in: read_link then bring_in adds brought-in things, kept, with sourc
   const r = await call(ctx, 'bring_in', { items: found.data.items.slice(0, 2) });
   assert.equal(r.isError, undefined, r.summary);
   assert.equal(r.data.added.length, 2);
-  assert.match(r.summary, /^Added 2 things to their 5s \(from Pinterest\), kept as their own saves\. Colours read here for 2\./);
+  assert.match(r.summary, /^Added 2 things to their database \(from Pinterest\), kept as their own saves\. Colours read here for 2\./);
   const st = await stateOf(ctx);
   assert.equal(st.own.length, 2);
   const [bowl, win] = st.own;
@@ -386,7 +386,7 @@ test('bring_in: GIFs, WebPs and pictures too big to decode here are added with c
   const r = await call(ctx, 'bring_in', { items, kind: 'space' });
   assert.equal(r.data.added.length, 4, r.summary);
   assert.equal(r.data.colours.pending, 4);
-  assert.match(r.summary, /4 with colours pending \(the 5s app reads them when it next opens\)/);
+  assert.match(r.summary, /4 with colours pending \(the app reads them when it next opens\)/);
   assert.match(r.data.colours.note, /item_image/);
   for (const a of r.data.added) { assert.equal(a.colours_pending, true); assert.deepEqual(a.colours, []); assert.ok(a.pending_because); }
   const st = await stateOf(ctx);
@@ -427,8 +427,8 @@ test('bring_in: what is not a picture, missing, private or already there is skip
   assert.match(why[3], /private network/);
   assert.match(why[4], /private network/);
   assert.match(why[5], /private network/);
-  assert.match(why[6], /Already in their 5s/);
-  assert.match(why[8], /Already in their 5s/, 'the same picture twice in one call: once');
+  assert.match(why[6], /Already in their database/);
+  assert.match(why[8], /Already in their database/, 'the same picture twice in one call: once');
   assert.ok(!fetched(web, 'localhost') && !fetched(web, '169.254.169.254') && !fetched(web, '127.0.0.1'));
   assert.match(r.summary, /Skipped 8 \(data\.skipped says why\)/);
 });
@@ -620,7 +620,7 @@ test('item_image: refusals: too large, gone, not a thing of theirs, brought in f
   assert.equal((await call(ctx, 'put_state', { state: st, base: g.data.rev })).data.ok, true);
   const photo = await call(ctx, 'item_image', { id: 'yphoto' });
   assert.equal(photo.data.error, 'no address');
-  assert.match(photo.summary, /lives only in the 5s app/);
+  assert.match(photo.summary, /lives only in the app/);
   const sneak = await call(ctx, 'item_image', { id: 'ysneak' });
   assert.equal(sneak.data.code, 'private');
   assert.ok(!fetched(web, '169.254.169.254'));

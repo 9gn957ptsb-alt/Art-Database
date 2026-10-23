@@ -346,7 +346,7 @@ test('read_link: a page with no picture still says what it is, and can be kept b
   // The same link again: already in their 5s.
   const again = await call(ctx, 'bring_in', { items: [{ image: null, link: 'https://studio.example.com/collection/long-table', source: 'The web' }] });
   assert.equal(again.data.added.length, 0);
-  assert.equal(again.data.skipped[0].why, 'Already in their 5s.');
+  assert.equal(again.data.skipped[0].why, 'Already in their database.');
   // Neither a picture nor a link: skipped, in plain words.
   const neither = await call(ctx, 'bring_in', { items: [{ image: null, source: 'The web' }] });
   assert.equal(neither.data.skipped[0].why, 'It has neither a picture nor a link.');

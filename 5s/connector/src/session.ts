@@ -82,7 +82,7 @@ type Fetcher = { fetch(request: Request, env: any, ctx: any): Promise<Response> 
  */
 export async function serveBound(inner: Fetcher, request: Request, env: { COOKIE_ENCRYPTION_KEY?: string }, ctx: unknown, person: string): Promise<Response> {
 	const key = await sessionKey(env.COOKIE_ENCRYPTION_KEY);
-	if (!key) return json(503, -32603, "5s is not set up yet: its COOKIE_ENCRYPTION_KEY secret is missing or too short.");
+	if (!key) return json(503, -32603, "Not set up yet: the COOKIE_ENCRYPTION_KEY secret is missing or too short.");
 	const headers = new Headers();
 	request.headers.forEach((value, name) => {
 		if (!isInternalHeader(name)) headers.set(name, value);

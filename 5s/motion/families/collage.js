@@ -278,7 +278,7 @@
     id: 'collage',
     name: 'Collage',
     idea: 'The mark arrives as torn paper fragments that settle into place, slightly off-register, like the artist\'s collages.',
-    why: '5s is a linear version of the artist\'s collaging: things put on the table and played with until they make one thing, familiar and new, the seams left showing.',
+    why: 'The app is a linear version of the artist\'s collaging: things put on the table and played with until they make one thing, familiar and new, the seams left showing.',
     moments: ['launch', 'bring', 'set-pin'],
     styles: ['drop', 'slide', 'paste', 'gather'],
     params: {

@@ -362,7 +362,7 @@
   Motion.register({
     id: 'dive',
     name: 'Dive',
-    idea: 'The view dives into the mark: the hollow of the 5\'s bowl rushes toward you until it fills the screen, you pass through it, and on the other side the same 5s comes forward to rest.',
+    idea: 'The view dives into the mark: the hollow in the bowl of the 5 rushes toward you until it fills the screen, you pass through it, and on the other side the same mark comes forward to rest.',
     why: 'Changing place is what a transition is: a dive through the bowl goes somewhere (one tab into another, the splash into the app, a card into Split), and the mark at the end is the one you started with: familiar, and new.',
     moments: ['tab', 'launch', 'split', 'path', 'turn'],
     styles: ['bowl', 'ess', 'tunnel'],

@@ -1394,7 +1394,7 @@
    * Motion: the family registry
    * ======================================================================================== */
   const MOMENTS = freezeDeep([
-    { id: 'launch', name: 'Opening 5s', feel: 'arrival, recognition', where: 'splash', length: '1.2–2 s', loop: false },
+    { id: 'launch', name: 'Opening the app', feel: 'arrival, recognition', where: 'splash', length: '1.2–2 s', loop: false },
     { id: 'load', name: 'Waiting for the deck', feel: "patience; it's alive", where: 'loading', length: 'loop', loop: true },
     { id: 'five-start', name: "Today's five begins", feel: 'readiness', where: 'Sort, first card', length: '0.6–1.2 s', loop: false },
     { id: 'keep', name: 'Keep', feel: 'a small yes, warmth', where: 'Sort, card flies right', length: '0.3–0.7 s', loop: false },

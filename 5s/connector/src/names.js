@@ -16,7 +16,7 @@ const tidy = (s) => String(s || '').replace(/^[-._]+/, '').replace(/(\.git)+$/i,
 
 /** fixName(name) -> a name GitHub (and 5s) will take, from anything typed. */
 export function fixName(name) {
-  return tidy(FiveSHub.rules.repo(name).fixed) || '5s-hub';
+  return tidy(FiveSHub.rules.repo(name).fixed) || 'my-hub';
 }
 
 /** checkName(name) -> {ok, name?, why?, fix?}: GitHub's rules (FiveSHub.rules.repo) and the two guards. */

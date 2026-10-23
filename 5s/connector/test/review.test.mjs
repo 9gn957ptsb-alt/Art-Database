@@ -40,7 +40,7 @@ test('put_state refuses states that would break the tools, in a sentence, and wr
     const r = await call(ctx, 'put_state', { state: st, base: before.data.rev });
     assert.equal(r.isError, true, what);
     assert.equal(r.data.error, 'bad state', what);
-    assert.match(r.summary, /^That is not a 5s state: state\./, what);
+    assert.match(r.summary, /^That is not a valid state: state\./, what);
     assert.equal((await call(ctx, 'get_state')).data.rev, before.data.rev, what + ': nothing written');
     for (const t of TOOL_NAMES.filter((x) => x !== 'put_state')) await call(ctx, t, argsFor(t)); // none throws
   }
@@ -248,7 +248,7 @@ test('a judgment that would take the state past 1 MB is a plain answer, not a fa
   const r = await call(ctx, 'judge', { card: 'i001', keep: true });
   assert.equal(r.isError, true);
   assert.equal(r.data.limit, 'size');
-  assert.match(r.summary, /Your 5s is full/);
+  assert.match(r.summary, /Your database is full/);
 });
 
 test('put_state refuses a state that drops many judgments at once (an Undo still works)', async () => {

@@ -445,7 +445,7 @@ const looksJson = (b) => /^\s*[[{]/.test(textOf(b.subarray(0, 64)));
 const looksFeed = (t) => /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*-->\s*)?<(rss|feed|rdf:RDF)\b/i.test(t);
 
 function notReadable(what) {
-  return new WebError('not readable', 'That address is ' + what + ', not a page or a picture 5s can read.', 'Use the address of the board, channel or page that shows the pictures.');
+  return new WebError('not readable', 'That address is ' + what + ', not a readable page or picture.', 'Use the address of the board, channel or page that shows the pictures.');
 }
 
 /**
@@ -464,18 +464,18 @@ export async function readLink(web, url) {
   if (kindOfBytes || /^image\//.test(doc.type)) {
     // The address is itself a picture.
     // The site's Content-Type is its own text: named only when it is a type 5s knows (web.js typeWord).
-    if (!kindOfBytes) throw notReadable('a kind of picture 5s does not read' + (typeWord(doc.type) ? ' (' + typeWord(doc.type) + ')' : ''));
+    if (!kindOfBytes) throw notReadable('a kind of picture that is not supported' + (typeWord(doc.type) ? ' (' + typeWord(doc.type) + ')' : ''));
     const name = safeDecode((new URL(doc.url).pathname.split('/').pop() || '').replace(/\.[a-z0-9]{2,5}$/i, '')).replace(/[_-]+/g, ' ');
     out = { title: null, items: [{ image: doc.url, thumb: null, title: plainText(name), link: url.href }] };
   } else if (what.kind === 'arena') {
     whole();
     let json;
-    try { json = JSON.parse(text()); } catch { throw notReadable('an answer from Are.na that 5s could not read'); }
+    try { json = JSON.parse(text()); } catch { throw notReadable('an answer from Are.na that could not be read'); }
     out = parseArena(json, doc.url);
     if (!out.title) out.title = what.slug.replace(/-+/g, ' ');
   } else if (what.kind === 'flickr-json' || (doc.type === 'application/json' && /flickr\.com$/.test(new URL(doc.url).hostname))) {
     whole();
-    try { out = parseFlickrJson(text(), doc.url); } catch { throw notReadable('an answer from Flickr that 5s could not read'); }
+    try { out = parseFlickrJson(text(), doc.url); } catch { throw notReadable('an answer from Flickr that could not be read'); }
   } else if (/(rss|atom)\+xml|^(application|text)\/xml$/.test(doc.type) || looksFeed(text().slice(0, 4096))) {
     whole();
     out = parseFeed(text(), doc.url);
@@ -496,7 +496,7 @@ export async function readLink(web, url) {
     }
   } else if (looksJson(doc.bytes)) {
     whole();
-    throw notReadable('data (JSON) from a site 5s does not know');
+    throw notReadable('data (JSON) from an unknown site');
   } else {
     throw notReadable(typeWord(doc.type) ? 'a file of type ' + typeWord(doc.type) : 'a file');
   }
@@ -516,7 +516,7 @@ function pinterestSizes(it) {
 }
 
 function tooLargeDoc() {
-  return new WebError('too large', 'That is bigger than 5s reads (over ' + Math.round(WEB_LIMITS.pageBytes / 1024) + ' KB).', 'Use the address of a single board, channel or page.');
+  return new WebError('too large', 'That is too big to read (over ' + Math.round(WEB_LIMITS.pageBytes / 1024) + ' KB).', 'Use the address of a single board, channel or page.');
 }
 
 /** For the tests: the one-pass scanners and looksFeed, each checked against the pattern it stands in for. */

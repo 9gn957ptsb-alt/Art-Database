@@ -263,8 +263,8 @@
   Motion.register({
     id: 'cast',
     name: 'Cast',
-    idea: 'The 5s stands up off the page like an object in a room; a light crosses over it, and its long shadow sweeps round the floor like the hand of a sundial, then tucks back under it.',
-    why: 'Light moving through a room is how a space feels lived in, and 5s is heading for your house: a shadow turning round the mark is a clock anyone can read, a dark hand at 64 px and architecture at full screen, calm enough to wait with.',
+    idea: 'The mark stands up off the page like an object in a room; a light crosses over it, and its long shadow sweeps round the floor like the hand of a sundial, then tucks back under it.',
+    why: 'Light moving through a room is how a space feels lived in, and the app is heading for your house: a shadow turning round the mark is a clock anyone can read, a dark hand at 64 px and architecture at full screen, calm enough to wait with.',
     moments: ['seed', 'load', 'empty', 'launch', 'five-start'],
     styles: ['sundial', 'window', 'lamp'],
     params: {

@@ -461,7 +461,8 @@
       const suit = game.suits[t.s];
       if (t.sp === 'mark' || t.s < 0) {
         e.className = 'fp-t fp-mark';
-        e.innerHTML = '<i class="fp-fr"></i><b>5s</b>';
+        e.innerHTML = '<i class="fp-fr"></i><b>5s</b><img class="fp-logo" src="logo.webp" alt="" draggable="false">';
+        e.lastChild.onerror = function () { this.remove(); }; // a failed logo would show a broken-image icon over the drawn tile
         return;
       }
       e._hex = suit ? suit.hex : IRIS;

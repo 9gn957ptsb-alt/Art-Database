@@ -172,9 +172,9 @@ const plain = (status: number, text: string, extra?: Record<string, string>) =>
 const boundMcp = {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext & { props?: Props }) {
 		const person = ctx.props && ctx.props.id;
-		if (!person) return plain(401, "Not signed in to 5s.");
+		if (!person) return plain(401, "Not signed in.");
 		if (env.RATE_LIMIT_PERSON && !(await env.RATE_LIMIT_PERSON.limit({ key: "person:" + person })).success) {
-			return plain(429, "5s is getting a lot of requests from you. Wait a minute and try again.", { "Retry-After": "60" });
+			return plain(429, "A lot of requests are coming from you. Wait a minute and try again.", { "Retry-After": "60" });
 		}
 		try {
 			return await serveBound(mcpHandler, request, env, ctx, person);
@@ -183,7 +183,7 @@ const boundMcp = {
 			// 100,000 Durable Object requests used up (costs.js). Said in plain words, never a bare 500.
 			console.error("5s /mcp failed:", error instanceof Error ? error.message : error);
 			return Response.json(
-				{ jsonrpc: "2.0", error: { code: -32603, message: "5s couldn't answer just now. Try again in a minute; if it keeps happening, 5s has used today's free allowance, which comes back at midnight UTC. Nothing saved is lost, and the 5s app keeps working on its own meanwhile." }, id: null },
+				{ jsonrpc: "2.0", error: { code: -32603, message: "That couldn't be answered just now. Try again in a minute; if it keeps happening, today's free allowance is used up: it comes back at midnight UTC. Nothing saved is lost, and the app keeps working on its own meanwhile." }, id: null },
 				{ status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } },
 			);
 		}
@@ -231,7 +231,7 @@ export default {
 			// Tests only: every /mcp request is a fake person, and GitHub is a fake. Refused anywhere
 			// but localhost, so a stray DEV_FAKE_USER can never open a deployed connector.
 			if (!LOCAL_HOSTS.has(url.hostname)) {
-				return plain(403, "DEV_FAKE_USER is set, but this request is not to localhost, so 5s refuses the dev bypass. DEV_FAKE_USER belongs only in .dev.vars, for local tests.");
+				return plain(403, "DEV_FAKE_USER is set, but this request is not to localhost, so the dev bypass is refused. DEV_FAKE_USER belongs only in .dev.vars, for local tests.");
 			}
 			if (url.pathname === "/mcp" || url.pathname.startsWith("/mcp/")) {
 				const props = devProps(env.DEV_FAKE_USER, request);

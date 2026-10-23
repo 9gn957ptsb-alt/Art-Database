@@ -33,7 +33,7 @@ export const SERVER_INSTRUCTIONS = [
   'When the person asks to add their Are.na channel, Pinterest board, Flickr or Tumblr, a page or some pictures to 5s, call read_link, show them what it found and ask which to add; call bring_in only after they confirm.',
 ].join(' ');
 
-const HUB_DESCRIPTION = 'My 5s hub: an aesthetic database, five judgments a day.';
+const HUB_DESCRIPTION = 'My taste, sorted five at a time.';
 const DAY_NOTE = 'It can take a minute for the address to appear.';
 
 // ------------------------------------------------------------------ small helpers
@@ -101,10 +101,10 @@ async function update(ctx, fn, opts) {
 function hubCaps(rec, now) {
   const use = usage(rec.use, now);
   if (use.writes >= DAILY_WRITES) {
-    return new LimitError('daily writes', '5s has saved your state ' + use.writes + ' times today, its most in one day.', 'Save your hub tomorrow (the count starts again at midnight UTC).');
+    return new LimitError('daily writes', 'Your state has been saved ' + use.writes + ' times today, the most allowed in one day.', 'Save your hub tomorrow (the count starts again at midnight UTC).');
   }
   if (use.saves >= DAILY_HUB_SAVES) {
-    return new LimitError('daily hub saves', '5s has saved to your hub ' + use.saves + ' times today, its most in one day.', 'Save your hub again tomorrow (the count starts again at midnight UTC); what is there now stays as it is.');
+    return new LimitError('daily hub saves', 'Your hub has been saved ' + use.saves + ' times today, the most allowed in one day.', 'Save your hub again tomorrow (the count starts again at midnight UTC); what is there now stays as it is.');
   }
   return null;
 }
@@ -124,7 +124,7 @@ function githubTrouble(e) {
   const code = e && e.code;
   const why = (e && e.message) || 'Something went wrong talking to GitHub.';
   const resolution = code === 'signed-out' || code === 'not-allowed'
-    ? 'Reconnect 5s in Claude: Settings → Connectors → 5s → Connect, then sign in with GitHub again and allow 5s to make and save your hub.'
+    ? 'Reconnect in Claude: Settings → Connectors → 5s → Connect, then sign in with GitHub again and give permission to make and save your hub.'
     : code === 'busy' ? 'Wait a few minutes and try again.'
       : 'Try again in a moment.';
   return refuse(why + ' ' + resolution, { error: 'github', code: code || null, status: (e && e.status) || null, why, resolution, detail: quoted(e && e.detail, 300) });
@@ -275,8 +275,8 @@ function hubFiles(ctx, st, opts) {
   });
   const code = seed.code;
   const how = {
-    'index.html': { message: 'Save my 5s hub page (' + code + ')', ours: hubpage.isFivesPage },
-    'seed.json': { message: 'Save my 5s seed (' + code + ')', ours: hubpage.isFivesSeed },
+    'index.html': { message: 'Save my hub page (' + code + ')', ours: hubpage.isFivesPage },
+    'seed.json': { message: 'Save my seed (' + code + ')', ours: hubpage.isFivesSeed },
     'README.md': { message: 'Say what this hub is', ours: hubpage.isFivesReadme, onlyOurs: true },
     '.nojekyll': { message: 'Serve the hub page exactly as written', ours: (t) => t === '', onlyOurs: true },
   };
@@ -333,7 +333,7 @@ async function saveHubFiles(ctx, { repo, files, ours, fresh }) {
 /** A repository GitHub now answers for under another account (moved, or the name redirects). */
 function movedAway(repo, login) {
   if (!repo.owner || sameName(repo.owner, login)) return null;
-  const why = 'Your hub "' + repo.name + '" now belongs to another GitHub account, so 5s won\'t save to it.';
+  const why = 'Your hub "' + repo.name + '" now belongs to another GitHub account, so nothing will be saved to it.';
   const resolution = 'Make a new hub on your own account with make_hub (for example "' + pagesName(login) + '").';
   return refuse(why + ' ' + resolution, { refused: 'moved', name: repo.name, why, resolution });
 }
@@ -357,11 +357,11 @@ async function turnOnAddress(ctx, repo) {
 }
 
 function notOurs(name, login, alsoSiteHint) {
-  const alt = [fixName(name + '-5s'), '5s-hub'];
-  const why = 'A repository called "' + name + '" is already on your GitHub account and 5s didn\'t make it, so 5s won\'t touch it.';
+  const alt = [...new Set([fixName(name + '-hub'), 'my-hub'])].filter((n) => n !== name);
+  const why = 'A repository called "' + name + '" is already on your GitHub account and this connector didn\'t make it, so it won\'t be touched.';
   const resolution = alsoSiteHint
-    ? 'To save your hub into your existing site, call make_hub again with name "' + pagesName(login) + '" (5s will not replace a homepage it didn\'t make). Or choose a new name, like "' + alt[0] + '".'
-    : 'Choose a new name, like "' + alt[0] + '" or "' + alt[1] + '".';
+    ? 'To save your hub into your existing site, call make_hub again with name "' + pagesName(login) + '" (a homepage that isn\'t a hub page is never replaced). Or choose a new name, like "' + alt[0] + '".'
+    : 'Choose a new name, like ' + alt.map((n) => '"' + n + '"').join(' or ') + '.';
   return refuse(why + ' ' + resolution, { refused: 'not made by 5s', name, why, resolution, suggestions: alt });
 }
 
@@ -408,12 +408,12 @@ function webRefusal(e) {
 
 /** The tool call's reader of the public web (web.js), or null when this connector has none. */
 const webFor = (ctx, budget) => (typeof ctx.web === 'function' ? ctx.web({ budget }) : null);
-const NO_WEB = () => refuse('Reading other sites is not available on this 5s connector.', { error: 'no web', why: 'This connector was started without a way to read the web.', resolution: 'Reconnect 5s in Claude; if it keeps happening, the connector needs redeploying.' });
+const NO_WEB = () => refuse('Reading other sites is not available on this connector.', { error: 'no web', why: 'This connector was started without a way to read the web.', resolution: 'Reconnect in Claude (Settings → Connectors → 5s → Connect); if it keeps happening, the connector needs redeploying.' });
 
 /** At most so many reads of other sites a minute per person (Workers Rate Limiting): else a plain answer. */
 async function webAllowed(ctx) {
   if (typeof ctx.limitWeb !== 'function' || (await ctx.limitWeb())) return null;
-  const why = '5s has read a lot of links and pictures for you in the last minute.';
+  const why = 'A lot of links and pictures have been read for you in the last minute.';
   const resolution = 'Wait a minute, then ask again.';
   return refuse(why + ' ' + resolution, { error: 'limit', limit: 'reads a minute', why, resolution });
 }
@@ -453,7 +453,7 @@ async function readPicture(web, p, mayMeasure) {
     }
     const type = sniff(r.bytes);
     if (!type) {
-      last = /svg/.test(r.type) ? 'It is a drawing file (SVG), which 5s does not keep.' : 'That address is not a picture (it gives ' + (typeWord(r.type) || 'something else') + ').';
+      last = /svg/.test(r.type) ? 'It is a drawing file (SVG), which is not kept.' : 'That address is not a picture (it gives ' + (typeWord(r.type) || 'something else') + ').';
       continue;
     }
     return { ok: true, src, type, bytes: r.bytes, truncated: r.truncated, dim: dimensions(r.bytes, type) };
@@ -488,7 +488,7 @@ export const TOOLS = [
       const { state } = await readState(ctx.store, ctx.user.id);
       const t = tasteOf(ctx, state);
       if (!t.data.judged) {
-        return ok('No judgments yet, so there is no taste to read. Run a five with next_five (or open the 5s app).', t.data);
+        return ok('No judgments yet, so there is no taste to read. Run a five with next_five (or open the app).', t.data);
       }
       const P = t.P;
       const labels = (xs) => xs.slice(0, 5).map((e) => e.label).join(', ') || 'nothing clear yet';
@@ -534,7 +534,7 @@ export const TOOLS = [
       const thin = P.judged < 15;
       const lines = [
         'Aesthetic brief for: ' + purpose,
-        'From ' + P.judged + ' quick keep-or-pass judgments in 5s (' + P.kept + ' kept)' + (thin ? '; an early read, so hold it lightly.' : '.'),
+        'From ' + P.judged + ' quick keep-or-pass judgments (' + P.kept + ' kept)' + (thin ? '; an early read, so hold it lightly.' : '.'),
         leansTo.length ? 'Leans toward: ' + listWords(leansTo) + '.' : null,
         materials.length ? 'Materials: ' + listWords(materials.map((s) => s.toLowerCase())) + '.' : null,
         colourWords.length || textures.length ? 'Colour and surface: ' + listWords(colourWords.concat(textures).map((s) => s.toLowerCase())) + '.' : null,
@@ -668,7 +668,7 @@ export const TOOLS = [
       }
       if (!checkName(hub.name).ok || (hub.user != null && !validLogin(hub.user))) {
         // Typed in the app and not a GitHub name: say so without repeating it (it is only text).
-        return ok('The hub recorded in 5s has a name or GitHub username that GitHub would not accept, so it cannot be on GitHub. make_hub can make a hub (' + pagesName(login) + ' becomes ' + hubAddress(login, pagesName(login)) + ').', {
+        return ok('The hub on record has a name or GitHub username that GitHub would not accept, so it cannot be on GitHub. make_hub can make a hub (' + pagesName(login) + ' becomes ' + hubAddress(login, pagesName(login)) + ').', {
           has_hub: true, valid: false, github_login: login, recorded: { name: quoted(hub.name, 100), user: quoted(hub.user, 39) },
           suggested_name: pagesName(login), current_code: code,
         });
@@ -683,7 +683,7 @@ export const TOOLS = [
       const data = {
         has_hub: true, github_login: login, name: quoted(hub.name, 100), owner: quoted(owner, 39),
         address: hubAddress(owner, hub.name), repo_url: repoUrl(owner, hub.name), public: !hub.private,
-        made_by: ours ? '5s connector' : hub.mode === 'links' ? 'you, from the 5s app' : 'you',
+        made_by: ours ? 'this connector' : hub.mode === 'links' ? 'you, from the app' : 'you',
         made_at: iso(hub.madeAt), saved_at: iso(hub.savedAt), saved_code: hub.savedCode || null,
         current_code: code, needs_save: hub.savedCode !== code, on_github: onGitHub,
       };
@@ -707,11 +707,11 @@ export const TOOLS = [
     async run(ctx, args) {
       const login = ctx.user.login;
       if (args.private) {
-        const why = '5s signs in with GitHub\'s "public_repo" permission, which can make and save public repositories only, so a private hub isn\'t possible yet.';
-        const resolution = 'Make a public hub now: it holds aesthetics only (no notes unless asked, no account details, never your own images). Private hubs will come with a 5s GitHub App, which can be given access to just one private repository.';
+        const why = 'The GitHub sign-in uses the "public_repo" permission, which can make and save public repositories only, so a private hub isn\'t possible yet.';
+        const resolution = 'Make a public hub now: it holds aesthetics only (no notes unless asked, no account details, never your own images). Private hubs will come with a GitHub App, which can be given access to just one private repository.';
         return refuse(why + ' ' + resolution, { refused: 'private', why, resolution });
       }
-      if (!ctx.github) return refuse('GitHub is not connected. Reconnect 5s in Claude (Settings → Connectors → 5s → Connect).', { error: 'not signed in' });
+      if (!ctx.github) return refuse('GitHub is not connected. Reconnect in Claude (Settings → Connectors → 5s → Connect).', { error: 'not signed in' });
       const named = typeof args.name === 'string' && args.name.trim() !== '';
       const check = checkName(named ? args.name : pagesName(login));
       if (!check.ok) {
@@ -728,7 +728,7 @@ export const TOOLS = [
         let created = false;
         if (repo) {
           if (repo.private) {
-            return refuse('"' + name + '" is a private repository; 5s can only save public hubs (its GitHub permission is public_repo).', { refused: 'private repository', name });
+            return refuse('"' + name + '" is a private repository; only public hubs can be saved (the GitHub permission is public_repo).', { refused: 'private repository', name });
           }
           const moved = movedAway(repo, login);
           if (moved) return moved;
@@ -736,8 +736,8 @@ export const TOOLS = [
           if (!ours && !siteTheyNamed) return notOurs(name, login, isPagesName(name, login));
         } else {
           if (madeOn(made, nowOf(ctx)) >= DAILY_NEW_HUBS) {
-            const why = '5s has already made ' + DAILY_NEW_HUBS + ' new hubs on your GitHub account today, its most in one day.';
-            const resolution = 'Save to a hub 5s already made (hub_status shows it), or make a new one tomorrow.';
+            const why = DAILY_NEW_HUBS + ' new hubs have already been made on your GitHub account today, the most allowed in one day.';
+            const resolution = 'Save to a hub already made (hub_status shows it), or make a new one tomorrow.';
             return refuse(why + ' ' + resolution, { error: 'limit', limit: 'daily new hubs', why, resolution });
           }
           repo = await ctx.github.createHub({ name, description: HUB_DESCRIPTION, private: false });
@@ -748,8 +748,9 @@ export const TOOLS = [
         const hf = hubFiles(ctx, first.state, { includeNotes: !!args.include_notes, site: hubAddress(login, repo.name) });
         const saved = await saveHubFiles(ctx, { repo, files: hf.files, ours, fresh: created });
         if (saved.blocked) {
-          const why = '"' + repo.name + '" already has a ' + saved.blocked + ' that 5s didn\'t make, so 5s left everything there as it was.';
-          const resolution = 'Choose a new name for your hub, like "5s-hub" (its address would be ' + hubAddress(login, '5s-hub') + ').';
+          const why = '"' + repo.name + '" already has a ' + saved.blocked + ' that wasn\'t made for a hub, so everything there was left as it was.';
+          const alt = repo.name === 'my-hub' ? 'my-hub-2' : 'my-hub';
+          const resolution = 'Choose a new name for your hub, like "' + alt + '" (its address would be ' + hubAddress(login, alt) + ').';
           return refuse(why + ' ' + resolution, { refused: 'existing page', name: repo.name, file: saved.blocked, why, resolution });
         }
         const address = await turnOnAddress(ctx, repo);
@@ -782,18 +783,18 @@ export const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     async run(ctx, args) {
       const login = ctx.user.login;
-      if (!ctx.github) return refuse('GitHub is not connected. Reconnect 5s in Claude (Settings → Connectors → 5s → Connect).', { error: 'not signed in' });
+      if (!ctx.github) return refuse('GitHub is not connected. Reconnect in Claude (Settings → Connectors → 5s → Connect).', { error: 'not signed in' });
       const first = await readState(ctx.store, ctx.user.id);
       const hub = first.state.hub && first.state.hub.name ? first.state.hub : null;
       if (!hub) return refuse('No hub yet. Make one with make_hub (it becomes ' + hubAddress(login, pagesName(login)) + ').', { refused: 'no hub' });
       if (hub.user != null && !validLogin(hub.user)) {
-        return refuse('The GitHub username recorded with your hub in 5s is not one GitHub would accept. Make the hub again with make_hub.', { refused: 'name', why: 'not a GitHub username' });
+        return refuse('The GitHub username recorded with your hub is not one GitHub would accept. Make the hub again with make_hub.', { refused: 'name', why: 'not a GitHub username' });
       }
       if (hub.user && !sameName(hub.user, login)) {
-        return refuse('Your hub in 5s belongs to the GitHub account "' + hub.user + '", but 5s is signed in as "' + login + '". Reconnect 5s with that account, or make a hub on this one with make_hub.', { refused: 'other account', hub_user: hub.user, login });
+        return refuse('Your hub belongs to the GitHub account "' + hub.user + '", but you are signed in to GitHub as "' + login + '". Reconnect in Claude (Settings → Connectors → 5s → Connect) and sign in with that account, or make a hub on this one with make_hub.', { refused: 'other account', hub_user: hub.user, login });
       }
       const check = checkName(hub.name);
-      if (!check.ok) return refuse('The hub name stored in 5s is not a GitHub name. Make the hub again with make_hub.', { refused: 'name', why: check.why });
+      if (!check.ok) return refuse('The stored hub name is not a GitHub name. Make the hub again with make_hub.', { refused: 'name', why: check.why });
       const capped = hubCaps(first, nowOf(ctx));
       if (capped) return limitRefusal(capped);
       try {
@@ -802,20 +803,20 @@ export const TOOLS = [
         if (!ours && !isPagesName(hub.name, login)) return notOurs(hub.name, login, false);
         const repo = await ctx.github.getHub({ owner: login, repo: hub.name });
         if (!repo) return refuse('Your hub "' + hub.name + '" is not on GitHub any more (renamed or deleted?). make_hub can make it again.', { refused: 'missing', name: hub.name });
-        if (repo.private) return refuse('"' + hub.name + '" is private now; 5s can only save public hubs.', { refused: 'private repository', name: hub.name });
+        if (repo.private) return refuse('"' + hub.name + '" is private now; only public hubs can be saved.', { refused: 'private repository', name: hub.name });
         const moved = movedAway(repo, login);
         if (moved) return moved;
         // The hub page and the seed: what changes from save to save (the README and .nojekyll stay).
         const hf = hubFiles(ctx, first.state, { includeNotes: !!args.include_notes, site: hubAddress(login, repo.name) });
         const saved = await saveHubFiles(ctx, { repo, ours, files: hf.files.filter((f) => f.path === 'index.html' || f.path === 'seed.json') });
         if (saved.blocked) {
-          return refuse('"' + repo.name + '" has a ' + saved.blocked + ' that 5s didn\'t make, so 5s left everything there as it was. Choose a new hub name with make_hub.', { refused: 'existing page', file: saved.blocked });
+          return refuse('"' + repo.name + '" has a ' + saved.blocked + ' that wasn\'t made for a hub, so everything there was left as it was. Choose a new hub name with make_hub.', { refused: 'existing page', file: saved.blocked });
         }
         const t = sec(nowOf(ctx));
         await update(ctx, (cur) => ({ state: setHub(cur, { user: login, name: repo.name, savedAt: t, savedCode: hf.code, mode: cur.hub && cur.hub.mode === 'links' && !ours ? 'links' : 'api' }, nowOf(ctx)) }), { hubSave: true });
         const data = { name: repo.name, address: hubAddress(login, repo.name), files: saved.files, notes_included: !!args.include_notes, seed_code: hf.code };
         if (args.include_own_images) {
-          data.own_images = 'Not included: your own images stay private in the 5s app and never reach the connector. To show them on your hub, save it from the Hub sheet in the 5s app with "Include my own images" ticked.';
+          data.own_images = 'Not included: your own images stay private in the app and never reach the connector. To show them on your hub, save it from the Hub sheet in the app with "Include my own images" ticked.';
         }
         const changed = saved.files.some((f) => f.saved);
         return ok((changed ? 'Saved your hub "' + repo.name + '" (' + hf.code + '). ' : 'Your hub "' + repo.name + '" was already up to date (' + hf.code + '). ') + data.address + (data.own_images ? ' ' + data.own_images : ''), data);
@@ -827,18 +828,18 @@ export const TOOLS = [
   },
   {
     name: 'get_state',
-    title: 'Get 5s state',
+    title: 'Get state',
     description: 'For the 5s app: the person\'s whole 5s state (judgments, the five in progress, sets, brought-in things\' details, notes, hub) with its revision number, so the app and the connector share one state. Pass the rev as base to put_state. Not needed in a conversation: use get_taste instead.',
     inputSchema: {},
     annotations: { readOnlyHint: true, openWorldHint: false },
     async run(ctx) {
       const r = await readState(ctx.store, ctx.user.id);
-      return ok('5s state, rev ' + r.rev + ': ' + r.state.j.length + ' judgments, ' + r.state.sets.length + ' sets, ' + r.state.notes.length + ' notes.', { rev: r.rev, updated_at: r.at, state: r.state });
+      return ok('State, rev ' + r.rev + ': ' + r.state.j.length + ' judgments, ' + r.state.sets.length + ' sets, ' + r.state.notes.length + ' notes.', { rev: r.rev, updated_at: r.at, state: r.state });
     },
   },
   {
     name: 'put_state',
-    title: 'Put 5s state',
+    title: 'Put state',
     description: 'For the 5s app: replace the person\'s whole 5s state. base is the rev the app last read (0 if it never read one). Last writer wins unless base is stale; then nothing is written and the newer stored state comes back to merge, with its rev to use as the next base. Not for use in a conversation.',
     inputSchema: {
       state: z.record(z.string(), z.unknown()).describe('The whole 5s state object (SPEC "State"): v, j, five, sets, days, own, notes, seen, opts, hub.'),
@@ -848,9 +849,9 @@ export const TOOLS = [
     async run(ctx, args) {
       const text = JSON.stringify(args.state);
       const bytes = byteLength(text);
-      if (bytes > MAX_STATE_BYTES) return refuse('That state is over 1 MB, more than 5s keeps. Brought-in images belong in the app, not in the state.', { error: 'too large', bytes });
+      if (bytes > MAX_STATE_BYTES) return refuse('That state is over 1 MB, more than can be kept. Brought-in images belong in the app, not in the state.', { error: 'too large', bytes });
       const bad = checkState(args.state, ctx.deck);
-      if (bad) return refuse('That is not a 5s state: ' + bad, { error: 'bad state', why: bad });
+      if (bad) return refuse('That is not a valid state: ' + bad, { error: 'bad state', why: bad });
       const base = args.base == null ? 0 : args.base;
       let conflict = null, dropped = 0;
       const r = await update(ctx, (cur, rec) => {
@@ -863,7 +864,7 @@ export const TOOLS = [
         return { state: next };
       });
       if (!conflict && dropped > MAX_DROPPED) {
-        const why = 'That state has ' + dropped + ' fewer judgments than the one 5s keeps, and 5s never removes that many at once.';
+        const why = 'That state has ' + dropped + ' fewer judgments than the saved one, and that many are never removed at once.';
         const resolution = 'Nothing was changed. Merge with the stored state (get_state) and put again, keeping its judgments.';
         return refuse(why + ' ' + resolution, { error: 'would remove judgments', dropped, why, resolution });
       }
@@ -872,7 +873,7 @@ export const TOOLS = [
           ok: false, conflict: true, base, rev: conflict.rev, updated_at: conflict.at, state: conflict.state,
         });
       }
-      return ok('Saved the 5s state as rev ' + r.rev + '.', { rev: r.rev, updated_at: new Date(nowOf(ctx)).toISOString() });
+      return ok('Saved the state as rev ' + r.rev + '.', { rev: r.rev, updated_at: new Date(nowOf(ctx)).toISOString() });
     },
   },
   {
@@ -900,8 +901,8 @@ export const TOOLS = [
       const where = SOURCE_PHRASE[r.source] || 'that link';
       const says = data.page && PAGE_THING.some((k) => data.page[k]);
       if (!items.length) {
-        data.why = 'Nothing at that link offers a picture 5s can read.';
-        data.resolution = 'Try the board, channel or page that shows the pictures, or save the pictures and bring them in from your photos in the 5s app (Split → Bring in your own).';
+        data.why = 'Nothing at that link offers a readable picture.';
+        data.resolution = 'Try the board, channel or page that shows the pictures, or save the pictures and bring them in from your photos in the app (Split → Bring in your own).';
         if (says) {
           data.next = 'The page says what it is (data.page). If the person wants it in their 5s, call bring_in with image null, this link, and what data.page says it is (definedBy "page"); nothing is added until then.';
           return ok('No pictures found at that link (' + where + '), but the page says what it is: its own words are in data.page, as quoted data. It can be kept by its link alone with bring_in.', data);
@@ -951,17 +952,17 @@ export const TOOLS = [
       const first = await readState(ctx.store, ctx.user.id);
       const use = usage(first.use, now);
       if (use.writes >= DAILY_WRITES) {
-        return limitRefusal(new LimitError('daily writes', '5s has saved your state ' + use.writes + ' times today, its most in one day.', 'Bring these in tomorrow (the count starts again at midnight UTC).'));
+        return limitRefusal(new LimitError('daily writes', 'Your state has been saved ' + use.writes + ' times today, the most allowed in one day.', 'Bring these in tomorrow (the count starts again at midnight UTC).'));
       }
       const left = DAILY_BRING - use.brought;
       const someByLink = args.items.some((it) => it.image == null);
       if (left <= 0 && !someByLink) {
-        return limitRefusal(new LimitError('daily things brought in', '5s has read ' + use.brought + ' pictures from other sites for you today, its most in one day.', 'Bring in the rest tomorrow (the count starts again at midnight UTC).'));
+        return limitRefusal(new LimitError('daily things brought in', use.brought + ' pictures from other sites have been read for you today, the most allowed in one day.', 'Bring in the rest tomorrow (the count starts again at midnight UTC).'));
       }
       const room = LIMITS.own - first.state.own.length;
       if (room <= 0) {
-        const why = 'Your 5s holds ' + LIMITS.own + ' brought-in things, its most.';
-        const resolution = 'Let some go (on a "Still yours?" card) or remove some in the 5s app, then bring these in.';
+        const why = 'Your database holds ' + LIMITS.own + ' brought-in things, its most.';
+        const resolution = 'Let some go (on a "Still yours?" card) or remove some in the app, then bring these in.';
         return refuse(why + ' ' + resolution, { error: 'full', why, resolution });
       }
       // 2. What to read: each picture once, never one already in their 5s, never past the caps.
@@ -975,9 +976,9 @@ export const TOOLS = [
         const def = definedFacts(it, ctx.deck);
         if (it.image == null) {
           const link = addressOrNull(it.link);
-          if (!link) { skipped.push({ item: i, image: null, why: it.link ? 'Its link is not an address 5s keeps.' : 'It has neither a picture nor a link.' }); return; }
-          if (haveLinks.has(link)) { skipped.push({ item: i, image: null, link, why: 'Already in their 5s.' }); return; }
-          if (plan.length + linkOnly.length >= room) { skipped.push({ item: i, image: null, link, why: 'Their 5s is full.' }); return; }
+          if (!link) { skipped.push({ item: i, image: null, why: it.link ? 'Its link is not an address that can be kept.' : 'It has neither a picture nor a link.' }); return; }
+          if (haveLinks.has(link)) { skipped.push({ item: i, image: null, link, why: 'Already in their database.' }); return; }
+          if (plan.length + linkOnly.length >= room) { skipped.push({ item: i, image: null, link, why: 'Their database is full.' }); return; }
           haveLinks.add(link);
           linkOnly.push({ i, image: null, thumb: null, link, title: it.title, source: sourceName(it.source), kind: it.kind || args.kind || 'image', def, given: it });
           return;
@@ -988,9 +989,9 @@ export const TOOLS = [
           skipped.push({ item: i, image: quoted(it.image, 200), why: e.why });
           return;
         }
-        if (have.has(image) || seen.has(image)) { skipped.push({ item: i, image, why: 'Already in their 5s.' }); return; }
+        if (have.has(image) || seen.has(image)) { skipped.push({ item: i, image, why: 'Already in their database.' }); return; }
         if (plan.length >= Math.min(left, room - linkOnly.length)) {
-          skipped.push({ item: i, image, why: plan.length >= room - linkOnly.length ? 'Their 5s is full.' : 'Past today\'s ' + DAILY_BRING + ' pictures from other sites; bring it in tomorrow.' });
+          skipped.push({ item: i, image, why: plan.length >= room - linkOnly.length ? 'Their database is full.' : 'Past today\'s ' + DAILY_BRING + ' pictures from other sites; bring it in tomorrow.' });
           return;
         }
         seen.add(image);
@@ -1024,7 +1025,7 @@ export const TOOLS = [
           if (!g.ok) { skipped.push({ item: p.i, image: p.image, why: g.why }); continue; }
           const px = g.dim ? g.dim.w * g.dim.h : Infinity;
           let m = null, pending = null;
-          if (!(g.type === 'jpeg' || g.type === 'png')) pending = 'a ' + g.type.toUpperCase() + ' picture, which the 5s app measures';
+          if (!(g.type === 'jpeg' || g.type === 'png')) pending = 'a ' + g.type.toUpperCase() + ' picture, which the app measures';
           else if (px > CONNECT.maxDecodePx) pending = 'a picture too large to measure here';
           else if (!mayMeasure || px > pxLeft || measured >= CONNECT.maxMeasured) pending = 'this call measured as many pictures as it measures';
           else if (g.truncated) pending = 'a picture too large to read here';
@@ -1050,8 +1051,8 @@ export const TOOLS = [
       const haveNow = new Set(st.own.map((o) => o && o.image).filter(Boolean));
       const linksNow = new Set(st.own.filter((o) => o && !o.image && o.link).map((o) => o.link));
       for (const d of done) {
-        if (d.linkOnly ? linksNow.has(d.p.link) : haveNow.has(d.p.image)) { skipped.push({ item: d.p.i, image: d.p.image, ...(d.linkOnly ? { link: d.p.link } : {}), why: 'Already in their 5s.' }); continue; }
-        if (st.own.length >= LIMITS.own) { skipped.push({ item: d.p.i, image: d.p.image, why: 'Their 5s is full.' }); continue; }
+        if (d.linkOnly ? linksNow.has(d.p.link) : haveNow.has(d.p.image)) { skipped.push({ item: d.p.i, image: d.p.image, ...(d.linkOnly ? { link: d.p.link } : {}), why: 'Already in their database.' }); continue; }
+        if (st.own.length >= LIMITS.own) { skipped.push({ item: d.p.i, image: d.p.image, why: 'Their database is full.' }); continue; }
         const id = freshId(st);
         const m = d.m;
         const f = d.p.def.facts;
@@ -1091,15 +1092,15 @@ export const TOOLS = [
         remaining: remaining.map((p) => p.given),
         colours: {
           read_here: added.length - pending - linksOnly, pending,
-          ...(pending ? { note: 'Colours pending: the 5s app reads them from the picture (item_image) when it next opens.' } : {}),
+          ...(pending ? { note: 'Colours pending: the app reads them from the picture (item_image) when it next opens.' } : {}),
         },
         brought_today: (rec ? rec.use.brought : use.brought), daily_cap: DAILY_BRING,
         rev: rec ? rec.rev : cur.rev,
       };
       const sources = Array.from(new Set(added.map((a) => a.source))).filter((x) => KNOWN_SOURCE.has(x));
       let summary = added.length
-        ? 'Added ' + added.length + (added.length === 1 ? ' thing' : ' things') + ' to their 5s' + (sources.length ? ' (from ' + listWords(sources) + ')' : '') +
-          ', kept as their own saves. Colours read here for ' + (added.length - pending - linksOnly) + (pending ? '; ' + pending + ' with colours pending (the 5s app reads them when it next opens).' : '.') +
+        ? 'Added ' + added.length + (added.length === 1 ? ' thing' : ' things') + ' to their database' + (sources.length ? ' (from ' + listWords(sources) + ')' : '') +
+          ', kept as their own saves. Colours read here for ' + (added.length - pending - linksOnly) + (pending ? '; ' + pending + ' with colours pending (the app reads them when it next opens).' : '.') +
           (linksOnly ? ' ' + linksOnly + ' kept by link alone (no picture).' : '')
         : 'Nothing was added.';
       if (skipped.length) summary += ' Skipped ' + skipped.length + ' (data.skipped says why).';
@@ -1118,10 +1119,10 @@ export const TOOLS = [
     async run(ctx, args) {
       const { state } = await readState(ctx.store, ctx.user.id);
       const o = state.own.find((x) => x && x.id === args.id);
-      if (!o) return refuse('There is no brought-in thing "' + args.id + '" in their 5s.', { error: 'unknown', id: args.id });
+      if (!o) return refuse('There is no brought-in thing "' + args.id + '" in their database.', { error: 'unknown', id: args.id });
       if (!o.image) {
-        const why = 'This thing was brought in from their own files, so its picture lives only in the 5s app, not at a web address.';
-        return refuse(why + ' Open the 5s app to see it.', { error: 'no address', id: args.id, why, resolution: 'Open the 5s app to see it.' });
+        const why = 'This thing was brought in from their own files, so its picture lives only in the app, not at a web address.';
+        return refuse(why + ' Open the app to see it.', { error: 'no address', id: args.id, why, resolution: 'Open the app to see it.' });
       }
       const limited = await webAllowed(ctx);
       if (limited) return limited;
@@ -1152,7 +1153,7 @@ export const TOOLS = [
           continue;
         }
         const type = sniff(r.bytes);
-        if (!type) { if (!copy) last = new WebError('not a picture', 'That address no longer gives a picture.', 'Remove it in the 5s app, or bring it in again from where it is now.'); continue; }
+        if (!type) { if (!copy) last = new WebError('not a picture', 'That address no longer gives a picture.', 'Remove it in the app, or bring it in again from where it is now.'); continue; }
         const dim = dimensions(r.bytes, type);
         let out = null;
         if (!r.truncated && r.bytes.length <= CONNECT.itemImageBytes) {
@@ -1167,7 +1168,7 @@ export const TOOLS = [
         }
         if (!out) {
           if (copy) continue;
-          last = new WebError('too large', 'That picture is too large for 5s to bring over' + (dim ? ' (' + dim.w + ' × ' + dim.h + ')' : '') + '.', 'Save the picture and bring it in from your photos in the 5s app (Split → Bring in your own).');
+          last = new WebError('too large', 'That picture is too large to bring over' + (dim ? ' (' + dim.w + ' × ' + dim.h + ')' : '') + '.', 'Save the picture and bring it in from your photos in the app (Split → Bring in your own).');
           if (main) {
             const sized = smallerCopies(r.url, dim);
             if (sized.copies.length) {
@@ -1180,7 +1181,7 @@ export const TOOLS = [
         const url = dataUrl(out.bytes, out.mime);
         const data = { id: o.id, image: url, type: out.mime, bytes: out.bytes.length, w: out.w || null, h: out.h || null, resized: out.resized, from: r.url, colours_pending: !!o.coloursPending };
         if (out.copy) data.smaller_copy_from = asked && asked.site;
-        const res = ok('The picture of ' + o.id + ' (' + out.mime.slice(6).toUpperCase() + (out.w ? ', ' + out.w + ' × ' + out.h : '') + ', ' + Math.round(out.bytes.length / 1024) + ' KB' + (out.resized ? ', made smaller' : out.copy ? ', a smaller copy its site keeps' : '') + ') is in data.image for the 5s app, and attached here as an image.', data);
+        const res = ok('The picture of ' + o.id + ' (' + out.mime.slice(6).toUpperCase() + (out.w ? ', ' + out.w + ' × ' + out.h : '') + ', ' + Math.round(out.bytes.length / 1024) + ' KB' + (out.resized ? ', made smaller' : out.copy ? ', a smaller copy its site keeps' : '') + ') is in data.image for the app, and attached here as an image.', data);
         // Claude sees the picture as an image; the data: URL stays out of the text it reads.
         res.textData = Object.assign({}, res.data, { image: '(a data: URL: structuredContent.image)' });
         res.images = [{ type: 'image', data: url.slice(url.indexOf(',') + 1), mimeType: out.mime }];
@@ -1249,7 +1250,7 @@ export function registerTools(server, getCtx) {
         return toMcpResult(await execute(t, await getCtx(), args || {}));
       } catch (e) {
         console.error('5s tool ' + t.name + ' failed:', e && e.stack ? e.stack : e);
-        return toMcpResult(refuse('Something went wrong in 5s (' + t.name + '). Try again in a moment.', { error: 'internal', tool: t.name }));
+        return toMcpResult(refuse('Something went wrong (' + t.name + '). Try again in a moment.', { error: 'internal', tool: t.name }));
       }
     });
   }

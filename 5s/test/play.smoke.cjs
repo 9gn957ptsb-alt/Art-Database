@@ -479,6 +479,8 @@ test('level 8 at 390: the coach makes the mark, and the mark clears a frame', as
   const mark = g.cells.findIndex((c) => c.t && c.t.sp === 'mark');
   assert.equal(await page.locator('.fp-t.fp-mark').count(), g.cells.filter((c) => c.t && c.t.sp === 'mark').length);
   assert.match(await page.getAttribute('.fp-gc[data-i="' + mark + '"]', 'aria-label'), /^The mark: /);
+  await page.waitForFunction(() => !document.querySelector('.fp-mark img.fp-logo')).catch(() => {});
+  assert.equal(await page.locator('.fp-mark img.fp-logo').count(), 0, 'a failed logo leaves only the drawn tile');
   await shot(page, 'level8-mark-390');
   const nb = [mark + 1, mark - 1, mark + 8, mark - 8].find((j) => j >= 0 && j < 64 && Math.abs((j % 8) - (mark % 8)) <= 1 && M.canSwap(g, mark, j));
   r = M.swap(g, mark, nb);
