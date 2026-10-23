@@ -30,7 +30,7 @@
   // costs.js TOKEN_LIFETIMES). Create it first (README step 4) and paste its id in here. Each person's
   // 5s is in FiveSPerson, never in KV.
   "kv_namespaces": [
-    { "binding": "OAUTH_KV" }
+    { "binding": "OAUTH_KV", "id": "e8c35f6f15b949df9bb42fb4bf524386" }
   ],
   // Workers Rate Limiting (index.ts): /mcp per signed-in person, and the sign-in endpoints anyone can
   // reach (/register, /authorize, /token, /callback) per address. namespace_id is any number unique
