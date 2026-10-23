@@ -456,8 +456,10 @@ test('pieces on the example taste: threads, one suit a thing, tokens by family',
 
 test('pieces with nothing kept: swatch suits in the frame colours', () => {
   const p = M.pieces(F.newState(), deck, 5);
-  assert.deepEqual(p.suits.map((s) => [s.key, s.label, s.token, s.ids.length]), M.TOKENS.slice(0, 5).map((t) => [null, t.word, t.name, 0]));
-  assert.deepEqual(p.suits[1].swatches, [['#FF9B55', '#feb787', '#fcd3b9']]);
+  // the frames spread by hue: red, then the farthest from those taken (blue, green, yellow, violet)
+  const order = ['flare', 'cobalt', 'fern', 'sun', 'iris'].map((n) => M.TOKENS.find((t) => t.name === n));
+  assert.deepEqual(p.suits.map((s) => [s.key, s.label, s.token, s.ids.length]), order.map((t) => [null, t.word, t.name, 0]));
+  assert.deepEqual(p.suits[1].swatches, [['#6C9DFF', '#97b9fe', '#c1d4fd']]);
   assert.deepEqual(p, M.pieces(null, deck, 5));
   const g = M.newGame(M.level(1), p, 's');
   assert.ok(g.cells.every((c) => c.t.o === null && c.t.sw === 0));

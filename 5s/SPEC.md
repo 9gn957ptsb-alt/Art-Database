@@ -955,43 +955,80 @@ moves, or left) counts in `saga.plays`, so the next attempt is a new board (the 
 - Levels past 30 come from `FiveSMatch.level(n)` (the 26–30 recipes in turn, each with 2 more moves
   and its thresholds × 1.1 per lap), so the saga never stops.
 
-### Levels 1–30 (initial; the playtest tunes them)
-Moves come from a rough simulation (a player taking the swap that paints most, 200 boards each):
-about the 80th percentile early and the 65th later. Paint-everything levels use 4 suits, because 5
-suits on 8×8 took 32 moves at the median. s1 = "win" means any finish earns the first star.
+### Levels 1–30 (tuned by the playtest, 22 Oct 2026)
+Tuned with `node 5s/test/sim.mjs 200` (200 boards a level, the example taste, no boosters). The **hint
+bot** plays `FiveSMatch.hint` (the biggest first wave, blind to the goals): the bar. The **smart bot**
+aims at the goals with what a person can see: every level must be winnable by it. The curve: levels
+1–5 almost always won, then a gentle rise with every fifth level a little harder (10, 15, 20, 25, 30),
+the first of each episode a breather, the hint bot never under 60 % before level 20, 3 stars on
+14–18 % of the hint bot's boards. s1 "win" means any finish earns the first star. A score-only level
+plays out all its moves (its s1 is the goal); other levels end when their goals are met, then the
+"All set." finale.
 
-| n | Episode | Board (cells) | Suits | Moves | Goals | Blockers | Stars s1 / s2 / s3 | Coach |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Sort | 7×7 (49) | 4 | 15 | score 3,000 | — | 3,000 / 6,000 / 9,000 | swap |
-| 2 | Sort | 7×7 | 4 | 15 | collect 20 of suit 0 | — | win / 5,000 / 8,000 | |
-| 3 | Sort | 7×7 | 4 | 18 | score 5,000 | — | 5,000 / 8,000 / 11,000 | stripe |
-| 4 | Sort | 7×7 | 5 | 20 | collect 12 of suit 0 + 12 of suit 1 | — | win / 4,500 / 6,500 | |
-| 5 | Sort | 8×8 (64) | 5 | 20 | score 3,000 | — | 3,000 / 4,500 / 6,500 | burst |
-| 6 | Split | 7×7 | 4 | 14 | paint centre 5×5 (25) | — | win / 6,000 / 9,000 | paint |
-| 7 | Split | 7×7 | 4 | 24 | paint all (49) | — | win / 9,000 / 13,000 | |
-| 8 | Split | 8×8 | 5 | 22 | collect 12 Images | — | win / 5,500 / 7,500 | mark |
-| 9 | Split | 8×8 | 5 | 22 | paint centre 6×6 (36) | — | win / 6,000 / 8,500 | |
-| 10 | Split | 8×8 | 4 | 30 | paint all (64), centre 4×4 two coats | — | win / 12,000 / 16,000 | |
-| 11 | Set | 8×8 | 5 | 20 | clear | 8 passes, bottom | win / 5,000 / 7,000 | pass |
-| 12 | Set | 8×8 | 5 | 24 | clear + score 4,000 | 12 passes, bottom | 4,000 / 6,000 / 8,000 | |
-| 13 | Set | 8×8 | 4 | 26 | paint all (52) + clear | 12 passes, bottom | win / 11,000 / 15,000 | |
-| 14 | Set | 8×8 | 5 | 26 | clear | 8 two-layer then 8 passes, bottom | win / 6,500 / 9,000 | |
-| 15 | Set | 9×9 (81) | 4 | 28 | paint all (69) + clear | 12 two-layer passes, scatter | win / 12,000 / 17,000 | |
-| 16 | See | 8×8 | 5 | 22 | collect 15 of suit 0 | 8 held, scatter | win / 5,500 / 7,500 | held |
-| 17 | See | 9×9 | 4 | 28 | paint all (71) | 10 held, scatter | win / 12,000 / 16,000 | |
-| 18 | See | 9×9 | 5 | 25 | score 5,000 | 9 held, centre 3×3 | 5,000 / 7,500 / 10,000 | |
-| 19 | See | 9×9 | 5 | 28 | clear | 18 passes, bottom; 9 held, scatter | win / 7,500 / 10,500 | |
-| 20 | See | 9×9 | 4 | 32 | paint all (73), centre 3×3 two coats | 8 held, scatter | win / 14,000 / 19,000 | |
-| 21 | Seed | diamond (41) | 4 | 24 | paint all (41) | — | win / 7,000 / 10,000 | |
-| 22 | Seed | ring (72) | 6 | 30 | collect 12 each of suits 0, 1, 2 | — | win / 5,000 / 7,000 | |
-| 23 | Seed | island (69) | 5 | 28 | paint centre 5×5 (25) + clear | 10 passes, sides | win / 8,000 / 11,000 | |
-| 24 | Seed | halves (72) | 4 | 32 | paint all (72) | — | win / 12,000 / 16,000 | |
-| 25 | Seed | house (53) | 4 | 30 | paint all (53), walls (rows 5–8) two coats | — | win / 12,000 / 16,000 | |
-| 26 | Another five | 9×9 | 6 | 32 | collect 10 Spaces + 10 Objects | — | win / 6,000 / 8,500 | |
-| 27 | Another five | 9×9 | 4 | 34 | paint all (81), centre 5×5 two coats | — | win / 15,000 / 20,000 | |
-| 28 | Another five | cross (45) | 4 | 28 | clear | 12 two-layer passes, bottom; 6 held, scatter | win / 7,000 / 10,000 | |
-| 29 | Another five | 9×9 | 5 | 32 | paint centre 5×5 (25) + clear | 18 passes, bottom; 6 held, scatter | win / 10,000 / 14,000 | |
-| 30 | Another five | the 5 (61) | 4 | 30 | paint all (61) | — | win / 10,000 / 14,000 | |
+| n | Episode | Board (cells) | Suits | Moves | Goals | Blockers | Stars s1 / s2 / s3 | Coach | Hint bot wins | Smart bot wins | 3 stars (hint / smart) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Sort | 7×7 (49) | 4 | 15 | score 3,500 | — | 3,500 / 19,000 / 35,000 | swap | 98 % | 100 % | 17 % / 98 % |
+| 2 | Sort | 7×7 | 4 | 14 | collect 30 of suit 0 | — | win / 21,000 / 31,000 |  | 99 % | 100 % | 17 % / 20 % |
+| 3 | Sort | 7×7 | 4 | 18 | score 8,500 | — | 8,500 / 24,000 / 40,000 | stripe | 97 % | 100 % | 14 % / 100 % |
+| 4 | Sort | 7×7 | 5 | 17 | collect 12 of suit 0 + 12 of suit 1 | — | win / 13,000 / 17,000 |  | 98 % | 100 % | 18 % / 32 % |
+| 5 | Sort | 8×8 (64) | 5 | 20 | score 4,000 | — | 4,000 / 12,000 / 19,000 | burst | 93 % | 100 % | 16 % / 95 % |
+| 6 | Split | 7×7 | 4 | 15 | paint centre 5×5 (25) | — | win / 24,000 / 33,000 | paint | 91 % | 100 % | 17 % / 14 % |
+| 7 | Split | 7×7 | 4 | 23 | paint all (49) | — | win / 35,000 / 44,000 |  | 91 % | 100 % | 16 % / 19 % |
+| 8 | Split | 8×8 | 5 | 19 | collect 40 Images | — | win / 17,000 / 24,000 | mark | 89 % | 98 % | 14 % / 19 % |
+| 9 | Split | 8×8 | 4 | 14 | paint centre 6×6 (36) | — | win / 35,000 / 56,000 |  | 88 % | 100 % | 17 % / 16 % |
+| 10 | Split | 8×8 | 4 | 18 | paint all (64), centre 4×4 two coats | — | win / 50,000 / 71,000 |  | 80 % | 97 % | 15 % / 14 % |
+| 11 | Set | 8×8 | 5 | 22 | clear | 8 passes, scatter | win / 21,000 / 26,000 | pass | 77 % | 99 % | 15 % / 21 % |
+| 12 | Set | 8×8 | 5 | 32 | clear + score 4,000 | 8 passes, bottom | win / 27,000 / 34,000 |  | 66 % | 100 % | 14 % / 65 % |
+| 13 | Set | 8×8 | 4 | 19 | paint all (52) + clear | 12 passes, bottom | win / 48,000 / 75,000 |  | 83 % | 100 % | 16 % / 14 % |
+| 14 | Set | 8×8 | 5 | 29 | clear | 8 two-layer passes, scatter | win / 24,000 / 30,000 |  | 66 % | 99 % | 16 % / 33 % |
+| 15 | Set | 9×9 (81) | 4 | 16 | paint all (69) + clear | 12 two-layer passes, scatter | win / 77,000 / 109,000 |  | 65 % | 90 % | 16 % / 19 % |
+| 16 | See | 8×8 | 5 | 20 | collect 25 of suit 0 | 8 held, scatter | win / 16,000 / 22,000 | held | 82 % | 94 % | 15 % / 22 % |
+| 17 | See | 9×9 | 4 | 14 | paint all (71) | 10 held, scatter | win / 75,000 / 113,000 |  | 76 % | 95 % | 16 % / 19 % |
+| 18 | See | 9×9 | 5 | 25 | score 8,000 | 9 held, centre 3×3 | 8,000 / 17,000 / 25,000 |  | 72 % | 100 % | 14 % / 100 % |
+| 19 | See | 9×9 | 5 | 31 | clear | 10 passes, scatter; 9 held, scatter | win / 30,000 / 36,000 |  | 64 % | 97 % | 15 % / 29 % |
+| 20 | See | 9×9 | 4 | 13 | paint all (73), centre 3×3 two coats | 8 held, scatter | win / 78,000 / 109,000 |  | 66 % | 90 % | 16 % / 16 % |
+| 21 | Seed | diamond (41) | 4 | 17 | paint all (41) | — | win / 23,000 / 29,000 |  | 71 % | 94 % | 15 % / 14 % |
+| 22 | Seed | ring (72) | 5 | 20 | collect 20 each of suits 0, 1, 2 | — | win / 12,000 / 16,000 |  | 67 % | 93 % | 16 % / 34 % |
+| 23 | Seed | island (69) | 5 | 33 | paint centre 5×5 (25) + clear | 10 passes, sides | win / 31,000 / 36,000 |  | 56 % | 100 % | 14 % / 33 % |
+| 24 | Seed | halves (72) | 4 | 28 | paint all (72) | — | win / 35,000 / 42,000 |  | 63 % | 96 % | 18 % / 22 % |
+| 25 | Seed | house (53) | 4 | 19 | paint all (53), walls (rows 5–8) two coats | — | win / 38,000 / 46,000 |  | 65 % | 85 % | 17 % / 17 % |
+| 26 | Another five | 9×9 | 5 | 22 | collect 60 Spaces + 60 Objects | — | win / 24,000 / 31,000 |  | 75 % | 91 % | 16 % / 14 % |
+| 27 | Another five | 9×9 | 4 | 12 | paint all (81), centre 5×5 two coats | — | win / 73,000 / 106,000 |  | 61 % | 87 % | 16 % / 21 % |
+| 28 | Another five | cross (45) | 4 | 29 | clear | 12 two-layer passes, bottom; 6 held, scatter | win / 25,000 / 29,000 |  | 53 % | 96 % | 16 % / 43 % |
+| 29 | Another five | 9×9 | 5 | 36 | paint centre 5×5 (25) + clear | 18 passes, bottom; 6 held, scatter | win / 35,000 / 38,000 |  | 43 % | 99 % | 16 % / 57 % |
+| 30 | Another five | the 5 (61) | 4 | 50 | paint all (61) | — | win / 36,000 / 37,000 |  | 38 % | 80 % | 16 % / 55 % |
+
+What the playtest changed, and why (the sections above still read as the brief had them on these
+points; this list is the current behaviour):
+- **The finale pays for moves left.** +1,000 a move left (was +100), and the finale's cascades are
+  multiplied like play's (`min(wave, 5)`, was 1). With +100, finishing early scored *less* than slow
+  play that farms cascades: on levels 6, 7, 10 and 11 the smart bot got 3 stars on 0–3 % of its
+  boards against the hint bot's 15 %. Now finishing with moves to spare is what earns stars, as in
+  Candy Crush.
+- **Frames spread by hue.** A suit that is not a hue thread takes the free token farthest in hue from
+  those already taken (ties: table order), not the next in table order. The example taste was red,
+  orange, yellow and green, three warm frames side by side; it is now orange (petal), blue (square),
+  green (hexagon), violet (diamond), then yellow (arch) and red (circle). Nothing kept: red, blue,
+  green, yellow, violet.
+- **Suits are the real difficulty knob.** Four suits on an open board cascade (1.1–2.6 specials a
+  move; one move in ten chains 5–9 waves); five play like Candy Crush (0.4–0.6 specials a move, 3–4
+  waves); six crawl (0.15–0.3 specials a move). Paint-everything stays on 4 suits (with 5 the hint
+  bot's median was 40–80 moves), with tight budgets (12–23 moves). Level 9 moved to 4 suits; 22 and
+  26 from 6 to 5.
+- **Passes at the bottom are slow for a player who does not aim** (on level 14's 24 layers the hint
+  bot's median was 58 moves, the smart bot's 22). Levels 11 and 14 scatter their passes, 12 has one row,
+  19 has 10 scattered passes instead of 18 at the bottom. Collect goals grew to fill their moves (2:
+  30, 8: 40 Images, 16: 25, 22: 20 each, 26: 60 + 60), so no level ends in three moves.
+- Moves and stars: the budget is the larger of the hint bot's target percentile and the smart bot's
+  85th; s2 is the median winning score, s3 the hint bot's 84th percentile. Level 30 (the 5) is the
+  hardest: its two-row bars only take horizontal lines; 50 moves, 38 % for the hint bot, 80 % smart.
+- **The game's feel** (play.js): the coach line leaves as the first counted swap starts (it covered the
+  row where that swap's match landed); in the finale the moves count down as each becomes a stripe
+  and the meter and stars fill as the score rises; a tap hurries the finale; the level end opens on
+  its stars, score and any booster earned, with its buttons held at the bottom of the sheet (focus
+  had scrolled it to them), and a paint level shows its painting before What you put together.
+- No dead boards: in 9,600 games (200 hint and 120 smart boards a level) no settled board offered
+  fewer than three ways; a reshuffle came on at most 0.3 % of moves (1.4 % on the cross, level 28).
 
 **Masks** (9×9, `#` playable, `.` a hole):
 ```
@@ -1029,7 +1066,7 @@ pass "These are things you passed. Match beside them to clear them away." · hel
 move. Match through them to free them."
 
 The playtest's bar (a bot playing the hint): each level won in ≥ 60 % of 50 boards for 1–10, ≥ 45 %
-for 11–20, ≥ 35 % for 21–30, and 3 stars in 10–25 %.
+for 11–20, ≥ 35 % for 21–30, and 3 stars in 10–25 %. Met on every level (the table above).
 
 ### Feel
 **Words** (5s's voice: plain, short, a full stop). Cascades, shown once per swap for its deepest wave:

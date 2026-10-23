@@ -562,25 +562,28 @@
       if (g.type === 'clear') return plural(left, 'pass layer') + ' left';
       return left + ' more ' + (g.kind ? KIND_PL[g.kind] : (game.suits[g.suit] || {}).label);
     }
-    function starsNow() {
-      const s = level.stars, sc = game.score;
+    function starsNow(sc) {
+      const s = level.stars;
       return (s[0] ? sc >= s[0] : game.state !== 'play' && game.state !== 'out') + (sc >= s[1]) + (sc >= s[2]);
     }
     function status() {
       $('.fp-moves b').textContent = game.moves;
       $('.fp-moves span').textContent = game.moves === 1 ? 'move' : 'moves';
       $('.fp-goals').innerHTML = game.goals.map((g) => '<p><b>' + esc(goalWords(g)) + '</b><span>' + esc(goalProgress(g)) + '</span></p>').join('');
-      $('.fp-score b').textContent = fmt(game.score);
       const top = level.stars[2] || 1;
-      $('.fp-meter i').style.transform = 'scaleX(' + Math.min(1, game.score / top) + ')';
       const ss = box.querySelectorAll('.fp-meter s');
       ss[0].style.left = (100 * (level.stars[0] || level.stars[1] * 0.5) / top) + '%';
       ss[1].style.left = (100 * level.stars[1] / top) + '%';
-      const n = starsNow();
+      showScore(game.score);
+      boosts();
+    }
+    function showScore(sc) {
+      $('.fp-score b').textContent = fmt(sc);
+      $('.fp-meter i').style.transform = 'scaleX(' + Math.min(1, sc / (level.stars[2] || 1)) + ')';
+      const n = starsNow(sc);
       $('.fp-sst').textContent = starText(n);
       $('.fp-sst').setAttribute('aria-label', n + ' of 3 stars');
-      $('.fp-score').setAttribute('aria-label', 'Score ' + fmt(game.score) + ', ' + n + ' of 3 stars');
-      boosts();
+      $('.fp-score').setAttribute('aria-label', 'Score ' + fmt(sc) + ', ' + n + ' of 3 stars');
     }
     function say(text, ms) { // words in the status line (reduced motion) and booster instructions
       sayEl.textContent = text || '';
@@ -666,7 +669,7 @@
     }
 
     async function playSteps(steps, quiet) {
-      let pend = [], phase = null, wave = 1;
+      let pend = [], phase = null, wave = 1, waved = false;
       const delays = {};
       const flush = async () => { if (pend.length) await Promise.all(pend); pend = []; };
       let fires = 0, makes = 0; // the finale: a stripe made every 80 ms, fired every 120 ms
@@ -698,7 +701,7 @@
             break;
           }
           case 'wave':
-            wave = s.n; fires = 0;
+            wave = s.n; fires = 0; waved = true;
             if (s.n > 1) { await flush(); await wait(reduce ? 150 : 40); }
             break;
           case 'match':
@@ -784,7 +787,8 @@
             break;
           case 'score':
             if (s.cell != null && s.add) scorePop(s.cell, s.add);
-            $('.fp-score b').textContent = fmt(s.total);
+            showScore(s.total); // the meter and the stars fill as the score rises
+            if (quiet && !waved) { const mb = $('.fp-moves b'); mb.textContent = Math.max(0, +mb.textContent - 1); } // the finale: each move left becomes a stripe
             break;
           case 'shuffle': {
             const ps = [];
@@ -862,8 +866,9 @@
         r = MX.boost(game, 'turn', [a, b]);
         if (r.ok) { held.turn--; disarm(); if (o.onBoost) o.onBoost('turn'); }
       } else r = MX.swap(game, a, b);
+      if (r.valid || r.ok) coachOff(); // the coach line covers a row: out of the way of the swap it taught
       const ok = await apply(r, turn ? 'boost' : 'swap');
-      if (ok) { swapsMade++; coachOff(); }
+      if (ok) swapsMade++;
       busy = false;
       settle();
     }
@@ -1178,7 +1183,10 @@
       await wait(reduce ? 150 : 300);
       const f = MX.finale(game);
       loop.scale = 0.6;
+      const hurry = () => { loop.scale = 0.2; }; // a tap hurries the finale
+      box.addEventListener('pointerdown', hurry);
       await playSteps(f.steps, true);
+      box.removeEventListener('pointerdown', hurry);
       loop.scale = 1;
       game = f.game;
       sync();
@@ -1200,11 +1208,11 @@
       const d = openSheet(box, 'Level ' + o.n + ' done.',
         '<p class="fp-endstars"><span aria-hidden="true">' + starText(result.stars) + '</span> ' + result.stars + ' of 3 stars</p>' +
         '<p>Score ' + fmt(result.score) + ' · Best ' + fmt(best) + '</p>' +
-        groupsHTML(result.groups) +
+        (gotWords.length ? '<p class="fp-earned">You earned ' + esc(gotWords.length > 1 ? gotWords.slice(0, -1).join(', ') + ' and ' + gotWords[gotWords.length - 1] : gotWords[0]) + '.</p>' : '') +
         (result.painting ? '<section class="fp-sec"><h3>Your painting</h3><canvas class="fp-paint" aria-label="The painting you made on this board"></canvas>' +
           '<p class="fp-keepmsg small" aria-live="polite"></p><div class="actions"><button type="button" class="btn btn-iris" data-keep>Keep this painting</button></div></section>' : '') +
-        (gotWords.length ? '<p class="fp-earned">You earned ' + esc(gotWords.length > 1 ? gotWords.slice(0, -1).join(', ') + ' and ' + gotWords[gotWords.length - 1] : gotWords[0]) + '.</p>' : '') +
-        '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-next data-autofocus>Next level</button>' +
+        groupsHTML(result.groups) +
+        '<div class="actions fp-endact"><button type="button" class="btn btn-keep btn-big" data-next data-autofocus>Next level</button>' +
         '<button type="button" class="btn btn-big" data-again>Play again</button><button type="button" class="btn btn-big" data-board>Your board</button></div>',
         () => { if (o.onMap) o.onMap(); });
       wireHearts(d, result.groups);

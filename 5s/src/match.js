@@ -36,6 +36,7 @@
   ]);
   const HUE_TOKEN = { red: 'flare', rose: 'flare', orange: 'ember', yellow: 'sun', lime: 'sun', green: 'fern', teal: 'fern',
     cyan: 'cobalt', blue: 'cobalt', indigo: 'cobalt', violet: 'iris', magenta: 'iris' };
+  const HUE_DEG = { flare: 10, ember: 25, sun: 46, fern: 148, cobalt: 220, iris: 255 };   // the frame colours' hues
   const PAPER = '#FAF9FC';       // the app's light --paper, for frame-colour swatches
   const MARK_PAINT = '#7350EE';  // what the mark paints when it leaves
   const THREAD_GROUPS = ['Materials', 'Qualities', 'Movements', 'Textures'];
@@ -288,7 +289,15 @@
       const h = isHue(s.key) ? HUE_TOKEN[s.key.slice(4)] : null;
       if (h && free.indexOf(h) >= 0) { token[j] = h; free.splice(free.indexOf(h), 1); }
     });
-    suits.forEach((s, j) => { if (!token[j]) token[j] = free.shift(); });
+    // The rest take the free token farthest in hue from those taken (the playtest: red, orange and yellow frames
+    // side by side read as one at a glance); ties: table order.
+    const gap = (x, y) => { const d = Math.abs(HUE_DEG[x] - HUE_DEG[y]); return Math.min(d, 360 - d); };
+    const near = (t) => Math.min(360, ...token.filter(Boolean).map((u) => gap(t, u)));
+    suits.forEach((s, j) => {
+      if (token[j]) return;
+      token[j] = free.reduce((best, t) => (near(t) > near(best) ? t : best));
+      free.splice(free.indexOf(token[j]), 1);
+    });
     const kept = prof.keptColours || [];
     let swatchSuits = 0;
     const out = suits.map((s, j) => {

@@ -258,7 +258,7 @@ test('level 1 by touch at 390: bounce, drag, tap-tap, keys, sound, hint, a casca
   const { ctx, page, cdp, errors } = await open({ touch: true }, 'plays=' + L1.p, '#level=1');
   await page.waitForSelector('dialog[open]');
   const card = await page.locator('dialog[open]').textContent();
-  assert.match(card, /Score 3,000/);
+  assert.match(card, new RegExp('Score ' + fmt(M.level(1).goals[0].n)));
   assert.match(card, /15 moves/);
   assert.match(card, /Swap two neighbours/, 'the coach line');
   await shot(page, 'level1-card-390');
