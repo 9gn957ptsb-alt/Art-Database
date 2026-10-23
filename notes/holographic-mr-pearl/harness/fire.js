@@ -33,6 +33,27 @@ const swing = (P, turnsPerSec, secs) => P.evaluate((a) => new Promise((done) => 
   await frames(P, 4);
   let r = await D(() => ({ ig: !!window.Rocket.debug().ignite(), launched: !!window.Rocket.debug().ride(), toasts: window.__toasts.slice(), K: window.Rocket.debug().igniteConsts }));
   check(r.ig && !r.launched && r.toasts.some((t) => /needs a fire/.test(t)), "Launch asks for the fire (" + JSON.stringify(r.toasts) + ")");
+  // two fingers: a thumb resting on the stick while the other swings a little; only each finger's own path rubs
+  // (the review, 23 Oct 2026: the way between the two had struck it in a tenth of a second)
+  await D(() => new Promise((done) => {
+    const cv = document.getElementById("view"), W = innerWidth, H = innerHeight, f0 = window.__frames;
+    const go = () => {
+      const k = window.__frames - f0;
+      cv.dispatchEvent(new PointerEvent("pointermove", { pointerId: 71, pointerType: "touch", clientX: W * 0.2 + (k % 2), clientY: H * 0.8, bubbles: true }));
+      cv.dispatchEvent(new PointerEvent("pointermove", { pointerId: 72, pointerType: "touch", clientX: W * 0.6 + 2 * k, clientY: H * 0.45, bubbles: true }));
+      if (k < 20) { requestAnimationFrame(go); } else { done(); }
+    };
+    go();
+  }));
+  r = await D(() => { const i = window.Rocket.debug().ignite(); return { E: i.E, struck: !!i.struck }; });
+  check(!r.struck && r.E < 0.3, "a thumb resting while another finger moves: only their own paths rub (heat " + r.E.toFixed(2) + ")");
+  // the hologram (H) and the sight (R, the right button) wait while the fire is asked for
+  await P.keyboard.press("h"); await P.keyboard.press("r");
+  await D(() => { const cv = document.getElementById("view"); cv.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 73, pointerType: "mouse", button: 2, buttons: 2, clientX: 200, clientY: 200, bubbles: true })); cv.dispatchEvent(new PointerEvent("pointerup", { pointerId: 73, pointerType: "mouse", button: 2, buttons: 0, clientX: 200, clientY: 200, bubbles: true })); });
+  await frames(P, 4);
+  r = await D(() => ({ head: !!window.Rocket.debug().head(), sight: document.body.dataset.sight || "" }));
+  check(!r.head && !r.sight, "no hologram and no sight while the fire is asked for (" + JSON.stringify(r) + ")");
+  await frames(P, 80);
   // a slow swing (a turn in two seconds: under a screen's height a second) never gets there
   await swing(P, 0.5 / PHI(), 4);
   r = await D(() => { const i = window.Rocket.debug().ignite(); return { E: i.E, struck: i.struck, sparks: i.sparks.length }; });
@@ -57,7 +78,22 @@ const swing = (P, turnsPerSec, secs) => P.evaluate((a) => new Promise((done) => 
   r = await D(() => ({ ride: !!window.Rocket.debug().ride(), ig: !!window.Rocket.debug().ignite(), toasts: window.__toasts.slice() }));
   check(r.ride && !r.ig && r.toasts.some((t) => t.indexOf("Struck") === 0), "struck, he rides it up");
   check(errors.length === 0, "no page errors " + JSON.stringify(errors));
-  // taps strike it too: a fresh page
+  // taps strike it too, however slowly they come: a fresh page; eleven Space presses half a bar apart do not, the twelfth does
+  await P.reload({ waitUntil: "load" });
+  await P.waitForFunction(() => { const b = document.getElementById("begin"); return (b && !b.disabled) || (window.Rocket && window.Rocket.debug().place); }, null, { timeout: 180000 });
+  if (await D(() => { const b = document.getElementById("begin"); return !!b && !b.disabled && !b.closest("[hidden]"); })) { await P.click("#begin"); }
+  await P.waitForFunction(() => window.Rocket && window.Rocket.debug().place && window.Rocket.debug().intro(), null, { timeout: 600000 });
+  await D(() => window.Rocket.debug().skip());
+  await P.waitForFunction(() => !window.Rocket.debug().intro(), null, { timeout: 600000 });
+  await D(() => { const d = window.Rocket.debug(); document.getElementById("notes").hidden = true; d.guards().forEach((g) => Object.assign(g, { mode: "hold", holdT: 1e9 })); d.coins().list.forEach((q, i) => d.takeCoin(i)); window.__toasts.length = 0; d.launch(); });
+  await frames(P, 4);
+  for (let i = 0; i < 11; i += 1) { await P.keyboard.press(" "); await frames(P, 38); }
+  r = await D(() => { const i = window.Rocket.debug().ignite(); return i ? { struck: !!i.struck, taps: i.taps, E: i.E } : null; });
+  check(r && !r.struck && r.taps === 11, "eleven taps half a bar apart: not yet (" + JSON.stringify(r) + ")");
+  await P.keyboard.press(" "); await frames(P, 2);
+  r = await D(() => { const i = window.Rocket.debug().ignite(); return i ? { struck: !!i.struck, taps: i.taps } : { gone: true }; });
+  check(r.struck, "the twelfth strikes it (" + JSON.stringify(r) + ")");
+  check(errors.length === 0, "no page errors after the taps " + JSON.stringify(errors));
   fs.writeFileSync(`${out}/log.txt`, log.join("\n") + "\n");
   await browser.close();
   console.log(bad.length ? "FAILED: " + bad.join("; ") : "ALL OK");

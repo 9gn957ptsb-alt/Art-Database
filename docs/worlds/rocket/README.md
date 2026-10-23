@@ -224,8 +224,15 @@ cover the glass), lifted clear of his head, out to his left and down, so it neve
 body, raises his right arm, the upper arm level out to his right and the forearm as upright as its bend lets it, a
 pearl in the glove, and faces the mark; the stick walks him as before, sideways too, and the camera no longer swings
 round behind him. The mark is the figure, the block's own seen down its diagonal, white and grey as light over a
-keyline of black, its aim point the crux, the figure's undrawn apex, at the middle of the screen; from the crux hang
-its holding circles, 8, 13 and 21, and their feet are the holdover marks, each labelled with the range at which the
+keyline of black, its aim point the crux, the figure's undrawn apex, at the middle of the screen. On the crux is **his
+nose** (the artist, 23 Oct 2026: "Use his nose, as if looking transparently through his head and his nose is a small
+contour like a section cut that gets filled when poche-ing a wall in an architecture section, to establish a usable
+point to aim when firing or throwing something"): the covers paint him no nose, so it is where one would be, its
+bridge between his eyes, which lie on the head's equator and so on the sight's line. Seen through the glass it is cut,
+as a wall is in a section, and poché'd: the drawing's black inside the mark's white-over-black contour, the one solid
+thing in the window. Its outline is the figure's own (an equilateral triangle 8 thirds of a block across, the drawing)
+at three thirds, its apex the crux, so it fills the figure's undrawn apex down to where the figure opens; where it
+points is where a pearl goes, and in space where the guns fire. From the crux hang its holding circles, 8, 13 and 21, and their feet are the holdover marks, each labelled with the range at which the
 throw comes down through it, worked out from the arc as you aim. The figure closes into the drawing when the aim is
 still and opens into its bars as it turns; still, a ring on the ground says where the pearl comes down; under the
 glass, in words, what the mark is on, how far, what it came from and the relation that put it there (a work says how

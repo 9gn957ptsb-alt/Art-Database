@@ -133,7 +133,9 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
     const { res } = await strikeCase("waist_timed", cell(1, 0, 0));
     check(res.startedSwing, "waist: the tap starts a swing");
     check(res.airFrame === res.strikeFrame && res.strikeFrame === BEATF, "waist: the block breaks at the strike, frame " + res.strikeFrame + " after the tap (a beat is " + BEATF + " frames of 25 ms)");
-    check(res.strikeMs >= K.SWING * 1000 - 1 && res.strikeMs < K.SWING * 1000 + 25 + 21, "waist: the strike " + res.strikeMs + " ms after the tap (half a beat " + K.SWING * 1000 + " ms)");
+    // (t0 is read in its own call, so it can fall up to the clock's 20 ms of real time inside its frame (game.js) after
+    // the frame the game times the tap from: the frame above is the exact check; 23 Oct 2026, 237.6 ms on a slow run)
+    check(res.strikeMs >= K.SWING * 1000 - 21 && res.strikeMs < K.SWING * 1000 + 25 + 21, "waist: the strike " + res.strikeMs + " ms after the tap (half a beat " + K.SWING * 1000 + " ms)");
     check(res.uBefore < 1 && res.uAtStrike >= 1, "waist: still standing at u " + (res.uBefore || 0).toFixed(3) + ", gone at u " + (res.uAtStrike || 0).toFixed(3));
     check(res.shardsAfter === 6, "waist: six bars fly (" + res.shardsAfter + ")");
   }

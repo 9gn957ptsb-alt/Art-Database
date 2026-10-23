@@ -401,7 +401,8 @@
     "vec4 wash(vec2 q) { vec2 r = vec2(q.x + q.y, q.x - q.y) * 0.7071; vec2 cell = floor(r), f = fract(r) - 0.5;",
     "  float h = h21(cell), e = smoothstep(0.5, 0.3, max(abs(f.x), abs(f.y)));",
     "  return vec4(mix(vec3(1.0, 0.84, 0.6), vec3(0.5, 0.5, 0.86), h), e * (0.35 + 0.65 * h21(cell + 7.1))); }",
-    // (each wash fades where its diamonds would be under four of the screen's pixels: mpp, metres a pixel there)
+    // (each wash fades where its diamonds would be under four of the screen's pixels: mpp, metres a pixel there along
+    // the face, so a face seen aslant fades sooner; the pattern is the grid's own, so it rides on the rocket as it lifts)
     "vec3 washOn(vec3 c, vec2 uv, float size, float amt, float mpp, mat2 turn, float off) {",
     "  float k = amt * (1.0 - smoothstep(size / 8.0, size / 4.0, mpp));",
     "  if (k <= 0.0) { return c; }",
@@ -443,7 +444,7 @@
     "    vec4 fw = mix(FAR_SLANT[vF], FAR_ON[vF], smoothstep(0.15, 0.75, -dot(d, n)));",
     "    vec3 pw = vec3(1.0) - vec3(uPaint);",
     "    vec3 far = fw.x * bar(vB, 1, 1.0) * (pw + uPaint * tone(1, 1.0)) + fw.y * bar(vB, 0, 1.0) * (pw + uPaint * tone(0, 1.0)) + fw.z * bar(vB, 2, 1.0) * (pw + uPaint * tone(2, 1.0)) + fw.w * dark(vB) * (pw + uPaint * tone(2, 1.0));",
-    "    far = paint(far, (uInvM * vec4(vP, 1.0)).xyz / length(mat3(uInvM)[0]), vF >> 1, 1.0, uPx * dist / length(mat3(uInvM)[0]), false);",
+    "    far = paint(far, ((uInvM * vec4(vP, 1.0)).xyz - uOrg) / length(mat3(uInvM)[0]), vF >> 1, 1.0, uPx * dist / length(mat3(uInvM)[0]) / max(-dot(d, n), 0.05), false);",
     // The veil: drawn where the depth test lets it, which is only where this face let a hole through.
     "    if (uVeil == 1) { o = vec4(mix(far, uHaze, clamp(1.0 - exp(-dist * 0.006), 0.0, 1.0)), lod); return; }",
     "    if (lod >= 1.0) { col = far; } else {",
@@ -465,7 +466,7 @@
     "          float tn = max(max(lo.x, lo.y), lo.z), tf = min(min(hi.x, hi.y), hi.z);",
     "          if (tn <= tf && tf >= tin && tn < best) { best = tn; ax = lo.x >= lo.y && lo.x >= lo.z ? 0 : lo.y >= lo.z ? 1 : 2; }",
     "        }",
-    "        if (ax >= 0) { res = 1; th = max(best, tin); col = paint(bar(int(b), ax, -float(sg[ax])), (p0 + uOrg + d * th) / length(mat3(uInvM)[0]), ax, -float(sg[ax]), uPx * dist / length(mat3(uInvM)[0]), true) * (1.0 - 0.07 * float(k)); break; }",
+    "        if (ax >= 0) { res = 1; th = max(best, tin); col = paint(bar(int(b), ax, -float(sg[ax])), (p0 + d * th) / length(mat3(uInvM)[0]), ax, -float(sg[ax]), uPx * dist / length(mat3(uInvM)[0]) / max(abs(d[ax]), 0.05), true) * (1.0 - 0.07 * float(k)); break; }",
     "        if (tm.x < tm.y && tm.x < tm.z) { c.x += sg.x; tin = tm.x; tm.x += td.x; }",
     "        else if (tm.y < tm.z) { c.y += sg.y; tin = tm.y; tm.y += td.y; }",
     "        else { c.z += sg.z; tin = tm.z; tm.z += td.z; }",
@@ -1103,7 +1104,7 @@
   // an option, just have one button that toggles between holographic view and third person view"): the head goes
   // out; out, the body follows it, and the view is third person again.
   function toggleHolo() {
-    if (intro || launched || !place) { return; }
+    if (intro || launched || ignite || !place) { return; }
     if (Hd) { bringBody(); } else { enterHolo(); }
   }
   function enterHolo() {
@@ -1539,7 +1540,8 @@
      The mark: the artist's figure (the block's model seen down its diagonal, which is the drawing), its aim point
      the crux, the outline's undrawn apex, where the two outer bars would meet only from the one eye; hanging from
      the crux, the holding circles of the figure's own line of levels (F = 8, 13, 21: level 2, the drawing, and the
-     two levels it is a corner of), every one touching the others at the crux (wf6/levels, ARNELL 1). The window
+     two levels it is a corner of), every one touching the others at the crux (wf6/levels, ARNELL 1); on the crux, his
+     nose, poched (noseMark), so the aim is a point you can see. The window
      holds the largest turned about the crux (the window's radius is its diameter), so the mark fits however it
      turns. Their feet are the holdover marks, labelled with the ranges the throw makes of them; the arc's landing
      is shown on the ground once the aim is still.
@@ -1608,7 +1610,7 @@
   // guitar's swing to raise a pearl.
   function raiseSight(on) {
     if (on == null) { on = !sight.up; }
-    if (on === sight.up || intro || launched || !place) { return; }
+    if (on === sight.up || intro || launched || ignite || !place) { return; }
     if (on && Hd) { barred(); return; }
     var now = performance.now(), still = stillMotion.matches;
     if (on) { letGo(); P.want = null; sight.at = now; closeLabel(); }
@@ -1629,7 +1631,7 @@
     }
     if (on) { document.body.dataset.sight = "true"; } else { delete document.body.dataset.sight; }
     $("v-sight").setAttribute("aria-pressed", String(on));
-    if (on && !sight.told) { sight.told = true; say(byTouch() ? "The sight: your head is the glass. Drag to aim, or hold a point to bring it to the mark; tap to throw a pearl." : "The sight: your head is the glass. Drag or the arrows aim; a click, T or Enter throws a pearl.", true); }
+    if (on && !sight.told) { sight.told = true; say(byTouch() ? "The sight: your head is the glass, your nose the aim. Drag to aim, or hold a point to bring it to the mark; tap to throw a pearl." : "The sight: your head is the glass, your nose the aim. Drag or the arrows aim; a click, T or Enter throws a pearl.", true); }
     drawCarry();
   }
   // At once (the head leaving, coming to, the launch): no blend, the arm and the hat back as they rest, no fling.
@@ -1640,7 +1642,7 @@
   }
   // The right mouse button: pressed, the sight comes up; let go after a beat or more it goes down (held, it is up
   // while held); let go within a beat it stays up (a click), and the next click lowers it.
-  function sightPress() { if (Hd) { barred(); return; } sight.rmb = { t: performance.now(), was: sight.up }; if (!sight.up) { raiseSight(true); } }
+  function sightPress() { if (ignite) { return; } if (Hd) { barred(); return; } sight.rmb = { t: performance.now(), was: sight.up }; if (!sight.up) { raiseSight(true); } }
   function sightRelease() { var r = sight.rmb; sight.rmb = null; if (r && (r.was || performance.now() - r.t >= BEAT * 1000)) { raiseSight(false); } }
   // The sight's camera: on the line through the head's seat along the look, SIGHT_D behind it, kept out of blocks
   // and let out no faster than he walks, as third person's is.
@@ -1703,6 +1705,21 @@
     sight.omega += (om - sight.omega) * k;
     if (om > 1e-3) { var L = hypot(dy, dp); sight.mx += (dy / L - sight.mx) * k; sight.my += (dp / L - sight.my) * k; }
     sight.theta = stillMotion.matches ? 0 : min(SIGHT_TMAX, sight.omega * T_LIFT);
+  }
+  /* His nose, the aim (the artist, 23 Oct 2026: "Use his nose, as if looking transparently through his head and his nose
+     is a small contour like a section cut that gets filled when poche-ing a wall in an architecture section, to
+     establish a usable point to aim when firing or throwing something"). The covers paint him no nose, so it is where
+     one would be: its bridge between his eyes, which lie on the head's equator, so on the sight's line, at the crux.
+     Seen through the glass it is cut, as a wall is in a section, and the cut is poched: filled with the drawing's black
+     inside the mark's two-tone contour, the one solid thing in the window. Its contour is the figure's own outline (an
+     equilateral triangle of side F(6) = 8 u: level 2, the drawing) at level 0, side F(4) = 3 u, its apex the crux, so it
+     fills the figure's undrawn apex down to where the figure opens; where it points is where a pearl goes, and in space
+     the guns' shots. */
+  function noseMark(c, cx, cy, u, hair) {
+    var s = 3 * u, h = s * Math.sqrt(3) / 2;
+    var path = function () { c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + s / 2, cy + h); c.lineTo(cx - s / 2, cy + h); c.closePath(); };
+    c.fillStyle = "#1e1c1a"; path(); c.fill();
+    twoTone(c, path, hair);
   }
   /* The figure, as the mark: the block's six bars (FIGURE) seen down the diagonal (the drawing), or turned off it by
      theta about an axis across the aim's motion, through the apex's line of sight; walked per pixel as blockMark is.
@@ -1890,6 +1907,7 @@
     });
     var fm = figureMark(round(u * dpr), sight.theta, sight.mx, sight.my);
     c.drawImage(fm.cv, cx - fm.ox / dpr, cy - fm.oy / dpr, fm.cv.width / dpr, fm.cv.height / dpr);
+    noseMark(c, cx, cy, u, hair);
     // what the crux is on, then the arc a throw now would take (it heads for what the crux is on), a frame in three
     var hit = sightPick(), info = sightInfo(hit);
     sight.hit = hit;
@@ -2622,12 +2640,16 @@
     if (ignite.sparks.length > 89) { ignite.sparks.splice(0, ignite.sparks.length - 89); }
     if (ignite.E >= IGNITE.FIRE) { igniteStrike(); }
   }
+  // A tap: a stretch of phi^-2 of the screen's height for the light and the sparks, and counted apart from the heat,
+  // which cools, so that the twelfth strikes however slowly they come (steady tapping had levelled off below the fire).
   function igniteTap() {
     if (!ignite || ignite.struck) { return; }
-    var H = window.innerHeight || 1, x = (window.innerWidth || 1) / 2, y = H / 2;
+    var H = window.innerHeight || 1, x = (window.innerWidth || 1) / 2, y = H / 2, s = H * IGNITE.TAP / Math.SQRT2;
     ignite.at = ignite.at || [x, y];
-    igniteRub(ignite.at[0], ignite.at[1], ignite.at[0] + H * IGNITE.TAP * 0.5, ignite.at[1] + H * IGNITE.TAP * 0.5);
-    if (ignite) { ignite.at = [x, y]; }
+    ignite.taps = (ignite.taps || 0) + 1;
+    igniteRub(ignite.at[0], ignite.at[1], ignite.at[0] + s, ignite.at[1] + s);
+    if (!ignite.struck && ignite.taps >= IGNITE.FIRE / IGNITE.TAP) { igniteStrike(); }
+    ignite.at = [x, y];
   }
   function igniteStep(dt) {
     if (!ignite) { return; }
@@ -2997,6 +3019,7 @@
     SIGHT_F.forEach(function (F) { var r = F * u / Math.sqrt(3); twoTone(c, function () { c.beginPath(); c.arc(cx, cy + r, r, 0, Math.PI * 2); }, hair); });
     var fm = figureMark(round(u * dpr), 0, 0, 0);
     c.drawImage(fm.cv, cx - fm.ox / dpr, cy - fm.oy / dpr, fm.cv.width / dpr, fm.cv.height / dpr);
+    noseMark(c, cx, cy, u, hair);
     // each one coming, held in a triangle of the unit (pointing down, as the mark's figure does not), the last in the glow
     space.enemies.forEach(function (e) {
       var q = [0, 0, 0, 0];
@@ -3913,7 +3936,9 @@
       if (q && !q.moved && now - q.t < 450) { if (sightOn()) { throwAt(); } else { var r = canvas.getBoundingClientRect(); act(r.left + r.width / 2, r.top + r.height / 2, false); } }
     };
     canvas.addEventListener("pointermove", function (e) {
-      if (ignite) { var lp = ignite.ptr; ignite.ptr = [e.clientX, e.clientY]; if (lp) { igniteRub(lp[0], lp[1], e.clientX, e.clientY); } return; }
+      // the fire: each finger's (or the cursor's) own path rubs; the way between two fingers, or from where one lifted
+      // to where it comes down again, is not friction
+      if (ignite) { var pp = ignite.ptr || (ignite.ptr = {}), lp = pp[e.pointerId]; pp[e.pointerId] = [e.clientX, e.clientY]; if (lp) { igniteRub(lp[0], lp[1], e.clientX, e.clientY); } return; }
       if (stick && e.pointerId === stick.id) {
         var dx = e.clientX - stick.x, dy = e.clientY - stick.y, L = min(water.REACH, hypot(dx, dy)), a = Math.atan2(dy, dx);
         input.side = Math.cos(a) * L / water.REACH; input.fwd = -Math.sin(a) * L / water.REACH;
@@ -3936,6 +3961,7 @@
       l.x = e.clientX; l.y = e.clientY;
     });
     var up = function (e) {
+      if (ignite && ignite.ptr) { delete ignite.ptr[e.pointerId]; }
       if (stick && e.pointerId === stick.id) { stick = null; input.fwd = input.side = 0; water.up(performance.now() / 1000); return; }
       var l = look[e.pointerId];
       delete look[e.pointerId];
