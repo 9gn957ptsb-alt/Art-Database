@@ -920,7 +920,7 @@
   const SHARED = freezeDeep({
     palette: { default: 'logo', options: PALETTES.slice() },
     ribbon: { default: true },
-    weight: { default: 1, min: 0.6, max: 1.4, step: 0.05 },
+    weight: { default: 0.75, min: 0.6, max: 1.4, step: 0.05 },   // the artist's standard weight (23 Oct 2026)
     intensity: { default: 0.6, min: 0, max: 1, step: 0.05 },
     easing: { default: 'outCubic', options: EASES.slice() }
   });

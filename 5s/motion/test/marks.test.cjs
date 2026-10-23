@@ -333,7 +333,7 @@ function suite() {
     const f = Motion.register(good());
     if (!Object.isFrozen(f) || !Object.isFrozen(f.params)) return 'not frozen';
     const d = Motion.defaults('zz-test');
-    const want = { palette: 'logo', ribbon: true, weight: 1, intensity: 0.6, easing: 'outCubic', style: 'a', duration: 1000, size: 0.5 };
+    const want = { palette: 'logo', ribbon: true, weight: 0.75, intensity: 0.6, easing: 'outCubic', style: 'a', duration: 1000, size: 0.5 };
     for (const k of Object.keys(want)) if (d[k] !== want[k]) return `default ${k} = ${d[k]}`;
     if (!Motion.families.some((x) => x.id === 'zz-test') || Motion.get('zz-test') !== f) return 'not listed';
     if (!Motion.forMoment('load').some((x) => x.id === 'zz-test')) return 'forMoment';

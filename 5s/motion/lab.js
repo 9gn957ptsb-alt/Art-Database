@@ -197,7 +197,7 @@ function createLab(root, opts) {
       p.duration = snap(p.duration * (0.8 + 0.4 * rd), d);
     }
     p.intensity = snap(0.35 + 0.6 * r(), fam.params.intensity);
-    p.weight = snap(0.85 + 0.3 * r(), fam.params.weight);
+    p.weight = snap(0.7 + 0.1 * r(), fam.params.weight);   // around the artist's standard 0.75
     const re = r(), easings = EASE_POOL.filter((e) => fam.params.easing.options.includes(e));
     const ee = pick(easings.length ? easings : fam.params.easing.options);
     if (re < 0.55) p.easing = ee;

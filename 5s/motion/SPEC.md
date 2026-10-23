@@ -86,7 +86,7 @@ Motion.register({
 direction: 'left'|'right' (for keep/pass), size, Marks}`. `draw` must be **deterministic** (same t, p,
 env → same pixels: never Math.random or the clock) so the lab can scrub, freeze frames and compare.
 Shared options every family honours: `palette`, `theme`, `ribbon` (on/off), `weight` (stroke scale
-0.6–1.4), `intensity` (0–1: how big the gesture is), `easing`.
+0.6–1.4; standard 0.75, the artist's choice of 23 Oct 2026), `intensity` (0–1: how big the gesture is), `easing`.
 
 **The library (19 families, three builders; seven more added 22 Oct, 26 in all).** Each family has 2–4 styles so "Generate" has real range.
 
