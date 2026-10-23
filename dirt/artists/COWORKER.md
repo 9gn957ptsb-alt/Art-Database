@@ -4,7 +4,9 @@ A scheduled Claude session runs this every week. It brings the next artists from
 plane (each as a minimal area on the ladder of complexity, see `roster.py`), commits them, and republishes DIRT.
 Only the works he saved himself (his choice, 23 Oct 2026: "Only my saves"): not the fifty thousand a run on his
 account saved from 1 to 14 October 2026, every work by the artists he follows, which had put KAWS, Honoré Daumier and
-Banksy on the roster on 14 October for works he had not chosen.
+Banksy on the roster on 14 October for works he had not chosen. It never stops: "I want it to gradually become a
+mosaic of everyone" (Aries, 23 Oct 2026), every artist he has saved, the most saved first, those he saves later
+joining the line.
 
 It runs on Tuesdays at 19:47 UTC, just after the account's weekly usage comes back (Tuesdays at 19:00 UTC). It first
 ran on Mondays at 15:00, when the week's usage was already spent, and its runs of 28 September, 5 October and 12
