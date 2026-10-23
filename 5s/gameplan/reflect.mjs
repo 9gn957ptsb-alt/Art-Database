@@ -85,6 +85,8 @@ function event(o) {
   return { type: kind, ...(v.internal_anthropic_catchall || v), timestamp: o.created_at };
 }
 
+// The CLI's own words when a tool hands work to the background; it comes back as a <task-notification>.
+const BACKGROUND = /^\s*(?:Command running in background|Async agent launched|Workflow launched in background)/;
 const blocks = m => (typeof m?.content === 'string' ? [{ type: 'text', text: m.content }] : m?.content || []);
 const textOf = c => (typeof c === 'string' ? c : Array.isArray(c) ? c.map(x => x.text || '').join(' ') : '');
 
@@ -94,7 +96,7 @@ export function session(lines, id = '') {
   const turns = [];
   const byTool = new Map();
   const on = { ponytail: null, caveman: false };
-  let turn = null, cost = null;
+  let turn = null, cost = null, pending = 0; // pending: work handed to the background, not yet back
   const open = (ask, at) => turns.push(turn = {
     ask, replies: [], tools: [], at, on: { ponytail: on.ponytail ?? at >= SKILLS_ON, caveman: on.caveman },
   });
@@ -108,13 +110,21 @@ export function session(lines, id = '') {
       for (const r of results) {
         const t = byTool.get(r.tool_use_id);
         if (t && r.is_error) t.error = textOf(r.content).slice(0, 400) || 'error';
+        if (turn && BACKGROUND.test(textOf(r.content))) { pending++; turn.pending = true; }
       }
       const text = bs.filter(b => b.type === 'text').map(b => b.text).join('\n');
       if (results.length || !text) continue;
       const said = typed(text);
       if (!e.isSynthetic) for (const k in on) on[k] = OFF[k].test(said) ? false : ON[k].test(said) ? true : on[k];
+      const back = /^\s*<task-notification>/.test(text);
+      const asked = !e.isSynthetic && !/^\s*</.test(text);
+      if (back) pending = Math.max(0, pending - 1);
+      const prev = turn;
       // A notification, command, reminder or synthetic message starts a turn too, but it is not the person asking.
-      open(e.isSynthetic || /^\s*</.test(text) ? '' : text, e.timestamp);
+      open(asked ? text : '', e.timestamp);
+      turn.pending = pending > 0; // still waiting on work handed off earlier
+      // Work coming back continues the turn that handed it off.
+      if (back && prev?.pending) turn.after = prev;
     } else if (e.type === 'assistant') {
       if (!turn) open('', e.timestamp); // a transcript read from its middle
       // An API error (a usage limit) arrives as a reply the CLI writes itself: a failure, not Claude's words.
@@ -261,12 +271,15 @@ export function facts(turn) {
   return f;
 }
 
+const owes = t => Boolean(t) && (facts(t).edited || owes(t.after));
+
 // The laws, each from the family that states it, as a test a turn can fail. A law is judged only while
 // its skill is on; the last two belong to both.
 export const LAWS = {
   'ceremony a cut still removes': ['caveman', (t, f) => t.replies.some(r => words(r) !== r)], // one cut answers it
-  // a turn cut off (t.failed) never got to write its last line
-  'a change with no last line on what was skipped': ['ponytail', (t, f) => f.edited && !f.said && !t.failed],
+  // a turn cut off (t.failed) never got to write its last line; one waiting on background work (t.pending)
+  // writes it when the work comes back, owing it for the change made before
+  'a change with no last line on what was skipped': ['ponytail', (t, f) => (f.edited || owes(t.after)) && !f.said && !t.failed && !t.pending],
   'new logic with no check left': ['ponytail', (t, f) => f.logic >= 10 && !f.tested],
   'a dependency nobody asked for': ['ponytail', (t, f) => f.unasked > 0],
   'a shortcut with no upgrade trigger': ['ponytail', (t, f) => f.untriggered > 0],
