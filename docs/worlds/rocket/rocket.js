@@ -350,6 +350,8 @@
   // How many times over his distance is taken where a face opens round Mr Pearl: an upright face at a quarter of the
   // distance, a level one at a thirty-second (the artist's 1/4 and 1/32, 21 Oct 2026; see above).
   var NEAR_F = [4, 32];
+  // Painted (1) as Cezanne paints, or the drawing alone (0): see FS's paint.
+  var PAINT = 1;
   function glslVecs(list, from, n) {
     return "vec" + n + "[" + list.length + "](" + list.map(function (b) {
       return "vec" + n + "(" + b.slice(from, from + n).map(function (q) { return q.toFixed(3); }).join(", ") + ")";
@@ -362,7 +364,7 @@
     "uniform vec4 uPal[64]; uniform vec3 uEye; uniform vec3 uSun; uniform float uT; uniform vec3 uSky; uniform vec3 uHaze;",
     "uniform usampler2DArray uVox; uniform vec3 uOrg; uniform ivec3 uDim; uniform int uFloor; uniform float uPx;",
     "uniform mat4 uInvM;",   // the world to a grid's own cells: the place's and the rocket's as they are, Mr Pearl's parts turned and scaled
-    "uniform int uSteps; uniform int uVeil;",
+    "uniform int uSteps; uniform int uVeil; uniform float uPaint;",
     "uniform vec3 uAxA; uniform vec3 uAxB; uniform vec3 uHeadC; uniform vec3 uHeadE; uniform vec2 uNear;",   // Mr Pearl, whom the faces open round
     "const vec3 N[6] = vec3[6](vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0), vec3(0,0,1), vec3(0,0,-1));",
     "const vec3 LO[6] = " + glslVecs(FIGURE, 0, 3) + ";",
@@ -389,6 +391,35 @@
     "}",
     // How far p is from the segment a to b.
     "float seg(vec3 p, vec3 a, vec3 b) { vec3 ab = b - a; return length(p - a - ab * clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0)); }",
+    // Painted as Cezanne paints (CLAUDE.md, the artist, 15 Oct 2026): form by warm and cool, not by dark and light
+    // alone (the faces the drawing makes white warmed toward his light, those it makes black cooled toward blue-violet),
+    // and two washes of translucent diamonds anchored to each face (phi^2 and phi to a metre, the second turned 36
+    // degrees), each diamond its own tint between the warm and the cool, mixing into new colours where they overlap;
+    // over them short dabs across the face. uPaint 0 is the drawing alone.
+    "vec3 tone(int ax, float s) { return ax == 1 && s > 0.0 ? vec3(1.06, 0.97, 0.84) : ax == 2 ? vec3(0.86, 0.89, 1.12) : vec3(0.99, 0.96, 1.0); }",
+    "float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }",
+    "vec4 wash(vec2 q) { vec2 r = vec2(q.x + q.y, q.x - q.y) * 0.7071; vec2 cell = floor(r), f = fract(r) - 0.5;",
+    "  float h = h21(cell), e = smoothstep(0.5, 0.3, max(abs(f.x), abs(f.y)));",
+    "  return vec4(mix(vec3(1.0, 0.84, 0.6), vec3(0.5, 0.5, 0.86), h), e * (0.35 + 0.65 * h21(cell + 7.1))); }",
+    // (each wash fades where its diamonds would be under four of the screen's pixels: mpp, metres a pixel there)
+    "vec3 washOn(vec3 c, vec2 uv, float size, float amt, float mpp, mat2 turn, float off) {",
+    "  float k = amt * (1.0 - smoothstep(size / 8.0, size / 4.0, mpp));",
+    "  if (k <= 0.0) { return c; }",
+    "  vec4 a = wash(turn * uv / size + off);",
+    "  return mix(c, c * a.rgb * 1.22, k * a.a);",
+    "}",
+    "vec3 paint(vec3 c, vec3 p, int ax, float s, float mpp, bool shaded) {",
+    "  if (uPaint <= 0.0) { return c; }",
+    "  if (shaded) { c *= mix(vec3(1.0), tone(ax, s), uPaint); }",
+    "  vec2 uv = ax == 0 ? p.zy : ax == 1 ? p.xz : p.xy;",
+    "  mat2 I = mat2(1.0), T = mat2(0.809, 0.588, -0.588, 0.809);",
+    "  c = washOn(c, uv, 0.618, 0.46 * uPaint, mpp, I, 0.0);",
+    "  c = washOn(c, uv, 1.0, 0.38 * uPaint, mpp, T, 0.37);",
+    "  c = washOn(c, uv, 2.618, 0.3 * uPaint, mpp, I, 0.71);",
+    "  float dab = fract(dot(uv, vec2(5.236, 3.236)) + h21(floor(uv * 4.236)));",
+    "  float dk = 1.0 - smoothstep(0.04, 0.1, mpp);",
+    "  return c * (1.0 + 0.07 * uPaint * dk * (smoothstep(0.2, 0.5, dab) - smoothstep(0.5, 0.8, dab) - 0.25));",
+    "}",
     "vec3 dark(int id) { return uPal[int(uPal[id].a + 0.5) == 1 ? " + B.DIRT + " : id].rgb / 255.0 * 0.16; }",
     "void main() {",
     "  vec4 pe = uPal[vB]; int st = int(pe.a + 0.5);",
@@ -410,7 +441,9 @@
     "    vec3 d = normalize(vP - uEye);",
     "    d = normalize(mat3(uInvM) * d);",   // the ray taken into the grid's frame
     "    vec4 fw = mix(FAR_SLANT[vF], FAR_ON[vF], smoothstep(0.15, 0.75, -dot(d, n)));",
-    "    vec3 far = fw.x * bar(vB, 1, 1.0) + fw.y * bar(vB, 0, 1.0) + fw.z * bar(vB, 2, 1.0) + fw.w * dark(vB);",
+    "    vec3 pw = vec3(1.0) - vec3(uPaint);",
+    "    vec3 far = fw.x * bar(vB, 1, 1.0) * (pw + uPaint * tone(1, 1.0)) + fw.y * bar(vB, 0, 1.0) * (pw + uPaint * tone(0, 1.0)) + fw.z * bar(vB, 2, 1.0) * (pw + uPaint * tone(2, 1.0)) + fw.w * dark(vB) * (pw + uPaint * tone(2, 1.0));",
+    "    far = paint(far, (uInvM * vec4(vP, 1.0)).xyz / length(mat3(uInvM)[0]), vF >> 1, 1.0, uPx * dist / length(mat3(uInvM)[0]), false);",
     // The veil: drawn where the depth test lets it, which is only where this face let a hole through.
     "    if (uVeil == 1) { o = vec4(mix(far, uHaze, clamp(1.0 - exp(-dist * 0.006), 0.0, 1.0)), lod); return; }",
     "    if (lod >= 1.0) { col = far; } else {",
@@ -432,12 +465,12 @@
     "          float tn = max(max(lo.x, lo.y), lo.z), tf = min(min(hi.x, hi.y), hi.z);",
     "          if (tn <= tf && tf >= tin && tn < best) { best = tn; ax = lo.x >= lo.y && lo.x >= lo.z ? 0 : lo.y >= lo.z ? 1 : 2; }",
     "        }",
-    "        if (ax >= 0) { res = 1; th = max(best, tin); col = bar(int(b), ax, -float(sg[ax])) * (1.0 - 0.07 * float(k)); break; }",
+    "        if (ax >= 0) { res = 1; th = max(best, tin); col = paint(bar(int(b), ax, -float(sg[ax])), (p0 + uOrg + d * th) / length(mat3(uInvM)[0]), ax, -float(sg[ax]), uPx * dist / length(mat3(uInvM)[0]), true) * (1.0 - 0.07 * float(k)); break; }",
     "        if (tm.x < tm.y && tm.x < tm.z) { c.x += sg.x; tin = tm.x; tm.x += td.x; }",
     "        else if (tm.y < tm.z) { c.y += sg.y; tin = tm.y; tm.y += td.y; }",
     "        else { c.z += sg.z; tin = tm.z; tm.z += td.z; }",
     "      }",
-    "      if (res == 0) { col = dark(int(lb)); th = tin; }",
+    "      if (res == 0) { col = dark(int(lb)) * (vec3(1.0) - vec3(uPaint) + uPaint * tone(2, 1.0)); th = tin; }",
     "      if (res == 2) { discard; }",
     "      else { col = mix(col, far, lod); }",
     "    }",
@@ -918,6 +951,7 @@
   }
   function act(px, py, forcePlace) {
     if (space) { input.fire = true; return; }
+    if (ignite) { igniteTap(); return; }
     if (intro || launched || !vp) { return; }
     var dir = dirAt(px, py), hit = pick(dir);
     // a pearl lying within his reach, tapped with the sight lowered, is back in his hand (the throw, 20 Oct 2026)
@@ -2432,7 +2466,7 @@
     return false;
   }
   function guardsStep(dt, now) {
-    if (!guards.length || intro || launched) { return; }
+    if (!guards.length || intro || launched || ignite) { return; }
     var SX = w.SX, hx = floor(P.x), hz = floor(P.z), walkable = gStand[hz * SX + hx] >= 0 && abs(gStand[hz * SX + hx] - P.y) < 0.6;
     guards.forEach(function (g) {
       if (g.mode !== "chase") { g.tellT = 0; g.tell = max(0, g.tell - dt / GUARD.TELL); }
@@ -2550,6 +2584,96 @@
     gl.bindVertexArray(null);
   }
 
+  /* ---- the fire: the rocket's engine struck alight ---------------------------------------------------------------
+     The artist, 21 Oct 2026: "There should be a really unique animation of when Mr. Pearl needs to start a fire, similar
+     to the animation in which the NASA pictures from the artist website come to be animated as you click or scroll around
+     the globe. You see a similar thing happened as far as sparks made of galaxies that are animated and fade out very
+     quickly. Nonetheless shine from a bright light that builds as you swing more and more your finger or cursor around,
+     and eventually, with enough movement from the finger, there generates enough friction in the game where a fire is
+     started." The fire he needs is the rocket's: Launch asks for it to be struck. Every swing of the finger or the cursor
+     over the view is friction: its length, in heights of the screen, adds to the heat, and the heat cools by itself over a
+     bar (so only a swing kept up gets there: at three heights a second it climbs to near six, at one it stops near two).
+     At phi^3 (4.24) the fire is struck. While it climbs, sparks made of galaxies fly off the finger, each a little spiral
+     of the deep-space photographs' own lights (the site's remains: stars a CSS pixel, two where they bloom, warm gold and
+     blue white, added as light adds), turning, and gone in a beat; and a light gathers where the finger swings, as large
+     and as bright as the heat is near the fire. A tap, or Space or Enter, strikes too (a twelfth of the way: phi^-2 each,
+     for the hand that cannot swing; WCAG 2.5.1). Struck, the flame leaves the engine and he rides it up (the ride). */
+  var ignite = null, IGNITE = { FIRE: PHI * PHI * PHI, TAP: 1 / (PHI * PHI) };
+  function igniteBegin() {
+    ignite = { E: 0, sparks: [], at: null, light: null, t0: performance.now(), struck: 0 };
+    document.body.dataset.ride = "true";
+    say("The engine needs a fire: swing your finger, or the cursor, round and round over the view to strike it; a tap strikes too.", true);
+  }
+  // Friction: a stretch of the swing (from x0, y0 to x1, y1, in CSS pixels).
+  function igniteRub(x0, y0, x1, y1) {
+    if (!ignite || ignite.struck) { return; }
+    var H = window.innerHeight || 1, d = hypot(x1 - x0, y1 - y0);
+    if (d <= 0) { return; }
+    ignite.E += d / H;
+    ignite.at = [x1, y1];
+    // a spark for every so far of the swing (a twentieth of the screen's height), off the way it goes
+    ignite.carry = (ignite.carry || 0) + d;
+    var step = H / 20, ux = (x1 - x0) / d, uy = (y1 - y0) / d;
+    while (ignite.carry >= step) {
+      ignite.carry -= step;
+      var k = ignite.sparks.length + ignite.E * 97;
+      ignite.sparks.push({ x: x1, y: y1, vx: ux * H * 0.6 + Math.sin(k * 2.3) * H * 0.25, vy: uy * H * 0.6 + Math.cos(k * 1.7) * H * 0.25, t: 0, a: k % 6.28, warm: (k | 0) % 2 === 0, r: H / 89 * (0.7 + 0.6 * ((k * 0.618) % 1)) });
+    }
+    if (ignite.sparks.length > 89) { ignite.sparks.splice(0, ignite.sparks.length - 89); }
+    if (ignite.E >= IGNITE.FIRE) { igniteStrike(); }
+  }
+  function igniteTap() {
+    if (!ignite || ignite.struck) { return; }
+    var H = window.innerHeight || 1, x = (window.innerWidth || 1) / 2, y = H / 2;
+    ignite.at = ignite.at || [x, y];
+    igniteRub(ignite.at[0], ignite.at[1], ignite.at[0] + H * IGNITE.TAP * 0.5, ignite.at[1] + H * IGNITE.TAP * 0.5);
+    if (ignite) { ignite.at = [x, y]; }
+  }
+  function igniteStep(dt) {
+    if (!ignite) { return; }
+    ignite.E -= ignite.E * min(1, dt / BAR);
+    ignite.sparks = ignite.sparks.filter(function (q) { q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 1 - min(1, dt * 3); q.vy *= 1 - min(1, dt * 3); q.a += Math.PI / BEAT * dt; return q.t < BEAT; });
+    if (ignite.struck && performance.now() - ignite.struck > BAR * 1000) { var go = ignite; ignite = null; rideBegin(go); }
+  }
+  function igniteStrike() {
+    ignite.struck = performance.now();
+    say("Struck: the engine is alight.", true);
+  }
+  // Over the view: the sparks, the light, and, struck, the flame at the engine.
+  function igniteDraw(c, W, H, now) {
+    if (!ignite) { return; }
+    c.save(); c.globalCompositeOperation = "lighter";
+    var near = min(1, ignite.E / IGNITE.FIRE);
+    if (ignite.at && near > 0.02) {
+      var r = H / (PHI * PHI * PHI) * (0.3 + near), g = c.createRadialGradient(ignite.at[0], ignite.at[1], 0, ignite.at[0], ignite.at[1], r);
+      g.addColorStop(0, "rgba(255,244,214," + (0.85 * near).toFixed(3) + ")"); g.addColorStop(0.35, "rgba(243,201,139," + (0.45 * near).toFixed(3) + ")"); g.addColorStop(1, "rgba(243,201,139,0)");
+      c.fillStyle = g; c.beginPath(); c.arc(ignite.at[0], ignite.at[1], r, 0, Math.PI * 2); c.fill();
+    }
+    ignite.sparks.forEach(function (q) {
+      var life = 1 - q.t / BEAT, n = 13;
+      for (var i = 0; i < n; i += 1) {
+        var arm = i % 2, t = i / n, rad = q.r * (0.15 + t), a = q.a + t * 4.2 + arm * Math.PI;
+        var x = q.x + Math.cos(a) * rad, y = q.y + Math.sin(a) * rad * 0.6, sz = i < 2 ? 2 : 1;
+        c.fillStyle = (q.warm ? (i % 3 ? "rgba(243,201,139," : "rgba(255,244,214,") : (i % 3 ? "rgba(168,190,234," : "rgba(234,240,255,")) + (life * (1 - t * 0.5)).toFixed(3) + ")";
+        c.fillRect(round(x), round(y), sz, sz);
+      }
+    });
+    if (ignite.struck && vp) {
+      // the flame: triangles of the unit leaving the engine, brightest first
+      var wr = place.wreck, base = [wr.x + 0.5, wr.y, wr.z + 0.5], q = [0, 0, 0, 0];
+      for (var i2 = 0; i2 < 4; i2++) { q[i2] = vp[i2] * base[0] + vp[4 + i2] * base[1] + vp[8 + i2] * base[2] + vp[12 + i2]; }
+      if (q[3] > 0.3) {
+        var bx = (q[0] / q[3] * 0.5 + 0.5) * W, by = (1 - (q[1] / q[3] * 0.5 + 0.5)) * H, u = (now - ignite.struck) / 1000;
+        for (var k = 0; k < 21; k += 1) {
+          var life2 = ((u * 2 + k * 0.137) % 1), s2 = max(4, H / q[3] * (0.6 + life2 * 1.6)), x2 = bx + Math.sin(k * 2.3) * s2 * 0.6, y2 = by - life2 * s2 * 2.4;
+          c.fillStyle = life2 < 0.3 ? "rgba(255,244,214," + (1 - life2).toFixed(2) + ")" : "rgba(243,140,70," + (0.9 * (1 - life2)).toFixed(2) + ")";
+          c.beginPath(); c.moveTo(x2, y2 - s2 * 0.58); c.lineTo(x2 + s2 / 2, y2 + s2 * 0.29); c.lineTo(x2 - s2 / 2, y2 + s2 * 0.29); c.closePath(); c.fill();
+        }
+      }
+    }
+    c.restore();
+  }
+
   /* ---- the ride, and space -----------------------------------------------------------------------------------------
      The artist, 21 Oct 2026 (the scoping note, notes/holographic-mr-pearl/specs/COINS-AND-SPACE.md, keeps the words):
      the rocket built, by the four pieces or the ten coins, he rides it up, steered by the stick, and past "a certain
@@ -2559,11 +2683,12 @@
      stick flying the ship; "once you shoot 10 you get shot by an enemy aircraft and crash down back to the planet where
      you have to assemble the rocket either by collecting 10 coins or finding all the parts".
      The ride: the rocket climbs as it always has (2.4 (t - 1)^2 m); the stick moves it across at his walk, within the
-     crash site's clearing (14 m); the camera follows it as far behind its nose as the rocket is tall (13 blocks); the
+     crash site's clearing (14 m round the crash, 20 in a city); the camera follows it as far behind its nose as the rocket is tall (13 blocks); the
      threshold is the height of the figure in the sky over the wreck, past which the figure is behind him; there the
      camera stops and watches; at twice that height and the rocket's own, space.
      Space, every number his or the song's: the ship flies at the hologram's speed (22.5 m/s) and turns at his turn over
-     phi cubed; he sits in it as the hologram's camera sits behind his head (HOLO_D), his head AIM below the centre;
+     phi cubed; the camera sits behind his head as far as the third person's does at rest (TP_HEAD), his head AIM below
+     the centre;
      the mark (the sight's figure, its size) is AIM / phi^2 below the centre (7.4 degrees: slightly below); the guns'
      shots converge on the mark's line at FAR / phi^3 (99 m) and cross the far plane in a beat; one a half beat (SWING);
      the enemies are the block of the unit, white, made the sphere study's size (F(4) = 3 m), each held in a triangle on
@@ -2571,7 +2696,7 @@
      it at its speed over phi, two at a time from FAR / phi ahead; a shot that passes within a block's half diagonal of
      one brings it down, its six bars flying; the tenth down, one comes head on and fires; hit, the ship tumbles for a
      bar and he comes down hard again: the place as it was, the pieces and the coins where they lay. */
-  var ride = null, space = null, enemyCh = null;
+  var ride = null, space = null, enemyCh = null, VIEW_LABEL = "";
   var SPACE = { N: 10, AHEAD: FAR / PHI, ZERO: FAR / (PHI * PHI * PHI), SHOT: FAR / BEAT, R: 1.5 * Math.sqrt(3), SIZE: 3 };
   function spaceV() { return HOLO_V; }
   function spaceTurn() { return TURN / (PHI * PHI * PHI); }
@@ -2585,9 +2710,12 @@
   }
   function rideStep(dt, c) {
     if (!ride || ride.cut || space) { return; }
-    var L = 14;
-    ride.dx = clampV(ride.dx + (Math.sin(P.yaw) * c.fwd + Math.cos(P.yaw) * c.side) * WALK * dt, -L, L);
-    ride.dz = clampV(ride.dz + (-Math.cos(P.yaw) * c.fwd + Math.sin(P.yaw) * c.side) * WALK * dt, -L, L);
+    // within the crash site's clearing (14 m round the crash, 20 in a city), the rocket's half width in from its edge
+    var R = (place.kind === "city" ? 20 : 14) - 2.5, wr = place.wreck, cr = place.crash;
+    ride.dx += (Math.sin(P.yaw) * c.fwd + Math.cos(P.yaw) * c.side) * WALK * dt;
+    ride.dz += (-Math.cos(P.yaw) * c.fwd + Math.sin(P.yaw) * c.side) * WALK * dt;
+    var ox = wr.x + 0.5 + ride.dx - cr.x, oz = wr.z + 0.5 + ride.dz - cr.z, L = hypot(ox, oz);
+    if (L > R) { ride.dx -= ox * (1 - R / L); ride.dz -= oz * (1 - R / L); }
   }
   function rideCam() {
     var wr = place.wreck, nose = [wr.x + 0.5 + ride.dx, wr.y + rocketLift + 13, wr.z + 0.5 + ride.dz];
@@ -2600,21 +2728,25 @@
   }
   // Past the threshold: the camera stays where it is and watches; past twice it and the rocket's height: space.
   function rideCheck(lift) {
-    if (!ride || space) { return; }
+    if (!ride || space || intro) { return; }
     if (!ride.cut && lift >= ride.top) { ride.cut = eye.slice(); say("Past the figure in the sky: the rocket has you now.", true); }
     if (lift >= 2 * ride.top + 13) { spaceBegin(); }
   }
   // Far from the place's grid (x below nought is air there), so nothing of the place is met.
   var SPACE_O = [-1e4, 1e4, -1e4];
+  // the eyes' opening in space: the wake-up's own lids (lids), from where they first open (1.2 s) to open (5 s)
+  var SPACE_WAKE = 5 - 1.2;
   function spaceBegin() {
-    space = { pos: SPACE_O.slice(), down: 0, enemies: [], shots: [], fired: -1e9, phase: "fight", made: 0, hitAt: 0, sky: spaceSky(), black: 0 };
+    // (he comes to in space as he came to under the tree: the eyes open, then the stick is his: "Once you get to space
+    // you return (like you do when initially opening the artifact) back to being able to control Mr Pearl")
+    space = { pos: SPACE_O.slice(), down: 0, enemies: [], shots: [], fired: -1e9, phase: "wake", made: 0, hitAt: 0, sky: spaceSky(), black: 0, t0: performance.now() };
     P.yaw = 0; P.pitch = 0; P.face = 0; blend = null;
     shards = []; swing = swingNext = null;
     if (!enemyCh) { enemyCh = meshBlocks([[0, 0, 0, B.WHITE]]); enemyCh.tex = voxTexture(new Uint8Array([B.WHITE]), 1, 1, 1); }
     document.body.dataset.space = "true";
     $("jump").setAttribute("aria-label", "Fire");
+    canvas.setAttribute("aria-label", "Space, from behind Mr Pearl in the pilot seat: the stick, W A S D or the arrows fly the ship; a tap, Fire or Space fires at the mark.");
     $("where").textContent = "Space · 0 of " + SPACE.N + " down";
-    say("Space. The stick flies the ship; a tap, the jump or Space fires. Ten of them come by: bring them down.", true);
   }
   // The stars and three galaxies, as directions (the deep-space photographs cannot come into an Artifact: drawn here as
   // the unit, triangles), the same every time.
@@ -2668,7 +2800,13 @@
     });
   }
   function spaceStep(dt, now) {
-    var c = controls(dt), A, i;
+    var yaw0 = P.yaw, c = controls(dt), A, i;
+    // (the arrows turn the ship as the stick does, not at the planet's own rate)
+    P.yaw = yaw0; c.side = clampV(c.side + (input.keys.ArrowRight ? 1 : 0) - (input.keys.ArrowLeft ? 1 : 0), -1, 1);
+    if (space.phase === "wake" && (now - space.t0) / 1000 >= SPACE_WAKE) {
+      space.phase = "fight";
+      say("Space. The stick flies the ship; a tap, the jump or Space fires. Ten of them come by: bring them down.", true);
+    }
     if (space.phase === "fight" || space.phase === "last") {
       P.yaw += c.side * spaceTurn() * dt; P.pitch = clampV(P.pitch + c.fwd * spaceTurn() * dt, -1.2, 1.2);
       if (c.up > 0 || input.fire) { fire(now); }
@@ -2704,16 +2842,15 @@
         return s.life > 0;
       }
       var hit = null;
-      space.enemies.forEach(function (e) { if (!hit && segDist(e.p, p0, s.p) < SPACE.R) { hit = e; } });
+      // (the last one, head on, is not to be brought down: it is the one that hits him)
+      space.enemies.forEach(function (e) { if (!hit && !e.last && segDist(e.p, p0, s.p) < SPACE.R) { hit = e; } });
       if (hit) {
         space.enemies.splice(space.enemies.indexOf(hit), 1);
         spaceBurst(hit);
-        if (!hit.last) {
-          space.down += 1;
-          $("where").textContent = "Space · " + space.down + " of " + SPACE.N + " down";
-          if (space.down >= SPACE.N) { say("Ten down. One more comes, head on.", true); space.phase = "last"; lastOne(); }
-          else { say(space.down + " of " + SPACE.N + " down.", true); }
-        } else { lastOne(); }
+        space.down += 1;
+        $("where").textContent = "Space · " + space.down + " of " + SPACE.N + " down";
+        if (space.down >= SPACE.N) { say("Ten down. One more comes, head on.", true); space.phase = "last"; lastOne(); }
+        else { say(space.down + " of " + SPACE.N + " down.", true); }
         return false;
       }
       return s.life > 0;
@@ -2733,6 +2870,12 @@
   // Down: the place as it was, the pieces and the coins where they lay, the rocket to build again; what he read kept.
   function crash() {
     delete document.body.dataset.ride;
+    Object.keys(looked).forEach(function (id) { if (looked[id] === "piece") { delete looked[id]; } });
+    // the old world's own GL things let go (the next is built anew)
+    paintings.forEach(function (p) { if (p.tex) { gl.deleteTexture(p.tex); } });
+    [homage, studies].forEach(function (h) { if (h) { h.figures.forEach(function (f) { if (f.vao) { gl.deleteVertexArray(f.vao); } }); } });
+    if (rocketCh) { gl.deleteVertexArray(rocketCh.vao); [rocketCh.pb, rocketCh.ib, rocketCh.eb].forEach(function (b) { if (b) { gl.deleteBuffer(b); } }); if (rocketCh.tex) { gl.deleteTexture(rocketCh.tex); } }
+    canvas.setAttribute("aria-label", VIEW_LABEL);
     space = null; ride = null; launched = null; ended = false; built = false; found = []; got = []; alarms = 0; rocketCh = null; rocketLift = 0; shards = [];
     delete document.body.dataset.space;
     $("jump").setAttribute("aria-label", "Jump");
@@ -2752,9 +2895,33 @@
     pxW = tanH / rows0;
     gl.useProgram(prog);
     gl.uniformMatrix4fv(U.uVP, false, vp); gl.uniform3fv(U.uEye, eye); gl.uniform3fv(U.uSun, sunDir); gl.uniform1f(U.uT, now / 1000);
-    gl.uniform3fv(U.uSky, BLACK); gl.uniform3fv(U.uHaze, BLACK); gl.uniform1i(U.uSteps, walk); gl.uniform1i(U.uVeil, 0); gl.uniform1i(U.uVox, 1);
+    gl.uniform3fv(U.uSky, BLACK); gl.uniform3fv(U.uHaze, BLACK); gl.uniform1i(U.uSteps, walk); gl.uniform1i(U.uVeil, 0); gl.uniform1i(U.uVox, 1); gl.uniform1f(U.uPaint, PAINT);
     gl.uniform3f(U.uOff, 0, 0, 0); gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform1i(U.uFloor, 0); gl.uniform2f(U.uNear, 0, 0);
     gl.uniform3f(U.uAxA, 1e9, 1e9, 1e9); gl.uniform3f(U.uAxB, 1e9, 1e9, 1e9); gl.uniform3f(U.uHeadC, 1e9, 1e9, 1e9); gl.uniform3f(U.uHeadE, 1e9, 1e9, 1e9);
+    // the stars and the galaxies, first and behind all (no depth written), facing the camera
+    if (trailProg) {
+      var D = 0.9 * FAR, dpr0 = min(2, window.devicePixelRatio || 1), cy0 = Math.cos(cam.yaw), sy0 = Math.sin(cam.yaw), fv = lookDir(cam.yaw, cam.pitch);
+      var rv = [cy0, 0, sy0], uv = [rv[1] * fv[2] - rv[2] * fv[1], rv[2] * fv[0] - rv[0] * fv[2], rv[0] * fv[1] - rv[1] * fv[0]];
+      var batch = {}, put = function (st, col) {
+        var c0 = [eye[0] + st.d[0] * D, eye[1] + st.d[1] * D, eye[2] + st.d[2] * D], z = st.s * 1.7 * dpr0 * pxW * D, a = st.a, B0 = batch[col] = batch[col] || [];
+        B0.push(c0[0] + uv[0] * 0.58 * z, c0[1] + uv[1] * 0.58 * z, c0[2] + uv[2] * 0.58 * z, a,
+                c0[0] + (rv[0] * 0.5 - uv[0] * 0.29) * z, c0[1] + (rv[1] * 0.5 - uv[1] * 0.29) * z, c0[2] + (rv[2] * 0.5 - uv[2] * 0.29) * z, a,
+                c0[0] + (-rv[0] * 0.5 - uv[0] * 0.29) * z, c0[1] + (-rv[1] * 0.5 - uv[1] * 0.29) * z, c0[2] + (-rv[2] * 0.5 - uv[2] * 0.29) * z, a);
+      };
+      space.sky.stars.forEach(function (st) { if (st.d[0] * fv[0] + st.d[1] * fv[1] + st.d[2] * fv[2] > 0.3) { put(st, "234,223,205"); } });
+      space.sky.gal.forEach(function (st) { if (st.d[0] * fv[0] + st.d[1] * fv[1] + st.d[2] * fv[2] > 0.3) { put(st, st.c); } });
+      gl.useProgram(trailProg); gl.uniformMatrix4fv(TU.uVP, false, vp);
+      gl.bindVertexArray(trailVao); gl.bindBuffer(gl.ARRAY_BUFFER, trailBuf);
+      gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE); gl.depthMask(false);
+      Object.keys(batch).forEach(function (k) {
+        var cc = k.split(",").map(function (v) { return +v / 255; });
+        gl.uniform3f(TU.uC, cc[0], cc[1], cc[2]);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(batch[k]), gl.DYNAMIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, batch[k].length / 4);
+      });
+      gl.disable(gl.BLEND); gl.depthMask(true); gl.bindVertexArray(null);
+      gl.useProgram(prog);
+    }
     var A = spaceAxes(), box = function (ch, m, dim, px) {
       gl.uniform1f(U.uPx, px);
       gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
@@ -2768,7 +2935,11 @@
       gl.uniform4fv(U.uPal, worldPal);
       var waist = [space.pos[0] - A.u[0] * (PEARL.headY - PEARL.leg), space.pos[1] - A.u[1] * (PEARL.headY - PEARL.leg), space.pos[2] - A.u[2] * (PEARL.headY - PEARL.leg)];
       var o = [0, 1, 2].map(function (i) { return waist[i] - A.r[i] * 2.5 - A.f[i] * 6.5 - A.u[i] * 4; });
-      box(rocketCh, basis(o, 1), rocketCh.dim, pxW);
+      // (its mesh is in the world's cells, its grid at org: both taken to the ship)
+      var org = rocketCh.org;
+      gl.uniform3f(U.uOrg, org[0], org[1], org[2]);
+      box(rocketCh, PB.mul(basis(o, 1), PB.T(-org[0], -org[1], -org[2])), rocketCh.dim, pxW);
+      gl.uniform3f(U.uOrg, 0, 0, 0);
     }
     // the enemies: the unit's block, three metres, turning
     gl.uniform4fv(U.uPal, worldPal);
@@ -2781,6 +2952,19 @@
     P.x = space.pos[0]; P.y = space.pos[1] - PEARL.headY; P.z = space.pos[2]; P.face = P.yaw; P.amount = 0;
     drawMe = { body: true, head: true };
     var HZ = HAZE; HAZE = BLACK; drawPearl(now); drawShards(); HAZE = HZ;
+    // the guns: two bars of the rocket's red along his way, their tips where the shots leave
+    if (shardProg) {
+      var tn = tonesOf(w.pal[B.RED] || [200, 60, 50]), gt = new Float32Array(9), L = PEARL.leg, tw = unitH() * 3;
+      for (var ti = 0; ti < 3; ti += 1) { for (var tj = 0; tj < 3; tj += 1) { gt[ti * 3 + tj] = tn[ti][tj] / 255; } }
+      gl.useProgram(shardProg);
+      gl.uniformMatrix4fv(SHU.uVP, false, vp); gl.uniform3fv(SHU.uEye, eye); gl.uniform3fv(SHU.uHaze, BLACK); gl.uniform3fv(SHU.uT, gt);
+      gl.bindVertexArray(null);
+      gunTips().forEach(function (t) {
+        var m = [A.r[0] * tw, A.r[1] * tw, A.r[2] * tw, 0, A.u[0] * tw, A.u[1] * tw, A.u[2] * tw, 0, A.f[0] * L, A.f[1] * L, A.f[2] * L, 0, t[0] - A.f[0] * L / 2, t[1] - A.f[1] * L / 2, t[2] - A.f[2] * L / 2, 1];
+        gl.uniformMatrix4fv(SHU.uM, false, m);
+        gl.drawArrays(gl.TRIANGLES, 0, 36);
+      });
+    }
     // the lasers
     var pts = [];
     space.shots.forEach(function (s) { var L = s.mine ? 6 : 3; pts.push(s.p[0], s.p[1], s.p[2], 0.95, s.p[0] - s.d[0] * L, s.p[1] - s.d[1] * L, s.p[2] - s.d[2] * L, 0); });
@@ -2800,12 +2984,8 @@
   function spaceOverlay(now) {
     var c = hud.getContext("2d"), dpr = min(2, window.devicePixelRatio || 1), W = hud.width / dpr, H = hud.height / dpr, f = H / 2 / T35;
     c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
-    var tri = function (x, y, s) { c.beginPath(); c.moveTo(x, y - s * 0.58); c.lineTo(x + s / 2, y + s * 0.29); c.lineTo(x - s / 2, y + s * 0.29); c.closePath(); c.fill(); };
-    var proj = function (d) { var p = [eye[0] + d[0] * 300, eye[1] + d[1] * 300, eye[2] + d[2] * 300], q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H] : null; };
-    c.globalCompositeOperation = "destination-over";
-    space.sky.stars.forEach(function (st) { var q = proj(st.d); if (q && q[0] > -4 && q[1] > -4 && q[0] < W + 4 && q[1] < H + 4) { c.fillStyle = "rgba(234,223,205," + st.a.toFixed(2) + ")"; tri(q[0], q[1], st.s * 1.6); } });
-    space.sky.gal.forEach(function (st) { var q = proj(st.d); if (q && q[0] > -4 && q[1] > -4 && q[0] < W + 4 && q[1] < H + 4) { c.fillStyle = "rgba(" + st.c + "," + st.a.toFixed(2) + ")"; tri(q[0], q[1], st.s * 1.8); } });
-    c.globalCompositeOperation = "source-over";
+    // the stick's water, under the thumb, as on the planet
+    water.step(min(0.05, (now - (water.last || now)) / 1000), stillMotion.matches); water.last = now; water.draw(c, now / 1000, stillMotion.matches);
     // the windshield: its frame the figure's three tones, lit along its top, grey at its sides, dark along its sill
     var u = sightU() * f, bw = max(3, u / 3), x0 = W * 0.08, x1 = W * 0.92, y0 = H * 0.1, y1 = H / 2 + f * Math.tan(AIM) * 0.62;
     c.lineCap = "butt";
@@ -2828,6 +3008,10 @@
       if (e.last) { c.strokeStyle = "#f3c98b"; c.lineWidth = 1; c.beginPath(); c.moveTo(x - r, y - r * 0.58); c.lineTo(x + r, y - r * 0.58); c.lineTo(x, y + r * 1.15); c.closePath(); c.stroke(); }
     });
     if (space.black > 0) { c.fillStyle = "rgba(5,3,2," + space.black.toFixed(3) + ")"; c.fillRect(0, 0, W, H); }
+    if (space.phase === "wake") {
+      var shut = (1 - lids(1.2 + (now - space.t0) / 1000)) * H / 2;
+      c.fillStyle = "#050302"; c.fillRect(0, 0, W, shut); c.fillRect(0, H - shut, W, shut);
+    }
   }
 
   /* ---- Mr Pearl drawn: his body of the unit through the blocks' own shader, his head the true sphere ------ */
@@ -3014,6 +3198,7 @@
   }
   // The guards put you out: you come to under your tree again, and the alarms are quiet.
   function putOut() {
+    if (launched || ignite || space) { return; }   // (leaving in the rocket beats the guards)
     alarms = 0;
     store();
     drawPieces();
@@ -3064,6 +3249,8 @@
       if (u > 9.6) { awake(); }
     } else if (launched && ride) {
       rideStep(dt, controls(dt));
+    } else if (ignite) {
+      controls(dt); physics(dt, { fwd: 0, side: 0, up: 0 }); igniteStep(dt);
     } else if (!launched && !flying) {
       var hand = controls(dt);
       // The head out, the body stands where it was under the place's physics, unled; while it follows the head
@@ -3072,7 +3259,7 @@
       else { physics(dt, hand); holoLeft = min(HOLO_T, holoLeft + HOLO_REFILL * dt); }
       swingStep(dt); sightStep(dt, now);
     }
-    shardsStep(dt); if (!intro && !launched) { stepPearls(dt); coinsStep(); guardsStep(dt, now); }
+    shardsStep(dt); if (!intro && (!launched || ride)) { stepPearls(dt); } if (!intro && !launched) { coinsStep(); guardsStep(dt, now); }
     pump(intro ? 14 : 6);
     var cw = canvas.width, chh = canvas.height, cam = camera(now, dt, eyeH, cw / chh);
     eye = cam.e;
@@ -3094,7 +3281,7 @@
     var tanH = 2 * Math.tan(FOV * Math.PI / 360), rows = curPix > 1 ? chh : rows0;
     pxW = tanH / rows;
     gl.uniform1f(U.uPx, pxW);
-    gl.uniform1i(U.uSteps, walk); gl.uniform1i(U.uVeil, 0);
+    gl.uniform1i(U.uSteps, walk); gl.uniform1i(U.uVeil, 0); gl.uniform1f(U.uPaint, PAINT);
     gl.uniform1i(U.uVox, 1);
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex); gl.activeTexture(gl.TEXTURE0);
     gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform3i(U.uDim, w.SX, w.SY, w.SZ); gl.uniform1i(U.uFloor, 1);
@@ -3222,7 +3409,7 @@
   // to it ended (both are Hd's), and where you woke not his eyes again until you have walked off.
   function lieDown(lines) {
     var at = underTree();
-    swing = swingNext = null; shards = []; swoosh = []; headWas = null;
+    swing = swingNext = null; shards = []; swoosh = []; headWas = null; ignite = null; delete document.body.dataset.ride;
     if (guards.length) { homeGuards(); }
     dropSight(); pearls = []; carried = THROW.CARRY; drawCarry();   // he comes to with his five pearls, none lying about
     if (Hd) { Hd = null; pov = "third"; delete document.body.dataset.holo; drawViews(); }
@@ -3298,6 +3485,7 @@
       c.fillStyle = launched && life < 0.15 ? "rgba(255,190,110," + (0.8 * (1 - life / 0.15)) + ")" : "rgba(70,66,64," + (0.42 * (1 - life)).toFixed(3) + ")";
       c.beginPath(); c.moveTo(x, y - s * 0.58); c.lineTo(x + s / 2, y + s * 0.29); c.lineTo(x - s / 2, y + s * 0.29); c.closePath(); c.fill();
     }
+    igniteDraw(c, W, H, now);
     // The stick's water, under the thumb (see Water).
     if (!intro) { water.step(min(0.05, (now - (water.last || now)) / 1000), stillMotion.matches); water.last = now; water.draw(c, now / 1000, stillMotion.matches); }
     // (the crosshair gives way to the sight)
@@ -3375,6 +3563,7 @@
   }
   // Where you are: the room and its floor; or by a building of the lots round it, the new form it is; or the place.
   function where() {
+    if (space) { return; }   // (in space the line is the tally)
     var m = me(), rm = place.kind !== "city" ? Pl.roomAt(place, m.x, m.y, m.z) : null, t = setting.name;
     if (rm && rm.name) { var FL = place.floors[rm.floor]; t = upper(rm.name) + (place.kind === "museum" ? " · " + (FL.name || FL.label) : ""); }
     else if (w.lot) {
@@ -3435,15 +3624,19 @@
     if (!quiet) { say("The rocket stands on the wreck's ground. Launch when you are clear.", true); }
   }
   function launch() {
-    if (!built || launched || Hd) { return; }
-    launched = performance.now();
+    if (!built || launched || Hd || ignite) { return; }
     dropSight();
-    store();
     closeLabel();
     $("notes").hidden = true;
-    // He rides it: the camera behind its nose, the stick his until the figure in the sky is passed (the ride, above).
+    igniteBegin();
+  }
+  // The fire struck: he rides it, the camera behind its nose, the stick his until the figure in the sky is passed.
+  function rideBegin() {
+    launched = performance.now();
+    store();
     ride = { dx: 0, dz: 0, top: rideTop(), cut: null };
     document.body.dataset.ride = "true";
+    canvas.setAttribute("aria-label", "The rocket climbing: the stick or W A S D steers it until it passes the figure in the sky.");
     var wr = place.wreck;
     P.yaw = Math.atan2(wr.x + 0.5 - P.x, -(wr.z + 0.5 - P.z)); P.pitch = REST;
     blend = { from: camLast, t0: performance.now(), dur: T_VIEW, pitchFrom: P.pitch, pitchTo: null };
@@ -3517,7 +3710,7 @@
 
   function advKey() { return setting.kind + ":" + setting.slug + ":" + seed; }
   function store() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ key: advKey(), found: found, known: known, looked: looked, alarms: alarms, built: built, done: !!launched, escaped: escaped, coins: got })); }
+    try { localStorage.setItem(SAVE, JSON.stringify({ key: advKey(), found: found, known: known, looked: looked, alarms: alarms, built: built, done: !!ended, escaped: escaped, coins: got })); }
     catch (e) { /* kept only while the page is open */ }
   }
   function saved() {
@@ -3720,6 +3913,7 @@
       if (q && !q.moved && now - q.t < 450) { if (sightOn()) { throwAt(); } else { var r = canvas.getBoundingClientRect(); act(r.left + r.width / 2, r.top + r.height / 2, false); } }
     };
     canvas.addEventListener("pointermove", function (e) {
+      if (ignite) { var lp = ignite.ptr; ignite.ptr = [e.clientX, e.clientY]; if (lp) { igniteRub(lp[0], lp[1], e.clientX, e.clientY); } return; }
       if (stick && e.pointerId === stick.id) {
         var dx = e.clientX - stick.x, dy = e.clientY - stick.y, L = min(water.REACH, hypot(dx, dy)), a = Math.atan2(dy, dx);
         input.side = Math.cos(a) * L / water.REACH; input.fwd = -Math.sin(a) * L / water.REACH;
@@ -3789,6 +3983,7 @@
       if (intro && performance.now() - intro.t0 > 600) { intro.t0 -= 9600; return; }
       var k = keyOf(e);
       if (["w", "a", "s", "d", " ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Shift", "c"].indexOf(k) >= 0) { input.keys[k] = true; e.preventDefault(); }
+      if (ignite && (k === " " || k === "Enter") && !e.repeat) { igniteTap(); }
       if (k === "h" && !e.repeat) { toggleHolo(); }   // the button's key, once a press: held, it does not toggle again
       if (k === "r" && !e.repeat) { if (Hd) { barred(); } else { raiseSight(); } }   // the sight (R), as its button
       // with the sight up, T or Enter throws (Enter only while nothing else has the focus: a focused button takes it)
@@ -3991,6 +4186,7 @@
 
   function init() {
     canvas = $("view");
+    VIEW_LABEL = canvas.getAttribute("aria-label");
     hud = $("hud");
     // Straight in: nothing over the view until you have come to.
     if (CFG.play) { document.body.dataset.film = "true"; }
@@ -4002,7 +4198,7 @@
     shardProg = compile(SHARD_VS, SHARD_FS);
     ["uVP", "uM", "uT", "uEye", "uHaze"].forEach(function (n) { SHU[n] = gl.getUniformLocation(shardProg, n); });
     ["uVP", "uOff", "uPal", "uEye", "uSun", "uT", "uSky", "uHaze", "uVox", "uOrg", "uDim", "uFloor", "uPx", "uSteps", "uVeil", "uM", "uInvM",
-     "uAxA", "uAxB", "uHeadC", "uHeadE", "uNear"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+     "uAxA", "uAxB", "uHeadC", "uHeadE", "uNear", "uPaint"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     ["uInv", "uEye", "uSun", "uSky", "uHaze"].forEach(function (n) { SU[n] = gl.getUniformLocation(skyProg, n); });
     ["uVP", "uTex", "uEye", "uHaze", "uLit"].forEach(function (n) { AU[n] = gl.getUniformLocation(artProg, n); });
     ["uVP", "uEye", "uHaze"].forEach(function (n) { FU[n] = gl.getUniformLocation(figProg, n); OU[n] = gl.getUniformLocation(homProg, n); });
@@ -4084,8 +4280,9 @@
              screenOf: function (p) { var r = canvas.getBoundingClientRect(), q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [r.left + (q[0] / q[3] * 0.5 + 0.5) * r.width, r.top + (0.5 - q[1] / q[3] * 0.5) * r.height] : null; },
              farEnd: function () { return swing && !swing.ret && FAR_END ? farEndAt(swing, swing.u) : null; }, smashConsts: function () { return { BEAT: BEAT, SWING: SWING, LEAP: LEAP, COIL: COIL, ARMS_UP: ARMS_UP, E0: E0, Y_SH: Y_SH, FAR_END: FAR_END }; },
              coins: function () { return { list: coins, got: got.slice(), R: coinR(), RO: coinRO(), units: coinCh && coinCh.units }; }, takeCoin: function (i) { takeCoin(coins[i]); },
-             space: function () { return space; }, ride: function () { return ride; }, spaceConsts: function () { return { SPACE: SPACE, V: spaceV(), TURN: spaceTurn(), MARK: markDrop() }; },
+             space: function () { return space; }, ride: function () { return ride; }, ignite: function () { return ignite; }, igniteConsts: IGNITE, spaceConsts: function () { return { SPACE: SPACE, V: spaceV(), TURN: spaceTurn(), MARK: markDrop() }; },
              guards: function () { return guards; }, guardConsts: function () { return { GUARD: GUARD, reach: guardReach() }; }, sees: sees, stands: function () { return gStand; },
+             paint: function (v) { if (v != null) { PAINT = v; } return PAINT; },
              stone: function () { return onStone; }, px: function () { return pxW; }, putOut: putOut,
              bring: bringBody, home: goHome, harm: harmBody, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; },
              pearl: function () { return me3 && { ms: me3.ms, cells: me3.body.cells, parts: me3.parts.length, cell: me3.body.cell, PEARL: PEARL, throwArm: me3.body.throwArm }; },

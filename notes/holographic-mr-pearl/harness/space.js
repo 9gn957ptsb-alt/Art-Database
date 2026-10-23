@@ -9,6 +9,17 @@ fs.mkdirSync(out, { recursive: true });
 const log = [], bad = [];
 const say = (l) => { console.log(l); log.push(l); };
 const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { bad.push(what); } return ok; };
+// A swing kept up over the view, dispatched in the page on the game's frames: round a circle a quarter of the screen's
+// height across, `turns` turns a second, for `secs` seconds of the game's clock (25 ms a frame).
+const swing = (P, turnsPerSec, secs) => P.evaluate((a) => new Promise((done) => {
+  const cv = document.getElementById("view"), W = innerWidth, H = innerHeight, f0 = window.__frames, n = Math.round(a.secs * 40);
+  const go = () => {
+    const k = window.__frames - f0, th = k * 0.025 * a.tps * 2 * Math.PI;
+    cv.dispatchEvent(new PointerEvent("pointermove", { pointerId: 70, pointerType: "mouse", clientX: W / 2 + Math.cos(th) * H / 8, clientY: H / 2 + Math.sin(th) * H / 8, bubbles: true }));
+    if (k < n) { requestAnimationFrame(go); } else { done(); }
+  };
+  go();
+}), { tps: turnsPerSec, secs });
 (async () => {
   const { browser, P, errors } = await open({ view, virtual: 25, port: +port || 8815, hash: hash || "form/15/7" });
   const D = (fn, a) => P.evaluate(fn, a);
@@ -23,6 +34,9 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
   const known0 = await D(() => Object.keys(window.Rocket.debug().known).length);
   check(await D(() => !document.getElementById("launch").hidden), "ten coins: Launch offered");
   await D(() => { window.__toasts.length = 0; window.Rocket.debug().launch(); });
+  // the fire struck by a swing kept up (fire.js tests it)
+  await swing(P, 4, 4);
+  await P.waitForFunction(() => !!window.Rocket.debug().ride(), null, { timeout: 900000 });
   await frames(P, 30);
   const R0 = await D(() => window.Rocket.debug().ride());
   check(!!R0 && R0.top > 13, "he rides it: the threshold the figure in the sky's height (" + (R0 && R0.top.toFixed(1)) + " m)");
@@ -39,6 +53,12 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
   await frames(P, 20);
   await P.screenshot({ path: `${out}/ride_watched.png` });
   await P.waitForFunction(() => !!window.Rocket.debug().space(), null, { timeout: 900000 });
+  // the eyes open first, as on opening the Artifact; then the stick is his
+  await frames(P, 20);
+  await P.screenshot({ path: `${out}/space_waking.png` });
+  const wk = await D(() => ({ phase: window.Rocket.debug().space().phase, en: window.Rocket.debug().space().enemies.length }));
+  check(wk.phase === "wake" && wk.en === 0, "in space he comes to first, the eyes opening (" + JSON.stringify(wk) + ")");
+  await P.waitForFunction(() => { const s = window.Rocket.debug().space(); return s && s.phase === "fight"; }, null, { timeout: 900000 });
   await frames(P, 10);
   const S0 = await D(() => ({ where: document.getElementById("where").textContent, fire: document.getElementById("jump").getAttribute("aria-label"), on: document.body.dataset.space, en: window.Rocket.debug().space().enemies.length, K: window.Rocket.debug().spaceConsts() }));
   say("space " + JSON.stringify(S0));
