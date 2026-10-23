@@ -92,6 +92,15 @@ trunks, a small figure on the ground):
   me in the development of Holographic Mr Pearl and the bottom is a Vincent Van Gogh painting. Notice
   the similarities in their composition and overall feeling"
 
+With the full painting (van Gogh's pine trees in the garden of Saint-Paul Hospital), 23 Oct 2026:
+
+- "Here is the full painting"
+- "Make sure that pairings like this happen in the game. Simplify the amount of things used in the game
+  so that the icons can be a bit bigger so that visual relationships between things can be determined.
+  Remember why people are swiping shouldn't be to align certain shapes in a row to beat a level in the
+  game, people should be swiping because they see similarities across compositions like the one I just
+  shared with you"
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
