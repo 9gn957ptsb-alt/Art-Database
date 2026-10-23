@@ -33,6 +33,9 @@
     bring: 'Why did you save it?',
     free: 'What are you looking for?',
   };
+  const NOTE_PAIR = 'You see these two the other way now. What changed?';   // Note why on a turn in Set ('pair:a|b')
+  const isPairRef = (ref) => typeof ref === 'string' && ref.indexOf('pair:') === 0;
+  const noteQ = (n) => (isPairRef(n.ref) ? NOTE_PAIR : NOTE_Q[n.q] || NOTE_Q.free);
   const LS_KEY = '5s.state.v1';
   const STRIP_MS = 2500;
   const STRIP_TURN_MS = 9000;
@@ -94,6 +97,7 @@
     detailBack: null, whereLinks: [],
     deckError: '', logoOk: null, drag: null,
     setMode: 'board', board: null, play: null, playPaused: false, boardWait: false, paintingI: -1,
+    first: null, firstWait: false,   // Set's first board (under six kept pictures), and a brought picture it waits on
     reveal: null,   // the kingdom's area just found: its island grows once, the next time the kingdom opens (this visit only)
   };
 
@@ -311,6 +315,7 @@
     });
     // Set's board draws its own tiles: once the brought-in pictures it asked for have all landed, draw it again.
     if (ui.boardWait && ui.board && !ownLoading.size) { ui.boardWait = false; ui.board.update({}); }
+    if (ui.firstWait && ui.first && !ownLoading.size && view === 'set') renderSet();   // the first board counts the pictures that landed
   }
 
   function paintSrc(el, src) {
@@ -498,7 +503,7 @@
     const five = S.five;
     const broken = five && five.ids.some((id) => !F.card(S, deck, id));
     if (!five || broken || five.day !== day) {
-      S = F.startFive(S, deck, now());
+      S = F.startFive(S, deck, now(), RL.ask(S, deck));   // one card of the five may follow from what they related in Set
       persist();
     }
   }
@@ -878,13 +883,19 @@
     const rect = top ? top.getBoundingClientRect() : null;
     if (top && how !== 'drag') top._dx = 0;
     flyOff(top, keep);
+    const had = keep && c && c.kind !== 'colour' ? poolSize(S) : 0;
     commit(F.fivePass(res.state, now()), { noRender: true });   // a five sorted: one Pass for Set's game, once a day
     renderSort();
-    showStrip({ id, keep: !!keep, turn: res.turn });
+    // The card that came from Set is named only now, after the decision; the keep that makes six readies the board.
+    const from = S.five && S.five.ask === id ? fromSet(id) : '';
+    const ready = had === 5 && poolSize(S) === 6 && !example ? readyLine() : '';
+    showStrip({ id, keep: !!keep, turn: res.turn, from, ready });
     if (keep && c && !c.own) flyParts(c, rect);
     let msg = c && c.own ? (keep ? 'Still yours: ' + (c.title || 'Untitled') + '.' : 'Let go: ' + (c.title || 'Untitled') + '. It moves to Let go in Split.')
       : (keep ? 'Kept: ' : 'Passed: ') + nameLine(c) + '.';
     if (res.turn) msg += ' A turn. ' + turnSentence(res.turn.dir, res.turn.because, 'this');
+    if (from) msg += ' ' + from;
+    if (ready) msg += ' ' + ready;
     if (F.fiveDone(S)) {
       const js = S.five.ids.map(lastJudgment).filter(Boolean);
       msg += ' Five sorted. You kept ' + js.filter((e) => e[1]).length + ' of ' + js.length + '.';
@@ -927,8 +938,16 @@
   function showStrip(info) {
     ui.strip = info;
     renderStrip();
-    scheduleStripHide(info.turn ? STRIP_TURN_MS : STRIP_MS);
+    scheduleStripHide(info.turn || info.from || info.ready ? STRIP_TURN_MS : STRIP_MS);
   }
+  // Sort, from Set (SPEC "Set, inside out" §2.2): why this card was in the five, in the lookers' line or the person's word.
+  function fromSet(id) {
+    const w = RL.why(S, deck, id);
+    if (!w) return '';
+    const name = playName(w.with), line = w.line && String(w.line).replace(/[.\s]+$/, '');
+    return w.word ? 'From your Set: it has ' + w.word + ', as you said of ' + name + '.' : 'From your Set: someone put this with your ' + name + ': ' + line + '.';
+  }
+  const readyLine = () => (S.saga.stars.length ? 'Level ' + (S.saga.stars.length + 1) + ' is ready.' : 'Your first board is ready.');
   function scheduleStripHide(ms) {
     clearTimeout(ui.stripTimer);
     ui.stripTimer = setTimeout(() => { if (ui.stripHold) return; hideStrip(); }, ms);
@@ -968,10 +987,13 @@
     if (info.turn) {
       html += '<p class="strip-text">' + icon('turn') + '<span><b>A turn.</b> ' + esc(turnSentence(info.turn.dir, info.turn.because, 'this')) + '</span></p>';
     }
+    if (info.from) html += '<p class="strip-text" style="flex-basis:100%;padding:8px 12px;border-radius:12px;background:var(--iris-tint);color:var(--iris-ink)">' + icon('set') + '<span>' + esc(info.from) + '</span></p>';
+    if (info.ready) html += '<p class="strip-text" style="flex-basis:100%">' + icon('set') + '<span><b>' + esc(info.ready) + '</b></span></p>';
     if (info.keep && !own && reduced()) {
       html += '<p class="parts" aria-label="Parts added to Split">' + partsOf(c).map((p) => (p.sw ? '<span class="sw" style="background:' + p.sw + '"></span>' : '<span class="pt">' + esc(p.t) + '</span>')).join('') + '</p>';
     }
     html += '<div class="strip-btns">' +
+      (info.ready ? '<button type="button" class="btn btn-keep" data-act="set-them">Set them</button>' : '') +
       (info.turn ? '<button type="button" class="btn" data-act="note-turn" data-id="' + esc(info.id) + '" aria-haspopup="dialog">Note why</button>' : '') +
       (canUndo() && S.j.length && S.j[S.j.length - 1][0] === info.id ? '<button type="button" class="btn" data-act="undo">Undo</button>' : '') +
       '<button type="button" class="btn" data-act="detail" data-id="' + esc(info.id) + '" aria-haspopup="dialog">Look closer</button>' +
@@ -1030,6 +1052,7 @@
     });
     const endAt = js.reduce((a, [, e]) => Math.max(a, e ? e[3] : 0), 0);
     const word = S.notes.filter((n) => n.q === 'five' && n.at >= endAt).pop();
+    const toGo = 6 - poolSize(S), won = S.saga.stars.length;   // under six: the way to the first board, counted down
     const tiles = js.map(([id, e]) => {
       const c = cardOf(id, S);
       const k = !!(e && e[1]);
@@ -1045,6 +1068,7 @@
         '<div><dt>Turns</dt><dd>' + turns + '</dd></div>' +
         '<div><dt>Parts gained</dt><dd>' + parts.size + '</dd></div>' +
       '</dl>' +
+      (toGo > 0 ? '<p class="sec-note">' + toGo + ' more to ' + (won ? 'play level ' + (won + 1) : 'your first board') + '.</p>' : '') +
       (word
         ? '<div class="oneword"><span class="small">Your word for this five</span><p class="said">' + esc(word.text) + '</p></div>'
         : '<form class="oneword" data-form="oneword"><label class="small" for="oneword-in">One word for this five (optional)</label>' +
@@ -1284,12 +1308,37 @@
   }
 
   // ================================================================ SET: the board and the game
-  // (SPEC "Set: the board and the game"). #set opens the board (FiveSBoard); the room is one tap away.
-  // Play opens a level (FiveSPlay) over Set at full height, the tab bar hidden while it is on; the level
-  // runs in memory, never saved. In Example mode the game plays on the example taste and writes nothing.
+  // (SPEC "Set: the board and the game", "Set, inside out"). #set opens the board (FiveSBoard); the room is one
+  // tap away. Play opens a level (FiveSPlay.mountSet) over Set at full height, the tab bar hidden while it is on;
+  // each relation is saved as it is said. Under six kept pictures Set shows the first board instead (the same
+  // view, free: no level), above the mood board. In Example mode the game plays on the example taste and writes nothing.
 
-  const MX = window.FiveSMatch, BD = window.FiveSBoard, PL = window.FiveSPlay, KD = window.FiveSKingdom;
+  const MX = window.FiveSMatch, BD = window.FiveSBoard, PL = window.FiveSPlay, KD = window.FiveSKingdom, RL = window.FiveSRelate;
   const nowSec = () => Math.floor(now() / 1000);
+  const NUM = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
+
+  // The brought things Set can deal: not let go, of a kind with a picture, and the picture here (a brought thing
+  // whose picture is still on its way sits out; hydrate() draws the first board again when it lands).
+  function ownPics(st) {
+    return st.own.filter((o) => {
+      const c = o && o.let == null && OWN_KINDS.includes(o.kind) ? cardOf(o.id, st) : null;
+      const src = c ? ownSrc(c, 'img') : null;
+      if (src === undefined) ui.firstWait = true;
+      return !!src;
+    }).map((o) => o.id);
+  }
+  const setTable = (st) => RL.table(st, deck, ownPics(st));
+  // The table's pool size, counted as FiveSRelate.table counts it but without the profile (Sort asks on every keep):
+  // deck pictures whose latest judgment is a keep, and brought things with their picture here.
+  let deckPics = null;
+  function poolSize(st) {
+    if (!deckPics) deckPics = new Set(deck.cards.filter((c) => c.img && c.kind !== 'colour').map((c) => c.id));
+    const last = new Map();
+    for (const e of st.j) last.set(e[0], e[1]);
+    let n = ownPics(st).length;
+    for (const [id, k] of last) if (k && deckPics.has(id)) n++;
+    return n;
+  }
 
   function renderSet() {
     const el = $('#view-set');
@@ -1298,22 +1347,76 @@
       return;
     }
     if (ui.board) { ui.board.destroy(); ui.board = null; }
+    if (ui.first) { ui.first.destroy(); ui.first = null; }
     if (!deck) { notReady(el); return; }
     if (ui.setMode === 'room') { renderRoom(); return; }
     const st = active();
     const P = prof(st);
     const kept = F.KINDS.some((k) => P.keptByKind[k].length) || st.paintings.length > 0;
+    ui.firstWait = false;
+    const table = setTable(st);
+    if (table.pool.length < 6) { renderFirst(el, st, table, kept); return; }
     let html = '<div class="wrap"><div class="view-head"><h1 class="h1" tabindex="-1">Set</h1>' +
       '<p class="lede">Your board: what you kept, grouped by what you put together.</p>' +
       '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-act="set-play">Play level ' + (st.saga.stars.length + 1) + '</button>' +
       '<button type="button" class="btn btn-quiet" data-act="set-room">See it as a room</button>' +
       '<button type="button" class="btn btn-quiet" data-act="set-kingdom">Your kingdom</button></div></div>';
-    if (!kept) {
-      html += '<div class="empty"><span class="ghosts" aria-hidden="true"><i></i><i></i><i></i></span><p>Your board fills with what you keep. Sort a five and it starts.</p>' +
-        '<button type="button" class="btn" data-act="goto" data-view="sort">Sort</button>' + exampleButton(st) + '</div>';
-    }
     el.innerHTML = html + '<div class="set-board"></div></div>';
+    moodBoard(el, st, kept);
+  }
+  function moodBoard(el, st, kept) {
     if (kept) ui.board = BD.mount($('.set-board', el), { state: st, deck, image: boardImage, name: nameLine, onOpen: (id, b) => openDetail(id, b), onPainting: openPainting });
+  }
+
+  // The first board (SPEC "Set, inside out" §2.3): under six kept pictures, what they kept sits whole and pairing
+  // already works (no clock, no level, nothing leaves); each relation is saved and shapes Sort's next five.
+  function renderFirst(el, st, table, kept) {
+    const n = table.pool.length, won = st.saga.stars.length, more = NUM[6 - n] + ' more';
+    const lede = !n ? 'Your first board fills with what you keep. Sort a five and it starts.'
+      : (won ? 'Your board: what you kept. ' : 'Your first board: what you kept. ') + n + ' of 6.';
+    const line = won ? 'Keep ' + more + ' to play level ' + (won + 1) + '.'
+      : n === 1 ? 'Keep one more and you can pair two.'
+      : n ? 'Level 1 opens at six. Pair any two now: it shapes your next five.' : '';
+    el.innerHTML = '<div class="wrap"><div class="view-head"><h1 class="h1" tabindex="-1">Set</h1><p class="lede">' + esc(lede) + '</p>' +
+      '<div class="actions"><button type="button" class="btn btn-quiet" data-act="set-room">See it as a room</button>' +
+      (won ? '<button type="button" class="btn btn-quiet" data-act="set-kingdom">Your kingdom</button>' : '') + '</div></div>' +
+      '<div class="set-first"></div>' + (line ? '<p class="sec-note">' + esc(line) + '</p>' : '') +
+      '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-act="goto" data-view="sort">Sort a five</button>' +
+      '<button type="button" class="btn btn-big" data-act="bring" aria-haspopup="dialog">Bring in your own</button>' + exampleButton(st) + '</div>' +
+      '<div class="set-board"></div></div>';
+    const { calls } = setCalls(table);
+    ui.first = PL.mountSet($('.set-first', el), Object.assign(calls, {
+      n: won + 1, table, seed: '5s:' + (won + 1) + ':' + (st.saga.plays || 0), lead: null, free: true, boost: {}, clock: 0, built: null,
+    }));
+    moodBoard(el, st, kept);
+  }
+
+  // What a level and the first board share: the whole pictures, the person's words, and each relation saved as it
+  // is said. Example mode keeps its game in memory only; the person's own goes through commit, like every change.
+  function setCalls(table) {
+    const ex = example;
+    const cur = () => (ex ? EX : S);
+    const save = (patch) => { if (ex) EX = Object.assign({}, EX, patch); else commit(Object.assign({}, S, patch), { noRender: true }); };
+    const st = cur();
+    return { cur, save, calls: {
+      pic: playPic, name: playName,
+      by: (id) => { const c = cardOf(id); return c && !c.own ? c.artist || null : 'Brought in by you'; },
+      kind: (id) => { const c = cardOf(id); return c ? KIND_LABEL[c.kind] || null : null; },   // "Surface: Lardero Chalet, by …" (SPEC §13)
+      aspectOf: deck.words || {},
+      opts: { sound: st.opts.sound !== false, hints: st.opts.hints !== false },
+      onRelate: (r) => save({ assoc: RL.relate(cur().assoc, r.x, r.y, r.s, r.w, nowSec()) }),
+      onWord: (text) => {
+        const a = RL.addWord(cur().saga.words, text);
+        if (a.w == null) return null;
+        save({ saga: Object.assign({}, cur().saga, { words: a.words }) });
+        table.vocab = a.words;
+        return a.w;
+      },
+      onHeart: (a) => save({ assoc: MX.heart(cur().assoc, a.ids, a.on) }),
+      onNote: (a, b) => openNote({ q: 'set', ref: 'pair:' + a.ids.slice().sort().join('|'), ex }, b),
+      onOpts: (o) => save({ opts: Object.assign({}, cur().opts, o) }),
+      onSort: () => showView('sort', { focus: true }),
+    } };
   }
 
   function boardImage(c) {
@@ -1323,7 +1426,14 @@
     return src || null;
   }
 
-  // The game's pictures: an atlas cell, one image, or a Colour card's bands.
+  // Set's pictures, whole: a deck card's image at its size (a kept Surface is its texture), a brought thing's picture.
+  function playPic(id) {
+    const c = cardOf(id);
+    if (!c || c.kind === 'colour') return { colours: (c && c.colours) || [] };
+    if (c.own) { const src = ownSrc(c, 'img'); return src ? { src } : { colours: c.colours || [] }; }
+    return c.img ? { src: c.img, w: c.w, h: c.h } : { colours: c.colours || [] };
+  }
+  // The shape game's pictures (retired from play; openShapeLevel brings it back): an atlas cell, one image, or a Colour card's bands.
   function playThumb(id) {
     const c = cardOf(id);
     if (!c || c.kind === 'colour') return { colours: (c && c.colours) || [] };
@@ -1358,6 +1468,7 @@
   }
   // Leaving Set: a level on is paused and kept for this visit; the kingdom, the list of levels and the room give way to the board.
   function leaveSet() {
+    if (ui.first) { ui.first.destroy(); ui.first = null; }
     // A level's own sheet open (its card, out of moves, its end): nothing is mid-play, and a modal left in a hidden view would make the page inert.
     if (ui.setMode === 'level' && ui.play && !$('dialog.fp-sheet[open]')) { ui.play.pause(); ui.playPaused = true; doc.body.classList.remove('fives-playing'); return; }
     stopPlay();
@@ -1368,7 +1479,14 @@
   function openList() {
     const ex = example;
     const el = playHost('map');
-    ui.play = PL.mountMap(el, { saga: (ex ? EX : S).saga, onLevel: openLevel, onBack: backToBoard, onKingdom: () => openKingdom(null) });
+    ui.play = PL.mountMap(el, { saga: (ex ? EX : S).saga, onLevel: (n) => openLevel(n), onBack: backToBoard, onKingdom: () => openKingdom(null) });
+    // No stars (the artist, 23 Oct 2026): a level is done, and in time when its flag flies.
+    // shortcut: rewrites mountMap's star words after it draws (play.js is not the app's); drop it once mountMap stops writing stars.
+    $$('#view-set .fp-node.is-done').forEach((li) => {
+      const b = $('button', li), nl = $('.fp-nl', li), t = / in time/.test(b.getAttribute('aria-label')) ? ', in time' : '';
+      b.setAttribute('aria-label', 'Level ' + b.dataset.n + ', done' + t + '.');
+      if (nl) nl.textContent = 'Done' + t;
+    });
     const nb = $('#view-set .fp-node.is-next button');   // the button that opened it is gone: focus would fall to the page
     if (nb) nb.focus({ preventScroll: true });
   }
@@ -1381,19 +1499,63 @@
     const reveal = ui.reveal;
     ui.reveal = null;
     const el = playHost('kingdom');
+    // Grown from what they related: storeys, ties between buildings, each island's line in their words, and the mist
+    // (kept things not set yet, each a way into the next level).
+    const k = RL.kingdom(st, deck, ownPics(st));
     ui.play = KD.mount(el, {
       // shortcut: the areas take only the deck's kept Surfaces (a brought photo's crop waits on the image store); add them if islands look bare
       saga: st.saga, palette: { kept: P.keptColours, passed: P.passedColours, surfaces: deckSurfaces(st, P) },
       thing: (id) => { const c = cardOf(id, st); return c ? { name: shortTitle(c.title || 'Untitled', 28), colours: (c.colours || []).filter(isHex) } : null; },
       drawHome: P.judged ? (cv) => groundSpec(st).then((x) => G.render(cv, x.spec)) : null,   // nothing judged: no home island at all
       theme: currentTheme(), focus, reveal,   // no reduce: the kingdom follows Reduce Motion live itself
-      onLevel: openLevel, onBack: backToBoard, onList: openList,
+      storeys: k.storeys, ties: k.ties, said: k.said,
+      mist: { n: k.mist.n, things: k.mist.ids.map((id) => ({ id, name: playName(id), src: playPic(id).src || null })) },
+      onLead: (id) => openLevel(st.saga.stars.length + 1, id),
+      onLevel: (n) => openLevel(n), onBack: backToBoard, onList: openList,
       onHome: () => showView('seed', { focus: true }),   // leaving Set gives the kingdom way to the board
     });
     $('#view-set .fk-play').focus({ preventScroll: true });   // as the board's Play: the button that opened it is gone
   }
 
-  function openLevel(n) {
+  // A level of Set (SPEC "Set, inside out"): a board of six of their kept pictures, led by `lead` (a way in chosen on
+  // the card or in the kingdom's mist), else the first of the three ways in. Under six, the first board instead.
+  function openLevel(n, lead) {
+    const st = example ? EX : S;
+    const table = setTable(st);
+    if (table.pool.length < 6) { backToBoard(); return; }   // let go under six: "Keep one more to play level n"
+    const { cur, save, calls } = setCalls(table);
+    const el = playHost('level');
+    const sg = st.saga, was = sg.built[n - 1];
+    ui.play = PL.mountSet(el, Object.assign(calls, {
+      n, table, seed: '5s:' + n + ':' + (sg.plays || 0), lead: lead || (RL.leads(table, n)[0] || {}).id, free: false,
+      boost: sg.boost || {},
+      // the clock: five seconds a move unless chosen; until then it follows the Five-second ring switch
+      clock: st.opts.clock ?? (st.opts.ring !== false ? 5 : 0),
+      built: sg.stars[n - 1] ? { name: cardOf(was, st) ? playName(was) : null, storeys: RL.storeys(st, n), secs: sg.time[n - 1] || 0 } : null,
+      onBoost: (k) => { const g = MX.useBoost(cur().saga, k); if (g) save({ saga: g }); },
+      onEnd: (r) => {   // a won level builds what stayed at once; Another way changes it (onBuild). No stars: saga.stars only marks it won.
+        const rec = MX.recordLevel(cur().saga, r, nowSec());
+        if (!r.won) { save({ saga: rec.saga }); return rec; }
+        if (n > rec.saga.stars.length) { save({ saga: rec.saga }); return null; }   // past the 999 the saga keeps: unrecorded, so the end claims no building and no clock
+        const ways = RL.ways(cur(), deck, r, cur().saga.built[n - 1]);
+        const saga = MX.build(rec.saga, n, ways[0] ?? null);
+        save({ saga });
+        if (rec.first && n % 5 === 0) ui.reveal = n / 5;   // an area built: the next one comes out of the cloud
+        const after = cur();
+        return Object.assign({}, rec, {
+          saga, build: { ways, storeys: ways.map((id) => RL.storeys(after, n, id)) },
+          ask: RL.ask(after, deck).length > 0, sortAFive: RL.unsetShare(setTable(after)) < 0.5,
+        });
+      },
+      onBuild: (id) => save({ saga: MX.build(cur().saga, n, id) }),
+      onKingdom: () => openKingdom(n),
+      onNext: (m) => openLevel(m), onMap: () => openKingdom(n), onBoard: backToBoard,
+    }));
+  }
+
+  // The shape game, retired from play and kept whole with FiveSPlay.mount and match.js: one line brings it back,
+  // `return openShapeLevel(n);` at the top of openLevel.
+  function openShapeLevel(n) {
     const ex = example;
     const cur = () => (ex ? EX : S);
     // Example mode keeps its game in memory only; the person's own goes through commit, like every change.
@@ -1462,9 +1624,14 @@
       // The answer to "What is this set for?" is usually the set's name: don't say it twice.
       return { th: '', text: s && s.name && s.name !== n.text ? 'Set: ' + s.name : s ? 'A set you pinned' : 'A set you removed' };
     }
+    const tile = (c) => '<button type="button" class="tilebtn" data-act="detail" data-id="' + esc(c.id) + '" aria-haspopup="dialog" aria-label="' + esc('About: ' + nameLine(c)) + '">' + thumbHTML(c, 'work') + '</button>';
+    if (isPairRef(n.ref)) {   // Note why on a turn in Set: both of the pair
+      const cs = n.ref.slice(5).split('|').map((id) => cardOf(id, st)).filter(Boolean);
+      return { th: cs.map(tile).join(''), text: cs.map((c) => shortTitle(c.title || 'Untitled', 40)).join(' and ') };
+    }
     const c = cardOf(n.ref, st);
     if (!c) return { th: '', text: '' };
-    return { th: '<button type="button" class="tilebtn" data-act="detail" data-id="' + esc(c.id) + '" aria-haspopup="dialog" aria-label="' + esc('About: ' + nameLine(c)) + '">' + thumbHTML(c, 'work') + '</button>', text: nameLine(c) };
+    return { th: tile(c), text: nameLine(c) };
   }
 
   function renderSee() {
@@ -1512,7 +1679,7 @@
       (notes.length ? '<ul class="notes">' + notes.map(({ n, i }) => {
         const ab = noteAbout(n, st);
         const confirm = ui.confirm === 'note:' + i;
-        return '<li class="note"><p class="q">' + esc(NOTE_Q[n.q] || NOTE_Q.free) + '</p><p class="a">' + esc(n.text) + '</p>' +
+        return '<li class="note"><p class="q">' + esc(noteQ(n)) + '</p><p class="a">' + esc(n.text) + '</p>' +
           '<p class="meta"><span>' + esc(fmtDate(n.at)) + '</span>' + (ab.text ? '<span>' + esc(ab.text) + '</span>' : '') + '</p>' +
           '<div class="side">' + ab.th + (ro || confirm ? '' : '<button type="button" class="linkbtn" data-act="confirm" data-key="note:' + i + '" aria-label="Remove this note">Remove</button>') + '</div>' +
           (confirm ? '<div class="confirm" role="group" aria-label="Remove this note?"><span>Remove this note?</span><button type="button" class="btn btn-quiet" data-act="del-note" data-i="' + i + '">Remove</button><button type="button" class="btn btn-quiet" data-act="confirm-no">Keep it</button></div>' : '') +
@@ -1942,11 +2109,13 @@
 
   function openNote(ctx, opener) {
     ui.noteCtx = ctx;
-    const c = ctx.ref && ctx.ref.indexOf('set:') !== 0 ? cardOf(ctx.ref, S) : null;
-    openSheet('note', ctx.q === 'turn' ? 'Note why' : 'Write a note', () =>
+    const pair = isPairRef(ctx.ref);
+    const c = ctx.ref && !pair && ctx.ref.indexOf('set:') !== 0 ? cardOf(ctx.ref, S) : null;
+    const about = pair ? noteAbout(ctx, ctx.ex ? EX : S).text : c ? nameLine(c) : '';
+    openSheet('note', ctx.q === 'turn' || pair ? 'Note why' : 'Write a note', () =>
       '<form class="field" data-form="note" style="gap:12px">' +
-        (c ? '<p class="small">About: ' + esc(nameLine(c)) + '</p>' : '') +
-        '<label for="note-text" style="font:500 18px/1.35 var(--font-body)">' + esc(NOTE_Q[ctx.q] || NOTE_Q.free) + '</label>' +
+        (about ? '<p class="small">About: ' + esc(about) + '</p>' : '') +
+        '<label for="note-text" style="font:500 18px/1.35 var(--font-body)">' + esc(noteQ(ctx)) + '</label>' +
         '<textarea id="note-text" maxlength="500" data-autofocus></textarea>' +
         '<div class="actions"><button type="submit" class="btn btn-ink">Save note</button><button type="button" class="btn" data-act="close-sheet">Cancel</button></div>' +
       '</form>', opener);
@@ -4047,7 +4216,7 @@
         { const b = $('#btn-start'); if (b) b.focus(); }
         break;
       case 'another':
-        commit(F.startFive(S, deck, now()), { noRender: true });
+        commit(F.startFive(S, deck, now(), RL.ask(S, deck)), { noRender: true });
         hideStrip();
         renderSort();
         { const k = $('#btn-keep'); if (k) k.focus({ preventScroll: true }); }
@@ -4109,6 +4278,7 @@
       }
       case 'pin': if (!readOnly()) openPin(t); break;
       case 'set-play': openLevel(active().saga.stars.length + 1); break;
+      case 'set-them': hideStrip(); showView('set'); openLevel(active().saga.stars.length + 1); break;   // the keep that made six: level 1's card
       case 'set-kingdom': openKingdom(null); break;
       case 'set-room': case 'set-board': {
         ui.setMode = act === 'set-room' ? 'room' : 'board';
@@ -4221,9 +4391,11 @@
       const ctx = ui.noteCtx || { q: 'free', ref: null };
       const v = ($('#note-text').value || '').trim();
       if (!v) { $('#note-text').focus(); return; }
-      commit(F.addNote(S, { q: ctx.q, ref: ctx.ref || null, text: v }, now()));
+      const note = { q: ctx.q, ref: ctx.ref || null, text: v };
+      if (ctx.ex) EX = F.addNote(EX, note, now());   // a note from Example mode's game stays in the example
+      else commit(F.addNote(S, note, now()), { noRender: view === 'set' });   // Set's board and level go on as they are
       closeSheet();
-      say('Note saved. It’s in See under Your notes.');
+      say(ctx.ex ? 'Note kept in the example. It isn’t saved.' : 'Note saved. It’s in See under Your notes.');
     } else if (kind === 'pin') {
       const name = ($('#pin-name').value || '').replace(/\s+/g, ' ').trim().slice(0, 80);
       const t = now();

@@ -24,14 +24,18 @@
  * name, the one choice that turns it on), the states advancing, Save to my hub again, reload, the Path's
  * twelve with at most one Next, focus, the live region, 24 px targets, measured contrast and no GitHub
  * words in 5s's own copy; Example mode's example hub; the file's text to copy when there is no downloads.
- * Set, at every size and theme: the board with nothing kept (Sort, See an example, Play level 1), Example
- * mode's board and game (nothing saved), the person's own board by kind, a tile's detail sheet, Play opening
- * level 1, a swap planned in Node (touch at 390, mouse at 1280) whose pairs land in the saved state, the
- * tab bar hiding and coming back, the board clustered by them, See it as a room and back. A five sorted
- * gives one Pass. The clock and the kingdom: Your kingdom from the board (its levels in order, the list of
- * levels one tap away, the next area under cloud); level 5 won against the clock builds on its plot, Another
- * way changes it, Split is found; the clock off; all of it after a reload. With nothing judged no home island; a
- * building whose thing names no card, a plain house; Reduce Motion followed live; a win of level 1000 claims nothing.
+ * Set (Set, inside out), at every size and theme: the first board with nothing kept (six places to fill from
+ * Sort, Sort a five, Bring in your own, See an example; Play waits for six), Example mode's board and game (nothing
+ * saved), the person's own board by kind, a tile's detail sheet, Play opening level 1, a carry planned in Node
+ * (touch at 390, mouse at 1280) said alike in line whose relation lands on its pairing's row, the tab bar hiding
+ * and coming back, the board clustered by it, See it as a room and back. A five sorted gives one Pass, and counts
+ * down to the first board. The first board under six: pairing there, nothing leaves, a place to fill opens Sort,
+ * Sort's next five holds one card from Set named after the decision ("From your Set: …"), the sixth keep's "Your
+ * first board is ready." and Set them. The clock and the kingdom: no stars anywhere; ties, the islands' lines and
+ * the mist; level 5 played by keys in time builds what stayed (its height from its relations), Another way changes
+ * it, Split is found; a mist button opens level 6 led by that thing; the clock off; all of it after a reload. With
+ * nothing judged no home island; a building whose thing names no card, a plain house; Reduce Motion followed live;
+ * a level under six kept is the first board; a win of level 1000 claims nothing.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -200,7 +204,7 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'board.js', 'play.js', 'kingdom.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js and Set\'s game and kingdom) load before app.js');
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js and Set\'s game, relate.js and kingdom) load before app.js');
   assert.equal((html.match(/<style data-fives="play">/g) || []).length, 1, 'play.css is inlined where the game and the board look for it');
   const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
@@ -326,6 +330,9 @@ for (const cfg of CONFIGS) {
         assert.equal(await page.textContent('#summary h2'), 'Five sorted');
         assert.equal(await page.locator('#summary .tile5').count(), 5);
         assert.equal(await page.locator('#summary .tile5.kept').count(), 3);
+        // under six kept pictures, Sort counts down to Set's first board
+        const sv5 = await page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1')));
+        assert.match(await page.textContent('#summary'), new RegExp((6 - RL.table(FiveS.migrate(sv5), deck, []).pool.length) + ' more to your first board\\.'));
         // a five sorted gives Set's game one Pass, once a day (one held from the start, so two)
         assert.deepEqual((await page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1')).saga)).boost, { pass: 2, turn: 1, more: 1 });
         await page.waitForTimeout(400);
@@ -2266,47 +2273,122 @@ for (const cfg of CONFIGS) {
   });
 }
 
-// ---------------------------------------------------------------- Set: the board and the game
+// ---------------------------------------------------------------- Set: the board and the game (Set, inside out)
 
-// The game's boards are deterministic (the seed is '5s:' + level + ':' + plays), so the swap is planned
-// in Node with the page's own engine and checked against what the page saved.
+// Set's boards are deterministic (the seed is '5s:' + level + ':' + plays, the table what the person kept), so a level
+// is planned in Node with the page's own engine (relate.js) and checked against what the page saved. The shape game
+// (match.js, FiveSPlay.mount) is retired from play; its own tests are play.smoke's and match.test's.
 const MATCH = require(path.join(ROOT, 'src', 'match.js'));
+const RL = require(path.join(ROOT, 'src', 'relate.js'));
+const seedState = (page, st) => page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+const savedState = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1') || 'null'));
+const relations = (st) => ((st && st.assoc) || []).filter((e) => e.length === 7);
+// app.js ownPics: brought things not let go, of a kind with a picture (the example's stand in with a deck card's)
+function ownIds(st, deck) {
+  const img = (id) => deck.cards.some((c) => c.id === id && c.img);
+  return st.own.filter((o) => o && o.let == null && FiveS.OWN_KINDS.includes(o.kind) && o.imgFrom && img(o.imgFrom)).map((o) => o.id);
+}
+const tableOf = (st, deck) => RL.table(FiveS.migrate(st), deck, ownIds(st, deck));
+// A level as the page deals it, played to the end: each move carries a picture onto the nearest other on the board
+// (by place, `cols` to a row), said alike in line. moves[k]: the places, the two, and "N to go" after it.
+function planLevel(st, deck, n, cols, lead) {
+  const T = tableOf(st, deck);
+  let g = RL.newGame(RL.level(n), T, '5s:' + n + ':' + (FiveS.migrate(st).saga.plays || 0), lead || RL.leads(T, n)[0].id);
+  const first = g, moves = [];
+  while (g.state === 'play') {
+    let best = null;
+    g.slots.forEach((x, i) => g.slots.forEach((y, j) => {
+      if (!x || !y || i === j) return;
+      const d = Math.abs((i % cols) - (j % cols)) + Math.abs(Math.floor(i / cols) - Math.floor(j / cols));
+      if (!best || d < best.d) best = { i, j, d };
+    }));
+    const r = RL.say(g, T, g.slots[best.i], g.slots[best.j], 1, 2);
+    moves.push({ i: best.i, j: best.j, x: g.slots[best.i], y: g.slots[best.j], togo: r.game.slots.filter(Boolean).length - 1 + r.game.pile });
+    g = r.game;
+  }
+  return { T, first, moves, game: g, res: RL.result(g, T) };
+}
+const cell = (page, i) => page.locator('#view-set [role="grid"] [role="gridcell"]').nth(i);
+// what a place reads: its label, else its text
+const toFill = (p) => /Keep one in Sort/.test(p);   // an empty place on the first board
+const cellsSay = (page, sel) => page.$$eval(sel + ' [role="grid"] [role="gridcell"]', (cs) => cs.map((c) => c.getAttribute('aria-label') || c.textContent.trim()));
+// Saying how two go: Alike, then in line (one tap on a chip finishes the move).
+async function sayAlikeInLine(page, keys) {
+  const alike = page.getByRole('button', { name: 'Alike', exact: true }), line = page.getByRole('button', { name: 'Line', exact: true });
+  if (keys) { await alike.press('Enter'); await line.press('Enter'); } else { await alike.click(); await line.click(); }
+}
+// After a move: the relation saved (k in all), "N to go" shown, and the answer's 1.6 s hold over.
+async function afterMove(page, k, togo) {
+  if (k != null) await page.waitForFunction((n) => (JSON.parse(localStorage.getItem('5s.state.v1') || '{}').assoc || []).filter((e) => e.length === 7).length >= n, k, { timeout: 20000 });
+  if (togo != null) await page.waitForFunction((n) => Array.from(document.querySelectorAll('#view-set *')).some((e) => new RegExp('^\\s*' + n + '\\s*to go').test(e.textContent)), togo, { timeout: 20000 });
+  await sleep(1900);
+}
+// A carry: touch (the app's phone) or the mouse, from one place to another.
+async function carry(page, ctx, touch, i, j) {
+  const mid = async (k) => { const r = await cell(page, k).boundingBox(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
+  const A = await mid(i), B = await mid(j);
+  if (touch) {
+    const cdp = await ctx.newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: A.x, y: A.y }] });
+    for (let k = 1; k <= 8; k++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: A.x + (B.x - A.x) * k / 8, y: A.y + (B.y - A.y) * k / 8 }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  } else {
+    await page.mouse.move(A.x, A.y); await page.mouse.down();
+    await page.mouse.move(B.x, B.y, { steps: 8 }); await page.mouse.up();
+  }
+}
+// The board by keys: the focus on a place, Enter lifts it, the arrows move the target, Enter sets it there.
+async function keysMove(page, i, j, cols) {
+  await cell(page, i).focus();
+  await page.keyboard.press('Enter');
+  const dx = (j % cols) - (i % cols), dy = Math.floor(j / cols) - Math.floor(i / cols);
+  for (let k = 0; k < Math.abs(dx); k++) await page.keyboard.press(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
+  for (let k = 0; k < Math.abs(dy); k++) await page.keyboard.press(dy > 0 ? 'ArrowDown' : 'ArrowUp');
+  await page.keyboard.press('Enter');
+}
+const noStars = async (page, sel, where) => assert.doesNotMatch(await page.textContent(sel), /★|☆|\bstars?\b/i, where + ': no stars');
 
 for (const cfg of CONFIGS) {
-  test('Set at ' + cfg.w + 'x' + cfg.h + ' ' + cfg.scheme + ': nothing kept, Example mode, the board, Play, a swap that puts things together, the room and back', { timeout: 120000 }, async () => {
+  test('Set at ' + cfg.w + 'x' + cfg.h + ' ' + cfg.scheme + ': the first board with nothing kept, Example mode, the board, Play, a pairing said alike, the room and back', { timeout: 150000 }, async () => {
     const touch = cfg.w < 600;
     const { ctx, page } = await newPage(Object.assign({}, cfg, { touch }));
     const shot = shooter(page, cfg);
-    const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1') || 'null'));
     const tabsShown = () => page.$eval('.tabs', (n) => getComputedStyle(n).display !== 'none');
     try {
-      // Nothing kept: the board's empty state, with Sort, See an example and Play still offered.
+      // Nothing kept: the first board, its six places to fill from Sort; Sort a five, Bring in your own and See an example; Play waits for six.
       await page.goto(BASE + '#set');
-      await page.waitForSelector('#view-set [data-act="set-play"]');
+      await page.waitForSelector('#view-set .set-first [role="grid"]');
       assert.deepEqual(await visibleH1s(page), ['Set']);
-      assert.match(await page.textContent('#view-set .lede'), /^Your board: what you kept, grouped by what you put together\.$/);
-      assert.equal((await page.textContent('#view-set [data-act="set-play"]')).trim(), 'Play level 1');
-      assert.match(await page.textContent('#view-set .empty'), /Your board fills with what you keep\. Sort a five and it starts\./);
-      assert.equal(await page.locator('#view-set .empty [data-act="goto"][data-view="sort"]').count(), 1);
-      assert.equal(await page.locator('#view-set .empty [data-act="example-on"]').count(), 1);
+      assert.equal(await page.textContent('#view-set .lede'), 'Your first board fills with what you keep. Sort a five and it starts.');
+      assert.equal(await page.locator('#view-set [data-act="set-play"]').count(), 0, 'Play waits for six kept');
+      assert.deepEqual((await cellsSay(page, '#view-set .set-first')).map(toFill), Array(6).fill(true), 'six places to fill');
+      assert.equal((await page.textContent('#view-set [data-act="goto"][data-view="sort"]')).trim(), 'Sort a five');
+      assert.equal(await page.locator('#view-set [data-act="bring"]').count(), 1);
+      assert.equal(await page.locator('#view-set [data-act="example-on"]').count(), 1);
       assert.equal(await page.locator('#view-set .fb-tile').count(), 0);
-      await noHScroll(page, 'set board empty');
-      await shot('40-set-board-empty');
+      await noHScroll(page, 'set first board empty');
+      await shot('40-set-first-empty');
 
       // Example mode: the example's board; its game plays and nothing is saved.
       const before = await page.evaluate(() => localStorage.getItem('5s.state.v1'));
       await page.click('#view-set [data-act="example-on"]');
       await page.waitForSelector('#exbanner:not([hidden])');
       await page.waitForSelector('#view-set .fb-tile[data-id]');
+      assert.match(await page.textContent('#view-set .lede'), /^Your board: what you kept, grouped by what you put together\.$/);
       assert.equal((await page.locator('#view-set .fb-head').allTextContents())[0], 'Images', 'before any pairings: by kind');
       await noHScroll(page, 'set board example');
       await shot('41-set-board-example');
       await page.click('#view-set [data-act="set-play"]');
       await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+      await noStars(page, 'dialog.fp-sheet[open]', 'the level card');
       await page.click('dialog.fp-sheet[open] [data-play]');
-      await page.waitForSelector('#view-set .fp-gc');
+      await page.waitForSelector('#view-set .fp-set [role="grid"]');
       assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
-      await page.click('#view-set .fp-level .fp-back');   // leaving a level costs nothing
+      // a pairing in Example mode plays as for the person, and is not saved
+      await cell(page, 0).click(); await cell(page, 1).click();
+      await sayAlikeInLine(page);
+      await afterMove(page, null, null);
+      await page.click('#view-set .fp-set .fp-back');   // leaving a level costs nothing
       await page.waitForSelector('#view-set .fk');
       assert.equal(await tabsShown(), true, 'and comes back with the map');
       // the example's kingdom: nothing won yet, level 1 next, the next area under cloud
@@ -2316,64 +2398,49 @@ for (const cfg of CONFIGS) {
       await page.waitForSelector('#view-set .fb-tile[data-id]');
       assert.equal(await page.evaluate(() => localStorage.getItem('5s.state.v1')), before, 'Example mode saved nothing');
       await page.click('#exbanner [data-act="example-off"]');
-      await page.waitForSelector('#view-set .empty [data-act="example-on"]');
+      await page.waitForSelector('#view-set .set-first');
 
       // The person's own: an example-sized history, saved as theirs.
       const deck = await (await fetch(new URL('deck.json', BASE))).json();
       let st = FiveS.exampleState(deck, Date.now());
       st = Object.assign({}, st, { seen: Object.assign({}, st.seen, { intro: 1 }) });
-      await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+      await seedState(page, st);
       await page.reload();   // seeded as the reload starts, before the page runs
       await page.waitForSelector('#view-set .fb-tile[data-id]');
       assert.deepEqual(await visibleH1s(page), ['Set']);
+      assert.equal((await page.textContent('#view-set [data-act="set-play"]')).trim(), 'Play level 1');
       // A tile opens the detail sheet.
       await page.click('#view-set .fb-tile[data-id]');
       await page.waitForSelector('#sheet[open]');
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.getElementById('sheet').open);
 
-      // Plan level 1 in Node: the first counted swap whose own match puts two or more things together.
-      const lv = MATCH.level(1);
-      const game = MATCH.newGame(lv, MATCH.pieces(FiveS.migrate(st), deck, lv.suits), '5s:1:0');
-      let mv = null, res = null;
-      for (const [a, b] of MATCH.moves(game)) { const r = MATCH.swap(game, a, b); if (r.valid && r.game.groups.length > game.groups.length) { mv = [a, b]; res = r; break; } }
-      assert.ok(mv, 'level 1 offers a swap that puts things together');
-      const made = res.game.groups.slice(game.groups.length);
-      let want = [];
-      for (const g of made) want = MATCH.addAssociations(want, g.ids, 1);
-
+      // Level 1, planned in Node on the page's seed: the first move carries one picture onto another, said alike in line.
+      const plan = planLevel(st, deck, 1, cfg.w < 600 ? 2 : 3);
+      const m = plan.moves[0];
       await page.click('#view-set [data-act="set-play"]');
       await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
       assert.match(await page.textContent('dialog.fp-sheet[open]'), /Level 1/);
       await page.click('dialog.fp-sheet[open] [data-play]');
       await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
       assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
+      assert.equal(await page.locator('#view-set [role="grid"] [role="gridcell"]').count(), 6, 'six places');
       await noHScroll(page, 'set level');
       await shot('42-set-level-1');
-      const centre = async (i) => { const r = await page.locator('#view-set .fp-gc[data-i="' + i + '"]').boundingBox(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
-      const A = await centre(mv[0]), Bc = await centre(mv[1]);
-      if (touch) {
-        const cdp = await ctx.newCDPSession(page);
-        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: A.x, y: A.y }] });
-        for (let k = 1; k <= 6; k++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: A.x + (Bc.x - A.x) * k / 6, y: A.y + (Bc.y - A.y) * k / 6 }] });
-        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-      } else {
-        await page.mouse.move(A.x, A.y); await page.mouse.down();
-        await page.mouse.move(Bc.x, Bc.y, { steps: 6 }); await page.mouse.up();
-      }
-      await page.waitForFunction((m) => { const b = document.querySelector('#view-set .fp-moves b'); return b && b.textContent === String(m); }, res.game.moves, { timeout: 20000 });
-      // The juxtaposition is in the state (saved through the app's own save path).
-      await page.waitForFunction(() => { const s = JSON.parse(localStorage.getItem('5s.state.v1') || '{}'); return s.assoc && s.assoc.length > 0; });
-      const after = await saved();
-      assert.deepEqual(after.assoc.map((e) => e.slice(0, 4)), want.map((e) => e.slice(0, 4)), 'the pairs your swap made');
-      await shot('43-set-level-1-swapped');
+      await carry(page, ctx, touch, m.i, m.j);
+      await sayAlikeInLine(page);
+      // The relation is in the state (saved through the app's own save path), on its pairing's row.
+      await afterMove(page, 1, m.togo);
+      const want = RL.relate([], m.x, m.y, 1, 2, 1)[0];
+      const after = await savedState(page);
+      assert.deepEqual(after.assoc.map((e) => [e[0], e[1], e[2], e[3], e[5], e[6]]), [[want[0], want[1], 1, 0, 1, 2]], 'the pairing, said alike in line');
+      await shot('43-set-level-1-said');
 
-      // Back: the map (the tab bar returns), then Your board, clustered by what you put together.
-      await page.click('#view-set .fp-level .fp-back');
+      // Back: the map (the tab bar returns), then Your board, clustered by what they put together.
+      await page.click('#view-set .fp-set .fp-back');
       await page.waitForSelector('#view-set .fk');
       assert.equal(await tabsShown(), true, 'the tab bar comes back');
       await shot('44-set-map');
-      // The kingdom (SPEC "Set: the clock and the kingdom"): its words, its levels in order, the list one tap away.
       assert.equal(await page.textContent('#view-set .fk .fp-title'), 'Your kingdom');
       assert.equal(await page.textContent('#view-set .fk-line'), 'Every level you win builds one of your things. Next: level 1, in Sort.');
       assert.deepEqual(await page.$$eval('#view-set .fk-nodes button', (bs) => bs.map((b) => b.dataset.n)), ['1', '2', '3', '4', '5']);
@@ -2391,8 +2458,9 @@ for (const cfg of CONFIGS) {
       assert.match(await focused(), /fk-play/);
       await page.click('#view-set .fk .fp-back');
       await page.waitForSelector('#view-set .fb-tile[data-id]');
-      const now = await saved();
+      const now = await savedState(page);
       assert.equal(now.saga.plays, 1, 'a level left counts as a play (the next board is new)');
+      assert.deepEqual(now.saga.stars, [], 'a level left is not won');
       const cl = MATCH.clusters(now, deck).clusters;
       assert.ok(cl.length >= 1, 'a cluster');
       assert.equal((await page.locator('#view-set .fb-head').allTextContents())[0], cl[0].label);
@@ -2430,109 +2498,243 @@ for (const cfg of CONFIGS) {
   });
 }
 
-// The clock and the kingdom (SPEC "Set: the clock and the kingdom"), wired in the app: from the board to the
-// kingdom, level 5 played against the clock (planned in Node, played by keys) builds one of your things on its
-// plot, completes Sort and finds Split; Another way changes the building; the clock can be off; it all reloads.
-test('Set: the clock and the kingdom: a win in time builds on its plot, the fifth finds the next area, the clock can be off', { timeout: 240000 }, async () => {
+// Sort and Set, one process (SPEC "Set, inside out" §2): under six kept pictures Set shows the first board, where
+// pairing already works and nothing leaves; a place to fill opens Sort; Sort's summary counts down to six; the next
+// five holds one card that follows from the relation just made, named only after the decision ("From your Set: …");
+// the keep that makes six says "Your first board is ready." and Set them opens level 1's card.
+test('Set: the first board under six, Sort counting down to it, one card of the next five from Set, and the sixth keep', { timeout: 180000 }, async () => {
   const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
   const shot = shooter(page, { w: 390, scheme: 'light' });
-  const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1') || 'null'));
   try {
     const deck = await (await fetch(new URL('deck.json', BASE))).json();
-    let st = FiveS.exampleState(deck, Date.now());
-    const lv = MATCH.level(5);
-    let plan = null;
-    for (let p = 0; p < 40 && !plan; p++) {
-      const s0 = Object.assign({}, st, { seen: Object.assign({}, st.seen, { intro: 1 }), saga: { stars: [3, 2, 3, 1], best: [9000, 6000, 9000, 4000], boost: { pass: 1, turn: 1, more: 1 }, plays: p, day: null, time: [], built: [] } });
-      let g = MATCH.newGame(lv, MATCH.pieces(FiveS.migrate(s0), deck, lv.suits), '5s:5:' + p);
-      const mv = [];
-      while (g.state === 'play') { const m = MATCH.hint(g); if (!m) break; const r = MATCH.swap(g, m[0], m[1]); mv.push({ a: m[0], b: m[1], moves: r.game.moves, score: Math.round(r.game.score).toLocaleString('en-GB') }); g = r.game; }
-      if (g.state === 'won') plan = { st: s0, mv, res: MATCH.result(MATCH.finale(g).game) };
+    // four kept pictures of four works, each one the lookers paired with something not kept (so Set has others' eyes to ask with)
+    const partners = (id) => (deck.rhymes || []).filter((r) => r[0] === id || r[1] === id).map((r) => (r[0] === id ? r[1] : r[0]));
+    const work = (id) => deck.cards.find((c) => c.id === id).work;
+    const kept = [];
+    for (const kind of ['image', 'space', 'object', 'surface']) {
+      const c = deck.cards.find((x) => x.kind === kind && x.img && partners(x.id).length && !kept.some((k) => work(k) === x.work || partners(k).includes(x.id)));
+      if (c) kept.push(c.id);
     }
-    assert.ok(plan, 'a board of level 5 the hints win');
-    st = plan.st;
+    assert.equal(kept.length, 4, 'four pictures the lookers paired: ' + kept);
+    let st = FiveS.newState();
+    st.seen = Object.assign({}, st.seen, { intro: 1 });
+    const t0 = Date.now() - 60000;
+    kept.forEach((id, k) => { st = FiveS.judge(st, deck, id, true, 1500, t0 + k * 1000).state; });
+    st = Object.assign({}, st, { five: null });
+    assert.equal(tableOf(st, deck).pool.length, 4);
+    await seedState(page, st);
+    await page.goto(BASE + '#set');
+    await page.waitForSelector('#view-set .set-first [role="grid"]');
+    assert.equal(await page.textContent('#view-set .lede'), 'Your first board: what you kept. 4 of 6.');
+    assert.equal(await page.textContent('#view-set .sec-note'), 'Level 1 opens at six. Pair any two now: it shapes your next five.');
+    const places = await cellsSay(page, '#view-set .set-first');
+    assert.equal(places.filter(toFill).length, 2, 'two places to fill: ' + places);
+    assert.ok((await page.locator('#view-set .fb-tile[data-id]').count()) >= 4, 'the mood board below');
+    await noHScroll(page, 'set first board');
+    await shot('49-set-first-board');
+
+    // Pairing already works: two of the four, alike in line, saved at once; nothing leaves the board.
+    const full = places.map((p, i) => (toFill(p) ? -1 : i)).filter((i) => i >= 0);
+    await cell(page, full[0]).click(); await cell(page, full[1]).click();
+    await sayAlikeInLine(page);
+    await afterMove(page, 1, null);
+    const r1 = relations(await savedState(page));
+    assert.equal(r1.length, 1);
+    assert.ok(kept.includes(r1[0][0]) && kept.includes(r1[0][1]) && r1[0][5] === 1 && r1[0][6] === 2, 'a relation of two kept things: ' + JSON.stringify(r1[0]));
+    assert.equal((await cellsSay(page, '#view-set .set-first')).filter(toFill).length, 2, 'nothing leaves the first board');
+    await shot('50-set-first-board-said');
+
+    // A place to fill opens Sort. Its five was dealt before the relation: nothing in it came from Set.
+    await cell(page, places.findIndex(toFill)).click();
+    await page.waitForFunction(() => !document.getElementById('view-sort').hidden);
+    await page.waitForSelector('#stack .card.is-top');
+    assert.equal('ask' in (await savedState(page)).five, false, 'a five dealt without relations has no card from Set');
+    while (!(await summaryShown(page))) { const p = await topId(page); await page.click('#btn-pass'); await waitTopChange(page, p); }
+    await page.waitForSelector('#summary:not([hidden]) h2');
+    assert.match(await page.textContent('#summary'), /2 more to your first board\./);
+
+    // Another five: one card follows from the relation just made, and nothing names it before the decision.
+    await page.click('#summary [data-act="another"]');
+    await page.waitForSelector('#stack .card.is-top');
+    const s2 = await savedState(page);
+    const ask = s2.five.ask;
+    assert.equal(typeof ask, 'string', 'the next five holds a card from Set');
+    assert.ok(s2.five.ids.includes(ask));
+    assert.ok(RL.ask(FiveS.migrate(s2), deck).some((a) => a.id === ask), ask + ' follows from the relation');
+    const why = RL.why(FiveS.migrate(s2), deck, ask);
+    let fromSeen = false, ready = false;
+    for (let round = 0; round < 3 && !ready; round++) {
+      while (!(await summaryShown(page)) && !ready) {
+        const id = await topId(page), c = deck.cards.find((x) => x.id === id);
+        if (id === ask) assert.doesNotMatch(await page.getAttribute('#stack .card.is-top', 'aria-label'), /From your Set|Someone put/, 'not named before the decision');
+        // pass what comes before the card from Set, then keep pictures until six
+        const keep = c && c.kind !== 'colour' && (fromSeen || id === ask);
+        await page.click(keep ? '#btn-keep' : '#btn-pass');
+        await waitTopChange(page, id);
+        const strip = await page.textContent('#strip');
+        if (id === ask) {
+          assert.match(strip, /From your Set: (someone put this with your .+: .+|it has .+, as you said of .+)\./, strip);
+          assert.ok(strip.indexOf(why.line || why.word) > 0, 'in the lookers\' line or the person\'s word: ' + strip);
+          fromSeen = true;
+          await shot('51-sort-from-set');
+        } else assert.doesNotMatch(strip, /From your Set/);
+        if (/Your first board is ready\./.test(strip)) ready = true;
+      }
+      if (!ready) {
+        assert.match(await page.textContent('#summary'), /1 more to your first board\./);
+        await page.click('#summary [data-act="another"]');
+        await page.waitForSelector('#stack .card.is-top');
+      }
+    }
+    assert.ok(fromSeen && ready, 'the card from Set named, and the sixth keep');
+    assert.equal(tableOf(await savedState(page), deck).pool.length, 6);
+    await shot('52-sort-first-board-ready');
+    // Set them: level 1's card.
+    await page.click('#strip [data-act="set-them"]');
+    await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+    assert.equal(await page.evaluate(() => document.getElementById('view-set').hidden), false);
+    assert.match(await page.textContent('dialog.fp-sheet[open]'), /Level 1/);
+    assert.deepEqual(page.errors(), []);
+  } finally {
+    await ctx.close();
+  }
+});
+
+// The clock and the kingdom, inside out, wired in the app: from the board to the kingdom (no stars; the ties between
+// buildings the person related, each island's line in their words, the mist of kept things not set yet), level 5
+// played by keys against the clock builds what stayed on its plot, its height from the relations it gathered,
+// completes Sort and finds Split; Another way changes the building; a mist button opens level 6 led by that thing;
+// the clock can be off; an old saga's stars stay saved and unseen; it all reloads.
+test('Set: the clock and the kingdom: level 5 by keys in time builds what stayed, the fifth finds the next area, ties, lines and the mist, the clock can be off', { timeout: 240000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
+  const shot = shooter(page, { w: 390, scheme: 'light' });
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const ex = FiveS.exampleState(deck, Date.now());
+    // an old saga (v12's stars) with two buildings the person once related, alike in line
+    const T0 = tableOf(ex, deck), b1 = T0.pool[0], b3 = T0.pool.find((id) => T0.work[id] !== T0.work[b1]);
+    const assoc = RL.relate([], b1, b3, 1, 2, Math.floor(Date.now() / 1000) - 3600);
+    const st = Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }), assoc,
+      saga: { stars: [3, 2, 3, 1], best: [9000, 6000, 9000, 4000], boost: { pass: 1, turn: 1, more: 1 }, plays: 4, day: null, time: [0, 40, 0, 0], built: [b1, null, b3, null] } });
+    const plan = planLevel(st, deck, 5, 2);
+    const k0 = RL.kingdom(FiveS.migrate(st), deck, ownIds(st, deck));
+    assert.deepEqual(k0.ties, [[1, 3, 1]]);
     await lateDeck(page);
-    // seeded before the page runs: planting it after the first load races the app's own first save, which can land on top
-    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+    await seedState(page, st);   // seeded before the page runs: planting it after the first load races the app's own first save
     await page.goto(BASE + '#set');
     await page.waitForSelector('#view-set .fb-tile[data-id]');   // the saved state is in (the board shows it)
     await page.click('#view-set [data-act="set-kingdom"]');
     await page.waitForSelector('#view-set .fk-node button');
     assert.equal(await page.textContent('#view-set .fk-line'), 'Every level you win builds one of your things. Next: level 5, in Sort.');
-    assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="2"]', 'aria-label'), 'Level 2, Sort, 2 of 3 stars. Built: a plain house.', 'won before the kingdom: a plain house');
+    assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="2"]', 'aria-label'), 'Level 2, Sort, in time. Built: a plain house.', 'won before: a plain house, no stars');
     assert.equal(await page.locator('#view-set .fk-homel').count(), 1, 'something judged: Your ground is there');
+    await noStars(page, '#view-set .fk', 'the kingdom');
+    assert.equal(await page.locator('#view-set svg.fk-ties path.is-alike').count(), 1, 'the tie between the two buildings they related');
+    assert.equal(await page.textContent('#view-set .fk-aname em'), 'Mostly alike in line', 'Sort\'s island in their words');
+    assert.equal(await page.textContent('#view-set .fk-mist span'), 'Not set yet: ' + k0.mist.n + ' of your things.');
+    assert.equal(await page.locator('#view-set .fk-mist button').count(), Math.min(3, k0.mist.n));
+    assert.match(await page.getAttribute('#view-set .fk-mist button', 'aria-label'), /^Play level 5 around .+/);
 
-    // Level 5 against the clock: five seconds a move (the default, as the ring is on), 20 moves, 1:40.
+    // Level 5 against the clock: five seconds a move (the default, as the ring is on), 8 moves, 0:40.
     await page.click('#view-set .fk-play');
     await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
     assert.equal(await page.isChecked('dialog.fp-sheet[open] input[name="fp-clock"][value="5"]'), true);
-    assert.match(await page.textContent('dialog.fp-sheet[open] .fp-clockline'), /^1:40 for this level, five seconds a move\./);
+    assert.equal(plan.first.moves, 8);
+    assert.match(await page.textContent('dialog.fp-sheet[open] .fp-clockline'), /^0:40 for this level\./);
+    await noStars(page, 'dialog.fp-sheet[open]', 'the level card');
     await page.click('dialog.fp-sheet[open] [data-play]');
     await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
-    assert.equal(await page.getAttribute('#view-set .fp-time', 'aria-label'), 'Clock 1:40');
-    const key = (a, b) => (b === a + 1 ? 'ArrowRight' : b === a - 1 ? 'ArrowLeft' : b > a ? 'ArrowDown' : 'ArrowUp');
-    for (const m of plan.mv) {
-      await page.focus('#view-set .fp-gc[data-i="' + m.a + '"]');
-      await page.keyboard.press('Shift+' + key(m.a, m.b));
-      // the board settled: the engine's moves and score shown (as play.smoke's settled)
-      if (m.moves > 0) await page.waitForFunction(([n, sc]) => { const b = document.querySelector('#view-set .fp-moves b'), c = document.querySelector('#view-set .fp-score > b'); return b && c && b.textContent === String(n) && c.textContent === sc; }, [m.moves, m.score], { timeout: 20000 });
+    assert.equal(await page.getAttribute('#view-set .fp-time', 'aria-label'), 'Clock 0:40');
+    for (const [k, m] of plan.moves.entries()) {
+      await keysMove(page, m.i, m.j, 2);
+      await sayAlikeInLine(page, true);
+      if (k < plan.moves.length - 1) await afterMove(page, k + 2, m.togo);
     }
     await page.waitForSelector('dialog.fp-sheet[open] .fp-built', { timeout: 60000 });
-    const end = await page.textContent('dialog.fp-sheet[open]');
+    const endSel = 'dialog.fp-sheet[open]', end = await page.textContent(endSel);
     assert.match(end, /Level 5 done\./);
-    assert.match(end, /In time: \d:\d\d to spare\. Best \d:\d\d\./);
-    assert.match(end, /Sort, built\.A new area: Split\. Paint with their colours\./);
+    assert.match(end, /In time: \d:\d\d to spare\./);
+    assert.match(end, /Sort, built\./);
+    assert.match(end, /A new area: Split\. Alike and unlike\./);
     assert.match(end, /You earned a Pass, a Turn and Five more\./, 'the fifth level\'s one of each, as before');
-    const ways = MATCH.buildChoices(FiveS.migrate(st), deck, plan.res, undefined);
-    let now = await saved();
-    assert.equal(now.saga.stars.length, 5);
-    assert.ok(now.saga.time[4] >= 1 && now.saga.time[4] <= 100, 'a best time in time: ' + now.saga.time[4]);
-    assert.deepEqual(now.saga.built, [null, null, null, null, ways[0] ?? null], 'the win built at once: the first of the ways');
+    await noStars(page, endSel, 'the level end');
+    let now = await savedState(page);
+    assert.equal(relations(now).length, 1 + plan.moves.length, 'every pairing saved as said');
+    assert.deepEqual(now.saga.stars, [3, 2, 3, 1, 1], 'an old saga\'s stars stay; the new level is marked won, unseen');
+    assert.ok(now.saga.time[4] >= 1 && now.saga.time[4] <= 40, 'a best time in time: ' + now.saga.time[4]);
+    const ways = RL.ways(FiveS.migrate(now), deck, plan.res, null);
+    assert.equal(ways[0], plan.res.stayed, 'what stayed is built first');
+    assert.deepEqual(now.saga.built, [b1, null, b3, null, plan.res.stayed], 'the win built at once');
+    const tall = ['one storey', 'two storeys', 'three storeys'][RL.storeys(now, 5) - 1];
+    assert.match(end, new RegExp('Built: .+, ' + tall + ', flying a flag\\.'), 'its height from the relations it gathered');
     await shot('47-set-level-5-built');
     if (ways.length > 1) {
-      await page.click('dialog.fp-sheet[open] [data-way]');
+      await page.click(endSel + ' [data-way]');
       await page.waitForFunction((w) => JSON.parse(localStorage.getItem('5s.state.v1')).saga.built[4] === w, ways[1]);
     }
-    const builtId = ways.length > 1 ? ways[1] : ways[0] ?? null;
+    const builtId = ways.length > 1 ? ways[1] : ways[0];
 
     // See it in your kingdom: Split is found, the cloud moves on, and level 5's building is in words.
-    await page.click('dialog.fp-sheet[open] [data-kingdom]');
+    await page.click(endSel + ' [data-kingdom]');
     await page.waitForSelector('#view-set .fk-node button[data-n="10"]');
     assert.equal(await page.locator('dialog[open]').count(), 0);
     assert.equal(await page.textContent('#view-set .fk-cloud p'), 'Under cloud: Set. Win level 10 to find it.');
     assert.equal(await page.textContent('#view-set .fk-line'), 'Every level you win builds one of your things. Next: level 6, in Split.');
     await page.waitForFunction(() => document.querySelector('#view-set .fk-live').textContent === 'A new area: Split.');
-    const name = builtId ? FiveS.card(FiveS.migrate(st), deck, builtId).title : 'a plain house';
+    const name = FiveS.card(FiveS.migrate(st), deck, builtId).title;
     const label = await page.getAttribute('#view-set .fk-node button[data-n="5"]', 'aria-label');
-    assert.match(label, /^Level 5, Sort, [123] of 3 stars, in time\. Built: .+\.$/);
+    assert.match(label, /^Level 5, Sort, in time\. Built: .+\.$/);
     assert.ok(label.indexOf('Built: ' + name.slice(0, 20)) > 0, label + ' names ' + name);
+    assert.equal(await page.textContent('#view-set .fk-aname em'), 'Mostly alike in line');
+    await noStars(page, '#view-set .fk', 'the kingdom after a win');
     // Sort's island, drawn: its five buildings in words, no plot left unbuilt
-    await page.waitForSelector('#view-set .fk-isle.is-drawn canvas[aria-label^="Sort, levels 1 to 5. "]', { timeout: 15000 });
+    await page.waitForSelector('#view-set .fk-isle.is-drawn canvas[aria-label^="Sort, levels 1 to 5. Mostly alike in line. "]', { timeout: 15000 });
     const isle = await page.getAttribute('#view-set .fk-isle.is-drawn canvas[aria-label^="Sort, levels 1 to 5. "]', 'aria-label');
     assert.match(isle, /Buildings: /);
     assert.doesNotMatch(isle, /not yet built/);
     await shot('48-set-kingdom-split-found');
 
-    // The clock off, chosen on the level card: no ring, and the choice is saved.
-    await page.click('#view-set .fk-play');
+    // The list of levels, one tap away: done, and in time where a flag flies; no stars.
+    await page.click('#view-set .fk-list');
+    await page.waitForSelector('#view-set .fp-mapview .fp-node.is-done');
+    await noStars(page, '#view-set .fp-mapview', 'the list of levels');
+    assert.deepEqual(await page.$$eval('#view-set .fp-mapview .fp-node.is-done button', (bs) => bs.map((b) => b.getAttribute('aria-label'))),
+      ['Level 1, done.', 'Level 2, done, in time.', 'Level 3, done.', 'Level 4, done.', 'Level 5, done, in time.']);
+    await page.click('#view-set .fp-mapview .fp-kingdom');
+    await page.waitForSelector('#view-set .fk-mist button');
+    // The mist: a kept thing not set yet, a way into level 6 led by it.
+    const k1 = RL.kingdom(FiveS.migrate(await savedState(page)), deck, ownIds(st, deck));
+    assert.equal(await page.textContent('#view-set .fk-mist span'), 'Not set yet: ' + k1.mist.n + ' of your things.');
+    const lead = await page.getAttribute('#view-set .fk-mist button', 'data-lead');
+    assert.equal(lead, k1.mist.ids[0]);
+    await page.focus('#view-set .fk-mist button');
+    await page.keyboard.press('Enter');
     await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+    assert.match(await page.textContent('dialog.fp-sheet[open]'), /Level 6/);
+    // The clock off, chosen on the level card: no ring, and the choice is saved.
     await page.check('dialog.fp-sheet[open] input[name="fp-clock"][value="0"]');
     assert.equal(await page.textContent('dialog.fp-sheet[open] .fp-clockline'), 'No clock for this level.');
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('5s.state.v1')).opts.clock === 0);
     await page.click('dialog.fp-sheet[open] [data-play]');
     await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
     assert.equal(await page.locator('#view-set .fp-time').count(), 0, 'no clock');
-    await page.click('#view-set .fp-level .fp-back');
+    const six = planLevel(await savedState(page), deck, 6, 2, lead);
+    assert.equal(six.first.lead, lead);
+    assert.match(await cell(page, six.first.slots.indexOf(lead)).getAttribute('aria-label'), new RegExp(FiveS.card(FiveS.migrate(st), deck, lead).title.slice(0, 12).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), 'level 6 is led by it');
+    await page.click('#view-set .fp-set .fp-back');
     await page.waitForSelector('#view-set .fk');
 
-    // It all reloads: the kingdom from the board, as built.
+    // It all reloads: the kingdom from the board, as built; a replay's card names its building and its height.
     await page.reload();
-    await page.waitForSelector('#view-set .fb-tile[data-id]');   // the saved state is in (the board shows it)
+    await page.waitForSelector('#view-set .fb-tile[data-id]');
     await page.click('#view-set [data-act="set-kingdom"]');
     await page.waitForSelector('#view-set .fk-node button[data-n="10"]');
     assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="5"]', 'aria-label'), label);
-    now = await saved();
+    now = await savedState(page);
     assert.deepEqual([now.saga.built[4], now.opts.clock], [builtId, 0]);
+    await page.$eval('#view-set .fk-node button[data-n="2"]', (b) => b.click());
+    await page.waitForSelector('dialog.fp-sheet[open] .fp-builtline');
+    assert.equal(await page.textContent('dialog.fp-sheet[open] .fp-builtline'), 'Your building: a plain house, two storeys. In time: best 0:40.', 'an old building keeps its height');
     assert.deepEqual(page.errors(), []);
   } finally {
     await ctx.close();
@@ -2540,8 +2742,8 @@ test('Set: the clock and the kingdom: a win in time builds on its plot, the fift
 });
 
 // The kingdom as the app opens it, at its edges: with nothing judged there is no home island, not for a moment
-// (SPEC "It appears only once something is judged"); a building whose thing names no card is a plain house on the
-// level card as on the map; Reduce Motion turned on while the kingdom is open makes its moves instant at once.
+// (SPEC "It appears only once something is judged"); a building whose thing names no card is a plain house; Reduce
+// Motion turned on while the kingdom is open makes its moves instant at once; a level opened under six kept is the first board.
 test('Set: the kingdom with nothing judged has no home; a building that names no card is a plain house; Reduce Motion is followed live', { timeout: 60000 }, async () => {
   const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
   try {
@@ -2550,15 +2752,17 @@ test('Set: the kingdom with nothing judged has no home; a building that names no
     st.seen = Object.assign({}, st.seen, { intro: 1 });
     st.saga = Object.assign(st.saga, { stars: [3, 2], best: [9000, 6000], time: [0, 40], built: [null, 'x-gone'], plays: 2 });
     assert.equal(FiveS.card(st, deck, 'x-gone'), null, 'an id that names no card (as a deck that dropped a thing leaves)');
-    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
-    await page.goto(BASE + '#set');   // seeded before the page runs: with nothing kept, no board tile shows that the state is in
+    await seedState(page, st);
+    await page.goto(BASE + '#set');   // seeded before the page runs: with nothing kept, the first board shows the state is in
     await page.waitForSelector('#view-set [data-act="set-kingdom"]');
+    assert.equal(await page.textContent('#view-set .sec-note'), 'Keep six more to play level 3.', 'under six with a saga: the way back');
     await page.evaluate(() => { window.__home = false; new MutationObserver(() => { if (document.querySelector('#view-set .fk-home')) window.__home = true; }).observe(document.body, { childList: true, subtree: true }); });
     await page.click('#view-set [data-act="set-kingdom"]');
     await page.waitForSelector('#view-set .fk-isle.is-drawn');
     await sleep(400);
     assert.equal(await page.evaluate(() => window.__home), false, 'no home island at any moment');
-    assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="2"]', 'aria-label'), 'Level 2, Sort, 2 of 3 stars, in time. Built: a plain house.');
+    assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="2"]', 'aria-label'), 'Level 2, Sort, in time. Built: a plain house.');
+    assert.equal(await page.locator('#view-set .fk-mist').count(), 0, 'nothing kept: no mist');
     // Reduce Motion on while the kingdom is open: Zoom in lands on the next frame, with no ease after it.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const z = () => page.$eval('#view-set .fk-table', (t) => t.style.getPropertyValue('--z'));
@@ -2568,10 +2772,10 @@ test('Set: the kingdom with nothing judged has no home; a building that names no
     const z1 = await z();
     await sleep(400);
     assert.deepEqual([z1 !== z0, z1], [true, await z()], 'Zoom in at once under Reduce Motion: ' + z0 + ' then ' + z1);
-    // The level card names the building as the map does.
+    // A level with nothing to set: the first board, not a level.
     await page.$eval('#view-set .fk-node button[data-n="2"]', (b) => b.click());
-    await page.waitForSelector('dialog.fp-sheet[open] .fp-builtline');
-    assert.equal(await page.textContent('dialog.fp-sheet[open] .fp-builtline'), 'Your building: a plain house, two storeys. In time: best 0:40.');
+    await page.waitForSelector('#view-set .set-first [role="grid"]');
+    assert.equal(await page.locator('dialog.fp-sheet[open]').count(), 0);
     assert.deepEqual(page.errors(), []);
   } finally {
     await ctx.close();
@@ -2579,45 +2783,35 @@ test('Set: the kingdom with nothing judged has no home; a building that names no
 });
 
 // At the saga's cap of 999 levels a win of level 1000 is not recorded, so its end claims no building and no clock
-// verdict; its stars, score and ways on stay (SPEC "As fixed").
+// verdict; its ways on stay (SPEC "As fixed").
 test('Set: a win of level 1000, past the 999 the saga keeps, claims nothing it did not record', { timeout: 150000 }, async () => {
   const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light' });
-  await page.emulateMedia({ reducedMotion: 'reduce' });   // the finale's hundreds of moves left, without waiting on each
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   try {
     const deck = await (await fetch(new URL('deck.json', BASE))).json();
-    const ex = FiveS.exampleState(deck, Date.now()), lv = MATCH.level(1000);
-    let plan = null;
-    for (let p = 0; p < 60 && !plan; p++) {
-      const s0 = Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }), saga: { stars: Array(999).fill(1), best: Array(999).fill(100), boost: { pass: 1, turn: 1, more: 1 }, plays: p, day: null, time: [], built: [] } });
-      let g = MATCH.newGame(lv, MATCH.pieces(FiveS.migrate(s0), deck, lv.suits), '5s:1000:' + p);
-      const mv = [];
-      while (g.state === 'play' && mv.length < 40) { const m = MATCH.hint(g); if (!m) break; const r = MATCH.swap(g, m[0], m[1]); mv.push({ a: m[0], b: m[1], moves: r.game.moves, score: Math.round(r.game.score).toLocaleString('en-GB') }); g = r.game; }
-      if (g.state === 'won') plan = { st: s0, mv };
-    }
-    assert.ok(plan, 'a board of level 1000 the hints win in 40 moves');
+    const ex = FiveS.exampleState(deck, Date.now());
+    const st = Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }), saga: { stars: Array(999).fill(1), best: Array(999).fill(100), boost: { pass: 1, turn: 1, more: 1 }, plays: 3, day: null, time: [], built: [] } });
+    const plan = planLevel(st, deck, 1000, 2);
     await lateDeck(page);
-    // seeded before the page runs: planting it after the first load races the app's own first save, which can land on top
-    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(plan.st));
+    await seedState(page, st);
     await page.goto(BASE + '#set');
     await page.waitForSelector('#view-set .fb-tile[data-id]');
     assert.match(await page.textContent('#view-set [data-act="set-play"]'), /Play level 1000/);
     await page.click('#view-set [data-act="set-play"]');
     await page.click('dialog.fp-sheet[open] [data-play]');
     await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
-    const key = (a, b) => (b === a + 1 ? 'ArrowRight' : b === a - 1 ? 'ArrowLeft' : b > a ? 'ArrowDown' : 'ArrowUp');
-    for (const [k, m] of plan.mv.entries()) {
-      await page.focus('#view-set .fp-gc[data-i="' + m.a + '"]');
-      await page.keyboard.press('Shift+' + key(m.a, m.b));
-      if (k < plan.mv.length - 1) await page.waitForFunction(([n, sc]) => { const b = document.querySelector('#view-set .fp-moves b'), c = document.querySelector('#view-set .fp-score > b'); return b && c && b.textContent === String(n) && c.textContent === sc; }, [m.moves, m.score], { timeout: 20000 });
+    for (const [k, m] of plan.moves.entries()) {
+      await cell(page, m.i).click(); await cell(page, m.j).click();   // tap, then tap
+      await sayAlikeInLine(page);
+      if (k < plan.moves.length - 1) await afterMove(page, k + 1, m.togo);
     }
-    await page.waitForSelector('dialog.fp-sheet[open] .fp-endstars', { timeout: 60000 });
+    await page.waitForFunction(() => { const d = document.querySelector('dialog.fp-sheet[open]'); return d && /Level 1000 done\./.test(d.textContent); }, null, { timeout: 60000 });
     const end = page.locator('dialog.fp-sheet[open]');
-    assert.match(await end.textContent(), /Level 1000 done\./);
     assert.equal(await end.locator('.fp-built, .fp-endclock, [data-way], [data-kingdom]').count(), 0, 'no Built and no clock verdict');
-    assert.doesNotMatch(await end.textContent(), /Your kingdom|Built:|to spare|Race it again/);
+    assert.doesNotMatch(await end.textContent(), /Your kingdom|Built:|to spare|Race it again|★|\bstars?\b/i);
     assert.equal(await end.locator('[data-next], [data-again], [data-board]').count(), 3, 'its ways on stay');
     const sv = await page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1')).saga);
-    assert.deepEqual([sv.stars.length, sv.built.length, sv.time.length, sv.plays], [999, 0, 0, plan.st.saga.plays + 1], 'the play counted, nothing else');
+    assert.deepEqual([sv.stars.length, sv.built.length, sv.time.length, sv.plays], [999, 0, 0, st.saga.plays + 1], 'the play counted, nothing else');
     assert.deepEqual(page.errors(), []);
   } finally {
     await ctx.close();
@@ -2632,17 +2826,13 @@ test('Set: the Path panel opened over a level holds the clock', { timeout: 60000
   try {
     const deck = await (await fetch(new URL('deck.json', BASE))).json();
     const ex = FiveS.exampleState(deck, Date.now());
-    const st = Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }) });
-    const lv = MATCH.level(1), m = MATCH.hint(MATCH.newGame(lv, MATCH.pieces(FiveS.migrate(st), deck, lv.suits), '5s:1:' + (st.saga.plays || 0)));
-    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+    await seedState(page, Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }) }));
     await page.goto(BASE + '#set');
     await page.waitForSelector('#view-set .fb-tile[data-id]');
     await page.click('#view-set [data-act="set-play"]');
     await page.click('dialog.fp-sheet[open] [data-play]');
     await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
-    await page.focus('#view-set .fp-gc[data-i="' + m[0] + '"]');   // the first counted swap starts the clock
-    await page.keyboard.press('Shift+' + (m[1] === m[0] + 1 ? 'ArrowRight' : m[1] === m[0] - 1 ? 'ArrowLeft' : m[1] > m[0] ? 'ArrowDown' : 'ArrowUp'));
-    await page.waitForFunction(() => document.querySelector('#view-set .fp-moves b').textContent === '14');
+    await cell(page, 0).tap();   // the first press starts the clock (a picture lifted: the clock runs while they look for a pair)
     await sleep(1500);
     const t0 = await secs();
     await page.tap('[data-act="path"]');
@@ -2651,6 +2841,7 @@ test('Set: the Path panel opened over a level holds the clock', { timeout: 60000
     await page.click('#sheet .sheet-head .iconbtn');
     await page.waitForFunction(() => !document.querySelector('#sheet[open]'));
     const t1 = await secs();
+    assert.ok(t0 < 25, 'the clock started at the first press: ' + t0);
     assert.ok(t0 - t1 <= 1, 'the clock stood while the Path was open: ' + t0 + ' then ' + t1);
     await sleep(2200);
     assert.ok(t1 - (await secs()) >= 1, 'and runs again once it closes');
@@ -2668,7 +2859,7 @@ test('Set: an error inside a level brings the tab bar back, even the same error 
     await page.click('#view-set [data-act="set-play"]');
     await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
     await page.click('dialog.fp-sheet[open] [data-play]');
-    await page.waitForSelector('#view-set .fp-gc');
+    await page.waitForSelector('#view-set .fp-set [role="grid"]');
     assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
   };
   const breakIt = async () => {
@@ -2676,19 +2867,22 @@ test('Set: an error inside a level brings the tab bar back, even the same error 
     await page.waitForFunction(() => getComputedStyle(document.querySelector('.tabs')).display !== 'none', null, { timeout: 3000 });
   };
   try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const ex = FiveS.exampleState(deck, Date.now());
+    await seedState(page, Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }) }));
     await page.goto(BASE + '#set');
     await page.waitForSelector('#view-set [data-act="set-play"]');
     await play();
     await breakIt();
     assert.match(await page.textContent('#problem'), /a level broke/);
-    await page.click('#view-set .fp-level .fp-back');
+    await page.click('#view-set .fp-set .fp-back');
     await page.waitForSelector('#view-set .fk');
     await page.click('#view-set .fk .fp-back');
     await page.waitForSelector('#view-set [data-act="set-play"]');
     await play();
     await breakIt();
     // The level card open and the address changed by hand: the card goes with the level, the page stays usable.
-    await page.click('#view-set .fp-level .fp-back');
+    await page.click('#view-set .fp-set .fp-back');
     await page.waitForSelector('#view-set .fk');
     await page.click('#view-set .fk .fp-back');
     await page.click('#view-set [data-act="set-play"]');
@@ -2710,6 +2904,9 @@ test('Set: an error inside a level brings the tab bar back, even the same error 
 test('Set: a level panel that lands out of sight is pinned into view, and a tap on the dimmed page closes it', { timeout: 60000 }, async () => {
   const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
   try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const ex = FiveS.exampleState(deck, Date.now());
+    await seedState(page, Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }) }));
     await page.goto(BASE + '#set');
     await page.waitForSelector('#view-set [data-act="set-play"]');
     // what the phone did: the panel placed far below the screen (the pinned panel is left alone)
@@ -2725,7 +2922,7 @@ test('Set: a level panel that lands out of sight is pinned into view, and a tap 
     assert.ok(where.top >= 0 && where.bottom <= where.vh + 1 && where.bottom > where.top + 40, 'pinned into view: ' + JSON.stringify(where));
     await page.tap('dialog.fp-sheet[open] [data-play]');   // and it works: Play starts the level
     await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
-    await page.click('#view-set .fp-level .fp-back');
+    await page.click('#view-set .fp-set .fp-back');
     await page.waitForSelector('#view-set .fk');
     // a tap on the dimmed page, above the panel, closes it and leaves the page usable (the map)
     await page.click('#view-set .fk .fp-back');

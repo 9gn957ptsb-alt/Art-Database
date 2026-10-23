@@ -1182,7 +1182,7 @@ test('Set\'s game: old states gain its fields, removeOwn drops its pairs, a five
       words: Array.from({ length: F.WORDS_MAX }, () => '語'.repeat(F.WORD_LEN)) },   // Set, inside out: the person's words
     paintings: Array.from({ length: 24 }, () => ({ at: 1761100000, n: 999, cols: 9, rows: 9, c: 'f28a3c'.repeat(81) })),
   };
-  const bytes = Buffer.byteLength(JSON.stringify(game));
+  const bytes = Buffer.byteLength(JSON.stringify(game)) + Buffer.byteLength(',"ask":"m999"');   // and the five's card from Set (a deck id)
   const max = /const STATE_MAX = (\d+) \* 1024;/.exec(readFileSync(join(here, '..', 'src', 'app.js'), 'utf8'));
   assert.ok(max, 'app.js says STATE_MAX');
   assert.ok(Number(max[1]) * 1024 + bytes <= 256 * 1024, 'STATE_MAX + ' + bytes + ' bytes is over the store\'s 256 KiB');

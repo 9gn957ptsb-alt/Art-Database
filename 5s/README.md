@@ -20,7 +20,7 @@ build contract) before changing anything.
 | --- | --- |
 | `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp`; then the bookmarks from `buildings.json` + `data/aa/` |
 | `buildings.json` | the artist's Architectural Authority bookmarks as chosen for the deck: each building's hero photo, surface crop, materials and genes (cards b001…, m001…) |
-| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined, and `play.css` as `<style data-fives="play">`), the twelve scripts in the order the page loads them (`hub.js`, `hubpage.js`, `connect.js`, `match.js`, `board.js`, `play.js`, `kingdom.js` and `links.js` before `app.js`), and `dist/dev.html` |
+| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined, and `play.css` as `<style data-fives="play">`), the thirteen scripts in the order the page loads them (`hub.js`, `hubpage.js`, `connect.js`, `match.js`, `relate.js`, `board.js`, `play.js`, `kingdom.js` and `links.js` before `app.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
 | `src/app.css`, `src/app.js` | styles and UI (including Your hub: Seed's last section and the Hub sheet, through GitHub's own pages) |
 | `src/engine.js` | pure logic: judgments, the taste model, turns, the five, profile, Path, seed (no DOM, clock or randomness) |
@@ -28,6 +28,7 @@ build contract) before changing anything.
 | `src/connect.js` | Connect your apps (`FiveSConnect`): an app's "download your data" file read on the device (JSON, web pages, spreadsheets, text, .zip), and the one client of the 5s connector through the `mcp` capability (server `"5s"`) |
 | `src/ground.js` | draws Seed's isometric island on a canvas (and the kingdom's islands, with their plots and buildings) |
 | `src/match.js` | Set's game, pure (`FiveSMatch`): Candy Crush Saga's rules with the person's own things, the 30 levels, the suits (the person's threads), pairings, the saga |
+| `src/relate.js` | Set, inside out, pure (`FiveSRelate`): boards dealt from the person's kept pictures, relations (alike or unlike, in what) and the answers, what a win builds and how tall, the kingdom's ties and mist, Sort's one card from Set |
 | `src/board.js` | Set's mood board (`FiveSBoard`): what you keep, in masonry, grouped by what you put together |
 | `src/play.js`, `src/play.css` | Set's game in the page (`FiveSPlay`): the list of levels, a level (with its clock), its sound, motion and gestures; the game's, the board's and the kingdom's styles |
 | `src/kingdom.js` | Set's kingdom map (`FiveSKingdom`): an island for every five levels, each level won one of your things built on its plot, the next area under cloud; you pan and zoom it |
@@ -63,7 +64,7 @@ Node 22 and Playwright with Chromium are required for the browser suites; each o
 its own `python3 -m http.server`.
 
 ```sh
-node --test 5s/test/                    # engine, hub, connect, links, reflect and match (pure logic; runs through test/index.js)
+node --test 5s/test/                    # engine, hub, connect, links, reflect, match and relate (pure logic; runs through test/index.js)
 node --test 5s/test/match.test.mjs      # Set's game engine alone
 node --test 5s/test/play.smoke.cjs      # Set's game and board in their harness (serves 5s/ itself)
 node --test 5s/test/kingdom.smoke.cjs   # Set's kingdom map in its harness (serves 5s/ itself)
@@ -96,7 +97,7 @@ its plot and finding the next area, Another way, the clock off, and a reload.
 Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing and is never
 published. The supporting files go with it at the same relative paths:
 
-- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `match.js`, `board.js`, `play.js`, `kingdom.js`, `links.js`, `app.js`
+- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `match.js`, `relate.js`, `board.js`, `play.js`, `kingdom.js`, `links.js`, `app.js`
 - `deck.json`, `logo.webp`, `img/atlas.webp`
 - the 451 card images `img/{i,o,s,u,b,m}NNN.webp` (Colour cards have no image; `b` and `m` are the
   artist's Architectural Authority bookmarks, a building's Space or Object and its Surface)

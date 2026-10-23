@@ -6,7 +6,8 @@
 <title>5s kingdom harness</title>
 <!-- A harness for src/kingdom.js: the deck, an example taste, and the app's part played by the
      callbacks below. Served from 5s/: /test/kingdom.html with ?won=N (levels won, default 8),
-     ?theme=dark|light, ?reduce=1, ?focus=n, ?reveal=k, ?empty=1 (nothing judged), ?deck=fixture. -->
+     ?theme=dark|light, ?reduce=1, ?focus=n, ?reveal=k, ?empty=1 (nothing judged), ?deck=fixture, and
+     ?inside=1: what Set, inside out adds (storeys from relations, ties, the islands' lines, the mist, onLead). -->
 <link rel="stylesheet" href="../src/app.css">
 <link rel="stylesheet" href="../src/play.css" data-fives="play">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Martian+Mono:wght@400;500&amp;family=Unbounded:wght@500;700&amp;display=swap">
@@ -66,13 +67,25 @@
 
     const calls = [];
     const num = (k) => (q.get(k) == null ? null : +q.get(k));
-    const k = window.FiveSKingdom.mount(document.getElementById('stage'), {
+    // Set, inside out: heights from relations (not the stars above), two ties, two islands' lines, two things in the mist.
+    // Every island drawn is recorded (its houses' storeys), so the heights the map draws can be checked.
+    const drawnSpecs = [];
+    const render = window.FiveSGround.render;
+    window.FiveSGround = Object.assign({}, window.FiveSGround, { render: (cv, spec) => { drawnSpecs.push(spec); return render(cv, spec); } });
+    const inside = q.get('inside') ? {
+      storeys: saga.stars.map((_, i) => [1, 3, 2][i % 3]),
+      ties: [[1, 3, 1], [2, 7, -1], [4, 20, 1]],   // the last names a level not won: never drawn
+      said: { 0: 'Mostly alike in line', 1: 'Mostly unlike: ‘a held breath’' },
+      mist: { n: 2, things: kept.filter((id) => card(id).img).slice(-2).map((id) => ({ id, name: short(card(id).title), src: base + card(id).img })) },
+      onLead: (id) => calls.push(['lead', id]),
+    } : {};
+    const k = window.FiveSKingdom.mount(document.getElementById('stage'), Object.assign({
       saga, palette, thing, drawHome, theme: dark ? 'dark' : 'light', reduce: q.get('reduce') ? true : undefined,
       focus: num('focus'), reveal: num('reveal'),
       onLevel: (n) => calls.push(['level', n]), onBack: () => calls.push(['back']),
       onList: () => calls.push(['list']), onHome: () => calls.push(['home']),
-    });
-    window.harness = { ready: true, calls, k, saga };
+    }, inside));
+    window.harness = { ready: true, calls, k, saga, inside, drawnSpecs };
   } catch (e) {
     window.harnessError = String(e && e.stack || e);
   }

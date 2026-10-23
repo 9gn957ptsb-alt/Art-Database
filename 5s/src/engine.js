@@ -533,9 +533,10 @@
   const isObj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
   const isInt = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi;
   // As the game writes them and the connector's put_state takes them, so a state read back can be put back.
-  const isPair = (e) => Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'string' && e[0] < e[1] && isInt(e[2], 1, 99) && (e[3] === 0 || e[3] === 1) && Number.isFinite(e[4]) &&
+  const isCardId = (x) => typeof x === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(x);   // a card or brought thing's id, as put_state takes it
+  const isPair = (e) => Array.isArray(e) && isCardId(e[0]) && isCardId(e[1]) && e[0] < e[1] && isInt(e[2], 1, 99) && (e[3] === 0 || e[3] === 1) && Number.isFinite(e[4]) &&
     (e.length === 5 || (e.length === 7 && (e[5] === 1 || e[5] === -1) && (isInt(e[6], 0, 5) || isInt(e[6], WORD0, WORD0 + WORDS_MAX - 1))));
-  const isWordText = (x) => typeof x === 'string' && x.length >= 1 && x.length <= WORD_LEN && x.trim() === x && !/[\u0000-\u001f\u007f]/.test(x);
+  const isWordText = (x) => typeof x === 'string' && x.length >= 1 && x.length <= WORD_LEN && x.trim() === x && !/[\u0000-\u001f\u007f]|\p{Cs}/u.test(x);
   const isPainting = (p) => isObj(p) && isInt(p.n, 1, 1e6) && Number.isFinite(p.at) && isInt(p.cols, 1, 16) && isInt(p.rows, 1, 16) &&
     typeof p.c === 'string' && p.c.length === p.cols * p.rows * 6 && /^(?:[0-9a-f]{6}|------)*$/.test(p.c);
   function normSaga(g) {
@@ -563,6 +564,15 @@
     return c;
   }
 
+  // A five; its card from Set (ask, FiveSRelate) only when it names a card, as put_state takes it.
+  function normFive(f) {
+    if (!f || !Array.isArray(f.ids)) return null;
+    if (f.ask === undefined || isCardId(f.ask)) return f;
+    const c = assign(f);
+    delete c.ask;
+    return c;
+  }
+
   // Fill in whatever an older or partial saved state is missing, without touching it.
   function norm(s) {
     const x = s && typeof s === 'object' ? s : {};
@@ -570,7 +580,7 @@
     return assign(x, {
       v: 1,
       j: Array.isArray(x.j) ? x.j : [],
-      five: x.five && Array.isArray(x.five.ids) ? x.five : null,
+      five: normFive(x.five),
       sets: Array.isArray(x.sets) ? x.sets : [],
       days: Array.isArray(x.days) ? x.days : [],
       own: Array.isArray(x.own) ? x.own : [],
@@ -764,7 +774,9 @@
   /** nextFive(state, deck, now, ask?) -> [cardId × 5]: one per kind, shuffled; deterministic for (state, day, ask).
    *  ask (FiveSRelate.ask): deck cards that follow from the person's relations in Set; the first that fits takes
    *  its kind's place, in a match slot (any slot in the first fives). Without ask the five is as before. */
-  function nextFive(state, deck, now, ask) {
+  function nextFive(state, deck, now, ask) { return fiveOf(state, deck, now, ask).ids; }
+  // nextFive's five, and the card of it that came from ask (null when none did)
+  function fiveOf(state, deck, now, ask) {
     const st = norm(state);
     const day = dayOf(now);
     const t = toSec(now);
@@ -841,7 +853,8 @@
       if (slot) slot.id = back.id;
       else picks.push({ kind: back.kind, id: back.id });
     }
-    return shuffle(picks.map((p) => p.id), rng);
+    const ids = shuffle(picks.map((p) => p.id), rng);
+    return { ids, ask: fit && ids.indexOf(fit.id) >= 0 ? fit.id : null };
   }
 
   /** isRevisit(state, id) -> true when the card is one of the person's own things ("Still yours?"). */
@@ -850,11 +863,14 @@
     return isOwnId(id) && st.own.some((o) => o && o.id === id);
   }
 
-  /** startFive(state, deck, now, ask?) -> State with five = {ids: nextFive(...), day, n, i: 0}. */
+  /** startFive(state, deck, now, ask?) -> State with five = {ids: nextFive(...), day, n, i: 0, ask?}. ask: the one
+   *  card of the five that came from Set, when one did (Sort names it only after the decision). */
   function startFive(state, deck, now, ask) {
     const st = norm(state);
     const day = dayOf(now);
-    return assign(st, { five: { ids: nextFive(st, deck, now, ask), day, n: fiveNumber(st, day), i: 0 } });
+    const f = fiveOf(st, deck, now, ask), five = { ids: f.ids, day, n: fiveNumber(st, day), i: 0 };
+    if (f.ask) five.ask = f.ask;
+    return assign(st, { five });
   }
 
   /** currentCard(state) -> the id to judge now, or null when the five is done (or none is started). */

@@ -1,7 +1,9 @@
 /* 5s play: Set's game in an element (SPEC.md, "Set: the board and the game").
  *
  * Candy Crush Saga's rules with the person's own things: the saga map (mountMap) and a level
- * (mount): the level card, the board, the out-of-moves sheet and the level end. The rules are
+ * (mount): the level card, the board, the out-of-moves sheet and the level end. Set, inside out
+ * (mountSet, SPEC-set-inside-out): six whole pictures, one carried onto another, said alike or unlike
+ * and in what; its rules are FiveSRelate's. mount stays for the shape game's return. The rules are
  * FiveSMatch's (pure); this file draws them, takes the gestures, and owns sound (WebAudio,
  * synthesised), haptics, motion (one requestAnimationFrame loop, transform and opacity only, one
  * overlay canvas) and the hint timer. It never writes state: the callbacks do.
@@ -1419,5 +1421,978 @@
     return api;
   }
 
-  root.FiveSPlay = Object.freeze({ version: 1, mount, mountMap });
+  // ================================================================ Set, inside out: a level of six whole pictures
+  // SPEC-set-inside-out §3, §4, §6 and §13, with the artist's answers (23 Oct 2026): no stars anywhere, and a turn is
+  // noticed in words and rewards nothing. The rules are FiveSRelate's (pure); this draws them, takes the gestures and
+  // keeps the clock. It never writes state: the callbacks do (onRelate at once, every pairing).
+
+  const SET_WHY = { fresh: 'Kept, not set yet.', stayed: 'It stayed last level.', turn: 'A turn you kept in Sort.', thin: 'Set beside the fewest.', brought: 'Brought in by you.' };
+  const SET_TAG = { again: 'Said before, it holds', turn: 'A turn', brought: 'Only you have this one', shared: 'Someone else too',
+    apart: 'You see them apart', agree: 'Others’ words agree', yours: 'Your own eye', first: 'You’re the first' };
+  const SET_HINT = 'Any two can go together. Which two would you hang side by side?';
+  const SET_PASS = 'Pass: press a picture and it leaves.';
+  const SET_SMALLER = 'Nothing more comes in: the board gets smaller now.';
+  const SET_FULL = 'You have 60 words. Use one of them, or an aspect.';
+  const GAP = 8, LIFT = 1.04, FOLLOW = 0.62, CARRY_PX = 12, LOOK_MS = 350, ANSWER_MS = 1600, HINT_MS = 10000;
+  const up1 = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const low1 = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+  const dot = (s) => (/[.…!?]$/.test(s) ? s : s + '.');   // a short name may already end in "…"
+  const sizeTo = (e, w, hh) => { e.style.width = w + 'px'; e.style.height = hh + 'px'; };
+
+  // A whole picture at its own proportions: an <img> (its w and h, else read once it loads) or a Colour card's bands.
+  function wholePic(p, cls) {
+    let e;
+    if (p && p.src) {
+      e = new Image();
+      e.alt = ''; e.draggable = false; e.decoding = 'async';
+      e._r = p.w > 0 && p.h > 0 ? p.w / p.h : 0;
+      if (!e._r) e.addEventListener('load', () => { e._r = e.naturalWidth / e.naturalHeight || 1; if (e._fit) e._fit(); }, { once: true });
+      e.src = p.src;
+    } else { e = h('span'); e.setAttribute('style', bandsBg(p && p.colours)); e._r = 4 / 3; }
+    e.className = cls;
+    return e;
+  }
+  // Whole inside W x H, never cropped; again when its proportions arrive.
+  function fitPic(e, W, H) {
+    e._fit = () => { const r = e._r || 1, w = Math.min(W, H * r); sizeTo(e, w, w / r); };
+    e._fit();
+    return e;
+  }
+  // Two side by side at one height, at most H tall and W wide together.
+  function fitPair(a, b, H, W) {
+    const go = () => { const ra = a._r || 1, rb = b._r || 1, hh = Math.min(H, (W - 6) / (ra + rb)); sizeTo(a, hh * ra, hh); sizeTo(b, hh * rb, hh); };
+    a._fit = b._fit = go;
+    go();
+  }
+
+  function mountSet(el, opts) {
+    ensureCss();
+    const RL = root.FiveSRelate, MX = M(), ASPECTS = root.FiveS.ASPECTS;
+    const o = Object.assign({ boost: {}, opts: {} }, opts);
+    const T = o.table, lv = RL.level(o.n || 1);
+    const aspectOf = o.aspectOf || T.aspectOf || {};
+    let game = o.free ? null : RL.newGame(lv, T, o.seed, o.lead);
+    const free = !game;   // under six kept pictures: the first board, no level (pairing already works there)
+    const mine = { made: [] };   // free mode keeps its relations here, where a Game would
+    const fslots = T.pool.slice(0, 6).concat([null, null, null, null, null, null]).slice(0, 6);
+    const slots = () => (free ? fslots : game.slots);
+    const held = { pass: o.boost.pass | 0, turn: o.boost.turn | 0, more: o.boost.more | 0 };
+    const set = { sound: o.opts.sound !== false, hints: o.opts.hints !== false };
+    let pace = !free && PACES.some(([v]) => v === o.clock) ? o.clock : 0, paceChosen = false;
+    let moves0 = game ? game.moves : 0;
+    const clk = { used: 0, from: null, begun: false, paused: false, said20: false, saidOut: false, t: 0 };
+    const optsNow = () => Object.assign({ sound: set.sound, hints: set.hints }, paceChosen ? { clock: pace } : {});
+    const mq = root.matchMedia ? root.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    let reduce = o.opts.reduce != null ? !!o.opts.reduce : !!(mq && mq.matches);
+    const onMq = (e) => { reduce = e.matches; clockDom(); };
+    if (mq && mq.addEventListener) mq.addEventListener('change', onMq);
+    const snd = makeSound(() => set.sound);
+    const buzz = (k) => { if (set.sound && navigator.vibrate) try { navigator.vibrate(HAPTIC[k]); } catch (e) { /* not on this device */ } };
+    const loop = makeLoop(() => false);
+    const wait = (ms) => loop.run(ms, () => {});
+    const name = (id) => (o.name ? o.name(id) : id);
+    const maker = (id) => (o.by ? o.by(id) : null);
+    const picOf = {};
+    const pic = (id) => (id in picOf ? picOf[id] : (picOf[id] = o.pic ? o.pic(id) : null));
+    const said = (s, w) => RL.saidText(T.vocab, aspectOf, s, w);   // the person's words: "Alike in line."
+    const toGo = () => slots().filter(Boolean).length - 1 + (game ? game.pile : 0);
+
+    // ---------------------------------------------------------- the frame
+    const box = h('div', 'fp fp-set' + (free ? ' fs-free' : ''));
+    box.innerHTML = (free ? ''   // the first board's lines and its Sort a five are the app's, around this view
+      : '<div class="fp-top"><button type="button" class="btn btn-quiet fp-back">' + SVG_BACK + '<span>Map</span></button>' +
+        '<h2 class="fp-title">Level ' + o.n + '</h2>' +
+        '<button type="button" class="btn btn-quiet fp-snd" aria-pressed="' + set.sound + '">' + SVG_SOUND + '<span>Sound</span></button></div>' +
+        '<div class="fp-status"><p class="fp-moves"><b></b> <span>to go</span></p><div class="fp-goals"><p><b>Set the board</b><span class="fs-made"></span></p></div>' +
+        '<button type="button" class="fs-last" hidden></button></div>' +
+        '<div class="fp-say fs-say"><p class="fs-say1"></p><p class="fs-say2"></p></div>') +
+      '<div class="fs-stage"><div class="fs-board"><div class="fs-places" role="grid"></div><div class="fs-over" aria-hidden="true"></div></div></div>' +
+      (free ? '<div class="fs-lastrow" hidden></div>' : '<div class="fp-boosts" role="group" aria-label="Boosters">' +
+        BOOSTS.map((b) => '<button type="button" class="fp-boost" data-b="' + b.kind + '" disabled>' + b.glyph + '<span>' + b.word + '</span><b class="fp-n"></b></button>').join('') + '</div>') +
+      '<div class="fs-ask" role="group" tabindex="-1" hidden></div><div class="fs-look" aria-hidden="true" hidden></div>' +
+      '<p class="visually-hidden fp-live" aria-live="polite"></p>';
+    el.appendChild(box);
+    const $ = (s) => box.querySelector(s);
+    const stage = $('.fs-stage'), boardEl = $('.fs-board'), grid = $('.fs-places'), over = $('.fs-over');
+    const askEl = $('.fs-ask'), lookEl = $('.fs-look'), live = $('.fp-live');
+    const tell = (text) => { live.textContent = ''; setTimeout(() => { live.textContent = text; }, 30); };
+    if (!free) $('.fp-boosts').addEventListener('click', (e) => { const b = e.target.closest('[data-b]'); if (b && !b.disabled) useBoost(b.dataset.b); });
+
+    // ---------------------------------------------------------- the places: 2 x 3 under 600 px wide, else 3 x 2
+    let cols = 2, rows = 3, pw = 175, ph = 110, cells = [];
+    const px = (i) => (i % cols) * (pw + GAP), py = (i) => Math.floor(i / cols) * (ph + GAP);
+    function measure() {
+      cols = (el.clientWidth || 390) >= 600 ? 3 : 2; rows = 6 / cols;
+      const W = Math.min(840, stage.clientWidth || 358);
+      pw = (W - GAP * (cols - 1)) / cols;
+      ph = free ? Math.round(Math.max(110, Math.min(220, pw * 0.63))) : Math.max(110, Math.floor((stage.clientHeight - GAP * (rows - 1)) / rows));
+      sizeTo(boardEl, W, rows * ph + GAP * (rows - 1));
+    }
+    const picEls = new Map();   // the board's pictures, one element a thing
+    function boardPic(id) { if (!picEls.has(id)) picEls.set(id, wholePic(pic(id), 'fs-pic')); return picEls.get(id); }
+    function build() {
+      measure();
+      grid.textContent = ''; cells = [];
+      grid.setAttribute('aria-rowcount', rows); grid.setAttribute('aria-colcount', cols);
+      for (let r = 0; r < rows; r++) {
+        const row = h('div', 'fs-row');
+        row.setAttribute('role', 'row'); row.setAttribute('aria-rowindex', r + 1);
+        row.style.top = r * (ph + GAP) + 'px'; row.style.height = ph + 'px';
+        for (let c = 0; c < cols; c++) {
+          const i = r * cols + c, b = h('button', 'fs-pl');
+          b.type = 'button'; b.setAttribute('role', 'gridcell'); b.setAttribute('aria-colindex', c + 1);
+          b.dataset.i = i; b.tabIndex = -1; b.style.left = c * (pw + GAP) + 'px'; sizeTo(b, pw, ph);
+          row.appendChild(b); cells[i] = b;
+        }
+        grid.appendChild(row);
+      }
+      for (let i = 0; i < 6; i++) draw(i);
+      if (sel != null) cells[sel].classList.add('is-lift');
+      if (ask && ask.i != null) cells[ask.i].classList.add('is-home');
+      cells[fi != null ? fi : 0].tabIndex = 0;
+      labels();
+    }
+    function draw(i, id) {   // place i as the game has it, or as given while a move lands
+      const b = cells[i];
+      if (!b) return;
+      if (id === undefined) id = slots()[i];
+      if (b._id !== id || (id && b.firstChild !== picEls.get(id))) {
+        b._id = id; b.textContent = '';
+        if (id) b.appendChild(boardPic(id));
+        else if (free) b.innerHTML = '<span class="fs-keepin"><i aria-hidden="true">+</i>Keep one in Sort</span>';
+      }
+      b.dataset.id = id || '';
+      b.classList.toggle('is-gone', !id && !free);
+      b.classList.toggle('is-keep', !id && free);
+      if (id) { const e = b.firstChild; e.style.transform = ''; e.style.opacity = ''; fitPic(e, pw, ph); }
+    }
+
+    // ---------------------------------------------------------- words for each place
+    function relLines(id) {   // what the person has said of a thing, newest first: "alike in layout with Three Gardens House"
+      const out = [], seen = new Set();
+      const add = (a, b, s, w) => {
+        const other = a === id ? b : b === id ? a : null;
+        if (!other || seen.has(other)) return;
+        seen.add(other); out.push(low1(said(s, w)).replace(/\.$/, '') + ' with ' + name(other));
+      };
+      const m = free ? mine.made : game.made;
+      for (let k = m.length - 1; k >= 0; k--) add(m[k].x, m[k].y, m[k].s, m[k].w);
+      Object.keys(T.rel).sort((a, b) => T.rel[b].at - T.rel[a].at).forEach((k) => { const ab = k.split('|'); add(ab[0], ab[1], T.rel[k].s, T.rel[k].w); });
+      return out;
+    }
+    function thingWords(id) {
+      const mk = maker(id), kind = o.kind ? o.kind(id) : null, ws = T.words[id] || [], rs = relLines(id).slice(0, 2);
+      const who = T.src[id] === 'own' ? 'Brought in by you: ' + name(id) : (kind ? up1(kind) + ': ' : '') + name(id) + (mk ? ', by ' + mk : '');
+      return dot(who) + (ws.length ? ' In others’ words: ' + ws.join(', ') + '.' : '') + (rs.length ? ' You said: ' + rs.join('; ') + '.' : '');
+    }
+    function cellLabel(i) {
+      const id = slots()[i], where = ' Row ' + (Math.floor(i / cols) + 1) + ', column ' + (i % cols + 1) + '.';
+      if (!id) return (free ? 'Keep one in Sort.' : 'Empty: set.') + where;
+      return thingWords(id) + (sel === i ? ' Lifted.' : '') + where;
+    }
+    function labels() {
+      for (let i = 0; i < 6; i++) if (cells[i]) cells[i].setAttribute('aria-label', cellLabel(i));
+      const n = slots().filter(Boolean).length;
+      grid.setAttribute('aria-label', (free ? 'Your first board, ' : 'Level ' + o.n + ' board, ') + cols + ' by ' + rows + '. ' + plural(n, 'picture') + '.' + (free ? '' : ' ' + toGo() + ' to go.'));
+    }
+
+    // ---------------------------------------------------------- the status, the say line and the last pairing
+    let keep = ['', ''], sayT = 0;
+    function sayShow(a, b, ms) {   // ms: for a while, then the move's own line again
+      if (free) return;
+      clearTimeout(sayT);
+      $('.fs-say1').textContent = a || ''; $('.fs-say2').textContent = b || '';
+      if (ms) sayT = setTimeout(() => sayShow(keep[0], keep[1]), ms);
+    }
+    function sayLine(a, b) { keep = [a || '', b || '']; sayShow(a, b); }
+    function status() {
+      labels();
+      if (free) return;
+      $('.fp-moves b').textContent = Math.max(0, toGo());
+      const m = game.made, a = m.filter((x) => x.s > 0).length, u = m.length - a;
+      $('.fs-made').textContent = m.length ? m.length + ' made · ' + [a ? a + ' alike' : '', u ? u + ' unlike' : ''].filter(Boolean).join(', ') : 'None made yet.';
+      boosts();
+    }
+    let last = null;   // the last pairing: {x, y, s, w, ans, arr, smaller, back}
+    function lastDraw() {
+      if (!last) return;
+      const dip = h('span', 'fs-dip'), a = wholePic(pic(last.x), 'fs-dpic'), b = wholePic(pic(last.y), 'fs-dpic');
+      dip.append(a, b);
+      if (free) {
+        fitPair(a, b, 56, 140);
+        const row = $('.fs-lastrow');
+        row.hidden = false; row.textContent = '';
+        row.append(dip, h('p', null, '<b>' + esc(said(last.s, last.w)) + '</b> ' + esc(last.ans.line)));
+        return;
+      }
+      fitPair(a, b, 34, 96);
+      const btn = $('.fs-last');
+      btn.hidden = false; btn.textContent = ''; btn.appendChild(dip);
+      btn.setAttribute('aria-label', 'Your last pairing: ' + name(last.x) + ' and ' + name(last.y) + '. Open it again.');
+    }
+
+    // ---------------------------------------------------------- the clock: the person's own time only
+    // shortcut: a copy of mount's clock, merge when the shape game is deleted
+    const clockSecs = () => pace * (moves0 + (game && game.more ? 5 : 0));
+    const clockUsed = () => clk.used + (clk.from != null ? performance.now() - clk.from : 0);
+    const clockLine = () => (pace ? mss(pace * moves0) + ' for this level. It stands while you say how two go, and never ends a level. Beat it and your building flies a flag.' : 'No clock for this level.');
+    function clockDom() {   // the five-second ring around "to go", the time under it; reduced motion: the time only
+      if (free) return;
+      const mv = $('.fp-moves');
+      mv.querySelectorAll('.fp-cring, .fp-time').forEach((e) => e.remove());
+      mv.classList.toggle('fp-clocked', !!pace && !reduce);
+      $('.fp-status').classList.toggle('fp-has-clock', !!pace);
+      if (pace && !reduce) {
+        mv.insertAdjacentHTML('afterbegin', '<svg class="fp-cring" viewBox="0 0 56 56" aria-hidden="true"><defs><linearGradient id="fp-ring-grad" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" style="stop-color:var(--ember-mark, #DE6A24)"/><stop offset="0.55" style="stop-color:var(--flare, #E5482B)"/><stop offset="1" style="stop-color:var(--iris, #7350EE)"/>' +
+          '</linearGradient></defs><circle class="fp-rt" cx="28" cy="28" r="24"/><circle class="fp-rf" cx="28" cy="28" r="24"/></svg>');
+      }
+      if (pace) mv.insertAdjacentHTML('beforeend', '<span class="fp-time" role="timer"></span>');
+      clockSync();
+    }
+    function clockSync() {   // banks the time run so far, then runs only while the person looks for a pair
+      if (free) return;
+      const now = performance.now();
+      if (clk.from != null) clk.used += now - clk.from;
+      clk.from = pace && clk.begun && started && !ended && !busy && !saying && !clk.paused && game.state === 'play' ? now : null;
+      const f = $('.fp-rf');
+      if (f) {
+        const total = clockSecs() * 1000, left = Math.max(0, total - clk.used);
+        f.style.transition = 'none';
+        f.style.strokeDashoffset = RING_C * (1 - left / total);
+        if (clk.from != null && left > 0) {
+          getComputedStyle(f).strokeDashoffset; // the drain starts from here
+          f.style.transition = 'stroke-dashoffset ' + Math.round(left) + 'ms linear';
+          f.style.strokeDashoffset = RING_C;
+        }
+      }
+      clockTick();
+    }
+    function clockTick() {
+      clearTimeout(clk.t);
+      const te = $('.fp-time');
+      if (!te) return;
+      const left = clockSecs() * 1000 - clockUsed(), text = left > 0 ? mss(Math.ceil(left / 1000)) : 'Time';
+      if (te.textContent !== text) { te.textContent = text; te.setAttribute('aria-label', 'Clock ' + text); }
+      if (clk.from == null) return;
+      if (left > 0 && left <= 20000 && !clk.said20) { clk.said20 = true; tell('20 seconds on the clock.'); }
+      if (left > 0) { clk.t = setTimeout(clockTick, ((Math.ceil(left) - 1) % 1000) + 1); return; }
+      const f = $('.fp-rf');
+      if (f) { f.style.transition = 'none'; f.style.strokeDashoffset = RING_C; }
+      if (!clk.saidOut) { clk.saidOut = true; sayShow('Time. Play on.', '', 2000); tell('Time. Play on: nothing is lost.'); }
+    }
+    const resultNow = () => Object.assign(RL.result(game, T), { secs: pace && clk.begun ? Math.max(1, Math.ceil(clockUsed() / 1000)) : 0, clock: pace ? clockSecs() : 0 });
+    const begin = () => { hintOff(); if (!free && started && !clk.begun) { clk.begun = true; clockSync(); } };
+
+    // ---------------------------------------------------------- boosters
+    function boostWhy(k) {   // why a booster cannot be used now ('' when it can)
+      if (k === 'more') return !pace ? 'The clock is off.' : game.more ? 'Used this level.' : '';
+      if (k === 'turn') return RL.back(game, T) ? '' : Object.keys(T.rel).length ? 'No earlier pair to bring back now.' : 'After your first pairing.';
+      return slots().filter(Boolean).length > 1 ? '' : 'Nothing left to pass.';
+    }
+    function boosts() {
+      if (free) return;
+      const wrap = $('.fp-boosts'), can = started && !ended && (phase === 'idle' || phase === 'lifted');
+      for (const b of BOOSTS) {
+        const e = wrap.querySelector('[data-b="' + b.kind + '"]'), n = held[b.kind], why = n ? boostWhy(b.kind) : '';
+        e.disabled = !n || !can;
+        e.setAttribute('aria-disabled', why ? 'true' : 'false');
+        e.querySelector('.fp-n').textContent = n;
+        e.setAttribute('aria-label', b.word + ', ' + n + ' held' + (why ? '. ' + why : ''));
+        e.setAttribute('aria-pressed', armed === b.kind ? 'true' : 'false');
+      }
+    }
+    function useBoost(k) {
+      if (!started || ended || (phase !== 'idle' && phase !== 'lifted')) return;
+      const why = boostWhy(k);
+      if (why) { sayShow(why, '', 2500); tell(why); return; }
+      if (k === 'pass' && armed === 'pass') { disarm(); return; }
+      putDown(true); begin();
+      if (k === 'more') {
+        held.more--; game.more = true;
+        if (o.onBoost) o.onBoost('more');
+        clockSync();
+        const t = 'Five more: ' + plural(5 * pace, 'second') + ' more on the clock.';
+        sayShow(t, '', 2500); tell(t); boosts();
+      } else if (k === 'turn') {
+        const b = RL.back(game, T);
+        openAsk(b.a, b.b, b, null, null, null);
+      } else { armed = 'pass'; sayShow(SET_PASS); tell(SET_PASS); boosts(); }
+    }
+    function disarm() { if (!armed) return; armed = null; sayShow(keep[0], keep[1]); boosts(); }
+    async function passAt(i) {
+      const id = slots()[i], r = RL.pass(game, T, i);
+      armed = null;
+      if (!id || r.game.passed.length === game.passed.length) { disarm(); return; }
+      held.pass--;
+      if (o.onBoost) o.onBoost('pass');
+      setPhase('moving'); busy = true; clockSync();
+      const e = cells[i].firstChild;
+      await loop.run(reduce ? 150 : 200, (t) => { e.style.opacity = 1 - t; if (!reduce) e.style.transform = 'scale(' + (1 - 0.15 * t) + ')'; });
+      game = r.game;
+      draw(i);
+      if (r.arrival) await arrive(i, null);
+      busy = false;
+      status();
+      sayLine(name(id) + ' leaves, set beside nothing.', r.arrival ? 'In: ' + dot(name(r.arrival.id)) : 'The board gets smaller.');
+      tell(keep.join(' ') + ' ' + toGo() + ' to go.');
+      afterMove();
+    }
+
+    // ---------------------------------------------------------- lifting and the gestures
+    let phase = free ? 'idle' : 'card', started = free, ended = false, busy = false, saying = false;
+    let sel = null, target = null, armed = null, fi = null, ask = null, result = null, info = null, saidSmaller = false;
+    function setPhase(p) { phase = p; box.dataset.phase = p; boosts(); }
+    const pose = (e, x, y, s) => { if (e) e.style.transform = x || y || s !== 1 ? 'translate3d(' + x + 'px,' + y + 'px,0) scale(' + s + ')' : ''; };
+    function lift(i, quiet) {
+      if (sel != null && sel !== i) putDown(true);
+      sel = i; cells[i].classList.add('is-lift'); setPhase('lifted');
+      if (!reduce) pose(cells[i].firstChild, 0, 0, LIFT);
+      snd.play('swap'); buzz('swap');
+      if (!quiet) tell('Lifted: ' + name(slots()[i]) + '. Now choose the one to set it with.');
+      labels();
+    }
+    function putDown(quiet) {
+      aim(null);
+      if (sel == null) return;
+      const b = cells[sel];
+      b.classList.remove('is-lift', 'is-home', 'is-carry');
+      pose(b.firstChild, 0, 0, 1);
+      sel = null; setPhase('idle');
+      if (!quiet) tell('Put down.');
+      labels();
+    }
+    function aim(i) {
+      if (target != null && cells[target]) cells[target].classList.remove('is-target');
+      target = i;
+      if (i != null) cells[i].classList.add('is-target');
+    }
+    const canTouch = () => started && !ended && (phase === 'idle' || phase === 'lifted');
+    const placeOf = (e) => { const b = e.target.closest && e.target.closest('.fs-pl'); return b && grid.contains(b) ? +b.dataset.i : null; };
+    function placeAt(x, y) {   // the place under a point, from the layout (the carried picture never hides it)
+      const r = boardEl.getBoundingClientRect(), lx = x - r.left, ly = y - r.top;
+      for (let i = 0; i < 6; i++) if (lx >= px(i) && lx <= px(i) + pw && ly >= py(i) && ly <= py(i) + ph) return i;
+      return null;
+    }
+    function flickTo(d) {   // a flick: 0.5 px/ms or more, toward a picture within 30° and at least 12° clearer than the next
+      const b = d.pts[d.pts.length - 1], a = d.pts.find((p) => p[2] >= b[2] - 100) || d.pts[0], dt = b[2] - a[2];
+      if (dt <= 0) return null;
+      const vx = (b[0] - a[0]) / dt, vy = (b[1] - a[1]) / dt;
+      if (Math.hypot(vx, vy) < 0.5) return null;
+      const dir = Math.atan2(vy, vx), x0 = px(d.i) + pw / 2, y0 = py(d.i) + ph / 2, ang = [];
+      slots().forEach((id, j) => {
+        if (!id || j === d.i) return;
+        let x = Math.abs(Math.atan2(py(j) + ph / 2 - y0, px(j) + pw / 2 - x0) - dir) * 180 / Math.PI;
+        if (x > 180) x = 360 - x;
+        ang.push([x, j]);
+      });
+      ang.sort((u, v) => u[0] - v[0]);
+      return ang.length && ang[0][0] <= 30 && (ang.length < 2 || ang[1][0] - ang[0][0] >= 12) ? ang[0][1] : null;
+    }
+    let drag = null, ptrUp = 0;
+    grid.addEventListener('pointerdown', (e) => {
+      snd.wake();
+      const i = placeOf(e);
+      if (i == null || !canTouch() || drag) return;
+      e.preventDefault();
+      focusCell(i, true);
+      begin();
+      drag = { i, x: e.clientX, y: e.clientY, id: e.pointerId, pts: [[e.clientX, e.clientY, e.timeStamp]], carry: false, look: false, lookT: 0 };
+      if (slots()[i]) drag.lookT = setTimeout(() => { if (drag && !drag.carry) { drag.look = true; openLook(slots()[drag.i]); } }, LOOK_MS);
+      try { grid.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointers */ }
+    });
+    grid.addEventListener('pointermove', (e) => {
+      const d = drag;
+      if (!d || e.pointerId !== d.id || d.look) return;
+      const dx = e.clientX - d.x, dy = e.clientY - d.y, dist = Math.hypot(dx, dy);
+      d.pts.push([e.clientX, e.clientY, e.timeStamp]);
+      if (d.pts.length > 12) d.pts.shift();
+      if (dist > 6) clearTimeout(d.lookT);   // Look is a still press
+      if (!d.carry) {
+        if (dist < CARRY_PX || !slots()[d.i] || armed) return;
+        d.carry = true;
+        if (sel !== d.i) lift(d.i, true);
+        cells[d.i].classList.add('is-home', 'is-carry');
+      }
+      if (!reduce) pose(cells[d.i].firstChild, dx * FOLLOW, dy * FOLLOW, LIFT);
+      const t = placeAt(e.clientX, e.clientY);
+      aim(t != null && t !== d.i && slots()[t] ? t : null);
+    });
+    const endDrag = (e) => {
+      const d = drag;
+      if (!d || e.pointerId !== d.id) return;
+      drag = null; ptrUp = performance.now();
+      clearTimeout(d.lookT);
+      if (d.look) { closeLook(); return; }
+      if (!d.carry) { if (e.type === 'pointerup') tap(d.i); return; }
+      const t = e.type === 'pointerup' ? (target != null ? target : flickTo(d)) : null;
+      cells[d.i].classList.remove('is-carry');
+      aim(null);
+      if (t != null) startSay(d.i, t); else home(d.i);
+    };
+    grid.addEventListener('pointerup', endDrag);
+    grid.addEventListener('pointercancel', endDrag);
+    // no click after a touch: the say panel opens under the finger as it lifts, and must not take that tap
+    grid.addEventListener('touchend', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+    // A click no pointer made: VoiceOver's double-tap
+    grid.addEventListener('click', (e) => { const i = placeOf(e); if (i != null && performance.now() - ptrUp > 500) { begin(); tap(i); } });
+
+    function home(i) {   // let go anywhere else: it glides home, nothing spent
+      const e = cells[i].firstChild, m = /translate3d\(([-\d.e]+)px,\s*([-\d.e]+)px/.exec((e && e.style.transform) || '');
+      cells[i].classList.remove('is-home');
+      const done = () => { putDown(true); tell('Put back. Nothing spent.'); };
+      if (!m || reduce) { done(); return; }
+      const x0 = +m[1], y0 = +m[2];
+      setPhase('moving');
+      loop.run(160, (t) => { const k = 1 - ease.out(t); pose(e, x0 * k, y0 * k, 1 + (LIFT - 1) * k); }).then(done);
+    }
+    function tap(i) {
+      if (!canTouch()) return;
+      const id = slots()[i];
+      if (!id) { if (free && o.onSort) o.onSort(); return; }
+      if (armed === 'pass') { passAt(i); return; }
+      if (sel == null) lift(i);
+      else if (sel === i) putDown();
+      else startSay(sel, i);
+    }
+
+    // keys: the board is one tab stop; arrows move the focus (the target, once lifted); Enter or Space lifts and sets
+    function focusCell(i, quiet) {
+      if (!cells[i]) return;
+      if (fi != null && cells[fi]) cells[fi].tabIndex = -1;
+      fi = i; cells[i].tabIndex = 0;
+      if (!quiet) cells[i].focus();
+    }
+    function stepFrom(i, dx, dy, full) {
+      let c = i % cols, r = Math.floor(i / cols);
+      for (;;) {
+        c += dx; r += dy;
+        if (c < 0 || r < 0 || c >= cols || r >= rows) return null;
+        const j = r * cols + c;
+        if (!full || slots()[j]) return j;
+      }
+    }
+    grid.addEventListener('keydown', (e) => {
+      const d = DIRS[e.key];
+      if (d && fi != null) {
+        e.preventDefault();
+        if (!canTouch()) return;
+        if (e.shiftKey) { const j = stepFrom(fi, d[0], d[1], true); if (j != null && slots()[fi]) { begin(); startSay(fi, j); } return; }
+        const j = stepFrom(fi, d[0], d[1], !free);
+        if (j == null) return;
+        focusCell(j);
+        if (sel != null) aim(j !== sel && slots()[j] ? j : null);
+        return;
+      }
+      if ((e.key === 'Enter' || e.key === ' ') && fi != null) {
+        e.preventDefault();
+        if (!canTouch()) return;
+        begin();
+        if (sel != null && fi !== sel && slots()[fi] && armed !== 'pass') startSay(sel, fi); else tap(fi);
+      }
+    });
+    grid.addEventListener('focusin', (e) => { const i = placeOf(e); if (i != null && i !== fi) focusCell(i, true); });
+    box.addEventListener('keydown', (e) => {
+      snd.wake();
+      if (e.target.closest('dialog, input')) return;
+      const k = e.key, plain = !e.ctrlKey && !e.metaKey && !e.altKey;
+      if (k === 'Escape') {
+        if (!lookEl.hidden) closeLook();
+        else if (phase === 'saying') putBack();
+        else if (phase === 'answer') goOn();
+        else { putDown(); disarm(); }
+      } else if ((k === 'l' || k === 'L') && plain) {
+        if (!lookEl.hidden) closeLook(); else if (fi != null && slots()[fi] && canTouch()) openLook(slots()[fi]);
+      } else if ((k === 'h' || k === 'H') && plain && !free) showHint(true);
+      else if ((k === 'm' || k === 'M') && plain && !free) toggleSound();
+      else return;
+      e.preventDefault();
+    });
+    box.addEventListener('pointerdown', () => snd.wake());
+
+    // ---------------------------------------------------------- Look: press and hold still (or L); the clock runs on
+    function openLook(id) {
+      if (!id) return;
+      const W = Math.max(160, stage.clientWidth - 32), H = Math.max(120, Math.min(stage.clientHeight || 300, 520) * 0.62);
+      const inner = h('div', 'fs-lookin'), mk = maker(id), kind = o.kind ? o.kind(id) : null, ws = T.words[id] || [], rs = relLines(id);
+      inner.appendChild(fitPic(wholePic(pic(id), 'fs-lpic'), W, H));
+      inner.insertAdjacentHTML('beforeend', '<p class="fs-lname">' + esc(name(id)) + '</p>' +
+        (T.src[id] === 'own' ? '<p class="small">Brought in by you</p>' : mk || kind ? '<p class="small">' + esc([mk, kind && up1(kind)].filter(Boolean).join(' · ')) + '</p>' : '') +
+        (ws.length ? '<p class="fs-lwords"><span>In others’ words:</span> ' + esc(ws.join(', ')) + '</p>' : '') +
+        (rs.length ? '<p class="fs-lsaid">You said: ' + esc(rs.join('; ')) + '.</p>' : ''));
+      lookEl.textContent = '';
+      lookEl.appendChild(inner);
+      lookEl.style.top = stage.offsetTop + 'px'; lookEl.style.minHeight = stage.offsetHeight + 'px';
+      lookEl.hidden = false;
+      tell('Look: ' + thingWords(id));
+    }
+    function closeLook() { lookEl.hidden = true; lookEl.textContent = ''; }
+
+    // ---------------------------------------------------------- How do they go? (the say panel)
+    const askH = () => (free || box.clientHeight >= 720 ? 110 : 88);
+    function startSay(i, j) {   // place i carried onto place j
+      const x = slots()[i], y = slots()[j];
+      if (!x || !y || i === j) return;
+      if (sel != null && sel !== i) putDown(true);
+      const from = [i, j].map((k) => cells[k].firstChild.getBoundingClientRect());
+      sel = i; aim(null);
+      cells[i].classList.remove('is-lift', 'is-carry');
+      cells[i].classList.add('is-home');
+      pose(cells[i].firstChild, 0, 0, 1);
+      openAsk(x, y, null, i, j, from);
+    }
+    function openAsk(x, y, back, i, j, from) {
+      ask = { x, y, back, i, j, s: 0, typing: false, full: false };
+      saying = true; clockSync(); hintOff(); closeLook();
+      setPhase('saying');
+      box.classList.add('fs-saying');
+      grid.inert = true;
+      if ($('.fp-boosts')) $('.fp-boosts').inert = true;
+      askEl.style.top = (free ? stage.offsetTop : $('.fs-say').offsetTop) + 'px';
+      askEl.hidden = false;
+      const q = back ? 'You said: ' + low1(said(back.s, back.w)) + ' And now?' : 'How do they go?';
+      askEl.setAttribute('aria-label', q + ' ' + name(x) + ' and ' + name(y) + '.');
+      askEl.innerHTML = '<div class="fs-askin"><div class="fs-sayrow"></div><p class="fs-names">' + esc(name(x)) + ' · ' + (back ? 'and' : 'onto') + ' · ' + esc(name(y)) + '</p>' +
+        '<div class="fs-dip fs-dipask"></div><h3 class="fs-q">' + esc(q) + '</h3>' +
+        '<div class="fs-two"><button type="button" class="fs-sbtn" data-s="1" aria-pressed="false">Alike</button><button type="button" class="fs-sbtn" data-s="-1" aria-pressed="false">Unlike</button></div>' +
+        '<div class="fs-what"></div></div>';
+      const dip = $('.fs-dipask'), a = wholePic(pic(x), 'fs-dpic'), b = wholePic(pic(y), 'fs-dpic');
+      dip.append(a, b);
+      fitPair(a, b, askH(), Math.min(480, dip.clientWidth || 340));
+      renderWhat();
+      grow();
+      askEl.focus({ preventScroll: true });
+      rise(from);
+    }
+    function grow() { if (free) box.style.minHeight = askEl.offsetTop + askEl.scrollHeight + 16 + 'px'; }
+    function rise(from) {   // the two rise from their places; reduced motion: they appear in place
+      const tos = Array.from(askEl.querySelectorAll('.fs-dipask > *')), rest = Array.from(askEl.querySelectorAll('.fs-askin > :not(.fs-dipask)'));
+      if (reduce || !from) { askEl.style.opacity = 0; loop.run(150, (t) => { askEl.style.opacity = t; }).then(() => { askEl.style.opacity = ''; }); return; }
+      const to = tos.map((e) => e.getBoundingClientRect());
+      loop.run(240, (t) => {
+        const k = ease.out(t);
+        tos.forEach((e, n) => {
+          const f = from[n], r = to[n], s = f.width / (r.width || 1);
+          e.style.transformOrigin = '0 0';
+          e.style.transform = 'translate3d(' + (f.left - r.left) * (1 - k) + 'px,' + (f.top - r.top) * (1 - k) + 'px,0) scale(' + (s + (1 - s) * k) + ')';
+        });
+        rest.forEach((e) => { e.style.opacity = k; });
+      }).then(() => { tos.forEach((e) => { e.style.transform = ''; }); rest.forEach((e) => { e.style.opacity = ''; }); });
+    }
+    function renderWhat() {   // the say row, and "in what" once Alike or Unlike is chosen
+      const a = ask;
+      $('.fs-sayrow').innerHTML = a.s ? '<span>Tap one, or</span><button type="button" class="btn btn-quiet fs-goon" data-goon>Go on</button>'
+        : '<button type="button" class="btn btn-quiet" data-putback>Put back</button>';
+      askEl.querySelectorAll('[data-s]').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.s === a.s)));
+      const what = $('.fs-what');
+      if (!a.s) { what.innerHTML = ''; return; }
+      const c = RL.chips(T, free ? mine : game, a.x, a.y, a.s);
+      const chip = (k, v, text, cls) => '<button type="button" class="fs-chip' + (cls ? ' ' + cls : '') + '" data-' + k + '="' + esc(v) + '">' + esc(text) + '</button>';
+      what.innerHTML = '<h3 class="fs-q2">' + (a.s > 0 ? 'Alike' : 'Unlike') + ' in what?</h3>' +
+        (c.mine.length ? '<div class="fs-chips" role="group" aria-label="Your words"><span class="fs-lab" aria-hidden="true">Your words</span>' +
+          c.mine.map((w) => chip('w', w, RL.wordOf(T.vocab, w), 'fs-mine')).join('') + '</div>' : '') +
+        '<div class="fs-chips" role="group" aria-label="Aspects">' + c.aspects.map((w) => chip('w', w, up1(ASPECTS[w - 1]), '')).join('') + '</div>' +
+        '<div class="fs-chips">' + (a.typing ? '<form class="fs-wordf"><input class="fs-word" type="text" maxlength="24" enterkeyhint="done" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Your word"></form>'
+          : '<button type="button" class="fs-chip fs-add" data-add>+ Your word</button>') + '</div>' +
+        (a.full ? '<p class="fs-full" role="status">' + esc(SET_FULL) + '</p>' : '') +
+        (c.others.length ? '<div class="fs-chips" role="group" aria-label="In others’ words"><span class="fs-lab" aria-hidden="true">In others’ words</span>' +
+          c.others.map((t) => chip('o', t, t, 'fs-drawn')).join('') + '</div>' : '');
+      grow();
+    }
+    function choose(s) {
+      ask.s = s;
+      snd.play('match', s > 0 ? 3 : 1);
+      renderWhat();
+    }
+    function addWordThen(text) {
+      const w = o.onWord ? o.onWord(text) : null;
+      if (w == null) { ask.full = true; ask.typing = false; renderWhat(); return; }
+      commit(ask.s, w);
+    }
+    askEl.addEventListener('click', (e) => {
+      if (!ask) return;
+      if (phase === 'answer') { if (!e.target.closest('[data-note]')) goOn(); return; }
+      if (phase !== 'saying') return;
+      const t = e.target.closest('button, input, form, .fs-dip');
+      if (!t) {   // a tap outside the two: Put back, or Go on once Alike or Unlike is said
+        if (ask.s) commit(ask.s, 0); else putBack();
+        return;
+      }
+      if (t.matches('[data-putback]')) putBack();
+      else if (t.matches('[data-goon]')) commit(ask.s, 0);
+      else if (t.matches('[data-s]')) choose(+t.dataset.s);
+      else if (t.matches('[data-w]')) commit(ask.s, +t.dataset.w);
+      else if (t.matches('[data-o]')) addWordThen(t.dataset.o);
+      else if (t.matches('[data-add]')) { ask.typing = true; renderWhat(); $('.fs-word').focus(); }
+    });
+    askEl.addEventListener('submit', (e) => { e.preventDefault(); const f = $('.fs-word'); if (f && f.value.trim()) addWordThen(f.value); });
+    askEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && e.target.closest('input')) { e.preventDefault(); e.stopPropagation(); putBack(); }
+      else if (phase === 'answer' && (e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')) { e.preventDefault(); goOn(); }
+    });
+    function closeAsk() {
+      askEl.hidden = true; askEl.textContent = ''; box.classList.remove('fs-saying'); box.style.minHeight = '';
+      grid.inert = false;
+      if ($('.fp-boosts')) $('.fp-boosts').inert = false;
+    }
+    function putBack() {
+      if (!ask || phase !== 'saying') return;
+      const back = ask.back, refocus = askEl.contains(document.activeElement);
+      ask = null; closeAsk();
+      saying = false; sel != null && cells[sel].classList.remove('is-home');
+      putDown(true); setPhase('idle');
+      if (refocus) focusCell(fi != null ? fi : 0);
+      tell(back ? 'Not said again. Nothing spent.' : 'Put back. Nothing spent.');
+      clockSync(); idleHint();
+    }
+
+    // ---------------------------------------------------------- the move said, then the other eyes
+    let goR = null, goT = 0;
+    function goOn() { clearTimeout(goT); const r = goR; goR = null; if (r) r(); }
+    async function commit(s, w) {
+      const a = ask;
+      if (!a || phase !== 'saying' || !(s === 1 || s === -1)) return;
+      setPhase('answer');
+      let ans, arr = null;
+      if (free) { ans = RL.answer(T, mine, a.x, a.y, s, w); mine.made.push({ x: a.x, y: a.y, s, w, kind: ans.kind, line: ans.line }); }
+      else { const r = RL.say(game, T, a.x, a.y, s, w); ans = r.answer; arr = r.arrival; game = r.game; }
+      if (a.back) { held.turn--; if (o.onBoost) o.onBoost('turn'); }
+      if (o.onRelate) o.onRelate({ x: a.x, y: a.y, s, w });
+      coachOff();
+      if (ans.kind === 'turn') { snd.play('special'); buzz('special'); } else buzz('match');
+      const smaller = !free && !a.back && !arr && !saidSmaller && game.state === 'play';
+      if (smaller) saidSmaller = true;
+      last = { x: a.x, y: a.y, s, w, ans, arr, smaller, back: !!a.back };
+      if (arr) boardPic(arr.id);   // known now: its picture loads while the answer shows
+      if (!free && game.state === 'done') { ended = true; result = resultNow(); info = o.onEnd ? o.onEnd(result) : null; }
+      showAnswer(last, false);
+      await new Promise((r) => { goR = r; if (ans.kind !== 'turn') goT = setTimeout(goOn, ANSWER_MS); });   // a turn waits: Note why is there
+      await land(last, a);
+    }
+    function showAnswer(m, again) {
+      const turn = m.ans.kind === 'turn';
+      askEl.setAttribute('aria-label', said(m.s, m.w) + ' ' + name(m.x) + ' and ' + name(m.y) + '.');
+      askEl.innerHTML = '<div class="fs-askin fs-answer"><div class="fs-sayrow">' + (again || free || m.back ? '' : esc(name(m.x)) + ' is set. ' + esc(name(m.y)) + ' stays.') + '</div>' +
+        '<div class="fs-dip fs-dipask"></div><p class="fs-said">' + esc(said(m.s, m.w)) + '</p>' +
+        '<div class="fs-eye' + (turn ? ' is-turn' : '') + '"><b>' + (turn ? 'A turn' : 'Other eyes') + '</b><p>' + esc(m.ans.line) + '</p>' +
+        (turn && o.onNote ? '<button type="button" class="btn btn-quiet" data-note>Note why</button>' : '') + '</div>' +
+        (m.arr && !again ? '<div class="fs-arrive"><span class="fs-apic"></span><p><b>In: ' + esc(dot(name(m.arr.id))) + '</b>' + (m.arr.line ? ' ' + esc(m.arr.line) : '') + '</p></div>'
+          : m.smaller && !again ? '<p class="fs-arrive">' + esc(SET_SMALLER) + '</p>' : '') +
+        '<p class="fs-tapon">Tap to go on</p></div>';
+      const dip = $('.fs-dipask'), a = wholePic(pic(m.x), 'fs-dpic'), b = wholePic(pic(m.y), 'fs-dpic');
+      dip.append(a, b);
+      fitPair(a, b, free ? 110 : askH() + 22, Math.min(480, dip.clientWidth || 340));
+      if (m.arr && !again) $('.fs-apic').appendChild(fitPic(wholePic(pic(m.arr.id), 'fs-dpic'), 72, 48));
+      const nb = $('[data-note]');
+      if (nb) nb.addEventListener('click', () => o.onNote({ ids: [m.x, m.y] }, nb));
+      grow();
+      askEl.focus({ preventScroll: true });
+      if (reduce) { askEl.style.opacity = 0; loop.run(150, (t) => { askEl.style.opacity = t; }).then(() => { askEl.style.opacity = ''; }); }
+    }
+    // The answer closes: the carried one shrinks into the last pairing, and what arrives falls into its place.
+    async function land(m, a) {
+      setPhase('moving'); busy = true;
+      const xEl = $('.fs-dipask > *'), from = xEl && xEl.getBoundingClientRect(), refocus = askEl.contains(document.activeElement);
+      ask = null; closeAsk();
+      if (sel != null) cells[sel].classList.remove('is-home');
+      sel = null;
+      if (!free && !m.back) {
+        const old = cells[a.i].firstChild;
+        if (reduce && old) await loop.run(150, (t) => { old.style.opacity = 1 - t; });
+        draw(a.i, null);
+        lastDraw();
+        if (!reduce && from) await flyTo(xEl, from, $('.fs-last'));
+        draw(a.i);
+        if (m.arr) await arrive(a.i, a.j);
+      } else lastDraw();
+      busy = false; saying = false;
+      status();
+      if (!free) sayLine(said(m.s, m.w) + ' ' + m.ans.line, m.arr ? m.arr.line : m.smaller ? SET_SMALLER : '');
+      const words = [said(m.s, m.w), m.ans.line];
+      if (!free && !m.back) words.push(name(m.y) + ' stays.');
+      if (m.arr) words.push(m.arr.line ? 'In: ' + name(m.arr.id) + ', ' + low1(m.arr.line) : 'In: ' + dot(name(m.arr.id)));
+      else if (m.smaller) words.push(SET_SMALLER);
+      if (!free) words.push(toGo() + ' to go.');
+      tell(words.join(' '));
+      if (refocus) focusCell(!free && !m.back && slots()[a.j] ? a.j : fi != null ? fi : 0);
+      afterMove();
+    }
+    function afterMove() {
+      if (!free && game.state === 'done') {
+        if (!ended) { ended = true; result = resultNow(); info = o.onEnd ? o.onEnd(result) : null; }
+        finish();
+        return;
+      }
+      setPhase('idle'); clockSync(); idleHint();
+    }
+    function flyTo(src, from, to) {   // a copy of a picture from one place on the page to another, shrinking
+      if (!to || to.hidden) return Promise.resolve();
+      const b = box.getBoundingClientRect(), t = to.getBoundingClientRect(), e = src.cloneNode(false);
+      e.className = 'fs-fly';
+      Object.assign(e.style, { left: from.left - b.left + box.scrollLeft + 'px', top: from.top - b.top + box.scrollTop + 'px', width: from.width + 'px', height: from.height + 'px', transform: '' });
+      box.appendChild(e);
+      const dx = t.left - from.left, dy = t.top - from.top, s = Math.min(t.width / 2, t.height * (src._r || 1)) / from.width;
+      return loop.run(260, (k) => { const q = ease.out(k); e.style.transform = 'translate3d(' + dx * q + 'px,' + dy * q + 'px,0) scale(' + (1 + (s - 1) * q) + ')'; e.style.opacity = 1 - 0.6 * q; }).then(() => e.remove());
+    }
+    function arrive(i, j) {   // an arrival falls into its place, with a thin thread from the picture that stayed
+      const e = cells[i] && cells[i].firstChild;
+      snd.play('paint');
+      if (!e) return Promise.resolve();
+      e.style.opacity = 0;
+      if (reduce) return loop.run(150, (t) => { e.style.opacity = t; }).then(() => { e.style.opacity = ''; });
+      let th = null, rot = '';
+      if (j != null) {
+        const x0 = px(j) + pw / 2, y0 = py(j) + ph / 2, x1 = px(i) + pw / 2, y1 = py(i) + ph / 2;
+        th = h('i', 'fs-thread');
+        Object.assign(th.style, { left: x0 + 'px', top: y0 + 'px', width: Math.hypot(x1 - x0, y1 - y0) + 'px' });
+        rot = 'rotate(' + Math.atan2(y1 - y0, x1 - x0) + 'rad)';
+        th.style.transform = rot + ' scaleX(0)';
+        over.appendChild(th);
+      }
+      return loop.run(320, (t) => {
+        if (th) th.style.transform = rot + ' scaleX(' + ease.out(Math.min(1, t * 1.6)) + ')';
+        const k = Math.max(0, (t - 0.25) / 0.75);
+        e.style.opacity = Math.min(1, k * 1.5);
+        e.style.transform = 'translate3d(0,' + (-24 * (1 - ease.back(k))) + 'px,0)';
+      }).then(() => {
+        e.style.opacity = ''; e.style.transform = '';
+        if (th) loop.run(300, (t) => { th.style.opacity = 1 - t; }).then(() => th.remove());
+      });
+    }
+    // The last pairing, again (the status's diptych): its answer, until a tap
+    $('.fs-last') && $('.fs-last').addEventListener('click', async () => {
+      if (!last || !canTouch()) return;
+      putDown(true); disarm();
+      ask = { x: last.x, y: last.y };
+      saying = true; clockSync(); setPhase('answer');
+      box.classList.add('fs-saying'); grid.inert = true; $('.fp-boosts').inert = true;
+      askEl.style.top = $('.fs-say').offsetTop + 'px'; askEl.hidden = false;
+      showAnswer(last, true);
+      await new Promise((r) => { goR = r; });
+      ask = null; closeAsk(); saying = false;
+      $('.fs-last').focus({ preventScroll: true });
+      setPhase('idle'); clockSync(); idleHint();
+    });
+
+    // ---------------------------------------------------------- hints and the coach: a line only, nothing leans
+    let hintT = 0;
+    function hintOff() { clearTimeout(hintT); hintT = 0; }
+    function idleHint() { hintOff(); if (set.hints && started && !ended && !free && phase === 'idle') hintT = setTimeout(() => showHint(false), HINT_MS); }
+    function showHint(manual) { if (ended || free || !started) return; sayShow(SET_HINT, '', 5000); if (manual) tell(SET_HINT); }
+    let coachEl = null;
+    function coachOn() {
+      if (!lv.coach || free) return;
+      coachEl = h('div', 'fs-coach');
+      over.appendChild(coachEl);
+      sayLine(lv.coach, '');
+      tell(lv.coach);
+      if (o.n !== 1) return;
+      const s = slots(), a = s.findIndex(Boolean), b = s.findIndex((id, k) => id && k > a);
+      if (b < 0) return;   // level 1: the ghost hand carries the first place onto the second, the gesture only
+      const hand = h('i', reduce ? 'fp-arrow fs-ghost' : 'fs-hand fs-ghost');
+      coachEl.appendChild(hand);
+      const x0 = px(a) + pw / 2, y0 = py(a) + ph / 2, x1 = px(b) + pw / 2, y1 = py(b) + ph / 2;
+      if (reduce) {
+        hand.textContent = Math.abs(x1 - x0) > Math.abs(y1 - y0) ? (x1 > x0 ? '→' : '←') : (y1 > y0 ? '↓' : '↑');
+        hand.style.transform = 'translate3d(' + (x0 + x1) / 2 + 'px,' + (y0 + y1) / 2 + 'px,0) translate(-50%,-50%)';
+        return;
+      }
+      const cycle = () => coachEl && loop.run(1600, (t) => {
+        const k = t < 0.15 ? 0 : t > 0.7 ? 1 : ease.out((t - 0.15) / 0.55);
+        hand.style.transform = 'translate3d(' + (x0 + (x1 - x0) * k) + 'px,' + (y0 + (y1 - y0) * k) + 'px,0) scale(' + (t < 0.15 ? 1.15 - t : 1) + ')';
+        hand.style.opacity = t > 0.82 ? 1 - (t - 0.82) / 0.18 : 1;
+      }).then(cycle);
+      cycle();
+    }
+    function coachOff() { if (coachEl) { coachEl.remove(); coachEl = null; sayLine('', ''); } }
+
+    function toggleSound() {
+      set.sound = !set.sound;
+      $('.fp-snd').setAttribute('aria-pressed', set.sound);
+      if (set.sound) snd.wake(); else snd.pause();
+      tell(set.sound ? 'Sound on.' : 'Sound off.');
+      if (o.onOpts) o.onOpts(optsNow());
+    }
+    if (!free) {
+      $('.fp-snd').addEventListener('click', toggleSound);
+      $('.fp-back').addEventListener('click', () => {   // every pairing is already saved; leaving midway records an unfinished play
+        if (started && !ended) { ended = true; goOn(); clockSync(); result = resultNow(); if (o.onEnd) o.onEnd(result); }
+        if (o.onMap) o.onMap();
+      });
+    }
+
+    // ---------------------------------------------------------- the level card
+    let ready = Promise.resolve();
+    function decode() {   // the board's pictures decode before Play
+      const all = slots().filter(Boolean).map(boardPic).filter((e) => e.decode).map((e) => e.decode().catch(() => {}));
+      ready = Promise.race([Promise.all(all), new Promise((r) => setTimeout(r, 2500))]);
+    }
+    function levelCard() {
+      const A = MX.area(lv.k), ways = RL.leads(T, o.n);
+      const count = () => '<b class="fp-big">' + (slots().filter(Boolean).length + game.pile) + '</b> of your things · <b class="fp-big">' + game.moves + '</b> moves · one stays.';
+      const d = openSheet(box, 'Level ' + o.n,
+        '<p class="fs-area">' + esc(A.name) + ' · ' + esc(A.line) + '</p>' +
+        (ways.length > 1 ? '<section class="fp-sec"><h3 id="fs-from">Start from</h3><ul class="fs-ways" role="group" aria-labelledby="fs-from">' + ways.map((w) =>
+          '<li><button type="button" class="fs-way" data-lead="' + esc(w.id) + '" aria-pressed="' + (w.id === game.lead) + '"><span class="fs-wpic"></span><b>' + esc(name(w.id)) + '</b><span>' + esc(SET_WHY[w.why] || '') + '</span></button></li>').join('') + '</ul></section>' : '') +
+        '<p>Carry one picture onto another, then say how they go. The one you carry is set; the other stays. Every pairing counts.</p>' +
+        '<p class="fs-count">' + count() + '</p>' +
+        (lv.coach ? '<p class="fs-coachline">' + esc(lv.coach) + '</p>' : '') +
+        (o.built ? '<p class="fp-builtline">Your building: ' + esc(o.built.name || 'a plain house') + ', ' + storeys(o.built.storeys) + '.' +
+          (o.built.secs > 0 ? ' In time: best ' + mss(o.built.secs) + '.' : '') + '</p>' : '') +
+        '<p class="small">Boosters: Pass ' + held.pass + ' · Turn ' + held.turn + ' · Five more ' + held.more + '</p>' +
+        '<button type="button" class="switch" role="switch" aria-checked="' + set.hints + '" data-hints><span><b>Hints</b><br><span class="small">After ten seconds, a line. Nothing leans.</span></span><span class="track" aria-hidden="true"></span></button>' +
+        '<fieldset class="fieldset-seg fp-clockset"><legend><b>Clock</b></legend><div class="seg">' + PACES.map(([v, w]) =>
+          '<label' + (pace === v ? ' class="on"' : '') + '><input type="radio" name="fp-clock" value="' + v + '"' + (pace === v ? ' checked' : '') + '>' + w + '</label>').join('') +
+        '</div><p class="small fp-clockline">' + esc(clockLine()) + '</p></fieldset>' +
+        '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-play data-autofocus>Play</button></div>',
+        () => { if (o.onMap) o.onMap(); });
+      d.querySelector('.sheet-body').scrollTop = 0;   // Play has the focus; the card opens at its top
+      d.querySelectorAll('.fs-way').forEach((b) => b.querySelector('.fs-wpic').appendChild(fitPic(wholePic(pic(b.dataset.lead), 'fs-dpic'), 96, 64)));
+      d.querySelectorAll('.fs-way').forEach((b) => b.addEventListener('click', () => {   // another way in: dealt again around it; nothing is saved
+        game = RL.newGame(lv, T, o.seed, b.dataset.lead); moves0 = game.moves;
+        d.querySelectorAll('.fs-way').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        d.querySelector('.fs-count').innerHTML = count();
+        for (let i = 0; i < 6; i++) draw(i);
+        status(); decode(); clockDom();
+        tell('Starting from ' + dot(name(b.dataset.lead)));
+      }));
+      d.querySelector('[data-hints]').addEventListener('click', (e) => {
+        set.hints = !set.hints;
+        e.currentTarget.setAttribute('aria-checked', set.hints);
+        if (o.onOpts) o.onOpts(optsNow());
+      });
+      d.querySelector('.fp-clockset').addEventListener('change', (e) => {
+        pace = +e.target.value; paceChosen = true;
+        d.querySelectorAll('.fp-clockset label').forEach((l) => l.classList.toggle('on', l.contains(e.target)));
+        d.querySelector('.fp-clockline').textContent = clockLine();
+        clockDom(); boosts();
+        if (o.onOpts) o.onOpts(optsNow());
+      });
+      d.querySelector('[data-play]').addEventListener('click', async (e) => {
+        const byKey = !e.detail;
+        snd.wake();
+        await ready;
+        d.done();
+        started = true;
+        setPhase('idle'); status(); clockSync();
+        const first = slots().findIndex(Boolean);
+        focusCell(first >= 0 ? first : 0, !byKey);
+        coachOn();
+        idleHint();
+      });
+    }
+
+    // ---------------------------------------------------------- the level's end
+    async function finish() {
+      setPhase('end'); hintOff(); coachOff(); clockSync();
+      const k = slots().findIndex(Boolean);
+      if (k >= 0) cells[k].classList.add('is-stay');
+      snd.play('win', 0); buzz('win');
+      await wait(reduce ? 200 : 700);
+      endSheet();
+    }
+    function endSheet() {
+      const r = result, rec = info, saga = rec && rec.saga, earned = (rec && rec.earned) || {};
+      const got = [['pass', 'a Pass'], ['turn', 'a Turn'], ['more', 'Five more']].filter(([k]) => earned[k] > 0).map(([, w]) => w);
+      const clockEnd = !r.clock || !rec ? null : rec.inTime ? 'In time: ' + mss(r.clock - r.secs) + ' to spare. Your building flies a flag.'
+        : mss(r.secs) + '. The clock gave ' + mss(r.clock) + '. Race it again.';
+      const ways = rec && rec.build && Array.isArray(rec.build.ways) ? rec.build.ways : null;
+      const tall = (wi) => (rec.build.storeys && rec.build.storeys[wi]) || 1, flag = !!(saga && saga.time && saga.time[o.n - 1] > 0);
+      const k = Math.floor((o.n - 1) / 5), A = MX.area(k), An = MX.area(k + 1);
+      const builtText = (wi) => 'Built: ' + (ways[wi] ? name(ways[wi]) : 'a plain house') + ', ' + storeys(tall(wi)) + (flag ? ', flying a flag' : '') + '.';
+      const builtPic = (id) => (id ? fitPic(wholePic(pic(id), 'fs-dpic'), 64, 48) : h('span', null, miniTile({ hex: MX.TOKENS[k % 6].hex, shape: 'square' }, null, 44)));
+      const made = r.made, others = r.others, uid = 'fs' + Math.random().toString(36).slice(2, 7);
+      let wi = 0;
+      tell('Level ' + o.n + ' done. ' + (r.stayed ? name(r.stayed) + ' stayed. ' : '') + plural(made.length, 'pairing') + ' made.' + (clockEnd ? ' ' + clockEnd : ''));
+      const d = openSheet(box, 'Level ' + o.n + ' done.',
+        (clockEnd ? '<p class="fp-endclock">' + esc(clockEnd) + '</p>' : '') +
+        (got.length ? '<p class="fp-earned">You earned ' + esc(got.length > 1 ? got.slice(0, -1).join(', ') + ' and ' + got[got.length - 1] : got[0]) + '.</p>' : '') +
+        (r.stayed ? '<section class="fp-sec"><h3>What stayed</h3><div class="fs-stay"><span class="fs-spic"></span><p><b>' + esc(dot(name(r.stayed))) + '</b> You never carried it: everything else was set beside it.</p></div></section>' : '') +
+        (ways ? '<section class="fp-sec"><h3>Your kingdom</h3>' +
+          (rec.first && o.n % 5 === 0 ? '<p class="fp-earned">' + esc(A.name) + ', built.</p><p>A new area: ' + esc(An.name) + '. ' + esc(An.line) + '</p>' : '') +
+          '<div class="fp-built"><span class="fp-bpic"></span><p class="fp-btext" aria-live="polite">' + esc(builtText(0)) + '</p></div>' +
+          '<div class="actions">' + (ways.length > 1 ? '<button type="button" class="btn btn-quiet" data-way>Another way <span class="fp-wayn">1 of ' + ways.length + '</span></button>' : '') +
+          (o.onKingdom ? '<button type="button" class="btn btn-iris" data-kingdom>See it in your kingdom</button>' : '') + '</div></section>' : '') +
+        (made.length ? '<section class="fp-sec"><h3>What you made · ' + made.length + '</h3><ul class="fs-made">' + made.map((m, i) =>
+          '<li><span class="fs-dip" data-m="' + i + '"></span><div class="fs-mtext"><p class="fs-mline">' + esc(said(m.s, m.w)) + '</p>' +
+          '<button type="button" class="fs-tag' + (m.kind === 'turn' ? ' is-turn' : '') + '" aria-expanded="false" aria-controls="' + uid + '-' + i + '">' + esc(SET_TAG[m.kind] || 'Other eyes') + '</button>' +
+          '<p class="fs-eyeline" id="' + uid + '-' + i + '" hidden>' + esc(m.line) + '</p><div class="fs-macts">' +
+          '<button type="button" class="btn btn-quiet fp-heart" data-h="' + i + '" aria-pressed="false">' + SVG_HEART + '<span>Keep</span></button>' +
+          (m.kind === 'turn' && o.onNote ? '<button type="button" class="btn btn-quiet" data-note="' + i + '">Note why</button>' : '') + '</div></div></li>').join('') + '</ul></section>' : '') +
+        (others.length ? '<section class="fp-sec"><h3>Other eyes</h3><p class="small">Someone else put these together.</p><ul class="fs-made fs-others">' + others.map((x, i) =>
+          '<li><span class="fs-dip" data-oe="' + i + '"></span><p class="fs-oline">' + esc(x.line) + '</p></li>').join('') + '</ul></section>' : '') +
+        (rec && rec.ask ? '<p class="fs-next">Your next five in Sort holds one that follows from what you made here.</p>' : '') +
+        (rec && rec.sortAFive ? '<p class="fs-next">Most of what you kept is already set. New things make new pairs.</p>' : '') +
+        '<div class="actions fp-endact"><button type="button" class="btn btn-keep btn-big" data-next data-autofocus>Next level</button>' +
+        '<button type="button" class="btn btn-big" data-again>Play again</button>' +
+        (rec && rec.sortAFive && o.onSort ? '<button type="button" class="btn btn-big" data-sort>Sort a five</button>' : '') +
+        '<button type="button" class="btn btn-big" data-board>Your board</button></div>',
+        () => { if (o.onMap) o.onMap(); });
+      const pair = (span, a, b) => { const x = wholePic(pic(a), 'fs-dpic'), y = wholePic(pic(b), 'fs-dpic'); span.append(x, y); fitPair(x, y, 64, 176); };
+      d.querySelectorAll('[data-m]').forEach((s) => pair(s, made[+s.dataset.m].x, made[+s.dataset.m].y));
+      d.querySelectorAll('[data-oe]').forEach((s) => pair(s, others[+s.dataset.oe].a, others[+s.dataset.oe].b));
+      const sp = d.querySelector('.fs-spic');
+      if (sp) sp.appendChild(fitPic(wholePic(pic(r.stayed), 'fs-dpic'), 150, 96));
+      if (ways) d.querySelector('.fp-bpic').appendChild(builtPic(ways[0]));
+      d.querySelectorAll('.fs-tag').forEach((b) => b.addEventListener('click', () => {   // the other eye's line, in place
+        const on = b.getAttribute('aria-expanded') !== 'true';
+        b.setAttribute('aria-expanded', String(on));
+        d.querySelector('#' + b.getAttribute('aria-controls')).hidden = !on;
+      }));
+      d.querySelectorAll('.fp-heart').forEach((b) => b.addEventListener('click', () => {
+        const on = b.getAttribute('aria-pressed') !== 'true', m = made[+b.dataset.h];
+        b.setAttribute('aria-pressed', String(on));
+        b.querySelector('span').textContent = on ? 'Kept' : 'Keep';
+        if (o.onHeart) o.onHeart({ ids: [m.x, m.y], on });
+      }));
+      d.querySelectorAll('[data-note]').forEach((b) => b.addEventListener('click', () => { const m = made[+b.dataset.note]; o.onNote({ ids: [m.x, m.y] }, b); }));
+      const way = d.querySelector('[data-way]');
+      if (way) way.addEventListener('click', () => {   // Irwin's three ways: whichever shows when the person leaves is the building
+        wi = (wi + 1) % ways.length;
+        const bp = d.querySelector('.fp-bpic');
+        bp.textContent = ''; bp.appendChild(builtPic(ways[wi]));
+        d.querySelector('.fp-btext').textContent = builtText(wi);
+        way.querySelector('.fp-wayn').textContent = (wi + 1) + ' of ' + ways.length;
+        if (o.onBuild) o.onBuild(ways[wi]);
+      });
+      const go = (sel_, fn) => { const b = d.querySelector(sel_); if (b) b.addEventListener('click', () => { d.done(); fn(); }); };
+      go('[data-kingdom]', () => o.onKingdom(o.n));
+      go('[data-next]', () => o.onNext && o.onNext(o.n + 1));
+      go('[data-again]', () => o.onNext && o.onNext(o.n));
+      go('[data-sort]', () => o.onSort());
+      go('[data-board]', () => o.onBoard && o.onBoard());
+    }
+
+    // ---------------------------------------------------------- go
+    clockDom(); build(); status(); decode();
+    box.dataset.phase = phase;
+    let lastW = stage.clientWidth, lastH = stage.clientHeight;
+    const ro = new ResizeObserver(() => {   // the stage: the screen turned, or the status grew a clock
+      if (stage.clientWidth === lastW && (free || stage.clientHeight === lastH)) return;
+      lastW = stage.clientWidth; lastH = stage.clientHeight;
+      requestAnimationFrame(() => { if (!drag && phase !== 'moving') { build(); if (sel != null && !reduce && cells[sel].firstChild) pose(cells[sel].firstChild, 0, 0, LIFT); } });
+    });
+    ro.observe(stage);
+    // Paused by the page hiding or by the app (Set left); the page showing again resumes only what it paused itself.
+    let appPaused = false;
+    const halt = () => { loop.pause(); snd.pause(); hintOff(); clk.paused = true; clockSync(); };
+    const resume = () => { loop.resume(); snd.resume(); idleHint(); clk.paused = false; clockSync(); };
+    const onVis = () => (document.hidden ? halt() : !appPaused && resume());
+    document.addEventListener('visibilitychange', onVis);
+    if (!free) levelCard();
+
+    return {
+      pause() { appPaused = true; halt(); },
+      resume() { appPaused = false; resume(); },
+      destroy() {
+        loop.stop(); snd.close(); hintOff(); clearTimeout(goT); clearTimeout(sayT); clearTimeout(clk.t); ro.disconnect();
+        document.removeEventListener('visibilitychange', onVis);
+        if (mq && mq.removeEventListener) mq.removeEventListener('change', onMq);
+        if (!free) document.querySelectorAll('dialog.fp-sheet').forEach((d) => { if (d.open) d.close(); d.remove(); });
+        box.remove();
+      },
+    };
+  }
+
+  root.FiveSPlay = Object.freeze({ version: 1, mount, mountMap, mountSet });
 })(typeof self !== 'undefined' ? self : globalThis);

@@ -7,11 +7,13 @@
  *
  * FiveSKingdom.mount(el, {saga, palette: {kept, passed, surfaces}, thing(id) -> {name, colours} | null,
  *   drawHome(canvas) -> Promise<{description}> | null, theme, reduce, focus, reveal,
- *   ties: [[n, m, s]], said: {k: text}, mist: {n, things: [{id, name, src}]} | null,
- *   onLevel(n), onBack(), onList(), onHome(), onLead(id)}) -> {update({saga, palette, theme, ties, said, mist}), destroy()}
- * Set, inside out (SPEC "Set, inside out"): ties are the person's relations between two levels' buildings (s 1 alike,
- * -1 unlike), drawn plot to plot; said is what they said most on an island, under its name; the mist is what they kept
- * and have not set beside anything yet, in the cloud over the next area, each a way into the next level.
+ *   storeys: [1..3], ties: [[n, m, s]], said: {k: text}, mist: {n, things: [{id, name, src}]} | null,
+ *   onLevel(n), onBack(), onList(), onHome(), onLead(id)}) -> {update({saga, palette, theme, storeys, ties, said, mist}), destroy()}
+ * Set, inside out (SPEC "Set, inside out"): storeys are each won level's building's height, from the relations its
+ * thing gathered (FiveSRelate.kingdom; without them, as v12, saga.stars); ties are the person's relations between two
+ * levels' buildings (s 1 alike, -1 unlike), drawn plot to plot; said is what they said most on an island, under its
+ * name; the mist is what they kept and have not set beside anything yet, in the cloud over the next area, each a way
+ * into the next level. No stars show: a won level is its building, and a flag when it was won in time.
  * Styles: play.css (under .fk). Browser only: window.FiveSKingdom (load after ground.js and match.js).
  */
 (function (root) {
@@ -27,7 +29,6 @@
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
-  const starText = (n) => '★★★'.slice(0, n) + '<i>' + '★★★'.slice(0, 3 - n) + '</i>';   // unearned ones dim: clearer than ☆ at 10 px
   const SVG_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m5.5-5.5L5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const SVG_MINUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   const SVG_PLUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
@@ -78,7 +79,7 @@
         if (i >= stars.length) break;
         const th = built[i] && o.thing ? o.thing(built[i]) : null;
         const c = (th && th.colours) || [];
-        houses.push({ plot: p, wall: c[0] || MX.TOKENS[k % 6].hex, trim: c[1], accent: c[2], storeys: clamp(stars[i] | 0, 1, 3), flag: time[i] > 0, name: th ? th.name : 'a plain house' });
+        houses.push({ plot: p, wall: c[0] || MX.TOKENS[k % 6].hex, trim: c[1], accent: c[2], storeys: clamp((o.storeys ? o.storeys[i] : stars[i]) | 0, 1, 3), flag: time[i] > 0, name: th ? th.name : 'a plain house' });
       }
       return { rand: MX.prng('area:' + k), size: 9, kept: pal.kept || [], passed: pal.passed || [], surfaces, theme: o.theme === 'dark' ? 'dark' : 'light', plots: 5, houses };
     }
@@ -123,13 +124,13 @@
           let up = 0;   // world px above LIFT, so pins never cover each other at the opening zoom
           for (const e of pins) if (Math.abs(x - e.x) * z0 < 40 && Math.abs(y - up - e.top) * z0 < 46) up = y - e.top + 46 / z0;
           pins.push({ x, top: y - up });
-          const done = n < next, isNext = n === next, s = done ? clamp(stars[i] | 0, 1, 3) : 0;
+          const done = n < next, isNext = n === next;
           const th = done && built[i] && o.thing ? o.thing(built[i]) : null;
-          const label = 'Level ' + n + ', ' + a.name + ', ' + (done ? s + ' of 3 stars' + (time[i] > 0 ? ', in time' : '') + '. Built: ' + (th ? th.name : 'a plain house') + '.' : isNext ? 'Next.' : 'Not yet.');
+          const label = 'Level ' + n + ', ' + a.name + (done ? (time[i] > 0 ? ', in time' : '') + '. Built: ' + (th ? th.name : 'a plain house') + '.' : isNext ? ', Next.' : ', Not yet.');
           nodes.push({ n, x, y: y - LIFT - up });
           lis += '<li class="fk-node ' + (done ? 'is-done' : isNext ? 'is-next' : 'is-not') + '" style="left:' + x + 'px;top:' + (y - LIFT - up) + 'px;--up:' + Math.round(up) + ';z-index:' + Math.round(y + 50000) + '">' +
             '<button type="button" data-n="' + n + '" aria-label="' + esc(label) + '"' + (done || isNext ? '' : ' aria-disabled="true"') + '><b>' + n + '</b>' +
-            (done ? '<span class="fk-st">' + starText(s) + '</span>' : isNext ? '<span>Next</span>' : '') + '</button></li>';
+            (isNext ? '<span>Next</span>' : '') + '</button></li>';
         });
       }
       // A cloud bank across the table over the next area, its words above the last area found; nothing beyond it.

@@ -10,7 +10,8 @@
  * p95 frame of at most 20 ms while panning with the CPU slowed 4x. Then reduced motion, nothing judged,
  * a new area found and the focus kept through a theme change; a short map (a phone on its side); Tab
  * panning to Your ground and the nodes at 3, 8 and 30 won; a mouse click on them in the foot's band or at
- * the map's edge; touch on the foot (a pinch, a drag, a tap) and three fingers; the title at 320.
+ * the map's edge; touch on the foot (a pinch, a drag, a tap) and three fingers; the title at 320. No stars on the
+ * pins or in the labels; Set, inside out (?inside=1): heights from opts.storeys, ties, the islands' lines, the mist.
  *   SHOTS   folder for screenshots (default <tmp>/5s-kingdom-shots)
  *   FONTS   optional folder holding css.css and the font files (named by md5 of url + "\n"), for true type in
  *           shots and in the title's check (without it the title is measured in a fallback font)
@@ -107,9 +108,12 @@ for (const mode of [{ w: 390, h: 844, touch: true }, { w: 1280, h: 800 }]) {
       assert.equal(await page.locator('.fk-play').textContent(), 'Play level 9');
       const labels = await page.locator('ol.fk-nodes[aria-label="Levels"] > li > button').evaluateAll((bs) => bs.map((b) => [b.dataset.n, b.getAttribute('aria-label'), b.getAttribute('aria-disabled')]));
       assert.deepEqual(labels.map((l) => +l[0]), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-      assert.match(labels[0][1], /^Level 1, Sort, 3 of 3 stars, in time\. Built: .+\.$/);
-      assert.match(labels[1][1], /^Level 2, Sort, 2 of 3 stars\. Built: .+\.$/);
-      assert.equal(labels[3][1], 'Level 4, Sort, 1 of 3 stars, in time. Built: a plain house.');
+      // No stars (the artist, 23 Oct 2026): a won level is its building, and its flag when won in time.
+      assert.match(labels[0][1], /^Level 1, Sort, in time\. Built: .+\.$/);
+      assert.match(labels[1][1], /^Level 2, Sort\. Built: .+\.$/);
+      assert.equal(labels[3][1], 'Level 4, Sort, in time. Built: a plain house.');
+      assert.doesNotMatch(await page.locator('.fk').textContent(), /★|stars?\b/i, 'no stars on the pins or in words');
+      assert.ok(labels.every((l) => !/star/i.test(l[1])), 'no stars in the labels');
       assert.equal(labels[8][1], 'Level 9, Split, Next.');
       assert.equal(labels[9][1], 'Level 10, Split, Not yet.');
       assert.equal(labels[9][2], 'true');
@@ -272,7 +276,7 @@ test('reduced motion: a move lands at once; nothing judged: no home island; a ne
   await page.locator('[data-n="11"]').focus();
   await page.evaluate(() => { const h = window.harness, s = h.saga; h.k.update({ theme: 'dark', saga: Object.assign({}, s, { stars: s.stars.concat(2), time: s.time.concat(0), built: s.built.concat(null) }) }); });
   assert.equal(await page.locator('.fk').getAttribute('data-theme'), 'dark');
-  assert.equal(await page.locator('[data-n="11"]').getAttribute('aria-label'), 'Level 11, Set, 2 of 3 stars. Built: a plain house.');
+  assert.equal(await page.locator('[data-n="11"]').getAttribute('aria-label'), 'Level 11, Set. Built: a plain house.');
   assert.equal(await page.locator('.fk-play').textContent(), 'Play level 12');
   assert.equal(await page.evaluate(() => document.activeElement.dataset.n), '11', 'a theme change keeps the focus on its node');
   // On the home label too; and with the focus panned out of view, the view stays where the person left it.
@@ -443,6 +447,44 @@ test('touch on the foot: a pinch with a finger on Play or Zoom zooms, a drag fro
   assert.ok(Math.abs(d2[2] / d1[2] - 1) < 0.01 && Math.abs(d2[0] - d1[0]) < 4 && Math.abs(d2[1] - d1[1]) < 4, 'one finger of three lifts, then a 1 px move: ' + d1 + ' to ' + d2);
   assert.deepEqual(errors, []);
   await ctx.close();
+});
+
+// Set, inside out (SPEC §7): what the person related grows the kingdom. Heights come from opts.storeys (the relations
+// each building's thing gathered), not from stars; ties arc plot to plot (solid alike, dotted unlike) and never to a level
+// not won; each island's line is in the person's words, on the map and in its canvas label; the mist over the next area
+// holds kept things not set yet, each a button into the next level around it. Without them the map is v12's (above).
+test('Set, inside out: storeys from relations, ties, the islands\' lines and the mist', async () => {
+  for (const mode of [{ w: 390, h: 844, touch: true }, { w: 1280, h: 800, dark: true }]) {
+    const { ctx, page, errors } = await open(mode, 'inside=1');
+    await drawn(page);
+    const h = await page.evaluate(() => ({ inside: window.harness.inside, stars: window.harness.saga.stars }));
+    // the islands drawn take their heights from storeys: Sort's five and Split's three won
+    await page.waitForFunction(() => window.harness.drawnSpecs.filter((s) => s.houses).length >= 2);
+    const heights = await page.evaluate(() => { const by = {}; for (const s of window.harness.drawnSpecs) if (s.houses && s.houses.length) by[s.houses.length === 5 ? 0 : 1] = s.houses.map((x) => x.storeys); return by; });
+    assert.deepEqual(heights[0], h.inside.storeys.slice(0, 5), 'Sort\'s buildings stand as storeys says');
+    assert.deepEqual(heights[1], h.inside.storeys.slice(5, 8), 'Split\'s too');
+    assert.notDeepEqual(heights[0], h.stars.slice(0, 5), 'and not as the stars');
+    // ties: two drawn (the third names level 20, not won), alike solid and unlike dotted, hidden from assistive tech
+    assert.equal(await page.locator('svg.fk-ties[aria-hidden="true"] path').count(), 2);
+    assert.deepEqual(await page.$$eval('svg.fk-ties path', (ps) => ps.map((p) => p.getAttribute('class'))), ['is-alike', 'is-unlike']);
+    // the islands' lines in the person's words, under the names and in the canvas labels
+    assert.deepEqual(await page.$$eval('.fk-aname em', (es) => es.map((e) => e.textContent)), ['Mostly alike in line', 'Mostly unlike: ‘a held breath’']);
+    await page.waitForSelector('.fk-isle.is-drawn canvas[aria-label^="Sort, levels 1 to 5. Mostly alike in line. "]');
+    // the mist: its words and two ways into level 9, labelled by the thing; a tap leads with it
+    assert.equal(await page.locator('.fk-mist span').textContent(), 'Not set yet: 2 of your things.');
+    const mist = await page.$$eval('.fk-mist button', (bs) => bs.map((b) => [b.dataset.lead, b.getAttribute('aria-label')]));
+    assert.deepEqual(mist.map((m) => m[0]), h.inside.mist.things.map((t) => t.id));
+    assert.deepEqual(mist.map((m) => m[1]), h.inside.mist.things.map((t) => 'Play level 9 around ' + t.name));
+    await page.locator('.fk-mist button').first().focus(); await settle(page);   // a focused control is panned into view
+    assert.equal(await clear(page, '.fk-mist button'), '');
+    await page.keyboard.press('Enter');
+    assert.deepEqual(await calls(page, 'lead'), [h.inside.mist.things[0].id]);
+    assert.deepEqual(await calls(page, 'level'), [], 'a way in from the mist is not a level button');
+    assert.doesNotMatch(await page.locator('.fk').textContent(), /★|stars?\b/i);
+    await shot(page, 'kingdom-inside-' + mode.w);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
 });
 
 test('the title reads in full at 320 px, the top bar no taller; one line at 375 and 390', async () => {

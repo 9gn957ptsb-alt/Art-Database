@@ -278,3 +278,128 @@
 .fk-foot > * { pointer-events: auto; touch-action: none; }   /* a finger on Play or Zoom pinches and drags the map too (kingdom.js) */
 .fk-play { flex: 0 1 320px; box-shadow: 0 6px 18px var(--shadow, rgba(40, 28, 70, 0.2)); }
 .fk-foot .iconbtn { background: var(--raised, #FFFFFF); box-shadow: 0 4px 12px var(--shadow, rgba(40, 28, 70, 0.2)); }
+
+/* ------------------------------------------------------------------ Set, inside out (.fp-set, play.js mountSet)
+   SPEC-set-inside-out §3, §4, §6, §13: six whole pictures on the app's paper, carried one onto another; the say
+   panel, the other eyes, the arrivals and the level end. No stars anywhere. Tokens only, so both themes hold. */
+.fp-set, .fp-sheet { --fs-turn-bg: #EADCFF; --fs-turn-ink: #5B1FA8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.fp-set, .fp-sheet) { --fs-turn-bg: #3A2266; --fs-turn-ink: #E2CCFF; } }
+:root[data-theme="dark"] :is(.fp-set, .fp-sheet) { --fs-turn-bg: #3A2266; --fs-turn-ink: #E2CCFF; }
+.fs-last { display: inline-flex; align-items: center; min-height: 44px; padding: 4px; border: 0; border-radius: 10px; background: var(--paper-2, #F1EEF6); cursor: pointer; }
+.fs-last[hidden] { display: none; }
+.fs-last:focus-visible, .fs-way:focus-visible, .fs-sbtn:focus-visible, .fs-chip:focus-visible, .fs-tag:focus-visible { outline: 2px solid var(--focus, #7350EE); outline-offset: 2px; }
+.fs-dip { display: flex; align-items: flex-end; justify-content: center; gap: 6px; }
+.fs-last .fs-dip { gap: 2px; }
+.fs-dpic { display: block; flex: none; border-radius: 6px; background: var(--paper-2, #F1EEF6); }
+.fp-set .fs-say { min-height: 40px; display: grid; align-content: center; gap: 1px; width: 100%; max-width: 520px; margin: 0 auto; text-align: center; font-weight: 500; color: var(--ink, #16131F); }
+.fs-say p { font-size: 13px; line-height: 1.38; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.fs-say:has(.fs-say2:not(:empty)) .fs-say1 { -webkit-line-clamp: 1; line-clamp: 1; }
+.fs-say p:empty { display: none; }
+.fs-say2 { color: var(--ink-2, #57516A); }
+.fp-boost[aria-disabled="true"] { opacity: 0.45; }
+
+/* the board: places of 175 x 110 at 390 (more when the screen is taller), each picture whole inside its place */
+.fs-stage { position: relative; flex: 1 1 0; min-height: 346px; width: 100%; display: flex; justify-content: center; align-items: flex-start; }
+@media (min-width: 600px) { .fs-stage { min-height: 228px; } }
+.fs-board { position: relative; flex: none; }
+.fs-places { position: absolute; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.fs-row { position: absolute; left: 0; width: 100%; }
+.fs-pl { position: absolute; top: 0; display: grid; place-items: center; margin: 0; padding: 0; border: 0; border-radius: 14px; background: transparent; color: inherit; font: inherit; cursor: grab; -webkit-tap-highlight-color: transparent; }
+.fs-pl:focus-visible { outline: 2px solid var(--focus, #7350EE); outline-offset: 2px; }
+.fs-pic { display: block; border-radius: 12px; background: var(--paper-2, #F1EEF6); box-shadow: 0 1px 2px rgba(22, 19, 31, 0.18); pointer-events: none; }
+.fs-pl.is-carry { z-index: 3; cursor: grabbing; }
+.fs-pl.is-lift > .fs-pic { box-shadow: 0 0 0 3px var(--paper, #FAF9FC), 0 0 0 5px var(--iris, #7350EE), 0 12px 26px rgba(22, 19, 31, 0.3); }
+.fs-pl.is-target > .fs-pic { box-shadow: 0 0 0 3px var(--paper, #FAF9FC), 0 0 0 6px var(--iris, #7350EE), 0 0 22px 4px rgba(115, 80, 238, 0.45); }
+.fs-pl.is-home::before { content: ""; position: absolute; inset: 0; border: 2px dashed var(--line-strong, #8C86A0); border-radius: 14px; }
+.fs-pl.is-gone { cursor: default; box-shadow: inset 0 0 0 1px var(--line, #E2DEEA); background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(140, 134, 160, 0.16) 8px 9px); }
+.fs-pl.is-keep { border: 2px dashed var(--line-strong, #8C86A0); color: var(--ink-2, #57516A); cursor: pointer; }
+.fs-keepin { display: grid; justify-items: center; gap: 6px; font: 600 14px/1.3 var(--font-body, system-ui, sans-serif); }
+.fs-keepin i { font: 600 24px/1 var(--font-body, system-ui, sans-serif); font-style: normal; color: var(--iris-ink, #5B3BD6); }
+.fs-pl.is-stay > .fs-pic { box-shadow: 0 0 0 3px var(--paper, #FAF9FC), 0 0 0 6px var(--ember-mark, #DE6A24), 0 0 26px 6px rgba(242, 138, 60, 0.35); }
+.fs-over { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.fs-thread { position: absolute; height: 2px; margin-top: -1px; border-radius: 1px; transform-origin: 0 50%; background: linear-gradient(90deg, rgba(115, 80, 238, 0), var(--iris, #7350EE)); }
+.fs-coach { position: absolute; inset: 0; }
+.fs-hand { position: absolute; left: 0; top: 0; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; background: rgba(22, 19, 31, 0.22); border: 2px solid rgba(255, 255, 255, 0.92); box-shadow: 0 0 0 2px var(--iris, #7350EE); }
+.fs-ghost.fp-arrow { color: var(--iris-ink, #5B3BD6); text-shadow: none; }
+
+/* How do they go? The two side by side over the board, which steps back to 14 % */
+.fp-set.fs-saying .fs-board, .fp-set.fs-saying .fp-boosts { opacity: 0.14; }
+.fp-set.fs-saying .fs-say { visibility: hidden; }
+.fs-ask { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 16px; background: color-mix(in srgb, var(--paper, #FAF9FC) 72%, transparent); }
+.fp-set:not([data-phase="idle"]) .fs-ghost { display: none; }
+.fs-free .fs-ask { bottom: auto; }
+.fs-ask:focus { outline: none; }
+.fs-askin { display: grid; justify-items: center; gap: 8px; width: 100%; max-width: 520px; margin: 0 auto; text-align: center; }
+.fs-sayrow { min-height: 40px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; font-size: 13px; line-height: 1.38; color: var(--ink-2, #57516A); }
+.fs-sayrow:empty { min-height: 8px; }
+.fs-names { font-size: 12.5px; line-height: 1.3; color: var(--ink-2, #57516A); overflow-wrap: anywhere; }
+.fs-dipask { width: 100%; min-height: 64px; }
+.fs-dipask .fs-dpic { border-radius: 10px; box-shadow: 0 1px 2px rgba(22, 19, 31, 0.18); }
+.fs-q, .fs-q2 { font: 600 15px/1.25 var(--font-body, system-ui, sans-serif); }
+.fs-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.fs-sbtn { min-height: 52px; border-radius: 16px; border: 1.5px solid var(--line-strong, #8C86A0); background: var(--raised, #FFFFFF); color: var(--ink, #16131F); font: 600 16px/1 var(--font-body, system-ui, sans-serif); cursor: pointer; }
+.fs-sbtn[aria-pressed="true"] { background: var(--iris, #7350EE); border-color: var(--iris, #7350EE); color: var(--glyph-on, #FFFFFF); }
+.fs-what { display: grid; justify-items: center; gap: 8px; width: 100%; }
+.fs-what:empty { display: none; }
+.fs-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.fs-lab { width: 100%; font: 500 11px/1 var(--font-mono, ui-monospace, monospace); letter-spacing: 0.02em; color: var(--ink-2, #57516A); }
+.fs-chip { position: relative; min-height: 32px; padding: 0 12px; border-radius: 16px; border: 1.5px solid var(--line-strong, #8C86A0); background: var(--raised, #FFFFFF); color: var(--ink, #16131F); font: 600 13px/1 var(--font-body, system-ui, sans-serif); cursor: pointer; }
+.fs-chip::after { content: ""; position: absolute; inset: -8px -4px; }   /* a 48 px hit area round a 32 px chip */
+.fs-chip.fs-mine { border-color: var(--iris, #7350EE); color: var(--iris-ink, #5B3BD6); }
+.fs-chip.fs-drawn { background: var(--iris-tint, #EEE8FE); border-color: var(--iris-tint, #EEE8FE); color: var(--iris-ink, #5B3BD6); }
+.fs-chip.fs-add { border-style: dashed; color: var(--ink-2, #57516A); }
+.fs-wordf { display: flex; justify-content: center; }
+.fs-word { width: min(240px, 100%); min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1.5px solid var(--iris, #7350EE); background: var(--raised, #FFFFFF); color: var(--ink, #16131F); font: 400 16px/1.2 var(--font-body, system-ui, sans-serif); }   /* 16 px: iOS does not zoom */
+.fs-word:focus-visible { outline: 2px solid var(--focus, #7350EE); outline-offset: 2px; }
+.fs-full { font-size: 13px; color: var(--keep-ink, #C2361A); }
+/* the answer: the person's words first, large; then one line from the other eyes */
+.fs-said { font: 700 20px/1.25 var(--font-display, system-ui, sans-serif); max-width: 360px; overflow-wrap: anywhere; }
+.fs-eye { display: grid; justify-items: start; gap: 5px; width: 100%; max-width: 380px; padding: 10px 12px; border-radius: 14px; background: var(--iris-tint, #EEE8FE); text-align: left; }
+.fs-eye b { font: 500 11px/1 var(--font-mono, ui-monospace, monospace); letter-spacing: 0.02em; color: var(--iris-ink, #5B3BD6); }
+.fs-eye p { font-size: 14px; line-height: 1.4; color: var(--ink, #16131F); }
+.fs-eye.is-turn { background: var(--fs-turn-bg); }
+.fs-eye.is-turn b { color: var(--fs-turn-ink); }
+.fs-arrive { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 380px; padding-top: 8px; border-top: 1px solid var(--line, #E2DEEA); text-align: left; font-size: 13px; line-height: 1.35; }
+.fs-apic .fs-dpic { box-shadow: 0 0 0 2px var(--paper, #FAF9FC), 0 0 0 4px var(--iris, #7350EE); }
+.fs-tapon { font-size: 13px; color: var(--ink-2, #57516A); }
+.fs-fly { position: absolute; z-index: 7; margin: 0; border-radius: 10px; transform-origin: 0 0; pointer-events: none; }
+/* Look: the picture large, its name and maker, others' words and what the person said of it */
+.fs-look { position: absolute; left: 0; right: 0; z-index: 8; display: grid; place-items: center; padding: 8px 16px; pointer-events: none; }
+.fs-look[hidden] { display: none; }
+.fs-lookin { display: grid; justify-items: center; gap: 6px; width: 100%; max-width: 520px; padding: 16px; border-radius: 20px; background: var(--raised, #FFFFFF); box-shadow: 0 12px 40px var(--shadow, rgba(40, 28, 70, 0.25)); text-align: center; }
+.fs-lpic { display: block; border-radius: 12px; background: var(--paper-2, #F1EEF6); }
+.fs-lname { font: 600 16px/1.3 var(--font-body, system-ui, sans-serif); }
+.fs-lwords, .fs-lsaid { font-size: 14px; line-height: 1.4; }
+.fs-lwords span { color: var(--iris-ink, #5B3BD6); font-weight: 600; }
+/* the first board (free mode): in Set's own view, above the mood board; its lines are the app's */
+.fp-set.fs-free { height: auto; padding: 0; overflow: visible; background: transparent; gap: 12px; }
+.fs-free .fs-stage { flex: none; min-height: 0; }
+.fs-lastrow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: var(--paper-2, #F1EEF6); }
+.fs-lastrow[hidden] { display: none; }
+.fs-lastrow p { font-size: 14px; line-height: 1.35; }
+/* the level card: the three ways in */
+.fs-area { color: var(--iris-ink, #5B3BD6); font-weight: 600; }
+.fs-ways { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fs-way { width: 100%; height: 100%; display: grid; justify-items: center; align-content: start; gap: 4px; padding: 8px 4px 10px; border: 1.5px solid var(--line, #E2DEEA); border-radius: 16px; background: var(--raised, #FFFFFF); color: var(--ink, #16131F); text-align: center; cursor: pointer; }
+.fs-way[aria-pressed="true"] { border-color: var(--iris, #7350EE); box-shadow: 0 0 0 2px var(--iris-tint, #EEE8FE); }
+.fs-wpic { display: grid; place-items: center; height: 64px; }
+.fs-way b { font: 600 12.5px/1.2 var(--font-body, system-ui, sans-serif); overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.fs-way > span:last-child { font-size: 11.5px; line-height: 1.25; color: var(--ink-2, #57516A); }
+.fs-count { font-size: 15px; }
+.fs-coachline { color: var(--ink-2, #57516A); font-style: italic; }
+/* the level end: what stayed, and every relation side by side with its line */
+.fs-stay { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.fs-stay p { font-size: 15px; line-height: 1.4; }
+.fs-made { list-style: none; padding: 0; display: grid; gap: 14px; }
+.fs-made li { display: grid; grid-template-columns: 188px minmax(0, 1fr); align-items: center; gap: 10px; }
+.fs-made .fs-dip { padding: 6px; gap: 4px; border-radius: 12px; background: var(--paper-2, #F1EEF6); }
+.fs-mtext { display: grid; justify-items: start; gap: 6px; min-width: 0; }
+.fs-mline, .fs-oline { font: 600 14px/1.35 var(--font-body, system-ui, sans-serif); overflow-wrap: anywhere; }
+.fs-oline { font-weight: 500; }
+.fs-tag { min-height: 32px; padding: 4px 10px; border: 0; border-radius: 13px; background: var(--iris-tint, #EEE8FE); color: var(--iris-ink, #5B3BD6); font: 600 12px/1.2 var(--font-body, system-ui, sans-serif); text-align: left; cursor: pointer; }
+.fs-tag::after { content: " ›"; }
+.fs-tag[aria-expanded="true"]::after { content: " ⌄"; }
+.fs-tag.is-turn { background: var(--fs-turn-bg); color: var(--fs-turn-ink); }
+.fs-eyeline { font-size: 13px; line-height: 1.38; color: var(--ink-2, #57516A); overflow-wrap: anywhere; }
+.fs-macts { display: flex; flex-wrap: wrap; gap: 6px; }
+.fs-next { color: var(--iris-ink, #5B3BD6); font-weight: 600; }

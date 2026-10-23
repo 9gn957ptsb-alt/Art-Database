@@ -8,7 +8,10 @@
      things among them), and the app's part played by the callbacks below. Served from 5s/:
      /test/play.html#map | #level=7 | #board, with ?assoc=1 (sample pairings and a painting),
      ?theme=dark|light, ?reduce=1, ?plays=N (the board's seed), ?stars=3,2,1 (levels won), ?time=41,0 (wins in time),
-     ?clock=0|5|10 (else as the app resolves it), ?empty=1 (nothing kept), ?deck=fixture. -->
+     ?clock=0|5|10 (else as the app resolves it), ?empty=1 (nothing kept), ?deck=fixture.
+     Set, inside out (FiveSPlay.mountSet, FiveSRelate.table of the same taste): ?set=1 with #level=N, or #first (the
+     first board under six: ?keep=K pictures kept), ?rel=N (N relations said before, oldest first), ?words=N (N words
+     of the person's own), ?boost=p,t,m (boosters held). -->
 <link rel="stylesheet" href="../src/app.css">
 <link rel="stylesheet" href="../src/play.css" data-fives="play">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Martian+Mono:wght@400;500&amp;family=Unbounded:wght@500;700&amp;display=swap">
@@ -23,6 +26,7 @@
 <div id="stage"></div>
 <script src="../src/engine.js"></script>
 <script src="../src/match.js"></script>
+<script src="../src/relate.js"></script>
 <script src="../src/board.js"></script>
 <script src="../src/play.js"></script>
 <script>
@@ -139,12 +143,85 @@
       onBoard: () => { log('board', true); location.hash = 'board'; },
     });
   }
+  // ---------------------------------------------------------------- Set, inside out: the app's part (SPEC-set-inside-out §10.5)
+  const RL = window.FiveSRelate;
+  if (q.get('set')) {
+    if (q.get('keep') != null) {   // the first board: only the first K kept pictures stay kept, nothing brought
+      let k = +q.get('keep');
+      const pics = new Set(deck.cards.filter((c) => c.img && c.kind !== 'colour').map((c) => c.id));
+      state = Object.assign({}, state, { own: [], j: state.j.filter((e) => !(e[1] && pics.has(e[0])) || k-- > 0) });
+    }
+    if (q.get('words')) state.saga.words = Array.from({ length: +q.get('words') }, (_, i) => 'word ' + (i + 1));
+    if (q.get('boost')) { const b = q.get('boost').split(',').map(Number); state.saga.boost = { pass: b[0] | 0, turn: b[1] | 0, more: b[2] | 0 }; }
+    const T0 = RL.table(state, deck, ownPics());
+    for (let i = 0; i < +(q.get('rel') || 0) && i + 1 < T0.pool.length; i++) state.assoc = RL.relate(state.assoc, T0.pool[i], T0.pool[i + 1], i % 2 ? -1 : 1, (i % 5) + 1, NOW / 1000 - 9000 + i * 60);
+  }
+  function ownPics() { return (state.own || []).filter((o) => o && o.let == null && byId.get(o.imgFrom) && byId.get(o.imgFrom).img).map((o) => o.id); }
+  function setPic(id) {
+    const o = own(id), c = byId.get(o ? o.imgFrom : id);
+    return c && c.img ? { src: base + c.img, w: c.w, h: c.h } : { colours: (c && c.colours) || (o && o.colours) || [] };
+  }
+  function setBy(id) { const c = F.card(state, deck, id); return c && !c.own ? c.artist || null : 'Brought in by you'; }
+  let relAt = NOW / 1000;
+  function setCallbacks(n, table) {
+    return {
+      pic: setPic, name: shortName, by: setBy, kind: (id) => (F.card(state, deck, id) || {}).kind || null, aspectOf: deck.words || {},
+      boost: state.saga.boost, clock: q.get('clock') != null ? +q.get('clock') : state.opts.clock ?? (state.opts.ring !== false ? 5 : 0),
+      opts: { sound: state.opts.sound !== false, hints: state.opts.hints !== false, reduce },
+      onRelate: (r) => { log('relate', r); state.assoc = RL.relate(state.assoc, r.x, r.y, r.s, r.w, ++relAt); },
+      onWord: (text) => { log('word', text); const a = RL.addWord(state.saga.words, text); if (a.w == null) return null; state.saga = Object.assign({}, state.saga, { words: a.words }); table.vocab = a.words; return a.w; },
+      onHeart: (a) => { log('heart', a); state.assoc = M.heart(state.assoc, a.ids, a.on); },
+      onNote: (a) => log('note', a),
+      onBoost: (k) => { log('boost', k); state.saga = M.useBoost(state.saga, k) || state.saga; },
+      onEnd: (r) => {   // as the app (engine-api.md, EndInfo)
+        log('end', r);
+        const rec = M.recordLevel(state.saga, r);
+        if (!r.won) { state.saga = rec.saga; return rec; }
+        if (n > rec.saga.stars.length) { state.saga = rec.saga; return null; }
+        const ways = RL.ways(state, deck, r, state.saga.built[n - 1]);
+        state.saga = M.build(rec.saga, n, ways[0] ?? null);
+        const info = Object.assign({}, rec, { saga: state.saga, build: { ways, storeys: ways.map((id) => RL.storeys(state, n, id)) },
+          ask: RL.ask(state, deck).length > 0, sortAFive: RL.unsetShare(RL.table(state, deck, ownPics())) < 0.5 });
+        log('endInfo', info);
+        return info;
+      },
+      onBuild: (id) => { log('build', id); state.saga = M.build(state.saga, n, id); },
+      onKingdom: (k) => log('kingdom', k),
+      onOpts: (o) => { log('opts', o); state.opts = Object.assign({}, state.opts, o); },
+      onNext: (k) => { log('next', k); location.hash = 'level=' + k + '&t=' + Date.now(); },
+      onMap: () => { log('map', true); location.hash = 'map'; },
+      onBoard: () => { log('board', true); location.hash = 'board'; },
+      onSort: () => log('sort', true),
+    };
+  }
+  function showSet(n) {
+    clear();
+    const table = RL.table(state, deck, ownPics());
+    const seed = '5s:' + n + ':' + (state.saga.plays || 0), lead = (RL.leads(table, n)[0] || {}).id;
+    const sg = state.saga, built = sg.built[n - 1];
+    window.harness.level = { n, table: JSON.parse(JSON.stringify(table)), seed, lead };
+    current = P.mountSet(stage, Object.assign(setCallbacks(n, table), { n, table, seed, lead,
+      built: sg.stars[n - 1] ? { name: built ? shortName(built) : null, storeys: RL.storeys(state, n), secs: (sg.time || [])[n - 1] || 0 } : null }));
+  }
+  function showFirst() {   // Set's view under six: the first board above the mood board, as the app shows it
+    clear();
+    const wrap = document.createElement('div');
+    wrap.className = 'h-board';
+    wrap.innerHTML = '<div class="view-head"><h1 class="h1">Set</h1></div><div class="set-first"></div>';
+    stage.appendChild(wrap);
+    const table = RL.table(state, deck, ownPics());
+    window.harness.level = { n: 1, table: JSON.parse(JSON.stringify(table)), free: true };
+    const v = P.mountSet(wrap.querySelector('.set-first'), Object.assign(setCallbacks(1, table), { n: state.saga.stars.length + 1, table, free: true }));
+    current = { destroy: () => { v.destroy(); wrap.remove(); } };
+  }
   function route() {
     const h = location.hash.slice(1);
     const m = /^level=(\d+)/.exec(h);
-    if (m) showLevel(+m[1]); else if (h === 'map') showMap(); else showBoard();
+    if (m && q.get('set')) showSet(+m[1]);
+    else if (h === 'first') showFirst();
+    else if (m) showLevel(+m[1]); else if (h === 'map') showMap(); else showBoard();
   }
-  window.harness = { deck, get state() { return state; }, calls, NOW, route };
+  window.harness = { deck, get state() { return state; }, calls, NOW, route, name: shortName };
   window.addEventListener('hashchange', route);
   route();
   window.harness.ready = true;

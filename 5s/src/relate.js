@@ -143,7 +143,7 @@
     return isWord(w) ? (vocab || [])[w - W0] || '' : '';
   }
   // what the person said, in their words: "alike", "alike in line", "alike: airy" (others' word made theirs), "unlike: ‘a held breath’"
-  const said = (T, s, w) => (s > 0 ? 'alike' : 'unlike') + (!w ? '' : w <= 5 ? ' in ' + ASPECTS[w - 1] : T.aspectOf[wordOf(T.vocab, w)] ? ': ' + wordOf(T.vocab, w) : ': ‘' + wordOf(T.vocab, w) + '’');
+  const said = (T, s, w) => { const t = wordOf(T.vocab, w); return (s > 0 ? 'alike' : 'unlike') + (!t ? '' : w <= 5 ? ' in ' + t : T.aspectOf[t] ? ': ' + t : ': ‘' + t + '’'); };
   const alpha = (T, g) => 12 / (12 + rels(T, g).length);
 
   // ---------------------------------------------------------------- the deal
@@ -319,21 +319,26 @@
     if (g.slots.filter(Boolean).length <= 1) g.state = 'done';
     return { game: g, arrival: arr };
   }
-  /** back(game, table) -> {a, b, s, w} | null: Turn: the person's oldest relation from before this level comes back to be said again. */
+  /** back(game, table) -> {a, b, s, w} | null: Turn: the person's oldest relation from before this level comes back to be said
+   *  again, a never on the board (so say(game, table, a, b, ...) leaves the board as it is); a pair both on the board waits. */
   function back(game, T) {
-    const done = new Set(game.made.map((m) => key(m.x, m.y)));
+    const done = new Set(game.made.map((m) => key(m.x, m.y))), on = new Set(game.slots.filter(Boolean));
     let best = null;
-    for (const k in T.rel) if (!done.has(k) && (!best || T.rel[k].at < best.at || (T.rel[k].at === best.at && k < best.k))) best = Object.assign({ k }, T.rel[k]);
-    return best ? { a: best.k.split('|')[0], b: best.k.split('|')[1], s: best.s, w: best.w } : null;
+    for (const k in T.rel) {
+      const [a, b] = k.split('|');
+      if (done.has(k) || (on.has(a) && on.has(b))) continue;
+      if (!best || T.rel[k].at < best.at || (T.rel[k].at === best.at && k < best.k)) best = Object.assign({ k, a, b }, T.rel[k]);
+    }
+    return !best ? null : on.has(best.a) ? { a: best.b, b: best.a, s: best.s, w: best.w } : { a: best.a, b: best.b, s: best.s, w: best.w };
   }
 
   /** result(game, table) -> what recordLevel and buildChoices take, and the level end's lists.
-   *  Stars, the moments they defy: one for the board set; two once against others (apart, or otherwise than others'
-   *  words); three once against themselves (a turn). A brought thing alone earns neither: no one else has seen it. */
+   *  No stars (the artist, 23 Oct 2026): a level is done when the board is set. `stars` is only the won-level marker
+   *  recordLevel keeps in saga.stars (1 won, 0 not; an old higher value stands); it is never shown. A turn is noticed
+   *  in words (made[].kind 'turn') and rewards nothing. */
   function result(g, T) {
     const stayed = g.slots.filter(Boolean)[0] || null;
-    const own = g.made.some((m) => m.kind === 'apart' || m.kind === 'yours'), turn = g.made.some((m) => m.kind === 'turn');
-    const stars = g.state === 'done' ? 1 + (own ? 1 : 0) + (turn ? 1 : 0) : 0;
+    const stars = g.state === 'done' ? 1 : 0;
     const made = new Set(g.made.map((m) => key(m.x, m.y))), others = [];
     for (let i = 0; i < g.used.length; i++) for (let j = i + 1; j < g.used.length; j++) {
       const L = lookOf(T, g.used[i], g.used[j]);
@@ -352,6 +357,35 @@
     const all = [current, res && res.stayed].concat(MX.buildChoices(state, deck, res, null));
     return all.filter((id, i) => id && all.indexOf(id) === i && FiveS.card(state, deck, id)).slice(0, 3);
   }
+
+  // ---------------------------------------------------------------- the kingdom, grown from what the person related
+  // level i + 1's building: the relations its thing has gathered, 1 to 3; never under the height v12 gave it (saga.stars[i])
+  const tall = (st, i, thing) => Math.max(1, Math.min(3, Math.max(thing ? st.assoc.filter((e) => e.length === 7 && (e[0] === thing || e[1] === thing)).length : 0, st.saga.stars[i] | 0)));
+  /** storeys(state, n, id?) -> 1..3: level n's building as id (else saga.built[n − 1]) would stand: the relations that
+   *  thing has gathered, 1 to 3. A building from before keeps its height: never under saga.stars[n − 1] as v12 wrote it. */
+  function storeys(state, n, id) { const st = FiveS.migrate(state); return tall(st, n - 1, id === undefined ? st.saga.built[n - 1] : id); }
+  /** kingdom(state, deck, own) -> {storeys, ties, said, mist}: what the kingdom map draws from the person's relations.
+   *  storeys: [1..3] a won level; ties: [[n, m, s]] two levels whose buildings they related (s 1 alike, -1 unlike);
+   *  said: {k: 'Mostly alike in line'} what they said most about island k's buildings, in their words, never the lookers';
+   *  mist: {n, ids} the kept pictures not set beside anything yet (ids: the newest three), each a way into the next level. */
+  function kingdom(state, deck, own) {
+    const st = FiveS.migrate(state), won = st.saga.stars.length, bl = st.saga.built.slice(0, won);
+    const R = st.assoc.filter((e) => e.length === 7), at = {}, ties = [], lines = {};
+    bl.forEach((id, i) => { if (id) (at[id] = at[id] || []).push(i + 1); });
+    for (const e of R) for (const n of at[e[0]] || []) for (const m of at[e[1]] || []) ties.push(n < m ? [n, m, e[5]] : [m, n, e[5]]);
+    ties.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const T = { vocab: st.saga.words || [], aspectOf: (deck && deck.words) || {} };
+    for (let k = 0; 5 * k < won; k++) {
+      const things = new Set(bl.slice(5 * k, 5 * k + 5).filter(Boolean)), cnt = {};
+      for (const e of R) if (things.has(e[0]) || things.has(e[1])) { const x = said(T, e[5], e[6]); cnt[x] = (cnt[x] || 0) + 1; }
+      const top = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || (a < b ? -1 : 1))[0];
+      if (top) lines[k] = 'Mostly ' + top;
+    }
+    const related = new Set(R.map((e) => e[0]).concat(R.map((e) => e[1])));
+    const unset = table(st, deck, own).pool.filter((id) => !related.has(id));
+    return { storeys: st.saga.stars.map((_, i) => tall(st, i, bl[i] || null)), ties, said: lines, mist: { n: unset.length, ids: unset.slice(0, 3) } };
+  }
+
   /** saidText(vocab, s, w) -> the person's words for a relation, as the answer leads with them: "Alike in line." */
   function saidText(vocab, aspectOf, s, w) { const t = said({ vocab, aspectOf: aspectOf || {} }, s, w); return t.charAt(0).toUpperCase() + t.slice(1) + '.'; }
 
@@ -368,7 +402,8 @@
    *  The app saves words to saga.words and sets the level's table.vocab to them, so the game knows the new word. */
   function addWord(words, text) {
     const list = (words || []).slice();
-    const t = String(text == null ? '' : text).replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, FiveS.WORD_LEN);
+    const tidy = (s) => s.replace(/[\u0000-\u001f\u007f]|\p{Cs}/gu, '').replace(/\s+/g, ' ').trim();   // \p{Cs}: half a character
+    const t = tidy(tidy(String(text == null ? '' : text)).slice(0, FiveS.WORD_LEN));   // again after the cut: no space or half a character at the end
     if (!t) return { words: list, w: null };
     const i = list.findIndex((x) => x.toLowerCase() === t.toLowerCase());
     if (i >= 0) return { words: list, w: W0 + i };
@@ -430,7 +465,7 @@
 
   const FiveSRelate = Object.freeze({
     version: 1, AREAS, COACH,
-    level, table, leads, newGame, chips, answer, say, pass, back, result, ways, saidText,
+    level, table, leads, newGame, chips, answer, say, pass, back, result, ways, storeys, kingdom, saidText,
     relate, addWord, wordOf, ask, why, unsetShare,
   });
   if (typeof module === 'object' && module.exports) module.exports = FiveSRelate;

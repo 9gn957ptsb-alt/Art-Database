@@ -561,6 +561,23 @@ test('put_state: Set\'s relations ride on a pairing (alike or unlike, in what), 
   assert.match(checkState({ saga: { words: ['x'.repeat(LIMITS.word + 1)] } }), /saga.words/);
   assert.match(checkState({ saga: { words: Array(LIMITS.words + 1).fill('w') } }), /saga.words/);
   assert.match(checkState({ saga: { words: ['a\u0007b'] } }), /saga.words/);
+  assert.match(checkState({ saga: { words: ['x\ud800'] } }), /saga.words/, 'half a character');
+  assert.equal(checkState({ five: { ids: ['i001', 's003'], i: 0, ask: 's003' } }), '', 'the card of the five that came from Set');
+  assert.match(checkState({ five: { ids: ['i001'], ask: 'not an id!' } }), /five.ask/);
+});
+
+test('put_state takes back whatever the engine reads Set\'s fields as (norm and put_state agree)', () => {
+  const hand = {
+    assoc: [['i001', 'o001', 1, 0, 5], ['a b', 'c', 1, 0, 1], [7, 'c', 1, 0, 1], ['i001', 's001', 2, 1, 6, -1, FiveS.WORD0 + FiveS.WORDS_MAX - 1],
+      ['i001', 's002', 1, 0, 6, -1, FiveS.WORD0 + FiveS.WORDS_MAX], ['i001', 'u001', 1, 0, 7, 2, 0]].concat(Array.from({ length: 450 }, (_, i) => ['p' + i, 'q', 1, 0, i])),
+    saga: { stars: [3, 9, 'x'], words: ['ok', ' padded ', 'x'.repeat(FiveS.WORD_LEN + 1), 'a\u0007', 'x\udc00', 5].concat(Array(70).fill('w')) },
+    five: { ids: ['i001'], ask: 'not an id!' },
+  };
+  assert.notEqual(checkState(hand), '');
+  const st = FiveS.migrate(hand);
+  assert.equal(checkState(st), '');
+  assert.deepEqual([st.assoc.length, st.saga.words.length, st.saga.words.slice(0, 6), 'ask' in st.five], [LIMITS.assoc, LIMITS.words, ['ok', '?', '?', '?', '?', '?'], false]);
+  assert.deepEqual([FiveS.WORDS_MAX, FiveS.WORD_LEN], [LIMITS.words, LIMITS.word], 'the same caps');
 });
 
 // ------------------------------------------------------------------ item_image

@@ -136,7 +136,7 @@ function saga(g) {
   if (!(g.time == null || (Array.isArray(g.time) && g.time.length <= LIMITS.levels && g.time.every((x) => isInt(x, 0, 9999))))) return 'state.saga.time must be a list of at most ' + LIMITS.levels + ' whole seconds, 0 to 9999.';
   if (!(g.built == null || (Array.isArray(g.built) && g.built.length <= LIMITS.levels && g.built.every((x) => x === null || (typeof x === 'string' && BUILT.test(x)))))) return 'state.saga.built must be a list of at most ' + LIMITS.levels + ' card ids of up to 10 characters, or nulls.';
   // Set's words: the person's own, and others' words they made theirs (the app's caps, so the store keeps room)
-  if (!(g.words == null || (Array.isArray(g.words) && g.words.length <= LIMITS.words && g.words.every((x) => typeof x === 'string' && x.length >= 1 && x.length <= LIMITS.word && x.trim() === x && !/[\u0000-\u001f\u007f]/.test(x))))) return 'state.saga.words must be a list of at most ' + LIMITS.words + ' words of 1 to ' + LIMITS.word + ' characters.';
+  if (!(g.words == null || (Array.isArray(g.words) && g.words.length <= LIMITS.words && g.words.every((x) => typeof x === 'string' && x.length >= 1 && x.length <= LIMITS.word && x.trim() === x && !/[\u0000-\u001f\u007f]|\p{Cs}/u.test(x))))) return 'state.saga.words must be a list of at most ' + LIMITS.words + ' words of 1 to ' + LIMITS.word + ' characters.';
   return '';
 }
 
@@ -173,6 +173,7 @@ export function checkState(s, deck) {
     if (!isObj(f) || !Array.isArray(f.ids) || f.ids.length > 10 || !f.ids.every((id) => typeof id === 'string' && ID.test(id))) return 'state.five must have ids: a list of card ids.';
     if (f.i != null && !(Number.isInteger(f.i) && f.i >= 0 && f.i <= f.ids.length)) return 'state.five.i must count the cards judged so far.';
     if (!optStr(f.day, 20) || !(f.n == null || (Number.isInteger(f.n) && f.n >= 1))) return 'state.five has a day or number of the wrong kind.';
+    if (!(f.ask == null || (typeof f.ask === 'string' && ID.test(f.ask)))) return 'state.five.ask must be the id of the card that came from Set.';
   }
   if (s.seen != null && !isObj(s.seen)) return 'state.seen must be an object.';
   if (s.seen && s.seen.path != null && !(Array.isArray(s.seen.path) && s.seen.path.every((k) => isStr(k, 40)))) return 'state.seen.path must be a list of milestone names.';

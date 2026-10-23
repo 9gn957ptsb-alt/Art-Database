@@ -55,4 +55,12 @@ with tempfile.TemporaryDirectory() as out:
             x, y, w, h = c["crop"]
             assert min(x, y) >= 0 and x + w <= 1.0001 and y + h <= 1.0001, c["id"]
     assert "Architectural Authority" in deck["source"]
-print(f"ok: {len(artsy)} Artsy cards unchanged, {len(bld)} building cards")
+
+    # Set's other eyes, when data/5s holds pairs, tags and words: pairs of pictures of different works, words the deck knows
+    pics = {c["id"]: c for c in cards if c["kind"] != "colour" and c.get("img")}
+    for a, b, v, line in deck.get("rhymes", []):
+        assert a < b and a in pics and b in pics and pics[a]["work"] != pics[b]["work"], (a, b)
+        assert v in (0, 1) and line and not line.startswith("Both: "), (a, b)
+    assert all(w in deck.get("words", {}) for c in pics.values() for w in c.get("comp", []) + c.get("feel", []))
+    others = f", {len(deck['rhymes'])} lookers' pairs" if "rhymes" in deck else ", no other eyes (no data/5s pairs)"
+print(f"ok: {len(artsy)} Artsy cards unchanged, {len(bld)} building cards{others}")
