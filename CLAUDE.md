@@ -11,3 +11,8 @@ sentence they can say to the Claude running there. Decide what a sensible defaul
 only for what only their words can give. Anything they must paste elsewhere goes in one copy-ready
 code block, with where to paste it ("send it to me like that so I get exactly what you want and it's
 easiest for me to do it", 23 Oct 2026).
+
+Storage and money (the artist, 23 Oct 2026): "You have to let me know any potentially outrageous
+storage action or something that is going to charge me money". Before anything that takes a lot of
+space somewhere (Drive, a repository, an artifact) or could bill them (paid plans, extra usage,
+API calls, large multi-agent runs), say so plainly, with the rough size or cost, and wait for their word.
