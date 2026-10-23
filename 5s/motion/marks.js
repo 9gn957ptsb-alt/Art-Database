@@ -914,7 +914,8 @@
   ]);
   const MOMENT_IDS = MOMENTS.map((m) => m.id);
   const ORDER = Object.freeze(['swipe', 'pulse', 'fill', 'negative', 'rewind', 'flip', 'draw', 'count', 'ring', 'stack', 'echo',
-                               'path', 'split', 'collage', 'morph', 'three', 'pin', 'grow', 'ribbon']);
+                               'path', 'split', 'collage', 'morph', 'three', 'pin', 'grow', 'ribbon',
+                               'phases', 'stamp', 'dive', 'neon', 'tiles', 'swarm', 'cast']);
   // options every family honours; a family may re-declare one to change its default or range
   const SHARED = freezeDeep({
     palette: { default: 'logo', options: PALETTES.slice() },
