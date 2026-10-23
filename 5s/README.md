@@ -30,6 +30,7 @@ build contract) before changing anything.
 | `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
 | `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
 | `test/` | engine, bring, ground and UI tests; `test/fixture/` is a synthetic 50-card deck (no real data) |
+| `gameplan/reflect.mjs` | the Game Plan as code: reads Claude Code transcripts, places each session on the plan's seven stages, finds the traps it met, and judges its turns against the laws ponytail and caveman share (each only while that skill is on). `node 5s/gameplan/reflect.mjs <transcripts or folders>` prints the reflection; `--hook` is a Stop hook that prints one line when a turn met a trap or broke a law. Transcripts stay out of the repository |
 | `test/deck.test.py` | checks a built deck: the Artsy cards and the bookmarks' b and m cards (source, url, kinds, images) |
 | `dist/` | built output; gitignored |
 
@@ -58,7 +59,7 @@ Node 22 and Playwright with Chromium are required for the browser suites; each o
 its own `python3 -m http.server`.
 
 ```sh
-node --test 5s/test/                    # engine and hub (pure logic; runs through test/index.js), and connect.test.mjs
+node --test 5s/test/                    # engine and hub (pure logic; runs through test/index.js), connect.test.mjs and reflect.test.mjs
 node --test 5s/test/hub.test.mjs        # the hub drivers and page, against a fake GitHub
 node --test 5s/test/bring.test.cjs      # bring-in: images, colours, crop, texture, stores
 node --test 5s/test/ground.test.cjs     # the ground renderer
