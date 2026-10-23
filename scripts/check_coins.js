@@ -104,6 +104,15 @@ function report(kind, e) {
   out.push(shut.length ? fail("shut in " + shut.map((q) => q.id).join(" ")) : "open");
   out.push(notIn.length ? fail("not in a room " + notIn.map((q) => q.id).join(" ")) : "least " + least.toFixed(1) + " m");
   out.push(JSON.stringify(C) === JSON.stringify(C2) ? "same" : fail("not the same twice"));
+  // the guards (place.js guards): one for each ground-floor room works hang in, three at most; each round walkable
+  // (every spot reached from the first by the field), and how long a field takes
+  const S = Pl.stands(place), G = Pl.guards(place, hung, S);
+  let worst = 0, cut2 = 0;
+  G.forEach((g) => {
+    const t1 = Date.now(), F = Pl.field(place, S, g.round[0].x, g.round[0].z); worst = Math.max(worst, Date.now() - t1);
+    g.round.forEach((r) => { if (F[r.z * w.SX + r.x] < 0) { cut2 += 1; } });
+  });
+  out.push(cut2 ? fail(cut2 + " spots off the guards' ways") : G.length + " guards (" + G.map((g) => g.round.length).join(",") + ") field " + worst + " ms");
   if (argv.includes("--words")) { C.forEach((q) => out.push("\n    " + q.kind + " " + q.text)); }
   console.log((kind + " " + String(e.slug || e)).slice(0, 52).padEnd(54) + out.join(" | "));
   return { place, hung };

@@ -295,6 +295,7 @@
     gl.activeTexture(gl.TEXTURE0);
   }
   function remeshAt(x, z) {
+    guardsRemesh(x, z);
     var cx = floor(x / CH), cz = floor(z / CH), nx = w.SX / CH, nz = w.SZ / CH;
     refresh(x, z, x, z);
     meshChunk(cx, cz);
@@ -923,6 +924,8 @@
     // a coin: what it is and where (it is taken by passing through it, not by a tap)
     var cq = coinAt(dir, hit);
     if (cq) { say(coinWords(cq)); return; }
+    var gq = guardAt(dir, hit);
+    if (gq) { say(guardWords(gq)); return; }
     if (!hit) { return; }
     // A block kept for the next swing is turned to at this one's strike, not now.
     var kept = !Hd && !!swing && !swing.ret && swing.u < 1.5 && !hit.painting && hit.b !== B.NOTE && !(forcePlace || mode === "place");
@@ -2353,6 +2356,192 @@
     gl.bindVertexArray(null);
   }
 
+  /* ---- the guards -------------------------------------------------------------------------------------------------
+     The artist, 21 Oct 2026: "Think of Mr Pearl like the golden snitch from harry potter right now, there are people
+     trying to grab me, but additionally what's unique to Mr Pearl as the golden snitch is that he can collect these
+     coins". The people are the guards the alarms already bring, now seen: one for each room on the ground floor the
+     works hang in, three at most (place.js guards), each walking its round, the reading spots of its room's works, a
+     beat at each. Each is built as he is, of his own grids in the drawing's grey (no guitar, no hat), its head a sphere
+     of his cells: the one perfect sphere stays his. Every number is his or the song's:
+       on the round at his walk over phi squared (1.64 m/s), chasing at his walk over phi (2.66 m/s): he outwalks them
+         by phi, and the hologram outflies them;
+       they see as far as a label is read (LOOK, 9 m), across the game's own view (FOV, 70 degrees), from his eye's
+         height, the line to his head's seat clear (glass and leaves seen through);
+       in reach, his box and its a step apart (0.3 + his leg + 0.3), their arms rise over a beat; still in reach at its
+         end, they have hold of him: an alarm, and the last coin he took goes back where it lay (Sonic's ring loss, one
+         ring); that guard stands a bar, and no guard grabs again within a bar (Sonic's two seconds of safety);
+       the third alarm walks him out (putOut), coins and pieces kept;
+       seen, they chase where he was last seen, and a bar unseen they go back to their rounds; where they cannot walk
+         (water, two blocks up, off the plot) they stop and look at him; a wrong look behind a work sends them to it;
+       while the head is out they watch the body, and a grab of the body puts him out under his tree.
+     Their ways are place.js's field over the plot (stands), kept per target and cleared when a block there changes. */
+  var GUARD = { ROUND: WALK / (PHI * PHI), CHASE: WALK / PHI, SIGHT: LOOK, HALF: FOV / 2 * Math.PI / 180, TELL: BEAT, HOLD: BAR, GRACE: BAR };
+  var guards = [], gStand = null, gFields = {}, guardPal = null, guardHead = null, graceUntil = 0, warnedBody = false;
+  function guardReach() { return 0.3 + PEARL.leg + 0.3; }
+  function initGuards() {
+    guards = []; gStand = null; gFields = {};
+    if (!place.M || !Pl.guards) { return; }
+    gStand = Pl.stands(place);
+    guards = Pl.guards(place, paintings, gStand).map(function (g, i) { return { i: i, room: g.round[0].work.room, round: g.round }; });
+    homeGuards();
+  }
+  // Each at the start of its round, walking it (after waking, and when he is put out).
+  function homeGuards() {
+    graceUntil = 0; warnedBody = false;
+    guards.forEach(function (g) {
+      var r = g.round[0];
+      Object.assign(g, { x: r.x + 0.5, y: gStand[r.z * w.SX + r.x], z: r.z + 0.5, face: 0, walked: 0, amount: 0, mode: "round", leg: 0, pause: 0, tell: 0, tellT: 0, holdT: 0, seenAt: -1e9, to: null });
+    });
+  }
+  function fieldTo(x, z) {
+    var key = x + "," + z;
+    if (!gFields[key]) { if (Object.keys(gFields).length > 32) { gFields = {}; } gFields[key] = Pl.field(place, gStand, x, z); }
+    return gFields[key];
+  }
+  // A block broken or set: the column's stand again, and every way worked out again.
+  function guardsRemesh(x, z) {
+    if (!gStand || x < 0 || z < 0 || x >= w.SX || z >= w.SZ) { return; }
+    gStand[z * w.SX + x] = Pl.standIn(place, x, z); gFields = {};
+  }
+  // A step toward (tx, tz) at speed v: to the next column one step nearer, not one another guard stands in; true there.
+  function walkTo(g, tx, tz, v, dt) {
+    var SX = w.SX, F = fieldTo(tx, tz), cx = floor(g.x), cz = floor(g.z), c = cz * SX + cx, ease = 1 - Math.exp(-dt / STEP_T);
+    var stop = function () { g.amount -= g.amount * ease; };
+    if (F[c] < 0) { stop(); return false; }
+    var nx = cx, nz = cz;
+    if (F[c] > 0) {
+      for (var i = 0; i < 8; i += 1) {
+        var d = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]][i], X = cx + d[0], Z = cz + d[1], C = Z * SX + X;
+        if (F[C] !== F[c] - 1 || abs(gStand[C] - gStand[c]) > 1 || (d[0] && d[1] && (gStand[cz * SX + X] < 0 || gStand[Z * SX + cx] < 0))) { continue; }
+        if (guards.some(function (o) { return o !== g && hypot(o.x - X - 0.5, o.z - Z - 0.5) < 0.9; })) { continue; }
+        nx = X; nz = Z; break;
+      }
+      if (nx === cx && nz === cz) { stop(); return false; }
+    }
+    var dx = nx + 0.5 - g.x, dz = nz + 0.5 - g.z, L = hypot(dx, dz), step = min(L, v * dt);
+    if (L < 0.05 && F[c] === 0) { stop(); return true; }
+    if (L > 1e-6) { g.x += dx / L * step; g.z += dz / L * step; g.face = turnTo(g.face, Math.atan2(dx, -dz), TURN * dt); }
+    g.walked += step; g.amount += (1 - g.amount) * ease;
+    var sy = gStand[floor(g.z) * SX + floor(g.x)];
+    if (sy >= 0) { g.y += (sy - g.y) * ease; }
+    return false;
+  }
+  function guardsStep(dt, now) {
+    if (!guards.length || intro || launched) { return; }
+    var SX = w.SX, hx = floor(P.x), hz = floor(P.z), walkable = gStand[hz * SX + hx] >= 0 && abs(gStand[hz * SX + hx] - P.y) < 0.6;
+    guards.forEach(function (g) {
+      if (g.mode !== "chase") { g.tellT = 0; g.tell = max(0, g.tell - dt / GUARD.TELL); }
+      if (g.mode === "hold") { g.holdT -= dt; g.amount -= g.amount * (1 - Math.exp(-dt / STEP_T)); if (g.holdT <= 0) { g.mode = "round"; } return; }
+      if (g.mode === "chase") {
+        if (now - g.seenAt > GUARD.HOLD * 1000) { g.mode = "round"; return; }
+        if (walkable) { g.to = { x: hx, z: hz }; }
+        if (!walkable && hypot(g.x - P.x, g.z - P.z) < 3) { g.face = turnTo(g.face, Math.atan2(P.x - g.x, -(P.z - g.z)), TURN * dt); g.amount -= g.amount * (1 - Math.exp(-dt / STEP_T)); }
+        else if (g.to) { walkTo(g, g.to.x, g.to.z, GUARD.CHASE, dt); }
+        // the grab: a beat in reach, the arms rising
+        var reach = hypot(g.x - P.x, g.z - P.z) <= guardReach() && abs(g.y - P.y) <= PEARL.top && !(Hd && Hd.phase === "follow") && now >= graceUntil;
+        if (reach) { g.tellT += dt; g.tell = min(1, g.tellT / GUARD.TELL); if (g.tellT >= GUARD.TELL) { grab(g, now); } }
+        else { g.tellT = 0; g.tell = max(0, g.tell - dt / GUARD.TELL); }
+        return;
+      }
+      if (g.mode === "go") { if (walkTo(g, g.to.x, g.to.z, GUARD.CHASE, dt) || fieldTo(g.to.x, g.to.z)[floor(g.z) * SX + floor(g.x)] < 0) { g.mode = "round"; } return; }
+      if (g.pause > 0) { g.pause -= dt; g.amount -= g.amount * (1 - Math.exp(-dt / STEP_T)); if (g.pause <= 0) { g.leg = (g.leg + 1) % g.round.length; } return; }
+      var r = g.round[g.leg];
+      if (walkTo(g, r.x, r.z, GUARD.ROUND, dt)) { g.pause = BEAT; }
+    });
+  }
+  // Does a guard see him (his head's seat: while the head is out, the body)?
+  function sees(g) {
+    var e = [g.x, g.y + EYE, g.z], t = seat(), d = [t[0] - e[0], t[1] - e[1], t[2] - e[2]], L = hypot(d[0], d[1], d[2]);
+    if (L > GUARD.SIGHT || abs(angle(Math.atan2(d[0], -d[2]) - g.face)) > GUARD.HALF) { return false; }
+    for (var s = 0.25; s < L; s += 0.25) { if (!w.SEE[w.get(floor(e[0] + d[0] * s / L), floor(e[1] + d[1] * s / L), floor(e[2] + d[2] * s / L))]) { return false; } }
+    return true;
+  }
+  // On the quarter-second tick: who sees him.
+  function guardsLook(now) {
+    if (!guards.length || intro || launched) { return; }
+    guards.forEach(function (g) {
+      if (g.mode === "hold" || !sees(g)) { return; }
+      if (g.mode !== "chase" && now >= graceUntil) { say("A guard has seen you."); }
+      g.mode = "chase"; g.seenAt = now;
+    });
+    if (Hd && !warnedBody && guards.some(function (g) { return hypot(g.x - P.x, g.z - P.z) < LOOK; })) { warnedBody = true; say("A guard is nearing your body: Holo, and it follows your head."); }
+    if (!Hd) { warnedBody = false; }
+  }
+  function grab(g, now) {
+    g.mode = "hold"; g.holdT = GUARD.HOLD; g.tellT = 0; graceUntil = now + GUARD.GRACE * 1000;
+    var back = got.length ? coins.filter(function (q) { return q.id === got[got.length - 1]; })[0] : null;
+    if (back) { got.pop(); drawCoins(); }
+    if (Hd) {
+      // the body, headless, taken: the head pulled home, and he comes to under his tree
+      harmBody("guard");
+      alarms = 0; store(); drawPieces(); closeLabel();
+      lieDown(["The guards have your body.", "You come to under your tree again.", adv.title]);
+      return;
+    }
+    alarms += 1;
+    store(); drawPieces();
+    if (alarms >= 3) { say("A guard has hold of you: the third alarm" + (back ? ", and your last coin goes back" : "") + "."); setTimeout(putOut, 1400); return; }
+    say("A guard has hold of you: an alarm" + (back ? ", and your last coin goes back " + back.text : "") + ". " + (alarms === 1 ? "Two more" : "One more") + " and the guards walk you out.");
+  }
+  // A wrong look behind a work: every guard not chasing goes to it.
+  function guardsTo(p) {
+    var s = Pl.readingSpots ? Pl.readingSpots(place, p)[0] : null;
+    if (!s) { return; }
+    guards.forEach(function (g) { if (g.mode === "round") { g.mode = "go"; g.to = { x: s[0], z: s[1] }; } });
+  }
+  // The guard a ray from the eye meets first (its upright cylinder, his box's width, feet to hat top).
+  function guardAt(dir, hit) {
+    var best = null;
+    guards.forEach(function (g) {
+      var ox = eye[0] - g.x, oz = eye[2] - g.z, a = dir[0] * dir[0] + dir[2] * dir[2], b = ox * dir[0] + oz * dir[2], c = ox * ox + oz * oz - 0.09, h = b * b - a * c;
+      if (a < 1e-9 || h < 0) { return; }
+      var t = (-b - Math.sqrt(h)) / a, y = eye[1] + dir[1] * t;
+      if (t < 0 || y < g.y || y > g.y + PEARL.top || (hit && hit.t < t) || t > LOOK + 6) { return; }
+      if (!best || t < best.t) { best = { g: g, t: t }; }
+    });
+    return best && best.g;
+  }
+  function guardWords(g) { return "A guard of " + (g.room && g.room.name ? g.room.name : "a room") + ": it sees 9 m across 70°, walks at your walk over φ, cannot climb two blocks, swim, or hold your head."; }
+  function drawGuards(now) {
+    if (!guards.length || !me3) { return; }
+    var PB = window.PearlBody, body = me3.body, h = unitH(), RO = coinRO(), SX = w.SX;
+    if (!guardPal) {
+      guardPal = new Float32Array(me3.pal);
+      for (var i = 1; i < 64; i += 1) { if (guardPal[i * 4] || guardPal[i * 4 + 1] || guardPal[i * 4 + 2]) { guardPal[i * 4] = guardPal[i * 4 + 1] = guardPal[i * 4 + 2] = 128; } }
+      var n = 2 * RO, ids = new Uint8Array(n * n * n), blocks = [], id = (body.paletteIds.jacket || [1])[0];
+      for (var y = 0; y < n; y += 1) { for (var z = 0; z < n; z += 1) { for (var x = 0; x < n; x += 1) {
+        if (hypot(x + 0.5 - RO, y + 0.5 - RO, z + 0.5 - RO) > RO) { continue; }
+        ids[(y * n + z) * n + x] = id; blocks.push([x, y, z, id]);
+      } } }
+      guardHead = meshBlocks(blocks); guardHead.tex = voxTexture(ids, n, n, n); guardHead.n = n;
+    }
+    gl.useProgram(prog);
+    gl.uniform4fv(U.uPal, guardPal);
+    gl.uniform1f(U.uPx, pxW / h); gl.uniform2f(U.uNear, 0, 0);
+    gl.uniform3f(U.uOff, 0, 0, 0); gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform1i(U.uFloor, 0);
+    var draw = function (ch, m, dim) {
+      gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, ch.tex); gl.activeTexture(gl.TEXTURE0);
+      gl.uniform3i(U.uDim, dim[0], dim[1], dim[2]);
+      gl.bindVertexArray(ch.vao);
+      gl.drawElements(gl.TRIANGLES, ch.count, gl.UNSIGNED_INT, 0);
+    };
+    guards.forEach(function (g) {
+      if (abs(g.x - eye[0]) > 90 || abs(g.z - eye[2]) > 90) { return; }
+      var M = PB.pose(body, PB.phaseStep(body, 0, g.walked), g.amount, g.tell > 0 ? { arms: g.tell * ARMS_UP } : null);
+      me3.parts.forEach(function (ch) {
+        if (ch.p.name === "guitar" || ch.p.name === "hat") { return; }
+        draw(ch, PB.place(M[ch.p.name], g.x, g.y, g.z, g.face), ch.p.dim);
+      });
+      var c = apply(PB.place(M.head, g.x, g.y, g.z, g.face), body.head.centre);
+      draw(guardHead, PB.mul(PB.T(c[0], c[1], c[2]), PB.mul(PB.RY(-g.face), PB.mul(PB.S(h), PB.T(-RO, -RO, -RO)))), [guardHead.n, guardHead.n, guardHead.n]);
+    });
+    gl.uniform4fv(U.uPal, worldPal); gl.uniformMatrix4fv(U.uM, false, ID4); gl.uniformMatrix4fv(U.uInvM, false, ID4);
+    gl.uniform1f(U.uPx, pxW); gl.uniform2f(U.uNear, NEAR_F[0], NEAR_F[1]); gl.uniform1i(U.uFloor, 1); gl.uniform3i(U.uDim, SX, w.SY, w.SZ);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, voxTex); gl.activeTexture(gl.TEXTURE0);
+    gl.bindVertexArray(null);
+  }
+
   /* ---- Mr Pearl drawn: his body of the unit through the blocks' own shader, his head the true sphere ------ */
 
   /* His body is the game's own figure seven golden steps down (pearl.js, from pearl-body.json): ten small grids,
@@ -2529,6 +2718,7 @@
       alarms += 1;
       store();
       drawPieces();
+      guardsTo(p);
       if (alarms >= 3) { say("Nothing behind it, and the third alarm brings the guards."); setTimeout(putOut, 1400); }
       else { say("Nothing behind it, and an alarm goes off. " + (alarms === 1 ? "Two more" : "One more") + " and the guards come."); }
     }
@@ -2590,7 +2780,7 @@
       else { physics(dt, hand); holoLeft = min(HOLO_T, holoLeft + HOLO_REFILL * dt); }
       swingStep(dt); sightStep(dt, now);
     }
-    shardsStep(dt); if (!intro && !launched) { stepPearls(dt); coinsStep(); }
+    shardsStep(dt); if (!intro && !launched) { stepPearls(dt); coinsStep(); guardsStep(dt, now); }
     pump(intro ? 14 : 6);
     var cw = canvas.width, chh = canvas.height, cam = camera(now, dt, eyeH, cw / chh);
     eye = cam.e;
@@ -2648,7 +2838,7 @@
       if (launched && lift > 300 && !ended) { ended = true; finish(); }
       rocketLift = lift;
     }
-    drawPearl(now); drawPearls(now); drawCoins3(now);
+    drawPearl(now); drawPearls(now); drawCoins3(now); drawGuards(now);
     drawShards();
     if (skyFig) {
       gl.useProgram(figProg);
@@ -2713,7 +2903,7 @@
     }
     drawTrails(); drawSwoosh(now);
     gl.bindVertexArray(null);
-    if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); homageCheck(); }
+    if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); homageCheck(); guardsLook(now); }
     overlay(now, open);
     requestAnimationFrame(frame);
   }
@@ -2739,6 +2929,7 @@
   function lieDown(lines) {
     var at = underTree();
     swing = swingNext = null; shards = []; swoosh = []; headWas = null;
+    if (guards.length) { homeGuards(); }
     dropSight(); pearls = []; carried = THROW.CARRY; drawCarry();   // he comes to with his five pearls, none lying about
     if (Hd) { Hd = null; pov = "third"; delete document.body.dataset.holo; drawViews(); }
     if (skyFig) { skyFig.away = false; }
@@ -2748,7 +2939,7 @@
     document.body.dataset.film = "true";
   }
   function awake() {
-    var again = intro.lines[0] === "The guards walk you out.";
+    var again = intro.lines[0] === "The guards walk you out." || intro.lines[0] === "The guards have your body.";
     intro = null;
     // Out of his eyes and up over his head: the first time you see him, from the nearest side where nothing stands
     // between the camera and his head.
@@ -2860,6 +3051,9 @@
         var dx = target.x + 0.5 - m.x, dz = target.z + 0.5 - m.z, dy = target.y - m.y;
         text = bearing(target.x + 0.5, target.z + 0.5) + " " + label + " · " + round(hypot(dx, dz)) + " m" + (dy > 3 ? " up" : dy < -3 ? " down" : "");
       }
+      // a guard chasing him, before all else (behind the camera as often as not)
+      var gc = guards.filter(function (g) { return g.mode === "chase"; }).sort(function (a, b) { return hypot(a.x - m.x, a.z - m.z) - hypot(b.x - m.x, b.z - m.z); })[0];
+      if (gc) { text = bearing(gc.x, gc.z) + " A guard · " + round(hypot(gc.x - m.x, gc.z - m.z)) + " m"; }
     }
     el.hidden = !text;
     if (text && el.textContent !== text) { el.textContent = text; }
@@ -3447,7 +3641,7 @@
       if (was && was.key === advKey() && was.escaped) { escaped = true; }
       homage = homageData && window.Homage && !escaped ? Homage.plan(place, homageData, { wake: underTree(), yaw: wakeYaw(), eye: EYE, B: B }) : null;
       studies = studiesData && window.Homage && Homage.row ? Homage.row(place, studiesData, { wake: underTree(), eye: EYE, B: B, avoid: homage && homage.box }) : null;
-      seatCoins();
+      seatCoins(); initGuards();
       voxTex = voxTexture(w.data, w.SX, w.SY, w.SZ, voxTex);
       byPlane = {};
       paintings.forEach(function (p) {
@@ -3585,7 +3779,7 @@
   // debug() hands the game's state to a test (it changes nothing by itself).
   window.Rocket = { debug: function () {
     return { P: P, place: place, w: w, adv: adv, paintings: paintings, pieces: pieces, notes: notes, found: found, known: known, looked: looked,
-             alarms: function () { return alarms; }, act: act, remeshAt: remeshAt, buildRocket: buildRocket, launch: launch, showLabel: showLabel,
+             alarms: function (v) { if (v != null) { alarms = v; drawPieces(); } return alarms; }, act: act, remeshAt: remeshAt, buildRocket: buildRocket, launch: launch, showLabel: showLabel,
              lookBehind: lookBehind, readNote: readNote, queue: function () { return queue.length; }, intro: function () { return intro; },
              skip: function () { if (intro) { intro.t0 -= 9600; } },
              hold: function (q, steps) { held = true; quality = q; walk = steps || 8; resize(); }, walk: function () { return walk; }, quality: function () { return quality; },
@@ -3598,6 +3792,7 @@
              screenOf: function (p) { var r = canvas.getBoundingClientRect(), q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [r.left + (q[0] / q[3] * 0.5 + 0.5) * r.width, r.top + (0.5 - q[1] / q[3] * 0.5) * r.height] : null; },
              farEnd: function () { return swing && !swing.ret && FAR_END ? farEndAt(swing, swing.u) : null; }, smashConsts: function () { return { BEAT: BEAT, SWING: SWING, LEAP: LEAP, COIL: COIL, ARMS_UP: ARMS_UP, E0: E0, Y_SH: Y_SH, FAR_END: FAR_END }; },
              coins: function () { return { list: coins, got: got.slice(), R: coinR(), RO: coinRO(), units: coinCh && coinCh.units }; }, takeCoin: function (i) { takeCoin(coins[i]); },
+             guards: function () { return guards; }, guardConsts: function () { return { GUARD: GUARD, reach: guardReach() }; }, sees: sees, stands: function () { return gStand; },
              stone: function () { return onStone; }, px: function () { return pxW; }, putOut: putOut,
              bring: bringBody, home: goHome, harm: harmBody, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; },
              pearl: function () { return me3 && { ms: me3.ms, cells: me3.body.cells, parts: me3.parts.length, cell: me3.body.cell, PEARL: PEARL, throwArm: me3.body.throwArm }; },

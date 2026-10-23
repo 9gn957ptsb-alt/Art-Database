@@ -357,7 +357,7 @@ to three blocks), there without the sphere if it alone does not fit, and only th
 and of the homage. It stands in every world, not only the first. `node scripts/check_homage.js --studies` plans it
 with the homage in every place and checks each figure against its drawing from its stone.
 
-## Ten coins, and half the space
+## Ten coins, the guards, and half the space
 
 The artist, 21 Oct 2026: "I want you to point coins like sonic the video game all through the space, inside and
 outside the architecture, also cut the surrounding space down in half for now to make the development of it more
@@ -384,6 +384,20 @@ not flown past); nothing is taken while the body follows the head. The tally is 
 Notes, the toast says each, the direction line points to a coin nearer than where it would point, a tap or the
 crosshair says what one is; the save keeps them. The tenth builds the rocket at the wreck, as the four pieces do
 (`ready`), and Launch is offered; the end says your ten coins built it.
+
+**The guards** (the artist, the same day: "Think of Mr Pearl like the golden snitch from harry potter right now, there
+are people trying to grab me"): the guards the alarms bring, now seen, one for each ground-floor room the works hang in,
+three at most (`place.js` `guards`), each walking its round of its room's reading spots, a beat at each, built of his
+own grids in the drawing's grey with a head that is a sphere of his cells (the one perfect sphere stays his). They walk
+the plot a block up or down a step, never in water (`stands`, `field`), at his walk over φ² on their rounds and over φ
+chasing, so he outwalks them by φ and the hologram outflies them. They see as far as a label is read (9 m) across the
+game's view (70°), from his eye's height, glass and leaves seen through; seen, he is chased where he was last seen, a
+bar unseen they go back. In reach (his box and theirs a step apart) their arms rise for a beat; still in reach, they
+have hold of him: an alarm, and the last coin he took goes back where it lay (Sonic's ring loss), that guard stands a
+bar and none grabs again within it; the third alarm walks him out, all he found and took kept. Where they cannot walk
+(water, two blocks up, off the plot) they stop and look at him. A wrong look behind a work sends them to it. While the
+head is out they watch the body, and a grab of the body puts him under his tree. The direction line names a guard
+chasing; a tap on one says what it is.
 
 ## Escapes made from what the site holds
 
@@ -504,7 +518,7 @@ aiming; Escape lowers it.
   (`clueSet`), the adventure for a place and a seed (`make`).
 - `place.js` — the place in blocks, no DOM: the ground and its lots, the model, the rooms carved
   or hollowed and named, the crash site, the works hung (`hang`), the pieces hidden and the notes
-  left (`hide`), which section a block came from (`partAt`), the ten coins (`coins`). Both run in Node, so a test can
+  left (`hide`), which section a block came from (`partAt`), the ten coins (`coins`), the guards and their ways (`guards`, `stands`, `field`). Both run in Node, so a test can
   build every place without a page.
 - `forms.js` — the new forms, no DOM: the sections sorted by what each can be (`load`), a
   section's blocks (`stampOf`), a roof drawn again at a new size (`roofOver`), a house of new
@@ -522,7 +536,7 @@ aiming; Escape lowers it.
   page's marks (`blockMark()`, the model seen down its diagonal), the figure in the sky
   (`figureBeams`, `drawnIn`, `placeSky`), the homage's figures (`HOM_VS`, `homageUpload`), the works'
   pictures, the hand, the opening, the labels and the notes, the sight (`raiseSight`, `sightCam`, `drawSight`) and
-  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the coins (`coinGrid`, `coinsStep`, `takeCoin`, `drawCoins3`), the rocket, the start screen.
+  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the coins (`coinGrid`, `coinsStep`, `takeCoin`, `drawCoins3`), the guards (`initGuards`, `guardsStep`, `sees`, `grab`, `drawGuards`), the rocket, the start screen.
 - `pearl.js` — Mr Pearl, no DOM: his body built of the unit from his form (`build`), the walk (`pose`, with the
   throwing arm, `act.right`, `act.fling`, and `build`'s `throwArm`; `phaseStep`), his place in the world (`place`),
   and his head's own program (`HEAD_FS`, the true sphere). `rocket.js` draws them (`drawPearl`) and holds the views

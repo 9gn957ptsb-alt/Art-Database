@@ -1428,6 +1428,17 @@
     return null;
   }
 
+  // Where one stands to read a work's label: a step and a half out from its wall at its middle, or a step if that is
+  // not in its room; the columns [x, z], the nearer last.
+  function readingSpots(place, p) {
+    var SX = place.w.SX, SZ = place.w.SZ, u = floor((p.u0 + p.u1) / 2), FL = place.floors[p.room.floor], out = [];
+    for (var k = 1; k >= 0; k -= 1) {
+      var a = p.dir > 0 ? p.plane + k : p.plane - 1 - k, x = p.axis === "x" ? a : u, z = p.axis === "x" ? u : a;
+      if (x >= 1 && z >= 1 && x < SX - 1 && z < SZ - 1 && FL.cols[z * SX + x] === p.room.idx) { out.push([x, z]); }
+    }
+    return out;
+  }
+
   /* ---- the ten coins ----------------------------------------------------------------
      The artist, 21 Oct 2026: "I want you to point coins like sonic the video game all through the space, inside and
      outside the architecture". Ten, by rule, no draw: the same place and the same works hung give the same ten.
@@ -1508,11 +1519,9 @@
     var hung = paintings.filter(function (p) { return p.room && p.f; }).slice().sort(function (a, b) { return (b.u1 - b.u0) * (b.y1 - b.y0) - (a.u1 - a.u0) * (a.y1 - a.y0); });
     hung.forEach(function (p, i) {
       if (inn() >= 5) { return; }
-      var u = floor((p.u0 + p.u1) / 2), FL = place.floors[p.room.floor];
-      for (var k = 1; k >= 0; k -= 1) {
-        var a = p.dir > 0 ? p.plane + k : p.plane - 1 - k, x = p.axis === "x" ? a : u, z = p.axis === "x" ? u : a;
-        if (x < 1 || z < 1 || x >= SX - 1 || z >= SZ - 1 || FL.cols[z * SX + x] !== p.room.idx) { continue; }
-        var y = stand(x, p.y0, z), f = p.f;
+      var spots = readingSpots(place, p);
+      for (var k = 0; k < spots.length; k += 1) {
+        var x = spots[k][0], z = spots[k][1], y = stand(x, p.y0, z), f = p.f;
         if (!free(x + 0.5, y + hy, z + 0.5)) { continue; }
         var cm = f.wcm && f.hcm ? Math.round(f.hcm) + " × " + Math.round(f.wcm) + " cm" : "";
         add("work", x, y + hy, z, "before " + (f.title || "a work") + " (" + [f.artist, f.year].filter(Boolean).join(", ") + ")" +
@@ -1540,7 +1549,61 @@
     return out;
   }
 
+  /* ---- the guards ---------------------------------------------------------------------
+     The artist, 21 Oct 2026: "Think of Mr Pearl like the golden snitch from harry potter right now, there are people
+     trying to grab me". The people are the guards the alarms already bring, now seen: one for each room on the ground
+     floor that works hang in, three at most (the third alarm brings them all), each with its round, the reading spots
+     of its room's works in the order they were hung. They walk the model's plot, on the ground floor and the ground
+     round it, never in water, a block up or down a step: stands is where one stands in each column of the plot (-1
+     where none can), field the steps from every column to one (-1 where it cannot be reached). */
+  function standIn(place, x, z) {
+    var w = place.w, M = place.M, c = z * w.SX + x;
+    if (!M || x < 1 || z < 1 || x >= w.SX - 1 || z >= w.SZ - 1 || !M.plot[c]) { return -1; }
+    for (var y = max(1, M.base - 4); y < M.base + 4; y += 1) {
+      var b = w.get(x, y, z);
+      if (w.SOLID[w.get(x, y - 1, z)] && !w.SOLID[b] && !w.SOLID[w.get(x, y + 1, z)]) { return b === B.WATER || w.get(x, y - 1, z) === B.WATER ? -1 : y; }
+    }
+    return -1;
+  }
+  function stands(place) {
+    var w = place.w, S = new Int16Array(w.SX * w.SZ).fill(-1);
+    if (!place.M) { return S; }
+    for (var z = place.M.z0 - 16; z <= place.M.z1 + 16; z += 1) {
+      for (var x = place.M.x0 - 16; x <= place.M.x1 + 16; x += 1) { if (x >= 0 && z >= 0 && x < w.SX && z < w.SZ) { S[z * w.SX + x] = standIn(place, x, z); } }
+    }
+    return S;
+  }
+  var STEP8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  function field(place, S, tx, tz) {
+    var SX = place.w.SX, n = S.length, F = new Int16Array(n).fill(-1), q = new Int32Array(n), h = 0, t = 0, c0 = tz * SX + tx;
+    if (tx < 0 || tz < 0 || tx >= SX || tz >= place.w.SZ || S[c0] < 0) { return F; }
+    F[c0] = 0; q[t++] = c0;
+    while (h < t) {
+      var c = q[h++], x = c % SX, z = (c - x) / SX;
+      for (var i = 0; i < 8; i += 1) {
+        var d = STEP8[i], X = x + d[0], Z = z + d[1], C = Z * SX + X;
+        if (X < 0 || Z < 0 || X >= SX || Z >= place.w.SZ || F[C] >= 0 || S[C] < 0 || abs(S[C] - S[c]) > 1) { continue; }
+        // a corner only when both sides are open
+        if (d[0] && d[1] && (S[z * SX + X] < 0 || S[Z * SX + x] < 0)) { continue; }
+        F[C] = F[c] + 1; q[t++] = C;
+      }
+    }
+    return F;
+  }
+  // (a spot its way does not reach from the round's first, a raised floor or a sunken one, is left out of the round)
+  function guards(place, paintings, S) {
+    var rooms = [], SX = place.w.SX;
+    S = S || stands(place);
+    paintings.forEach(function (p) { if (p.room && p.room.floor === 0 && rooms.indexOf(p.room) < 0) { rooms.push(p.room); } });
+    return rooms.slice(0, 3).map(function (rm) {
+      var round = [];
+      paintings.forEach(function (p) { if (p.room === rm) { var s = readingSpots(place, p)[0]; if (s && S[s[1] * SX + s[0]] >= 0) { round.push({ x: s[0], z: s[1], work: p }); } } });
+      if (round.length) { var F = field(place, S, round[0].x, round[0].z); round = round.filter(function (r) { return F[r.z * SX + r.x] >= 0; }); }
+      return { room: rm, round: round };
+    }).filter(function (g) { return g.round.length; });
+  }
+
   var api = { B: B, PIECE_IDS: PIECE_IDS, SY: SY, World: World, city: makeCity, place: makePlace, hangable: hangable,
-              hang: hang, hide: hide, roomAt: roomAt, partAt: partAt, rng: rng, hash: hash, sizeIn: sizeIn, coins: coins };
+              hang: hang, hide: hide, roomAt: roomAt, partAt: partAt, rng: rng, hash: hash, sizeIn: sizeIn, coins: coins, guards: guards, stands: stands, standIn: standIn, field: field, readingSpots: readingSpots };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.RocketPlace = api; }
 })(typeof window !== "undefined" ? window : this);
