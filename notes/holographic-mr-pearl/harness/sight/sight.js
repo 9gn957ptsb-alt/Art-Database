@@ -239,9 +239,11 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
     await P.waitForFunction(() => window.Rocket.debug().pearls().length >= 2, null, { timeout: 600000 });
     await frames(2);
     let rec = await L.recs(G); await L.recOn(G, false);
-    const f2 = rec.find((r) => r.n >= 2), expect = rec.find((r) => r.V >= t1.thrown + 480);
-    R.cases.rate.two = { f1: t1.f, f2: f2 && f2.f, dframes: f2 && f2.f - t1.f, expectFrame: expect && expect.f, kept };
-    check(kept === true && f2 && f2.f - t1.f === 20 && f2.f === expect.f, "two taps 3 frames apart: the second kept, thrown " + (f2 && f2.f - t1.f) + " frames after the first (20: BEAT at 25 ms)");
+    // the frame the first was thrown in: the last recorded at or before its time (read from outside after the tap, a
+    // frame can pass before the read)
+    const f1 = rec.filter((r) => r.V <= t1.thrown).pop(), f2 = rec.find((r) => r.n >= 2), expect = rec.find((r) => r.V >= t1.thrown + 480);
+    R.cases.rate.two = { f1: f1 && f1.f, read: t1.f, f2: f2 && f2.f, dframes: f1 && f2 && f2.f - f1.f, expectFrame: expect && expect.f, kept };
+    check(kept === true && f1 && f2 && f2.f - f1.f === 20 && f2.f === expect.f, "two taps 3 frames apart: the second kept, thrown " + (f1 && f2 && f2.f - f1.f) + " frames after the first (20: BEAT at 25 ms)");
     // five taps in a beat throw two
     // (dispatched in the page on the game's own frames: from outside, the software renderer's frames run on between
     // taps, and five taps 3 frames apart had spread over more than a beat)
