@@ -69,6 +69,9 @@ test('each skill stays on until told otherwise; caveman waits to be asked', () =
     ...turn('normal mode', 'ok'),
   ].map((l, i) => ({ ...l, timestamp: l.timestamp.replace(/00Z$/, String(i).padStart(2, '0') + 'Z') })));
   assert.deepEqual(s.turns.map(t => `${t.on.ponytail ? 'P' : '-'}${t.on.caveman ? 'C' : '-'}`), ['--', 'P-', 'PC', '-C', '--']);
+  const more = session([...turn('/caveman', 'ok'), ...turn('stop caveman-review', 'ok'), ...turn('/ponytail lite', 'ok'), ...turn('/ponytail full', 'ok')]
+    .map((l, i) => ({ ...l, timestamp: `2026-10-22T20:00:${String(i).padStart(2, '0')}Z` })));
+  assert.deepEqual(more.turns.map(t => `${t.on.ponytail ? 'P' : '-'}${t.on.caveman ? 'C' : '-'}`), ['PC', 'PC', '-C', 'PC'], 'lite judges none of full\'s laws; a sibling\'s stop is not caveman\'s');
 });
 
 test('the road: an ask is placed on its stage', () => {
@@ -99,6 +102,8 @@ test('to the power: the cut runs until the reply stands still, and every fact su
   assert.equal(power(words, 'That is not really it.').n, 0, 'a negated word is meaning, not filler');
   assert.equal(power(words, "It doesn't really work.").n, 0, 'a contraction negates too');
   assert.equal(power(words, 'This is really slow. Let me know if it does not help.').n, 1, 'a refused cut does not hide the next');
+  assert.equal(power(words, 'You cannot just copy the file.').n, 0);
+  assert.equal(power(words, 'Two exports work. Let me know if you want the CSV or the JSON.').n, 0, 'a question offering a choice stays');
 });
 
 test('a turn\'s facts: lines, checks, dependencies, shortcuts, the last line', () => {
@@ -113,7 +118,14 @@ test('a turn\'s facts: lines, checks, dependencies, shortcuts, the last line', (
     { name: 'Edit', input: { file_path: 'a.js', old_string: '', new_string: '// shortcut: linear scan, upgrade past 10k rows\n// shortcut: no cache' } },
   ] };
   const g = facts(t);
-  assert.equal(g.installs, 1, 'restoring the lockfile is not a new dependency');
+  assert.equal(g.unasked, 1, 'restoring the lockfile is not a new dependency');
+  const asked = facts({ ask: 'Install sharp so the thumbnails resize', replies: [], tools: [{ name: 'Bash', input: { command: 'npm install sharp@0.33' } }] });
+  assert.equal(asked.unasked, 0, 'a dependency the person asked for is never cut');
+  const quoted = facts({ replies: [], tools: [{ name: 'Bash', input: { command: "cat > t.mjs <<'EOF'\nrun('npm install left-pad')\nEOF\ncd x && npm install sharp" } }] });
+  assert.equal(quoted.unasked, 1, 'an install inside a heredoc is text, not an install');
+  assert.equal(facts({ replies: ['Re-measured after the edit: saves 412 tokens per turn.'], tools: [] }).claimsSaving, false, 'a measured saving');
+  const told = facts({ replies: ["I can't push: the remote denied access."], tools: [{ name: 'Bash', input: { command: 'git push' }, error: 'Permission denied' }] });
+  assert.equal(told.failedUnsaid, false, 'a failure named in other words is said');
   assert.equal(g.untriggered, 1, 'only the shortcut that names no upgrade');
   assert.equal(g.claimsSaving, true);
   assert.equal(facts({ replies: ['All 15 favorites were saved.'], tools: [] }).claimsSaving, false, 'saved, as in stored');
@@ -157,12 +169,10 @@ test('the reflection keeps the laws it measures, to the second power', () => {
 });
 
 test('the hook speaks only when there is something to say', () => {
-  assert.equal(moment(session(local)), "Reflect: stage 3, Open the door; A proxy 403 is fixed in the environment's settings (allowed domains, a credential), not in the chat.");
-  assert.equal(moment(session(remote)), 'Reflect: stage 3, Open the door.');
+  assert.equal(moment(session(local)), "Reflect: A proxy 403 is fixed in the environment's settings (allowed domains, a credential), not in the chat.");
+  assert.equal(moment(session(remote)), '', 'placing a session on the road is the report\'s, not one ask\'s');
   assert.equal(moment(session([...turn('/caveman', 'Sure! Done.')])), 'Reflect: ceremony a cut still removes.');
   assert.equal(moment(session(turn('thanks', 'Done.'))), '');
-  const again = session([...turn('Publish the page', 'Done.'), ...turn('ok', 'Done.'), ...turn('Publish the page again', 'Done.')].map((l, i) => ({ ...l, timestamp: `2026-10-22T20:00:0${i}Z` })));
-  assert.equal(moment(again), '', 'the same stage is not announced twice');
   assert.equal(moment({ turns: [] }), '');
 });
 
