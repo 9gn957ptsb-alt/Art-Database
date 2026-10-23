@@ -40,6 +40,9 @@ const json = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
 const FORMS_OPEN = [2, 4, 11, 12, 13, 15, 16, 23, 24, 27, 35, 41, 50, 64, 67];
 const EYE = 1.62;
 const data = json(path.join(ROCKET, "homage.json"));
+// --studies: the unit's studies too, in their row beside the tree (Homage.row, studies.json), each mesh checked as the
+// homage's figures are, from its stone
+const studies = process.argv.includes("--studies") ? json(path.join(ROCKET, "studies.json")) : null;
 const forms = window.Forms.load(json(path.join(ROCKET, "sections.json")));
 const cat = json(path.join(ROCKET, "catalogue.json"));
 const argv = process.argv.slice(2);
@@ -89,8 +92,8 @@ const unit = (a) => { const n = Math.hypot(a[0], a[1], a[2]); return a.map((q) =
 
 /* A figure seen from its stone, against its drawing: pixels of a different tone, off the edges of the
    drawing, of those the drawing covers. */
-function closes(fig, key, size = 220) {
-  const src = data[key], shape = Homage.shapeOf(src), fr = Homage.frameOf(src);
+function closes(fig, key, size = 220, own) {
+  const src = own || data[key], shape = Homage.shapeOf(src), fr = Homage.frameOf(src);
   const E = fig.eye, C = fig.centre, F = unit([C[0] - E[0], C[1] - E[1], C[2] - E[2]]);
   const U = unit([-F[0] * F[1], 1 - F[1] * F[1], -F[2] * F[1]]), R = cross(F, U);
   // Only the figure's own triangles (its support rod comes after them).
@@ -104,7 +107,7 @@ function closes(fig, key, size = 220) {
   const seen = raster(pos, shape.W, idx, { E, F, U, R, fov }, size);
   // The drawing: its own triangles, orthographic down its eye, at the same size on the page.
   // (centred on the middle of its drawing, as the figure is drawn in about it)
-  const P = shape.P.map((v) => v * Homage.SCALE), axes = [fr.r, fr.u, fr.e], mid = axes.map((v) => {
+  const P = shape.P.map((v) => v * (shape.scale || Homage.SCALE)), axes = [fr.r, fr.u, fr.e], mid = axes.map((v) => {
     let lo = 1e9, hi = -1e9;
     for (let i = 0; i < P.length; i += 3) { const q = P[i] * v[0] + P[i + 1] * v[1] + P[i + 2] * v[2]; lo = Math.min(lo, q); hi = Math.max(hi, q); }
     return (lo + hi) / 2;
@@ -230,6 +233,16 @@ list.forEach(([kind, e]) => {
     return f.name.split(" ")[1] + " " + D.toFixed(2) + " m, " + c.diff + "/" + c.cover + " off";
   });
   console.log(label + h.row.rho + " m, turn " + turn.toFixed(2) + ", faces " + side + ", hidden " + h.row.hidden + " | " + figs.join(" | ") + "  (" + ms + " ms)");
+  if (studies) {
+    const why2 = {}, t1 = Date.now(), S = Homage.row(place, studies, { wake, eye: EYE, B: Pl.B, avoid: h.box, why: why2 }), ms2 = Date.now() - t1;
+    if (!S) { bad += 1; console.log("".padEnd(35) + "studies: NO ROOM (" + ms2 + " ms) " + JSON.stringify(why2)); return; }
+    const tr = place.tree || place.crash, sf = S.figures.map((f) => {
+      const c = closes(f, null, 220, S.studies[f.i]);
+      if (c.diff > c.cover * 0.002) { bad += 1; }
+      return f.name + " " + c.diff + "/" + c.cover + " off";
+    });
+    console.log("".padEnd(35) + "studies: " + S.row.rho + " m from the tree (" + tr.x + "," + tr.z + "), " + S.stands.length + " stones | " + sf.join(" | ") + "  (" + ms2 + " ms)");
+  }
 });
 if (spare) { console.log(spare + " of " + list.length + " places have no room for the homage: it is left out there"); }
 console.log(bad ? bad + " problems" : "all ok");

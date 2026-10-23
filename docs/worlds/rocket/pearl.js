@@ -6,9 +6,10 @@
      opts.skip = palette ids the game's block shader reads as no block (water, a note), which his cells never take.
    PearlBody.pose(body, phase, amount, act) -> { part: mat4 }: each part's cells -> his own frame (metres, y up, he
      faces -z, the origin the ground under his head), the walk at that phase; column-major as rocket.js's. act
-     (optional) is what his arms and upper body do over the walk: { arms, twist, right, fling }, arms and twist in
-     radians (the smash); right, 0 to 1, the right arm raised to throw (the sight); fling, in radians, that arm turned
-     about the shoulder line after a throw.
+     (optional) is what his arms and upper body do over the walk: { arms, twist, right, fling, spin, lift }, arms and
+     twist in radians (the smash); right, 0 to 1, the right arm raised to throw (the sight); fling, in radians, that
+     arm turned about the shoulder line after a throw; spin, in radians, and lift, in metres, the whole of him (the
+     smash's styles).
    PearlBody.place(m, x, y, z, yaw) -> mat4: his frame -> the world, stood at (x, y, z), facing the yaw.
    PearlBody.phaseStep(body, phase, metres): the walk's phase after walking that far (a stride is two legs).
    PearlBody.HEAD_VS, HEAD_FS: his head's own program, the true sphere solved per pixel.
@@ -389,6 +390,9 @@
   // "And when I click with the reflex sight up, I am able to throw something"; build's throwArm): it lets go of the
   // guitar, which stays with his left glove and his torso; act.fling, that raised arm about the shoulder line after a
   // throw (- brings the forearm down to the fore). With act.arms (a swing let go, coming back) it turns with both arms.
+  // act.spin, his whole body about the upright through his head's centre (+ to his right, as twist), and act.lift,
+  // his whole body up, in metres: the smash's spin and its slam's leap (the artist, 21 Oct 2026: "Give the animations
+  // more style, look at different hand combat styles of fighting").
   function pose(body, phase, amount, act) {
     var W = body.walk, th = W.thigh_swing_deg * Math.PI / 180 * (amount == null ? 1 : amount), J = body.joints;
     var kn = W.knee_bend_deg / W.thigh_swing_deg, tw = W.shoulder_twist_deg / W.thigh_swing_deg;
@@ -409,6 +413,7 @@
       right = about(mmul(RA(u1, TA.a2 * k), R1), sR2);
       if (act.fling) { right = mmul(about(RA([sR2[0] - sL2[0], sR2[1] - sL2[1], sR2[2] - sL2[2]], act.fling), sR2), right); }
     }
+    if (act && (act.spin || act.lift)) { bob = mmul(mmul(T(0, act.lift || 0, 0), RY(-(act.spin || 0))), bob); }
     var M = {};
     var rest = function (p) { return mmul(T(p.org[0], p.org[1], p.org[2]), S(body.cell)); };   // cells -> his frame at rest
     body.parts.forEach(function (p) {
