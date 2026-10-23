@@ -200,6 +200,30 @@ test('a usage limit cuts a turn off: a trap on the road, not a reply that skippe
   }
 });
 
+test('a change handed to background work owes its last line when the work comes back', () => {
+  const at = i => `2026-10-22T20:00:0${i}Z`;
+  const handOff = [
+    { type: 'user', timestamp: at(0), message: { content: 'Review the loop' } },
+    { type: 'assistant', timestamp: at(1), message: { content: [
+      { type: 'tool_use', id: 'e', name: 'Edit', input: { file_path: 'a.js', old_string: 'x', new_string: 'y' } },
+      { type: 'tool_use', id: 'w', name: 'Workflow', input: {} },
+    ] } },
+    { type: 'user', timestamp: at(2), message: { content: [{ type: 'tool_result', tool_use_id: 'w', content: 'Workflow launched in background. Task ID: w1' }] } },
+    { type: 'assistant', timestamp: at(3), message: { content: [{ type: 'text', text: 'The reviewers are running.' }] } },
+  ];
+  const back = reply => [
+    { type: 'user', timestamp: at(4), message: { content: '<task-notification><task-id>w1</task-id><status>completed</status></task-notification>' } },
+    { type: 'assistant', timestamp: at(5), message: { content: [{ type: 'text', text: reply }] } },
+  ];
+  assert.equal(moment(session(handOff)), '', 'a progress note while the work runs is not judged');
+  assert.deepEqual(broken(session([...handOff, ...back('Both reviews pass. Not checked: the phone layout.')]).turns.at(-1)), []);
+  assert.deepEqual(broken(session([...handOff, ...back('Both reviews pass.')]).turns.at(-1)), ['a change with no last line on what was skipped'],
+    'the turn the work came back to owes the line for the change made before it');
+  const asked = session([...handOff, { type: 'user', timestamp: at(4), message: { content: 'thanks' } }, { type: 'assistant', timestamp: at(5), message: { content: [{ type: 'text', text: 'Ok.' }] } }]);
+  assert.equal(asked.turns.at(-1).after, undefined, "the person's next ask is not the work coming back");
+  assert.deepEqual(broken(asked.turns.at(-1)), [], 'and while that work is still out, no turn is judged on its last line');
+});
+
 test('the script takes nothing it does not need: Node\'s own modules only', () => {
   const src = readFileSync(new URL('../gameplan/reflect.mjs', import.meta.url), 'utf8');
   for (const [, from] of src.matchAll(/^import .* from '([^']+)'/gm)) assert.match(from, /^node:/);
