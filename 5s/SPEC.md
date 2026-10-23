@@ -1776,6 +1776,17 @@ The app (`app.js`, the integration team):
 - **The opening zoom fits the island both ways**: clamp(0.9 × min(the map's width / 520, its height
   above the foot / 380), 0.5, 1.2). At 390 × 844 and 1280 × 800 nothing changes; a phone on its side
   (844 × 390) opened at 1.2, with the island cut off and the next level under Play, and now opens at 0.5.
+- **The focus lands on Play level N when the kingdom opens**, as Back to the board lands on the board's
+  Play, and on the next level when the list of levels opens. Before, the button that opened the view was
+  gone and the focus fell to the page (`<body>`). `ui.smoke.cjs` tests it.
+- **An area found in Example mode stays there.** It was announced ("A new area: Split.") the next time
+  the person's own kingdom opened; switching Example mode on or off now forgets it.
+- **Measured, not changed: a very long saga pans more slowly.** With the CPU slowed 4× at 390 × 844 ×3,
+  the p95 frame while panning is 16.8 ms up to 30 levels won and 33 ms from 100 to 999 (it opens in
+  about 0.85 s at 999, and nothing breaks). The cost is Chrome re-layering the level buttons over the
+  islands' canvases inside the composited table. A 2D `translate()` in place of `translate3d()` brings
+  100–200 levels back to 16.8 ms in Chrome, but it would make Safari repaint the table on every frame, and
+  Safari could not be measured here, so the table stays composited.
 
 ### Decisions, obstacles and their resolutions
 - *Royal Kingdom has no clock inside a level* (its levels count moves; its races are events around
