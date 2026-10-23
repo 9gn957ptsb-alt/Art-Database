@@ -32,6 +32,14 @@ fs.mkdirSync(out, { recursive: true });
   await shot("smash_swing", 8);
   await shot("smash_after", 20);
   console.log("aim", aim, "swing", await D(() => JSON.stringify(window.Rocket.debug().swing ? window.Rocket.debug().swing() : null)));
+  // the sight raised (R, or the button on a phone) and a pearl thrown (a click, or a tap)
+  await D(() => { window.Rocket.debug().P.pitch = 0.05; });
+  if (view === "phone") { const b = await D(() => { const r = document.getElementById("v-sight").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }); await P.touchscreen.tap(b.x, b.y); }
+  else { await P.keyboard.press("r"); }
+  await shot("sight_up", 22);
+  if (view === "phone") { await P.touchscreen.tap(r.x, r.y - 120); } else { await P.mouse.click(r.x, r.y); }
+  await shot("thrown", 10);
+  console.log("sight", await D(() => JSON.stringify((({ up, tag }) => ({ up, tag }))(window.Rocket.debug().sight()))), "pearls", await D(() => JSON.stringify(window.Rocket.debug().pearls().map((p) => [p.state, !!p.first]))), "said", await D(() => JSON.stringify(window.__toasts)));
   console.log("errors", JSON.stringify(errors));
   await browser.close();
 })().catch((e) => { console.error("FAIL", e); process.exit(1); });
