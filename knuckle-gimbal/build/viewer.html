@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: one screen. The product fills the stage; a small dock at the bottom slides the arm, turns the grip, slides the ring, opens the inside view and shows a hand holding it. */
+/* Layout: one screen. The product fills the stage; a small dock at the bottom slides the arm, turns the grip, slides the ring, opens the inside view, and shows a hand holding it and the phone on it. */
 :root {
   --bg: #e4e6e9;
   --bg-2: #f6f7f8;
@@ -65,13 +65,13 @@ body {
 .hint { font-size: 12px; color: var(--muted); transition: opacity .4s; text-align: center; }
 .hint.gone { opacity: 0; }
 .dock {
-  pointer-events: auto; width: min(100%, 760px);
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto; gap: 10px 18px; align-items: end;
+  pointer-events: auto; width: min(100%, 860px);
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto auto; gap: 10px 18px; align-items: end;
   padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
 }
 #clenchCtl { grid-column: 1 / -1; }
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .dock { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; }
 }
 .ctl { display: grid; gap: 4px; min-width: 0; }
@@ -126,6 +126,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         </div>
         <button class="tgl" id="inside" type="button" aria-pressed="false">Show inside <i></i></button>
         <label class="chk" id="handBox" hidden><input type="checkbox" id="hand"> Hand</label>
+        <label class="chk" id="phoneBox" hidden><input type="checkbox" id="phone"> Phone</label>
       </div>
     </div>
   </div>
@@ -141,6 +142,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   const Q = new Int16Array(bytes.buffer);
   const PARTS = META.parts.map(p => ({ ...p, q: Q.subarray(p.start, p.start + p.count) }));
+
+  // ---------- phone: an orange iPhone 17 Pro Max on the MagSafe face, drawn from published dimensions by phone.py ----------
+  const PHONE = /*PHONE_META*/null;
+  const PHONE_B64 = "/*PHONE_DATA*/";
+  if (PHONE) {
+    const bin = atob(PHONE_B64), by = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) by[i] = bin.charCodeAt(i);
+    const PQ = new Int16Array(by.buffer);
+    for (const p of PHONE.parts) PARTS.push({ ...p, q: PQ.subarray(p.start, p.start + p.count) });
+  }
 
   // ---------- hand: the WebXR generic left hand, posed in the grip by hand_fit.py ----------
   // Hand model from @webxr-input-profiles/assets (generic-hand), MIT License, Copyright (c) 2019 Amazon.
@@ -200,11 +211,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   // ---------- articulation (SketchUp pose: arm out 45 mm, grip turned 90° toward the phone, hinge axis at x 79.25, z 16.5) ----------
   // grip angle: 0 = flat out, +90 = turned toward the phone (hold), −180 = folded back over the puck (stowed)
   const POSE_E = 45, POSE_AX = 79.25, AXIS_Z = 16.5, POSE_GRIP = 90;
-  const LIFT = { rotor: 0, stator: 10, battery: 20, board: 30, shell: 44, stage1: 44, stage2: 44, knuckle: 44, ringT: 44, ringB: 44, hand: 44 };
+  const LIFT = { rotor: 0, phone: 0, stator: 10, battery: 20, board: 30, shell: 44, stage1: 44, stage2: 44, knuckle: 44, ringT: 44, ringB: 44, hand: 44 };
   const RING_OUT = 16;   // inside view: the rings lift out of the track by this much
-  const state = { E: 45, grip: 90, ring: 0, inside: 0, insideTarget: 0, hand: false, clench: 1 };
-  // the hand holds the grip at the hold angle; turned anywhere else it lets go, and the inside view pulls the rings out of it
-  const handShown = () => !!hand && state.hand && state.inside === 0 && state.grip === POSE_GRIP;
+  const state = { E: 45, grip: 90, ring: 0, inside: 0, insideTarget: 0, hand: false, clench: 1, phone: false };
+  // the hand turns with the grip (the Grip slider stops where it would run into the puck or phone); the inside view pulls the rings out of it
+  const handShown = () => !!hand && state.hand && state.inside === 0;
   // 3×4 row-major transform per group
   function knuckleMatrix(dz) {
     const d = (state.grip - POSE_GRIP) * Math.PI / 180, c = Math.cos(d), s = Math.sin(d);
@@ -237,7 +248,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   const HOME = { theta: -0.5, phi: 1.3 };
   const view = { theta: HOME.theta, phi: HOME.phi, dist: 300, target: [0, 0, 0], vTheta: 0, vPhi: 0 };
   let home = null, fitDist = 300, anim = null;
-  function bounds(withHand) {
+  function bounds(withHand, withPhone) {
     let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
     const add = (m, q, s) => {
       for (let i = 0; i < q.length; i += 3) {
@@ -247,24 +258,29 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         if (X > hi[0]) hi[0] = X; if (Y > hi[1]) hi[1] = Y; if (Z > hi[2]) hi[2] = Z;
       }
     };
-    for (const p of PARTS) add(groupMatrix(p.group), p.q, 100);
+    for (const p of PARTS) if (withPhone || p.group !== "phone") add(groupMatrix(p.group), p.q, 100);
     if (withHand) add(groupMatrix("hand"), hand.pos, 1);
     const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], corners = [];
     for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) corners.push([x, y, z]);
     return { c, corners, lo, hi, r: Math.hypot(hi[0] - c[0], hi[1] - c[1], hi[2] - c[2]) };
   }
-  const B0 = bounds(false), B1 = hand ? (() => {
+  function span(withHand, withPhone) {
+    if (!withHand) return bounds(false, withPhone);
+    // with the hand: every pose of its fingers and the ring finger's slide
     let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
     for (const [c, sl] of [[0, 0], [1, 0], [0, 8], [1, 8]]) {
-      hand.pose(c, sl); const b = bounds(true);
+      hand.pose(c, sl); const b = bounds(true, withPhone);
       for (let i = 0; i < 3; i++) { lo[i] = Math.min(lo[i], b.lo[i]); hi[i] = Math.max(hi[i], b.hi[i]); }
     }
     hand.pose(1, 0);
     const c = [0, 1, 2].map(i => (lo[i] + hi[i]) / 2), corners = [];
     for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) corners.push([x, y, z]);
     return { c, corners, lo, hi, r: Math.hypot(hi[0] - c[0], hi[1] - c[1], hi[2] - c[2]) };
-  })() : B0;
-  const frame = () => state.hand ? B1 : B0;          // what the home view fits: the product, or the product and the hand
+  }
+  // what the home view fits: the product, with the hand and the phone when they are shown
+  const FRAMES = {};
+  for (const h of hand ? [0, 1] : [0]) for (const ph of PHONE ? [0, 1] : [0]) FRAMES[h + "" + ph] = span(!!h, !!ph);
+  const frame = () => FRAMES[(state.hand ? 1 : 0) + "" + (state.phone ? 1 : 0)];
   // screen layout: the product is framed in the space between the top bar and the dock
   const layout = { w: 1, h: 1, cx: 0.5, cy: 0.5, f: 1 };
   function measure() {
@@ -363,8 +379,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   const $ = id => document.getElementById(id);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   function gripLabel(a) { return a === 90 ? "90° hold" : a === 0 ? "0° flat" : a === -180 ? "stowed" : (a < 0 ? "−" + -a : a) + "°"; }
-  // turned toward the phone, the grip needs the arm out far enough to clear the phone's edge; a hand in it needs more
-  const eMin = a => a <= 30 ? 0 : state.hand && a === POSE_GRIP ? HAND.minE : Math.ceil(20 * (a - 30) / 60);
+  // turned toward the phone, the grip needs the arm out far enough to clear the phone's edge; with a hand in it,
+  // as far as hand_range.py found the hand needs at that angle
+  const eMin = a => state.hand ? HAND.eHand[a - HAND.gripMin] : a <= 30 ? 0 : Math.ceil(20 * (a - 30) / 60);
   function setE(v) { state.E = Math.max(v, eMin(state.grip)); $("slide").value = state.E; $("slideOut").textContent = state.E + " mm"; }
   $("slide").addEventListener("input", e => { setE(+e.target.value); applyPose(); invalidate(); });
   $("fold").addEventListener("input", e => {
@@ -375,19 +392,35 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   $("ring").addEventListener("input", e => { state.ring = +e.target.value; $("ringOut").textContent = state.ring + " mm"; poseHand(); applyPose(); invalidate(); });
   let handDirty = false;
   const DESC = $("stage").getAttribute("aria-label");
+  function describe() {
+    let more = state.phone ? " An orange iPhone 17 Pro Max is clipped to the MagSafe face." : "";
+    if (hand && state.hand) {
+      const grip = state.clench === 1 ? "fingers closed around its lower half" : state.clench === 0 ? "fingers open" : "fingers partly closed";
+      more += ` A left hand holds it: index and ring fingers through the rings, middle finger in the gap over the hinge, the palm's little-finger edge on the grip, ${grip}, the fin between the ring and little fingers, the little finger straight along the grip.`;
+    }
+    $("stage").setAttribute("aria-label", DESC.replace(" Drag to orbit", more + " Drag to orbit"));
+  }
   function poseHand() {
     if (!hand) return;
     if (state.hand) { hand.pose(state.clench, state.ring); handDirty = true; }
-    const grip = state.clench === 1 ? "fingers closed around its lower half" : state.clench === 0 ? "fingers open" : "fingers partly closed";
-    $("stage").setAttribute("aria-label", state.hand ? DESC.replace(" Drag to orbit", ` A left hand holds it: index and ring fingers through the rings, middle finger in the gap over the hinge, the palm's little-finger edge on the grip, ${grip}, the fin between the ring and little fingers, the little finger straight along the grip. Drag to orbit`) : DESC);
+    describe();
+  }
+  if (PHONE) {
+    $("phoneBox").hidden = false;
+    $("phone").addEventListener("change", e => {
+      state.phone = e.target.checked; describe(); applyPose();
+      const before = fitDist; measure(); view.dist *= fitDist / before;
+      $("reset").click();
+    });
   }
   if (hand) {
     $("handBox").hidden = false;
     $("hand").addEventListener("change", e => {
       state.hand = e.target.checked; $("clenchCtl").hidden = !state.hand;
+      $("fold").min = state.hand ? HAND.gripMin : -180;
       if (state.hand) {
-        // a hand can only hold the grip turned to the hold, with the rings in the track
-        state.grip = POSE_GRIP; $("fold").value = POSE_GRIP; $("foldOut").textContent = gripLabel(POSE_GRIP);
+        // the hand needs the rings in the track; folded back further than a hand fits, the grip returns to the hold
+        if (state.grip < HAND.gripMin) { state.grip = POSE_GRIP; $("fold").value = POSE_GRIP; $("foldOut").textContent = gripLabel(POSE_GRIP); }
         state.insideTarget = 0; $("inside").setAttribute("aria-pressed", "false"); if (reduce) state.inside = 0;
       }
       if (state.E < eMin(state.grip)) setE(state.E);
@@ -417,7 +450,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   });
 
   // ---------- renderer 1: plain canvas (instant, works everywhere) ----------
-  const COLOR2D = { si: [80, 77, 73], cf: [44, 46, 51], al: [104, 109, 118], st: [176, 180, 186], cu: [184, 115, 51], bat: [154, 160, 172], pcb: [31, 58, 44], port: [22, 22, 24], led: [120, 220, 170] };
+  const COLOR2D = { ph: [226, 112, 45], sc: [16, 17, 20], lr: [58, 50, 46], lg: [20, 22, 26], fl: [226, 220, 200], si: [80, 77, 73], cf: [44, 46, 51], al: [104, 109, 118], st: [176, 180, 186], cu: [184, 115, 51], bat: [154, 160, 172], pcb: [31, 58, 44], port: [22, 22, 24], led: [120, 220, 170] };
   const ctx = c2d.getContext("2d");
   const HIDDEN = new Set(["Motor Rotor Can", "Motor Stator", "Curved Battery", "Control Board"]);
   const DEPTH_BIAS = { stage1: 4, stage2: 7 };
@@ -452,6 +485,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     const tris = [];
     PARTS.forEach((p, pi) => {
       if (state.inside === 0 && HIDDEN.has(p.name)) return;          // sealed inside the shell
+      if (p.group === "phone" && !state.phone) return;
       const bias = DEPTH_BIAS[p.group] || 0;                            // nested arm stages draw before the rail around them
       const m = groupMatrix(p.group), q = SUB[pi].pos, n = SUB[pi].n, col = COLOR2D[p.mat];
       for (let i = 0, t = 0; i < q.length; i += 9, t += 3) {
@@ -522,7 +556,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     const fill = new T.DirectionalLight(0xffffff, 0.4); fill.position.set(220, -80, 40); scene.add(fill);
     const under = new T.DirectionalLight(0xffffff, 0.35); under.position.set(0, 60, -200); scene.add(under);
     const ground = new T.Mesh(new T.PlaneGeometry(4000, 4000), new T.ShadowMaterial({ opacity: 0.2 }));
-    ground.position.z = B0.lo[2] - 0.5; ground.receiveShadow = true; scene.add(ground);
+    ground.position.z = frame().lo[2] - 0.5; ground.receiveShadow = true; scene.add(ground);
 
     // carbon fiber: 2×2 twill, 1 mm tows (the same weave as the SketchUp material)
     const S = 256, tow = 32, cv = document.createElement("canvas"); cv.width = cv.height = S;
@@ -552,6 +586,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       port: new T.MeshStandardMaterial({ color: 0x141416, roughness: 0.5 }),
       led: new T.MeshStandardMaterial({ color: 0x78dcaa, emissive: 0x2a8a5a, roughness: 0.3 }),
       si: new T.MeshStandardMaterial({ color: new T.Color(0x4a4744).convertSRGBToLinear(), roughness: 0.9, metalness: 0, bumpMap: grain, bumpScale: 0.35 }),   // soft-touch silicone overmold
+      // the phone: orange anodized aluminium, black front glass, dark lens rings and glass, the flash
+      ph: new T.MeshStandardMaterial({ color: new T.Color(0xe2702d).convertSRGBToLinear(), roughness: 0.42, metalness: 0.45 }),
+      sc: new T.MeshPhysicalMaterial({ color: 0x0a0b0d, roughness: 0.1, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05 }),
+      lr: new T.MeshStandardMaterial({ color: new T.Color(0x3a322e).convertSRGBToLinear(), roughness: 0.3, metalness: 0.7 }),
+      lg: new T.MeshPhysicalMaterial({ color: 0x0e1014, roughness: 0.05, metalness: 0.2, clearcoat: 1 }),
+      fl: new T.MeshStandardMaterial({ color: new T.Color(0xe2dcc8).convertSRGBToLinear(), roughness: 0.35 }),
     };
     // smooth normals across edges under 35° (as SketchUp softens them), box-mapped UVs at 8 mm per weave tile
     function geometry(q) {
@@ -604,6 +644,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     return { T, renderer, scene, camera, groups, handGeo, ground };
   }
   function poseThree() {
+    if (gl.groups.phone) gl.groups.phone.visible = state.phone;
     if (gl.groups.hand) {
       gl.groups.hand.visible = handShown();
       if (handDirty) { gl.handGeo.attributes.position.needsUpdate = true; gl.handGeo.attributes.normal.needsUpdate = true; handDirty = false; }
