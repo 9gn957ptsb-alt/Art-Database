@@ -169,9 +169,11 @@ def works_of(db, name, cache, per):
     rows = rows[:: len(rows) // per] if len(rows) > 2 * per else rows   # (across all of a prolific artist's saves, not their first)
     rows = rows[:per]
     ms, px = [], []
-    for med, url, rank in rows:
-        img = cache / f"{rank:05d}.jpg"
-        if not img.exists() and url:
+    for med, url, _ in rows:
+        if not url:
+            continue
+        img = cache / (url.split("/")[-2] + ".jpg")       # by the image, as collection_soil.py does: save_rank moves with every save
+        if not img.exists():
             subprocess.run(["curl", "-s", "-m", "30", "-o", str(img), url], check=False)
         if img.exists() and img.stat().st_size > 1000:
             try:
