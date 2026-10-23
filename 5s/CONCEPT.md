@@ -83,6 +83,15 @@ With a screenshot of the App Store listing of Royal Kingdom ("King Richard's Mat
   implemented into the Set game, as well as, the idea that you are building a kingdom by playing this
   game and having a map view of your kingdom that you roam to find new levels in new areas"
 
+With two pictures side by side, 23 Oct 2026: above, a render made in the development of Holographic
+Mr Pearl (white rings laced over a centred triangle, grey blocky architecture, a dark ground); below, a
+Vincent van Gogh painting of trees in the garden of Saint-Paul Hospital (branches swinging over leaning
+trunks, a small figure on the ground):
+
+- "These are the type of juxtapositions I want to find in the Set game. The top is an image you sent
+  me in the development of Holographic Mr Pearl and the bottom is a Vincent Van Gogh painting. Notice
+  the similarities in their composition and overall feeling"
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
