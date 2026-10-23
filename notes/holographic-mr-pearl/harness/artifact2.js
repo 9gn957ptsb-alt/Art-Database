@@ -1,11 +1,11 @@
 // artifact2.js - the built Artifact (on 8805) boots and plays: the wake-up, walking, Holo out and back (the body
-// follows), a smash at the crosshair; no page errors. node artifact2.js desk|phone outdir
+// follows), a smash at the crosshair; no page errors. node artifact2.js desk|phone outdir [port, 8805]
 const { open, frames, state } = require("./game.js");
 const fs = require("fs");
-const [view, out] = process.argv.slice(2);
+const [view, out, port] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
 (async () => {
-  const { browser, P, errors } = await open({ view, play: true, virtual: 25, url: "http://127.0.0.1:8805/index.html" });
+  const { browser, P, errors } = await open({ view, play: true, virtual: 25, url: "http://127.0.0.1:" + (port || 8805) + "/index.html" });
   const D = (fn, arg) => P.evaluate(fn, arg);
   let n = 0;
   const shot = async (name, wait) => { await frames(P, wait || 2); const s = await state(P); await P.screenshot({ path: `${out}/${String(++n).padStart(2, "0")}_${name}.png` }); console.log(name, JSON.stringify(s)); return s; };
@@ -40,6 +40,7 @@ fs.mkdirSync(out, { recursive: true });
   if (view === "phone") { await P.touchscreen.tap(r.x, r.y - 120); } else { await P.mouse.click(r.x, r.y); }
   await shot("thrown", 10);
   console.log("sight", await D(() => JSON.stringify((({ up, tag }) => ({ up, tag }))(window.Rocket.debug().sight()))), "pearls", await D(() => JSON.stringify(window.Rocket.debug().pearls().map((p) => [p.state, !!p.first]))), "said", await D(() => JSON.stringify(window.__toasts)));
+  console.log("rows", JSON.stringify(await D(() => { const d = window.Rocket.debug(), h = d.homage(), s = d.studies && d.studies(); return { homage: h ? h.stands.length : 0, studies: s ? s.stands.map((t) => t.name) : null }; })));
   console.log("errors", JSON.stringify(errors));
   await browser.close();
 })().catch((e) => { console.error("FAIL", e); process.exit(1); });
