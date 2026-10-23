@@ -33,7 +33,7 @@ build contract) before changing anything.
 | `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
 | `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
 | `test/` | engine, match, bring, ground, play and UI tests; `test/play.html` is the game's harness, `test/sim.mjs` its playtest; `test/fixture/` is a synthetic 50-card deck (no real data) |
-| `gameplan/reflect.mjs` | the Game Plan as code: reads Claude Code transcripts, places each session on the plan's seven stages, finds the traps it met, and judges its turns against the laws ponytail and caveman share (each only while that skill is on). `node 5s/gameplan/reflect.mjs <transcripts or folders>` prints the reflection; `--hook` is a Stop hook that prints one line when a turn met a trap or broke a law. Transcripts stay out of the repository |
+| `gameplan/reflect.mjs` | the Game Plan as code: reads Claude Code transcripts, places each session on the plan's seven stages, finds the traps it met, and judges its turns against the laws ponytail and caveman share (each only while that skill is on). `node 5s/gameplan/reflect.mjs <transcripts or folders>` prints the reflection; `--hook` is a Stop hook that prints one line when a turn met a trap or broke a law. `gameplan/REFRESH.md` is how a routine redoes the reflection every other day. Transcripts stay out of the repository |
 | `test/deck.test.py` | checks a built deck: the Artsy cards and the bookmarks' b and m cards (source, url, kinds, images) |
 | `dist/` | built output; gitignored |
 
