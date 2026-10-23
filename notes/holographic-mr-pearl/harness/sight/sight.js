@@ -231,7 +231,8 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
   {
     R.cases.rate = {};
     await clear(); await frames(21);
-    await L.recOn(G, true);
+    // (recording a few frames before the tap, so the frame the first is thrown in is on the record)
+    await L.recOn(G, true); await frames(3);
     await tap();
     const t1 = await D(() => ({ f: window.__frames, thrown: window.Rocket.debug().sight().thrown }));
     await frames(3); await tap();
