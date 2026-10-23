@@ -519,7 +519,10 @@ async function main() {
       ok(grounds.length === 0 && nAll > 0, 'All families: each in the Iterations look, at rest on its ground', grounds.slice(0, 4).join(', ') || nAll + ' families');
       await page.click('.mode[data-mode="board"]');
       await page.waitForTimeout(300);
-      ok(!(await lab(page, () => MotionLab.running)), 'the Board autoplays nothing');
+      // the clock also runs while it paints the tiles' still frames the first time; on a busy machine that outlasts 300 ms
+      await page.waitForFunction(() => !MotionLab.running, null, { timeout: 3000 }).catch(() => {});
+      const gb = await lab(page, () => MotionLab.groups());
+      ok(!(await lab(page, () => MotionLab.running)) && Object.keys(gb).every((k) => !gb[k].playing), 'the Board autoplays nothing');
       await shot(page, 'reduced-board');
       await page.click('.mode[data-mode="moments"]');
       await page.waitForTimeout(200);
