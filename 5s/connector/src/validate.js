@@ -12,6 +12,7 @@ const optStr = (x, max) => x == null || isStr(x, max);
 const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 const SLOTS = ['wall', 'window', 'picture', 'floor', 'object'];
+const BUILT = /^[A-Za-z0-9_-]{1,10}$/;
 
 export const LIMITS = Object.freeze({ judgments: 50000, sets: 500, own: 1000, notes: 5000, days: 5000, text: 2000, name: 200, url: 2048,
   assoc: 400, levels: 999, paintings: 24 });   // Set's game (SPEC "Set: the board and the game", "Data"): the app's own caps
@@ -129,6 +130,9 @@ function saga(g) {
   }
   if (g.boost != null && !(isObj(g.boost) && ['pass', 'turn', 'more'].every((k) => g.boost[k] == null || isInt(g.boost[k], 0, 9)))) return 'state.saga.boost must hold 0 to 9 of each booster.';
   if (!(g.plays == null || isInt(g.plays, 0, Number.MAX_SAFE_INTEGER)) || !optStr(g.day, 20)) return 'state.saga has plays or a day of the wrong kind.';
+  // The clock and the kingdom (SPEC "Set: the clock and the kingdom", "Data"): a best time and the id a level built.
+  if (!(g.time == null || (Array.isArray(g.time) && g.time.length <= LIMITS.levels && g.time.every((x) => isInt(x, 0, 9999))))) return 'state.saga.time must be a list of at most ' + LIMITS.levels + ' whole seconds, 0 to 9999.';
+  if (!(g.built == null || (Array.isArray(g.built) && g.built.length <= LIMITS.levels && g.built.every((x) => x === null || (typeof x === 'string' && BUILT.test(x)))))) return 'state.saga.built must be a list of at most ' + LIMITS.levels + ' card ids of up to 10 characters, or nulls.';
   return '';
 }
 
@@ -170,6 +174,7 @@ export function checkState(s, deck) {
   if (s.seen && s.seen.path != null && !(Array.isArray(s.seen.path) && s.seen.path.every((k) => isStr(k, 40)))) return 'state.seen.path must be a list of milestone names.';
   if (s.opts != null && !isObj(s.opts)) return 'state.opts must be an object.';
   if (s.opts && ['sound', 'hints'].some((k) => !(s.opts[k] == null || typeof s.opts[k] === 'boolean'))) return 'state.opts.sound and state.opts.hints must be true or false.';
+  if (s.opts && !(s.opts.clock == null || [0, 5, 10].includes(s.opts.clock))) return 'state.opts.clock must be 0 (off), 5 or 10 seconds a move.';
   if (s.hub != null) {
     const h = s.hub;
     if (!isObj(h)) return 'state.hub must be an object.';

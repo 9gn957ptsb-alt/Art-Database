@@ -532,7 +532,7 @@ test('clusters: by kind before any associations; merged up to the cap', () => {
 
 test('the saga: plays, stars and best, boosters earned, used and capped; paintings capped at 24', () => {
   let { saga, earned } = M.recordLevel(undefined, { n: 1, won: true, stars: 3, score: 9000 }, 1);
-  assert.deepEqual(saga, { stars: [3], best: [9000], boost: { pass: 2, turn: 1, more: 1 }, plays: 1, day: null });
+  assert.deepEqual(saga, { stars: [3], best: [9000], boost: { pass: 2, turn: 1, more: 1 }, plays: 1, day: null, time: [], built: [] });
   assert.deepEqual(earned, { pass: 1, turn: 0, more: 0 });
   ({ saga, earned } = M.recordLevel(saga, { n: 1, won: true, stars: 3, score: 100 }, 2));
   assert.deepEqual([saga.stars, saga.best, earned.pass], [[3], [9000], 0]);   // 3 stars only once
@@ -556,6 +556,60 @@ test('the saga: plays, stars and best, boosters earned, used and capped; paintin
   assert.deepEqual(ps[0], { at: 0, n: 7, cols: 1, rows: 1, c: 'abcdef' });
   assert.equal(M.keepPainting(ps, res, 99), null);
   assert.equal(M.keepPainting([], { n: 1, painting: null }, 1), null);
+});
+
+test('area(k): the episodes, then a new island every five levels', () => {
+  assert.deepEqual(M.area(0), { k: 0, name: 'Sort', line: 'Line things up.', from: 1, to: 5 });
+  assert.deepEqual(M.area(5), { k: 5, name: 'Another five', line: 'All of it, together.', from: 26, to: 30 });
+  assert.deepEqual(M.area(6), { k: 6, name: 'Another five 2', line: 'All of it, together.', from: 31, to: 35 });
+  assert.deepEqual(M.area(7), { k: 7, name: 'Another five 3', line: 'All of it, together.', from: 36, to: 40 });
+});
+
+test('the clock in the saga: time passed in; a win in time keeps the best; nothing else is earned', () => {
+  const win = (n, secs, clock, stars = 1) => ({ n, won: true, stars, score: 10, secs, clock });
+  let r = M.recordLevel(undefined, win(1, 41, 75));
+  assert.deepEqual([r.first, r.inTime, r.saga.time, r.earned], [true, true, [41], { pass: 0, turn: 0, more: 0 }]);
+  r = M.recordLevel(r.saga, win(1, 60, 75));
+  assert.deepEqual([r.first, r.inTime, r.saga.time], [false, true, [41]], 'a slower win in time keeps the lower');
+  r = M.recordLevel(r.saga, win(1, 30, 75));
+  assert.deepEqual(r.saga.time, [30]);
+  const before = r.saga.time.slice();
+  for (const x of [win(1, 76, 75), win(1, 20, 0), win(1, 0, 75), { n: 1, won: false, stars: 0, score: 0, secs: 5, clock: 75 }, win(1, undefined, undefined)]) {
+    r = M.recordLevel(r.saga, x);
+    assert.deepEqual([r.inTime, r.first, r.saga.time], [false, false, before], 'not in time, the clock off, no time or a loss: ' + JSON.stringify(x));
+  }
+  r = M.recordLevel(r.saga, win(2, 200, 90));
+  assert.deepEqual([r.first, r.inTime, r.saga.time, r.saga.stars.length], [true, false, [30], 2]);
+  r = M.recordLevel(r.saga, win(3, 12.2, 90));
+  assert.deepEqual(r.saga.time, [30, 0, 13], 'padded with 0; seconds rounded up');
+  assert.equal(M.recordLevel(r.saga, win(9, 5, 90)).inTime, false, 'a level not yet open');
+  const stars = M.recordLevel(r.saga, win(3, 5, 90, 3)).saga.stars;
+  assert.deepEqual(stars, [1, 1, 3], 'the stars are the moves\' alone');
+});
+
+test('build: one id a won level, padded with null; a bad id is a plain house', () => {
+  let saga = { stars: [1, 2, 3], best: [1, 1, 1] };
+  saga = M.build(saga, 3, 'b001');
+  assert.deepEqual(saga.built, [null, null, 'b001']);
+  saga = M.build(saga, 1, 'o017');
+  assert.deepEqual(saga.built, ['o017', null, 'b001']);
+  assert.deepEqual(M.build(saga, 4, 'i001').built, saga.built, 'nothing beyond the levels won');
+  assert.deepEqual(M.build(saga, 0, 'i001').built, saga.built);
+  for (const bad of ['x'.repeat(11), '<img>', '', 7, null]) assert.equal(M.build(saga, 1, bad).built[0], null, String(bad));
+  assert.deepEqual(saga.stars, [1, 2, 3], 'nothing else changes');
+});
+
+test('buildChoices: the building first, then by groups, the artist\'s buildings at a tie, newest; at most 3', () => {
+  const dk = { ...deck, cards: deck.cards.map((c) => (c.id === 'i005' ? { ...c, source: 'Architectural Authority' } : c)) };
+  const st = F.newState();
+  const res = (...groups) => ({ groups: groups.map((ids) => ({ ids, key: null, label: 'L' })) });
+  // newest first: i003 and i004 once each (i003 newer), i005 (the artist's) once, i002 twice
+  assert.deepEqual(M.buildChoices(st, dk, res(['i003', 'i002'], ['i004', 'i005'], ['i002', 'i001']), null), ['i002', 'i005', 'i003']);
+  assert.deepEqual(M.buildChoices(st, dk, res(['i003', 'i002'], ['i004', 'i005']), 'i004'), ['i004', 'i005', 'i003'], 'the current building first');
+  assert.deepEqual(M.buildChoices(st, dk, res(['i003', 'i003', 'zz99']), 'nope'), ['i003'], 'distinct, and only things that exist');
+  assert.deepEqual(M.buildChoices(st, dk, res(), null), []);
+  assert.deepEqual(M.buildChoices(st, dk, { groups: [] }, 'i001'), ['i001']);
+  assert.deepEqual(M.buildChoices(st, dk, null, undefined), []);
 });
 
 test('boosters: Turn needs no line and its lines are yours; Pass clears a tile, fires a special, wears a pass', () => {

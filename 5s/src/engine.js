@@ -523,7 +523,7 @@
     return { v: 1, j: [], five: null, sets: [], days: [], own: [], notes: [], seen: { path: [] }, opts: { ring: true }, assoc: [], saga: newSaga(), paintings: [] };
   }
   // Set's game (SPEC "Set: the board and the game", "Data"): the saga's progress; the first play holds one of each booster.
-  const newSaga = () => ({ stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: null });
+  const newSaga = () => ({ stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: null, time: [], built: [] });
   // The game's fields as its modules read them (a hand-edited or foreign state reaches the board, the map's
   // HTML and the game): a malformed pairing or painting is dropped; a wrong part of the saga is its default.
   const isObj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
@@ -540,7 +540,18 @@
       stars: list(g.stars, (x) => isInt(x, 0, 3), 1), best: list(g.best, (x) => Number.isFinite(x) && x >= 0, 0),
       boost: assign(b, { pass: held(b.pass), turn: held(b.turn), more: held(b.more) }),
       plays: isInt(g.plays, 0, Number.MAX_SAFE_INTEGER) ? g.plays : 0, day: typeof g.day === 'string' && g.day.length <= 20 ? g.day : null,
+      // The clock and the kingdom (SPEC "Set: the clock and the kingdom", "Data"): a best time in time, and the id each level built.
+      time: list(g.time, (x) => isInt(x, 0, 9999), 0), built: list(g.built, (x) => x === null || (typeof x === 'string' && BUILT_ID.test(x)), null),
     });
+  }
+  const BUILT_ID = /^[A-Za-z0-9_-]{1,10}$/;
+  const CLOCKS = [0, 5, 10];   // opts.clock: seconds a move; missing, it follows opts.ring
+  function normOpts(o) {
+    if (!o || typeof o !== 'object') return { ring: true };
+    if (o.clock === undefined || CLOCKS.indexOf(o.clock) >= 0) return o;
+    const c = assign(o);
+    delete c.clock;
+    return c;
   }
 
   // Fill in whatever an older or partial saved state is missing, without touching it.
@@ -556,7 +567,7 @@
       own: Array.isArray(x.own) ? x.own : [],
       notes: Array.isArray(x.notes) ? x.notes : [],
       seen: Array.isArray(seen.path) ? seen : assign(seen, { path: [] }),
-      opts: x.opts && typeof x.opts === 'object' ? x.opts : { ring: true },
+      opts: normOpts(x.opts),
       // the game's caps (400 pairings, 24 paintings) also hold for a state edited by hand: it stays under the store's limit
       assoc: Array.isArray(x.assoc) ? x.assoc.filter(isPair).slice(0, 400) : [],
       saga: normSaga(x.saga),
@@ -1068,7 +1079,7 @@
     return assign(st, { own: st.own.concat([ordered]) });
   }
 
-  /** removeOwn(state, id) -> State without the brought thing, its judgments, the notes about it and the pairings that name it. */
+  /** removeOwn(state, id) -> State without the brought thing, its judgments, the notes about it, the pairings that name it and what it built. */
   function removeOwn(state, id) {
     const st = norm(state);
     if (!st.own.some((o) => o && o.id === id)) return assign(st);
@@ -1087,7 +1098,9 @@
       five = assign(five, { ids: five.ids.filter((x) => x !== id), i: at < five.i ? five.i - 1 : five.i });
     }
     const assoc = st.assoc.filter((e) => !(Array.isArray(e) && (e[0] === id || e[1] === id)));
-    return assign(st, { own, j, notes, sets, five, assoc });
+    // what it built in the kingdom comes down: a plain house stands there
+    const saga = st.saga.built.indexOf(id) >= 0 ? assign(st.saga, { built: st.saga.built.map((x) => (x === id ? null : x)) }) : st.saga;
+    return assign(st, { own, j, notes, sets, five, assoc, saga });
   }
 
   /** addNote(state, {q, text, ref}, now) -> State. q: turn | five | set | bring | free; ref: a card id,

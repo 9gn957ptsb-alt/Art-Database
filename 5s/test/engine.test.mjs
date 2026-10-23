@@ -96,7 +96,7 @@ test('engine source: no clock, no Math.random, no DOM, no network', () => {
 test('newState matches the State shape', () => {
   const s = F.newState();
   assert.deepEqual(s, { v: 1, j: [], five: null, sets: [], days: [], own: [], notes: [], seen: { path: [] }, opts: { ring: true },
-    assoc: [], saga: { stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: null }, paintings: [] });
+    assoc: [], saga: { stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: null, time: [], built: [] }, paintings: [] });
   assert.notEqual(F.newState(), F.newState());
 });
 
@@ -1141,7 +1141,7 @@ test('Set\'s game: old states gain its fields, removeOwn drops its pairs, a five
   assert.deepEqual([old.assoc, old.paintings, old.saga.boost, old.saga.plays, old.opts.ring], [[], [], { pass: 1, turn: 1, more: 1 }, 0, false]);
   const odd = F.migrate({ assoc: 'x', saga: [1], paintings: {} });
   assert.deepEqual([odd.assoc, odd.paintings, odd.saga.stars], [[], [], []], 'wrong shapes become the defaults');
-  const kept = { stars: [3], best: [9000], boost: { pass: 0, turn: 2, more: 0 }, plays: 4, day: null };
+  const kept = { stars: [3], best: [9000], boost: { pass: 0, turn: 2, more: 0 }, plays: 4, day: null, time: [41], built: ['b001'] };
   assert.deepEqual(F.migrate({ saga: kept }).saga, kept, 'a saga is kept as it is');
   // A hand-edited state: what the board, the map's HTML and the game would trip on is dropped or defaulted.
   const good = ['i001', 'o001', 2, 1, 5], pic = { at: 1, n: 6, cols: 2, rows: 1, c: 'ff8800------' };
@@ -1151,7 +1151,7 @@ test('Set\'s game: old states gain its fields, removeOwn drops its pairs, a five
     saga: { stars: ['<img>', 2], best: null, boost: 'x', plays: -1, day: '2026-10-22' },
   });
   assert.deepEqual([bad.assoc, bad.paintings], [[good], [pic]]);
-  assert.deepEqual(bad.saga, { stars: [1, 2], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: '2026-10-22' });
+  assert.deepEqual(bad.saga, { stars: [1, 2], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: '2026-10-22', time: [], built: [] });
   assert.deepEqual(F.migrate({ saga: {} }).saga, F.newState().saga);
   assert.equal(F.migrate({ saga: { stars: Array(5000).fill(3) } }).saga.stars.length, 999, 'at most 999 levels');
 
@@ -1173,7 +1173,8 @@ test('Set\'s game: old states gain its fields, removeOwn drops its pairs, a five
   const yid = (i) => 'y' + i.toString(36).padStart(5, '0');
   const game = {
     assoc: Array.from({ length: 400 }, (_, i) => [yid(i), yid(i + 400), 99, 1, 1761100000]),
-    saga: { stars: Array(999).fill(3), best: Array(999).fill(9999999), boost: { pass: 9, turn: 9, more: 9 }, plays: 999999, day: TODAY },
+    saga: { stars: Array(999).fill(3), best: Array(999).fill(9999999), boost: { pass: 9, turn: 9, more: 9 }, plays: 999999, day: TODAY,
+      time: Array(999).fill(9999), built: Array(999).fill('y123456789') },   // the clock and the kingdom: a best time and an id a level
     paintings: Array.from({ length: 24 }, () => ({ at: 1761100000, n: 999, cols: 9, rows: 9, c: 'f28a3c'.repeat(81) })),
   };
   const bytes = Buffer.byteLength(JSON.stringify(game));
@@ -1193,4 +1194,23 @@ test('Set\'s game: norm holds a hand-edited state to the game\'s caps and the co
   assert.deepEqual(st.assoc, Array.from({ length: 400 }, (_, i) => pair(i)), 'at most 400; out of order, n 0 or a heart of 2 is dropped');
   assert.deepEqual(st.paintings, Array(24).fill(pic), 'at most 24; cells that are not six lowercase hex digits each are dropped');
   assert.deepEqual([st.saga.best, st.saga.day], [[0, 10], null]);
+});
+
+// The clock and the kingdom (SPEC "Set: the clock and the kingdom", "Data"): additive fields, held to the connector's shapes.
+test('Set\'s clock and kingdom: norm caps saga.time and saga.built, drops a wrong opts.clock; removeOwn takes down what a thing built', () => {
+  const st = F.migrate({
+    saga: { stars: [3, 2, 1], time: [41, -1, 1.5, 10000, '9', 0].concat(Array(2000).fill(7)), built: ['b001', null, 'x'.repeat(11), 7, '<img>', 'o017'].concat(Array(2000).fill('i001')) },
+    opts: { ring: true, clock: 7 },
+  });
+  assert.deepEqual(st.saga.time.slice(0, 6), [41, 0, 0, 0, 0, 0], 'whole seconds 0 to 9999; a wrong one is 0');
+  assert.deepEqual(st.saga.built.slice(0, 6), ['b001', null, null, null, null, 'o017'], 'ids of 1 to 10 characters, or null');
+  assert.deepEqual([st.saga.time.length, st.saga.built.length], [999, 999], 'at most 999 of each');
+  assert.deepEqual(st.opts, { ring: true }, 'a clock that is not 0, 5 or 10 is dropped: it follows the ring again');
+  for (const c of [0, 5, 10]) assert.equal(F.migrate({ opts: { clock: c } }).opts.clock, c);
+  assert.equal('clock' in F.migrate({ opts: { ring: false } }).opts, false, 'missing stays missing');
+
+  let s = F.bring(F.newState(), { id: 'yabc12', kind: 'object', name: 'Bowl', source: 'Your photos', colours: ['#aa3311'] }, NOW);
+  s = { ...s, saga: { ...s.saga, stars: [3, 2, 1], built: ['yabc12', 'b001', 'yabc12'] } };
+  assert.deepEqual(F.removeOwn(s, 'yabc12').saga.built, [null, 'b001', null], 'a plain house stands where it was');
+  assert.deepEqual(F.removeOwn(s, 'yabc12').saga.stars, [3, 2, 1], 'the levels stay won');
 });

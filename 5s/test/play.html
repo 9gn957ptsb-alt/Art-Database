@@ -7,7 +7,8 @@
 <!-- A harness for src/play.js and src/board.js: the deck, an example taste (~37 kept things, brought
      things among them), and the app's part played by the callbacks below. Served from 5s/:
      /test/play.html#map | #level=7 | #board, with ?assoc=1 (sample pairings and a painting),
-     ?theme=dark|light, ?reduce=1, ?plays=N (the board's seed), ?stars=3,2,1 (levels won), ?empty=1 (nothing kept), ?deck=fixture. -->
+     ?theme=dark|light, ?reduce=1, ?plays=N (the board's seed), ?stars=3,2,1 (levels won), ?time=41,0 (wins in time),
+     ?clock=0|5|10 (else as the app resolves it), ?empty=1 (nothing kept), ?deck=fixture. -->
 <link rel="stylesheet" href="../src/app.css">
 <link rel="stylesheet" href="../src/play.css" data-fives="play">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Martian+Mono:wght@400;500&amp;family=Unbounded:wght@500;700&amp;display=swap">
@@ -39,7 +40,8 @@
 
   let state = q.get('empty') ? F.newState() : F.exampleState(deck, NOW);
   const won = q.get('stars') ? q.get('stars').split(',').map(Number) : [];
-  state = Object.assign({}, state, { assoc: [], paintings: [], saga: { stars: won, best: won.map((s) => s * 3000), boost: { pass: 1, turn: 1, more: 1 }, plays: +(q.get('plays') || 0), day: null } });
+  const time = q.get('time') ? q.get('time').split(',').map(Number) : [];
+  state = Object.assign({}, state, { assoc: [], paintings: [], saga: { stars: won, best: won.map((s) => s * 3000), boost: { pass: 1, turn: 1, more: 1 }, plays: +(q.get('plays') || 0), day: null, time, built: [] } });
   if (q.get('assoc')) {
     // Pairings as if three levels had been played: groups of kept things that share a thread.
     const pcs = M.pieces(state, deck, 5);
@@ -101,7 +103,7 @@
   }
   function showMap() {
     clear();
-    current = P.mountMap(stage, { saga: state.saga, onLevel: (n) => { location.hash = 'level=' + n; }, onBack: () => { location.hash = 'board'; } });
+    current = P.mountMap(stage, { saga: state.saga, onLevel: (n) => { location.hash = 'level=' + n; }, onBack: () => { location.hash = 'board'; }, onKingdom: () => log('kingdom', true) });
   }
   function showLevel(n) {
     clear();
@@ -109,15 +111,27 @@
     const pieces = M.pieces(state, deck, level.suits);
     const seed = '5s:' + n + ':' + state.saga.plays;
     window.harness.level = { n, pieces, seed };
+    const sg = state.saga, built = sg.built[n - 1];
     current = P.mount(stage, {
       n, pieces, seed,
+      clock: q.get('clock') != null ? +q.get('clock') : state.opts.clock ?? (state.opts.ring !== false ? 5 : 0), // as the app resolves it
+      built: sg.stars[n - 1] ? { name: built ? shortName(built) : null, storeys: sg.stars[n - 1], secs: sg.time[n - 1] || 0 } : null,
       boost: state.saga.boost,
       thumb, name: shortName,
       opts: { sound: state.opts.sound !== false, hints: state.opts.hints !== false, reduce },
       onAssociate: (a) => { log('associate', a); state.assoc = M.addAssociations(state.assoc, a.ids, NOW / 1000); },
       onHeart: (a) => { log('heart', a); state.assoc = M.heart(state.assoc, a.ids, a.on); },
       onBoost: (k) => { log('boost', k); state.saga = M.useBoost(state.saga, k) || state.saga; },
-      onEnd: (r) => { log('end', r); const rec = M.recordLevel(state.saga, r, NOW / 1000); state.saga = rec.saga; return rec; },
+      onEnd: (r) => { // as the app: record, then build with the first of the ways
+        log('end', r);
+        const rec = M.recordLevel(state.saga, r, NOW / 1000);
+        if (!r.won) { state.saga = rec.saga; return rec; }
+        const ways = M.buildChoices(state, deck, r, state.saga.built[n - 1]);
+        state.saga = M.build(rec.saga, n, ways[0] ?? null);
+        return Object.assign({}, rec, { saga: state.saga, build: { ways } });
+      },
+      onBuild: (id) => { log('build', id); state.saga = M.build(state.saga, n, id); },
+      onKingdom: (k) => log('kingdom', k),
       onKeepPainting: (p) => { log('keepPainting', p); const ps = M.keepPainting(state.paintings, { painting: p, n }, NOW / 1000); if (!ps) return false; state.paintings = ps; return true; },
       onOpts: (o) => { log('opts', o); state.opts = Object.assign({}, state.opts, o); },
       onNext: (k) => { log('next', k); location.hash = 'level=' + k + '&t=' + Date.now(); },

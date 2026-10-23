@@ -75,7 +75,8 @@ test('checkState takes Set\'s game fields at their caps, and refuses wrong shape
   for (let i = 0; i < 24; i++) paintings = FiveSMatch.keepPainting(paintings, { n: 7, painting }, 1761100000);
   let { saga } = FiveSMatch.recordLevel(null, { n: 1, won: true, stars: 3, score: 9000 });
   saga = FiveSMatch.useBoost(saga, 'turn');
-  const st = { ...FiveS.newState(), assoc, paintings, saga, opts: { ring: true, sound: false, hints: true } };
+  saga = { ...saga, time: Array(999).fill(9999), built: Array(999).fill('y123456789').fill(null, 0, 1) };   // the clock and the kingdom, at their caps
+  const st = { ...FiveS.newState(), assoc, paintings, saga, opts: { ring: true, sound: false, hints: true, clock: 10 } };
   assert.equal(assoc.length, 400);
   assert.equal(checkState(JSON.parse(JSON.stringify(st))), '');
   const bad = [
@@ -92,6 +93,13 @@ test('checkState takes Set\'s game fields at their caps, and refuses wrong shape
     [{ saga: { boost: { pass: 10 } } }, /0 to 9/],
     [{ saga: { plays: -1 } }, /plays or a day/],
     [{ opts: { sound: 'yes' } }, /sound and state\.opts\.hints/],
+    [{ saga: { time: Array(1000).fill(1) } }, /time must be a list of at most 999/],
+    [{ saga: { time: [1.5] } }, /whole seconds, 0 to 9999/],
+    [{ saga: { time: [10000] } }, /whole seconds, 0 to 9999/],
+    [{ saga: { built: Array(1000).fill(null) } }, /built must be a list of at most 999/],
+    [{ saga: { built: ['x'.repeat(11)] } }, /up to 10 characters, or nulls/],
+    [{ saga: { built: [7] } }, /up to 10 characters, or nulls/],
+    [{ opts: { clock: 7 } }, /clock must be 0 \(off\), 5 or 10/],
   ];
   for (const [x, why] of bad) assert.match(checkState(x), why, JSON.stringify(x).slice(0, 80));
 });

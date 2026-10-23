@@ -22,6 +22,11 @@
   const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many || one + 's');
   const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const starText = (n) => '★★★'.slice(0, n) + '☆☆☆'.slice(0, 3 - n);
+  const mss = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  const STOREYS = ['one storey', 'two storeys', 'three storeys'];
+  const storeys = (n) => STOREYS[Math.max(1, Math.min(3, n | 0)) - 1];
+  const PACES = [[0, 'Off'], [5, 'Five seconds a move'], [10, 'Ten seconds a move']];
+  const RING_C = 150.8; // the five-second ring's circumference (r 24)
   const M = () => root.FiveSMatch;
 
   const SVG_SOUND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path class="fp-wave" d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
@@ -240,9 +245,11 @@
     let o = Object.assign({}, opts);
     const box = h('div', 'fp fp-mapview');
     box.innerHTML = '<div class="fp-top"><button type="button" class="btn btn-quiet fp-back">' + SVG_BACK + '<span>Your board</span></button>' +
-      '<h2 class="fp-title">Levels</h2><span class="fp-topgap"></span></div><div class="fp-scroll"><ol class="fp-map" aria-label="Levels"></ol></div>';
+      '<h2 class="fp-title">Levels</h2>' + (o.onKingdom ? '<button type="button" class="btn btn-quiet fp-kingdom">Kingdom</button>' : '<span class="fp-topgap"></span>') +
+      '</div><div class="fp-scroll"><ol class="fp-map" aria-label="Levels"></ol></div>';
     el.appendChild(box);
     box.querySelector('.fp-back').addEventListener('click', () => o.onBack && o.onBack());
+    if (o.onKingdom) box.querySelector('.fp-kingdom').addEventListener('click', () => o.onKingdom());
     const scroller = box.querySelector('.fp-scroll');
     const list = box.querySelector('.fp-map');
     list.addEventListener('click', (e) => {
@@ -283,11 +290,12 @@
         }
         const n = it.n, done = n < next, isNext = n === next;
         const s = done ? stars[n - 1] || 1 : 0;
-        const label = 'Level ' + n + ', ' + (done ? s + ' of 3 stars' : isNext ? 'Next' : 'Not yet');
+        const inTime = done && Array.isArray(saga.time) && saga.time[n - 1] > 0 ? ', in time' : '';
+        const label = 'Level ' + n + ', ' + (done ? s + ' of 3 stars' + inTime : isNext ? 'Next' : 'Not yet');
         const side = it.x < 50 ? 'r' : 'l';
         html += '<li class="fp-node ' + (done ? 'is-done' : isNext ? 'is-next' : 'is-not') + ' fp-side-' + side + '" style="top:' + (H - it.y - 28) + 'px;left:calc(' + it.x + '% - 28px)">' +
           '<button type="button" data-n="' + n + '" aria-label="' + esc(label) + '"' + (done || isNext ? '' : ' aria-disabled="true"') + '>' + n + '</button>' +
-          (done ? '<span class="fp-nl" aria-hidden="true"><span class="fp-st">' + starText(s) + '</span>' + s + ' of 3 stars</span>' : isNext ? '<span class="fp-nl" aria-hidden="true"><b>Next</b></span>' : '') + '</li>';
+          (done ? '<span class="fp-nl" aria-hidden="true"><span class="fp-st">' + starText(s) + '</span>' + s + ' of 3 stars' + inTime + '</span>' : isNext ? '<span class="fp-nl" aria-hidden="true"><b>Next</b></span>' : '') + '</li>';
       }
       list.innerHTML = html;
       const nb = list.querySelector('[data-n="' + next + '"]');
@@ -310,9 +318,13 @@
     let game = MX.newGame(level, o.pieces, o.seed);
     const held = { pass: o.boost.pass | 0, turn: o.boost.turn | 0, more: o.boost.more | 0 };
     const set = { sound: o.opts.sound !== false, hints: o.opts.hints !== false };
+    // The clock (SPEC "Set: the clock and the kingdom"): pace seconds a move; 0 is off. It ends nothing.
+    let pace = PACES.some(([v]) => v === o.clock) ? o.clock : 0, paceChosen = false;
+    const clk = { used: 0, from: null, begun: false, paused: false, said20: false, saidOut: false, t: 0 };
+    const optsNow = () => Object.assign({ sound: set.sound, hints: set.hints }, paceChosen ? { clock: pace } : {}); // until chosen, the app's ring switch decides
     const mq = root.matchMedia ? root.matchMedia('(prefers-reduced-motion: reduce)') : null;
     let reduce = o.opts.reduce != null ? !!o.opts.reduce : !!(mq && mq.matches);
-    const onMq = (e) => { reduce = e.matches; };
+    const onMq = (e) => { reduce = e.matches; clockDom(); };
     if (mq && mq.addEventListener) mq.addEventListener('change', onMq);
 
     const snd = makeSound(() => set.sound);
@@ -615,6 +627,57 @@
     }
     const tell = (text) => { live.textContent = ''; setTimeout(() => { live.textContent = text; }, 30); };
 
+    // ---------------------------------------------------------- the clock: the person's own time only
+    const clockSecs = () => pace * (level.moves + (game.more ? 5 : 0));
+    const clockUsed = () => clk.used + (clk.from != null ? performance.now() - clk.from : 0);
+    const clockLine = () => (pace ? mss(pace * level.moves) + ' for this level, ' + (pace === 5 ? 'five' : 'ten') +
+      ' seconds a move. It stops while tiles move and never ends a level. Beat it and your building flies a flag.' : 'No clock for this level.');
+    function clockDom() { // the five-second ring around Moves, the time under it; reduced motion: the time only
+      const mv = $('.fp-moves');
+      mv.querySelectorAll('.fp-cring, .fp-time').forEach((e) => e.remove());
+      mv.classList.toggle('fp-clocked', !!pace && !reduce);
+      $('.fp-status').classList.toggle('fp-has-clock', !!pace);
+      if (pace && !reduce) {
+        mv.insertAdjacentHTML('afterbegin', '<svg class="fp-cring" viewBox="0 0 56 56" aria-hidden="true"><defs><linearGradient id="fp-ring-grad" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" style="stop-color:var(--ember-mark, #DE6A24)"/><stop offset="0.55" style="stop-color:var(--flare, #E5482B)"/><stop offset="1" style="stop-color:var(--iris, #7350EE)"/>' +
+          '</linearGradient></defs><circle class="fp-rt" cx="28" cy="28" r="24"/><circle class="fp-rf" cx="28" cy="28" r="24"/></svg>');
+      }
+      if (pace) mv.insertAdjacentHTML('beforeend', '<span class="fp-time" role="timer"></span>');
+      clockSync();
+    }
+    function clockSync() { // banks the time run so far, then runs only while the board waits: not while tiles move, a sheet is open or paused
+      const now = performance.now();
+      if (clk.from != null) clk.used += now - clk.from;
+      clk.from = pace && clk.begun && started && !ended && !busy && !clk.paused && !outSheet && game.state === 'play' ? now : null;
+      const f = $('.fp-rf');
+      if (f) {
+        const total = clockSecs() * 1000, left = Math.max(0, total - clk.used);
+        f.style.transition = 'none';
+        f.style.strokeDashoffset = RING_C * (1 - left / total);
+        if (clk.from != null && left > 0) {
+          getComputedStyle(f).strokeDashoffset; // the drain starts from here
+          f.style.transition = 'stroke-dashoffset ' + Math.round(left) + 'ms linear';
+          f.style.strokeDashoffset = RING_C;
+        }
+      }
+      clockTick();
+    }
+    function clockTick() { // the time in text, once a second, and its two words
+      clearTimeout(clk.t);
+      const te = $('.fp-time');
+      if (!te) return;
+      const left = clockSecs() * 1000 - clockUsed(), text = left > 0 ? mss(Math.ceil(left / 1000)) : 'Time';
+      if (te.textContent !== text) { te.textContent = text; te.setAttribute('aria-label', 'Clock ' + text); }
+      if (clk.from == null) return;
+      if (left > 0 && left <= 20000 && !clk.said20) { clk.said20 = true; tell('20 seconds on the clock.'); }
+      if (left > 0) { clk.t = setTimeout(clockTick, ((Math.ceil(left) - 1) % 1000) + 1); return; }
+      const f = $('.fp-rf');
+      if (f) { f.style.transition = 'none'; f.style.strokeDashoffset = RING_C; } // empty, whatever the drawing's own timing
+      if (!clk.saidOut) { clk.saidOut = true; say('Time. Play on.', 2000); tell('Time. Play on: nothing is lost.'); }
+    }
+    // The result as the app records it: the seconds used (whole, rounded up) and the seconds the clock gave.
+    const resultNow = () => Object.assign(MX.result(game), { secs: pace && clk.begun ? Math.max(1, Math.ceil(clockUsed() / 1000)) : 0, clock: pace ? clockSecs() : 0 });
+
     // ---------------------------------------------------------- legend and boosters
     function legend() {
       $('.fp-legend').innerHTML = game.suits.map((s) => {
@@ -882,14 +945,14 @@
     async function doSwap(a, b) {
       if (busy || ended || !hasTile(a) || !hasTile(b) || !neighbours(a, b)) return;
       if (armed === 'turn' && (!movable(a) || !movable(b))) return;
-      busy = true; clearHint(); select(null);
+      busy = true; clockSync(); clearHint(); select(null);
       const turn = armed === 'turn';
       let r;
       if (turn) {
         r = MX.boost(game, 'turn', [a, b]);
         if (r.ok) { held.turn--; disarm(); if (o.onBoost) o.onBoost('turn'); }
       } else r = MX.swap(game, a, b);
-      if (r.valid || r.ok) coachOff(); // the coach line covers a row: out of the way of the swap it taught
+      if (r.valid || r.ok) { coachOff(); clk.begun = true; } // the coach line covers a row: out of the way of the swap it taught
       const ok = await apply(r, turn ? 'boost' : 'swap');
       if (ok) swapsMade++;
       busy = false;
@@ -903,7 +966,7 @@
         const r = MX.boost(game, 'more');
         if (!r.ok) return;
         held.more--; if (o.onBoost) o.onBoost('more');
-        game = r.game; sync();
+        game = r.game; clk.begun = true; sync();
         if (outSheet) { outSheet.done(); outSheet = null; }
         tell('Five more moves. ' + plural(game.moves, 'move') + ' left.');
         say('Five more moves.', 1200);
@@ -917,20 +980,21 @@
     async function passAt(i) {
       const c = game.cells[i];
       if (!c || c.hole || (!c.t && !c.pass)) return;
-      busy = true; clearHint();
+      busy = true; clockSync(); clearHint();
       const r = MX.boost(game, 'pass', i);
-      if (r.ok) { held.pass--; if (o.onBoost) o.onBoost('pass'); }
+      if (r.ok) { held.pass--; clk.begun = true; if (o.onBoost) o.onBoost('pass'); }
       disarm();
       await apply(r, 'boost');
       busy = false;
       settle();
     }
 
-    async function settle() {
+    function settle() {
       status();
-      if (game.state === 'won' && !ended) return finish();
-      if (game.state === 'out' && !ended) return showOut();
-      idle();
+      if (game.state === 'won' && !ended) finish();
+      else if (game.state === 'out' && !ended) showOut();
+      else idle();
+      clockSync();
     }
 
     // ---------------------------------------------------------- hints and the coach
@@ -1102,11 +1166,11 @@
       $('.fp-snd').setAttribute('aria-pressed', set.sound);
       if (set.sound) snd.wake(); else snd.pause();
       tell(set.sound ? 'Sound on.' : 'Sound off.');
-      if (o.onOpts) o.onOpts({ sound: set.sound, hints: set.hints });
+      if (o.onOpts) o.onOpts(optsNow());
     }
     $('.fp-snd').addEventListener('click', toggleSound);
     $('.fp-back').addEventListener('click', () => {
-      if (started && !ended) { ended = true; if (o.onEnd) o.onEnd(MX.result(game)); }
+      if (started && !ended) { ended = true; clockSync(); if (o.onEnd) o.onEnd(resultNow()); }
       if (o.onMap) o.onMap();
     });
 
@@ -1160,14 +1224,26 @@
         '<p><b class="fp-big">' + game.moves + '</b> moves</p>' +
         (level.coach && COACH[level.coach] ? '<p class="fp-coachline">' + esc(COACH[level.coach]) + '</p>' : '') +
         '<section class="fp-sec"><h3>Your frames</h3>' + legendHTML() + '</section>' +
+        (o.built ? '<p class="fp-builtline">Your building: ' + esc(o.built.name || 'a plain house') + ', ' + storeys(o.built.storeys) + '.' +
+          (o.built.secs > 0 ? ' In time: best ' + mss(o.built.secs) + '.' : '') + '</p>' : '') +
         '<p class="small">Boosters: Pass ' + held.pass + ' · Turn ' + held.turn + ' · Five more ' + held.more + '</p>' +
         '<button type="button" class="switch" role="switch" aria-checked="' + set.hints + '" data-hints><span><b>Hints</b><br><span class="small">After five seconds, two tiles nudge.</span></span><span class="track" aria-hidden="true"></span></button>' +
+        '<fieldset class="fieldset-seg fp-clockset"><legend><b>Clock</b></legend><div class="seg">' + PACES.map(([v, w]) =>
+          '<label' + (pace === v ? ' class="on"' : '') + '><input type="radio" name="fp-clock" value="' + v + '"' + (pace === v ? ' checked' : '') + '>' + w + '</label>').join('') +
+        '</div><p class="small fp-clockline">' + esc(clockLine()) + '</p></fieldset>' +
         '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-play data-autofocus>Play</button></div>',
         () => { if (o.onMap) o.onMap(); });
       d.querySelector('[data-hints]').addEventListener('click', (e) => {
         set.hints = !set.hints;
         e.currentTarget.setAttribute('aria-checked', set.hints);
-        if (o.onOpts) o.onOpts({ sound: set.sound, hints: set.hints });
+        if (o.onOpts) o.onOpts(optsNow());
+      });
+      d.querySelector('.fp-clockset').addEventListener('change', (e) => {
+        pace = +e.target.value; paceChosen = true;
+        d.querySelectorAll('.fp-clockset label').forEach((l) => l.classList.toggle('on', l.contains(e.target)));
+        d.querySelector('.fp-clockline').textContent = clockLine();
+        clockDom();
+        if (o.onOpts) o.onOpts(optsNow());
       });
       d.querySelector('[data-play]').addEventListener('click', async (e) => {
         const byKey = !e.detail; // a key press: the board takes the focus; a tap leaves it unringed
@@ -1206,7 +1282,7 @@
     }
     function leaveTo(where) {
       if (outSheet) { outSheet.done(); outSheet = null; }
-      if (!ended) { ended = true; if (o.onEnd) o.onEnd(MX.result(game)); }
+      if (!ended) { ended = true; clockSync(); if (o.onEnd) o.onEnd(resultNow()); }
       if (where === 'again' && o.onNext) o.onNext(o.n); else if (where === 'map' && o.onMap) o.onMap();
     }
 
@@ -1222,7 +1298,7 @@
       loop.scale = 1;
       game = f.game;
       sync();
-      const result = MX.result(game);
+      const result = resultNow();
       const rec = o.onEnd ? o.onEnd(result) : null;
       const earned = (rec && (rec.earned || rec)) || {};
       for (const k of ['pass', 'turn', 'more']) held[k] = Math.min(9, held[k] + (earned[k] | 0));
@@ -1236,11 +1312,30 @@
       if (result.stars === 3) { word('Three stars.'); await wait(reduce ? 0 : 500); }
       busy = false;
       const gotWords = [['pass', 'a Pass'], ['turn', 'a Turn'], ['more', 'Five more']].filter(([k]) => earned[k] > 0).map(([, w]) => w);
-      tell('Level ' + o.n + ' done. ' + result.stars + ' of 3 stars. Score ' + fmt(result.score) + '.');
+      // The clock's line: in time keeps a best and flies a flag, and earns nothing else.
+      const bestT = saga && Array.isArray(saga.time) && saga.time[o.n - 1] > 0 ? saga.time[o.n - 1] : result.secs;
+      const spare = result.clock - result.secs;
+      const clockEnd = !result.clock || !rec ? null : rec.inTime
+        ? ['In time: ' + mss(spare) + ' to spare. Best ' + mss(bestT) + '.', ' In time, ' + plural(spare, 'second') + ' to spare.']
+        : [mss(result.secs) + '. The clock gave ' + mss(result.clock) + '. Race it again.', ' Not in time.'];
+      // What the win built (the app chose the ways; ways[0] stands now), and an area built on its fifth level's first win.
+      const ways = rec && rec.build && Array.isArray(rec.build.ways) ? rec.build.ways : null;
+      const tall = (saga && saga.stars && saga.stars[o.n - 1]) || result.stars, flag = !!(saga && saga.time && saga.time[o.n - 1] > 0);
+      const k = Math.floor((o.n - 1) / 5), A = MX.area(k), An = MX.area(k + 1);
+      const builtText = (id) => 'Built: ' + (id ? name(id) : 'a plain house') + ', ' + storeys(tall) + (flag ? ', flying a flag' : '') + '.';
+      const builtPic = (id) => miniTile(id ? null : { hex: MX.TOKENS[k % 6].hex, shape: 'square' }, id ? thumb(id) : null, 44);
+      let wi = 0;
+      tell('Level ' + o.n + ' done. ' + result.stars + ' of 3 stars. Score ' + fmt(result.score) + '.' + (clockEnd ? clockEnd[1] : ''));
       const d = openSheet(box, 'Level ' + o.n + ' done.',
         '<p class="fp-endstars"><span aria-hidden="true">' + starText(result.stars) + '</span> ' + result.stars + ' of 3 stars</p>' +
         '<p>Score ' + fmt(result.score) + ' · Best ' + fmt(best) + '</p>' +
+        (clockEnd ? '<p class="fp-endclock">' + esc(clockEnd[0]) + '</p>' : '') +
         (gotWords.length ? '<p class="fp-earned">You earned ' + esc(gotWords.length > 1 ? gotWords.slice(0, -1).join(', ') + ' and ' + gotWords[gotWords.length - 1] : gotWords[0]) + '.</p>' : '') +
+        (ways ? '<section class="fp-sec"><h3>Your kingdom</h3>' +
+          (rec.first && o.n % 5 === 0 ? '<p class="fp-earned">' + esc(A.name) + ', built.</p><p>A new area: ' + esc(An.name) + '. ' + esc(An.line) + '</p>' : '') +
+          '<div class="fp-built"><span class="fp-bpic">' + builtPic(ways[0]) + '</span><p class="fp-btext" aria-live="polite">' + esc(builtText(ways[0])) + '</p></div>' +
+          '<div class="actions">' + (ways.length > 1 ? '<button type="button" class="btn btn-quiet" data-way>Another way <span class="fp-wayn">1 of ' + ways.length + '</span></button>' : '') +
+          (o.onKingdom ? '<button type="button" class="btn btn-iris" data-kingdom>See it in your kingdom</button>' : '') + '</div></section>' : '') +
         (result.painting ? '<section class="fp-sec"><h3>Your painting</h3><canvas class="fp-paint" aria-label="The painting you made on this board"></canvas>' +
           '<p class="fp-keepmsg small" aria-live="polite"></p><div class="actions"><button type="button" class="btn btn-iris" data-keep>Keep this painting</button></div></section>' : '') +
         groupsHTML(result.groups) +
@@ -1258,13 +1353,23 @@
           else msg.textContent = 'Your board holds 24 paintings. Remove one to keep this.';
         });
       }
+      const way = d.querySelector('[data-way]');
+      if (way) way.addEventListener('click', () => { // Irwin's three ways: whichever shows when the person leaves is the building
+        wi = (wi + 1) % ways.length;
+        d.querySelector('.fp-bpic').innerHTML = builtPic(ways[wi]);
+        d.querySelector('.fp-btext').textContent = builtText(ways[wi]);
+        way.querySelector('.fp-wayn').textContent = (wi + 1) + ' of ' + ways.length;
+        if (o.onBuild) o.onBuild(ways[wi]);
+      });
+      const kg = d.querySelector('[data-kingdom]');
+      if (kg) kg.addEventListener('click', () => { d.done(); o.onKingdom(o.n); });
       d.querySelector('[data-next]').addEventListener('click', () => { d.done(); if (o.onNext) o.onNext(o.n + 1); });
       d.querySelector('[data-again]').addEventListener('click', () => { d.done(); if (o.onNext) o.onNext(o.n); });
       d.querySelector('[data-board]').addEventListener('click', () => { d.done(); if (o.onBoard) o.onBoard(); });
     }
 
     // ---------------------------------------------------------- go
-    measure(); build(); sync(); legend(); decode();
+    measure(); build(); sync(); legend(); decode(); clockDom();
     let lastW = el.clientWidth;
     const ro = new ResizeObserver(() => {
       if (el.clientWidth === lastW) return;
@@ -1279,15 +1384,19 @@
       });
     });
     ro.observe(el);
-    const onVis = () => (document.hidden ? api.pause() : api.resume());
+    // Paused by the page hiding or by the app (Set left); the page showing again resumes only what it paused itself.
+    let appPaused = false;
+    const halt = () => { loop.pause(); snd.pause(); clearTimeout(hintT); clk.paused = true; clockSync(); };
+    const go = () => { loop.resume(); snd.resume(); idle(); clk.paused = false; clockSync(); };
+    const onVis = () => (document.hidden ? halt() : !appPaused && go());
     document.addEventListener('visibilitychange', onVis);
     levelCard();
 
     const api = {
-      pause() { loop.pause(); snd.pause(); clearTimeout(hintT); },
-      resume() { loop.resume(); snd.resume(); idle(); },
+      pause() { appPaused = true; halt(); },
+      resume() { appPaused = false; go(); },
       destroy() {
-        loop.stop(); snd.close(); clearHint(); ro.disconnect();
+        loop.stop(); snd.close(); clearHint(); ro.disconnect(); clearTimeout(clk.t);
         document.removeEventListener('visibilitychange', onVis);
         if (mq && mq.removeEventListener) mq.removeEventListener('change', onMq);
         document.querySelectorAll('dialog.fp-sheet').forEach((d) => { if (d.open) d.close(); d.remove(); });

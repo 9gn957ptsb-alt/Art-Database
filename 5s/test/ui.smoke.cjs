@@ -28,7 +28,9 @@
  * mode's board and game (nothing saved), the person's own board by kind, a tile's detail sheet, Play opening
  * level 1, a swap planned in Node (touch at 390, mouse at 1280) whose pairs land in the saved state, the
  * tab bar hiding and coming back, the board clustered by them, See it as a room and back. A five sorted
- * gives one Pass.
+ * gives one Pass. The clock and the kingdom: Your kingdom from the board (its levels in order, the list of
+ * levels one tap away, the next area under cloud); level 5 won against the clock builds on its plot, Another
+ * way changes it, Split is found; the clock off; all of it after a reload.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -189,7 +191,7 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'board.js', 'play.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js and Set\'s game) load before app.js');
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'board.js', 'play.js', 'kingdom.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js and Set\'s game and kingdom) load before app.js');
   assert.equal((html.match(/<style data-fives="play">/g) || []).length, 1, 'play.css is inlined where the game and the board look for it');
   const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
@@ -2291,9 +2293,12 @@ for (const cfg of CONFIGS) {
       await page.waitForSelector('#view-set .fp-gc');
       assert.equal(await tabsShown(), false, 'the tab bar hides while a level is on');
       await page.click('#view-set .fp-level .fp-back');   // leaving a level costs nothing
-      await page.waitForSelector('#view-set .fp-mapview');
+      await page.waitForSelector('#view-set .fk');
       assert.equal(await tabsShown(), true, 'and comes back with the map');
-      await page.click('#view-set .fp-mapview .fp-back');
+      // the example's kingdom: nothing won yet, level 1 next, the next area under cloud
+      assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="1"]', 'aria-label'), 'Level 1, Sort, Next.');
+      assert.equal(await page.textContent('#view-set .fk-cloud p'), 'Under cloud: Split. Win level 5 to find it.');
+      await page.click('#view-set .fk .fp-back');
       await page.waitForSelector('#view-set .fb-tile[data-id]');
       assert.equal(await page.evaluate(() => localStorage.getItem('5s.state.v1')), before, 'Example mode saved nothing');
       await page.click('#exbanner [data-act="example-off"]');
@@ -2351,10 +2356,22 @@ for (const cfg of CONFIGS) {
 
       // Back: the map (the tab bar returns), then Your board, clustered by what you put together.
       await page.click('#view-set .fp-level .fp-back');
-      await page.waitForSelector('#view-set .fp-mapview');
+      await page.waitForSelector('#view-set .fk');
       assert.equal(await tabsShown(), true, 'the tab bar comes back');
       await shot('44-set-map');
-      await page.click('#view-set .fp-mapview .fp-back');
+      // The kingdom (SPEC "Set: the clock and the kingdom"): its words, its levels in order, the list one tap away.
+      assert.equal(await page.textContent('#view-set .fk .fp-title'), 'Your kingdom');
+      assert.equal(await page.textContent('#view-set .fk-line'), 'Every level you win builds one of your things. Next: level 1, in Sort.');
+      assert.deepEqual(await page.$$eval('#view-set .fk-nodes button', (bs) => bs.map((b) => b.dataset.n)), ['1', '2', '3', '4', '5']);
+      assert.equal(await page.textContent('#view-set .fk-play'), 'Play level 1');
+      await page.waitForSelector('#view-set .fk-isle.is-drawn');
+      await noHScroll(page, 'set kingdom');
+      await shot('44b-set-kingdom');
+      await page.click('#view-set .fk-list');
+      await page.waitForSelector('#view-set .fp-mapview .fp-kingdom');
+      await page.click('#view-set .fp-mapview .fp-kingdom');
+      await page.waitForSelector('#view-set .fk');
+      await page.click('#view-set .fk .fp-back');
       await page.waitForSelector('#view-set .fb-tile[data-id]');
       const now = await saved();
       assert.equal(now.saga.plays, 1, 'a level left counts as a play (the next board is new)');
@@ -2377,6 +2394,12 @@ for (const cfg of CONFIGS) {
       await page.click('#view-set [data-act="set-board"]');
       await page.waitForSelector('#view-set .fb-tile[data-id]');
       assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-act')), 'set-room');
+      // Your kingdom, from the board; leaving Set gives it way to the board.
+      await page.click('#view-set [data-act="set-kingdom"]');
+      await page.waitForSelector('#view-set .fk-node button');
+      await tab(page, 'see');
+      await tab(page, 'set');
+      await page.waitForSelector('#view-set [data-act="set-kingdom"]');
       // Set always opens on the board.
       await page.click('#view-set [data-act="set-room"]');
       await tab(page, 'see');
@@ -2388,6 +2411,113 @@ for (const cfg of CONFIGS) {
     }
   });
 }
+
+// The clock and the kingdom (SPEC "Set: the clock and the kingdom"), wired in the app: from the board to the
+// kingdom, level 5 played against the clock (planned in Node, played by keys) builds one of your things on its
+// plot, completes Sort and finds Split; Another way changes the building; the clock can be off; it all reloads.
+test('Set: the clock and the kingdom: a win in time builds on its plot, the fifth finds the next area, the clock can be off', { timeout: 240000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
+  const shot = shooter(page, { w: 390, scheme: 'light' });
+  const saved = () => page.evaluate(() => JSON.parse(localStorage.getItem('5s.state.v1') || 'null'));
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    let st = FiveS.exampleState(deck, Date.now());
+    const lv = MATCH.level(5);
+    let plan = null;
+    for (let p = 0; p < 40 && !plan; p++) {
+      const s0 = Object.assign({}, st, { seen: Object.assign({}, st.seen, { intro: 1 }), saga: { stars: [3, 2, 3, 1], best: [9000, 6000, 9000, 4000], boost: { pass: 1, turn: 1, more: 1 }, plays: p, day: null, time: [], built: [] } });
+      let g = MATCH.newGame(lv, MATCH.pieces(FiveS.migrate(s0), deck, lv.suits), '5s:5:' + p);
+      const mv = [];
+      while (g.state === 'play') { const m = MATCH.hint(g); if (!m) break; const r = MATCH.swap(g, m[0], m[1]); mv.push({ a: m[0], b: m[1], moves: r.game.moves, score: Math.round(r.game.score).toLocaleString('en-GB') }); g = r.game; }
+      if (g.state === 'won') plan = { st: s0, mv, res: MATCH.result(MATCH.finale(g).game) };
+    }
+    assert.ok(plan, 'a board of level 5 the hints win');
+    st = plan.st;
+    await page.goto(BASE + '#set');
+    await page.evaluate((json) => localStorage.setItem('5s.state.v1', json), JSON.stringify(st));
+    await page.reload();
+    await page.waitForSelector('#view-set .fb-tile[data-id]');   // the saved state is in (the board shows it)
+    await page.click('#view-set [data-act="set-kingdom"]');
+    await page.waitForSelector('#view-set .fk-node button');
+    assert.equal(await page.textContent('#view-set .fk-line'), 'Every level you win builds one of your things. Next: level 5, in Sort.');
+    assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="2"]', 'aria-label'), 'Level 2, Sort, 2 of 3 stars. Built: a plain house.', 'won before the kingdom: a plain house');
+
+    // Level 5 against the clock: five seconds a move (the default, as the ring is on), 20 moves, 1:40.
+    await page.click('#view-set .fk-play');
+    await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+    assert.equal(await page.isChecked('dialog.fp-sheet[open] input[name="fp-clock"][value="5"]'), true);
+    assert.match(await page.textContent('dialog.fp-sheet[open] .fp-clockline'), /^1:40 for this level, five seconds a move\./);
+    await page.click('dialog.fp-sheet[open] [data-play]');
+    await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
+    assert.equal(await page.getAttribute('#view-set .fp-time', 'aria-label'), 'Clock 1:40');
+    const key = (a, b) => (b === a + 1 ? 'ArrowRight' : b === a - 1 ? 'ArrowLeft' : b > a ? 'ArrowDown' : 'ArrowUp');
+    for (const m of plan.mv) {
+      await page.focus('#view-set .fp-gc[data-i="' + m.a + '"]');
+      await page.keyboard.press('Shift+' + key(m.a, m.b));
+      // the board settled: the engine's moves and score shown (as play.smoke's settled)
+      if (m.moves > 0) await page.waitForFunction(([n, sc]) => { const b = document.querySelector('#view-set .fp-moves b'), c = document.querySelector('#view-set .fp-score > b'); return b && c && b.textContent === String(n) && c.textContent === sc; }, [m.moves, m.score], { timeout: 20000 });
+    }
+    await page.waitForSelector('dialog.fp-sheet[open] .fp-built', { timeout: 60000 });
+    const end = await page.textContent('dialog.fp-sheet[open]');
+    assert.match(end, /Level 5 done\./);
+    assert.match(end, /In time: \d:\d\d to spare\. Best \d:\d\d\./);
+    assert.match(end, /Sort, built\.A new area: Split\. Paint with their colours\./);
+    assert.match(end, /You earned a Pass, a Turn and Five more\./, 'the fifth level\'s one of each, as before');
+    const ways = MATCH.buildChoices(FiveS.migrate(st), deck, plan.res, undefined);
+    let now = await saved();
+    assert.equal(now.saga.stars.length, 5);
+    assert.ok(now.saga.time[4] >= 1 && now.saga.time[4] <= 100, 'a best time in time: ' + now.saga.time[4]);
+    assert.deepEqual(now.saga.built, [null, null, null, null, ways[0] ?? null], 'the win built at once: the first of the ways');
+    await shot('47-set-level-5-built');
+    if (ways.length > 1) {
+      await page.click('dialog.fp-sheet[open] [data-way]');
+      await page.waitForFunction((w) => JSON.parse(localStorage.getItem('5s.state.v1')).saga.built[4] === w, ways[1]);
+    }
+    const builtId = ways.length > 1 ? ways[1] : ways[0] ?? null;
+
+    // See it in your kingdom: Split is found, the cloud moves on, and level 5's building is in words.
+    await page.click('dialog.fp-sheet[open] [data-kingdom]');
+    await page.waitForSelector('#view-set .fk-node button[data-n="10"]');
+    assert.equal(await page.locator('dialog[open]').count(), 0);
+    assert.equal(await page.textContent('#view-set .fk-cloud p'), 'Under cloud: Set. Win level 10 to find it.');
+    assert.equal(await page.textContent('#view-set .fk-line'), 'Every level you win builds one of your things. Next: level 6, in Split.');
+    await page.waitForFunction(() => document.querySelector('#view-set .fk-live').textContent === 'A new area: Split.');
+    const name = builtId ? FiveS.card(FiveS.migrate(st), deck, builtId).title : 'a plain house';
+    const label = await page.getAttribute('#view-set .fk-node button[data-n="5"]', 'aria-label');
+    assert.match(label, /^Level 5, Sort, [123] of 3 stars, in time\. Built: .+\.$/);
+    assert.ok(label.indexOf('Built: ' + name.slice(0, 20)) > 0, label + ' names ' + name);
+    // Sort's island, drawn: its five buildings in words, no plot left unbuilt
+    await page.waitForSelector('#view-set .fk-isle.is-drawn canvas[aria-label^="Sort, levels 1 to 5. "]', { timeout: 15000 });
+    const isle = await page.getAttribute('#view-set .fk-isle.is-drawn canvas[aria-label^="Sort, levels 1 to 5. "]', 'aria-label');
+    assert.match(isle, /Buildings: /);
+    assert.doesNotMatch(isle, /not yet built/);
+    await shot('48-set-kingdom-split-found');
+
+    // The clock off, chosen on the level card: no ring, and the choice is saved.
+    await page.click('#view-set .fk-play');
+    await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+    await page.check('dialog.fp-sheet[open] input[name="fp-clock"][value="0"]');
+    assert.equal(await page.textContent('dialog.fp-sheet[open] .fp-clockline'), 'No clock for this level.');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('5s.state.v1')).opts.clock === 0);
+    await page.click('dialog.fp-sheet[open] [data-play]');
+    await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
+    assert.equal(await page.locator('#view-set .fp-time').count(), 0, 'no clock');
+    await page.click('#view-set .fp-level .fp-back');
+    await page.waitForSelector('#view-set .fk');
+
+    // It all reloads: the kingdom from the board, as built.
+    await page.reload();
+    await page.waitForSelector('#view-set .fb-tile[data-id]');   // the saved state is in (the board shows it)
+    await page.click('#view-set [data-act="set-kingdom"]');
+    await page.waitForSelector('#view-set .fk-node button[data-n="10"]');
+    assert.equal(await page.getAttribute('#view-set .fk-node button[data-n="5"]', 'aria-label'), label);
+    now = await saved();
+    assert.deepEqual([now.saga.built[4], now.opts.clock], [builtId, 0]);
+    assert.deepEqual(page.errors(), []);
+  } finally {
+    await ctx.close();
+  }
+});
 
 // A level that breaks must not keep the tab bar away, the second time too (the problem note shows a message once).
 test('Set: an error inside a level brings the tab bar back, even the same error in the next level; a level card left by the address bar goes', { timeout: 60000 }, async () => {
@@ -2411,15 +2541,15 @@ test('Set: an error inside a level brings the tab bar back, even the same error 
     await breakIt();
     assert.match(await page.textContent('#problem'), /a level broke/);
     await page.click('#view-set .fp-level .fp-back');
-    await page.waitForSelector('#view-set .fp-mapview');
-    await page.click('#view-set .fp-mapview .fp-back');
+    await page.waitForSelector('#view-set .fk');
+    await page.click('#view-set .fk .fp-back');
     await page.waitForSelector('#view-set [data-act="set-play"]');
     await play();
     await breakIt();
     // The level card open and the address changed by hand: the card goes with the level, the page stays usable.
     await page.click('#view-set .fp-level .fp-back');
-    await page.waitForSelector('#view-set .fp-mapview');
-    await page.click('#view-set .fp-mapview .fp-back');
+    await page.waitForSelector('#view-set .fk');
+    await page.click('#view-set .fk .fp-back');
     await page.click('#view-set [data-act="set-play"]');
     await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
     await page.evaluate(() => { location.hash = 'split'; });
@@ -2455,14 +2585,14 @@ test('Set: a level panel that lands out of sight is pinned into view, and a tap 
     await page.tap('dialog.fp-sheet[open] [data-play]');   // and it works: Play starts the level
     await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
     await page.click('#view-set .fp-level .fp-back');
-    await page.waitForSelector('#view-set .fp-mapview');
+    await page.waitForSelector('#view-set .fk');
     // a tap on the dimmed page, above the panel, closes it and leaves the page usable (the map)
-    await page.click('#view-set .fp-mapview .fp-back');
+    await page.click('#view-set .fk .fp-back');
     await page.click('#view-set [data-act="set-play"]');
     await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
     await page.mouse.click(195, 40);
     await page.waitForFunction(() => !document.querySelector('dialog[open]'));
-    await page.waitForSelector('#view-set .fp-mapview');
+    await page.waitForSelector('#view-set .fk');
     assert.equal(await page.locator('dialog.fp-sheet').count(), 0, 'no panel left behind');
   } finally {
     await ctx.close();

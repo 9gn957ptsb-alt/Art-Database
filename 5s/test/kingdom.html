@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>5s kingdom harness</title>
+<!-- A harness for src/kingdom.js: the deck, an example taste, and the app's part played by the
+     callbacks below. Served from 5s/: /test/kingdom.html with ?won=N (levels won, default 8),
+     ?theme=dark|light, ?reduce=1, ?focus=n, ?reveal=k, ?empty=1 (nothing judged), ?deck=fixture. -->
+<link rel="stylesheet" href="../src/app.css">
+<link rel="stylesheet" href="../src/play.css" data-fives="play">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Martian+Mono:wght@400;500&amp;family=Unbounded:wght@500;700&amp;display=swap">
+<style>
+  html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
+  #stage { height: 100%; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="../src/engine.js"></script>
+<script src="../src/match.js"></script>
+<script src="../src/ground.js"></script>
+<script src="../src/kingdom.js"></script>
+<script>
+(async function () {
+  'use strict';
+  try {
+    const q = new URLSearchParams(location.search);
+    const dark = q.get('theme') ? q.get('theme') === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    const F = window.FiveS;
+    const NOW = Date.UTC(2026, 9, 22, 12);
+    let base = q.get('deck') === 'fixture' ? 'fixture/' : '../dist/';
+    let deck;
+    try { deck = await (await fetch(base + 'deck.json')).json(); }
+    catch (e) { base = 'fixture/'; deck = await (await fetch(base + 'deck.json')).json(); }
+    const st = q.get('empty') ? F.newState() : F.exampleState(deck, NOW);
+    const P = F.profile(st, deck);
+
+    // A saga as if `won` levels were won: stars, some in time, and buildings from kept things
+    // (the artist's buildings first), with a plain house now and then.
+    const won = +(q.get('won') || 8);
+    const kept = Object.values(P.keptByKind).flat().sort((a, b) => (/^b/.test(b) ? 1 : 0) - (/^b/.test(a) ? 1 : 0));
+    const saga = { stars: [], best: [], time: [], built: [], boost: { pass: 1, turn: 1, more: 1 }, plays: won, day: null };
+    for (let i = 0; i < won; i++) {
+      saga.stars.push([3, 2, 3, 1, 2, 3, 2][i % 7]);
+      saga.best.push(9000);
+      saga.time.push(i % 3 === 1 ? 0 : 40 + i);
+      saga.built.push(kept.length && i % 4 !== 3 ? kept[i % kept.length] : null);
+    }
+
+    const card = (id) => F.card(st, deck, id);
+    const short = (t) => { t = String(t || 'Untitled').replace(/\s+/g, ' ').trim(); return t.length > 28 ? t.slice(0, 27).replace(/[\s,.;:]+$/, '') + '…' : t; };
+    const thing = (id) => { const c = card(id); return c ? { name: short(c.title), colours: c.colours || [] } : null; };
+    const surfaces = P.keptByKind.surface.map((id) => card(id)).filter((c) => c && c.img).map((c) => ({ src: base + c.img, crop: null }));
+    const palette = { kept: P.keptColours, passed: P.passedColours, surfaces };
+    function drawHome(canvas) {
+      if (!P.judged) return null;
+      const s = st.sets[st.sets.length - 1], c = s && s.wall ? card(s.wall) : null, cs = (c && c.colours) || [];
+      return window.FiveSGround.render(canvas, {
+        rand: F.prng(F.seedCode(st)), surfaces, kept: P.keptColours, passed: P.passedColours,
+        house: cs.length ? { wall: cs[0], trim: cs[1] || cs[0], accent: cs[2] || cs[1] || cs[0] } : null,
+        size: P.judged < 20 ? 7 : P.judged < 50 ? 9 : P.judged < 100 ? 11 : 13, theme: dark ? 'dark' : 'light',
+      });
+    }
+
+    const calls = [];
+    const num = (k) => (q.get(k) == null ? null : +q.get(k));
+    const k = window.FiveSKingdom.mount(document.getElementById('stage'), {
+      saga, palette, thing, drawHome, theme: dark ? 'dark' : 'light', reduce: q.get('reduce') ? true : undefined,
+      focus: num('focus'), reveal: num('reveal'),
+      onLevel: (n) => calls.push(['level', n]), onBack: () => calls.push(['back']),
+      onList: () => calls.push(['list']), onHome: () => calls.push(['home']),
+    });
+    window.harness = { ready: true, calls, k, saga };
+  } catch (e) {
+    window.harnessError = String(e && e.stack || e);
+  }
+})();
+</script>
+</body>
+</html>

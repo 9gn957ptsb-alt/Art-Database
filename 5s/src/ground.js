@@ -3,7 +3,7 @@
  * Plain script, no modules, no network beyond loading the images it is given. Exposes one frozen
  * global, `FiveSGround`:
  *
- * FiveSGround.render(canvas, spec) -> Promise<{land, water, house, description}>
+ * FiveSGround.render(canvas, spec) -> Promise<{land, water, house, description, plots}>
  *   canvas   an HTMLCanvasElement with a CSS box: give it a width and a height (or an aspect-ratio).
  *            Its bitmap is set to that box x devicePixelRatio, cleared to transparent, and the ground
  *            drawn inside a margin, so nothing reaches the canvas's edges. A canvas with no layout box
@@ -27,8 +27,14 @@
  *     grow      true: animate once (land rises from the sea, the house last). Ignored under
  *               prefers-reduced-motion. The last frame is pixel-identical to a render without grow.
  *     theme     "light" | "dark": the plinth, its shadow, the foam and the default water.
+ *     plots     0..9 (default 0): the kingdom's plots (SPEC "Set: the clock and the kingdom"), land tiles
+ *               chosen after the plan (no draws from rand, so the shape is the same), never the house's,
+ *               front to back. An unbuilt plot is a pale slab; room is kept for three storeys and a flag.
+ *     houses    [{plot, wall, trim, accent, storeys 1..3, flag, name}]: a building on a plot, a window a
+ *               storey, an Iris pennant when flag is true; named in the description.
  *   }
  *   Resolves once the ground is fully drawn (after the grow, if any) with
+ *     plots        [{x, y}]: each plot tile's top centre in CSS px of the canvas box, front to back,
  *     land         the number of land tiles,
  *     water        the number of water tiles (land + water = size x size),
  *     house        true when the ground has a house (spec.house given, with a valid wall colour),
@@ -38,6 +44,10 @@
  *   Images that fail to load (or take over 10 s) fall back to colours and are not counted as surfaces.
  *   A later render() on the same canvas supersedes an earlier one: the earlier one resolves without
  *   drawing (or, mid-grow, stops where it is). Rejects only when `canvas` is not a canvas.
+ *
+ * FiveSGround.layout(spec, w, h) -> {plots, land, water}
+ *   The same plan and fit as render on a w x h CSS px box, drawing nothing (no canvas needed): where
+ *   the plots will be, before anything is drawn. Give it a fresh rand with the same seed.
  *
  * FiveSGround.stop()
  *   Cancels any running grow animation: each jumps to its final frame (so no island is left half
@@ -80,7 +90,7 @@
       matTop: [239, 236, 243], matLeft: [222, 217, 230], matRight: [196, 189, 210],
       rim: [255, 255, 255], rimA: 0.85, drop: [40, 30, 76], dropA: 0.28,
       ink: [30, 24, 48], line: 0.16,
-      foam: [255, 255, 255], foamA: 0.9,
+      foam: [255, 255, 255], foamA: 0.9, slab: 0.45,
       sea: ['#7895cf', '#4a68aa', '#2b4683', '#1d3163'],
       land: ['#a8b78e', '#cdbb8f', '#93a684', '#c4a47c'],
     },
@@ -88,7 +98,7 @@
       matTop: [42, 38, 54], matLeft: [32, 29, 42], matRight: [23, 21, 31],
       rim: [255, 255, 255], rimA: 0.16, drop: [0, 0, 0], dropA: 0.62,
       ink: [8, 6, 14], line: 0.22,
-      foam: [236, 240, 255], foamA: 0.78,
+      foam: [236, 240, 255], foamA: 0.78, slab: 0.22,
       sea: ['#5d7bbd', '#3a5797', '#253d74', '#182a55'],
       land: ['#97a67f', '#b8a77f', '#859777', '#b0916c'],
     },
@@ -368,9 +378,40 @@
     for (const k of landIds) far = Math.max(far, Math.hypot(k % n - hi, Math.floor(k / n) - hj));
     for (const k of landIds) delay[k] = 0.45 * Math.hypot(k % n - hi, Math.floor(k / n) - hj) / far;
 
+    // Plots (the kingdom's): placed after every draw from rand, so they never change the shape.
+    // The front-most land tile first, then each next the farthest from those chosen; front to back.
+    const ij = (k) => [k % n, Math.floor(k / n)];
+    const free = landIds.filter((k) => k !== houseAt);
+    const want = Math.min(free.length, clamp(Math.round(Number(spec.plots) || 0), 0, 9));
+    const plots = [];
+    for (const k of free) {
+      if (plots.length >= want) break;
+      const [i, j] = ij(k), f = plots[0];
+      if (f == null) { plots[0] = k; continue; }
+      const [fi, fj] = ij(f);
+      if (i + j > fi + fj || (i + j === fi + fj && Math.abs(i - j) < Math.abs(fi - fj))) plots[0] = k;
+    }
+    while (plots.length < want) {
+      let best = -1, bd = -1;
+      for (const k of free) {
+        if (plots.indexOf(k) >= 0) continue;
+        let d = Infinity;
+        for (const q of plots) d = Math.min(d, (k % n - q % n) ** 2 + (Math.floor(k / n) - Math.floor(q / n)) ** 2);
+        if (d > bd) { bd = d; best = k; }
+      }
+      plots.push(best);
+    }
+    plots.sort((a, b) => (ij(b)[0] + ij(b)[1]) - (ij(a)[0] + ij(a)[1]) || ij(a)[0] - ij(b)[0]);
+    const builds = [];
+    for (const x of Array.isArray(spec.houses) ? spec.houses : []) {
+      const q = Math.floor(Number(x && x.plot));
+      const c = q >= 0 && q < plots.length && !builds[q] ? cleanHouse(x) : null;
+      if (c) builds[q] = Object.assign(c, { storeys: clamp(Math.round(Number(x.storeys) || 1), 1, 3), flag: x.flag === true, name: String(x.name || 'a house').slice(0, 80) });
+    }
+
     return {
       n, N, theme, kept, passed, surfaces, house, isLand, landIds, waterIds, level, L, houseAt,
-      seaColours, seaDefault, band, regions, region, jitter, delay,
+      seaColours, seaDefault, band, regions, region, jitter, delay, plots, builds,
     };
   }
 
@@ -545,7 +586,9 @@
       if (canvas.width !== W) canvas.width = W;
       if (canvas.height !== H) canvas.height = H;
     }
-    const W = canvas.width, H = canvas.height;
+    return geoOf(plan, canvas.width, canvas.height, dpr);
+  }
+  function geoOf(plan, W, H, dpr) {
     const n = plan.n;
     // The scene's box at a tile edge of 1: the plinth, the land's tops, the house's ridge.
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -562,6 +605,12 @@
     if (plan.house && plan.houseAt >= 0) {
       const k = plan.houseAt, z = SEA + plan.level[k] * STEP + HOUSE.wall + HOUSE.roof;
       add(k % n + HOUSE.u0, Math.floor(k / n) + 0.5, z);
+    }
+    // Every plot keeps room for its tallest building, so nothing moves as one rises.
+    for (const k of plan.plots) {
+      const z = SEA + plan.level[k] * STEP + 3 * HOUSE.wall + HOUSE.roof + FLAG.pole;
+      add(k % n + HOUSE.u0, Math.floor(k / n) + 0.5, z);
+      add(k % n + HOUSE.u1 + FLAG.len, Math.floor(k / n) + 0.5 - FLAG.len, z);
     }
     // Room for the plinth's soft shadow (it fades out by three sigmas).
     const reach = 3 * DROP.sigma;
@@ -628,6 +677,7 @@
   // ---------------------------------------------------------------- drawing
 
   const HOUSE = { u0: 0.14, u1: 0.86, v0: 0.22, v1: 0.78, wall: 0.4, roof: 0.36, eave: 0.06 };
+  const FLAG = { pole: 0.3, len: 0.13, hex: [167, 139, 255] };   // the Iris pennant of a level won in time
 
   function scene(ctx, geo, plan, mats, t) {
     const { n, theme } = plan;
@@ -826,7 +876,10 @@
       if (zl < zt) { ctx.beginPath(); ctx.moveTo(D.x, D.y); ctx.lineTo(C.x, C.y); ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.stroke(); }
       if (zr < zt) { ctx.beginPath(); ctx.moveTo(B.x, B.y); ctx.lineTo(C.x, C.y); ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.stroke(); }
 
-      if (k === plan.houseAt && plan.house && houseG > 0) house(i, j, zt, houseG);
+      if (k === plan.houseAt && plan.house && houseG > 0) house(i, j, zt, houseG, plan.house, 1, false);
+      const q = plan.plots.indexOf(k);
+      if (q >= 0 && plan.builds[q] && houseG > 0) house(i, j, zt, houseG, plan.builds[q], plan.builds[q].storeys, plan.builds[q].flag);
+      else if (q >= 0) fillPoly(rect(i + 0.18, j + 0.18, i + 0.82, j + 0.82, zt), css([255, 255, 255], theme.slab));
     }
 
     // A side face of a column: the same material, shaded, darker toward its foot.
@@ -866,10 +919,9 @@
     }
 
     // A small house in the same isometry: walls, a window, a door, a gabled roof.
-    function house(i, j, z0, g) {
-      const h = plan.house;
+    function house(i, j, z0, g, h, storeys, flag) {
       const { u0, u1, v0, v1, eave } = HOUSE;
-      const hw = HOUSE.wall * g, hr = HOUSE.roof * g;
+      const hw = HOUSE.wall * storeys * g, hr = HOUSE.roof * g, sw = HOUSE.wall * g;
       const vm = (v0 + v1) / 2, zw = z0 + hw, zr = zw + hr;
       const Q = (u, v, z) => P(i + u, j + v, z);
       // Its shadow on the tile, toward the lower right, kept on the tile.
@@ -878,8 +930,8 @@
       // The long wall (lit) with its window, the gable end (in shade) with its door.
       fillPoly([Q(u0, v1, z0), Q(u1, v1, z0), Q(u1, v1, zw), Q(u0, v1, zw)], css(shade(h.wall, SHADE.left * 0.8)));
       fillPoly([Q(u1, v0, z0), Q(u1, v1, z0), Q(u1, v1, zw), Q(u1, vm, zr), Q(u1, v0, zw)], css(shade(h.wall, SHADE.right)));
-      if (g > 0.6 && s >= 6) {
-        const wz0 = z0 + hw * 0.3, wz1 = z0 + hw * 0.74, wa = 0.36, wb = 0.64, f = 0.035;
+      for (let st = 0; st < storeys && g > 0.6 && s >= 6; st++) {
+        const wz0 = z0 + sw * (st + 0.3), wz1 = z0 + sw * (st + 0.74), wa = 0.36, wb = 0.64, f = 0.035;
         fillPoly([Q(wa, v1, wz0), Q(wb, v1, wz0), Q(wb, v1, wz1), Q(wa, v1, wz1)], css(shade(h.accent, 0.06)));
         const glass = mix(mix(h.wall, SHADOW_INK, 0.55), [170, 190, 230], 0.25);
         fillPoly([Q(wa + f, v1, wz0 + f), Q(wb - f, v1, wz0 + f), Q(wb - f, v1, wz1 - f), Q(wa + f, v1, wz1 - f)], css(glass));
@@ -890,8 +942,9 @@
         ctx.strokeStyle = css(shade(h.accent, 0.06));
         ctx.lineWidth = Math.max(geo.px * 0.75, s * 0.022);
         ctx.stroke();
+        if (st) continue;
         const da = vm - 0.1, db = vm + 0.1;
-        fillPoly([Q(u1, da, z0), Q(u1, db, z0), Q(u1, db, z0 + hw * 0.62), Q(u1, da, z0 + hw * 0.62)], css(shade(h.accent, SHADE.right)));
+        fillPoly([Q(u1, da, z0), Q(u1, db, z0), Q(u1, db, z0 + sw * 0.62), Q(u1, da, z0 + sw * 0.62)], css(shade(h.accent, SHADE.right)));
       }
       // The roof: the front plane (the back one faces away), its eave reaching past the wall.
       const ze = zw - eave * (hr / (vm - v0));
@@ -917,6 +970,14 @@
       ctx.strokeStyle = css(shade(h.trim, 0.25));
       ctx.lineWidth = Math.max(geo.px * 0.75, s * 0.02);
       ctx.stroke();
+      if (!flag || g < 1) return;
+      // The flag: an Iris pennant on a pole at the ridge's front.
+      const zt = zr + FLAG.pole, f0 = Q(u1 - 0.04, vm, zr), f1 = Q(u1 - 0.04, vm, zt);
+      ctx.beginPath(); ctx.moveTo(f0.x, f0.y); ctx.lineTo(f1.x, f1.y);
+      ctx.strokeStyle = css(SHADOW_INK, 0.85);
+      ctx.lineWidth = Math.max(geo.px, s * 0.03);
+      ctx.stroke();
+      fillPoly([f1, Q(u1 - 0.04 + FLAG.len, vm - FLAG.len, zt - 0.06), Q(u1 - 0.04, vm, zt - 0.12)], css(FLAG.hex));
     }
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -953,6 +1014,13 @@
       out.push('A house in ' + colourName(plan.house.wallHex) + ' with ' + article(colourName(plan.house.trimHex)) +
         ' roof, on the highest ground.');
     }
+    const built = plan.builds.filter(Boolean);
+    if (built.length) {
+      out.push('Buildings: ' + built.map((b) => b.name + ', ' + ['one', 'two', 'three'][b.storeys - 1] + ' ' + (b.storeys === 1 ? 'storey' : 'storeys') +
+        (b.flag ? ', flying a flag' : '')).join('; ') + '.');
+    }
+    const empty = plan.plots.length - built.length;
+    if (empty) out.push(plural(empty, 'plot', 'plots') + ' not yet built.');
     return out.join(' ');
   }
 
@@ -1016,7 +1084,9 @@
     // The counts and the words describe the ground as planned (so they hold even for a canvas too
     // small to draw on); "surfaces you kept" counts only surfaces whose image is drawn.
     const hasHouse = !!(plan.house && plan.houseAt >= 0);
+    let plots = [];
     const result = (surfacesDrawn) => ({
+      plots,
       land: plan.landIds.length,
       water: plan.waterIds.length,
       house: hasHouse,
@@ -1025,6 +1095,7 @@
     const loaded = new Set(plan.regions.filter((r) => r.surface >= 0 && images[r.surface]).map((r) => r.surface)).size;
     if (tokens.get(canvas) !== token) return result(loaded);   // superseded by a later render
     const geo = fit(canvas, plan);
+    plots = plotPoints(plan, geo);
     const ctx = canvas.getContext('2d');
     if (!ctx || geo.W < MIN_PX || geo.H < MIN_PX) {
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1037,9 +1108,26 @@
     return result(mats.surfacesDrawn);
   }
 
+  // Plot tiles' top centres, in CSS px of the box, front to back.
+  function plotPoints(plan, geo) {
+    const n = plan.n, s = geo.s;
+    return plan.plots.map((k) => {
+      const i = k % n + 0.5, j = Math.floor(k / n) + 0.5, z = SEA + plan.level[k] * STEP;
+      return { x: (geo.ox + (i - j) * C30 * s) / geo.dpr, y: (geo.oy + (i + j) * 0.5 * s - z * s) / geo.dpr };
+    });
+  }
+
+  function layout(spec, w, h) {
+    spec = spec && typeof spec === 'object' ? spec : {};
+    const plan = makePlan(spec, guard(typeof spec.rand === 'function' ? spec.rand : mulberry32(0x5e5d)));
+    const dpr = root.devicePixelRatio > 0 ? root.devicePixelRatio : 1;
+    const geo = geoOf(plan, Math.max(1, Math.round(w * dpr)), Math.max(1, Math.round(h * dpr)), dpr);
+    return { plots: plotPoints(plan, geo), land: plan.landIds.length, water: plan.waterIds.length };
+  }
+
   function stop() {
     for (const a of Array.from(live)) a.finish();
   }
 
-  root.FiveSGround = Object.freeze({ render, stop });
+  root.FiveSGround = Object.freeze({ render, stop, layout });
 })(typeof window !== 'undefined' ? window : globalThis);

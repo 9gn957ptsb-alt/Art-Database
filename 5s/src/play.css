@@ -58,6 +58,17 @@
 .fp-meter s { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink-2, #57516A); }
 .fp-sst { font-size: 13px; letter-spacing: 1px; color: var(--ember-mark, #DE6A24); line-height: 1; }
 .fp-say { min-height: 22px; text-align: center; font-weight: 600; font-size: 14px; color: var(--iris-ink, #5B3BD6); flex: none; }
+/* the clock: the five-second ring around Moves, draining while the board waits; the time under it (text only under reduced motion) */
+.fp-status.fp-has-clock { min-height: 76px; }
+.fp-moves.fp-clocked { position: relative; width: 56px; height: 76px; align-content: start; padding-top: 12px; }
+.fp-clocked > b { font-size: 20px; }
+.fp-clocked > span:not(.fp-time) { font-size: 10px; margin-top: 2px; }
+.fp-cring { position: absolute; left: 0; top: 0; width: 56px; height: 56px; transform: rotate(-90deg); }
+.fp-cring circle { fill: none; stroke-width: 4; }
+.fp-cring .fp-rt { stroke: var(--line, #E2DEEA); }
+.fp-cring .fp-rf { stroke: url(#fp-ring-grad); stroke-linecap: round; stroke-dasharray: 150.8; stroke-dashoffset: 0; }
+.fp-time { margin-top: 6px; font: 500 13px/1 var(--font-mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; color: var(--ink-2, #57516A); white-space: nowrap; }
+.fp-clocked .fp-time { position: absolute; left: 50%; top: 61px; margin: 0; transform: translateX(-50%); }
 
 /* ------------------------------------------------------------------ the game: the board on its table */
 .fp-boardwrap { display: flex; justify-content: center; flex: none; }
@@ -167,6 +178,13 @@
 .fp-endstars span { font-size: 26px; letter-spacing: 2px; color: var(--ember-mark, #DE6A24); vertical-align: -3px; }
 .fp-paint { display: block; width: 100%; max-width: 300px; height: auto; border-radius: 16px; image-rendering: pixelated; }
 .fp-earned, .fp-left { font-weight: 600; }
+/* the level card's clock choice (the app's .seg, its three words allowed two lines) and the level end's building */
+.fp-clockset .seg { display: grid; width: 100%; border-radius: 18px; }
+.fp-clockset .seg label { border-radius: 14px; padding: 6px 8px; text-align: center; line-height: 1.2; }
+.fp-clockline { margin-top: 2px; }
+.fp-built { display: flex; align-items: center; gap: 12px; }
+.fp-btext { font-weight: 600; overflow-wrap: anywhere; }
+.fp-wayn { font: 500 12px/1 var(--font-mono, ui-monospace, monospace); color: var(--ink-2, #57516A); margin-left: 6px; }
 
 /* ------------------------------------------------------------------ the saga map */
 .fp-mapview { overflow: hidden; }
@@ -191,3 +209,61 @@
 .fp-side-l .fp-nl { right: 70px; justify-items: end; }
 .fp-nl b { font-weight: 700; color: var(--iris-ink, #5B3BD6); font-size: 15px; }
 .fp-st { font-size: 17px; letter-spacing: 1px; color: var(--ember-mark, #DE6A24); }
+
+/* ------------------------------------------------------------------ the kingdom map (.fk, src/kingdom.js)
+   SPEC.md, "Set: the clock and the kingdom". A drafting table you roam: one transform on .fk-table a
+   frame; --z is the zoom, and labels and nodes are counter-scaled by it, so they stay their size. */
+.fk { overflow: hidden; --fk-cloud: rgba(250, 249, 252, 0.92); --fk-cloud-shade: rgba(40, 28, 70, 0.16); --fk-plinth: #EFECF3; --fk-grid: color-mix(in srgb, var(--line, #E2DEEA) 35%, transparent); }
+.fk[data-theme="dark"] { --fk-cloud: rgba(42, 36, 56, 0.92); --fk-cloud-shade: rgba(0, 0, 0, 0.45); --fk-plinth: #2A2636; }
+.fk .fp-top { grid-template-columns: auto minmax(0, 1fr) auto; }
+.fk .fp-top .btn { white-space: nowrap; padding: 0 12px; }
+.fk .fp-title { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 400px) { .fk .fp-title { font-size: 16px; } }
+.fk-line { width: 100%; max-width: 480px; margin: 0 auto 10px; text-align: center; font-size: 14px; line-height: 1.4; color: var(--ink-2, #57516A); flex: none; }
+.fk-stage { position: relative; flex: 1 1 auto; min-height: 0; margin: 0 calc(-1 * max(16px, env(safe-area-inset-right, 0px))) calc(-1 * env(safe-area-inset-bottom, 0px)) calc(-1 * max(16px, env(safe-area-inset-left, 0px))); }
+.fk-map { position: absolute; inset: 0; overflow: hidden; overflow: clip; background: var(--paper, #FAF9FC); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; border-top: 1px solid var(--line, #E2DEEA); }
+.fk-map.is-drag { cursor: grabbing; }
+.fk-map:focus-visible { outline: 2px solid var(--focus, #7350EE); outline-offset: -3px; }
+.fk-table { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; --z: 1; }
+.fk-table > * { position: absolute; }
+.fk-grid { background-image: linear-gradient(to right, var(--fk-grid) 1px, transparent 1px), linear-gradient(to bottom, var(--fk-grid) 1px, transparent 1px); background-size: 24px 24px; }
+.fk-road, .fk-trail { left: 0; top: 0; overflow: visible; pointer-events: none; }
+.fk-road path, .fk-trail path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.fk-trail path { stroke: #FFFFFF; stroke-width: 3.5px; stroke-dasharray: 0.1 9; opacity: 0.75; }
+.fk-isle { width: 520px; height: 380px; }
+.fk-isle canvas { display: block; width: 100%; height: 100%; }
+/* until an island is drawn, its plinth's place on the table */
+.fk-isle:not(.is-drawn)::before { content: ""; position: absolute; inset: 14% 6% 10%; background: var(--fk-plinth); clip-path: polygon(50% 0, 100% 46%, 50% 100%, 0 46%); }
+.fk-aname { margin: 0; display: grid; gap: 2px; transform-origin: 0 0; transform: scale(calc(1 / var(--z))); pointer-events: none; white-space: nowrap; }
+.fk-aname.is-r { justify-items: end; transform: scale(calc(1 / var(--z))) translateX(-100%); text-align: right; }
+.fk-aname b { font: 700 17px/1.1 var(--font-display, system-ui, sans-serif); color: var(--ink, #16131F); }
+.fk-aname span { font: 500 12px/1 var(--font-mono, ui-monospace, monospace); color: var(--ink-2, #57516A); }
+.fk-cloud { height: 380px; pointer-events: none; filter: drop-shadow(0 10px 18px var(--fk-cloud-shade));
+  background:
+    radial-gradient(closest-side, var(--fk-cloud) 62%, transparent) 2% 60% / 30% 52% no-repeat,
+    radial-gradient(closest-side, var(--fk-cloud) 62%, transparent) 22% 34% / 36% 66% no-repeat,
+    radial-gradient(closest-side, var(--fk-cloud) 62%, transparent) 50% 24% / 34% 60% no-repeat,
+    radial-gradient(closest-side, var(--fk-cloud) 62%, transparent) 76% 36% / 38% 64% no-repeat,
+    radial-gradient(closest-side, var(--fk-cloud) 62%, transparent) 98% 60% / 30% 52% no-repeat,
+    radial-gradient(closest-side, var(--fk-cloud) 66%, transparent) 50% 72% / 92% 56% no-repeat; }
+.fk-cloud p { position: absolute; top: 64%; width: 200px; margin: 0; text-align: center; font: 600 15px/1.35 var(--font-body, system-ui, sans-serif); color: var(--ink, #16131F); transform: translate(-50%, -50%) scale(calc(1 / var(--z))); }
+.fk-nodes { left: 0; top: 0; margin: 0; padding: 0; list-style: none; }
+.fk-node { position: absolute; width: 0; height: 0; transform-origin: 0 0; transform: scale(calc(1 / var(--z))); }
+.fk-node button { position: absolute; left: -18px; bottom: 7px; width: 36px; min-height: 36px; padding: 5px 0 4px; border: 0; border-radius: 12px; display: grid; align-content: center; justify-items: center; gap: 2px; box-shadow: 0 3px 8px var(--shadow, rgba(40, 28, 70, 0.2)); --fk-pin: var(--flare, #E5482B); }
+/* the pin's stem, down to just above its building */
+.fk-node button::after { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: calc(7px + var(--up, 0) * var(--z) * 1px); margin-left: -1px; background: var(--fk-pin); border-radius: 0 0 1px 1px; }
+.fk-node b { font: 700 15px/1 var(--font-display, system-ui, sans-serif); }
+.fk-node span { font: 700 9px/1 var(--font-body, system-ui, sans-serif); white-space: nowrap; }
+.fk-node .fk-st { font-size: 10px; letter-spacing: -1px; color: var(--on-keep, #16131F); }
+.fk-node .fk-st i { font-style: normal; opacity: 0.3; }
+.fk-node.is-done button { background: linear-gradient(160deg, var(--ember, #F28A3C), var(--flare, #E5482B)); color: var(--on-keep, #16131F); }
+.fk-node.is-next button { --fk-pin: var(--iris, #7350EE); background: var(--raised, #FFFFFF); color: var(--ink, #16131F); box-shadow: 0 0 0 3px var(--iris, #7350EE), 0 0 18px 6px rgba(115, 80, 238, 0.35); }
+.fk-node.is-next span { color: var(--iris-ink, #5B3BD6); font-size: 10px; }
+.fk-node.is-not button { --fk-pin: var(--line-strong, #8C86A0); background: var(--paper, #FAF9FC); color: var(--ink-2, #57516A); box-shadow: inset 0 0 0 2px var(--line-strong, #8C86A0); cursor: default; }
+.fk-node button:focus-visible { outline: 2px solid var(--focus, #7350EE); outline-offset: 4px; }
+.fk-homel { position: absolute; transform-origin: 0 0; transform: scale(calc(1 / var(--z))); min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--line-strong, #8C86A0); background: var(--raised, #FFFFFF); color: var(--ink, #16131F); font: 600 14px/1 var(--font-body, system-ui, sans-serif); white-space: nowrap; }
+.fk-homel:focus-visible { outline: 2px solid var(--focus, #7350EE); outline-offset: 3px; }
+.fk-foot { position: absolute; z-index: 2; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; align-items: center; gap: 8px; pointer-events: none; }
+.fk-foot > * { pointer-events: auto; }
+.fk-play { flex: 0 1 320px; box-shadow: 0 6px 18px var(--shadow, rgba(40, 28, 70, 0.2)); }
+.fk-foot .iconbtn { background: var(--raised, #FFFFFF); box-shadow: 0 4px 12px var(--shadow, rgba(40, 28, 70, 0.2)); }

@@ -1177,6 +1177,8 @@ throttles the CPU 4× (CDP) and requires a p95 frame ≤ 20 ms through a cascade
 - Never colour alone: suits by shape and legend, specials by pattern and glyph, paint by hatching,
   stars and map states in words.
 - No timing: no clock, no countdown; the hint is optional (`opts.hints`, a switch in the level card).
+  *Amended 23 Oct 2026:* the game now has a clock, which can be off or slower by choice and never ends
+  a level: see "Set: the clock and the kingdom".
 - Focus ring 2 px Iris (`#A78BFF` on the table), 2 px offset; sheets trap focus and Escape closes them;
   the game's Back is always reachable.
 
@@ -1362,3 +1364,443 @@ the harness `test/play.html` and `test/play.smoke.cjs` (the board's checks are i
 - *Another workflow adds Architectural Authority buildings (a `source` field).* Nothing here assumes a
   card is from Artsy: pictures and names come from the app's callbacks, and a tile opens the detail
   sheet, which says where the thing lives.
+
+## Set: the clock and the kingdom (23 Oct 2026)
+
+The artist, with a screenshot of the App Store listing of Royal Kingdom (CONCEPT.md, "Set as a game"):
+"The basic idea that your racing against the clock should be implemented into the Set game, as well
+as, the idea that you are building a kingdom by playing this game and having a map view of your
+kingdom that you roam to find new levels in new areas".
+
+So Set's game gains three things, and keeps everything it has:
+- **The clock.** Every level is a race against the five-second ring: five seconds a move. Beating it
+  makes the level's building fly a flag. The clock never ends a level; moves still do.
+- **The kingdom.** Every level you win builds one of your own things: a small house in its colours on
+  that level's plot. The level's stars are the building's storeys.
+- **The kingdom map.** One island for each episode, laid out as site models on a drafting table,
+  with the level path running through them. You pan and zoom the map to find the next level. The next
+  area waits under cloud until the one before it is built.
+
+Everything above stays: the board, the room, the levels and their tuning, the level card, and the
+list of levels (the saga map, now one tap from the kingdom).
+
+The standing rules, applied:
+- Nothing to download.
+- No one pays: no lives, no currency, nothing bought, no ads, no waiting. A win builds at once.
+- Aesthetics only: the clock earns a flag, never points, stars or boosters. A building is one of the
+  person's things, never a price or a name for fame.
+- Add, never take away: no building is ever taken down, and levels unlock exactly as before.
+
+This section outranks two lines above: "no timers" (the standing rules of "Set: the board and the
+game") and "No timing" (its Accessibility). The artist's words outrank this spec. The clock never
+makes anyone wait or lose, and it can be turned off (WCAG 2.2.1).
+
+**What Royal Kingdom does, and what 5s takes.** The research of 23 Oct 2026 read the official Help
+Center and the App Store through search extracts, and looked at the stills YouTube picks from
+gameplay videos. No video could be watched (see the obstacles below).
+
+| Royal Kingdom | 5s |
+| --- | --- |
+| Levels are limited by moves, not time ("Moves 30", "Out of Moves!"). The race is around the levels: Power Rush (a daily 30 minutes), Island Race ("Beat 5 levels before others"), a countdown on every event | Moves still limit a level. The clock races each level and never ends it. Its rival is the person's own best time |
+| Moves left become potions (and flames) | As now: each move left is worth 1,000 in the finale, which raises the stars |
+| Potions pay for a district's tasks, and each task builds something | A win builds one of the person's things on its level's plot. Stars are storeys; a win in time adds a flag |
+| A finished district: "Parliament Completed!", a chest of coins and boosters, the next district under cloud ("New District!") | The first win of an area's fifth level: "Split, built." It gives the one of each booster that the fifth level already gives, and the next island comes out of the cloud |
+| Bird's-eye isometric islands in a turquoise sea; a World Map of kingdoms; new kingdoms as levels are added | Site models (Seed's ground) on a drafting table, one per episode, which you pan and zoom. Past level 30, every five levels make a new island |
+| One big "Level 1451" button on the home screen | **Play level 9** at the bottom of the kingdom |
+| Lives, buying moves, ads, leaderboards, countdown badges, streaks that a loss wipes out | Not taken |
+
+### The clock
+- **What it times.** One level, and only the person's own time. It runs while the board waits for a
+  swap or a booster. It starts at the level's first counted swap (or booster) and ends when the
+  level is won: when the goals are met, or after the last move of a score-only level.
+- **When it stops.** It stops while tiles move, so a slow phone or reduced motion changes nothing.
+  It stops while a sheet is open (the level card, Out of moves) and while the level is paused (the
+  page is hidden, or Set is left). The finale is not timed.
+- **How long.** Five seconds for every move the level gives: `clock = pace × level.moves`. With the
+  default pace of 5, level 1's 15 moves give 1:15 and level 30's 50 moves give 4:10. **Five more**
+  adds five moves and 5 × pace seconds. The time is shown as m:ss.
+- **What shows it.** The five-second ring, 5s's own clock, wraps the Moves number in the status and
+  drains as the seconds go. It is drawn as in Look and feel: a 56 px ring, a 4 px stroke from Ember to
+  Flare to Iris, on a `--line` track. Under the ring, the time in Martian Mono 13 px ("1:15"). With the
+  clock on, the status row is 76 px tall instead of 64. The time is always in text, and the ring is
+  its picture. With the clock off, the status is as it was.
+- **When it runs out.** The ring is empty and the time reads "Time". The say line shows "Time. Play on."
+  for 2 s, and the level plays on with every move it has. No move, goal, score, star or thing is lost,
+  and what you put together still counts.
+- **Beating it.** A win with the clock on, using no more time than the clock gave, is **in time**:
+  - the level's building flies a flag in the kingdom;
+  - its node says "in time", in the kingdom and in the list of levels;
+  - the best time is kept (`saga.time`).
+
+  The level end says "In time: 0:23 to spare. Best 0:41." When the win is not in time, it says "1:02.
+  The clock gave 0:45. Race it again." A win in time earns no points, stars or boosters: the stars
+  stay as the playtest tuned them, and turning the clock off costs nothing.
+- **Which levels.** Every level from 1 onward, laps past 30 included, whenever the clock is on. Coach
+  levels too: their clock starts with the first counted swap, just as the coach line leaves.
+- **The setting** (`opts.clock`).
+  - The level card offers a choice of three under Hints, headed "Clock": **Off**, **Five seconds a
+    move** (the default) and **Ten seconds a move**.
+  - Under the choice: "1:15 for this level, five seconds a move. It stops while tiles move and never
+    ends a level. Beat it and your building flies a flag."
+  - Until the person chooses, the clock follows the Five-second ring switch: with the ring off, the
+    clock is off.
+- **WCAG 2.2.1 Timing Adjustable.**
+  - The clock can be turned off before a level starts, and it can be given twice the time.
+  - It limits nothing (running out loses nothing), so no one is ever timed out.
+  - SC 2.2.2: the ring moves only while the person is playing, and Off stops it.
+- **Reduced motion.** No ring: the time in text only, changing once a second.
+- **Words and the live region** (the game's one polite region).
+  - At 20 seconds left, once: "20 seconds on the clock."
+  - At 0: "Time. Play on: nothing is lost."
+  - At the end, after the stars: "In time, 23 seconds to spare." or "Not in time."
+  - The time is a `role="timer"` element ("Clock 1:15"), and its own changes are not announced.
+  - No ticking and no new sounds.
+
+### The kingdom: built by playing
+- **What is built.** Each level, once won, raises one building on its plot in its area.
+  - The building is a small house in true isometry (Seed's house, drawn by ground.js), in the three
+    colours of one of the person's kept things: walls in its first colour, the roof in its second, the
+    window and door in its third. These are the Seed house's wall, trim and accent, and a Colour
+    card's 3:2:1.
+  - A kept Architectural Authority building (a `b…` Space card) is built as itself, in its own colours,
+    so the kingdom holds the very buildings the person kept. A painting, a chair, a surface or a chord
+    becomes a house in its colours: "practice architecture, but digitally".
+  - Everywhere, the building is named in words by its thing ("Built: Casa Malaparte").
+- **Storeys.** The level's best stars, 1 to 3. Winning the level again with more stars raises a storey.
+- **The flag.** A level won in time (above) flies an Iris pennant on the ridge.
+- **Which thing** (Irwin's three ways). It comes from what the person put together in that win.
+  - `FiveSMatch.buildChoices` gives up to three things: the level's building as it stands, first;
+    then the things in the win's juxtapositions, those in the most groups first, then the artist's
+    buildings, then the newest.
+  - The level end shows the first. **Another way** ("1 of 3") shows the next, then the next, then the
+    first again. Whichever is showing when the person leaves is the building.
+  - Every win of a level can change its building. Nothing else changes it, and nothing ever takes it
+    down.
+- **What a level earns, and what a build costs.** A win builds; that is the whole price. There is no
+  currency, nothing to save up, no shop, no waiting and no extra step: the building already stands
+  when the level end opens. Levels unlock one after another, as before, and building never holds a
+  level back. Royal Kingdom pays in potions; in 5s, moves left already earn the finale's points, and
+  stars are storeys.
+- **A plain house.** A level gets a plain house when nothing was put together in its win (nothing
+  kept yet, so the suits are swatches), or when it was won before the kingdom was built. The house
+  is in its area's frame colour (area k takes `TOKENS[k % 6]`: Sort's are red, Split's orange, and so
+  on) and has its storeys. The next win with things put together builds with them. So an old state's
+  kingdom is full of houses from the start.
+- **An area built.** The first win of an area's fifth level completes the area.
+  - The level end says "Split, built." and "A new area: Set. Clear what you passed." It also gives the
+    boosters the fifth level already gives (Royal Kingdom's district chest).
+  - It offers **See it in your kingdom** (Iris). There, the new island rises once from the table
+    (Seed's grow, not under reduced motion), and the live region says "A new area: Set."
+- **A removed brought thing** comes down from its plot and becomes a plain house: `removeOwn` clears
+  it, as it does the thing's pairings.
+
+### The kingdom map (FiveSKingdom)
+- **Where it is.** Its own view in Set, "Your kingdom", at Set's full height; the tab bar stays, as
+  for the list of levels. These all lead to it:
+  - **Your kingdom** (quiet), on the board after See it as a room;
+  - the level's Back ("Map"), the level card's close, and Out of moves' **Map**;
+  - the level end's **See it in your kingdom**.
+
+  The list of levels (the saga map, `mountMap`) stays one tap away: **Levels** in the kingdom's top
+  bar. The list gains **Kingdom** in its top bar's empty right slot. Back ("Your board") returns to the
+  board with the focus on Play. Leaving Set gives way to the board, as the list does.
+- **The layout of the view.**
+  - The top bar (56 px): Back "Your board", the heading "Your kingdom", and Levels.
+  - Then one sentence: "Every level you win builds one of your things. Next: level 9, in Split."
+  - Then the map, down to the bottom of the view.
+  - Over the map's foot: **Play level 9** (Ember, at least 56 px), which opens the next level's card
+    as Set's Play does, and Zoom out and Zoom in (− and +, 44 px, labelled). The next level is always
+    one tap away.
+- **The table.** The map is a drafting table: the paper (`--paper` in both themes) with a faint 24 px
+  grid (`--line` at 35 %). On it, each area is a site model: an island on its plinth, drawn by Seed's
+  own ground renderer (ground.js) at 520 × 380 CSS px, 9 tiles a side.
+- **The areas, in the episodes' order** (`FiveSMatch.area(k)`):
+  - Sort (levels 1–5), Split (6–10), Set (11–15), See (16–20), Seed (21–25), Another five (26–30);
+  - then Another five 2 (31–35), Another five 3, and so on: a new island for every five levels.
+
+  So the saga never stops; `FiveSMatch.level` already makes the levels.
+- **Each island's ground.** Each area has its own fixed shape, from `FiveSMatch.prng('area:' + k)`.
+  The shape is the same for everyone, so the areas are places. It is dressed in the person's taste,
+  as Seed's ground is:
+  - the land tinted with their kept colours, and the sea in their passed colours;
+  - their kept Surfaces on the land. Area k takes them from index 3k, wrapping round, at most 4, so
+    the islands differ.
+
+  With nothing judged, the land and water are the theme's plain colours.
+- **The home island.** Seed's ground itself, drawn as Seed draws it, at the foot of the path: its seed
+  code, with the latest pinned set as its house (the castle). It is labelled "Your ground", and
+  tapping the label opens Seed. It appears only once something is judged, as in Seed. It changes with
+  every judgment, as Seed's ground does; the areas' shapes never change.
+- **Where the islands sit.** A zigzag climbing the table, as the saga climbs. The home island's centre
+  is at (0, 0). Area k's centre is at x = −150 (k even) or +150 (k odd), and y = −(k + 1) × 340 world
+  px, tuned so the plinths never touch.
+- **Plots and the level path.** Each area's island has five plots (ground.js `plots: 5`), spread over
+  the land from front to back.
+  - Level 5k + 1 sits at the front (the bottom of the screen), and level 5k + 5 at the back.
+  - A built plot holds its house; an unbuilt one, a pale slab.
+  - The level path is the logo's ribbon (the list's two bands, violet and blue). It runs from the
+    home island's middle through the plots, and crosses the table from each island's last plot to the
+    next island's first.
+- **Found, and under cloud.**
+  - An area is found when its first level unlocks: that is, when the area before it is built, since
+    every win builds.
+  - Found areas are drawn with their plots and nodes.
+  - The area after the last found one is a cloud bank with "Under cloud: Set. Win level 10 to find
+    it." The cloud is soft and still: paper-white at 92 % in light, `#2A2438` at 92 % in dark.
+  - Nothing is drawn beyond it.
+- **Nodes.** Every level of the found areas has a button, all in one `<ol aria-label="Levels">` in DOM
+  order 1..N.
+  - Each node sits over its plot's tile. It is counter-scaled (`scale(calc(1 / var(--z)))`), so it is
+    36 px on screen at every zoom.
+  - Done: Ember to Flare, its number, and its stars as glyphs below. Next: an Iris ring and "Next".
+    Not yet: hollow and `aria-disabled`.
+  - A done or next node opens its level card.
+  - Labels are in words: "Level 7, Split, 2 of 3 stars, in time. Built: Casa Malaparte." ·
+    "Level 9, Split, Next." · "Level 10, Split, Not yet."
+- **Roaming.**
+  - Pointer: one pointer drags the table. Two pointers pinch to zoom about their midpoint. The wheel
+    pans, and Ctrl or ⌘ with the wheel (a trackpad's pinch) zooms. The Zoom buttons step 1.25×.
+  - A press that moves less than 8 px is a tap (the node's click), and a drag never clicks.
+  - Keyboard: the map is one tab stop, a `role="region"` labelled "Your kingdom, a map: arrow keys
+    move it, + and − zoom, Home finds the next level". The arrows pan 64 px, + and − zoom, and Home
+    centres the next level. Tab then goes through the nodes in order, and a focused node is panned
+    into view.
+  - Zoom runs from 0.5 to 1.5. The map opens at clamp(0.9 × the map's width / 520, 0.5, 1.2),
+    centred on the level just played, or else on the next level.
+  - Panning is held so that part of the found kingdom is always in view.
+  - `touch-action: none` on the map only.
+  - Each frame applies one transform to the table (requestAnimationFrame) and sets `--z` for the
+    nodes.
+- **Drawing.**
+  - An island is drawn when it comes within one view of the visible area, once a pan or zoom has
+    settled for 150 ms.
+  - It lets its bitmap go when it is more than three views away, so at most 8 are drawn at once.
+    Until it is drawn, its box is the plinth's colour.
+  - The nodes are placed before any drawing, from `FiveSGround.layout`, so nothing moves when an
+    island lands.
+- **Accessibility.**
+  - One heading and one sentence (above).
+  - Each island's canvas is `role="img"` with ground.js's description, which names its buildings
+    ("Buildings: Casa Malaparte, two storeys, flying a flag; …; 2 plots not yet built.").
+  - The cloud's words are visible text.
+  - Never colour alone: states in words, and stars as glyphs and words.
+  - Focus ring 2 px Iris.
+  - Every gesture has a tap way and a key way (SC 2.5.1, 2.5.7): the Zoom buttons, a tap on a node,
+    the keys, and the list of levels.
+  - Targets are at least 24 px at every zoom (SC 2.5.8).
+- **Reduced motion.** No grow and no eased pans (a move lands at once); the clouds are still.
+- **Example mode.** The example taste's saga and colours; nothing is saved.
+
+### Data (additive; `norm()` fills the defaults; old states stay valid)
+```jsonc
+{
+  "saga": {
+    "time":  [41, 0, 63],            // index n−1: the best seconds of a win in time; 0: never in time yet. Whole numbers 0–9999; length ≤ stars.length
+    "built": ["b001", null, "o017"]  // index n−1: the id of the thing that level built (1–10 characters, [A-Za-z0-9_-]), or null: a plain house. Length ≤ stars.length
+  },
+  "opts": {"clock": 5}               // 0 off, 5 or 10 seconds a move; missing: 5, or 0 when opts.ring is false
+}
+```
+- **norm.** `normSaga` keeps at most 999 entries of each list. A wrong `time` entry becomes 0, and a
+  wrong `built` entry becomes null. An `opts.clock` that is not 0, 5 or 10 is dropped, so the clock
+  follows the ring again. match.js's `sagaOf` fills `time: []` and `built: []`. The running clock is
+  not saved, like the running level.
+- **Size.**
+  - Ids in `built` are at most 10 characters: deck ids are 4, and brought things' ids are at most 9
+    today.
+  - At the caps, the game's fields come to 55,403 bytes. Before, they were 37,402; 999 times of 9999
+    and 999 ten-character ids add 18,001.
+  - With `STATE_MAX` (200 KiB), that is 260,203 bytes of the store's 262,144, with 1,941 to spare.
+  - Measured in `scratchpad/kingdom/design/size.cjs`. `engine.test.mjs`'s size test adds the new
+    fields.
+- **removeOwn.** `removeOwn(state, id)` also sets the `saga.built` entries naming the removed thing to
+  null.
+- **The connector.** Its `put_state` (`connector/src/validate.js`, changed by the connector's team)
+  takes these fields with these limits, and refuses anything else in a sentence:
+  - `saga.time`: at most 999 whole numbers, 0–9999;
+  - `saga.built`: at most 999 ids or nulls;
+  - `opts.clock`: 0, 5 or 10.
+- **Nothing else is saved.** The kingdom opens on the next level each time. Which area was just found
+  is the app's to remember, for this visit only.
+
+### The APIs
+FiveSMatch (additive; pure; nothing else changes):
+```js
+FiveSMatch.area(k) -> {k, name, line, from, to}
+   // k 0..5: the episodes; k ≥ 6: {name: 'Another five ' + (k − 4), line: 'All of it, together.', from: 5k + 1, to: 5k + 5}
+FiveSMatch.recordLevel(saga, result) -> {saga, earned, first, inTime}
+   // result may carry secs (the seconds the person used, whole, rounded up) and clock (the level's clock in seconds; 0: off).
+   // A win with clock > 0 and 0 < secs <= clock is inTime: time[n−1] = min(time[n−1] || Infinity, secs), padded with 0.
+   // first: this was the level's first win. Everything else is as before.
+FiveSMatch.buildChoices(state, deck, result, current) -> [id]   // at most 3, distinct
+   // current (the level's built id) first, if FiveS.card resolves it; then the things in result.groups, ranked by the
+   // number of groups they are in, then deck cards with source 'Architectural Authority', then first appearance
+   // (result.groups is newest first). [] when there is nothing: a plain house.
+FiveSMatch.build(saga, n, id) -> saga
+   // built[n−1] = id (a string of 1–10 [A-Za-z0-9_-] characters) or null; only for a won level (n <= stars.length); padded with null.
+```
+FiveSGround (additive; without these, Seed's ground is drawn exactly as before):
+```js
+spec.plots    // 0..9 (default 0): level plots, placed on land after everything else is planned, so no draw of the PRNG
+              // moves and the shape, sea and regions stay the same. Never on the house tile. The first plot is the
+              // front-most land tile (largest i + j; ties: nearest i = j, then the lower index). Each next one is the
+              // land tile farthest (squared tile distance) from those chosen (ties: the lower index). They are then
+              // ordered front to back (i + j descending; ties: the lower i). With fewer land tiles, every land tile is a plot.
+spec.houses   // [{plot, wall, trim, accent, storeys: 1..3, flag: boolean, name}]: a house on a plot. Its walls are
+              // storeys × 0.4 high, with a window each storey; then the roof. flag: an Iris (#A78BFF) pennant on a
+              // pole 0.3 above the ridge's front end. A plot without a house: a pale slab (the tile's top inset 18 %,
+              // white at 45 % light, 22 % dark). Missing trim or accent: as for spec.house.
+              // With plots, fit() leaves room on every plot for three storeys and a flag, so the island's scale and
+              // the plots' places never change as it fills.
+render(canvas, spec) -> Promise<{land, water, house, description, plots: [{x, y}]}>
+              // plots: each plot tile's top centre, in CSS px of the canvas box, in path order. The description adds
+              // "Buildings: <name>, <one|two|three> storey(s)[, flying a flag]; … ." and "<k> plots not yet built."
+FiveSGround.layout(spec, w, h) -> {plots: [{x, y}], land, water}
+              // synchronous, draws nothing: the same plan and fit as render() on a w × h CSS box (spec.rand fresh,
+              // with the same seed). For placing buttons before an island is drawn.
+```
+FiveSKingdom (`src/kingdom.js`, new; `window.FiveSKingdom`; its CSS in play.css under `.fk`):
+```js
+FiveSKingdom.mount(el, {
+  saga,                                     // stars, time, built (missing parts: nothing built)
+  palette: {kept: [hex], passed: [hex], surfaces: [{src, crop}]},   // as Seed's ground takes them (the app's drawGround)
+  thing(id) -> {name, colours: [hex, hex, hex]} | null,             // a building's thing; null: a plain house
+  drawHome(canvas) -> Promise<{description}> | null,               // Seed's ground on the home island; null: no home island
+  theme: 'light' | 'dark', reduce,          // reduce: prefers-reduced-motion (it also listens for changes)
+  focus: n | null,                          // centre this level's plot (default: the next level)
+  reveal: k | null,                         // an area just found: its island grows once
+  onLevel(n), onBack(), onList(), onHome(), // a node; Your board; Levels; Your ground
+}) -> {update({saga, palette, theme}), destroy()}
+```
+FiveSPlay (additive):
+```js
+FiveSPlay.mount(el, {
+  …,                                        // as before
+  clock: 0 | 5 | 10,                        // seconds a move (opts.clock, resolved by the app); 0: no clock
+  built: {name, storeys, secs} | null,      // the level's building now, for its card ("Your building: Casa Malaparte,
+                                            //   two storeys. In time: best 0:41."); null: not won yet
+  onEnd(result) -> {saga, earned, first, inTime, build: {ways: [id | null]}},
+                                            // result also carries secs and clock. ways[0] is the building now; play.js
+                                            //   names them with name() and thumb(). first and n % 5 === 0: the area lines
+  onBuild(id),                              // Another way: the app calls FiveSMatch.build and saves
+  onKingdom(n),                             // See it in your kingdom
+  onOpts({sound, hints, clock}),
+})
+FiveSPlay.mountMap(el, {saga, onLevel, onBack, onKingdom})   // onKingdom: a "Kingdom" button in its top bar;
+                                                             //   a done label adds ", in time" when saga.time says so
+```
+The app (`app.js`, the integration team):
+- `opts.clock` resolves as `st.opts.clock ?? (st.opts.ring !== false ? 5 : 0)`.
+- `openMap()` becomes `openKingdom(focus, reveal)`. The old `openMap` stays, as `openList()`.
+- onEnd:
+  1. `rec = MX.recordLevel(saga, r)`.
+  2. On a win, `ways = MX.buildChoices(st, deck, r, saga.built[n − 1])`, and
+     `saga = MX.build(rec.saga, n, ways[0] ?? null)`.
+  3. Save, and return `{…rec, saga, build: {ways}}`.
+  4. Remember the area to reveal when `rec.first && n % 5 === 0`.
+- onBuild saves `MX.build(cur().saga, n, id)`.
+- `drawGround`'s spec moves into a function, so `drawHome` draws the same ground into any canvas.
+- `thing(id)` is `{name: shortTitle(card.title, 28), colours: card.colours}`.
+- `kingdom.js` loads after `play.js` and before `links.js`, in `src/index.html` and in `build_page.py`'s
+  SCRIPTS.
+
+### Files and tests
+- **Files.**
+  - New: `src/kingdom.js`.
+  - Additive changes: `src/match.js` (area, recordLevel, buildChoices, build), `src/ground.js` (plots,
+    houses, layout), `src/play.js` (the clock, the level end's build, mountMap's Kingdom), `src/play.css`
+    (`.fk`, the clock ring), `src/engine.js` (norm, removeOwn), `src/app.js` (the wiring),
+    `src/index.html` and `build_page.py`.
+  - The connector team's: `connector/src/validate.js`.
+- **`test/match.test.mjs`.**
+  - `area(k)` for k = 0, 5, 6 and 7.
+  - recordLevel: a first win in time sets the time; a slower win in time keeps the lower; not in time,
+    the clock off, or a loss change nothing; `first` is true only on the first win.
+  - build: it sets the id and pads with null; it does nothing beyond the levels won; a bad id becomes
+    null.
+  - buildChoices: the current building comes first; the ranking holds, with the artist's buildings
+    first at an equal count; at most 3, distinct; [] when there is nothing.
+  - ground.js's layout in Node (load `src/ground.js` into globalThis; layout needs no canvas): 5
+    distinct land plots, never the house tile, front to back; the same for the same seed; unchanged by
+    houses, colours and surfaces.
+- **`test/engine.test.mjs`.** norm's caps for `time`, `built` and `opts.clock`; removeOwn clears
+  `built`; the size test with the new fields.
+- **`test/ground.test.cjs`.** render's plots equal layout's.
+- **`test/play.smoke.cjs`.**
+  - The ring drains only while the board waits, and stops for a sheet.
+  - Off shows no clock; under reduced motion, text only.
+  - The level end's In time line and Another way.
+- **`test/kingdom.smoke.cjs`** (Playwright at 390 × 844 and 1280, light and dark).
+  - The nodes are in DOM order and labelled, and the map opens centred on the next level.
+  - A drag pans and never opens a level; the Zoom buttons, the arrows, Home and Tab work.
+  - The nodes are at least 24 px at zoom 0.5, and the cloud's words are shown.
+  - No console errors.
+  - A p95 frame of at most 20 ms while panning, with the CPU throttled 4×.
+
+*As built (23 Oct 2026, the integration):*
+- **Where it is.** The board's actions are Play level N, See it as a room and **Your kingdom**, which
+  wrap to a second row at 390 px. Play still opens the next level's card at once, as it did before.
+  Every way out of a level leads to the kingdom, centred on that level: the level's Map, the level
+  card's close, Out of moves' Map, the level end's close, and See it in your kingdom. The kingdom's
+  Levels opens the list (`openList`, the old `openMap`), and the list's Kingdom comes back. Your
+  ground opens Seed. A theme change redraws the kingdom (`update({theme})`).
+- **The home island** is drawn from `groundSpec(st)`, the spec Seed's `drawGround` now uses too. The
+  areas' islands take only the deck's kept Surfaces. A brought photo's crop is read from the device's
+  image store, which is asynchronous, so it dresses the home island only.
+- **The state.** `newState` and `norm` always give `saga.time` and `saga.built` (`[]` when missing),
+  so a state saved after this has them. `engine.test.mjs`'s fresh and kept sagas include them.
+  `put_state` takes them at their caps and refuses anything else, as does `opts.clock` other than
+  0, 5 or 10.
+- **ground.js** has the kingdom team's `plots`, `houses` and `layout`. Seed's ground is unchanged:
+  every earlier ground test passes. The layout test runs in `test/ground.test.cjs`, in the browser
+  with the other ground tests, and not in `match.test.mjs`: five distinct plots, the same whatever is
+  built, coloured or surfaced, and the same plots as render's.
+- **The kingdom team's starting values, as built.** The zigzag is ±120 world px, not ±150. Each node
+  is a pin on a stem above its plot's tallest building, so the buildings stay in sight. The cloud is a
+  bank across the table, with its words above the last area found.
+- **The level card's clock choice** is saved (`opts.clock`) only once the person picks one. Until then
+  the clock follows the Five-second ring switch.
+- **`test/ui.smoke.cjs`.** The level's Back now lands in the kingdom (`.fk`), not the list. The new
+  test, at 390 by touch, opens the kingdom from the board. It plays level 5 by keys (planned in Node)
+  against the clock, and the win builds the first of the ways at once. The level end says "Sort,
+  built." and Another way changes the building. See it in your kingdom then shows Split found, Set
+  under cloud, and level 5 in words, in time. Finally it turns the clock off on the next card, and
+  everything holds after a reload.
+
+### Decisions, obstacles and their resolutions
+- *Royal Kingdom has no clock inside a level* (its levels count moves; its races are events around
+  the levels). Resolution: the clock is a race inside each level that the person can win, never a
+  limit. Moves still end a level, so the 30 tuned levels and "Nothing is lost" stay true.
+- *A clock that ends levels* would retune the saga and take away "nothing is lost". Resolution: the
+  clock ends nothing.
+- *Wall-clock time punishes slow phones and rewards skipping animations.* Resolution: only the
+  person's own time counts; the clock stops while tiles move.
+- *Points for time left would break the stars the playtest tuned* (and turning the clock off would
+  then cost points). Resolution: the clock earns a flag and a best time, aesthetics only.
+- *A currency to save up* (potions) adds waiting and a shop's logic. Resolution: there is none. A win
+  builds, and stars are storeys: Dream's own light meta, kept light.
+- *Building could gate levels.* Resolution: it never does. Every win builds, so an area is found at
+  exactly the moment the area before it is built, and levels unlock as before.
+- *Storing each building's colours, or its three things, would not fit the store*: 19,942 bytes are
+  free at the caps. Resolution: one id a level (at most 10 characters) and one number, 18,001 bytes
+  at the caps. The colours come from the card when the kingdom is drawn.
+- *Plots would shift as buildings rise* (ground.js fits the island to its tallest point). Resolution:
+  fit reserves room for the tallest building on every plot.
+- *Pinch-zoom shrinks the targets.* Resolution: the nodes are counter-scaled, 36 px at every zoom.
+- *Islands drawn from the seed code would change shape with every judgment.* Resolution: each area's
+  shape comes from its own fixed seed, and the person's colours and surfaces dress it. The home island
+  is Seed's own ground, which changes, as Seed's does.
+- *Dragging (SC 2.5.7) and pinching (SC 2.5.1).* Resolution: the Zoom buttons, a tap on a node, the
+  keys, and the list of levels.
+- *Many island bitmaps on a phone.* Resolution: islands are drawn lazily, at most 8 at a time.
+- *The research could not watch any video*: YouTube's bot check, and most hosts blocked. Resolution:
+  the Help Center and App Store were read through search extracts, and the stills YouTube picks were
+  looked at, kept in scratch only and never in the repository. Fan-site claims are marked weak in the
+  research and are not relied on here.
+
+### Not taken, for now
+- The race of five levels against your best (Island Race's shape) and a daily rush (Power Rush's).
+- Enemies that advance every few moves (the Dark King's minions), and the Dark King himself.
+- Difficulty words ("Hard"), the win streak (Magic Pots), a globe of kingdoms, episode cartoons.
+- Lives, buying moves, ads, leaderboards and countdown badges: never, by the standing rules.
+- The taste model learning from buildings (as for pairings: later).

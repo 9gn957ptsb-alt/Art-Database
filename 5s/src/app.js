@@ -94,6 +94,7 @@
     detailBack: null, whereLinks: [],
     deckError: '', logoOk: null, drag: null,
     setMode: 'board', board: null, play: null, playPaused: false, boardWait: false, paintingI: -1,
+    reveal: null,   // the kingdom's area just found: its island grows once, the next time the kingdom opens (this visit only)
   };
 
   const profCache = new WeakMap();
@@ -1288,7 +1289,7 @@
   // Play opens a level (FiveSPlay) over Set at full height, the tab bar hidden while it is on; the level
   // runs in memory, never saved. In Example mode the game plays on the example taste and writes nothing.
 
-  const MX = window.FiveSMatch, BD = window.FiveSBoard, PL = window.FiveSPlay;
+  const MX = window.FiveSMatch, BD = window.FiveSBoard, PL = window.FiveSPlay, KD = window.FiveSKingdom;
   const nowSec = () => Math.floor(now() / 1000);
 
   function renderSet() {
@@ -1306,7 +1307,8 @@
     let html = '<div class="wrap"><div class="view-head"><h1 class="h1" tabindex="-1">Set</h1>' +
       '<p class="lede">Your board: what you kept, grouped by what you put together.</p>' +
       '<div class="actions"><button type="button" class="btn btn-keep btn-big" data-act="set-play">Play level ' + (st.saga.stars.length + 1) + '</button>' +
-      '<button type="button" class="btn btn-quiet" data-act="set-room">See it as a room</button></div></div>';
+      '<button type="button" class="btn btn-quiet" data-act="set-room">See it as a room</button>' +
+      '<button type="button" class="btn btn-quiet" data-act="set-kingdom">Your kingdom</button></div></div>';
     if (!kept) {
       html += '<div class="empty"><span class="ghosts" aria-hidden="true"><i></i><i></i><i></i></span><p>Your board fills with what you keep. Sort a five and it starts.</p>' +
         '<button type="button" class="btn" data-act="goto" data-view="sort">Sort</button>' + exampleButton(st) + '</div>';
@@ -1355,7 +1357,7 @@
     const b = $('#view-set [data-act="set-play"]');
     if (b) b.focus({ preventScroll: true });
   }
-  // Leaving Set: a level on is paused and kept for this visit; the map and the room give way to the board.
+  // Leaving Set: a level on is paused and kept for this visit; the kingdom, the list of levels and the room give way to the board.
   function leaveSet() {
     // A level's own sheet open (its card, out of moves, its end): nothing is mid-play, and a modal left in a hidden view would make the page inert.
     if (ui.setMode === 'level' && ui.play && !$('dialog.fp-sheet[open]')) { ui.play.pause(); ui.playPaused = true; doc.body.classList.remove('fives-playing'); return; }
@@ -1363,10 +1365,30 @@
     ui.setMode = 'board';
   }
 
-  function openMap() {
+  // The list of levels (the saga map), one tap from the kingdom.
+  function openList() {
     const ex = example;
     const el = playHost('map');
-    ui.play = PL.mountMap(el, { saga: (ex ? EX : S).saga, onLevel: openLevel, onBack: backToBoard });
+    ui.play = PL.mountMap(el, { saga: (ex ? EX : S).saga, onLevel: openLevel, onBack: backToBoard, onKingdom: () => openKingdom(null) });
+  }
+
+  // The kingdom map (SPEC "Set: the clock and the kingdom"): every level won is one of your things built on
+  // its plot; it opens on `focus` (the level just played), else the next level. It writes nothing.
+  function openKingdom(focus) {
+    const st = active();
+    const P = prof(st);
+    const reveal = ui.reveal;
+    ui.reveal = null;
+    const el = playHost('kingdom');
+    ui.play = KD.mount(el, {
+      // shortcut: the areas take only the deck's kept Surfaces (a brought photo's crop waits on the image store); add them if islands look bare
+      saga: st.saga, palette: { kept: P.keptColours, passed: P.passedColours, surfaces: deckSurfaces(st, P) },
+      thing: (id) => { const c = cardOf(id, st); return c ? { name: shortTitle(c.title || 'Untitled', 28), colours: (c.colours || []).filter(isHex) } : null; },
+      drawHome: (cv) => (P.judged ? groundSpec(st).then((x) => G.render(cv, x.spec)) : null),
+      theme: currentTheme(), reduce: reduced(), focus, reveal,
+      onLevel: openLevel, onBack: backToBoard, onList: openList,
+      onHome: () => showView('seed', { focus: true }),   // leaving Set gives the kingdom way to the board
+    });
   }
 
   function openLevel(n) {
@@ -1377,17 +1399,31 @@
     const st = cur();
     const level = MX.level(n);
     const el = playHost('level');
+    const sg = st.saga, was = sg.built[n - 1];
     ui.play = PL.mount(el, {
       n, pieces: MX.pieces(st, deck, level.suits), seed: '5s:' + n + ':' + (st.saga.plays || 0),
       boost: st.saga.boost || {}, thumb: playThumb, name: playName,
+      // the clock: five seconds a move unless chosen; until then it follows the Five-second ring switch
+      clock: st.opts.clock ?? (st.opts.ring !== false ? 5 : 0),
+      built: sg.stars[n - 1] ? { name: was ? playName(was) : null, storeys: sg.stars[n - 1], secs: sg.time[n - 1] || 0 } : null,
       opts: { sound: st.opts.sound !== false, hints: st.opts.hints !== false },
       onAssociate: (a) => save({ assoc: MX.addAssociations(cur().assoc, a.ids, nowSec()) }),
       onHeart: (a) => save({ assoc: MX.heart(cur().assoc, a.ids, a.on) }),
       onBoost: (k) => { const g = MX.useBoost(cur().saga, k); if (g) save({ saga: g }); },
-      onEnd: (r) => { const rec = MX.recordLevel(cur().saga, r, nowSec()); save({ saga: rec.saga }); return rec; },
+      onEnd: (r) => {   // a win builds at once: the first of the ways stands; Another way changes it (onBuild)
+        const rec = MX.recordLevel(cur().saga, r, nowSec());
+        if (!r.won) { save({ saga: rec.saga }); return rec; }
+        const ways = MX.buildChoices(cur(), deck, r, cur().saga.built[n - 1]);
+        const saga = MX.build(rec.saga, n, ways[0] ?? null);
+        save({ saga });
+        if (rec.first && n % 5 === 0) ui.reveal = n / 5;   // an area built: the next one comes out of the cloud
+        return Object.assign({}, rec, { saga, build: { ways } });
+      },
+      onBuild: (id) => save({ saga: MX.build(cur().saga, n, id) }),
+      onKingdom: () => openKingdom(n),
       onKeepPainting: (p) => { const ps = MX.keepPainting(cur().paintings, { n, painting: p }, nowSec()); if (ps) save({ paintings: ps }); return !!ps; },
       onOpts: (o) => save({ opts: Object.assign({}, cur().opts, o) }),
-      onNext: openLevel, onMap: openMap, onBoard: backToBoard,
+      onNext: openLevel, onMap: () => openKingdom(n), onBoard: backToBoard,
     });
   }
 
@@ -1633,18 +1669,15 @@
     }
   }
 
-  async function drawGround(force) {
-    const cv = $('#ground');
-    if (!cv || !G || view !== 'seed') return;
-    const st = active();
+  // Seed's ground as Seed draws it (groundSpec), for any canvas: the Seed tab and the kingdom's home island; the deck's kept Surfaces alone dress the kingdom's areas.
+  function deckSurfaces(st, P) {
+    const out = [];
+    for (const id of P.keptByKind.surface) { const c = cardOf(id, st); if (c && c.img) out.push({ src: c.img, crop: null }); }
+    return out;
+  }
+  async function groundSpec(st) {
     const P = prof(st);
-    const code = F.seedCode(st);
-    const theme = currentTheme();
-    const key = code + '|' + theme + '|' + cv.clientWidth + '|' + (example ? 'ex' : 'me');
-    if (!force && key === ui.seedKey) return;
-    ui.seedKey = key;
-    const surfaces = [];
-    for (const id of P.keptByKind.surface) { const c = cardOf(id, st); if (c && c.img) surfaces.push({ src: c.img, crop: null }); }
+    const surfaces = deckSurfaces(st, P);
     for (const o of st.own) {
       if (o.let != null || !Array.isArray(o.crop)) continue;
       let src = null;
@@ -1652,16 +1685,26 @@
       else if (imgStore) { try { const v = await imgStore.get(o.id); src = v && v.img; } catch (e) { src = null; } }
       if (src) surfaces.push({ src, crop: o.crop });
     }
-    if (ui.seedKey !== key) return;
     const h = latestHouse(st);
+    return { h, spec: { rand: F.prng(F.seedCode(st)), surfaces, kept: P.keptColours, passed: P.passedColours, house: h ? h.house : null, size: groundSize(P.judged), theme: currentTheme() } };
+  }
+
+  async function drawGround(force) {
+    const cv = $('#ground');
+    if (!cv || !G || view !== 'seed') return;
+    const st = active();
+    const code = F.seedCode(st);
+    const theme = currentTheme();
+    const key = code + '|' + theme + '|' + cv.clientWidth + '|' + (example ? 'ex' : 'me');
+    if (!force && key === ui.seedKey) return;
+    ui.seedKey = key;
+    const { spec, h } = await groundSpec(st);
+    if (ui.seedKey !== key) return;
     const grow = !ui.seedGrown && !reduced();
     ui.seedGrown = true;
     let res;
     try {
-      res = await G.render(cv, {
-        rand: F.prng(code), surfaces, kept: P.keptColours, passed: P.passedColours,
-        house: h ? h.house : null, size: groundSize(P.judged), grow, theme,
-      });
+      res = await G.render(cv, Object.assign(spec, { grow }));
     } catch (e) { res = null; }
     if (ui.seedKey !== key || !res) return;
     let words = res.description || '';
@@ -4059,6 +4102,7 @@
       }
       case 'pin': if (!readOnly()) openPin(t); break;
       case 'set-play': openLevel(active().saga.stars.length + 1); break;
+      case 'set-kingdom': openKingdom(null); break;
       case 'set-room': case 'set-board': {
         ui.setMode = act === 'set-room' ? 'room' : 'board';
         renderView();
@@ -4272,7 +4316,10 @@
     });
     window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (VIEWS.indexOf(v) >= 0 && v !== view) showView(v); });
     // theme and motion changes
-    const onTheme = () => { if (view === 'seed') drawGround(true); };
+    const onTheme = () => {
+      if (view === 'seed') drawGround(true);
+      if (ui.setMode === 'kingdom' && ui.play) ui.play.update({ theme: currentTheme() });
+    };
     try { mqDark.addEventListener('change', onTheme); } catch (e) { /* old Safari */ }
     try { new MutationObserver(onTheme).observe(doc.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (e) { /* no observer */ }
     try { mqReduce.addEventListener('change', () => { ui.counterKey = ''; if (view === 'sort') { updateCounter(); renderStrip(); } }); } catch (e) { /* old Safari */ }

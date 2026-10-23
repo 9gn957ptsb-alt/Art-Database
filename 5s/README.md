@@ -5,7 +5,7 @@ for a few minutes a day. That month had five moves: gather saved things into one
 them into their parts, make new things from the parts, name and reflect on each one, and keep at
 it. In 5s they become five tabs and a habit: **Sort** five cards a day (an Image, an Object, a Space,
 a Surface and a Colour, all from the artist's database of Artsy saves and the artist's Architectural
-Authority bookmarks of buildings, plus things you bring in from your own photos and pins), **Split** what you kept into its parts, **Set** them on a mood board, played like Candy Crush Saga (with the room one tap away),
+Authority bookmarks of buildings, plus things you bring in from your own photos and pins), **Split** what you kept into its parts, **Set** them on a mood board, played like Candy Crush Saga against the clock, each level won building your kingdom (with the room one tap away),
 **See** the positive and negative space of your taste, and grow it into a **Seed**: a ground drawn
 from your judgments and a file you can take with you. Its job, in the system's one line: *how a
 person brings their own information in: quick judgments of what they like become their aesthetic
@@ -20,19 +20,20 @@ build contract) before changing anything.
 | --- | --- |
 | `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp`; then the bookmarks from `buildings.json` + `data/aa/` |
 | `buildings.json` | the artist's Architectural Authority bookmarks as chosen for the deck: each building's hero photo, surface crop, materials and genes (cards b001…, m001…) |
-| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined, and `play.css` as `<style data-fives="play">`), the eleven scripts in the order the page loads them (`hub.js`, `hubpage.js`, `connect.js`, `match.js`, `board.js`, `play.js` and `links.js` before `app.js`), and `dist/dev.html` |
+| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined, and `play.css` as `<style data-fives="play">`), the twelve scripts in the order the page loads them (`hub.js`, `hubpage.js`, `connect.js`, `match.js`, `board.js`, `play.js`, `kingdom.js` and `links.js` before `app.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
 | `src/app.css`, `src/app.js` | styles and UI (including Your hub: Seed's last section and the Hub sheet, through GitHub's own pages) |
 | `src/engine.js` | pure logic: judgments, the taste model, turns, the five, profile, Path, seed (no DOM, clock or randomness) |
 | `src/bring.js` | turns a person's own images into 5s things in the browser and keeps the images private |
 | `src/connect.js` | Connect your apps (`FiveSConnect`): an app's "download your data" file read on the device (JSON, web pages, spreadsheets, text, .zip), and the one client of the 5s connector through the `mcp` capability (server `"5s"`) |
-| `src/ground.js` | draws Seed's isometric island on a canvas |
+| `src/ground.js` | draws Seed's isometric island on a canvas (and the kingdom's islands, with their plots and buildings) |
 | `src/match.js` | Set's game, pure (`FiveSMatch`): Candy Crush Saga's rules with the person's own things, the 30 levels, the suits (the person's threads), pairings, the saga |
 | `src/board.js` | Set's mood board (`FiveSBoard`): what you keep, in masonry, grouped by what you put together |
-| `src/play.js`, `src/play.css` | Set's game in the page (`FiveSPlay`): the map, a level, its sound, motion and gestures; the game's and the board's styles |
+| `src/play.js`, `src/play.css` | Set's game in the page (`FiveSPlay`): the list of levels, a level (with its clock), its sound, motion and gestures; the game's, the board's and the kingdom's styles |
+| `src/kingdom.js` | Set's kingdom map (`FiveSKingdom`): an island for every five levels, each level won one of your things built on its plot, the next area under cloud; you pan and zoom it |
 | `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
 | `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
-| `test/` | engine, match, bring, ground, play and UI tests; `test/play.html` is the game's harness, `test/sim.mjs` its playtest; `test/fixture/` is a synthetic 50-card deck (no real data) |
+| `test/` | engine, match, bring, ground, play, kingdom and UI tests; `test/play.html` and `test/kingdom.html` are the game's and the kingdom's harnesses, `test/sim.mjs` its playtest; `test/fixture/` is a synthetic 50-card deck (no real data) |
 | `gameplan/reflect.mjs` | the Game Plan as code: reads Claude Code transcripts, places each session on the plan's seven stages, finds the traps it met, and judges its turns against the laws ponytail and caveman share (each only while that skill is on). `node 5s/gameplan/reflect.mjs <transcripts or folders>` prints the reflection; `--hook` runs after each turn (Stop) and when the person next writes (UserPromptSubmit), where it passes Claude one line on the turns since their last message that met a trap or broke a law, for Claude to tell them. `gameplan/REFRESH.md` is how a routine redoes the reflection every other day. Transcripts stay out of the repository |
 | `test/deck.test.py` | checks a built deck: the Artsy cards and the bookmarks' b and m cards (source, url, kinds, images) |
 | `dist/` | built output; gitignored |
@@ -65,6 +66,7 @@ its own `python3 -m http.server`.
 node --test 5s/test/                    # engine, hub, connect, links, reflect and match (pure logic; runs through test/index.js)
 node --test 5s/test/match.test.mjs      # Set's game engine alone
 node --test 5s/test/play.smoke.cjs      # Set's game and board in their harness (serves 5s/ itself)
+node --test 5s/test/kingdom.smoke.cjs   # Set's kingdom map in its harness (serves 5s/ itself)
 node 5s/test/sim.mjs 200                # the playtest: 200 boards a level, the hint and smart bots
 node --test 5s/test/hub.test.mjs        # the hub drivers and page, against a fake GitHub
 node --test 5s/test/bring.test.cjs      # bring-in: images, colours, crop, texture, stores
@@ -78,6 +80,7 @@ Environment variables:
 | --- | --- |
 | bring | `BRING_PORT` (default 8750); `BRING_SCRATCH` for generated fixtures |
 | ground | `GROUND_PORT` (default 8761); `GROUND_SHOTS` for screenshots |
+| play, kingdom | `PORT` (default: any free port); `SHOTS` for screenshots |
 | UI smoke | `SITE_DIR` (default `5s/dist`) or `BASE_URL` (a served `dev.html`); `UI_PORT` (default 8731); `SHOTS`; `UI_SIZES` (e.g. `390-light`) |
 
 The UI smoke test runs at 390×844 and 1280×800, in light and dark. It covers a fake `db`, `user`,
@@ -85,14 +88,15 @@ The UI smoke test runs at 390×844 and 1280×800, in light and dark. It covers a
 Your hub's four steps in links mode (with GitHub's pages answered by a stand-in, so no network), and
 Set: the board, Play opening level 1, a planned swap (touch at 390, the mouse at 1280) whose pairs are
 saved and cluster the board, the tab bar hiding during a level, the room and back, Example mode and
-nothing kept.
+nothing kept; Your kingdom and the list of levels from it; level 5 won against the clock building on
+its plot and finding the next area, Another way, the clock off, and a reload.
 
 ## Publish
 
 Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing and is never
 published. The supporting files go with it at the same relative paths:
 
-- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `match.js`, `board.js`, `play.js`, `links.js`, `app.js`
+- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `match.js`, `board.js`, `play.js`, `kingdom.js`, `links.js`, `app.js`
 - `deck.json`, `logo.webp`, `img/atlas.webp`
 - the 451 card images `img/{i,o,s,u,b,m}NNN.webp` (Colour cards have no image; `b` and `m` are the
   artist's Architectural Authority bookmarks, a building's Space or Object and its Surface)

@@ -160,18 +160,43 @@ test.after(async () => {
   if (server) server.kill();
 });
 
-test('the API: one frozen global with render and stop; no text drawn, no Math.random', async () => {
+test('the API: one frozen global with render, layout and stop; no text drawn, no Math.random', async () => {
   const src = fs.readFileSync(path.join(ROOT, 'src', 'ground.js'), 'utf8');
   assert.ok(!/fillText|strokeText/.test(src), 'no text is drawn on the canvas');
   assert.ok(!/Math\.random/.test(src.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, '')), 'Math.random is never used');
   const { ctx, page, errors } = await newPage();
   const api = await page.evaluate(() => ({ frozen: Object.isFrozen(FiveSGround), keys: Object.keys(FiveSGround).sort() }));
-  assert.deepEqual(api, { frozen: true, keys: ['render', 'stop'] });
+  assert.deepEqual(api, { frozen: true, keys: ['layout', 'render', 'stop'] });
   const bad = await page.evaluate(() => FiveSGround.render(null, {}).then(() => 'resolved', (e) => e.name));
   assert.equal(bad, 'TypeError');
   // Math.random throws: rendering never calls it.
   const r = await page.evaluate(async (o) => { Math.random = () => { throw new Error('Math.random used'); }; return (await T.run(o)).r; }, base());
   checkWords(r, { house: true });
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+// The kingdom's plots (SPEC "Set: the clock and the kingdom"): placed before anything is drawn, where render puts them.
+test('plots and houses: layout gives render\'s plots, the same for the same seed whatever is built, colours or surfaces', async () => {
+  const { ctx, page, errors } = await newPage({ dpr: 2 });
+  const out = await page.evaluate(async ([kept, passed, surfaces]) => {
+    const spec = (x) => Object.assign({ rand: FiveS.prng('area:1'), size: 9, kept: [], passed: [], surfaces: [], theme: 'light', plots: 5 }, x);
+    const c = document.getElementById('c');
+    c.style.width = '520px'; c.style.height = '380px'; c.style.aspectRatio = 'auto';
+    const houses = [{ plot: 0, wall: '#2f6f73', trim: '#b5452a', accent: '#f3e1b8', storeys: 2, flag: true, name: 'Casa Malaparte' }];
+    const r = await FiveSGround.render(c, spec({ kept, passed, surfaces, houses }));
+    return {
+      plain: FiveSGround.layout(spec(), 520, 380).plots, dressed: FiveSGround.layout(spec({ kept, passed, surfaces, houses }), 520, 380).plots,
+      none: FiveSGround.layout(spec({ plots: 0 }), 520, 380).plots, rendered: r.plots, words: r.description,
+    };
+  }, [KEPT, PASSED, SURFACES]);
+  assert.equal(out.plain.length, 5);
+  assert.equal(new Set(out.plain.map((p) => p.x.toFixed(1) + ',' + p.y.toFixed(1))).size, 5, 'five distinct plots');
+  for (const p of out.plain) assert.ok(p.x > 0 && p.x < 520 && p.y > 0 && p.y < 380, 'inside the box: ' + JSON.stringify(p));
+  assert.deepEqual(out.dressed, out.plain, 'buildings, colours and surfaces never move a plot');
+  assert.deepEqual(out.none, []);
+  out.rendered.forEach((p, i) => assert.ok(Math.abs(p.x - out.plain[i].x) < 0.01 && Math.abs(p.y - out.plain[i].y) < 0.01, 'render\'s plot ' + i));
+  assert.match(out.words, /Buildings: Casa Malaparte, two storeys, flying a flag\. 4 plots not yet built\./);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

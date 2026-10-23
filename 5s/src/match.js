@@ -216,6 +216,13 @@
     };
   }
 
+  /** area(k) -> {k, name, line, from, to}: the kingdom's areas, the episodes' order; past the sixth, Another five 2, 3, … */
+  function areaOf(k) {
+    k = Math.max(0, Math.floor(Number(k)) || 0);
+    const e = EPISODES[k] || { name: 'Another five ' + (k - 4), line: EPISODES[5].line };
+    return { k, name: e.name, line: e.line, from: 5 * k + 1, to: 5 * k + 5 };
+  }
+
   // ---------------------------------------------------------------- pieces: your threads as suits
 
   const threadGroup = (key, deck) => (isHue(key) ? 'Colours' : FiveS.featureGroup(key, deck));
@@ -893,26 +900,63 @@
     return capAssoc(list);
   }
 
-  const newSaga = () => ({ stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: null });
+  const newSaga = () => ({ stars: [], best: [], boost: { pass: 1, turn: 1, more: 1 }, plays: 0, day: null, time: [], built: [] });
   function sagaOf(saga) {
     const s = Object.assign(newSaga(), clone(saga || {}));
     s.boost = Object.assign({ pass: 1, turn: 1, more: 1 }, s.boost);
+    if (!Array.isArray(s.time)) s.time = [];
+    if (!Array.isArray(s.built)) s.built = [];
     return s;
   }
-  /** recordLevel(saga, result, nowSec) -> {saga, earned}: plays + 1; a win extends or maxes stars and
-   *  best; the first 3 stars on a level earn one booster, the first win of every fifth level one of each. */
+  /** recordLevel(saga, result, nowSec) -> {saga, earned, first, inTime}: plays + 1; a win extends or maxes stars and
+   *  best; the first 3 stars on a level earn one booster, the first win of every fifth level one of each.
+   *  The clock (SPEC "Set: the clock and the kingdom"): result.secs (the person's own seconds, passed in) and
+   *  result.clock (the seconds the clock gave; 0 off). A win in 0 < secs <= clock is in time: the best is kept
+   *  in time[n − 1] (0: never in time), and it earns nothing else. */
   function recordLevel(saga, res) {
     const s = sagaOf(saga), earned = { pass: 0, turn: 0, more: 0 };
+    let first = false, inTime = false;
     s.plays++;
     const i = res && res.n - 1;
     if (res && res.won && i >= 0 && i <= s.stars.length && i < 999) {
-      const first = i === s.stars.length, prev = first ? 0 : s.stars[i];
+      first = i === s.stars.length;
+      const prev = first ? 0 : s.stars[i];
       if (first) { s.stars.push(res.stars); s.best.push(res.score); } else { s.stars[i] = Math.max(prev, res.stars); s.best[i] = Math.max(s.best[i] || 0, res.score); }
       if (prev < 3 && res.stars >= 3) earned[BOOSTS[i % 3]]++;
       if (first && res.n % 5 === 0) for (const k of BOOSTS) earned[k]++;
       for (const k of BOOSTS) s.boost[k] = Math.min(9, s.boost[k] + earned[k]);
+      const secs = Math.min(9999, Math.ceil(Number(res.secs) || 0));
+      inTime = res.clock > 0 && secs > 0 && secs <= res.clock;
+      if (inTime) {
+        while (s.time.length < i) s.time.push(0);
+        s.time[i] = Math.min(s.time[i] || Infinity, secs);
+      }
     }
-    return { saga: s, earned };
+    return { saga: s, earned, first, inTime };
+  }
+
+  // The kingdom (SPEC "The kingdom: built by playing"): one thing a won level, by id; null is a plain house.
+  const BUILD_ID = /^[A-Za-z0-9_-]{1,10}$/;
+  /** build(saga, n, id) -> saga: built[n − 1] = id (or null when it is not a valid id), for a won level only. */
+  function build(saga, n, id) {
+    const s = sagaOf(saga), i = Math.floor(Number(n)) - 1;
+    if (!(i >= 0 && i < s.stars.length)) return s;
+    while (s.built.length < i) s.built.push(null);
+    s.built[i] = typeof id === 'string' && BUILD_ID.test(id) ? id : null;
+    return s;
+  }
+  /** buildChoices(state, deck, result, current) -> [id] (<= 3, distinct; [] is a plain house): Irwin's three ways.
+   *  The building as it stands first; then the things in the win's juxtapositions, by the number of groups they
+   *  are in, the artist's buildings first at an equal count, then the newest (result.groups is newest first). */
+  function buildChoices(state, deck, res, current) {
+    const cards = new Map();
+    const cardOf = (id) => { if (!cards.has(id)) cards.set(id, typeof id === 'string' && BUILD_ID.test(id) ? FiveS.card(state, deck, id) : null); return cards.get(id); };
+    const count = new Map();
+    for (const g of (res && res.groups) || []) for (const id of new Set(g.ids || [])) if (cardOf(id)) count.set(id, (count.get(id) || 0) + 1);
+    const seen = Array.from(count.keys());
+    const aa = (id) => (cardOf(id).source === 'Architectural Authority' ? 1 : 0);
+    const ranked = seen.slice().sort((a, b) => count.get(b) - count.get(a) || aa(b) - aa(a) || seen.indexOf(a) - seen.indexOf(b));
+    return (cardOf(current) ? [current] : []).concat(ranked.filter((id) => id !== current)).slice(0, 3);
   }
   /** useBoost(saga, kind) -> saga | null (none held). */
   function useBoost(saga, kind) {
@@ -973,6 +1017,7 @@
     version: 1, TOKENS, LEVELS, EPISODES, MASKS, WORDS,
     prng, level, pieces, newGame, canSwap, swap, moves, hint, boost, finale, result,
     addAssociations, heart, recordLevel, useBoost, keepPainting, clusters,
+    area: areaOf, build, buildChoices,
   });
 
   if (typeof module === 'object' && module.exports) module.exports = FiveSMatch;

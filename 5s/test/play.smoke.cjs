@@ -6,7 +6,7 @@
  * from 5s/dist, or the fixture when there is no build; an example taste). The boards are deterministic,
  * so this file plans every move in Node with the same engine (src/match.js) and checks the page
  * against it after each one.
- *   SHOTS   folder for screenshots (default <tmp>/5s-play-shots)
+ *   SHOTS   folder for screenshots (default <tmp>/5s-play-shots); PORT  the port to serve on (default: any free one)
  *   FONTS   optional folder holding css.css and the font files (named by md5 of url + "\n"), for true type in shots
  *
  * The board: two columns at 390, five at 1280, every tile at its own proportions, lazy images with their
@@ -16,7 +16,11 @@
  * a cascade with the CPU slowed 4x within the frame budget (p95 <= 20 ms); a special and a combo;
  * the Pass booster; reduced motion (tiles only ever sit on cells) and its dashed hint; out of moves,
  * Five more, out again, Map; a win, the finale and the level end (stars, score, hearts, a booster
- * earned, Keep this painting), Next level and Your board; light and dark.
+ * earned, Keep this painting), Next level and Your board; light and dark. The clock (SPEC "Set: the clock
+ * and the kingdom"): the card's choice (Off, Ten seconds), the ring standing before the first swap, while
+ * tiles move, while hidden and for a sheet; text only under reduced motion; Five more's time; running out
+ * (the page's time moved on); the level end's In time and not in time lines, Another way and See it
+ * in your kingdom; the list of levels' "in time" and Kingdom.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -43,6 +47,8 @@ const NOW = Date.UTC(2026, 9, 22, 12); // the harness's
 const taste = F.exampleState(deck, NOW);
 const fmt = (n) => Math.round(n).toLocaleString('en-GB');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const mss = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+const secsOf = (t) => { const [m, s] = t.split(':').map(Number); return m * 60 + s; };
 
 // ---------------------------------------------------------------- the same games, in Node
 function start(n, plays) { const lv = M.level(n); return M.newGame(lv, M.pieces(taste, deck, lv.suits), '5s:' + n + ':' + plays); }
@@ -85,7 +91,7 @@ before(async () => {
       if (!p.startsWith(ROOT + path.sep) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { rsp.writeHead(404); rsp.end(); return; }
       rsp.writeHead(200, { 'content-type': TYPES[path.extname(p)] || 'application/octet-stream' });
       fs.createReadStream(p).pipe(rsp);
-    }).listen(0, '127.0.0.1', () => res(s));
+    }).listen(+process.env.PORT || 0, '127.0.0.1', () => res(s));
   });
   BASE = 'http://127.0.0.1:' + server.address().port + '/test/play.html';
   browser = await chromium.launch();
@@ -98,6 +104,9 @@ async function open(o, query, hash) {
     reducedMotion: o.reduce ? 'reduce' : 'no-preference', hasTouch: !!o.touch, isMobile: !!o.touch,
   });
   const page = await ctx.newPage();
+  // skip(ms) moves the page's performance.now on, so the game's clock jumps (Playwright's clock.fastForward
+  // dropped timers set while it fired, now and then: the live region's words never came)
+  if (o.skip) await page.addInitScript(() => { const now = performance.now.bind(performance); let off = 0; performance.now = () => now() + off; window.__skip = (ms) => { off += ms; }; });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
@@ -229,15 +238,17 @@ test('board: clusters, paintings and the rest at 1280 in dark', async () => {
 // ---------------------------------------------------------------- the map
 
 test('map: thirty levels climbing, in order, scrolled to the next', async () => {
-  const { ctx, page, errors } = await open({ dark: true, touch: true }, 'stars=3,2,1', '#map');
+  const { ctx, page, errors } = await open({ dark: true, touch: true }, 'stars=3,2,1&time=41', '#map');
   await page.waitForSelector('.fp-node');
   await sleep(300);
   const ns = await page.locator('.fp-node button').evaluateAll((bs) => bs.map((b) => [+b.dataset.n, b.getAttribute('aria-label'), b.getAttribute('aria-disabled'), Math.round(b.getBoundingClientRect().top)]));
   assert.equal(ns.length, 30);
   assert.deepEqual(ns.map((x) => x[0]), Array.from({ length: 30 }, (_, i) => i + 1), 'DOM order 1..30');
-  assert.deepEqual(ns.slice(0, 5).map((x) => x[1]), ['Level 1, 3 of 3 stars', 'Level 2, 2 of 3 stars', 'Level 3, 1 of 3 stars', 'Level 4, Next', 'Level 5, Not yet']);
+  assert.deepEqual(ns.slice(0, 5).map((x) => x[1]), ['Level 1, 3 of 3 stars, in time', 'Level 2, 2 of 3 stars', 'Level 3, 1 of 3 stars', 'Level 4, Next', 'Level 5, Not yet']);
   assert.equal(ns[4][2], 'true');
-  assert.match(await page.textContent('.fp-node.is-done .fp-nl'), /^★★★3 of 3 stars$/);
+  assert.match(await page.textContent('.fp-node.is-done .fp-nl'), /^★★★3 of 3 stars, in time$/);
+  await page.click('.fp-kingdom');
+  assert.deepEqual(await calls(page, 'kingdom'), [true], 'Kingdom in the top bar');
   assert.ok(ns[29][3] < ns[0][3], 'the path climbs: level 30 above level 1');
   assert.ok(await page.evaluate(() => document.querySelector('.fp-scroll').scrollTop > 0), 'scrolled to the next level');
   assert.equal(await page.locator('.fp-ep').count(), 6);
@@ -325,6 +336,18 @@ test('level 1 by touch at 390: bounce, drag, tap-tap, keys, sound, hint, a casca
   assert.equal(ends.length, 1);
   assert.equal(ends[0].won, true);
   if (res.stars === 3) assert.match(end, /You earned a Pass\./);
+  // The clock: played at once, so in time; the building is the first of the ways, and Another way shows the next.
+  assert.equal(ends[0].clock, 75);
+  assert.ok(ends[0].secs >= 1 && ends[0].secs < 75, 'secs ' + ends[0].secs);
+  assert.equal(await page.textContent('dialog[open] .fp-endclock'), 'In time: ' + mss(75 - ends[0].secs) + ' to spare. Best ' + mss(ends[0].secs) + '.');
+  const bw = M.buildChoices(taste, deck, ends[0], undefined);
+  assert.equal(bw.length, 3);
+  assert.match(await page.textContent('dialog[open] .fp-btext'), new RegExp('^Built: .+, ' + ['one storey', 'two storeys', 'three storeys'][res.stars - 1] + ', flying a flag\\.$'));
+  assert.deepEqual(await page.evaluate(() => [window.harness.state.saga.built, window.harness.state.saga.time]), [[bw[0]], [ends[0].secs]]);
+  await page.locator('dialog[open] [data-way]').click();
+  assert.equal(await page.textContent('dialog[open] .fp-wayn'), '2 of 3');
+  assert.deepEqual(await calls(page, 'build'), [bw[1]]);
+  assert.deepEqual(await page.evaluate(() => window.harness.state.saga.built), [bw[1]], 'whichever shows is the building');
   const hearts = page.locator('dialog[open] .fp-heart');
   // most things first; a group inside one already shown is not shown again
   const shown = [];
@@ -352,6 +375,7 @@ test('level 2 in reduced motion and dark: tiles only sit on cells, out of moves,
   const { ctx, page, errors } = await open({ touch: true, reduce: true, dark: true }, 'plays=' + L2.p, '#level=2');
   await page.waitForSelector('dialog[open]');
   await play(page);
+  assert.deepEqual([await page.locator('.fp-cring').count(), await page.textContent('.fp-time')], [0, mss(5 * 14)], 'reduced motion: the time in text, no ring');
   // The hint is a static dashed outline after five seconds.
   await page.waitForFunction(() => document.querySelectorAll('.fp-t.fp-hint').length === 2, null, { timeout: 8000 });
   await shot(page, 'level2-hint-reduced-dark');
@@ -378,9 +402,14 @@ test('level 2 in reduced motion and dark: tiles only sit on cells, out of moves,
   const left = g.goals[0].n - g.goals[0].have;
   assert.match(await page.textContent('dialog[open] .fp-left'), new RegExp('^' + left + ' more '));
   await shot(page, 'level2-out-dark');
+  const atOut = await page.textContent('.fp-time');
+  await sleep(1500);
+  assert.equal(await page.textContent('.fp-time'), atOut, 'the clock stands while a sheet is open');
   await page.locator('dialog[open] [data-more]').click();
   await page.waitForFunction(() => !document.querySelector('dialog[open]'));
   assert.equal(await page.textContent('.fp-moves b'), '5');
+  const more = secsOf(await page.textContent('.fp-time')) - secsOf(atOut);
+  assert.ok(more >= 24 && more <= 25, 'Five more adds 25 seconds: ' + more);
   assert.deepEqual(await calls(page, 'boost'), ['more']);
   g = M.boost(g, 'more').game;
   for (const mv of plan(g, 'worst')) { await swapBy('shift', page, null, mv.a, mv.b, 7); g = mv.r.game; if (g.state === 'play') await settled(page, g); }
@@ -498,6 +527,95 @@ test('level 6: paint, the finale, keep the painting, and Your board shows it', a
   await page.waitForSelector('.fb-painting');
   assert.match(await page.locator('.fb-head').allTextContents().then((x) => x.join('|')), /Paintings you made/);
   await shot(page, 'board-after-painting-390');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+// ---------------------------------------------------------------- the clock
+
+test('the clock: Off and Ten seconds in the card; it runs only while the board waits', async () => {
+  const lv = M.level(4), g0 = start(4, 0);
+  const { ctx, page, errors } = await open({ touch: true, skip: true }, '', '#level=4');
+  const skip = (ms) => page.evaluate((m) => window.__skip(m), ms);
+  await page.waitForSelector('dialog[open]');
+  const card = page.locator('dialog[open]');
+  const statusH = () => page.locator('.fp-status').evaluate((e) => Math.round(e.getBoundingClientRect().height));
+  assert.equal(await card.locator('.fp-clockset input:checked').getAttribute('value'), '5', 'five seconds a move until the person chooses');
+  assert.equal(await card.locator('.fp-clockline').textContent(), mss(5 * lv.moves) + ' for this level, five seconds a move. It stops while tiles move and never ends a level. Beat it and your building flies a flag.');
+  assert.deepEqual([await page.locator('.fp-cring').count(), await page.textContent('.fp-time'), await statusH()], [1, mss(5 * lv.moves), 76]);
+  await card.locator('.fp-clockset label').nth(0).click();
+  assert.deepEqual([await page.locator('.fp-time, .fp-cring, .fp-has-clock, .fp-clocked').count()], [0], 'Off: the status as it was');
+  assert.ok((await statusH()) < 76);
+  assert.equal(await card.locator('.fp-clockline').textContent(), 'No clock for this level.');
+  assert.deepEqual((await calls(page, 'opts')).pop(), { sound: true, hints: true, clock: 0 });
+  await card.locator('.fp-clockset label').nth(2).click();
+  assert.deepEqual((await calls(page, 'opts')).pop(), { sound: true, hints: true, clock: 10 });
+  const total = 10 * lv.moves;
+  assert.deepEqual([await page.getAttribute('.fp-time', 'role'), await page.getAttribute('.fp-time', 'aria-label')], ['timer', 'Clock ' + mss(total)]);
+  await shot(page, 'clock-card-390');
+  await play(page);
+  const left = async () => secsOf(await page.textContent('.fp-time'));
+  const runs = () => page.evaluate(() => /stroke-dashoffset/.test(document.querySelector('.fp-rf').style.transition));
+  await skip(30000);
+  assert.equal(await runs(), false, 'nothing runs before the first counted swap');
+  const [mv] = plan(g0, 'hint', 1);
+  await swapBy('shift', page, null, mv.a, mv.b, 7);
+  assert.equal(await runs(), false, 'it stands while tiles move');
+  await skip(30000);
+  await settled(page, mv.r.game);
+  assert.ok(total - (await left()) <= 1, 'the time before the first swap and while tiles moved cost nothing');
+  assert.equal(await runs(), true, 'the ring drains while the board waits');
+  await skip(10000);
+  await page.waitForFunction((t) => { const [m, x] = document.querySelector('.fp-time').textContent.split(':').map(Number); return m * 60 + x <= t; }, total - 10);
+  const l1 = await left();
+  assert.ok(l1 >= total - 12, 'ten seconds waiting: ' + (total - l1));
+  const hide = (on) => page.evaluate((h) => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => h }); document.dispatchEvent(new Event('visibilitychange')); }, on);
+  await hide(true);
+  assert.equal(await runs(), false, 'it stands while the page is hidden');
+  await skip(30000);
+  await hide(false);
+  assert.ok(l1 - (await left()) <= 1, 'hidden cost no time');
+  assert.equal(await runs(), true);
+  await shot(page, 'clock-running-390');
+  await page.click('.fp-back');
+  const ends = await calls(page, 'end');
+  assert.equal(ends[0].clock, total);
+  assert.ok(ends[0].secs >= 10 && ends[0].secs <= 13, 'secs ' + ends[0].secs);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('the clock runs out: Time, play on; the win is not in time, keeps no time and still builds', async () => {
+  const L = find(1, 'hint', (pl) => pl.length > 2 && pl[pl.length - 1].r.game.state === 'won');
+  const { ctx, page, errors } = await open({ w: 1280, h: 800, dark: true, skip: true }, 'plays=' + L.p, '#level=1');
+  const skip = (ms) => page.evaluate((m) => window.__skip(m), ms);
+  await page.waitForSelector('dialog[open]');
+  await play(page);
+  let g = L.g;
+  const live = (t) => page.waitForFunction((x) => document.querySelector('.fp-live').textContent === x, t);
+  for (const [k, mv] of L.pl.entries()) {
+    await swapBy('shift', page, null, mv.a, mv.b, 7);
+    g = mv.r.game;
+    await settled(page, g);
+    if (k) continue;
+    await skip(56000);
+    await live('20 seconds on the clock.');
+    await skip(20000);
+    await live('Time. Play on: nothing is lost.');
+    assert.deepEqual([await page.textContent('.fp-time'), await page.getAttribute('.fp-time', 'aria-label'), await page.textContent('.fp-say')], ['Time', 'Clock Time', 'Time. Play on.']);
+    assert.equal(await page.textContent('.fp-moves b'), String(g.moves), 'no move is lost');
+    await shot(page, 'clock-time-1280-dark');
+  }
+  await page.waitForSelector('dialog[open] .fp-endclock', { timeout: 30000 });
+  const ends = await calls(page, 'end');
+  assert.ok(ends[0].won && ends[0].clock === 75 && ends[0].secs > 75, JSON.stringify([ends[0].secs, ends[0].clock]));
+  assert.equal(await page.textContent('dialog[open] .fp-endclock'), mss(ends[0].secs) + '. The clock gave 1:15. Race it again.');
+  assert.match(await page.textContent('dialog[open] .fp-btext'), /^Built: .+, (one storey|two storeys|three storeys)\.$/, 'no flag');
+  assert.deepEqual(await page.evaluate(() => window.harness.state.saga.time), [], 'not in time keeps no time');
+  await shot(page, 'clock-not-in-time-1280-dark');
+  await page.locator('dialog[open] [data-kingdom]').click();
+  assert.deepEqual(await calls(page, 'kingdom'), [1]);
+  assert.equal(await page.locator('dialog[open]').count(), 0);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
