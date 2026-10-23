@@ -100,6 +100,32 @@ and each line's roots to the engine. It postures the breath of the calm country'
 
 The ground, its passages and their colours are the body's own and are left as they were.
 
+## Morphology's order (a beta)
+
+Aries, 23 Oct 2026: "I want the words, the character, the spirit of the Morphology artifact to inform everything that
+is in DRIFT Poetry. Think of it as if the relevancy of the Morphology artifact to DRIFT Poetry is that it is guiding it
+as if its philosophy ... I want the Morphology artifact to now inform how DRIFT and Picture Poetry are organized when
+they come together", neither artifact itself touched; and of this first step, "give me a beta version ... keep it very
+small". Morphology Web orders words by what they share: a root makes a family, and a link between two words is the root
+they share. Three tastes of that order, in `layer.js` ("Morphology's order"):
+
+- **A page is a family round its root, the plot.** Within 610 CSS pixels of a plot (φ⁻² of its square) the swimmers
+  write its page's poem, in order, each taking the next line, so the family recites it; and the photograph that goes into
+  the collage is the nearest plot's page's.
+- **Between the plots, DRIFT's paintings and the poems are linked by their roots.** A swimmer writes a line whose words
+  share a root with the title of the painting it swims over: *Phenomena Rain Palace* (Paul Jenkins) opens to "Though
+  having just rained", *Composition for two Sunflowers* to "Opposing nature as the impossible" (the root MorphoLex gives both, *pose*).
+  `build_poetry.py --morpholex` roots DRIFT's 2,226 titles as it roots the poems (`kin`: 460 share a root). Elsewhere a
+  swimmer writes as DRIFT has it, and the label under the view says which order chose a line.
+- **The link is named.** When DRIFT names a painting, the root its title shares with the poems is written beside its
+  name, with the line it opens to.
+
+The swimmers ask the page for their next line through the one line `build_poetry.py` turns in DRIFT Poetry's copy of
+DRIFT's engine (`organize`, `ENGINE_TURN`); DRIFT's own page and source are untouched, and if DRIFT's engine changes
+there, the build says so and the swimmers keep DRIFT's own choice. `window.DRIFT_POETRY.order()` lists the lines begun
+lately and which order chose each. Not yet ordered: the calm country's breathing lines (in the engine's shaders), the
+buildings' deal, and DRIFT's own placing of its paintings.
+
 ## The photographs, into the collage
 
 Each page's photograph goes into DRIFT as a photo the viewer puts in does (`GLG.putIn`, drift.js): it arrives torn out

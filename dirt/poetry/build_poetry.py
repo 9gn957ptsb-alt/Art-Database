@@ -63,22 +63,31 @@ just only also even ever never more most less much many few other same""".split(
 SEGMENT = re.compile(r"<([^<>{}()]+)<|\(([^()]+)\)|>([^<>{}()]+)>")
 
 
+_SEGS = {}
+
+
+def segments(morpholex, words):
+    """MorphoLex-en's segments for each of words it has, [(kind p|r|s, morpheme)] in order (the workbook read once)."""
+    if not _SEGS:
+        import openpyxl
+        for ws in openpyxl.load_workbook(morpholex, read_only=True).worksheets:
+            rows = ws.iter_rows(values_only=True)
+            head = next(rows, ())
+            if "Word" not in head or "MorphoLexSegm" not in head:
+                continue
+            wi, si = head.index("Word"), head.index("MorphoLexSegm")
+            for r in rows:
+                if r[wi] and r[si]:
+                    _SEGS[str(r[wi]).lower()] = r[si]
+    return {w: [(k, m) for t in SEGMENT.findall(_SEGS[w]) for k, m in zip("prs", t) if m] for w in words if w in _SEGS}
+
+
 def spirits(verse, morpholex):
     """For each of the poems' words (lower case, as layer.js finds them: runs of a to z), the steps its letters shed in
     and its roots. A letter's code is s + 16 n: its word sheds n affixes and this letter goes at step s (1 first); the
     roots and anything kept are 0. Words MorphoLex lacks, and words that shed nothing, are left out."""
-    import openpyxl
     words = {w.lower() for P in verse for l in P["lines"] for w in re.findall(r"[A-Za-z]+", l)}
-    segs = {}
-    for ws in openpyxl.load_workbook(morpholex, read_only=True).worksheets:
-        rows = ws.iter_rows(values_only=True)
-        head = next(rows, ())
-        if "Word" not in head or "MorphoLexSegm" not in head:
-            continue
-        wi, si = head.index("Word"), head.index("MorphoLexSegm")
-        for r in rows:
-            if r[wi] and r[si] and str(r[wi]).lower() in words:
-                segs[str(r[wi]).lower()] = [(k, m) for t in SEGMENT.findall(r[si]) for k, m in zip("prs", t) if m]
+    segs = segments(morpholex, words)
     shed, roots = {}, {}
     for w, seg in segs.items():
         code, rs = morph_codes(w, seg)
@@ -114,6 +123,50 @@ def morph_codes(w, seg):
         order.append(i)
     n = len(order)
     return [16 * n + order.index(o) + 1 if o in order else 0 for o in own], [m.lower() for k, m in seg if k == "r"]
+
+
+# ---- Morphology's order, where DRIFT and Picture Poetry come together (layer.js: "Morphology's order") ------------------
+# Aries, 23 Oct 2026: "I want the Morphology artifact to now inform how DRIFT and Picture Poetry are organized when they
+# come together", DRIFT's artifact itself not touched. Morphology Web links two words by the root they share; so DRIFT's
+# paintings are linked to the poems by the roots their titles share with the poems' words (kin), and DRIFT Poetry's copy
+# of DRIFT's engine lets the page choose which line a swimmer writes next (organize).
+ENGINE_TURN = ("p.line = p.last = verseNext(p.last); p.dir = right ? 1 : -1;",
+               "const kn = w.next ? w.next(p.last, x, y) : -1; p.line = p.last = kn >= 0 ? kn : verseNext(p.last); p.dir = right ? 1 : -1;")
+
+
+def works_of(page):
+    """DRIFT's paintings, as its page lists them (PL.works: each its title, artist, date, link and colours)."""
+    i = page.find("\nconst PL = ")
+    return json.JSONDecoder().raw_decode(page, i + len("\nconst PL = "))[0].get("works", []) if i >= 0 else []
+
+
+def kin(works, roots, morpholex):
+    """For each of DRIFT's paintings (its index in works) whose title shares a root with the poems' words (roots, as
+    spirits() gives them), those roots in the title's order. A title's words are rooted as the poems' are, from
+    MorphoLex-en's segments; a word it lacks is its own root."""
+    shared = {r for rs in roots.values() for r in rs}
+    titles = [[w.lower() for w in re.findall(r"[A-Za-z]+", x.get("title") or "")] for x in works]
+    segs = segments(morpholex, {w for t in titles for w in t})
+    out = {}
+    for i, t in enumerate(titles):
+        rs = []
+        for w in t:
+            if w in STOP or len(w) <= 2:
+                continue
+            rs += [r for r in ([m.lower() for k, m in segs.get(w, []) if k == "r"] or [w]) if r in shared and r not in rs]
+        if rs:
+            out[i] = rs
+    print(f"the kin: {len(out)} of DRIFT's {len(works)} paintings share a root with the poems")
+    return out
+
+
+def organize(page):
+    """DRIFT Poetry's one turn in its copy of DRIFT's engine: a swimmer asks the page which line to write next
+    (words().next, layer.js), and keeps the engine's own choice where the page answers -1."""
+    if page.count(ENGINE_TURN[0]) != 1:
+        print("DRIFT's engine has changed where the swimmers pick their lines: they keep its own choice (see ENGINE_TURN)")
+        return page
+    return page.replace(*ENGINE_TURN)
 
 
 def lum(a):
@@ -324,6 +377,9 @@ def build(drift, out, sources, morpholex=None):
                         '&family=Poppins:ital,wght@0,500;1,300&display=swap">', 1)
     if page.index("<script") != page.index("<script>window.DRIFT_WORDS"):
         raise SystemExit("one of DRIFT's scripts runs before its title, so before the letters are asked for: has DRIFT's page changed shape?")
+    page = organize(page)
+    if morpholex:
+        spec["kin"] = kin(works_of(page), spec.get("roots", {}), morpholex)
     layer = (HERE / "layer.js").read_text(encoding="utf-8").replace("__POETRY__", json.dumps(spec, separators=(",", ":")))
     src = json.loads(Path(sources).read_text(encoding="utf-8")) if sources else {}
     # each page image's fingerprint, kept with the sources, so the next build can say which pages are new or changed

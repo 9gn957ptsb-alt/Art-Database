@@ -248,8 +248,10 @@
   // As a photo the viewer puts in goes (drift.js): it arrives torn out where it is put in, and the collage melts it
   // (the datamosh) and carries it off in torn pieces across the plane. The first arrives where the visit begins; every
   // 144 seconds the next goes in quietly (no arrival: only the collage's pieces turn to it, phi^-1 of the usual
-  // share); and for 377 seconds after the viewer puts in a photo or a name of their own, theirs is left to drift.
-  const photoImgs = [];
+  // share); and for 377 seconds after the viewer puts in a photo or a name of their own, theirs is left to drift. The
+  // photograph is the one of its family (Morphology's order, below): the page of the plot nearest the view's middle,
+  // else the next in turn.
+  const photoOf = new Map();                                          // a page (index) to its photograph, once it has come
   let photoNext = Math.floor(Math.random() * 8), photoAt = -1, viewerAt = -1e9;
   if (typeof GLG.putIn === "function") {
     const putIn = GLG.putIn;
@@ -257,18 +259,18 @@
       if (!(src && src.poetry) && !(o && o.quiet)) viewerAt = performance.now();
       return putIn.apply(this, arguments);
     };
-    Promise.all((SPEC.pages || []).filter((p) => p.photo).map((p) => loadImage(p.photo).catch(() => null)))
-      .then((ims) => ims.forEach((im) => { if (im) { im.poetry = true; photoImgs.push(im); } }));
+    (SPEC.pages || []).forEach((p, pi) => { if (p.photo) loadImage(p.photo).then((im) => { im.poetry = true; photoOf.set(pi, im); }, () => {}); });
   }
   let groundAt = -1;
   function photos(now) {
     // (once DRIFT's ground is being painted: it has read back a frame of its own)
     if (groundAt < 0) { if (GLG.reflection && GLG.reflection()) groundAt = now; return; }
-    if (!photoImgs.length || now - groundAt < 1618 || now - viewerAt < 377000) return;
+    if (!photoOf.size || now - groundAt < 1618 || now - viewerAt < 377000) return;
     const firstOne = photoAt < 0;
     if (!firstOne && now - photoAt < 144000) return;
     photoAt = now;
-    const im = photoImgs[photoNext++ % photoImgs.length];
+    const b = lastV && plotNear(lastV.x + lastV.W / lastV.dpr / 2, lastV.y + lastV.H / lastV.dpr / 2), all = [...photoOf.values()];
+    const im = (b && photoOf.get(b.page)) || all[photoNext++ % all.length];
     GLG.putIn(im, vx + VW * 0.38, vy + VH * 0.42, firstOne ? {} : { quiet: true, share: P1 });
   }
 
@@ -299,13 +301,89 @@
       if (b.at <= verseSeen) continue;
       verseSeen = b.at;
       if (bk || Math.abs(b.x - (vx + VW / 2)) > VW * 0.3 || Math.abs(b.y - (vy + VH / 2)) > VH * 0.3) continue;
-      const P = SPEC.poems[linePoem[b.line]];
+      const P = SPEC.poems[linePoem[b.line]], w = why.get(b.line), y = w && w.x === b.x && w.y === b.y ? w : null;
       if (!P) continue;
-      show(P.name, "Picture Poetry, page " + P.n);
+      show(P.name, "Picture Poetry, page " + P.n + (!y ? "" : y.plot ? " · round its plot, " + y.plot.name
+        : " · its root " + y.root + ", in " + [PL.works[y.work].title || "Untitled", PL.works[y.work].artist].filter(Boolean).join(", ")));
       clearTimeout(poemTimer);
       poemTimer = setTimeout(() => label.classList.remove("on"), 6854);
     }
   }
+
+  // ---- Morphology's order (a beta) ----------------------------------------------------------------------------------
+  // Aries, 23 Oct 2026: "I want the words, the character, the spirit of the Morphology artifact to inform everything
+  // that is in DRIFT Poetry ... guiding it as if its philosophy", organizing DRIFT's information and Picture Poetry's
+  // where they come together here (neither artifact itself); and, of this first step, "give me a beta version ... keep it
+  // very small". Morphology Web (https://claude.ai/artifact/9CYzDaxb6YYSDxm5y2G9zx) orders words by what they share: a
+  // root makes a family, and a link between two words is the root they share. Three tastes of that order:
+  // - A page of Picture Poetry is a family round its root, the plot. Within 610 CSS pixels of a plot (phi^-2 of its
+  //   square) the swimmers write its page's poem, in order, each taking the next line (the family recites it); and the
+  //   photograph that goes into the collage is the nearest plot's page's (above).
+  // - Between the plots, DRIFT's paintings and the poems are linked as the Web links its words: a swimmer writes a line
+  //   whose words share a root with the title of the painting it swims over (build_poetry.py roots the titles: SPEC.kin).
+  //   Elsewhere it writes as DRIFT has it (the engine's own choice), and the label says which order chose a line.
+  // - The link is named: when DRIFT names a painting, the root its title shares with the poems is written beside it, with
+  //   the line it opens to.
+  // (The swimmers ask nextLine through the one line build_poetry.py turns in DRIFT Poetry's copy of DRIFT's engine:
+  // organize(). DRIFT itself is not touched.)
+  const FAMILY = 610, lineRoots = new Map(), why = new Map(), recited = new Map();
+  /** The plot whose family a point on the plane (CSS pixels) lies in: the nearest within FAMILY of its middle, or null. */
+  function plotNear(px, py) {
+    if (!anchored || !NB) return null;
+    const gx = Math.floor((px - shift[0]) / B), gy = Math.floor((py - shift[1]) / B);
+    let best = null, bd = FAMILY;
+    for (let y = gy - 1; y <= gy + 1; y++) for (let x = gx - 1; x <= gx + 1; x++) {
+      const s = seedOf(x, y), d = Math.hypot(px - s.x, py - s.y);
+      if (d < bd) { bd = d; best = BLD[bldOf(x, y)]; }
+    }
+    return best;
+  }
+  /** DRIFT's painting at a cell of the plane, where its ground has been grown there, else -1. */
+  function workAt(x, y) {
+    if (typeof chunks === "undefined" || typeof ck !== "function" || typeof N === "undefined") return -1;
+    const c = chunks.get(ck(Math.floor(x / N), Math.floor(y / N)));
+    return c && c.work ? c.work[(((Math.floor(y) % N) + N) % N) * N + (((Math.floor(x) % N) + N) % N)] : -1;
+  }
+  /** Of some lines, the next in turn (key: whose turn it is), so that a family's poem is recited in order and a root's
+   *  lines take turns. */
+  function inTurn(key, ls) { const k = recited.get(key) || 0; recited.set(key, k + 1); return ls[k % ls.length]; }
+  /** The line a swimmer at (x, y) (cells) writes next, as Morphology orders them; -1 leaves the choice to DRIFT's
+   *  engine, which goes on with the swimmer's poem after its last line (after) or else picks one. */
+  function nextLine(after, x, y) {
+    const dpr = field.width / Math.max(1, field.clientWidth), b = plotNear((x * R) / dpr, (y * R) / dpr);
+    const pi = b ? SPEC.poems.findIndex((q) => q.n === SPEC.pages[b.page].n) : -1;
+    if (pi >= 0) {
+      const k = inTurn("poem " + pi, linePoem.reduce((a, p, li) => (p === pi ? a.concat(li) : a), []));
+      why.set(k, { plot: b, x, y });
+      return k;
+    }
+    const wi = workAt(x, y);
+    for (const r of (wi >= 0 && SPEC.kin && SPEC.kin[wi]) || []) {
+      const ls = lineRoots.get(r);
+      if (!ls || !ls.size) continue;
+      const k = inTurn("root " + r, [...ls]);
+      why.set(k, { root: r, work: wi, x, y });
+      return k;
+    }
+    return -1;
+  }
+  // the link named, beside DRIFT's caption: the root the painting named shares with the poems, and a line it opens to
+  const capKin = document.createElement("span"), capTitle = document.getElementById("c-title");
+  capKin.className = "kin";
+  style.textContent += ".art .kin{color:var(--muted);font:italic 400 15px/1.2 var(--serif);flex:0 2 auto}.art .kin b{font:400 11px/1 var(--mono);" +
+    "letter-spacing:.06em;text-transform:uppercase;margin-right:.5em}";
+  if (capTitle && typeof PL !== "undefined") {
+    capTitle.parentNode.append(capKin);
+    new MutationObserver(() => {
+      const wi = typeof shown === "number" ? shown : -1, r = ((wi >= 0 && SPEC.kin && SPEC.kin[wi]) || []).find((q) => lineRoots.has(q));
+      capKin.textContent = "";
+      if (!r) return;
+      const li = [...lineRoots.get(r)][0], [a, z] = lineText[li] || [];
+      capKin.append(el("b", "", r), "“" + (a != null ? letterText.slice(a, z) : "") + "”");
+      capKin.title = "Its root, shared with a line of " + SPEC.poems[linePoem[li]].name + " (Picture Poetry, page " + SPEC.poems[linePoem[li]].n + ")";
+    }).observe(capTitle, { childList: true, characterData: true, subtree: true });
+  }
+  let letterText = "", lineText = [];                                  // (the poems' text and each line's span in it, from letters())
 
   // ---- a plot opens like a book -----------------------------------------------------------------------------------
   // Aries, 21 Oct 2026: "Plots should be able to open like a book when clicked on." A building's plot lies on DRIFT's
@@ -903,6 +981,12 @@
   Object.assign(window.DRIFT_POETRY, {
     book: () => (bk ? { open: true, busy: bk.busy, wide: bk.g.wide, pos: bk.pos, pages: bk.pages.map((p) => p.kind + ":" + nameOf(p)) } : { open: false }),
     turn: (d) => turn(d), close: () => closeBook(),
+    // the lines the swimmers have begun lately, and which of Morphology's orders chose each (or none: DRIFT's own)
+    order: () => (GLG.verse ? GLG.verse().begun : []).map((b) => {
+      const w = why.get(b.line), y = w && w.x === b.x && w.y === b.y ? w : null;   // (chosen for this swimmer, here)
+      return { line: b.line, poem: (SPEC.poems[linePoem[b.line]] || {}).name, plot: y && y.plot ? y.plot.name : null, root: (y && y.root) || null,
+               work: y && y.work != null ? PL.works[y.work].title : null };
+    }),
   });
 
   // ---- on DRIFT's frames ------------------------------------------------------------------------------------------
@@ -1015,7 +1099,8 @@
     // breathe together (WORDS in ground-gl.js). A line holding a not, a number or an "only" stands as said and sheds
     // nothing: what it holds has no place in a word cut down to its root (HELD, as Morphology Web has it).
     const HELD = /\b(?:not|no|non|never|without|cannot|only|except|sole|unique|both|one|two|three|four|five|first|second|secondary|third|fourth|fifth|highest|squared|exponent\w*|un(?!i|til|der)\w+|inseparable|independen\w*|infinit\w*)\b|n't\b|\d+(?:st|nd|rd|th)?/i;
-    const shed = new Array(text.length).fill(0), byRoot = new Map();
+    const shed = new Array(text.length).fill(0), byRoot = lineRoots;
+    letterText = text; lineText = lines;
     lines.forEach(([a, b], li) => {
       const l = text.slice(a, b), said = HELD.test(l);
       for (const m of l.matchAll(/[A-Za-z]+/g)) {
@@ -1047,7 +1132,7 @@
       for (const c of text) { const a = adv[gi.get(c)]; at[0] += a[0]; at[1] += a[1]; ends.push([at[0], at[1]]); }
       GLG.words({ atlas: cv, slot: [SW, SH], cols: COLS, em: EM, origin: [OX, OY], glyphs: chars.length, adv, spread: SPREAD,
                   text: [...text].map((c) => gi.get(c)), ends, lines, poem: linePoem, space: gi.has(" ") ? gi.get(" ") : -1,
-                  shed, groups });
+                  shed, groups, next: nextLine });
     };
     const sample = chars.join("");
     const fonts = document.fonts && document.fonts.load ? Promise.all(faces.map((f) => document.fonts.load(f, sample))) : Promise.resolve();
