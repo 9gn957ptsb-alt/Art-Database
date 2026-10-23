@@ -293,8 +293,10 @@ world that presents the three figurations of the impossible triangle They should
 each other and be very simple objects, almost like an homage site").
 
 **The three.** The first is the block's own figure, six square bars whose ends meet only down the
-diagonal, closing from above, as the site draws its buildings. The second is being made in the game's
-own session; its plinth stands empty until `homage.json` gives it. The third (`scripts/figure_three.py`)
+diagonal, closing from above, as the site draws its buildings. The second is the third study of the figure,
+after the figure and Bent: the same beams, every point moved along the line of sight by a bow across the drawing
+and a lean up it, so that from its stone they are straight and it is the drawing, and a step aside they curve away
+(`scripts/figure_three.py` `second`, from `figure_studies.py`'s Bent). The third (`scripts/figure_three.py`)
 is the first's six bars made one closed thing by a curve: every point of a figure may slide along the
 line of sight without changing the drawing, so each tribar gives up its rise round its own loop, a
 third a beam, in the beams' middles, its joints held square, until each cut's two ends lie EPS (0.3 of
@@ -319,7 +321,8 @@ sight, near the middle at its own size (a projective map, so faces stay flat). O
 come apart; back on it, it closes. Looked down on and up at along the diagonal's slope (35.26°):
 
 - **the first**, on a pin in a limestone square sunk a block, looked down on from a white step;
-- **the second**, a limestone plinth, empty, a white stone three blocks before it;
+- **the second**, on a pin over a limestone plinth, looked at from a white stone three blocks before it,
+  as near level as its pin leaves it;
 - **the third**, on a thread under the lintel of a limestone gate five blocks high, looked up at from
   a white stone.
 
