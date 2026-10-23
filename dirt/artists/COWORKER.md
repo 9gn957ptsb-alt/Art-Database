@@ -2,12 +2,14 @@
 
 A scheduled Claude session runs this every week. It brings the next artists from Aries's own Artsy saves into DIRT's
 plane (each as a minimal area on the ladder of complexity, see `roster.py`), commits them, and republishes DIRT.
-Only the works he saved himself (his choice, 23 Oct 2026: "Only my saves"): not the fifty thousand a run on his
-account saved from 1 to 14 October 2026, every work by the artists he follows, which had put Frank Stella, Karel
-Appel and Wayne Thiebaud on the roster on 6 October and KAWS, Honoré Daumier and Banksy on 14 October, for works he
-had not chosen (4, 1, 0, 0, 0 and 1 of his own). It never stops: "I want it to gradually become a
-mosaic of everyone" (Aries, 23 Oct 2026), every artist he has saved, the most saved first, those he saves later
-joining the line.
+Who comes next is picked from the works he saved himself (his choice, 23 Oct 2026: "Only my saves"), not from the
+fifty thousand a run on his account saved from 1 to 14 October 2026, every work by the artists he follows, which had
+put Frank Stella, Karel Appel and Wayne Thiebaud on the roster on 6 October and KAWS, Honoré Daumier and Banksy on 14
+October, for works he had not chosen (4, 1, 0, 0, 0 and 1 of his own). The plane still takes its paintings and
+colours from every save, the run's included, so it keeps its variety (the same day: "maintaining the color
+diversity"; on his own alone each chocolate painting would fill about 29 clods instead of about 4). It never
+stops: "I want it to gradually become a mosaic of everyone" (Aries, 23 Oct 2026), every artist he has saved, the most
+saved first, those he saves later joining the line.
 
 It runs on Tuesdays at 19:47 UTC, just after the account's weekly usage comes back (Tuesdays at 19:00 UTC). It first
 ran on Mondays at 15:00, when the week's usage was already spent, and its runs of 28 September, 5 October and 12
@@ -21,9 +23,7 @@ Rules it keeps:
 - Never commit `data/` or `dirt/private/`: the saves, the database, the downloaded images and the built page stay out
   of the repository. It commits only `dirt/artists/roster.json` (names, colours and numbers), the plants and cast,
   and `roster.py` when it adds an artist to FAMILY.
-- No step calls Artsy's API now (step 1 reads Color Middling's list; the images come from Artsy's image hosts, which
-  need no token). If one ever does, the token is the environment's credential, added by the proxy: never ask for it or
-  write it anywhere.
+- The Artsy token is the environment's API credential, added by the proxy; never ask for it or write it anywhere.
 - If a step fails, say which and why in the session, and commit nothing half-done.
 - End commit messages with the attribution lines the session's own instructions give.
 
@@ -33,19 +33,23 @@ Rules it keeps:
 git fetch origin claude/digital-dirt-layers-paiial && git checkout -B claude/digital-dirt-layers-paiial origin/claude/digital-dirt-layers-paiial
 pip install numpy pillow requests "opencv-python-headless<4.13" scipy
 
-# 1. his own saves into data/artworks.db: Color Middling's list of them (data/artsy_saves_raw.json on
-#    claude/artsy-import-rwgk8s, kept level with Artsy by that branch's daily reconcile, the run's works set aside),
-#    read with git lfs smudge (apt-get install -y git-lfs if it is missing); then normalized with the normalizer from
-#    the same branch, run in memory and patched for open-ended prices (saves.py says how). It no longer walks Artsy.
+# 1. every save, fresh from Artsy, into data/artworks.db (the plane's): four pages at a time, a page retried when its
+#    tunnel drops or Artsy answers 5xx, and on past Artsy's count (which runs behind) until a page comes back empty;
+#    then normalized with the normalizer from claude/artsy-import-rwgk8s, run in memory and patched for open-ended
+#    prices (saves.py says how; fetch_artsy_saves.py alone, one page after another, rarely gets through forty thousand
+#    saves). Then his own saves into data/own.db (the roster's): Color Middling's list of them (data/artsy_saves_raw.json
+#    on that branch, kept level with Artsy by its daily reconcile, the run's works set aside), read with git lfs smudge
+#    (apt-get install -y git-lfs if it is missing) and normalized the same way.
 git fetch origin claude/artsy-import-rwgk8s
 python3 dirt/artists/saves.py
 
 # 2. the next three artists onto the roster
-python3 dirt/artists/roster.py --db data/artworks.db --cache dirt/private/briefs --add 3
+python3 dirt/artists/roster.py --db data/own.db --cache dirt/private/briefs --add 3
 
 # 2a. if a new artist's way of working is one of the compositions after a body of work (10-18 in roster.py's
 #     docstring) better than the measured one, add them to FAMILY in roster.py, naming the body of work (a real series
-#     and its years), and run roster.py again with --add 0 --repalette; then commit roster.py with the roster
+#     and its years), and run roster.py again with --db data/artworks.db --add 0 --repalette (palettes from every
+#     save, so the colours keep their variety); then commit roster.py with the roster
 
 # 3. a plant for each new artist (below), then commit the roster and the plants
 git add dirt/artists/roster.json dirt/artists/plants.json dirt/artists/cast.json dirt/artists/roster.py
@@ -56,7 +60,7 @@ git push -u origin claude/digital-dirt-layers-paiial
 #    session soil_tiles.py first downloads the chocolate paintings it uses (into dirt/private/cache/), so give it
 #    time; a work Artsy has taken down since it was saved (403 or 404) is passed over for the next painting. It
 #    takes the faces it may centre a clod on from dirt/private/faces.json (4a brings it from the artifact); without
-#    that file it searches every saved painting for faces, some 1,400 downloads
+#    that file it searches every saved painting for faces, some 11,000 downloads, an hour or more
 # (4a, below: the quilts, the history and the faces into dirt/private/ first)
 python3 dirt/soil_tiles.py --db data/artworks.db
 python3 dirt/build_soil_viewer.py                 # the plane alone: the Earth is the website's globe
