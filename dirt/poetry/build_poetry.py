@@ -28,9 +28,11 @@ The page also asks DRIFT's engine, before it begins, for the letters (window.DRI
 which layer.js draws the glyphs of and hands over.
 """
 import argparse
+import difflib
 import hashlib
 import html
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -42,6 +44,76 @@ HERE = Path(__file__).resolve().parent
 PRIVATE = HERE.parent / "private" / "poetry"
 PHOTO_MAX = 1024                # a photograph's long side, at most (pixels)
 CREATURE_PAD = 3                # pixels kept round a creature's box when it is cut out
+
+
+# ---- the spirit (Morphology) that postures the poems' breath (layer.js; WORDS in ground-gl.js) ---------------------------
+# Aries, 23 Oct 2026: "how our morphology findings can come to posture the changes that happen in DRIFT Poetry ...
+# thinking of DRIFT Poetry as the body and Morphology as the Spirit". Each of the poems' words is cut as Morphology Web
+# (https://claude.ai/artifact/9CYzDaxb6YYSDxm5y2G9zx) cuts its words, by the law ponytail and caveman share
+# (5s/gameplan/reflect.mjs on the photos branch): one affix at a time, the outermost suffix first, else the first prefix,
+# never a root and never a not, until it stands still. Its segments come from MorphoLex-en (Sanchez-Gutierrez et al.,
+# 2018: https://github.com/hugomailhot/MorphoLex-en), aligned to the word as spelt (allude is allus- in allusive), and an
+# inflection MorphoLex leaves unmarked (-s, -ed, -ing) is the outermost suffix of all.
+NOTS = {"un", "non", "in", "im", "il", "ir"}    # prefixes that can say not: kept (keeping a not too many only sheds less)
+STOP = set("""a an the and or but nor so yet for of to in on at by with from as into onto upon out up down off over under
+again then than that this these those there here where when what which who whom whose why how all any each every some no
+not is are was were be been being am do does did done have has had having i me my mine we us our ours you your yours he
+him his she her hers it its they them their theirs one own such too very can could will would shall should may might must
+just only also even ever never more most less much many few other same""".split())
+SEGMENT = re.compile(r"<([^<>{}()]+)<|\(([^()]+)\)|>([^<>{}()]+)>")
+
+
+def spirits(verse, morpholex):
+    """For each of the poems' words (lower case, as layer.js finds them: runs of a to z), the steps its letters shed in
+    and its roots. A letter's code is s + 16 n: its word sheds n affixes and this letter goes at step s (1 first); the
+    roots and anything kept are 0. Words MorphoLex lacks, and words that shed nothing, are left out."""
+    import openpyxl
+    words = {w.lower() for P in verse for l in P["lines"] for w in re.findall(r"[A-Za-z]+", l)}
+    segs = {}
+    for ws in openpyxl.load_workbook(morpholex, read_only=True).worksheets:
+        rows = ws.iter_rows(values_only=True)
+        head = next(rows, ())
+        if "Word" not in head or "MorphoLexSegm" not in head:
+            continue
+        wi, si = head.index("Word"), head.index("MorphoLexSegm")
+        for r in rows:
+            if r[wi] and r[si] and str(r[wi]).lower() in words:
+                segs[str(r[wi]).lower()] = [(k, m) for t in SEGMENT.findall(r[si]) for k, m in zip("prs", t) if m]
+    shed, roots = {}, {}
+    for w, seg in segs.items():
+        code, rs = morph_codes(w, seg)
+        if any(code):
+            shed[w] = code
+        rs = [r for r in rs if len(r) > 2 and r not in STOP and w not in STOP]
+        if rs:
+            roots[w] = rs
+    print(f"the spirit: {len(segs)} of the poems' {len(words)} words found in MorphoLex, {len(shed)} shed affixes, "
+          f"{len(roots)} carry roots")
+    return {"shed": shed, "roots": roots}
+
+
+def morph_codes(w, seg):
+    """A word's letters' codes (spirits()), from its MorphoLex segments seg [(kind p|r|s, morpheme)] in order."""
+    lab = [i for i, (_, m) in enumerate(seg) for _ in m]           # each segment letter: which segment it is
+    own = [None] * len(w)
+    for a, b, n in difflib.SequenceMatcher(None, "".join(m for _, m in seg), w, autojunk=False).get_matching_blocks():
+        for j in range(n):
+            own[b + j] = lab[a + j]
+    last = max((j for j, o in enumerate(own) if o is not None), default=-1)
+    for j in range(len(w)):                                        # a changed spelling belongs with the letter before it
+        if own[j] is None and j < last:
+            own[j] = own[j - 1] if j and own[j - 1] is not None else next(o for o in own[j:] if o is not None)
+    infl = len(seg)                                                # what follows the last match: an inflection
+    own = [infl if o is None else o for o in own]
+    order = ([infl] if infl in own else []) + [i for i in reversed(range(len(seg))) if seg[i][0] == "s"]
+    for i, (k, m) in enumerate(seg):                               # then the prefixes from the first, until a not
+        if k != "p":
+            continue
+        if m.lower() in NOTS:
+            break
+        order.append(i)
+    n = len(order)
+    return [16 * n + order.index(o) + 1 if o in order else 0 for o in own], [m.lower() for k, m in seg if k == "r"]
 
 
 def lum(a):
@@ -155,7 +227,7 @@ def name_of(p):
     return p.get("title") or p.get("label") or (p.get("signature") or "").lstrip("—") or "Page %d" % p["n"]
 
 
-def build(drift, out, sources):
+def build(drift, out, sources, morpholex=None):
     out = Path(out)
     (out / "poetry").mkdir(parents=True, exist_ok=True)
     for f in (out / "poetry").glob("ink-*.png"):                       # (the pages' ink, from before they came apart)
@@ -192,6 +264,8 @@ def build(drift, out, sources):
     verse = [{"name": name_of(poems[e["n"]]), "n": e["n"], "lines": [l for l in poems[e["n"]]["lines"] if l.strip()],
               "prose": bool(poems[e["n"]].get("prose"))} for e in book]
     spec = {"pages": pages, "poems": verse}
+    if morpholex:
+        spec.update(spirits(verse, morpholex))
     # the buildings, drawn live and turned by a swipe (layer.js), by Picture Poetry's own model code: where each stands on
     # its page (page pixels), what it is made of, and the soil it is made of (capture_pages.js takes them from the book)
     bld = json.loads((PRIVATE / "buildings.json").read_text(encoding="utf-8"))
@@ -266,5 +340,7 @@ if __name__ == "__main__":
     ap.add_argument("--drift", required=True, help="DRIFT's page as published")
     ap.add_argument("--out", required=True)
     ap.add_argument("--sources", help="the versions of DRIFT and Picture Poetry it is built from (JSON)")
+    ap.add_argument("--morpholex", help="MorphoLex-en's MorphoLEX_en.xlsx: the poems' words cut by Morphology's law, "
+                                        "which postures how their lines breathe (without it, they breathe as before)")
     a = ap.parse_args()
-    build(a.drift, a.out, a.sources)
+    build(a.drift, a.out, a.sources, a.morpholex)

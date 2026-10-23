@@ -69,8 +69,14 @@ repository.
     "picturePoetry": {"url": "https://claude.ai/artifact/GK14x2YbV1T7rMDtpnmhQE", "version": "<Picture Poetry's version>"},
     "built": "<today>"}
    EOF
-   python3 dirt/poetry/build_poetry.py --drift <DRIFT's page, from step 2> --out <scratch>/drift-poetry --sources <scratch>/sources.json
+   curl -sSL -o <scratch>/MorphoLEX_en.xlsx https://raw.githubusercontent.com/hugomailhot/MorphoLex-en/master/MorphoLEX_en.xlsx
+   pip install openpyxl
+   python3 dirt/poetry/build_poetry.py --drift <DRIFT's page, from step 2> --out <scratch>/drift-poetry --sources <scratch>/sources.json \
+     --morpholex <scratch>/MorphoLEX_en.xlsx
    ```
+
+   MorphoLex (6.8 MB, the scratchpad only) is how the spirit postures the breath (README, "The spirit's postures"): it
+   prints how many of the poems' words it found, shed and rooted. Without `--morpholex` the lines breathe as before.
 
    Each page's photograph is cut from its image (where Picture Poetry's data sets it, or else the largest patch of the
    page unlike its paper) and its creatures from its overlay: read the printed sizes and look at any photograph that

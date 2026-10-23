@@ -76,6 +76,30 @@ the swimmers' lines are a *construction* (written on, letter by letter, where th
   distance transform (2012). DRIFT never sets the flag, so its shaders compile without any of it. `#nowords` leaves
   DRIFT's lines and swimmers as they are.
 
+## The spirit's postures
+
+Aries, 23 Oct 2026: "We need to now understand how our morphology findings can come to posture the changes that happen
+in DRIFT Poetry. Once again, thinking of DRIFT Poetry as the body and Morphology as the Spirit." The spirit is
+Morphology Web's (https://claude.ai/artifact/9CYzDaxb6YYSDxm5y2G9zx): a word cut by the law ponytail and caveman share,
+one affix at a time, the outermost suffix first, else the first prefix, never a root and never a not, until it stands
+still at its roots. `build_poetry.py --morpholex` cuts each of the poems' words so, from MorphoLex-en's segments
+(Sánchez-Gutiérrez et al., 2018, about 68,000 English words; an inflection it leaves unmarked is the outermost suffix,
+and since it cannot tell *in-* "not" from *in-* "into", every *in-* is kept), and `layer.js` hands each letter's step
+and each line's roots to the engine. It postures the breath of the calm country's lines two ways (WORDS in
+`engine/ground-gl.js`; DRIFT never compiles it):
+
+- **The breath sheds.** Over the 2 seconds before a line swells back into its mark, each word sheds its affixes in the
+  law's order, the letters of each step wearing away in turn, and its roots are what bleed back into the line. A
+  word's steps are its own (a word that sheds four and one that sheds one take the same 2 seconds). A line holding a
+  not, a number or an "only" stands as said and closes whole, as Morphology Web's sentences do. Shedding runs only on
+  the way out, so a root reads as where the word stops, never where it begins ("Perception is rootless", the Manifesto).
+- **Shared roots breathe together.** A φ⁻³ share of the marks breathe on one beat, 34 seconds long: on each beat they
+  all open at the same moment, each with a line whose words share that beat's root (*day*, *thing*, *light*, *pose* in
+  "opposing" and "exposing"...), wherever on the plane they lie: "Space is the only thing capable of maintaining a
+  quality simultaneously in different points of itself" (the Manifesto). The other marks keep their own breath.
+
+The ground, its passages and their colours are the body's own and are left as they were.
+
 ## The photographs, into the collage
 
 Each page's photograph goes into DRIFT as a photo the viewer puts in does (`GLG.putIn`, drift.js): it arrives torn out

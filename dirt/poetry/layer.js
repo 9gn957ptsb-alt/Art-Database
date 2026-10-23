@@ -920,6 +920,22 @@
     SPEC.poems.forEach((P, pi) => {
       for (const l of linesOf(P)) { const a = text.length; text += l; lines.push([a, text.length]); linePoem.push(pi); text += " "; }
     });
+    // The spirit (Morphology; build_poetry.py cuts the words): what each letter sheds as its line swells back, a step at a
+    // time (s + 16 n: its word sheds n affixes, this letter at step s), and the lines whose words share a root, which
+    // breathe together (WORDS in ground-gl.js). A line holding a not, a number or an "only" stands as said and sheds
+    // nothing: what it holds has no place in a word cut down to its root (HELD, as Morphology Web has it).
+    const HELD = /\b(?:not|no|non|never|without|cannot|only|except|sole|unique|both|one|two|three|four|five|first|second|secondary|third|fourth|fifth|highest|squared|exponent\w*|un(?!i|til|der)\w+|inseparable|independen\w*|infinit\w*)\b|n't\b|\d+(?:st|nd|rd|th)?/i;
+    const shed = new Array(text.length).fill(0), byRoot = new Map();
+    lines.forEach(([a, b], li) => {
+      const l = text.slice(a, b), said = HELD.test(l);
+      for (const m of l.matchAll(/[A-Za-z]+/g)) {
+        const w = m[0].toLowerCase(), c = SPEC.shed && SPEC.shed[w];
+        if (c && !said) c.forEach((v, j) => (shed[a + m.index + j] = v));
+        for (const r of (SPEC.roots && SPEC.roots[w]) || []) (byRoot.get(r) || byRoot.set(r, new Set()).get(r)).add(li);
+      }
+    });
+    const groups = [...new Set([...byRoot.values()].filter((g) => g.size > 1).map((g) => [...g].sort((p, q) => p - q).join(",")))]
+      .map((g) => g.split(",").map(Number));
     const chars = [...new Set(text)], gi = new Map(chars.map((c, i) => [c, i]));
     const draw = () => {
       const cv = document.createElement("canvas");
@@ -940,7 +956,8 @@
       const ends = [], at = [0, 0];
       for (const c of text) { const a = adv[gi.get(c)]; at[0] += a[0]; at[1] += a[1]; ends.push([at[0], at[1]]); }
       GLG.words({ atlas: cv, slot: [SW, SH], cols: COLS, em: EM, origin: [OX, OY], glyphs: chars.length, adv, spread: SPREAD,
-                  text: [...text].map((c) => gi.get(c)), ends, lines, poem: linePoem, space: gi.has(" ") ? gi.get(" ") : -1 });
+                  text: [...text].map((c) => gi.get(c)), ends, lines, poem: linePoem, space: gi.has(" ") ? gi.get(" ") : -1,
+                  shed, groups });
     };
     const sample = chars.join("");
     const fonts = document.fonts && document.fonts.load ? Promise.all(faces.map((f) => document.fonts.load(f, sample))) : Promise.resolve();

@@ -95,9 +95,18 @@ void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Positio
 // back into the line over 3 seconds (the letters bleeding into one another, as wet ink does), and is the line alone for
 // 5 seconds; then the next line of the poems. wCycle: (open: 0 the line, 1 the letters; seconds into the cycle; which
 // cycle) at time T, worked out alike in both passes, so a line gives way exactly where its letters come.
-const W_CYCLE = `vec3 wCycle(uint hs, float T) {
-  float P = 34.0 * pow(PHI, unit(mixh(hs + 101u)) - 0.5), u = (T + 89.0) / P + unit(mixh(hs + 102u)), k = floor(u), tau = (u - k) * P;
-  return vec3(smoothstep(0.0, 2.6, tau) * (1.0 - smoothstep(P - 8.0, P - 5.0, tau)), tau, k);
+// The spirit postures the breath (Aries, 23 Oct 2026: "how our morphology findings can come to posture the changes that
+// happen in DRIFT Poetry ... DRIFT Poetry as the body and Morphology as the Spirit"; layer.js and build_poetry.py cut the
+// words). Over the 2 seconds before a line swells back, each word sheds its affixes as Morphology's law cuts them, the
+// outermost first, and its roots are what bleed back into the line (wPrint; the fraction of the cycle's number carries how
+// far the shedding has gone). And a phi^-3 share of the marks breathe on one beat, 34 seconds long, all opening at the
+// same moment with lines whose words share a root (wLineOf): the simultaneity in which "Space is the only thing capable of
+// maintaining a quality simultaneously in different points of itself" (the Manifesto).
+const W_CYCLE = `bool wRoot(uint hs) { return unit(mixh(hs + 104u)) < 0.236068; }
+vec3 wCycle(uint hs, float T) {
+  bool r = wRoot(hs);
+  float P = r ? 34.0 : 34.0 * pow(PHI, unit(mixh(hs + 101u)) - 0.5), u = (T + 89.0) / P + (r ? 0.0 : unit(mixh(hs + 102u))), k = floor(u), tau = (u - k) * P;
+  return vec3(smoothstep(0.0, 2.6, tau) * (1.0 - smoothstep(P - 8.0, P - 5.0, tau)), tau, k + 0.5 * clamp((tau - P + 10.0) / 2.0, 0.0, 1.0));
 }`;
 
 // The second pass: each pixel takes its cell's colour for the top left pixel, or for the other three.
@@ -2609,6 +2618,7 @@ uniform sampler2D uWAtlas;          // the glyphs, a slot each: the italic, then
 uniform highp sampler2D uWText;     // the poems: per character its glyph and where it ends (em), in each face, the
                                     // text twice over; then each glyph's advance; then where each line begins and ends
 uniform ivec4 uWN;                  // characters, glyphs a face, lines; the row of the advances
+uniform ivec2 uWG;                  // the roots' lines (layer.js): how many groups, and the row their table begins
 uniform vec4 uWAt;                  // a slot's width and height (px), slots a row, an em (px)
 uniform vec2 uWO;                   // where a glyph's origin lies in its slot (px)
 uniform float uWOn;                 // 0 to 1, as they come in
@@ -2636,10 +2646,13 @@ float wGlyph(int g, int f, vec2 e, float lod) {
 }
 /** The ink of a distance field d: an edge aa wide, swollen by dil (letters bleeding into one another, as wet ink does). */
 float wInk(float d, float aa, float dil) { return smoothstep(0.5 - aa, 0.5 + aa, d + dil); }
+/** How far letter i is shed at sh (0 to 1, the 2 seconds before the swell): its code (layer.js) is s + 16 n, its word
+ *  shedding n affixes and this letter at step s; 0, a root or a thing kept, is never shed. */
+float wShed(int i, float sh) { float c = wTx(i).w, n = floor(c / 16.0), s = c - 16.0 * n; return s > 0.0 ? clamp(sh * n - s + 1.0, 0.0, 1.0) : 0.0; }
 /** One line of the poems (characters st to en), x em along it and y em below the middle of its small letters, in face
  *  f, an em e q units high: written on as far as rev em along it (a letter coming a little at a time, worn thin at
- *  first), swollen by dil. */
-float wPrint(float x, float y, int st, int en, int f, float e, float rev, float dil) {
+ *  first), swollen by dil, its affixes shed as far as sh. */
+float wPrint(float x, float y, int st, int en, int f, float e, float rev, float dil, float sh) {
   if (x < -0.6 || abs(y) > 0.8 || en <= st || uWN.x < 2) return 0.0;
   float x0 = wBegin(st, f), X = x0 + x;
   if (X > wBegin(en, f) + 0.6) return 0.0;
@@ -2654,12 +2667,21 @@ float wPrint(float x, float y, int st, int en, int f, float e, float rev, float 
     int i = lo + k;
     if (i < st || i >= en) continue;
     float b = wBegin(i, f), on = clamp((rev - (b - x0)) / 1.5, 0.0, 1.0);
-    d = max(d, wGlyph(int(wTx(i).x), f, vec2(X - b, y - 0.25), lod) - 0.45 * (1.0 - on));
+    d = max(d, wGlyph(int(wTx(i).x), f, vec2(X - b, y - 0.25), lod) - 0.45 * (1.0 - on) - wShed(i, sh));
   }
   return wInk(d, wAA(e), dil);
 }
-/** The line of the poems a mark hs writes in its cycle k (r: which of its rows, where it has several). */
-vec4 wLineOf(uint hs, float k, int r) { return wLine(mixh(hs ^ uint(int(k)) * 0x9E3779B9u ^ uint(r + 1000) * 2654435761u)); }
+/** The line of the poems a mark hs writes in its cycle k (r: which of its rows, where it has several). A root's mark
+ *  (wRoot) writes, in each beat, a line of that beat's root: one of the lines whose words share it (layer.js). */
+vec4 wLineOf(uint hs, float k, int r) {
+  uint h = mixh(hs ^ uint(int(k)) * 0x9E3779B9u ^ uint(r + 1000) * 2654435761u);
+  if (uWG.x > 0 && wRoot(hs)) {
+    int base = uWG.y * 1024;
+    vec4 g = wTx(base + int(mixh(uint(int(k)) * 0x9E3779B9u + 17u) % uint(uWG.x)));
+    return wLine(uint(wTx(base + uWG.x + int(g.x) + int(h % uint(max(g.y, 1.0)))).x));
+  }
+  return wLine(h);
+}
 /** A line of the poems ln written along a mark L em long, x em along the mark and y em off it (from the middle of the
  *  small letters), an em e high, in face f, as its cycle c has it now (wCycle): centred on the mark (or, as print is,
  *  from its start), written on and swollen as the cycle has it, and thinning out where the mark ends. */
@@ -2667,7 +2689,7 @@ float wAlong(float x, float y, float L, vec4 ln, int f, float e, vec3 c, bool le
   if (c.x <= 0.0 || x < -0.6 || x > L) return 0.0;
   int st = int(ln.x), en = int(ln.y);
   float off = left ? 0.0 : max(0.0, 0.5 * (L - (wBegin(en, f) - wBegin(st, f))));
-  float ink = wPrint(x - off, y, st, en, f, e, c.y * 13.0 - 1.0, 0.42 * (1.0 - c.x));
+  float ink = wPrint(x - off, y, st, en, f, e, c.y * 13.0 - 1.0, 0.42 * (1.0 - c.x), fract(c.z) * 2.0);
   return ink * smoothstep(0.0, 0.3, c.x) * (1.0 - smoothstep(L - 1.0, L, x));
 }
 /** A line of the poems along the segment a-b (q units), an em e high, the middle of its small letters on the segment,
@@ -2822,7 +2844,7 @@ vec4 wCalm(uvec4 m, vec2 pc, vec2 cc) {
           int gl = int(wTx(i).x);
           float on = clamp((c.y * 13.0 - 1.0 - (k - k0) * 6.0 / EC) / 1.5, 0.0, 1.0);
           float d = wGlyph(gl, 1, vec2((q.x - 6.0 * k) / EC - 0.5 * (6.0 / EC - texelFetch(uWText, ivec2(gl, uWN.w), 0).y), (q.y - y) / EC - 0.35), wLod(EC));
-          cov = wInk(d - 0.45 * (1.0 - on), wAA(EC), 0.42 * (1.0 - c.x)) * smoothstep(0.0, 0.3, c.x);
+          cov = wInk(d - 0.45 * (1.0 - on) - wShed(i, fract(c.z) * 2.0), wAA(EC), 0.42 * (1.0 - c.x)) * smoothstep(0.0, 0.3, c.x);
         }
         ink = D;
       }
@@ -2853,7 +2875,7 @@ vec4 wGesture(uvec4 m, vec2 p) {
   const float S = 40.0;
   float X = (x + 0.5 * F) / E + 8192.0 + uWTime * P1, n = floor(X / S);
   vec4 ln = wLine(mixh((h + 3u) ^ uint(int(n)) * 0x9E3779B9u));
-  float ink = wPrint(X - n * S - 3.0, (p.y - y) / sqrt(k2) / E, int(ln.x), int(ln.y), 0, E * WQ, 1e9, 0.0);
+  float ink = wPrint(X - n * S - 3.0, (p.y - y) / sqrt(k2) / E, int(ln.x), int(ln.y), 0, E * WQ, 1e9, 0.0, 0.0);   // (the gesture has no breath: nothing shed)
   return vec4(float(m.x & 255u), float((m.x >> 8) & 255u), float((m.x >> 16) & 255u), ink * 0.92);
 }
 `;
@@ -4654,16 +4676,23 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
     // the poems: 1024 characters a row, the text twice over (so a run can pass its end), each as its glyph and where it
     // ends in each face; then a row of the glyphs' advances; then each line's first character and its end
-    const n = w.text.length, rows = Math.ceil((2 * n) / 1024), H = rows + 1 + Math.ceil(w.lines.length / 1024), d = new Float32Array(1024 * H * 4);
+    // (and each character's shed code, layer.js; then the roots' groups: each its first line in the list and how many,
+    // then the list of their lines)
+    const n = w.text.length, rows = Math.ceil((2 * n) / 1024), gRow = rows + 1 + Math.ceil(w.lines.length / 1024);
+    const groups = w.groups || [], G = groups.length, list = groups.flat();
+    const H = gRow + (G ? Math.ceil((G + list.length) / 1024) : 0), d = new Float32Array(1024 * H * 4);
     const t0 = w.ends[n - 1][0], t1 = w.ends[n - 1][1];
-    for (let i = 0; i < 2 * n; i++) { const k = i % n, o = i < n ? 0 : 1; d.set([w.text[k], w.ends[k][0] + o * t0, w.ends[k][1] + o * t1, 0], i * 4); }
+    for (let i = 0; i < 2 * n; i++) { const k = i % n, o = i < n ? 0 : 1; d.set([w.text[k], w.ends[k][0] + o * t0, w.ends[k][1] + o * t1, (w.shed && w.shed[k]) || 0], i * 4); }
     w.adv.forEach((a, g) => d.set([a[0], a[1], 0, 0], (rows * 1024 + g) * 4));
     w.lines.forEach((l, k) => d.set([l[0], l[1], 0, 0], ((rows + 1) * 1024 + k) * 4));
+    let first = 0;
+    groups.forEach((g, j) => { d.set([first, g.length, 0, 0], (gRow * 1024 + j) * 4); first += g.length; });
+    list.forEach((l, i) => d.set([l, 0, 0, 0], (gRow * 1024 + G + i) * 4));
     gl.activeTexture(gl.TEXTURE17);
     gl.deleteTexture(tWText);
     tWText = tex(gl.TEXTURE_2D);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 1024, H, 0, gl.RGBA, gl.FLOAT, d);
-    wordsN = gl.getError() === gl.NO_ERROR ? [n, w.glyphs, w.lines.length, rows] : null;
+    wordsN = gl.getError() === gl.NO_ERROR ? [n, w.glyphs, w.lines.length, rows, G, gRow] : null;
   }
   // ---- the swimmers' lines (WORDS: DRIFT Poetry) ------------------------------------------------------------------
   // Aries, 15 Oct 2026: "I don't mind having the language the most animated aspect of DRIFT Poetry, just as long as
@@ -4905,7 +4934,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   function link() {
     if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i, pending.j].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier", "uWordsOn"]);
-    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster", "uWTime", "uWSpread"]);
+    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster", "uWTime", "uWSpread", "uWG"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     // the formal pass is an addition: without it, the plane is as it was
@@ -5250,6 +5279,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
       if (wordsN) {
         const w = wordsSrc;
         gl.uniform4i(V.uWN, wordsN[0], wordsN[1], wordsN[2], wordsN[3]);
+        gl.uniform2i(V.uWG, wordsN[4], wordsN[5]);
         gl.uniform4f(V.uWAt, w.slot[0], w.slot[1], w.cols, w.em);
         gl.uniform2f(V.uWO, w.origin[0], w.origin[1]);
         gl.uniform1f(V.uWSpread, w.spread || 8);
