@@ -176,6 +176,30 @@ test('the hook speaks only when there is something to say', () => {
   assert.equal(moment({ turns: [] }), '');
 });
 
+test('a usage limit cuts a turn off: a trap on the road, not a reply that skipped its last line', () => {
+  const cut = { type: 'text', text: "You've hit your session limit · resets 2:10am (UTC)" };
+  const edit = { type: 'tool_use', id: 'e', name: 'Edit', input: { file_path: 'a.js', old_string: 'x', new_string: 'y' } };
+  const localCut = [
+    { type: 'user', timestamp: T, message: { content: 'Fix the loop' } },
+    { type: 'assistant', timestamp: T, message: { content: [{ type: 'text', text: 'Fixing it.' }, edit] } },
+    { type: 'assistant', timestamp: T, isApiErrorMessage: true, apiError: 'usage_limit_reached', message: { model: '<synthetic>', content: [cut] } },
+  ];
+  const remoteCut = [
+    { created_at: T, user: { internal_anthropic_catchall: { message: { content: [{ type: 'text', text: 'Fix the loop' }] } } } },
+    { created_at: T, assistant: { internal_anthropic_catchall: { message: { content: [edit] } } } },
+    { created_at: T, assistant: { internal_anthropic_catchall: { is_api_error_message: true, api_error: 'usage_limit_reached', message: { content: [cut] } } } },
+    { created_at: T, result: { internal_anthropic_catchall: { is_error: true, result: cut.text } } },
+  ];
+  for (const lines of [localCut, remoteCut]) {
+    const s = session(lines);
+    assert.ok(!s.turns[0].replies.includes(cut.text), "the CLI's notice is not Claude's reply");
+    assert.match(s.turns[0].failed, /session limit/, 'the result event keeps the notice, not a bare "error"');
+    assert.deepEqual(broken(s.turns[0]), [], 'a turn cut off never got to write its last line');
+    assert.deepEqual(reflect(s).traps, [7]);
+    assert.match(moment(s), /every other day/);
+  }
+});
+
 test('the script takes nothing it does not need: Node\'s own modules only', () => {
   const src = readFileSync(new URL('../gameplan/reflect.mjs', import.meta.url), 'utf8');
   for (const [, from] of src.matchAll(/^import .* from '([^']+)'/gm)) assert.match(from, /^node:/);

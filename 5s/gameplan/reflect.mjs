@@ -50,7 +50,7 @@ export const ROAD = [
   { stage: 7, name: 'Keep it growing',
     advice: 'Daily passes spend the usage window by noon: pace them every other day.',
     signs: /\b(routines?|schedul\w*|cron|triggers?|actions?|sync|daily|hourly|every other day|loop)\b/gi,
-    trap: /usage limit|rate limit|limit reached|resets at/i },
+    trap: /usage.limit|rate.limit|limit.reached|session limit|resets at/i },
 ];
 
 // Where an ask stood: the stage whose words fill it most (ties go to the later stage).
@@ -117,6 +117,11 @@ export function session(lines, id = '') {
       open(e.isSynthetic || /^\s*</.test(text) ? '' : text, e.timestamp);
     } else if (e.type === 'assistant') {
       if (!turn) open('', e.timestamp); // a transcript read from its middle
+      // An API error (a usage limit) arrives as a reply the CLI writes itself: a failure, not Claude's words.
+      if (e.isApiErrorMessage || e.is_api_error_message) {
+        turn.failed = `${textOf(e.message?.content)} ${e.apiError || e.api_error || ''}`.trim() || 'error';
+        continue;
+      }
       for (const b of blocks(e.message)) {
         if (b.type === 'text' && b.text.trim()) turn.replies.push(b.text);
         if (b.type === 'tool_use') {
@@ -127,7 +132,7 @@ export function session(lines, id = '') {
       }
     } else if (e.type === 'result' && turn) {
       cost = Math.max(cost ?? 0, e.total_cost_usd || 0); // a running total, not this turn's
-      if (e.is_error) turn.failed = (e.errors || []).join(' ').slice(0, 400) || 'error';
+      if (e.is_error) turn.failed ||= ((e.errors || []).join(' ') || e.result || 'error').slice(0, 400);
     }
   }
   return { id: id || events.find(e => e.sessionId)?.sessionId || '', turns, cost };
@@ -260,11 +265,12 @@ export function facts(turn) {
 // its skill is on; the last two belong to both.
 export const LAWS = {
   'ceremony a cut still removes': ['caveman', (t, f) => t.replies.some(r => words(r) !== r)], // one cut answers it
-  'a change with no last line on what was skipped': ['ponytail', (t, f) => f.edited && !f.said],
+  // a turn cut off (t.failed) never got to write its last line
+  'a change with no last line on what was skipped': ['ponytail', (t, f) => f.edited && !f.said && !t.failed],
   'new logic with no check left': ['ponytail', (t, f) => f.logic >= 10 && !f.tested],
   'a dependency nobody asked for': ['ponytail', (t, f) => f.unasked > 0],
   'a shortcut with no upgrade trigger': ['ponytail', (t, f) => f.untriggered > 0],
-  'a failure left unsaid': ['ponytail caveman', (t, f) => f.failedUnsaid],
+  'a failure left unsaid': ['ponytail caveman', (t, f) => f.failedUnsaid && !t.failed],
   'a saving nobody measured': ['ponytail caveman', (t, f) => f.claimsSaving],
 };
 
@@ -380,7 +386,7 @@ export function moment(s) {
   const t = s.turns.at(-1);
   if (!t) return '';
   const notes = broken(t);
-  for (const r of ROAD) if (t.tools.some(x => x.error && r.trap.test(x.error))) notes.push(r.advice);
+  for (const r of ROAD) if ([...t.tools.map(x => x.error), t.failed].some(e => e && r.trap.test(e))) notes.push(r.advice);
   return notes.length ? `Reflect: ${notes.join('; ')}`.replace(/[^.]$/, '$&.') : '';
 }
 
