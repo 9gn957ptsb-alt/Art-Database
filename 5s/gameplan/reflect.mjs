@@ -66,16 +66,22 @@ export function stageOf(text) {
 export const SKILLS_ON = '2026-10-22T18:49:57Z';
 
 // Each skill stays on until told otherwise (both SKILL.md files, line 17). Ponytail is on from this
-// repository's CLAUDE.md; caveman's voice only once the person asks for it.
-const ON = { ponytail: /\/ponytail(?![-\w])(?! off)/i, caveman: /\/(caveman|ultracave|megacave)(?![-\w])(?! status)|caveman mode|talk like (a )?caveman/i };
-const OFF = { ponytail: /stop ponytail|\/ponytail off|normal mode/i, caveman: /stop caveman|normal mode/i };
+// repository's CLAUDE.md; caveman's voice only once the person asks for it. A switch counts only when it
+// opens what the person sent, so a path or an install line that names a skill switches nothing.
+const ON = {
+  ponytail: /^\s*\/ponytail(?![-\w])(?!\s+off\b)/i,
+  caveman: /^\s*(?:\/(?:caveman|ultracave|megacave)(?![-\w])(?!\s+(?:off|status)\b)|caveman mode|talk like (?:a )?caveman)/i,
+};
+const OFF = { ponytail: /^\s*(?:stop ponytail|\/ponytail off|normal mode)\b/i, caveman: /^\s*(?:stop caveman|normal mode)\b/i };
+// A slash command as Claude Code records it, read back as typed: "/name args".
+const typed = t => t.replace(/^\s*(?:<command-message>[^<]*<\/command-message>\s*)?<command-name>\/?([^<]*)<\/command-name>(?:\s*<command-args>([^<]*)<\/command-args>)?[\s\S]*$/, '/$1 $2');
 
 // One line of a local transcript ({type, message}) or of a remote one ({created_at, <kind>: {...}}).
 function event(o) {
   if (o.type) return o;
   const kind = Object.keys(o).find(k => k !== 'created_at');
   const v = o[kind] || {};
-  return { type: kind, timestamp: o.created_at, ...(v.internal_anthropic_catchall || v) };
+  return { type: kind, ...(v.internal_anthropic_catchall || v), timestamp: o.created_at };
 }
 
 const blocks = m => (typeof m?.content === 'string' ? [{ type: 'text', text: m.content }] : m?.content || []);
@@ -87,12 +93,14 @@ export function session(lines, id = '') {
   const turns = [];
   const byTool = new Map();
   const on = { ponytail: null, caveman: false };
-  let turn = null;
+  let turn = null, cost = null;
   const open = (ask, at) => turns.push(turn = {
     ask, replies: [], tools: [], at, on: { ponytail: on.ponytail ?? at >= SKILLS_ON, caveman: on.caveman },
   });
-  for (const e of lines.map(event).sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))) {
-    if (e.isSidechain || e.isMeta) continue;
+  let last = ''; // an event with no time takes the one before it, so it keeps its place
+  const events = lines.map(event).map(e => ({ ...e, timestamp: (last = e.timestamp || last) }));
+  for (const e of events.sort((a, b) => a.timestamp.localeCompare(b.timestamp))) {
+    if (e.isSidechain || e.isMeta || e.parent_tool_use_id) continue; // a subagent's work is its own, not the session's
     if (e.type === 'user') {
       const bs = blocks(e.message);
       const results = bs.filter(b => b.type === 'tool_result');
@@ -102,11 +110,10 @@ export function session(lines, id = '') {
       }
       const text = bs.filter(b => b.type === 'text').map(b => b.text).join('\n');
       if (results.length || !text) continue;
-      if (!/^\s*<(task-notification|system-reminder)/.test(text)) {
-        for (const k in on) on[k] = OFF[k].test(text) ? false : ON[k].test(text) ? true : on[k];
-      }
-      // A notification, command or reminder starts a turn too, but it is not the person asking.
-      open(/^\s*</.test(text) ? '' : text, e.timestamp);
+      const said = typed(text);
+      if (!e.isSynthetic) for (const k in on) on[k] = OFF[k].test(said) ? false : ON[k].test(said) ? true : on[k];
+      // A notification, command, reminder or synthetic message starts a turn too, but it is not the person asking.
+      open(e.isSynthetic || /^\s*</.test(text) ? '' : text, e.timestamp);
     } else if (e.type === 'assistant') {
       if (!turn) open('', e.timestamp); // a transcript read from its middle
       for (const b of blocks(e.message)) {
@@ -118,27 +125,34 @@ export function session(lines, id = '') {
         }
       }
     } else if (e.type === 'result' && turn) {
-      turn.cost = (turn.cost || 0) + (e.total_cost_usd || 0);
+      cost = Math.max(cost ?? 0, e.total_cost_usd || 0); // a running total, not this turn's
       if (e.is_error) turn.failed = (e.errors || []).join(' ').slice(0, 400) || 'error';
     }
   }
-  return { id: id || lines.map(event).find(e => e.sessionId)?.sessionId || '', turns };
+  return { id: id || events.find(e => e.sessionId)?.sessionId || '', turns, cost };
 }
 
 // Files and folders → {transcripts: {id: lines}, meta: {id: session record}}.
 export function load(paths) {
   const transcripts = {};
   const meta = {};
-  const files = paths.flatMap(p => (statSync(p).isDirectory() ? readdirSync(p).map(f => join(p, f)) : [p]));
+  const files = paths.flatMap(p => (statSync(p).isDirectory()
+    ? readdirSync(p, { withFileTypes: true }).filter(d => d.isFile()).map(d => join(p, d.name)) : [p]));
   for (const f of files) {
     const raw = readFileSync(f, 'utf8');
+    const name = basename(f).replace(/\.\w+$/, '');
     if (f.endsWith('.jsonl')) {
-      transcripts[basename(f, '.jsonl')] = raw.split('\n').filter(Boolean).flatMap(l => {
-        try { return [JSON.parse(l)]; } catch { return []; } // shortcut: a torn last line is skipped, not repaired
+      transcripts[name] = raw.split('\n').filter(Boolean).flatMap(l => {
+        try { return [JSON.parse(l)]; } catch { return []; } // shortcut: any unparseable line is skipped, repair it if a report ever looks short
       });
-    } else if (raw.includes('{"ccr"')) {
-      const listing = jsonAt(raw, raw.indexOf('{"ccr"'));
-      for (const s of listing?.ccr?.data || []) if (String(s.id).startsWith('session_')) meta[s.id] = s;
+      continue;
+    }
+    // Saved tool results: a session listing, or pages of one session's events (pages may be joined in one file).
+    for (let i = raw.indexOf('{"ccr"'); i >= 0; i = raw.indexOf('{"ccr"', i + 1)) {
+      for (const x of jsonAt(raw, i)?.ccr?.data || []) {
+        if (String(x.id).startsWith('session_')) meta[x.id] = x;
+        else if (x.created_at) (transcripts[name] ||= []).push(x);
+      }
     }
   }
   return { transcripts, meta };
@@ -152,7 +166,9 @@ function jsonAt(raw, i) {
     if (inStr) { if (c === '\\') j++; else if (c === '"') inStr = false; }
     else if (c === '"') inStr = true;
     else if (c === '{' || c === '[') depth++;
-    else if ((c === '}' || c === ']') && --depth === 0) return JSON.parse(raw.slice(i, j + 1));
+    else if ((c === '}' || c === ']') && --depth === 0) {
+      try { return JSON.parse(raw.slice(i, j + 1)); } catch { return null; }
+    }
   }
   return null;
 }
@@ -185,20 +201,25 @@ const CEREMONY = [
   /^\s*(sure|great question|absolutely|certainly|of course|happy to help|i'?d be happy to help)[!,.]*\s*/i,
   /^\s*(let me|i'?ll now|i will now|now i'?ll)\s+/i,
   /\s*(hope this helps|let me know if [^.!?]*|feel free to [^.!?]*)[.!]*\s*$/i,
-  /(?<!\b(?:not|no|never|n't)\s)\b(just|really|basically|actually|simply)\s+/i,
+  /(?<!\b(?:not|no|never)\s|n't\s)\b(just|really|basically|actually|simply)\s+/i,
 ];
 const KEPT = /\b(?:not|never|no|only|except|without|cannot|can't|don't|doesn't|isn't|won't)\b|\d[\d.,:%]*|`[^`]+`|(?:\/[\w.-]+){2,}/gi;
-export const words = skill(
-  s => { for (const c of CEREMONY) if (c.test(s)) return s.replace(c, ''); return s; },
-  s => (s.match(KEPT) || []).map(k => k.toLowerCase()),
-);
+const keep = s => (s.match(KEPT) || []).map(k => k.toLowerCase());
+// Each kind of ceremony is its own cut, so one refused cut does not hide the next.
+const cuts = CEREMONY.map(c => skill(s => s.replace(c, ''), keep));
+export const words = s => cuts.map(cut => cut(s)).find(y => y !== s) ?? s;
 
 // What a turn did, read off its tools and its last reply.
-const count = s => (s ? String(s).split('\n').length : 0);
+const rows = s => (s ? String(s).split('\n') : []);
+// Lines of a that b does not have, each counted once, so an edit's unchanged context is not counted as change.
+const beyond = (a, b) => { const left = rows(b); return rows(a).filter(l => { const i = left.indexOf(l); return i < 0 || !left.splice(i, 1); }).length; };
 const prose = s => s.replace(/```[\s\S]*?```|`[^`\n]*`/g, ''); // code is payload, not prose
 const CODE = /\.(m?js|cjs|ts|tsx|py|sh|rb|go|rs|java|swift|css|html)$/;
 const INSTALL = /\b(?:npm (?:i|install|add)|pnpm add|yarn add|pip3? install|uv add|poetry add|cargo add|go get|gem install|bundle add)\s+(?!-)[@\w]/;
-const TESTS = /\b(?:node --test|npm (?:run )?test|pytest|vitest|jest|unittest|go test|cargo test|assert)\b|\.test\.|_test\.|\btests?\//;
+// Ponytail's check: "one small test or an assert-based self-check". A test runner, a check script, or an
+// inline assert counts; so does a test or an assert written into the code.
+const RUNS_TESTS = /\b(?:node --test|npm (?:run )?(?:test|smoke)|pytest|vitest|jest|unittest|go test|cargo test|assert)\b|\b(?:node|python3?|bash|sh|deno|bun)\s+\S*(?:test|check|smoke|verify)\S*\.(?:m?js|cjs|py|sh)\b/;
+const TEST_FILE = /\.test\.|_test\.|(?:^|\/)tests?\//;
 const SAID = /\b(?:skipp?ed|did ?n[o']t (?:check|test|run|verify)|not (?:checked|tested|verified|run)|untested|unchecked|left out|risk)/i;
 const MARKER = /(?:#|\/\/|\/\*|--|<!--) ?(?:shortcut|ponytail):([^\n]*)/g;
 const TRIGGER = /,.*\b(?:when|once|if|after|upgrade|beyond|past|over)\b|>/i;
@@ -208,15 +229,19 @@ const SAVING = new RegExp(String.raw`\bsav(?:e|ed|es|ings?)\b[^.\n]{0,40}${UNIT}
 export function facts(turn) {
   const f = { added: 0, removed: 0, logic: 0, installs: 0, untriggered: 0, tested: false };
   for (const { name, input: i } of turn.tools) {
-    const added = name === 'Edit' ? count(i.new_string) : name === 'Write' ? count(i.content) : 0;
+    const now = i.new_string ?? i.content ?? i.new_source ?? i.edits?.map(e => e.new_string).join('\n') ?? '';
+    const was = i.old_string ?? i.edits?.map(e => e.old_string).join('\n') ?? '';
+    const path = i.file_path || i.notebook_path || '';
+    const added = beyond(now, was);
     f.added += added;
-    f.removed += name === 'Edit' ? count(i.old_string) : 0;
-    if (CODE.test(i.file_path || '')) f.logic += added;
-    for (const [m, rest] of String(i.new_string || i.content || '').matchAll(MARKER)) {
-      if (!String(i.old_string || '').includes(m) && !TRIGGER.test(rest)) f.untriggered++;
-    }
-    if (name === 'Bash' && INSTALL.test(i.command || '')) f.installs++;
-    if (TESTS.test(name === 'Bash' ? i.command || '' : i.file_path || '')) f.tested = true;
+    f.removed += beyond(was, now);
+    if (CODE.test(path)) f.logic += added;
+    for (const [m, rest] of String(now).matchAll(MARKER)) if (!was.includes(m) && !TRIGGER.test(rest)) f.untriggered++;
+    const cmd = name === 'Bash' ? i.command || '' : '';
+    if (INSTALL.test(cmd)) f.installs++;
+    // reading a test file is not running one
+    const reads = /^\s*(?:cat|sed|grep|head|tail|less|git)\b/.test(cmd);
+    if ((RUNS_TESTS.test(cmd) && !reads) || (now && (TEST_FILE.test(path) || (CODE.test(path) && /\bassert\b/.test(now))))) f.tested = true;
   }
   const last = turn.replies.at(-1) || '';
   f.edited = f.added + f.removed > 0;
@@ -263,8 +288,8 @@ export function reflect(s, meta = {}) {
     title: meta.title || s.id,
     start: meta.created_at || s.turns[0]?.at || '',
     stage: stage?.stage || null,
-    // read from its middle: the first event read came well after the session began
-    partial: Boolean(meta.created_at && s.turns[0] && new Date(s.turns[0].at) - new Date(meta.created_at) > 15 * 60e3),
+    // read from its middle: it opens on no ask of the person's, or well after the session began
+    partial: s.turns[0]?.ask === '' || Boolean(meta.created_at && s.turns[0] && new Date(s.turns[0].at) - new Date(meta.created_at) > 15 * 60e3),
     errors: errors.length,
     traps: ROAD.filter(r => errors.some(e => r.trap.test(e))).map(r => r.stage),
     ...measure(s.turns),
@@ -273,7 +298,7 @@ export function reflect(s, meta = {}) {
     after: measure(s.turns.filter(t => t.at >= SKILLS_ON)),
     laws,
     judged,
-    cost: meta.external_metadata?.usage?.cost_usd ?? s.turns.reduce((n, t) => n + (t.cost || 0), 0),
+    cost: meta.external_metadata?.usage?.cost_usd ?? s.cost ?? null,
   };
 }
 
@@ -325,7 +350,7 @@ export function report(rows) {
   out.push('', '| Date | Session | Stage | Turns | Errors | Replies still | Lines + / − | Laws broken | Cost (list price) |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of rows) {
     const n = Object.values(r.laws).reduce((a, b) => a + b, 0);
-    out.push(`| ${day(r.start)} | ${r.title} | ${r.stage || '—'} | ${r.turns ? r.turns + (r.partial ? '+' : '') : '—'} | ${r.turns ? r.errors : '—'} | ${pct(r.still, r.replies)} | ${r.turns ? `${r.added} / ${r.removed}` : '—'} | ${r.turns ? n : '—'} | $${(r.cost || 0).toFixed(2)} |`);
+    out.push(`| ${day(r.start)} | ${r.title} | ${r.stage || '—'} | ${r.turns ? r.turns + (r.partial ? '+' : '') : '—'} | ${r.turns ? r.errors : '—'} | ${pct(r.still, r.replies)} | ${r.turns ? `${r.added} / ${r.removed}` : '—'} | ${r.turns ? n : '—'} | ${r.cost == null ? '—' : `$${r.cost.toFixed(2)}`} |`);
   }
   if (rows.some(r => r.partial)) out.push('', 'A + after the turns: the transcript was read from its middle, so only its later turns are counted.');
   out.push('', NOT_CHECKED);
@@ -343,10 +368,10 @@ export const selfCheck = md => broken({ replies: [md], tools: [{ name: 'Write', 
 export function moment(s) {
   const t = s.turns.at(-1);
   if (!t) return '';
-  const asked = s.turns.filter(x => x.ask);
   const st = t.ask && stageOf(t.ask);
+  const was = s.turns.slice(0, -1).map(x => x.ask && stageOf(x.ask)).filter(Boolean).at(-1); // the last stage an ask named
   const notes = [];
-  if (st && st !== (asked.length > 1 && stageOf(asked.at(-2).ask))) notes.push(`stage ${st.stage}, ${st.name}`);
+  if (st && st !== was) notes.push(`stage ${st.stage}, ${st.name}`);
   notes.push(...broken(t));
   for (const r of ROAD) if (t.tools.some(x => x.error && r.trap.test(x.error))) notes.push(r.advice);
   return notes.length ? `Reflect: ${notes.join('; ')}`.replace(/[^.]$/, '$&.') : '';

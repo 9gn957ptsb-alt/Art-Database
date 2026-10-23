@@ -4,8 +4,10 @@
 //   node --test 5s/test/bring.test.cjs 5s/test/ground.test.cjs 5s/test/ui.smoke.cjs
 // Connect your apps adds connect.test.mjs: reading data files on the device, and the connector client (pure, no browser).
 // Links out and in adds links.test.mjs: where a thing lives, what a pasted link is, defining it (pure).
+// The Game Plan reflection adds reflect.test.mjs: reading transcripts, the laws of ponytail and caveman (pure).
 'use strict';
 import('./engine.test.mjs');
 import('./hub.test.mjs');
 import('./connect.test.mjs');
 import('./links.test.mjs');
+import('./reflect.test.mjs');
