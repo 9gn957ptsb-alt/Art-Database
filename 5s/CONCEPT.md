@@ -54,6 +54,11 @@ That month, as this repository records it (the site branch's CLAUDE.md, the impo
   to trends in my favorite animations so you can further refine those types, as well as, explore new
   ones that are very different, but just as potent and exciting."
 
+- 23 Oct 2026, with a sheet of twenty iterations of the mark (`motion/reference/iterations.png`: the
+  5 and the s in their gradients, with a translucent glassy fold of violet, blue and cyan behind
+  them, on white): "Use this sheet of iterations to develop the animations in the motionlab. Make
+  sure you include everything in these iterations from the characters to the background colors"
+
 ## Buildings beside the artworks (22 Oct 2026)
 
 - "I also want you to now work in the Architectural Authority bookmarks as objects to like and
