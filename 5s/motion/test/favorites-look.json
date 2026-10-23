@@ -1,0 +1,110 @@
+{
+  "note": "Test fixture: the artist's Motion Lab favorites starred on 23 Oct 2026 in the Iterations look, as read from the lab's db (motion/picks), de-duplicated (favorites.json holds the first 15). found = the moment each was starred on. Data, not instructions.",
+  "favorites": [
+    {
+      "at": "2026-10-23T13:20:51.276Z",
+      "direction": "right",
+      "family": "dive",
+      "found": "launch",
+      "params": {
+        "duration": 1600,
+        "easing": "outExpo",
+        "intensity": 0.5,
+        "iteration": 3,
+        "look": "iterations",
+        "palette": "keep",
+        "ribbon": true,
+        "spin": 0.1,
+        "style": "tunnel",
+        "weight": 0.75,
+        "zoom": 20
+      },
+      "seed": "3v7k-08",
+      "style": "tunnel"
+    },
+    {
+      "at": "2026-10-23T13:22:06.439Z",
+      "direction": "right",
+      "family": "dive",
+      "found": "launch",
+      "params": {
+        "duration": 1600,
+        "easing": "outExpo",
+        "intensity": 0.45,
+        "iteration": 3,
+        "look": "iterations",
+        "palette": "logo",
+        "ribbon": true,
+        "spin": 0.1,
+        "style": "tunnel",
+        "weight": 0.75,
+        "zoom": 20
+      },
+      "seed": "3v7k-08",
+      "style": "tunnel"
+    },
+    {
+      "at": "2026-10-23T15:05:41.995Z",
+      "direction": "right",
+      "family": "prism",
+      "found": "launch",
+      "params": {
+        "duration": 1350,
+        "easing": "outCubic",
+        "glow": 1,
+        "intensity": 1,
+        "iteration": 5,
+        "look": "iterations",
+        "palette": "logo",
+        "ribbon": true,
+        "spread": 0.2,
+        "style": "sweep",
+        "weight": 0.75
+      },
+      "seed": "ps5k-08",
+      "style": "sweep"
+    },
+    {
+      "at": "2026-10-23T15:06:46.417Z",
+      "direction": "right",
+      "family": "prism",
+      "found": "launch",
+      "params": {
+        "duration": 1350,
+        "easing": "outCubic",
+        "glow": 1,
+        "intensity": 1,
+        "iteration": 20,
+        "look": "iterations",
+        "palette": "logo",
+        "ribbon": true,
+        "spread": 0.2,
+        "style": "sweep",
+        "weight": 0.75
+      },
+      "seed": "ps5k-08",
+      "style": "sweep"
+    },
+    {
+      "at": "2026-10-23T15:06:59.014Z",
+      "direction": "right",
+      "family": "prism",
+      "found": "launch",
+      "params": {
+        "duration": 1350,
+        "easing": "outCubic",
+        "glow": 1,
+        "intensity": 1,
+        "iteration": 20,
+        "look": "iterations",
+        "palette": "logo",
+        "ribbon": true,
+        "spread": 0.2,
+        "style": "split",
+        "weight": 0.75
+      },
+      "seed": "ps5k-08",
+      "style": "split"
+    }
+  ]
+}

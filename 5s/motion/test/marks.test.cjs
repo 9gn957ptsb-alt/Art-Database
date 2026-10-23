@@ -8,7 +8,7 @@
  * gradient spread along the whole stroke and even translucency; ribbon(); rng determinism; palettes in
  * both themes; easing end points; mix(); fit(); Motion.register validation; Motion.render clamping,
  * restoring the context, determinism and reduced motion; the Iterations look (presets, palettes, the stroke's
- * profile/caps/cut, the glass, render's look param). Then, with the families loaded: the 15 favorites resolve to
+ * profile/caps/cut, the glass, render's look param). Then, with the families loaded: the favorites resolve to
  * exactly their saved params, no defaults carry a look, and no family's cache leaks between looks. Exits 1 on any failure.
  */
 'use strict';
@@ -467,9 +467,10 @@ function lookSuite(favorites) {
     catch (e) { out.push({ name, ok: false, detail: String(e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e) }); }
   };
   const canon = (o) => JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]]));
-  check('look: each of the 15 favorites resolves to exactly its saved params (no look key)', () => {
-    if (favorites.length !== 15) return favorites.length + ' favorites';
-    const bad = favorites.filter((f) => { const r = Motion.resolve(f.family, f.params); return canon(r) !== canon(f.params) || 'look' in r || 'iteration' in r; });
+  check('look: every favorite resolves to exactly its saved params; the 15 classic ones carry no look key', () => {
+    const classic = favorites.filter((f) => !('look' in f.params));
+    if (classic.length !== 15) return classic.length + ' classic favorites';
+    const bad = favorites.filter((f) => { const r = Motion.resolve(f.family, f.params); return canon(r) !== canon(f.params) || (!('look' in f.params) && ('look' in r || 'iteration' in r)); });
     return bad.length ? 'changed: ' + bad.map((f) => f.family + '/' + f.params.style).join(', ') : true;
   });
   check('look: no family\'s defaults carry look or iteration; the shared options are as before', () => {
@@ -534,7 +535,8 @@ function lookSuite(favorites) {
     const results = await page.evaluate(suite);
     const fams = fs.readdirSync(path.join(path.dirname(MARKS), 'families')).filter((f) => f.endsWith('.js') && f !== 'zz-test.js').sort();
     for (const f of fams) await page.addScriptTag({ path: path.join(path.dirname(MARKS), 'families', f) });
-    const favorites = JSON.parse(fs.readFileSync(path.join(__dirname, 'favorites.json'), 'utf8')).favorites;
+    const favorites = JSON.parse(fs.readFileSync(path.join(__dirname, 'favorites.json'), 'utf8')).favorites
+      .concat(JSON.parse(fs.readFileSync(path.join(__dirname, 'favorites-look.json'), 'utf8')).favorites);
     results.push(...await page.evaluate(lookSuite, favorites));
     for (const r of results) {
       if (!r.ok) failed++;
