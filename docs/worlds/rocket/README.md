@@ -399,6 +399,26 @@ bar and none grabs again within it; the third alarm walks him out, all he found 
 head is out they watch the body, and a grab of the body puts him under his tree. The direction line names a guard
 chasing; a tap on one says what it is.
 
+## The ride, and space
+
+The rocket built (by the four pieces or the ten coins), Launch puts him in it: the camera behind its nose as far as
+the rocket is tall, it climbs as it always has, and the stick moves it across at his walk within the crash site's
+clearing (14 m), until it passes the height of the figure in the sky over the wreck ("a certain threshold in the
+sky"): there control goes, the camera stops and watches it go, and at twice that height and the rocket's own, space.
+
+Space (the artist, 21 Oct 2026, in the scoping note `notes/holographic-mr-pearl/specs/COINS-AND-SPACE.md`): third
+person behind him in the pilot seat, his head AIM below the centre as the hologram's camera holds it, the rocket he
+built lying along his way under him, the windshield's frame in the figure's three tones, and the sight's mark (its
+figure and holding circles, at the sight's size) slightly below the centre (AIM / φ², 7.4°). The stick flies the ship
+(at his turn over φ³; it flies at the hologram's speed, 22.5 m/s); a tap, the jump or Space fires both guns, whose
+shots converge on the mark's line at FAR / φ³ (99 m) and cross the far plane in a beat, one a half beat. The enemies
+are the unit's block made the sphere study's size (3 m), coming in at the ship and across it at its speed over φ, two
+at a time from FAR / φ ahead; a shot within a block's half diagonal brings one down, its six bars flying. The header
+counts them ("Space · 3 of 10 down"). The tenth down, one comes head on and fires; hit, the ship tumbles for a bar and
+he comes down hard again: the place built anew, the pieces and the coins where they lay, the rocket to build again by
+either way; what he read is kept. The stars and three galaxies are drawn as the unit, triangles: the deep-space
+photographs the site shows cannot come into an Artifact.
+
 ## Escapes made from what the site holds
 
 Every adventure is generated, by a seed, from the art database the site has put together on
@@ -536,7 +556,7 @@ aiming; Escape lowers it.
   page's marks (`blockMark()`, the model seen down its diagonal), the figure in the sky
   (`figureBeams`, `drawnIn`, `placeSky`), the homage's figures (`HOM_VS`, `homageUpload`), the works'
   pictures, the hand, the opening, the labels and the notes, the sight (`raiseSight`, `sightCam`, `drawSight`) and
-  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the coins (`coinGrid`, `coinsStep`, `takeCoin`, `drawCoins3`), the guards (`initGuards`, `guardsStep`, `sees`, `grab`, `drawGuards`), the rocket, the start screen.
+  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the coins (`coinGrid`, `coinsStep`, `takeCoin`, `drawCoins3`), the guards (`initGuards`, `guardsStep`, `sees`, `grab`, `drawGuards`), the ride and space (`launch`, `rideCam`, `spaceBegin`, `spaceStep`, `spaceFrame`, `crash`), the rocket, the start screen.
 - `pearl.js` — Mr Pearl, no DOM: his body built of the unit from his form (`build`), the walk (`pose`, with the
   throwing arm, `act.right`, `act.fling`, and `build`'s `throwArm`; `phaseStep`), his place in the world (`place`),
   and his head's own program (`HEAD_FS`, the true sphere). `rocket.js` draws them (`drawPearl`) and holds the views

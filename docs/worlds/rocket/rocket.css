@@ -146,6 +146,9 @@ select { min-height: 40px; padding: 8px 12px; border: 1px solid var(--hair); bor
 /* While you come to, everything else steps back. */
 .top, .corner, .notes, .near, .foot, .jump, .label { transition: opacity 0.6s steps(6); }
 body[data-film] .views, body[data-film] .top, body[data-film] .corner, body[data-film] .notes, body[data-film] .near, body[data-film] .foot, body[data-film] .jump, body[data-film] .label, body[data-film] .tag, body[data-film] .sight-tag, body[data-film] .toast { opacity: 0; pointer-events: none; }
+/* space: the stick, the jump (Fire) and the header's line (the tally) only; the rest is the planet's */
+body[data-ride] .views, body[data-ride] .foot, body[data-ride] .corner, body[data-ride] .notes, body[data-ride] .near, body[data-ride] .label, body[data-ride] .tag, body[data-ride] .sight-tag,
+body[data-space] .views, body[data-space] .foot, body[data-space] .corner, body[data-space] .notes, body[data-space] .near, body[data-space] .label, body[data-space] .tag, body[data-space] .sight-tag, body[data-space] .alarms, body[data-space] .pearls, body[data-space] .coins, body[data-space] .pieces { display: none; }
 @media (max-width: 560px) {
   .near { top: calc(136px + env(safe-area-inset-top, 0px)); }
   .label { left: 12px; right: 12px; width: auto; grid-template-columns: 76px 1fr; gap: 12px; }

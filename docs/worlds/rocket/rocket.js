@@ -785,7 +785,7 @@
   // The view the game kept until 21 Oct 2026 (third or first person): first person is no longer a choice, so a kept
   // one is let go and the view is third person.
   try { localStorage.removeItem("rocket-view"); } catch (e) { /* nothing was kept */ }
-  var input = { fwd: 0, side: 0, jump: false, keys: {} };
+  var input = { fwd: 0, side: 0, jump: false, keys: {}, fire: false };
   var mode = "break", slot = 0;
 
   function boxHits(x, y, z) {
@@ -917,6 +917,7 @@
     return [d[0] / L, d[1] / L, d[2] / L];
   }
   function act(px, py, forcePlace) {
+    if (space) { input.fire = true; return; }
     if (intro || launched || !vp) { return; }
     var dir = dirAt(px, py), hit = pick(dir);
     // a pearl lying within his reach, tapped with the sight lowered, is back in his hand (the throw, 20 Oct 2026)
@@ -984,7 +985,7 @@
   // head) and comes at most straight over him; from his own eyes (a stone, where you woke: the third figure is looked
   // up at), as the hologram, and with the sight up (as from his eyes: a lob is aimed high; the farthest throw is aimed
   // 39.5 deg up), to nearly straight up and down.
-  function clampPitch(p) { return !Hd && !onStone && !sight.up ? clampV(p, TP_DOWN, TP_UP) : clampV(p, -1.5, 1.5); }
+  function clampPitch(p) { return space ? clampV(p, -1.2, 1.2) : !Hd && !onStone && !sight.up ? clampV(p, TP_DOWN, TP_UP) : clampV(p, -1.5, 1.5); }
   // Where his head sits on the body (the hologram's seat).
   function seat() { return [P.x, P.y + PEARL.headY, P.z]; }
   function isOpen(b) { return b === B.AIR || b === B.WATER; }
@@ -1034,7 +1035,7 @@
       onStone = stone;
       if (!Hd) { blend = { from: camLast, t0: now, dur: T_VIEW, pitchFrom: P.pitch, pitchTo: stone || sight.up ? null : clampV(P.pitch, TP_DOWN, TP_UP) }; camD = 1e9; }
     }
-    var c = intro || launched ? firstCam(eyeH) : Hd ? holoCam(dt) : sight.up ? sightCam(dt) : onStone ? firstCam(EYE) : thirdCam(dt);
+    var c = intro ? firstCam(eyeH) : launched ? (ride ? rideCam() : firstCam(eyeH)) : Hd ? holoCam(dt) : sight.up ? sightCam(dt) : onStone ? firstCam(EYE) : thirdCam(dt);
     if (blend && !intro) {
       // (a blend held at s for a photograph, holdView, never ends)
       var s = blend.hold != null ? blend.hold : smooth((now - blend.t0) / 1000 / blend.dur), f = blend.from, a = c.from || c.e;
@@ -1414,8 +1415,9 @@
     if (!shards.length) { return; }
     shards = shards.filter(function (q) {
       q.t += dt;
-      if (q.t >= BEAT) { return false; }
+      if (q.t >= (q.life || BEAT)) { return false; }
       if (q.lies) { return true; }
+      if (q.free) { q.c = [q.c[0] + q.v[0] * dt, q.c[1] + q.v[1] * dt, q.c[2] + q.v[2] * dt]; q.turn += Math.PI / SWING * dt; return true; }
       var wet = w.get(floor(q.c[0]), floor(q.c[1]), floor(q.c[2])) === B.WATER;
       q.v[1] = wet ? max(-2.5, q.v[1] - 6 * dt) : q.v[1] - 25 * dt;
       var c = [q.c[0] + q.v[0] * dt, q.c[1] + q.v[1] * dt, q.c[2] + q.v[2] * dt];
@@ -2542,6 +2544,286 @@
     gl.bindVertexArray(null);
   }
 
+  /* ---- the ride, and space -----------------------------------------------------------------------------------------
+     The artist, 21 Oct 2026 (the scoping note, notes/holographic-mr-pearl/specs/COINS-AND-SPACE.md, keeps the words):
+     the rocket built, by the four pieces or the ten coins, he rides it up, steered by the stick, and past "a certain
+     threshold in the sky" control goes and the camera watches him blast off; then space: "in his rockets ... shoot 10
+     enemy spacecraft down as they fly by", third person behind him in the pilot seat, the windshield's frame, the tips of
+     the ship's guns and their lasers, "a reflex target symbol ... slightly below the center of the windshield", the
+     stick flying the ship; "once you shoot 10 you get shot by an enemy aircraft and crash down back to the planet where
+     you have to assemble the rocket either by collecting 10 coins or finding all the parts".
+     The ride: the rocket climbs as it always has (2.4 (t - 1)^2 m); the stick moves it across at his walk, within the
+     crash site's clearing (14 m); the camera follows it as far behind its nose as the rocket is tall (13 blocks); the
+     threshold is the height of the figure in the sky over the wreck, past which the figure is behind him; there the
+     camera stops and watches; at twice that height and the rocket's own, space.
+     Space, every number his or the song's: the ship flies at the hologram's speed (22.5 m/s) and turns at his turn over
+     phi cubed; he sits in it as the hologram's camera sits behind his head (HOLO_D), his head AIM below the centre;
+     the mark (the sight's figure, its size) is AIM / phi^2 below the centre (7.4 degrees: slightly below); the guns'
+     shots converge on the mark's line at FAR / phi^3 (99 m) and cross the far plane in a beat; one a half beat (SWING);
+     the enemies are the block of the unit, white, made the sphere study's size (F(4) = 3 m), each held in a triangle on
+     the windshield as far off as it is seen (it is small and fades into the black), coming in at the ship and across
+     it at its speed over phi, two at a time from FAR / phi ahead; a shot that passes within a block's half diagonal of
+     one brings it down, its six bars flying; the tenth down, one comes head on and fires; hit, the ship tumbles for a
+     bar and he comes down hard again: the place as it was, the pieces and the coins where they lay. */
+  var ride = null, space = null, enemyCh = null;
+  var SPACE = { N: 10, AHEAD: FAR / PHI, ZERO: FAR / (PHI * PHI * PHI), SHOT: FAR / BEAT, R: 1.5 * Math.sqrt(3), SIZE: 3 };
+  function spaceV() { return HOLO_V; }
+  function spaceTurn() { return TURN / (PHI * PHI * PHI); }
+  function markDrop() { return AIM / (PHI * PHI); }
+  // The height the ride is his to steer: the middle of the figure in the sky over the wreck.
+  function rideTop() {
+    if (!skyFig) { return 60; }
+    var s = 0, n = 0;
+    skyFig.hexes.forEach(function (P8) { P8.forEach(function (p) { s += p[1]; n += 1; }); });
+    return max(13, s / n - place.wreck.y);
+  }
+  function rideStep(dt, c) {
+    if (!ride || ride.cut || space) { return; }
+    var L = 14;
+    ride.dx = clampV(ride.dx + (Math.sin(P.yaw) * c.fwd + Math.cos(P.yaw) * c.side) * WALK * dt, -L, L);
+    ride.dz = clampV(ride.dz + (-Math.cos(P.yaw) * c.fwd + Math.sin(P.yaw) * c.side) * WALK * dt, -L, L);
+  }
+  function rideCam() {
+    var wr = place.wreck, nose = [wr.x + 0.5 + ride.dx, wr.y + rocketLift + 13, wr.z + 0.5 + ride.dz];
+    if (ride.cut) {
+      var d = [nose[0] - ride.cut[0], nose[1] - ride.cut[1], nose[2] - ride.cut[2]];
+      return { e: ride.cut, yaw: Math.atan2(d[0], -d[2]), pitch: Math.atan2(d[1], hypot(d[0], d[2])) };
+    }
+    var f = lookDir(P.yaw, P.pitch - AIM);
+    return { e: [nose[0] - f[0] * 13, nose[1] - f[1] * 13, nose[2] - f[2] * 13], yaw: P.yaw, pitch: P.pitch };
+  }
+  // Past the threshold: the camera stays where it is and watches; past twice it and the rocket's height: space.
+  function rideCheck(lift) {
+    if (!ride || space) { return; }
+    if (!ride.cut && lift >= ride.top) { ride.cut = eye.slice(); say("Past the figure in the sky: the rocket has you now.", true); }
+    if (lift >= 2 * ride.top + 13) { spaceBegin(); }
+  }
+  // Far from the place's grid (x below nought is air there), so nothing of the place is met.
+  var SPACE_O = [-1e4, 1e4, -1e4];
+  function spaceBegin() {
+    space = { pos: SPACE_O.slice(), down: 0, enemies: [], shots: [], fired: -1e9, phase: "fight", made: 0, hitAt: 0, sky: spaceSky(), black: 0 };
+    P.yaw = 0; P.pitch = 0; P.face = 0; blend = null;
+    shards = []; swing = swingNext = null;
+    if (!enemyCh) { enemyCh = meshBlocks([[0, 0, 0, B.WHITE]]); enemyCh.tex = voxTexture(new Uint8Array([B.WHITE]), 1, 1, 1); }
+    document.body.dataset.space = "true";
+    $("jump").setAttribute("aria-label", "Fire");
+    $("where").textContent = "Space · 0 of " + SPACE.N + " down";
+    say("Space. The stick flies the ship; a tap, the jump or Space fires. Ten of them come by: bring them down.", true);
+  }
+  // The stars and three galaxies, as directions (the deep-space photographs cannot come into an Artifact: drawn here as
+  // the unit, triangles), the same every time.
+  function spaceSky() {
+    var r = Pl.rng(seed * 7 + 3), stars = [], gal = [];
+    var dirOf = function () { var z = 2 * r() - 1, a = 2 * Math.PI * r(), q = Math.sqrt(1 - z * z); return [q * Math.cos(a), z, q * Math.sin(a)]; };
+    for (var i = 0; i < 700; i += 1) { stars.push({ d: dirOf(), s: 0.6 + 1.6 * r() * r(), a: 0.35 + 0.65 * r() }); }
+    for (var g = 0; g < 3; g += 1) {
+      var c = dirOf(), u = norm([c[1], -c[0], 0.3]), v = norm([c[1] * u[2] - c[2] * u[1], c[2] * u[0] - c[0] * u[2], c[0] * u[1] - c[1] * u[0]]), k = 0.06 + 0.05 * r(), tilt = 0.4 + 0.5 * r();
+      var warm = r() < 0.5;
+      for (var j = 0; j < 260; j += 1) {
+        var arm = j % 2, t = r() * 3.2, rad = k * (0.12 + t / 3.2), a2 = t * 2.4 + arm * Math.PI + (r() - 0.5) * 0.5;
+        var x = Math.cos(a2) * rad, y = Math.sin(a2) * rad * tilt;
+        gal.push({ d: norm([c[0] + u[0] * x + v[0] * y, c[1] + u[1] * x + v[1] * y, c[2] + u[2] * x + v[2] * y]), s: 0.8 + 1.2 * r(), a: 0.25 + 0.5 * (1 - t / 3.2), c: warm ? (r() < 0.6 ? "243,201,139" : "234,223,205") : (r() < 0.6 ? "168,190,234" : "234,223,205") });
+      }
+    }
+    return { stars: stars, gal: gal };
+  }
+  function spaceAxes() { var f = lookDir(P.yaw, P.pitch), r = [Math.cos(P.yaw), 0, Math.sin(P.yaw)], u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]]; return { f: f, r: r, u: u }; }
+  // (as far from his head as the third person's camera is at rest, TP_HEAD, his head AIM below the centre)
+  function spaceCam() {
+    var f = lookDir(P.yaw, P.pitch - AIM), h = space.pos;
+    return { e: [h[0] - f[0] * TP_HEAD, h[1] - f[1] * TP_HEAD, h[2] - f[2] * TP_HEAD], yaw: P.yaw, pitch: P.pitch };
+  }
+  // The guns' tips, either side of him under his shoulders and ahead (a step out, half his height down, a step on).
+  function gunTips() {
+    var A = spaceAxes(), h = space.pos, s = PEARL.leg, dn = PEARL.top / 2;
+    return [-1, 1].map(function (k) { return [0, 1, 2].map(function (i) { return h[i] + A.r[i] * k * s - A.u[i] * dn + A.f[i] * s; }); });
+  }
+  function fire(now) {
+    if (!space || (space.phase !== "fight" && space.phase !== "last") || now - space.fired < SWING * 1000) { return; }
+    space.fired = now;
+    var e = spaceCam().e, d = lookDir(P.yaw, P.pitch - markDrop()), A = [e[0] + d[0] * SPACE.ZERO, e[1] + d[1] * SPACE.ZERO, e[2] + d[2] * SPACE.ZERO];
+    gunTips().forEach(function (t) { space.shots.push({ p: t.slice(), d: norm([A[0] - t[0], A[1] - t[1], A[2] - t[2]]), life: FAR / SPACE.SHOT, mine: true }); });
+  }
+  function spawn() {
+    var A = spaceAxes(), r = Pl.rng(seed * 31 + space.made * 7 + 1), side = (r() < 0.5 ? -1 : 1) * (0.5 + 0.5 * r()), up = (r() - 0.5) * 0.6, V = spaceV() / PHI;
+    var p = [0, 1, 2].map(function (i) { return space.pos[i] + A.f[i] * SPACE.AHEAD + A.r[i] * side * SPACE.AHEAD / PHI / 2 + A.u[i] * up * SPACE.AHEAD / PHI / 2; });
+    // in at the ship, and across its way
+    var v = [0, 1, 2].map(function (i) { return -A.f[i] * V - A.r[i] * Math.sign(side) * V / PHI; });
+    space.made += 1;
+    space.enemies.push({ p: p, v: v, spin: r() * 6, last: false });
+  }
+  function spaceBurst(e) {
+    var tn = tonesOf(w.pal[B.WHITE] || [230, 230, 230]), tones = new Float32Array(9), V = spaceV() / PHI;
+    for (var i = 0; i < 3; i += 1) { for (var j = 0; j < 3; j += 1) { tones[i * 3 + j] = tn[i][j] / 255; } }
+    FIGURE.forEach(function (f) {
+      var c = [(f[0] + f[3]) / 2 - 0.5, (f[1] + f[4]) / 2 - 0.5, (f[2] + f[5]) / 2 - 0.5], dir = norm([c[0] + 0.01, c[1] + 0.01, c[2] + 0.01]);
+      shards.push({ c: [e.p[0] + c[0] * SPACE.SIZE, e.p[1] + c[1] * SPACE.SIZE, e.p[2] + c[2] * SPACE.SIZE], size: [(f[3] - f[0]) * SPACE.SIZE, (f[4] - f[1]) * SPACE.SIZE, (f[5] - f[2]) * SPACE.SIZE],
+                    v: [e.v[0] + dir[0] * V, e.v[1] + dir[1] * V, e.v[2] + dir[2] * V], ax: [dir[1], -dir[0], 0.3], turn: 0, t: 0, tones: tones, free: true, life: BAR });
+    });
+  }
+  function spaceStep(dt, now) {
+    var c = controls(dt), A, i;
+    if (space.phase === "fight" || space.phase === "last") {
+      P.yaw += c.side * spaceTurn() * dt; P.pitch = clampV(P.pitch + c.fwd * spaceTurn() * dt, -1.2, 1.2);
+      if (c.up > 0 || input.fire) { fire(now); }
+    } else if (space.phase === "hit") {
+      // the ship tumbles, nose down, for a bar; then he comes down hard again
+      P.yaw += TURN / PHI * dt; P.pitch = max(-1.4, P.pitch - spaceTurn() * dt);
+      space.black = min(1, (now - space.hitAt) / 1000 / BAR);
+      if (space.black >= 1) { crash(); return; }
+    }
+    input.fire = false;
+    A = spaceAxes();
+    for (i = 0; i < 3; i += 1) { space.pos[i] += A.f[i] * spaceV() * dt; }
+    // the enemies: two at a time until ten are down; then the last, head on
+    if (space.phase === "fight") { while (space.enemies.length < 2 && space.down + space.enemies.length < SPACE.N) { spawn(); } }
+    space.enemies = space.enemies.filter(function (e) {
+      for (var k = 0; k < 3; k += 1) { e.p[k] += e.v[k] * dt; }
+      e.spin += Math.PI / BEAT * dt;
+      var d = [e.p[0] - space.pos[0], e.p[1] - space.pos[1], e.p[2] - space.pos[2]], ahead = d[0] * A.f[0] + d[1] * A.f[1] + d[2] * A.f[2];
+      if (e.last && !e.fired && hypot(d[0], d[1], d[2]) < SPACE.ZERO) {
+        e.fired = true;
+        space.shots.push({ p: e.p.slice(), d: norm([-d[0], -d[1], -d[2]]), life: FAR / SPACE.SHOT * PHI * PHI, mine: false, v: SPACE.SHOT / (PHI * PHI) });
+      }
+      return ahead > -2 * SPACE.ZERO / PHI && hypot(d[0], d[1], d[2]) < FAR * 1.2;
+    });
+    // the shots, and what they meet
+    space.shots = space.shots.filter(function (s) {
+      var v = s.v || SPACE.SHOT, p0 = s.p.slice();
+      for (var k = 0; k < 3; k += 1) { s.p[k] += s.d[k] * v * dt; }
+      s.life -= dt;
+      if (!s.mine) {
+        var dd = segDist(space.pos, p0, s.p);
+        if (dd < PEARL.top && space.phase === "last") { space.phase = "hit"; space.hitAt = now; say("Hit. The ship goes down.", false); return false; }
+        return s.life > 0;
+      }
+      var hit = null;
+      space.enemies.forEach(function (e) { if (!hit && segDist(e.p, p0, s.p) < SPACE.R) { hit = e; } });
+      if (hit) {
+        space.enemies.splice(space.enemies.indexOf(hit), 1);
+        spaceBurst(hit);
+        if (!hit.last) {
+          space.down += 1;
+          $("where").textContent = "Space · " + space.down + " of " + SPACE.N + " down";
+          if (space.down >= SPACE.N) { say("Ten down. One more comes, head on.", true); space.phase = "last"; lastOne(); }
+          else { say(space.down + " of " + SPACE.N + " down.", true); }
+        } else { lastOne(); }
+        return false;
+      }
+      return s.life > 0;
+    });
+    if (space.phase === "last" && !space.enemies.length) { lastOne(); }
+  }
+  // the last: straight at the ship, a little above its line, at the ship's speed over phi
+  function lastOne() {
+    var A = spaceAxes(), V = spaceV() / PHI;
+    space.enemies.push({ p: [0, 1, 2].map(function (i) { return space.pos[i] + A.f[i] * SPACE.AHEAD + A.u[i] * 4; }), v: A.f.map(function (q) { return -q * V; }), spin: 0, last: true });
+  }
+  function segDist(c, a, b) {
+    var ab = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], L2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2];
+    var t = L2 > 0 ? clampV(((c[0] - a[0]) * ab[0] + (c[1] - a[1]) * ab[1] + (c[2] - a[2]) * ab[2]) / L2, 0, 1) : 0;
+    return hypot(a[0] + ab[0] * t - c[0], a[1] + ab[1] * t - c[1], a[2] + ab[2] * t - c[2]);
+  }
+  // Down: the place as it was, the pieces and the coins where they lay, the rocket to build again; what he read kept.
+  function crash() {
+    delete document.body.dataset.ride;
+    space = null; ride = null; launched = null; ended = false; built = false; found = []; got = []; alarms = 0; rocketCh = null; rocketLift = 0; shards = [];
+    delete document.body.dataset.space;
+    $("jump").setAttribute("aria-label", "Jump");
+    store();
+    start(setting.kind, chosen(), seed).catch(function (err) { $("veil").hidden = false; $("veil").textContent = "The world could not be built: " + err.message; });
+  }
+  function spaceFrame(now, dt) {
+    spaceStep(dt, now);
+    if (!space) { return false; }
+    shardsStep(dt);
+    var cw = canvas.width, chh = canvas.height, cam = spaceCam();
+    eye = cam.e; camLast = { e: cam.e, yaw: cam.yaw, pitch: cam.pitch };
+    vp = mul(perspective(FOV * Math.PI / 180, cw / chh, NEAR, FAR), view(eye, cam.yaw, cam.pitch));
+    gl.viewport(0, 0, cw, chh);
+    gl.clearColor(0.004, 0.004, 0.012, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.clearColor(0, 0, 0, 0);
+    var tanH = 2 * Math.tan(FOV * Math.PI / 360), BLACK = [0, 0, 0], PB = window.PearlBody;
+    pxW = tanH / rows0;
+    gl.useProgram(prog);
+    gl.uniformMatrix4fv(U.uVP, false, vp); gl.uniform3fv(U.uEye, eye); gl.uniform3fv(U.uSun, sunDir); gl.uniform1f(U.uT, now / 1000);
+    gl.uniform3fv(U.uSky, BLACK); gl.uniform3fv(U.uHaze, BLACK); gl.uniform1i(U.uSteps, walk); gl.uniform1i(U.uVeil, 0); gl.uniform1i(U.uVox, 1);
+    gl.uniform3f(U.uOff, 0, 0, 0); gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform1i(U.uFloor, 0); gl.uniform2f(U.uNear, 0, 0);
+    gl.uniform3f(U.uAxA, 1e9, 1e9, 1e9); gl.uniform3f(U.uAxB, 1e9, 1e9, 1e9); gl.uniform3f(U.uHeadC, 1e9, 1e9, 1e9); gl.uniform3f(U.uHeadE, 1e9, 1e9, 1e9);
+    var A = spaceAxes(), box = function (ch, m, dim, px) {
+      gl.uniform1f(U.uPx, px);
+      gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, ch.tex); gl.activeTexture(gl.TEXTURE0);
+      gl.uniform3i(U.uDim, dim[0], dim[1], dim[2]); gl.bindVertexArray(ch.vao); gl.drawElements(gl.TRIANGLES, ch.count, gl.UNSIGNED_INT, 0);
+    };
+    // the basis: grid x his right, grid y the way he flies, grid z up (right-handed)
+    var basis = function (o, k) { return [A.r[0] * k, A.r[1] * k, A.r[2] * k, 0, A.f[0] * k, A.f[1] * k, A.f[2] * k, 0, A.u[0] * k, A.u[1] * k, A.u[2] * k, 0, o[0], o[1], o[2], 1]; };
+    // the ship: the rocket he built, lying along his way, its hull's top at his waist, the nose ahead of him
+    if (rocketCh) {
+      gl.uniform4fv(U.uPal, worldPal);
+      var waist = [space.pos[0] - A.u[0] * (PEARL.headY - PEARL.leg), space.pos[1] - A.u[1] * (PEARL.headY - PEARL.leg), space.pos[2] - A.u[2] * (PEARL.headY - PEARL.leg)];
+      var o = [0, 1, 2].map(function (i) { return waist[i] - A.r[i] * 2.5 - A.f[i] * 6.5 - A.u[i] * 4; });
+      box(rocketCh, basis(o, 1), rocketCh.dim, pxW);
+    }
+    // the enemies: the unit's block, three metres, turning
+    gl.uniform4fv(U.uPal, worldPal);
+    space.enemies.forEach(function (e) {
+      var m = PB.mul(PB.T(e.p[0], e.p[1], e.p[2]), PB.mul(PB.RA([0.3, 1, 0.2], e.spin), PB.mul(PB.S(SPACE.SIZE), PB.T(-0.5, -0.5, -0.5))));
+      box(enemyCh, m, [1, 1, 1], pxW / SPACE.SIZE);
+    });
+    gl.uniformMatrix4fv(U.uM, false, ID4); gl.uniformMatrix4fv(U.uInvM, false, ID4);
+    // him, in the seat: the world's drawing of him at the ship, facing its way
+    P.x = space.pos[0]; P.y = space.pos[1] - PEARL.headY; P.z = space.pos[2]; P.face = P.yaw; P.amount = 0;
+    drawMe = { body: true, head: true };
+    var HZ = HAZE; HAZE = BLACK; drawPearl(now); drawShards(); HAZE = HZ;
+    // the lasers
+    var pts = [];
+    space.shots.forEach(function (s) { var L = s.mine ? 6 : 3; pts.push(s.p[0], s.p[1], s.p[2], 0.95, s.p[0] - s.d[0] * L, s.p[1] - s.d[1] * L, s.p[2] - s.d[2] * L, 0); });
+    if (pts.length && trailProg) {
+      gl.useProgram(trailProg);
+      gl.uniformMatrix4fv(TU.uVP, false, vp); gl.uniform3f(TU.uC, 1, 0.71, 0.45);
+      gl.bindVertexArray(trailVao); gl.bindBuffer(gl.ARRAY_BUFFER, trailBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pts), gl.DYNAMIC_DRAW);
+      gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE); gl.depthMask(false);
+      gl.drawArrays(gl.LINES, 0, pts.length / 4);
+      gl.disable(gl.BLEND); gl.depthMask(true);
+    }
+    gl.bindVertexArray(null);
+    spaceOverlay(now);
+    return true;
+  }
+  // Over the view in space: the stars and galaxies, the windshield's frame, the mark, the black of the fall.
+  function spaceOverlay(now) {
+    var c = hud.getContext("2d"), dpr = min(2, window.devicePixelRatio || 1), W = hud.width / dpr, H = hud.height / dpr, f = H / 2 / T35;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+    var tri = function (x, y, s) { c.beginPath(); c.moveTo(x, y - s * 0.58); c.lineTo(x + s / 2, y + s * 0.29); c.lineTo(x - s / 2, y + s * 0.29); c.closePath(); c.fill(); };
+    var proj = function (d) { var p = [eye[0] + d[0] * 300, eye[1] + d[1] * 300, eye[2] + d[2] * 300], q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H] : null; };
+    c.globalCompositeOperation = "destination-over";
+    space.sky.stars.forEach(function (st) { var q = proj(st.d); if (q && q[0] > -4 && q[1] > -4 && q[0] < W + 4 && q[1] < H + 4) { c.fillStyle = "rgba(234,223,205," + st.a.toFixed(2) + ")"; tri(q[0], q[1], st.s * 1.6); } });
+    space.sky.gal.forEach(function (st) { var q = proj(st.d); if (q && q[0] > -4 && q[1] > -4 && q[0] < W + 4 && q[1] < H + 4) { c.fillStyle = "rgba(" + st.c + "," + st.a.toFixed(2) + ")"; tri(q[0], q[1], st.s * 1.8); } });
+    c.globalCompositeOperation = "source-over";
+    // the windshield: its frame the figure's three tones, lit along its top, grey at its sides, dark along its sill
+    var u = sightU() * f, bw = max(3, u / 3), x0 = W * 0.08, x1 = W * 0.92, y0 = H * 0.1, y1 = H / 2 + f * Math.tan(AIM) * 0.62;
+    c.lineCap = "butt";
+    c.strokeStyle = "rgba(234,230,220,0.85)"; c.lineWidth = bw; c.beginPath(); c.moveTo(x0 + W * 0.06, y0); c.lineTo(x1 - W * 0.06, y0); c.stroke();
+    c.strokeStyle = "rgba(150,146,140,0.85)"; c.beginPath(); c.moveTo(x0 + W * 0.06, y0); c.lineTo(x0, y1); c.moveTo(x1 - W * 0.06, y0); c.lineTo(x1, y1); c.stroke();
+    c.strokeStyle = "rgba(30,28,26,0.9)"; c.beginPath(); c.moveTo(x0, y1); c.lineTo(x1, y1); c.stroke();
+    // the mark: the sight's figure and its holding circles, slightly below the centre
+    var cx = W / 2, cy = H / 2 + f * Math.tan(markDrop()), hair = 1;
+    SIGHT_F.forEach(function (F) { var r = F * u / Math.sqrt(3); twoTone(c, function () { c.beginPath(); c.arc(cx, cy + r, r, 0, Math.PI * 2); }, hair); });
+    var fm = figureMark(round(u * dpr), 0, 0, 0);
+    c.drawImage(fm.cv, cx - fm.ox / dpr, cy - fm.oy / dpr, fm.cv.width / dpr, fm.cv.height / dpr);
+    // each one coming, held in a triangle of the unit (pointing down, as the mark's figure does not), the last in the glow
+    space.enemies.forEach(function (e) {
+      var q = [0, 0, 0, 0];
+      for (var i = 0; i < 4; i++) { q[i] = vp[i] * e.p[0] + vp[4 + i] * e.p[1] + vp[8 + i] * e.p[2] + vp[12 + i]; }
+      if (q[3] <= 0.5) { return; }
+      var x = (q[0] / q[3] * 0.5 + 0.5) * W, y = (1 - (q[1] / q[3] * 0.5 + 0.5)) * H, r = max(u * 0.9, f * SPACE.R / q[3]);
+      if (x < -r || y < -r || x > W + r || y > H + r) { return; }
+      twoTone(c, function () { c.beginPath(); c.moveTo(x - r, y - r * 0.58); c.lineTo(x + r, y - r * 0.58); c.lineTo(x, y + r * 1.15); c.closePath(); }, e.last ? 2 : 1);
+      if (e.last) { c.strokeStyle = "#f3c98b"; c.lineWidth = 1; c.beginPath(); c.moveTo(x - r, y - r * 0.58); c.lineTo(x + r, y - r * 0.58); c.lineTo(x, y + r * 1.15); c.closePath(); c.stroke(); }
+    });
+    if (space.black > 0) { c.fillStyle = "rgba(5,3,2," + space.black.toFixed(3) + ")"; c.fillRect(0, 0, W, H); }
+  }
+
   /* ---- Mr Pearl drawn: his body of the unit through the blocks' own shader, his head the true sphere ------ */
 
   /* His body is the game's own figure seven golden steps down (pearl.js, from pearl-body.json): ten small grids,
@@ -2755,6 +3037,8 @@
     var dt = min(0.05, (now - (last || now)) / 1000);
     last = now;
     tick += 1;
+    // In space the frame is space's own; down again, the place is built anew and starts its own frames.
+    if (space) { if (spaceFrame(now, dt)) { requestAnimationFrame(frame); } return; }
     // Frames coming slowly: the view a little coarser, then the walk among the bars shorter (walk, in
     // blocks); never the distance at which the faces close, which is set by the screen (rows0).
     if (!intro && !held && dt > 0.03) {
@@ -2772,6 +3056,8 @@
       P.pitch = 1.2 + (0.2 - 1.2) * sm(3.8, 7.2);
       P.yaw = intro.yaw0 + intro.turn * sm(5.5, 8.6);
       if (u > 9.6) { awake(); }
+    } else if (launched && ride) {
+      rideStep(dt, controls(dt));
     } else if (!launched && !flying) {
       var hand = controls(dt);
       // The head out, the body stands where it was under the place's physics, unled; while it follows the head
@@ -2827,15 +3113,17 @@
         gl.drawElements(gl.TRIANGLES, ch.count, gl.UNSIGNED_INT, 0);
       });
     var lift = launched ? Math.pow(max(0, (now - launched) / 1000 - 1), 2) * 2.4 : 0;
+    var rx = ride ? ride.dx : 0, rz = ride ? ride.dz : 0;
     if (rocketCh) {
-      gl.uniform3f(U.uOff, 0, lift, 0);
+      gl.uniform3f(U.uOff, rx, lift, rz);
       // The rocket walks its own small grid, which rises with it.
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, rocketCh.tex); gl.activeTexture(gl.TEXTURE0);
-      gl.uniform3f(U.uOrg, rocketCh.org[0], rocketCh.org[1] + lift, rocketCh.org[2]);
+      gl.uniform3f(U.uOrg, rocketCh.org[0] + rx, rocketCh.org[1] + lift, rocketCh.org[2] + rz);
       gl.uniform3i(U.uDim, rocketCh.dim[0], rocketCh.dim[1], rocketCh.dim[2]); gl.uniform1i(U.uFloor, 0);
       gl.bindVertexArray(rocketCh.vao);
       gl.drawElements(gl.TRIANGLES, rocketCh.count, gl.UNSIGNED_INT, 0);
-      if (launched && lift > 300 && !ended) { ended = true; finish(); }
+      if (launched && !ride && lift > 300 && !ended) { ended = true; finish(); }
+      if (launched && ride) { rideCheck(lift); }
       rocketLift = lift;
     }
     drawPearl(now); drawPearls(now); drawCoins3(now); drawGuards(now);
@@ -2881,7 +3169,7 @@
         veil.push({ ch: ch, d: hypot(eye[0] - (ch.cx + 0.5) * CH, eye[2] - (ch.cz + 0.5) * CH), lift: 0 });
       }
     });
-    if (rocketCh && rocketCh.vcount) { veil.push({ ch: rocketCh, d: hypot(eye[0] - rocketCh.org[0] - 2.5, eye[2] - rocketCh.org[2] - 2.5), lift: lift }); }
+    if (rocketCh && rocketCh.vcount) { veil.push({ ch: rocketCh, d: hypot(eye[0] - rocketCh.org[0] - 2.5, eye[2] - rocketCh.org[2] - 2.5), lift: lift, rx: rx, rz: rz }); }
     // And Mr Pearl's parts, when the camera stands near enough that a face of his is closing: the same reach in
     // his unit (lod is 1 beyond reach - 1 of his cells), to the nearest of him in any pose of the walk.
     if (me3 && drawMe.body) {
@@ -2895,7 +3183,7 @@
       gl.enable(gl.CULL_FACE); gl.depthMask(false);
       veil.sort(function (a, b) { return b.d - a.d; }).forEach(function (e) {
         if (e.pearl) { drawPearl(now, true); return; }
-        gl.uniform3f(U.uOff, 0, e.lift, 0);
+        gl.uniform3f(U.uOff, e.rx || 0, e.lift, e.rz || 0);
         gl.bindVertexArray(e.ch.vao);
         gl.drawElements(gl.TRIANGLES, e.ch.vcount, gl.UNSIGNED_INT, e.ch.count * 4);
       });
@@ -2992,7 +3280,7 @@
     c.clearRect(0, 0, W, H);
     var wr = place.wreck;
     // Smoke from the wreck, and from the rocket going up.
-    var src = launched ? [wr.x + 0.5, wr.y + rocketLift, wr.z + 0.5] : [wr.x + 0.5, wr.y + 2, wr.z + 0.5];
+    var src = launched ? [wr.x + 0.5 + (ride ? ride.dx : 0), wr.y + rocketLift, wr.z + 0.5 + (ride ? ride.dz : 0)] : [wr.x + 0.5, wr.y + 2, wr.z + 0.5];
     for (var k = 0; k < (launched ? 60 : 22); k += 1) {
       var life = ((now / 1000 * (launched ? 2.5 : 1) + k * 0.41) % 8) / 8;
       var p = [src[0] + Math.sin(k * 2.3) * (0.3 + life * (launched ? 9 : 3)), src[1] - (launched ? life * 30 : -life * 18), src[2] + Math.cos(k * 1.9) * (0.3 + life * 3)];
@@ -3146,16 +3434,13 @@
     store();
     closeLabel();
     $("notes").hidden = true;
-    // Stand back under your tree, where you woke, and watch it go up past the figure in the sky.
-    var at = underTree(), wr = place.wreck;
-    P.x = at.x; P.z = at.z; P.y = at.y;
-    // The ground there, looked for from just over your head (the tree's leaves are over it).
-    for (var y = floor(at.y) + 1; y > 0; y -= 1) { if (w.SOLID[w.get(floor(P.x), y, floor(P.z))]) { P.y = y + 1; break; } }
-    P.yaw = Math.atan2(wr.x + 0.5 - P.x, -(wr.z + 0.5 - P.z));
-    P.pitch = 0.3;
-    var t0 = performance.now();
-    (function tilt() { if (!launched) { return; } var u = (performance.now() - t0) / 1000; P.pitch = min(1.1, 0.3 + u * 0.09); if (u < 9) { requestAnimationFrame(tilt); } })();
-    say("Lift-off.", true);
+    // He rides it: the camera behind its nose, the stick his until the figure in the sky is passed (the ride, above).
+    ride = { dx: 0, dz: 0, top: rideTop(), cut: null };
+    document.body.dataset.ride = "true";
+    var wr = place.wreck;
+    P.yaw = Math.atan2(wr.x + 0.5 - P.x, -(wr.z + 0.5 - P.z)); P.pitch = REST;
+    blend = { from: camLast, t0: performance.now(), dur: T_VIEW, pitchFrom: P.pitch, pitchTo: null };
+    say("Lift-off. The stick steers the rocket until you pass the figure in the sky.", true);
   }
   function finish() {
     var end = $("end"), name = setting.kind === "museum" ? Adv.theName(setting.name) : setting.name.replace(/^The /, "the ");
@@ -3792,6 +4077,7 @@
              screenOf: function (p) { var r = canvas.getBoundingClientRect(), q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [r.left + (q[0] / q[3] * 0.5 + 0.5) * r.width, r.top + (0.5 - q[1] / q[3] * 0.5) * r.height] : null; },
              farEnd: function () { return swing && !swing.ret && FAR_END ? farEndAt(swing, swing.u) : null; }, smashConsts: function () { return { BEAT: BEAT, SWING: SWING, LEAP: LEAP, COIL: COIL, ARMS_UP: ARMS_UP, E0: E0, Y_SH: Y_SH, FAR_END: FAR_END }; },
              coins: function () { return { list: coins, got: got.slice(), R: coinR(), RO: coinRO(), units: coinCh && coinCh.units }; }, takeCoin: function (i) { takeCoin(coins[i]); },
+             space: function () { return space; }, ride: function () { return ride; }, spaceConsts: function () { return { SPACE: SPACE, V: spaceV(), TURN: spaceTurn(), MARK: markDrop() }; },
              guards: function () { return guards; }, guardConsts: function () { return { GUARD: GUARD, reach: guardReach() }; }, sees: sees, stands: function () { return gStand; },
              stone: function () { return onStone; }, px: function () { return pxW; }, putOut: putOut,
              bring: bringBody, home: goHome, harm: harmBody, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; },
