@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { session, stageOf, skill, power, words, facts, broken, reflect, report, selfCheck, moment, load } from '../gameplan/reflect.mjs';
+import { execFileSync } from 'node:child_process';
+import { session, stageOf, skill, power, words, facts, broken, reflect, report, selfCheck, moment, since, load } from '../gameplan/reflect.mjs';
 
 const T = '2026-10-22T20:00:00Z'; // after ponytail and caveman joined
 const local = [
@@ -216,12 +217,55 @@ test('a change handed to background work owes its last line when the work comes 
     { type: 'assistant', timestamp: at(5), message: { content: [{ type: 'text', text: reply }] } },
   ];
   assert.equal(moment(session(handOff)), '', 'a progress note while the work runs is not judged');
+  const printed = handOff.map(l => (l.message.content[0]?.tool_use_id === 'w'
+    ? { ...l, message: { content: [{ type: 'tool_result', tool_use_id: 'g', content: 'Async agent launched successfully   remote files: 4' }] } }
+    : l.message.content[1]?.id === 'w' ? { ...l, message: { content: [l.message.content[0], { type: 'tool_use', id: 'g', name: 'Bash', input: { command: 'grep -c launched *.txt' } }] } } : l));
+  assert.equal(session(printed).turns[0].pending, false, "a command's printed output is not a hand-off");
   assert.deepEqual(broken(session([...handOff, ...back('Both reviews pass. Not checked: the phone layout.')]).turns.at(-1)), []);
   assert.deepEqual(broken(session([...handOff, ...back('Both reviews pass.')]).turns.at(-1)), ['a change with no last line on what was skipped'],
     'the turn the work came back to owes the line for the change made before it');
+  const midTurn = [...handOff,
+    { type: 'attachment', timestamp: at(4), attachment: { type: 'queued_command', prompt: '<task-notification><status>completed</status></task-notification>' } },
+    { type: 'assistant', timestamp: at(5), message: { content: [{ type: 'text', text: 'Both reviews pass.' }] } }];
+  assert.deepEqual(broken(session(midTurn).turns.at(-1)), ['a change with no last line on what was skipped'],
+    'work back in the middle of a turn (a queued notification) ends the wait there');
   const asked = session([...handOff, { type: 'user', timestamp: at(4), message: { content: 'thanks' } }, { type: 'assistant', timestamp: at(5), message: { content: [{ type: 'text', text: 'Ok.' }] } }]);
   assert.equal(asked.turns.at(-1).after, undefined, "the person's next ask is not the work coming back");
   assert.deepEqual(broken(asked.turns.at(-1)), [], 'and while that work is still out, no turn is judged on its last line');
+});
+
+test('when the person next writes, Claude hears of every turn since their last message', () => {
+  const at = i => `2026-10-22T21:00:0${i}Z`;
+  const fetch = [
+    { type: 'user', timestamp: at(0), message: { content: 'Fetch the sources' } },
+    { type: 'assistant', timestamp: at(1), message: { content: [
+      { type: 'tool_use', id: 'c', name: 'Bash', input: { command: 'curl https://example.org' } },
+      { type: 'tool_use', id: 'w', name: 'Workflow', input: {} },
+    ] } },
+    { type: 'user', timestamp: at(2), message: { content: [
+      { type: 'tool_result', tool_use_id: 'c', is_error: true, content: 'curl: (56) CONNECT tunnel failed, response 403' },
+      { type: 'tool_result', tool_use_id: 'w', content: 'Workflow launched in background.' },
+    ] } },
+    { type: 'assistant', timestamp: at(3), message: { content: [{ type: 'text', text: 'One host was blocked; the rest are fetching.' }] } },
+    { type: 'user', timestamp: at(4), message: { content: '<task-notification><status>completed</status></task-notification>' } },
+    { type: 'assistant', timestamp: at(5), message: { content: [{ type: 'text', text: 'All fetched.' }] } },
+  ];
+  const advice = "Reflect: A proxy 403 is fixed in the environment's settings (allowed domains, a credential), not in the chat.";
+  assert.equal(moment(session(fetch)), '', 'the last turn alone met nothing');
+  assert.equal(since(session(fetch)), advice, 'the trap before the progress note is not lost');
+  const next = { type: 'user', timestamp: at(6), message: { content: 'thanks' } };
+  assert.equal(since(session([...fetch, next])), advice, 'the new message, not yet answered, does not hide what came before');
+  assert.equal(since(session([...fetch, next, { type: 'assistant', timestamp: at(7), message: { content: [{ type: 'text', text: 'Ok.' }] } }])), '', 'once answered, it is the boundary');
+
+  const dir = mkdtempSync(join(tmpdir(), 'reflect-hook-'));
+  const path = join(dir, 'x.jsonl');
+  writeFileSync(path, fetch.map(l => JSON.stringify(l)).join('\n'));
+  const run = name => execFileSync('node', [new URL('../gameplan/reflect.mjs', import.meta.url).pathname, '--hook'],
+    { input: JSON.stringify({ transcript_path: path, hook_event_name: name }) }).toString();
+  const out = JSON.parse(run('UserPromptSubmit')).hookSpecificOutput;
+  assert.equal(out.hookEventName, 'UserPromptSubmit');
+  assert.ok(out.additionalContext.startsWith(advice) && /Tell the artist in one line/.test(out.additionalContext));
+  assert.equal(run('Stop'), '', 'the Stop hook still speaks only of the last turn');
 });
 
 test('the script takes nothing it does not need: Node\'s own modules only', () => {

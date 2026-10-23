@@ -86,7 +86,7 @@ function event(o) {
 }
 
 // The CLI's own words when a tool hands work to the background; it comes back as a <task-notification>.
-const BACKGROUND = /^\s*(?:Command running in background|Async agent launched|Workflow launched in background)/;
+const BACKGROUND = /^\s*(?:Command running in background with ID|Async agent launched successfully|Workflow launched in background)/;
 const blocks = m => (typeof m?.content === 'string' ? [{ type: 'text', text: m.content }] : m?.content || []);
 const textOf = c => (typeof c === 'string' ? c : Array.isArray(c) ? c.map(x => x.text || '').join(' ') : '');
 
@@ -110,7 +110,8 @@ export function session(lines, id = '') {
       for (const r of results) {
         const t = byTool.get(r.tool_use_id);
         if (t && r.is_error) t.error = textOf(r.content).slice(0, 400) || 'error';
-        if (turn && BACKGROUND.test(textOf(r.content))) { pending++; turn.pending = true; }
+        // a command's own output can start with those words; only one sent to the background is handed off
+        if (turn && t && (t.name !== 'Bash' || t.input.run_in_background) && BACKGROUND.test(textOf(r.content))) { pending++; turn.pending = true; }
       }
       const text = bs.filter(b => b.type === 'text').map(b => b.text).join('\n');
       if (results.length || !text) continue;
@@ -123,6 +124,7 @@ export function session(lines, id = '') {
       // A notification, command, reminder or synthetic message starts a turn too, but it is not the person asking.
       open(asked ? text : '', e.timestamp);
       turn.pending = pending > 0; // still waiting on work handed off earlier
+      turn.back = back;
       // Work coming back continues the turn that handed it off.
       if (back && prev?.pending) turn.after = prev;
     } else if (e.type === 'assistant') {
@@ -140,6 +142,10 @@ export function session(lines, id = '') {
           turn.tools.push(t);
         }
       }
+    } else if (e.type === 'attachment' && /^\s*<task-notification>/.test(e.attachment?.prompt ?? '')) {
+      // work that comes back while a turn is still running is delivered into it, not as a new message
+      pending = Math.max(0, pending - 1);
+      if (turn) turn.pending = pending > 0;
     } else if (e.type === 'result' && turn) {
       cost = Math.max(cost ?? 0, e.total_cost_usd || 0); // a running total, not this turn's
       if (e.is_error) turn.failed ||= ((e.errors || []).join(' ') || e.result || 'error').slice(0, 400);
@@ -395,21 +401,31 @@ export const selfCheck = md => broken({ replies: [md], tools: [{ name: 'Write', 
 // Reflection in the moment: speaks only when the last turn met a trap on the road (and then gives the
 // Game Plan's advice for it) or broke a law of a skill that is on ("Harness decides when you speak,
 // caveman decides how"). Placing a session on the road is the report's: one ask's words are too few.
-export function moment(s) {
-  const t = s.turns.at(-1);
-  if (!t) return '';
-  const notes = broken(t);
-  for (const r of ROAD) if ([...t.tools.map(x => x.error), t.failed].some(e => e && r.trap.test(e))) notes.push(r.advice);
-  return notes.length ? `Reflect: ${notes.join('; ')}`.replace(/[^.]$/, '$&.') : '';
+const notes = t => [...broken(t), ...ROAD.filter(r => [...t.tools.map(x => x.error), t.failed].some(e => e && r.trap.test(e))).map(r => r.advice)];
+const say = n => (n.length ? `Reflect: ${n.join('; ')}`.replace(/[^.]$/, '$&.') : '');
+export const moment = s => (s.turns.length ? say(notes(s.turns.at(-1))) : '');
+
+// The same, when the person next writes: every turn since the last message someone sent (work coming back
+// is not a message), so a trap met before a progress note is not lost behind it. A turn with no reply and no
+// tool is the new message itself, not yet answered.
+export function since(s) {
+  const done = s.turns.filter(t => t.replies.length || t.tools.length);
+  const from = Math.max(0, done.findLastIndex(t => !t.back));
+  return say([...new Set(done.slice(from).flatMap(notes))]);
 }
+
+// The person sees no Stop hook's line in the app, so the note reaches them through Claude (the artist, 23 Oct 2026).
+const RELAY = 'This is the Game Plan hook, on your turns since the last message. Tell the artist in one line at the start of your reply, and fix what it names if it still applies.';
 
 if (process.argv[1]?.endsWith('reflect.mjs')) {
   const args = process.argv.slice(2);
   if (args[0] === '--hook') {
     try {
-      const { transcript_path: path } = JSON.parse(readFileSync(0, 'utf8'));
-      const line = moment(session(load([path]).transcripts[basename(path, '.jsonl')] || []));
-      if (line) console.log(JSON.stringify({ systemMessage: line }));
+      const { transcript_path: path, hook_event_name: hook } = JSON.parse(readFileSync(0, 'utf8'));
+      const s = session(load([path]).transcripts[basename(path, '.jsonl')] || []);
+      const line = hook === 'UserPromptSubmit' ? since(s) : moment(s);
+      if (line && hook === 'UserPromptSubmit') console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: hook, additionalContext: `${line} ${RELAY}` } }));
+      else if (line) console.log(JSON.stringify({ systemMessage: line }));
     } catch {} // a reflection never stops a session
   } else {
     const { transcripts, meta } = load(args.filter(a => a !== '--json'));
