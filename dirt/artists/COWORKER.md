@@ -1,7 +1,10 @@
 # The coworker: new artists into DIRT's plane, every week
 
-A scheduled Claude session runs this every week. It brings the next artists from the Artsy saves into DIRT's plane
-(each as a minimal area on the ladder of complexity, see `roster.py`), commits them, and republishes DIRT.
+A scheduled Claude session runs this every week. It brings the next artists from Aries's own Artsy saves into DIRT's
+plane (each as a minimal area on the ladder of complexity, see `roster.py`), commits them, and republishes DIRT.
+Only the works he saved himself (his choice, 23 Oct 2026: "Only my saves"): not the fifty thousand a run on his
+account saved from 1 to 14 October 2026, every work by the artists he follows, which had put KAWS, Honoré Daumier and
+Banksy on the roster on 14 October for works he had not chosen.
 
 It runs on Tuesdays at 19:47 UTC, just after the account's weekly usage comes back (Tuesdays at 19:00 UTC). It first
 ran on Mondays at 15:00, when the week's usage was already spent, and its runs of 28 September, 5 October and 12
@@ -25,10 +28,10 @@ Rules it keeps:
 git fetch origin claude/digital-dirt-layers-paiial && git checkout -B claude/digital-dirt-layers-paiial origin/claude/digital-dirt-layers-paiial
 pip install numpy pillow requests "opencv-python-headless<4.13" scipy
 
-# 1. the saves, fresh from Artsy, into data/artworks.db: four pages at a time, a page retried when its tunnel drops
-#    or Artsy answers 5xx, and on past Artsy's count (which runs behind) until a page comes back empty; then
-#    normalized with the normalizer from claude/artsy-import-rwgk8s, run in memory and patched for open-ended prices
-#    (saves.py says how; fetch_artsy_saves.py alone, one page after another, rarely gets through forty thousand saves)
+# 1. his own saves into data/artworks.db: Color Middling's list of them (data/artsy_saves_raw.json on
+#    claude/artsy-import-rwgk8s, kept level with Artsy by that branch's daily reconcile, the run's works set aside),
+#    read with git lfs smudge (apt-get install -y git-lfs if it is missing); then normalized with the normalizer from
+#    the same branch, run in memory and patched for open-ended prices (saves.py says how). It no longer walks Artsy.
 git fetch origin claude/artsy-import-rwgk8s
 python3 dirt/artists/saves.py
 
