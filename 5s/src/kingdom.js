@@ -7,7 +7,11 @@
  *
  * FiveSKingdom.mount(el, {saga, palette: {kept, passed, surfaces}, thing(id) -> {name, colours} | null,
  *   drawHome(canvas) -> Promise<{description}> | null, theme, reduce, focus, reveal,
- *   onLevel(n), onBack(), onList(), onHome()}) -> {update({saga, palette, theme}), destroy()}
+ *   ties: [[n, m, s]], said: {k: text}, mist: {n, things: [{id, name, src}]} | null,
+ *   onLevel(n), onBack(), onList(), onHome(), onLead(id)}) -> {update({saga, palette, theme, ties, said, mist}), destroy()}
+ * Set, inside out (SPEC "Set, inside out"): ties are the person's relations between two levels' buildings (s 1 alike,
+ * -1 unlike), drawn plot to plot; said is what they said most on an island, under its name; the mist is what they kept
+ * and have not set beside anything yet, in the cloud over the next area, each a way into the next level.
  * Styles: play.css (under .fk). Browser only: window.FiveSKingdom (load after ground.js and match.js).
  */
 (function (root) {
@@ -96,7 +100,7 @@
       if (homeOn) isles.push({ k: 'home' });
       for (let k = 0; k < found; k++) isles.push({ k });
       let html = '', lis = '';
-      const pts = homeOn ? [[0, 0]] : [];
+      const pts = homeOn ? [[0, 0]] : [], plotAt = {};
       nodes = [];
       for (const it of isles) {
         const [cx, cy] = centreOf(it.k);
@@ -109,12 +113,13 @@
         const a = areaOf(it.k);
         if (!layouts.has(it.k)) layouts.set(it.k, G.layout(specOf(it.k), BOX_W, BOX_H));
         html += '<div class="fk-isle" style="left:' + it.x + 'px;top:' + it.y + 'px"><canvas role="img" aria-label="' +
-          esc(a.name + ', levels ' + a.from + ' to ' + a.to + ': an island.') + '"></canvas></div>' +
-          '<p class="fk-aname' + (it.k % 2 ? '' : ' is-r') + '" aria-hidden="true" style="left:' + (it.x + BOX_W * (it.k % 2 ? 0.75 : 0.25)) + 'px;top:' + (it.y + BOX_H * 0.86) + 'px"><b>' + esc(a.name) + '</b><span>' + a.from + '–' + a.to + '</span></p>';
+          esc(a.name + ', levels ' + a.from + ' to ' + a.to + ': an island.' + (o.said && o.said[it.k] ? ' ' + o.said[it.k] + '.' : '')) + '"></canvas></div>' +
+          '<p class="fk-aname' + (it.k % 2 ? '' : ' is-r') + '" aria-hidden="true" style="left:' + (it.x + BOX_W * (it.k % 2 ? 0.75 : 0.25)) + 'px;top:' + (it.y + BOX_H * 0.86) + 'px"><b>' + esc(a.name) + '</b><span>' + a.from + '–' + a.to + '</span>' +
+          (o.said && o.said[it.k] ? '<em>' + esc(o.said[it.k]) + '</em>' : '') + '</p>';
         const pins = [];
         layouts.get(it.k).plots.forEach((p, q) => {
           const n = a.from + q, i = n - 1, x = it.x + p.x, y = it.y + p.y;
-          pts.push([x, y]);
+          pts.push([x, y]); plotAt[n] = [x, y];
           let up = 0;   // world px above LIFT, so pins never cover each other at the opening zoom
           for (const e of pins) if (Math.abs(x - e.x) * z0 < 40 && Math.abs(y - up - e.top) * z0 < 46) up = y - e.top + 46 / z0;
           pins.push({ x, top: y - up });
@@ -130,7 +135,20 @@
       // A cloud bank across the table over the next area, its words above the last area found; nothing beyond it.
       const ca = areaOf(found), [ccx, ccy] = centreOf(found), cw = BOX_W + 2 * DX, cl = -cw / 2;
       pts.push([ccx, ccy]);
-      const cloud = '<div class="fk-cloud" style="left:' + cl + 'px;top:' + (ccy - BOX_H / 2) + 'px;width:' + cw + 'px"><p style="left:' + (centreOf(found - 1)[0] - cl) + 'px">Under cloud: ' + esc(ca.name) + '. Win level ' + (5 * found) + ' to find it.</p></div>';
+      // The mist: kept things not set beside anything yet, in the cloud; each opens the next level around it.
+      const mist = o.mist && o.mist.things && o.mist.things.length ? o.mist : null;
+      const mistHTML = mist ? '<div class="fk-mist" style="left:' + (centreOf(found - 1)[0] - cl) + 'px"><span>Not set yet: ' + mist.n + ' of your things.</span>' +
+        mist.things.slice(0, 3).map((t) => '<button type="button" data-lead="' + esc(t.id) + '" aria-label="' + esc('Play level ' + next + ' around ' + t.name) + '">' +
+          (t.src ? '<img src="' + esc(t.src) + '" alt="">' : '') + '<b>' + esc(t.name) + '</b></button>').join('') + '</div>' : '';
+      const cloud = '<div class="fk-cloud" style="left:' + cl + 'px;top:' + (ccy - BOX_H / 2) + 'px;width:' + cw + 'px"><p style="left:' + (centreOf(found - 1)[0] - cl) + 'px">Under cloud: ' + esc(ca.name) + '. Win level ' + (5 * found) + ' to find it.</p>' + mistHTML + '</div>';
+      // Ties: what the person said between two levels' buildings, plot to plot, arching over the islands.
+      let ties = '';
+      for (const [n1, n2, sv] of o.ties || []) {
+        const A = plotAt[n1], Bp = plotAt[n2];
+        if (!A || !Bp || n1 >= next || n2 >= next) continue;
+        const mx = (A[0] + Bp[0]) / 2, my = Math.min(A[1], Bp[1]) - 40 - Math.abs(A[1] - Bp[1]) * 0.15;
+        ties += '<path class="' + (sv > 0 ? 'is-alike' : 'is-unlike') + '" d="M' + A[0] + ' ' + (A[1] - 12) + 'Q' + mx + ' ' + my + ' ' + Bp[0] + ' ' + (Bp[1] - 12) + '"/>';
+      }
       // The path through the plots: the logo's ribbon under the islands, a dotted trail over them.
       let d = 'M' + pts[0][0] + ' ' + pts[0][1];
       for (let q = 1; q < pts.length - 1; q++) d += 'Q' + pts[q][0] + ' ' + pts[q][1] + ' ' + (pts[q][0] + pts[q + 1][0]) / 2 + ' ' + (pts[q][1] + pts[q + 1][1]) / 2;
@@ -140,7 +158,8 @@
       const M = 3200;   // the table reaches past the kingdom by more than a view at the lowest zoom
       table.innerHTML = '<div class="fk-grid" style="left:' + (b.x0 - M) + 'px;top:' + (b.y0 - M) + 'px;width:' + (b.x1 - b.x0 + 2 * M) + 'px;height:' + (b.y1 - b.y0 + 2 * M) + 'px"></div>' +
         '<svg class="fk-road" aria-hidden="true" width="1" height="1"><path class="fp-rb1" d="' + d + '"/><path class="fp-rb2" d="' + d + '"/></svg>' + html +
-        '<svg class="fk-trail" aria-hidden="true" width="1" height="1"><path d="' + d + '"/></svg>' + cloud + '<ol class="fk-nodes" aria-label="Levels">' + lis + '</ol>';
+        '<svg class="fk-trail" aria-hidden="true" width="1" height="1"><path d="' + d + '"/></svg>' +
+        (ties ? '<svg class="fk-ties" aria-hidden="true" width="1" height="1">' + ties + '</svg>' : '') + cloud + '<ol class="fk-nodes" aria-label="Levels">' + lis + '</ol>';
       const els = table.querySelectorAll('.fk-isle');
       isles.forEach((it, q) => { it.el = els[q]; it.cv = els[q].querySelector('canvas'); it.drawn = false; });
       const hb = $('.fk-homel');
@@ -183,7 +202,7 @@
           if (!alive || it.gen !== gen) return;
           it.el.classList.add('is-drawn');
           const a = it.k === 'home' ? null : areaOf(it.k);
-          if (res && res.description) it.cv.setAttribute('aria-label', (a ? a.name + ', levels ' + a.from + ' to ' + a.to + '. ' : 'Your ground. ') + res.description);
+          if (res && res.description) it.cv.setAttribute('aria-label', (a ? a.name + ', levels ' + a.from + ' to ' + a.to + '. ' + (o.said && o.said[it.k] ? o.said[it.k] + '. ' : '') : 'Your ground. ') + res.description);
         };
         const safe = Promise.resolve(job).catch(() => null);
         if (grows) { it.el.classList.add('is-drawn'); safe.then(done); }   // the grow runs on; the queue does not wait for it
@@ -315,6 +334,8 @@
       else panBy(-e.deltaX * k, -e.deltaY * k);
     }, { passive: false });
     map.addEventListener('click', (e) => {
+      const l = e.target.closest('[data-lead]');
+      if (l) { if (o.onLead) o.onLead(l.dataset.lead); return; }
       const b = e.target.closest('[data-n]');
       if (b && b.getAttribute('aria-disabled') !== 'true' && o.onLevel) o.onLevel(+b.dataset.n);
     });

@@ -553,6 +553,16 @@ test('put_state: brought things may carry image, thumb, link and coloursPending,
   assert.match(checkState({ own: [{ id: 'yabcde', coloursPending: 'yes' }] }), /coloursPending/);
 });
 
+test('put_state: Set\'s relations ride on a pairing (alike or unlike, in what), and the person\'s words are short', () => {
+  assert.equal(checkState({ assoc: [['i001', 'o001', 1, 0, 5], ['i001', 's001', 2, 1, 6, -1, 3], ['i001', 'u001', 1, 0, 7, 1, 69]], saga: { words: ['a held breath'] } }), '');
+  assert.match(checkState({ assoc: [['i001', 'o001', 1, 0, 5, 1]] }), /is not \[a, b, times, heart, time\]/);
+  assert.match(checkState({ assoc: [['i001', 'o001', 1, 0, 5, 0, 1]] }), /alike or unlike/);
+  assert.match(checkState({ assoc: [['i001', 'o001', 1, 0, 5, 1, 7]] }), /alike or unlike, or in what/);
+  assert.match(checkState({ saga: { words: ['x'.repeat(LIMITS.word + 1)] } }), /saga.words/);
+  assert.match(checkState({ saga: { words: Array(LIMITS.words + 1).fill('w') } }), /saga.words/);
+  assert.match(checkState({ saga: { words: ['a\u0007b'] } }), /saga.words/);
+});
+
 // ------------------------------------------------------------------ item_image
 
 test('item_image: the picture as a data: URL (as it is when small, made smaller when not), so the app can show and measure it', async () => {

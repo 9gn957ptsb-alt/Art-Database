@@ -6,6 +6,7 @@
 // Links out and in adds links.test.mjs: where a thing lives, what a pasted link is, defining it (pure).
 // The Game Plan reflection adds reflect.test.mjs: reading transcripts, the laws of ponytail and caveman (pure).
 // Set's game adds match.test.mjs: the match engine, its levels, pieces, pairings and saga (pure).
+// Set, inside out adds relate.test.mjs: the deal from kept things, relations, the answers, Sort's ask (pure).
 'use strict';
 import('./engine.test.mjs');
 import('./hub.test.mjs');
@@ -13,3 +14,4 @@ import('./connect.test.mjs');
 import('./links.test.mjs');
 import('./reflect.test.mjs');
 import('./match.test.mjs');
+import('./relate.test.mjs');

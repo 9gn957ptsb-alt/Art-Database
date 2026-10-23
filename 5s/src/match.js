@@ -45,11 +45,12 @@
   const BOOSTS = ['pass', 'turn', 'more'];
 
   const EPISODES = Object.freeze([
-    { name: 'Sort', line: 'Line things up.', from: 1, to: 5 },
-    { name: 'Split', line: 'Paint with their colours.', from: 6, to: 10 },
-    { name: 'Set', line: 'Clear what you passed.', from: 11, to: 15 },
-    { name: 'See', line: 'Free what’s held.', from: 16, to: 20 },
-    { name: 'Seed', line: 'Boards in new shapes.', from: 21, to: 25 },
+    // Set, inside out (SPEC "Set, inside out"): the names stay, so every area built stays; the lines are FiveSRelate's
+    { name: 'Sort', line: 'What you kept.', from: 1, to: 5 },
+    { name: 'Split', line: 'Alike and unlike.', from: 6, to: 10 },
+    { name: 'Set', line: 'One thing follows another.', from: 11, to: 15 },
+    { name: 'See', line: 'Buildings and artworks.', from: 16, to: 20 },
+    { name: 'Seed', line: 'Your own things.', from: 21, to: 25 },
     { name: 'Another five', line: 'All of it, together.', from: 26, to: 30 },
   ]);
 
@@ -870,10 +871,10 @@
     for (let i = 0; i < u.length; i++) for (let j = i + 1; j < u.length; j++) out.push([u[i], u[j]]);
     return out;
   }
-  function capAssoc(list) { // in place: the unhearted with the lowest n, then the oldest (ties: the first), go; hearted never
+  function capAssoc(list) { // in place: the unhearted go, pairings the person never said how first (v12's), then the lowest n, then the oldest (ties: the first); hearted never
     const over = list.length - ASSOC_CAP;
     if (over <= 0) return list;
-    const go = new Set(list.map((e, i) => i).filter((i) => !list[i][3]).sort((x, y) => list[x][2] - list[y][2] || list[x][4] - list[y][4] || x - y).slice(0, over));
+    const go = new Set(list.map((e, i) => i).filter((i) => !list[i][3]).sort((x, y) => (list[x].length === 7) - (list[y].length === 7) || list[x][2] - list[y][2] || list[x][4] - list[y][4] || x - y).slice(0, over));
     const keep = list.filter((e, i) => !go.has(i));
     list.length = 0;
     for (const e of keep) list.push(e);

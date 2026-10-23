@@ -77,7 +77,14 @@
    "img": "img/i001.webp",
    "w": 600,
    "h": 520,
-   "thumb": 0
+   "thumb": 0,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "i002",
@@ -110,7 +117,14 @@
    "img": "img/i002.webp",
    "w": 600,
    "h": 720,
-   "thumb": 1
+   "thumb": 1,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "i003",
@@ -142,7 +156,14 @@
    "img": "img/i003.webp",
    "w": 600,
    "h": 520,
-   "thumb": 2
+   "thumb": 2,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "i004",
@@ -176,7 +197,14 @@
    "img": "img/i004.webp",
    "w": 600,
    "h": 720,
-   "thumb": 3
+   "thumb": 3,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "i005",
@@ -208,7 +236,14 @@
    "img": "img/i005.webp",
    "w": 600,
    "h": 520,
-   "thumb": 4
+   "thumb": 4,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "i006",
@@ -241,7 +276,14 @@
    "img": "img/i006.webp",
    "w": 600,
    "h": 720,
-   "thumb": 5
+   "thumb": 5,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "i007",
@@ -274,7 +316,14 @@
    "img": "img/i007.webp",
    "w": 600,
    "h": 520,
-   "thumb": 6
+   "thumb": 6,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "i008",
@@ -307,7 +356,14 @@
    "img": "img/i008.webp",
    "w": 600,
    "h": 720,
-   "thumb": 7
+   "thumb": 7,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "i009",
@@ -339,7 +395,14 @@
    "img": "img/i009.webp",
    "w": 600,
    "h": 520,
-   "thumb": 8
+   "thumb": 8,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "i010",
@@ -373,7 +436,14 @@
    "img": "img/i010.webp",
    "w": 600,
    "h": 720,
-   "thumb": 9
+   "thumb": 9,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "o001",
@@ -405,7 +475,14 @@
    "img": "img/o001.webp",
    "w": 600,
    "h": 520,
-   "thumb": 10
+   "thumb": 10,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "o002",
@@ -437,7 +514,14 @@
    "img": "img/o002.webp",
    "w": 600,
    "h": 720,
-   "thumb": 11
+   "thumb": 11,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "o003",
@@ -468,7 +552,14 @@
    "img": "img/o003.webp",
    "w": 600,
    "h": 520,
-   "thumb": 12
+   "thumb": 12,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "o004",
@@ -501,7 +592,14 @@
    "img": "img/o004.webp",
    "w": 600,
    "h": 720,
-   "thumb": 13
+   "thumb": 13,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "o005",
@@ -532,7 +630,14 @@
    "img": "img/o005.webp",
    "w": 600,
    "h": 520,
-   "thumb": 14
+   "thumb": 14,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "o006",
@@ -564,7 +669,14 @@
    "img": "img/o006.webp",
    "w": 600,
    "h": 720,
-   "thumb": 15
+   "thumb": 15,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "o007",
@@ -596,7 +708,14 @@
    "img": "img/o007.webp",
    "w": 600,
    "h": 520,
-   "thumb": 16
+   "thumb": 16,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "o008",
@@ -628,7 +747,14 @@
    "img": "img/o008.webp",
    "w": 600,
    "h": 720,
-   "thumb": 17
+   "thumb": 17,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "o009",
@@ -659,7 +785,14 @@
    "img": "img/o009.webp",
    "w": 600,
    "h": 520,
-   "thumb": 18
+   "thumb": 18,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "o010",
@@ -692,7 +825,14 @@
    "img": "img/o010.webp",
    "w": 600,
    "h": 720,
-   "thumb": 19
+   "thumb": 19,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "s001",
@@ -724,7 +864,14 @@
    "img": "img/s001.webp",
    "w": 600,
    "h": 520,
-   "thumb": 20
+   "thumb": 20,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "s002",
@@ -757,7 +904,14 @@
    "img": "img/s002.webp",
    "w": 600,
    "h": 720,
-   "thumb": 21
+   "thumb": 21,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "s003",
@@ -789,7 +943,14 @@
    "img": "img/s003.webp",
    "w": 600,
    "h": 520,
-   "thumb": 22
+   "thumb": 22,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "s004",
@@ -822,7 +983,14 @@
    "img": "img/s004.webp",
    "w": 600,
    "h": 720,
-   "thumb": 23
+   "thumb": 23,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "s005",
@@ -854,7 +1022,14 @@
    "img": "img/s005.webp",
    "w": 600,
    "h": 520,
-   "thumb": 24
+   "thumb": 24,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "s006",
@@ -887,7 +1062,14 @@
    "img": "img/s006.webp",
    "w": 600,
    "h": 720,
-   "thumb": 25
+   "thumb": 25,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "s007",
@@ -919,7 +1101,14 @@
    "img": "img/s007.webp",
    "w": 600,
    "h": 520,
-   "thumb": 26
+   "thumb": 26,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "s008",
@@ -952,7 +1141,14 @@
    "img": "img/s008.webp",
    "w": 600,
    "h": 720,
-   "thumb": 27
+   "thumb": 27,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "s009",
@@ -984,7 +1180,14 @@
    "img": "img/s009.webp",
    "w": 600,
    "h": 520,
-   "thumb": 28
+   "thumb": 28,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "s010",
@@ -1017,7 +1220,14 @@
    "img": "img/s010.webp",
    "w": 600,
    "h": 720,
-   "thumb": 29
+   "thumb": 29,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "u001",
@@ -1056,7 +1266,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.3
+   "texture": 0.3,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "u002",
@@ -1095,7 +1312,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.36
+   "texture": 0.36,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "u003",
@@ -1133,7 +1357,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.42
+   "texture": 0.42,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "u004",
@@ -1173,7 +1404,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.48
+   "texture": 0.48,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "u005",
@@ -1211,7 +1449,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.54
+   "texture": 0.54,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "u006",
@@ -1250,7 +1495,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.6
+   "texture": 0.6,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "u007",
@@ -1289,7 +1541,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.66
+   "texture": 0.66,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "u008",
@@ -1328,7 +1587,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.72
+   "texture": 0.72,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "u009",
@@ -1366,7 +1632,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.78
+   "texture": 0.78,
+   "comp": [
+    "a round heart",
+    "soft curls"
+   ],
+   "feel": [
+    "sunny"
+   ]
   },
   {
    "id": "u010",
@@ -1406,7 +1679,14 @@
     0.25,
     0.25
    ],
-   "texture": 0.84
+   "texture": 0.84,
+   "comp": [
+    "a lattice",
+    "heavy blocks"
+   ],
+   "feel": [
+    "shady"
+   ]
   },
   {
    "id": "c001",
@@ -1727,5 +2007,177 @@
    "h": null,
    "thumb": 49
   }
+ ],
+ "words": {
+  "a round heart": "layout",
+  "soft curls": "line",
+  "a lattice": "layout",
+  "heavy blocks": "mass",
+  "sunny": "mood",
+  "shady": "mood"
+ },
+ "rhymes": [
+  [
+   "i001",
+   "s001",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "i002",
+   "s002",
+   1,
+   "a lattice, heavy blocks · shady"
+  ],
+  [
+   "i003",
+   "s003",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "i004",
+   "s004",
+   1,
+   "a lattice, heavy blocks · shady"
+  ],
+  [
+   "i005",
+   "s005",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "i006",
+   "s006",
+   1,
+   "a lattice, heavy blocks · shady"
+  ],
+  [
+   "i007",
+   "s007",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "i008",
+   "s008",
+   1,
+   "a lattice, heavy blocks · shady"
+  ],
+  [
+   "i009",
+   "s009",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "o001",
+   "u001",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "o002",
+   "u002",
+   1,
+   "a lattice, heavy blocks · shady"
+  ],
+  [
+   "o003",
+   "u003",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "o004",
+   "u004",
+   1,
+   "a lattice, heavy blocks · shady"
+  ],
+  [
+   "o005",
+   "u005",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "o006",
+   "u006",
+   1,
+   "a lattice, heavy blocks · shady"
+  ],
+  [
+   "o007",
+   "u007",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "o008",
+   "u008",
+   1,
+   "a lattice, heavy blocks · shady"
+  ],
+  [
+   "o009",
+   "u009",
+   1,
+   "a round heart, soft curls · sunny"
+  ],
+  [
+   "i001",
+   "o001",
+   0,
+   "a round heart"
+  ],
+  [
+   "i002",
+   "o002",
+   0,
+   "a lattice"
+  ],
+  [
+   "i003",
+   "o003",
+   0,
+   "a round heart"
+  ],
+  [
+   "i004",
+   "o004",
+   0,
+   "a lattice"
+  ],
+  [
+   "i005",
+   "o005",
+   0,
+   "a round heart"
+  ],
+  [
+   "i006",
+   "o006",
+   0,
+   "a lattice"
+  ],
+  [
+   "i007",
+   "o007",
+   0,
+   "a round heart"
+  ],
+  [
+   "i008",
+   "o008",
+   0,
+   "a lattice"
+  ],
+  [
+   "i009",
+   "o009",
+   0,
+   "a round heart"
+  ]
  ]
 }

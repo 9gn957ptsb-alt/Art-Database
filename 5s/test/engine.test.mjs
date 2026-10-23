@@ -1158,6 +1158,9 @@ test('Set\'s game: old states gain its fields, removeOwn drops its pairs, a five
   let st = F.bring(F.newState(), { id: 'yabc12', kind: 'object', name: 'Bowl', source: 'Your photos', colours: ['#aa3311'] }, NOW);
   st = { ...st, assoc: [['i001', 'yabc12', 2, 1, 1], ['i001', 'o001', 1, 0, 1]] };
   assert.deepEqual(F.removeOwn(st, 'yabc12').assoc, [['i001', 'o001', 1, 0, 1]]);
+  // Set, inside out: a note on a pair (Note why on a turn) goes with the thing; one on another pair stays
+  const pn = { ...st, notes: [{ at: 1, q: 'set', ref: 'pair:i001|yabc12', text: 'a held breath' }, { at: 2, q: 'set', ref: 'pair:i001|o001', text: 'still' }] };
+  assert.deepEqual(F.removeOwn(pn, 'yabc12').notes.map((n) => n.ref), ['pair:i001|o001']);
 
   let s = F.startFive(F.newState(), deck, NOW);
   assert.equal(F.fivePass(s, NOW).saga.boost.pass, 1, 'nothing before the five is sorted');
@@ -1168,13 +1171,15 @@ test('Set\'s game: old states gain its fields, removeOwn drops its pairs, a five
   assert.equal(F.fivePass(p1, NOW + DAY_MS).saga.boost.pass, 3, 'the next day, another');
   assert.equal(F.fivePass({ ...p1, saga: { ...p1.saga, day: null, boost: { pass: 9, turn: 0, more: 0 } } }, NOW).saga.boost.pass, 9, 'at most 9');
 
-  // At their caps (400 pairings of the longest ids the app makes, 24 nine-by-nine paintings, 999 levels)
-  // the game's fields fit beside the most the app lets the rest of the state hold (STATE_MAX).
+  // At their caps (400 pairings of the longest ids the app makes, each said unlike in the last word, 60 words of
+  // 24 three-byte characters, 24 nine-by-nine paintings, 999 levels) the game's fields fit beside the most the app
+  // lets the rest of the state hold (STATE_MAX).
   const yid = (i) => 'y' + i.toString(36).padStart(5, '0');
   const game = {
-    assoc: Array.from({ length: 400 }, (_, i) => [yid(i), yid(i + 400), 99, 1, 1761100000]),
+    assoc: Array.from({ length: 400 }, (_, i) => [yid(i), yid(i + 400), 99, 1, 1761100000, -1, F.WORD0 + F.WORDS_MAX - 1]),
     saga: { stars: Array(999).fill(3), best: Array(999).fill(9999999), boost: { pass: 9, turn: 9, more: 9 }, plays: 999999, day: TODAY,
-      time: Array(999).fill(9999), built: Array(999).fill('y123456789') },   // the clock and the kingdom: a best time and an id a level
+      time: Array(999).fill(9999), built: Array(999).fill('y123456789'),   // the clock and the kingdom: a best time and an id a level
+      words: Array.from({ length: F.WORDS_MAX }, () => '語'.repeat(F.WORD_LEN)) },   // Set, inside out: the person's words
     paintings: Array.from({ length: 24 }, () => ({ at: 1761100000, n: 999, cols: 9, rows: 9, c: 'f28a3c'.repeat(81) })),
   };
   const bytes = Buffer.byteLength(JSON.stringify(game));

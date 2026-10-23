@@ -2300,7 +2300,7 @@
   // on the canvas (FiveSBring.process). `cid` is the thing's id in the connector, when it has one.
 
   const PER_FILE = 200;              // things one file adds at a time
-  const STATE_MAX = 200 * 1024;      // the state stays well under the db's document limit (256 KiB)
+  const STATE_MAX = 195 * 1024;      // the state stays well under the db's document limit (256 KiB), beside the game's fields at their caps (Set's relations and words took 5 KiB)
   const PICS_PER_VISIT = 24;         // pictures fetched without asking, a visit (the connector reads 30 a minute)
   const FILE_SOURCES = ['Instagram', 'Pinterest', 'Google Takeout', 'X', 'TikTok', 'Are.na', 'Flickr', 'Tumblr', 'Your file'];
   const FILE_ACCEPT = '.json,.js,.html,.htm,.csv,.tsv,.txt,.zip,application/json,text/html,text/csv,text/plain,application/zip';

@@ -15,7 +15,7 @@ const SLOTS = ['wall', 'window', 'picture', 'floor', 'object'];
 const BUILT = /^[A-Za-z0-9_-]{1,10}$/;
 
 export const LIMITS = Object.freeze({ judgments: 50000, sets: 500, own: 1000, notes: 5000, days: 5000, text: 2000, name: 200, url: 2048,
-  assoc: 400, levels: 999, paintings: 24 });   // Set's game (SPEC "Set: the board and the game", "Data"): the app's own caps
+  assoc: 400, levels: 999, paintings: 24, words: 60, word: 24 });   // Set's game (SPEC "Set: the board and the game", "Data"): the app's own caps
 
 /**
  * What a brought-in thing may say about itself (SPEC "Connect your apps": a thing defined from a
@@ -104,11 +104,13 @@ function note(n) {
 const isInt = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi;
 const PAINT = /^(?:[0-9a-f]{6}|------)*$/;
 
-// [a, b (a < b), n 1..99, heart 0|1, last unix seconds]
+// [a, b (a < b), n 1..99, heart 0|1, last unix seconds], and when the person said how the two go (Set, inside out):
+// s 1 alike or -1 unlike, w 0 not said, 1..5 an aspect, 10 + i their word saga.words[i]
 function pairing(e) {
-  if (!Array.isArray(e) || e.length !== 5) return 'is not [a, b, times, heart, time]';
+  if (!Array.isArray(e) || (e.length !== 5 && e.length !== 7)) return 'is not [a, b, times, heart, time] or [a, b, times, heart, time, alike, word]';
   if (typeof e[0] !== 'string' || typeof e[1] !== 'string' || !ID.test(e[0]) || !ID.test(e[1]) || !(e[0] < e[1])) return 'does not name two things in order';
   if (!isInt(e[2], 1, 99) || ![0, 1].includes(e[3]) || !isNum(e[4])) return 'has times, heart or time of the wrong kind';
+  if (e.length === 7 && (![1, -1].includes(e[5]) || !(isInt(e[6], 0, 5) || isInt(e[6], 10, 9 + LIMITS.words)))) return 'says alike or unlike, or in what, of the wrong kind';
   return '';
 }
 
@@ -133,6 +135,8 @@ function saga(g) {
   // The clock and the kingdom (SPEC "Set: the clock and the kingdom", "Data"): a best time and the id a level built.
   if (!(g.time == null || (Array.isArray(g.time) && g.time.length <= LIMITS.levels && g.time.every((x) => isInt(x, 0, 9999))))) return 'state.saga.time must be a list of at most ' + LIMITS.levels + ' whole seconds, 0 to 9999.';
   if (!(g.built == null || (Array.isArray(g.built) && g.built.length <= LIMITS.levels && g.built.every((x) => x === null || (typeof x === 'string' && BUILT.test(x)))))) return 'state.saga.built must be a list of at most ' + LIMITS.levels + ' card ids of up to 10 characters, or nulls.';
+  // Set's words: the person's own, and others' words they made theirs (the app's caps, so the store keeps room)
+  if (!(g.words == null || (Array.isArray(g.words) && g.words.length <= LIMITS.words && g.words.every((x) => typeof x === 'string' && x.length >= 1 && x.length <= LIMITS.word && x.trim() === x && !/[\u0000-\u001f\u007f]/.test(x))))) return 'state.saga.words must be a list of at most ' + LIMITS.words + ' words of 1 to ' + LIMITS.word + ' characters.';
   return '';
 }
 

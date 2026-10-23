@@ -1229,6 +1229,29 @@ def building_cards(cards, thumbs, lo, hi):
     return {g["slug"]: g for b in blds for g in b["new_genes"]}
 
 
+def add_others(cards, head, data=DATA):
+    """Set's other eyes (SPEC "Set, inside out"), only in this git-ignored build: each picture's composition and
+    feeling words (card comp, feel), the words' aspects (head words) and the lookers' pairs (head rhymes:
+    [a, b, 1 yes | 0 partly, their line]). Without data/5s's pairs, tags and words it ships none, and Set still plays."""
+    files = [data / n for n in ("pairs.json", "composition_tags.json", "words.json")]
+    if not all(f.exists() for f in files):
+        log("set: no pairs.json, composition_tags.json or words.json in data/5s: the deck ships no other eyes")
+        return
+    P, T, A = (json.loads(f.read_text()) for f in files)
+    pics = {c["id"]: c for c in cards if c["kind"] != "colour" and c.get("img")}
+    for c in pics.values():
+        t = (T.get(c["work"]) or {}).get(c["kind"]) or {}
+        c["comp"] = [w for w in t.get("comp", []) if w in A]
+        c["feel"] = [w for w in t.get("feel", []) if w in A]
+    pinned, rows = P.get("works") or {}, []   # works: the deck the pairs were judged on; an id that moved is dropped
+    for x in P["pairs"]:
+        a, b = sorted((x["a"], x["b"]))
+        if a in pics and b in pics and pics[a]["work"] != pics[b]["work"] and all(pinned.get(i) in (None, pics[i]["work"]) for i in (a, b)):
+            rows.append([a, b, 1 if x["verdict"] == "yes" else 0, re.sub(r"^Both: ", "", x["share"])])
+    head["words"], head["rhymes"] = A, rows
+    log(f"set: {len(rows)} lookers' pairs of {len(P['pairs'])}; words on {sum(1 for c in pics.values() if c['comp'] or c['feel'])} of {len(pics)} pictures")
+
+
 def write_deck(pk, families, artists):
     for old in OUT_IMG.glob("*.webp"):
         if re.fullmatch(r"[iosucbm]\d{3}\.webp|atlas\.webp", old.name):
@@ -1296,6 +1319,7 @@ def write_deck(pk, families, artists):
     head = {"version": 1, "built": date.today().isoformat(),
             "source": "The art database: Artsy saves and Architectural Authority bookmarks",
             "atlas": {"src": "img/atlas.webp", "cell": cell, "cols": cols}, "genes": genes}
+    add_others(cards, head)
     text = json.dumps(head, ensure_ascii=False, separators=(",", ":"))[:-1]
     text += ',"cards":[\n' + ",\n".join(json.dumps(c, ensure_ascii=False, separators=(",", ":"))
                                          for c in cards) + "\n]}\n"

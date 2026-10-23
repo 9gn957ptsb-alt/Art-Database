@@ -559,7 +559,7 @@ test('the saga: plays, stars and best, boosters earned, used and capped; paintin
 });
 
 test('area(k): the episodes, then a new island every five levels', () => {
-  assert.deepEqual(M.area(0), { k: 0, name: 'Sort', line: 'Line things up.', from: 1, to: 5 });
+  assert.deepEqual(M.area(0), { k: 0, name: 'Sort', line: 'What you kept.', from: 1, to: 5 });
   assert.deepEqual(M.area(5), { k: 5, name: 'Another five', line: 'All of it, together.', from: 26, to: 30 });
   assert.deepEqual(M.area(6), { k: 6, name: 'Another five 2', line: 'All of it, together.', from: 31, to: 35 });
   assert.deepEqual(M.area(7), { k: 7, name: 'Another five 3', line: 'All of it, together.', from: 36, to: 40 });

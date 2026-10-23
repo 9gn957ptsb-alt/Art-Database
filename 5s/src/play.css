@@ -248,6 +248,15 @@
     radial-gradient(closest-side, var(--fk-cloud) 62%, transparent) 76% 36% / 38% 64% no-repeat,
     radial-gradient(closest-side, var(--fk-cloud) 62%, transparent) 98% 60% / 30% 52% no-repeat,
     radial-gradient(closest-side, var(--fk-cloud) 66%, transparent) 50% 72% / 92% 56% no-repeat; }
+.fk-ties { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.fk-ties path { fill: none; stroke: var(--iris, #7350EE); stroke-width: 2.5px; stroke-linecap: round; opacity: 0.8; }
+.fk-ties path.is-unlike { stroke-dasharray: 2 7; }
+.fk-aname em { font: 500 12px/1.2 var(--font-body, system-ui, sans-serif); font-style: normal; color: var(--iris-ink, #5B3BD6); }
+.fk-mist { position: absolute; top: 4%; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: 260px; transform: translate(-50%, 0) scale(calc(1 / var(--z))); transform-origin: 50% 0; pointer-events: auto; }
+.fk-mist span { width: 100%; text-align: center; font: 500 12px/1.3 var(--font-body, system-ui, sans-serif); color: var(--ink-2, #57516A); }
+.fk-mist button { display: grid; justify-items: center; gap: 3px; width: 78px; min-height: 48px; padding: 4px; border: 1.5px dashed var(--line-strong, #8C86A0); border-radius: 12px; background: var(--raised, #FFF); color: var(--ink, #16131F); font: 600 11px/1.2 var(--font-body, system-ui, sans-serif); cursor: pointer; }
+.fk-mist img { width: 56px; height: 44px; object-fit: contain; border-radius: 6px; }
+.fk-mist b { font-weight: 600; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fk-cloud p { position: absolute; top: 64%; width: 200px; margin: 0; text-align: center; font: 600 15px/1.35 var(--font-body, system-ui, sans-serif); color: var(--ink, #16131F); transform: translate(-50%, -50%) scale(calc(1 / var(--z))); }
 .fk-nodes { left: 0; top: 0; margin: 0; padding: 0; list-style: none; }
 .fk-node { position: absolute; width: 0; height: 0; transform-origin: 0 0; transform: scale(calc(1 / var(--z))); }

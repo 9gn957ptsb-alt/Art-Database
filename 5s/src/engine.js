@@ -30,6 +30,10 @@
   /** deckSource(card) -> its DECK_SOURCES entry ({site, maker, sources}). */
   const deckSource = (c) => DECK_SOURCES[c && hasOwn(DECK_SOURCES, c.source) ? c.source : 'Artsy'];
   const NOTE_QS = Object.freeze(['turn', 'five', 'set', 'bring', 'free']);
+  // Set's relations (SPEC "Set, inside out"): a pairing said alike (1) or unlike (-1), and in what: w 0 not said,
+  // 1-5 an aspect, WORD0 + i the person's word saga.words[i] (at most WORDS_MAX, each up to WORD_LEN characters).
+  const ASPECTS = Object.freeze(['layout', 'line', 'light', 'mass', 'mood']);
+  const WORD0 = 10, WORDS_MAX = 60, WORD_LEN = 24;
   const GROUPS = Object.freeze(['Qualities', 'Movements', 'Subjects', 'Materials', 'Eras', 'Places', 'Kinds', 'Colours', 'Textures']);
   // The twelve hue names used as features (degrees: upper bound of each band).
   const HUE_BANDS = [[12, 'red'], [40, 'orange'], [65, 'yellow'], [90, 'lime'], [150, 'green'], [185, 'teal'],
@@ -529,20 +533,25 @@
   const isObj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
   const isInt = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi;
   // As the game writes them and the connector's put_state takes them, so a state read back can be put back.
-  const isPair = (e) => Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'string' && e[0] < e[1] && isInt(e[2], 1, 99) && (e[3] === 0 || e[3] === 1) && Number.isFinite(e[4]);
+  const isPair = (e) => Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'string' && e[0] < e[1] && isInt(e[2], 1, 99) && (e[3] === 0 || e[3] === 1) && Number.isFinite(e[4]) &&
+    (e.length === 5 || (e.length === 7 && (e[5] === 1 || e[5] === -1) && (isInt(e[6], 0, 5) || isInt(e[6], WORD0, WORD0 + WORDS_MAX - 1))));
+  const isWordText = (x) => typeof x === 'string' && x.length >= 1 && x.length <= WORD_LEN && x.trim() === x && !/[\u0000-\u001f\u007f]/.test(x);
   const isPainting = (p) => isObj(p) && isInt(p.n, 1, 1e6) && Number.isFinite(p.at) && isInt(p.cols, 1, 16) && isInt(p.rows, 1, 16) &&
     typeof p.c === 'string' && p.c.length === p.cols * p.rows * 6 && /^(?:[0-9a-f]{6}|------)*$/.test(p.c);
   function normSaga(g) {
     if (!isObj(g)) return newSaga();
     const b = isObj(g.boost) ? g.boost : {}, held = (x) => (isInt(x, 0, 9) ? x : 1);
     const list = (xs, ok, d) => (Array.isArray(xs) ? xs.slice(0, 999).map((x) => (ok(x) ? x : d)) : []);
-    return assign(g, {
+    const out = assign(g, {
       stars: list(g.stars, (x) => isInt(x, 0, 3), 1), best: list(g.best, (x) => Number.isFinite(x) && x >= 0, 0),
       boost: assign(b, { pass: held(b.pass), turn: held(b.turn), more: held(b.more) }),
       plays: isInt(g.plays, 0, Number.MAX_SAFE_INTEGER) ? g.plays : 0, day: typeof g.day === 'string' && g.day.length <= 20 ? g.day : null,
       // The clock and the kingdom (SPEC "Set: the clock and the kingdom", "Data"): a best time in time, and the id each level built.
       time: list(g.time, (x) => isInt(x, 0, 9999), 0), built: list(g.built, (x) => x === null || (typeof x === 'string' && BUILT_ID.test(x)), null),
     });
+    // Set's words (SPEC "Set, inside out"), when there are any: a malformed one stays as a placeholder, so the relations naming later ones keep their word
+    if (g.words !== undefined) out.words = Array.isArray(g.words) ? g.words.slice(0, WORDS_MAX).map((x) => (isWordText(x) ? x : '?')) : [];
+    return out;
   }
   const BUILT_ID = /^[A-Za-z0-9_-]{1,10}$/;
   const CLOCKS = [0, 5, 10];   // opts.clock: seconds a move; missing, it follows opts.ring
@@ -752,8 +761,10 @@
     return Object.keys(featuresOf(c)).filter((k) => k.indexOf('chord:') === 0 || k.indexOf('era:') === 0 || k.indexOf('place:') === 0);
   }
 
-  /** nextFive(state, deck, now) -> [cardId × 5]: one per kind, shuffled; deterministic for (state, day). */
-  function nextFive(state, deck, now) {
+  /** nextFive(state, deck, now, ask?) -> [cardId × 5]: one per kind, shuffled; deterministic for (state, day, ask).
+   *  ask (FiveSRelate.ask): deck cards that follow from the person's relations in Set; the first that fits takes
+   *  its kind's place, in a match slot (any slot in the first fives). Without ask the five is as before. */
+  function nextFive(state, deck, now, ask) {
     const st = norm(state);
     const day = dayOf(now);
     const t = toSec(now);
@@ -821,6 +832,9 @@
       picks.push({ kind, id: best.id });
     }
 
+    const fit = (ask || []).find((a) => { const c = a && idx.get(a.id); return c && !lastSeen.has(c.id) && (judged < 10 || modes[c.kind] === 'match'); });
+    if (fit) { const slot = picks.find((p) => p.kind === idx.get(fit.id).kind); if (slot) slot.id = fit.id; }
+
     const back = revisitFor(st, t);
     if (back) {
       const slot = picks.find((p) => p.kind === back.kind);
@@ -836,11 +850,11 @@
     return isOwnId(id) && st.own.some((o) => o && o.id === id);
   }
 
-  /** startFive(state, deck, now) -> State with five = {ids: nextFive(...), day, n, i: 0}. */
-  function startFive(state, deck, now) {
+  /** startFive(state, deck, now, ask?) -> State with five = {ids: nextFive(...), day, n, i: 0}. */
+  function startFive(state, deck, now, ask) {
     const st = norm(state);
     const day = dayOf(now);
-    return assign(st, { five: { ids: nextFive(st, deck, now), day, n: fiveNumber(st, day), i: 0 } });
+    return assign(st, { five: { ids: nextFive(st, deck, now, ask), day, n: fiveNumber(st, day), i: 0 } });
   }
 
   /** currentCard(state) -> the id to judge now, or null when the five is done (or none is started). */
@@ -1085,7 +1099,7 @@
     if (!st.own.some((o) => o && o.id === id)) return assign(st);
     const own = st.own.filter((o) => !(o && o.id === id));
     const j = st.j.filter((e) => !(Array.isArray(e) && e[0] === id));
-    const notes = st.notes.filter((n) => !(n && n.ref === id));
+    const notes = st.notes.filter((n) => !(n && (n.ref === id || (typeof n.ref === 'string' && n.ref.indexOf('pair:') === 0 && n.ref.slice(5).split('|').indexOf(id) >= 0))));
     const sets = st.sets.map((s) => {
       if (!SLOT_NAMES.some((k) => s[k] === id)) return s;
       const c = assign(s);
@@ -1306,8 +1320,20 @@
     }
     Object.keys(bySource).sort((a, b) => bySource[b] - bySource[a] || cmpStr(a, b)).forEach((s) => sources.push({ source: s, n: bySource[s] }));
 
+    // Set's relations among what is kept now (SPEC "Set, inside out"): how many, alike and unlike, what they name most.
+    const inDb = new Set(things.map((x) => x.id)), said = {};
+    const relations = { n: 0, alike: 0, unlike: 0, top: null };
+    for (const e of st.assoc) if (e.length === 7 && inDb.has(e[0]) && inDb.has(e[1])) {
+      relations.n++; relations[e[5] > 0 ? 'alike' : 'unlike']++;
+      const w = e[6] >= 1 && e[6] <= 5 ? ASPECTS[e[6] - 1] : e[6] >= WORD0 ? (st.saga.words || [])[e[6] - WORD0] : null;
+      if (w) said[w] = (said[w] || 0) + 1;
+    }
+    relations.top = Object.keys(said).sort((a, b) => said[b] - said[a] || cmpStr(a, b))[0] || null;
+    if (relations.top) relations.topN = said[relations.top];
+    relations.aspect = ASPECTS.indexOf(relations.top) >= 0;
+
     return {
-      judged, kept, passed, keepRate, medianMs, speed, turns, groups, positive, negative,
+      judged, kept, passed, keepRate, medianMs, speed, turns, groups, positive, negative, relations,
       keptColours: sortColours(Array.from(keptSet)),
       passedColours: sortColours(Array.from(passedSet)),
       keptByKind, drift,
@@ -1422,7 +1448,12 @@
       ? "You've brought in " + plural(brought, 'thing') + ' of your own' + (letGo ? ' and let ' + letGo + ' go.' : brought === 1 ? ' and kept it.' : ' and kept them all.')
       : "Everything you've judged so far came from the artist's database; you haven't brought in anything of your own.";
 
-    for (const l of [colourLine, keepLine, negLine, turnLine]) if (l) lines.push(l);
+    // Set: how they relate what they kept (from ten relations).
+    const R = P.relations;
+    const setLine = R && R.n >= 10 ? "You've said how " + R.n + ' pairs of your things go: ' + R.alike + ' alike, ' + R.unlike + ' unlike.' +
+      (R.top ? (R.aspect ? ' You look at ' + R.top + ' most' : ' You say ‘' + R.top + '’ most') + ' (' + R.topN + ' of ' + R.n + ').' : '') : null;
+
+    for (const l of [colourLine, keepLine, negLine, turnLine, setLine]) if (l) lines.push(l);
     for (const l of [broughtLine, driftLine]) if (l && lines.length < 6) lines.push(l);
     if (lines.length < 4) { // rate, turns and brought are always there, so this makes four
       lines.push(P.speed === 'gut' ? 'At least half your judgments take under two seconds.'
@@ -1533,6 +1564,9 @@
       }),
       own: st.own.filter(Boolean).map((o) => seedOwn(o, nameOf(o))),
       notes: st.notes.filter(Boolean).map((n) => ({ q: n.q, text: n.text, about: aboutOf(n.ref), at: dayOf(n.at * 1000) })),
+      // Set's relations, by work (or a brought thing's name): what the person saw between the things they kept
+      relations: st.assoc.filter((e) => e.length === 7).map((e) => ({ a: refOf(e[0]), b: refOf(e[1]), alike: e[5] > 0,
+        in: e[6] >= 1 && e[6] <= 5 ? ASPECTS[e[6] - 1] : e[6] >= WORD0 ? (st.saga.words || [])[e[6] - WORD0] || null : null })).filter((r) => r.a && r.b),
       speed: { medianMs: P.medianMs },
     };
   }
@@ -1720,7 +1754,7 @@
   // ---------------------------------------------------------------- export
 
   const FiveS = Object.freeze({
-    version: 1,
+    version: 1, ASPECTS, WORD0, WORDS_MAX, WORD_LEN,
     ERAS, KINDS, SLOTS, SLOT_NAMES, OWN_KINDS, SOURCES, DECK_SOURCE, DECK_SOURCES, deckSource, NOTE_QS, GROUPS, HUES, MILESTONES,
     HUB_MILESTONES, HUB_MODES, setHub,
     DEFINED_BY, OWN_LIMITS, checkOwnFields,

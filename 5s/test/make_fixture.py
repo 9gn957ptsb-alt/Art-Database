@@ -81,6 +81,9 @@ for kind, letter, category, mats in KINDS:
             card["texture"] = round(0.3 + 0.06 * n, 2)
         if kind != "colour":
             draw(IMG / f"{cid}.webp", colours, w, h, kind, warm)
+            # Set's other eyes, synthetic (SPEC "Set, inside out"): each picture's words, as the deck build ships them
+            card["comp"] = ["a round heart", "soft curls"] if warm else ["a lattice", "heavy blocks"]
+            card["feel"] = ["sunny"] if warm else ["shady"]
         atlas_cells.append(colours)
         cards.append(card)
 
@@ -96,5 +99,12 @@ atlas.save(IMG / "atlas.webp", "WEBP", quality=70)
 deck = {"version": 1, "built": "fixture", "source": "Synthetic fixture (not real works)",
         "atlas": {"src": "img/atlas.webp", "cell": cell, "cols": cols},
         "genes": {k: {"name": v[0], "family": v[1]} for k, v in GENES.items()}, "cards": cards}
+# Set's other eyes, synthetic words (the real ones stay in data/5s): their aspects, and lookers' pairs [a, b, 1 yes | 0 partly, line]
+deck["words"] = {"a round heart": "layout", "soft curls": "line", "a lattice": "layout", "heavy blocks": "mass",
+                 "sunny": "mood", "shady": "mood"}
+line = lambda k: "a round heart, soft curls · sunny" if k % 2 else "a lattice, heavy blocks · shady"
+deck["rhymes"] = ([[f"i{k:03d}", f"s{k:03d}", 1, line(k)] for k in range(1, 10)] +
+                  [[f"o{k:03d}", f"u{k:03d}", 1, line(k)] for k in range(1, 10)] +
+                  [[f"i{k:03d}", f"o{k:03d}", 0, "a round heart" if k % 2 else "a lattice"] for k in range(1, 10)])
 (HERE / "deck.json").write_text(json.dumps(deck, indent=1, ensure_ascii=False))
 print(f"wrote {len(cards)} cards to {HERE / 'deck.json'}")
