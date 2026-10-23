@@ -115,6 +115,14 @@ async function newPage(cfg) {
   return { ctx, page };
 }
 
+// deck.json answers late: when the next document is asked for (a reload), else after 600 ms. A seed planted after the
+// first load and then reloaded is overwritten by that load's first save every time, not now and then.
+async function lateDeck(page) {
+  let go = null;
+  await page.route(/deck\.json$/, async (r) => { const res = await r.fetch(); await new Promise((k) => { go = k; setTimeout(k, 600); }); go = null; await r.fulfill({ response: res }); });
+  await page.route(/dev\.html/, async (r) => { if (go) { go(); await sleep(300); } await r.continue(); });
+}
+
 function shooter(page, cfg) {
   const tag = cfg.w + '-' + cfg.scheme;
   return async (name) => {
@@ -2314,8 +2322,8 @@ for (const cfg of CONFIGS) {
       const deck = await (await fetch(new URL('deck.json', BASE))).json();
       let st = FiveS.exampleState(deck, Date.now());
       st = Object.assign({}, st, { seen: Object.assign({}, st.seen, { intro: 1 }) });
-      await page.evaluate((json) => localStorage.setItem('5s.state.v1', json), JSON.stringify(st));
-      await page.reload();
+      await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
+      await page.reload();   // seeded as the reload starts, before the page runs
       await page.waitForSelector('#view-set .fb-tile[data-id]');
       assert.deepEqual(await visibleH1s(page), ['Set']);
       // A tile opens the detail sheet.
@@ -2443,9 +2451,10 @@ test('Set: the clock and the kingdom: a win in time builds on its plot, the fift
     }
     assert.ok(plan, 'a board of level 5 the hints win');
     st = plan.st;
+    await lateDeck(page);
+    // seeded before the page runs: planting it after the first load races the app's own first save, which can land on top
+    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(st));
     await page.goto(BASE + '#set');
-    await page.evaluate((json) => localStorage.setItem('5s.state.v1', json), JSON.stringify(st));
-    await page.reload();
     await page.waitForSelector('#view-set .fb-tile[data-id]');   // the saved state is in (the board shows it)
     await page.click('#view-set [data-act="set-kingdom"]');
     await page.waitForSelector('#view-set .fk-node button');
@@ -2586,9 +2595,10 @@ test('Set: a win of level 1000, past the 999 the saga keeps, claims nothing it d
       if (g.state === 'won') plan = { st: s0, mv };
     }
     assert.ok(plan, 'a board of level 1000 the hints win in 40 moves');
+    await lateDeck(page);
+    // seeded before the page runs: planting it after the first load races the app's own first save, which can land on top
+    await page.addInitScript((json) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('5s.state.v1', json); sessionStorage.setItem('seeded', '1'); } }, JSON.stringify(plan.st));
     await page.goto(BASE + '#set');
-    await page.evaluate((json) => localStorage.setItem('5s.state.v1', json), JSON.stringify(plan.st));
-    await page.reload();
     await page.waitForSelector('#view-set .fb-tile[data-id]');
     assert.match(await page.textContent('#view-set [data-act="set-play"]'), /Play level 1000/);
     await page.click('#view-set [data-act="set-play"]');
