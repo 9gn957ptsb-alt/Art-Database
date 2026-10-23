@@ -196,6 +196,8 @@ def make_source(rng, pool, face_pool, images, objs=(), name=""):
     has_glint = np.zeros(CLODS, bool)
     for i in order:
         cells = lab == i
+        if not chocs:                                  # more gone from Artsy than the pool could spare: deal it again
+            chocs = list(rng.permutation(len(pool)))
         p = face_pool[faces.pop()] if faces and rng.random() < FACE_SHARE else pool[chocs.pop()]
         pic = images.try_get(p["work"]["image"])
         while pic is None and chocs:                   # its image is gone from Artsy: the next painting takes the clod

@@ -2,11 +2,11 @@
 """The saves into data/artworks.db: step 1 of the coworker's week (COWORKER.md).
 
 Only the works Aries saved himself (his choice, 23 Oct 2026: "Only my saves"). From 1 to 14 October 2026 a run on
-his account saved every work by the artists he follows, some fifty thousand; ranked by every save, DIRT took in KAWS,
-Honoré Daumier and Banksy on 14 October for works he had not chosen (0, 0 and 1 of his own). So this no longer walks
-Artsy. It takes Color Middling's list of his saves (data/artsy_saves_raw.json on the branch
-claude/artsy-import-rwgk8s), which that branch's daily reconcile keeps level with Artsy, the run's works set aside by
-their ids. It is an LFS file, read with `git lfs smudge` (a few seconds), never written into this branch.
+his account saved every work by the artists he follows, some fifty thousand; ranked by every save, DIRT took in Frank
+Stella, Karel Appel and Wayne Thiebaud on 6 October and KAWS, Honoré Daumier and Banksy on 14 October, for works he
+had not chosen (4, 1, 0, 0, 0 and 1 of his own). So this no longer walks Artsy. It takes Color Middling's list of his
+saves (data/artsy_saves_raw.json on the branch claude/artsy-import-rwgk8s), which that branch's daily reconcile keeps
+level with Artsy, the run's works set aside by their ids. It is an LFS file, read with `git lfs smudge` (a few seconds), never written into this branch.
 
 Then it normalizes them into data/artworks.db with the normalizer from the same branch, read with `git show` and run
 in memory, patched for an open-ended price ("from $5,000", a price_cents list holding a null), which would otherwise
