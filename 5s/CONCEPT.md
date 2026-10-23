@@ -117,6 +117,9 @@ a move):
   between and using those objects and those relationships to develop a new game. So I want you to
   think inversely going forward regarding this game then how you were currently thinking about it. We
   are looking for inside out processes of informing rather than outside in processes of informing."
+- "Think of sort and set as different stages of the same process. In sort, we are providing users and
+  opportunity to select specific objects that they like and with set, we are taking it a step further
+  and then allowing users to establish relationships between the objects, they have chosen to like"
 
 ## What it is
 
