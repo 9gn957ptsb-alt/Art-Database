@@ -44,14 +44,11 @@ KINDS = [
     {"kind": "architecture", "file": "architecture.json", "key": "buildings",
      "steps": ["fetch_architecture_saves.py", "build_architecture.py"]},
     {"kind": "museums", "file": "museums.json", "key": "museums",
-     "steps": ["fetch_artsy_saves.py", "build_museums.py"],
-     # Paused 6 Oct 2026: the artist asked for every work by the 878 artists he follows to be
-     # saved on Artsy (scripts/save_followed_artworks.py, ~100,000 works, a day's run). Read
-     # back daily, they would all flow into museums.json — a half-saved set, too large to fetch
-     # or build in one pass — before he has decided how they belong on the site. museums.json
-     # stays as it is (built from the works he saved himself); delete this key to resume.
-     "paused": "the Artsy saves now hold every work by the artists he follows; "
-               "waiting on the artist's decision about how they appear on the site"},
+     "steps": ["fetch_artsy_saves.py", "build_museums.py"]},
+     # Paused 6-23 Oct 2026 while every work by the artists he follows was saved on Artsy
+     # (scripts/save_followed_artworks.py). The artist chose (22 Oct) to keep that run's works off
+     # the site for now: fetch_artsy_saves.py writes only the works he saved himself, skipping the
+     # run's block by its ids in data/follow_saves/run_ids.json (private), and fails without them.
 ]
 
 

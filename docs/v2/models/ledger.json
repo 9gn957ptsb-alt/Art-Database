@@ -439,11 +439,11 @@
         "arranged": 31
       },
       "works": {
-        "hung": 52,
+        "hung": 46,
         "elsewhere": 0,
         "off": 0,
         "none": 0,
-        "arranged": 52
+        "arranged": 46
       },
       "log": []
     }
@@ -598,11 +598,11 @@
         "reconstructed": 19
       },
       "works": {
-        "hung": 31,
+        "hung": 17,
         "elsewhere": 0,
         "off": 0,
         "none": 0,
-        "arranged": 31
+        "arranged": 17
       },
       "log": [
         "2026-10-08 OpenStreetMap's plan taken: 18 rooms on 7 floors (levels 2-6 over half the model's floor), 17 reached; 5 mapped doors, 4 by the rule, 2 lifts and 3 by the rule; arranged → reconstructed"
@@ -1258,11 +1258,11 @@
         "arranged": 42
       },
       "works": {
-        "hung": 9,
+        "hung": 8,
         "elsewhere": 0,
         "off": 0,
         "none": 0,
-        "arranged": 9
+        "arranged": 8
       },
       "log": []
     }
@@ -2639,11 +2639,11 @@
         "arranged": 45
       },
       "works": {
-        "hung": 7,
+        "hung": 6,
         "elsewhere": 0,
         "off": 0,
         "none": 0,
-        "arranged": 7
+        "arranged": 6
       },
       "log": []
     }

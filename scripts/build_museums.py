@@ -232,6 +232,8 @@ def main():
     if not RAW.exists():
         sys.exit("No data/artsy_saves_raw.json — run scripts/fetch_artsy_saves.py first.")
     raw = json.loads(RAW.read_text())
+    # The listing runs oldest first, so its order is his: last_saved_at is anyone's latest save on Artsy.
+    saved = {r.get("id"): i for i, r in enumerate(raw)}
     locations, geocoded = load(LOCATIONS), load(GEOCODE)
     # A blank answer may have been Nominatim turning a busy client away; ask again.
     geocoded = {k: v for k, v in geocoded.items() if v}
@@ -313,7 +315,7 @@ def main():
     out = []
     for m in museums.values():
         recs = sorted({r["id"]: r for r in m.pop("_recs")}.values(),
-                      key=lambda r: r.get("last_saved_at") or "", reverse=True)
+                      key=lambda r: saved.get(r.get("id"), -1), reverse=True)
         works = []
         for r in recs:
             key = picture(r)

@@ -38,10 +38,13 @@ script names, once they answer.
    model yet. A kind that fails is reported and the rest carry on — say so at
    the end (a refused refresh token means the artist copies a fresh one).
    A kind can be **paused** (`"paused"` on its entry in `KINDS`): its intake is
-   skipped and says why. The museums' intake is paused since 6 Oct 2026, while
-   every work by the artists he follows is saved on Artsy and until he decides
-   how those works belong on the site; the existing museums are still modelled
-   and refined as before.
+   skipped and says why. The museums' intake was paused from 6 to 23 Oct 2026
+   while every work by the artists he follows was saved on Artsy; he chose (22
+   Oct) to keep that run's works off the site for now, so it reads only the
+   works he saved himself. It needs the run's ids, `data/follow_saves/run_ids.json`
+   (private, in the private repository 9gn957ptsb-alt/art-database-data: a
+   session without `data/` clones it there, as its README says); without them
+   the fetch fails and the museums' kind is reported as failed, nothing changed.
    - **First models.** Every new Architectural Authority building gets its
      first model this run. For the other kinds, model the **three** without a
      model that matter most — the order of their file (the museums holding
