@@ -41,7 +41,8 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 189 building cells taller, 25 lower; the tallest now 35 storeys (112 m), before 35 (112 m); roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 86% of its building cells stand at two storeys, the default where Overture gives no height, and no register of Flanders' buildings is read; (2) 5% of its building cells dated (Wikidata's landmarks and the satellites' 1975 on; OpenStreetMap's dates have not been read for it), the rest stand from the dial's first, so the dial shows almost no growth; (3) the Scheldt and the docks (5.0% water) are the sea's soil, blue patches with white specks, in its deep tone where a cell has no dot (it was black before today's drawing): a mottled surface, not a calm one (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Antwerp at both sizes)",
         "2026-10-21 · dated again with its runners' records · 8% of its building cells dated (8% at the last cut)",
-        "2026-10-21 · `--tunnels`: 271 road cells in tunnels and 31 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 271 road cells in tunnels and 31 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 20,008 building cells that stood at the default two storeys take it (86% of its building cells at two storeys before, 12% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Antwerp at both sizes)"
       ],
       "name": "Antwerp",
       "n": 288,
@@ -55,8 +56,8 @@
       "buildings": 26244,
       "green": 14382,
       "dated_share": 0.077,
-      "kb": 463,
-      "gz": 64
+      "kb": 464,
+      "gz": 66
     },
     "basel-ch": {
       "tier": 2,
@@ -68,7 +69,8 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 90 building cells taller, 9 lower; the tallest now 64 storeys (205 m), before 64 (205 m); roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 67% of its building cells stand at two storeys, the default where Overture gives no height, while the Swiss building register (GWR), which dates 96% of them, probably holds each building's floors too: not read for heights yet (unchecked whether the layer answers with them); EUBUCCO's heights are not used here (its France box takes in Basel, where they are a model's: median 7.5 m against Overture's 12.8, r = 0.37); (2) the Rhine (8.3% water) is crossed (64 bridge cells) by decks at water height (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Basel at both sizes)",
         "2026-10-21 · dated again with its runners' records · 96% of its building cells dated (96% at the last cut)",
-        "2026-10-21 · `--tunnels`: 124 road cells in tunnels and 68 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 124 road cells in tunnels and 68 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 5,505 building cells that stood at the default two storeys take it (67% of its building cells at two storeys before, 1% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Basel at both sizes)"
       ],
       "name": "Basel",
       "n": 152,
@@ -83,24 +85,46 @@
       "green": 1706,
       "dated_share": 0.963,
       "kb": 154,
-      "gz": 32
+      "gz": 33
+    },
+    "beijing-cn": {
+      "tier": 2,
+      "log": [
+        "2026-10-22 · first cut · 152 cells a side (19.7 m) from Overture 2026-10-21.0 · 2216 buildings, 2756 green cells · 98% of its building cells dated · 138 KB (19 KB sent)",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 4,623 building cells that stood at the default two storeys take it (98% of its building cells at two storeys before, 11% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Beijing at both sizes)",
+        "2026-10-22 · still wrong, biggest first: (1) its years are the satellites' alone (98% dated by the World Settlement Footprint, 1985-2015, and GHSL's 1975 and 1980): no Beijing record is read, so every building that stood by 1975 rises in 1975, among them the 798 Art Zone's factory halls of the 1950s; (2) 98% of its building cells stood at the default two storeys (Overture gives a height for 96 of its 5,281 cells): 4,623 now take their pixel's average from GHS-BUILT-H (11% still at two), so the 798's low halls read at four to six storeys, a mean not a building's height, and the tallest cell is 40 storeys (128 m, at 39.9987 N 116.4825 E, a building Wikidata gives 55 floors); (3) the square is 3 km round M Woods (798 Art Zone, Chaoyang): the Forbidden City (11 km south-west) and the Central Business District with the China Zun (528 m, 9 km south) are outside it, so it shows a district and not Beijing's skyline; (4) alleys under 6 m are left out and a street is a whole 20 m cell, so the hutong lanes and the compounds' inner roads do not read; (5) bridges, flyovers and the subway are drawn at ground height or not at all, and the first cut is 20 m: the next passes raise it to 14 m (checked at 390x844 and 1440x900 after the first cut and the heights repair, with the final drawing: all passed; screenshots looked at: Beijing at both sizes)"
+      ],
+      "name": "Beijing",
+      "n": 152,
+      "cell": 19.7,
+      "side": 3000,
+      "lat": 39.98587,
+      "lon": 116.49415,
+      "release": "2026-10-21.0",
+      "read": "2026-10-22",
+      "dated": "2026-10-22",
+      "buildings": 2216,
+      "green": 2756,
+      "dated_share": 0.979,
+      "kb": 138,
+      "gz": 20
     },
     "berlin-de": {
       "name": "Berlin",
-      "tier": 2,
-      "n": 328,
-      "cell": 20.1,
+      "tier": 3,
+      "n": 472,
+      "cell": 14.0,
       "side": 6600,
       "lat": 52.512,
       "lon": 13.35698,
-      "release": "2026-09-23.1",
-      "read": "2026-10-13",
-      "dated": "2026-10-21",
-      "buildings": 19892,
-      "green": 18153,
+      "release": "2026-10-21.0",
+      "read": "2026-10-22",
+      "dated": "2026-10-22",
+      "buildings": 22268,
+      "green": 38116,
       "dated_share": 0.525,
-      "kb": 640,
-      "gz": 106,
+      "kb": 1303,
+      "gz": 166,
       "log": [
         "2026-10-07 · first cut · 144 cells a side (45.8 m) from Overture 2026-09-23.0 · 6626 buildings · dated to 2026-10-08: 57% of its building cells",
         "2026-10-13 · raised to tier 2 · 328 cells a side (20.1 m) from Overture 2026-09-23.1 · 19892 buildings, 18153 green cells · 52% of its building cells dated (57% at the last cut) · 640 KB (105 KB sent)",
@@ -110,7 +134,9 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 1596 building cells taller, 812 lower; the tallest now 55 storeys (176 m), before 55 (176 m); roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 48% of its building cells have no year (52% dated, from the Umweltatlas's block ages (a block's cells share its decade's middle, before 1900 as 1900) and the listed buildings; OpenStreetMap's dates have not been read for it); (2) its square (6.6 km, east edge 13.406 E) ends 250 m west of the Fernsehturm: Alexanderplatz lies outside; (3) the Spree and the Landwehrkanal are 1-3 cell ribbons that the blocks hide from low headings; (4) 21% at two storeys, the default where Overture gives no height (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Berlin at both sizes)",
         "2026-10-21 · dated again with its runners' records · 52% of its building cells dated (52% at the last cut)",
-        "2026-10-21 · `--tunnels`: 110 road cells in tunnels and 148 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 110 road cells in tunnels and 148 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · raised to tier 3 · 472 cells a side (14.0 m) from Overture 2026-10-21.0 · 22268 buildings, 38116 green cells · 52% of its building cells dated (52% at the last cut) · 1303 KB (166 KB sent)",
+        "2026-10-22 · still wrong, biggest first: (1) 48% of its building cells have no year (52% dated, from the Umweltatlas's block ages (a block's cells share its decade's middle, before 1900 as 1900), the listed buildings and OpenStreetMap's dates) and stand from the dial's first; (2) its tallest cell, 55 storeys (176 m) at 52.51005 N 13.33293 E beside the Zoo, is Wikidata's Great Berlin Wheel (Q11744), a Ferris wheel that was proposed and never built, standing in the cell of a tent's roof: no class marks a never-built item, so the real tallest there, the Upper West and Zoofenster towers at 37 storeys (118 m), are lower; scripts/wikidata_heights.py now leaves out items Wikidata calls destroyed (Q19860854), which the Wheel is not; (3) its square (6.6 km, east edge 13.406 E) ends 250 m west of the Fernsehturm (368 m): Alexanderplatz and the Park Inn (125 m) are outside it; (4) the Spree and the Landwehrkanal are one to three cell ribbons that the blocks hide from low headings, and a street is a whole 14 m cell; (5) 22% of its building cells are at two storeys, the default where Overture gives no height (Hinterhaeuser and courtyard annexes among them) (checked at 390x844 and 1440x900 after the cut, and the 2D fallback at 1440x900, with the final drawing: all passed; screenshots looked at: Berlin at both sizes and in 2D)"
       ]
     },
     "bilbao-es": {
@@ -118,7 +144,8 @@
       "log": [
         "2026-10-21 · first cut · 152 cells a side (19.7 m) from Overture 2026-09-23.1 · 2343 buildings, 7637 green cells · 5% of its building cells dated · 138 KB (26 KB sent)",
         "2026-10-21 · `--tunnels`: 48 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · still wrong, most important first: (1) 5% dated: EUBUCCO's Spain is the national Catastro, and the Basque Country keeps its own foral cadastres, so no register year reached it, no OpenStreetMap dates are read for it yet (osm/REQUEST), and only the satellites and Wikidata's landmarks date it; (2) 46% of its building cells stand at the default two storeys (no register read for the Basque Country; Geoeuskadi's building data not looked for); (3) a 244 m relief in 3 km (the hills round the ria) is a tall wall at the clod's west side, and the steep slopes are stairs of 20 m cells; (4) the bridges over the ria are decks at water height with no arches or cables; (5) a street is a whole cell wide"
+        "2026-10-21 · still wrong, most important first: (1) 5% dated: EUBUCCO's Spain is the national Catastro, and the Basque Country keeps its own foral cadastres, so no register year reached it, no OpenStreetMap dates are read for it yet (osm/REQUEST), and only the satellites and Wikidata's landmarks date it; (2) 46% of its building cells stand at the default two storeys (no register read for the Basque Country; Geoeuskadi's building data not looked for); (3) a 244 m relief in 3 km (the hills round the ria) is a tall wall at the clod's west side, and the steep slopes are stairs of 20 m cells; (4) the bridges over the ria are decks at water height with no arches or cables; (5) a street is a whole cell wide",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 2,688 building cells that stood at the default two storeys take it (46% of its building cells at two storeys before, 5% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Bilbao at both sizes)"
       ],
       "name": "Bilbao",
       "n": 152,
@@ -133,24 +160,24 @@
       "green": 7637,
       "dated_share": 0.049,
       "kb": 138,
-      "gz": 26
+      "gz": 27
     },
     "boston-us": {
       "name": "Boston",
-      "tier": 2,
-      "n": 288,
-      "cell": 19.8,
+      "tier": 3,
+      "n": 408,
+      "cell": 14.0,
       "side": 5700,
       "lat": 42.34562,
       "lon": -71.07098,
-      "release": "2026-09-23.1",
-      "read": "2026-10-13",
-      "dated": "2026-10-21",
-      "buildings": 13309,
-      "green": 6640,
-      "dated_share": 0.662,
-      "kb": 450,
-      "gz": 74,
+      "release": "2026-10-21.0",
+      "read": "2026-10-22",
+      "dated": "2026-10-22",
+      "buildings": 21214,
+      "green": 13862,
+      "dated_share": 0.663,
+      "kb": 897,
+      "gz": 134,
       "log": [
         "2026-10-07 · first cut · 144 cells a side (39.6 m) from Overture 2026-09-23.0 · 4650 buildings · dated to 2026-10-08: 67% of its building cells",
         "2026-10-13 · raised to tier 2 · 288 cells a side (19.8 m) from Overture 2026-09-23.1 · 13309 buildings, 6640 green cells · 66% of its building cells dated (67% at the last cut) · 450 KB (74 KB sent)",
@@ -160,7 +187,9 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 492 building cells taller, 895 lower; the tallest now 75 storeys (240 m), before 75 (240 m); roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 34% of its building cells have no year: the assessing roll leaves parcels undated, and before 1900 stands as 1900; (2) the Charles and the harbour (16.2% of the square) are the sea's soil, in its deep tone where a cell has no dot, not black; (3) the bridges (271 cells) are decks at water height, and roads in tunnels (I-93 under the Greenway: 36 motorway segments flagged `is_tunnel`) are drawn on the surface until its next cut; (4) 15% at two storeys, the default where Overture gives no height (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Boston at both sizes)",
         "2026-10-21 · dated again with its runners' records · 66% of its building cells dated (66% at the last cut)",
-        "2026-10-21 · `--tunnels`: 489 road cells in tunnels and 175 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 489 road cells in tunnels and 175 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · raised to tier 3 · 408 cells a side (14.0 m) from Overture 2026-10-21.0 · 21214 buildings, 13862 green cells · 66% of its building cells dated (66% at the last cut) · 897 KB (134 KB sent)",
+        "2026-10-22 · still wrong, biggest first: (1) 34% of its building cells have no year: the assessing roll leaves parcels undated, and before 1900 stands as 1900; (2) its square (5.7 km round the Gardner and the MFA) takes in Back Bay, downtown and the Seaport but not Cambridge beyond MIT (Harvard Square is 3.9 km west and 3.1 km north of its centre), Charlestown or Logan Airport (5 km east); (3) the Charles and the harbour (16% of the square) are the sea's soil, blue patches with specks, and the bridges are decks at water height with no piers or cables (I-93 under the Greenway is off the surface in this cut); (4) 15% of its building cells are at two storeys, the default where Overture gives no height; the tallest are the Hancock Tower (75 storeys, 240 m) and the Prudential (71, 227 m); (5) a street is a whole 14 m cell, so Beacon Hill's lanes read twice as wide (checked at 390x844 and 1440x900 after the cut, with the final drawing: all passed; screenshots looked at: Boston at both sizes)"
       ]
     },
     "brussels-be": {
@@ -173,12 +202,12 @@
       "lon": 4.36079,
       "release": "2026-09-23.1",
       "read": "2026-10-14",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 41020,
       "green": 10229,
       "dated_share": 0.47,
       "kb": 692,
-      "gz": 124,
+      "gz": 127,
       "log": [
         "2026-10-07 · first cut · 144 cells a side (44.4 m) from Overture 2026-09-23.0 · 8848 buildings · dated to 2026-10-08: 66% of its building cells",
         "2026-10-13 · dated again with its runners' records · 66% of its building cells dated (66% at the last cut)",
@@ -191,25 +220,27 @@
         "2026-10-15 · still wrong, biggest first: (1) 83% of its building cells at two storeys, the default where Overture gives no height (it has one for 7% of Brussels' buildings; EUBUCCO's for Belgium are not a register's: median 6 m, r = 0.35 with Overture's), so a five- or six-storey street reads as a two-storey one beside the North Quarter's towers and the Tour du Midi (150 m); (2) 47% of its building cells dated (12% by the satellites' between-1930-and-1975 year, 1952; the rest by the heritage inventory, OpenStreetMap, Wikidata and the satellites' later years), the other 53% have no year and stand from the dial's first, so the city hardly grows on the dial; (3) the Senne, vaulted since 1871, is rightly not drawn, and the canal is a 1-2 cell ribbon (2.0% water), so the city reads dry; (4) bridge decks and the ring's flyovers are drawn at ground or water height; (5) streets kept are a whole 20 m cell, so the Petite Ceinture's boulevards read thicker than they are (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Brussels at both sizes)",
         "2026-10-21 · dated again with its runners' records · 47% of its building cells dated (47% at the last cut)",
         "2026-10-21 · `--tunnels`: 257 road cells in tunnels and 1004 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · dated again with its runners' records · 47% of its building cells dated (47% at the last cut)"
+        "2026-10-21 · dated again with its runners' records · 47% of its building cells dated (47% at the last cut)",
+        "2026-10-22 · dated again with its runners' records · 47% of its building cells dated (47% at the last cut)",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 35,984 building cells that stood at the default two storeys take it (83% of its building cells at two storeys before, 3% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Brussels at both sizes)"
       ]
     },
     "chicago-us": {
       "name": "Chicago",
-      "tier": 2,
-      "n": 296,
-      "cell": 19.9,
+      "tier": 3,
+      "n": 424,
+      "cell": 13.9,
       "side": 5900,
       "lat": 41.8953,
       "lon": -87.63185,
-      "release": "2026-09-23.1",
-      "read": "2026-10-13",
-      "dated": "2026-10-21",
-      "buildings": 10635,
-      "green": 6725,
-      "dated_share": 0.663,
-      "kb": 452,
-      "gz": 55,
+      "release": "2026-10-21.0",
+      "read": "2026-10-22",
+      "dated": "2026-10-22",
+      "buildings": 14708,
+      "green": 13959,
+      "dated_share": 0.644,
+      "kb": 922,
+      "gz": 95,
       "log": [
         "2026-10-07 · first cut · 144 cells a side (41.0 m) from Overture 2026-09-23.0 · 4019 buildings · dated to 2026-10-08: 70% of its building cells",
         "2026-10-13 · raised to tier 2 · 296 cells a side (19.9 m) from Overture 2026-09-23.1 · 10635 buildings, 6725 green cells · 66% of its building cells dated (70% at the last cut) · 451 KB (55 KB sent)",
@@ -219,8 +250,32 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 579 building cells taller, 584 lower; the tallest now 165 storeys (528 m), before 138 (442 m); the Willis Tower rises in tiers of 62 to 138 storeys with its antennas at 165, where it was 7 cells at 138; roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 34% of its building cells have no year (Chicago's footprints give a year only where one was recorded); (2) a mast is a whole 20 m cell: the Willis Tower's antennas stand as one cell at 165 storeys (528 m) beside its 138-storey roof; (3) Lake Michigan (32.3% of the square) is the sea's soil, blue patches with white specks, in its deep tone where a cell has no dot, not black; (4) the river's bridges (104 cells) are decks at water height, the Loop's elevated tracks are not drawn and Lower Wacker's level is drawn over the streets above it (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Chicago at both sizes)",
         "2026-10-21 · dated again with its runners' records · 66% of its building cells dated (66% at the last cut)",
-        "2026-10-21 · `--tunnels`: 62 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 62 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · raised to tier 3 · 424 cells a side (13.9 m) from Overture 2026-10-21.0 · 14708 buildings, 13959 green cells · 64% of its building cells dated (66% at the last cut) · 922 KB (95 KB sent)",
+        "2026-10-22 · still wrong, biggest first: (1) 36% of its building cells have no year (Chicago's footprints give a year only where one was recorded); (2) its square (5.9 km round the Art Institute and the MCA) stops at 41.869 N, so the Museum Campus (the Field Museum, the Shedd Aquarium, the Adler Planetarium, 3.2 km south of its centre) and McCormick Place are outside it; (3) masts are whole cells: the Willis Tower's antennas stand as a cell at 165 storeys (528 m) beside its roof at 138 (442 m), the Hancock's at 143 (458 m) beside 105 (336 m); (4) Lake Michigan (32% of the square, a third of the picture) is the sea's patchy soil with no shoreline, breakwater or calm surface; (5) the river's bridges are decks at water height and the Loop's elevated tracks are not drawn (checked at 390x844 and 1440x900 after the cut, with the final drawing: all passed; screenshots looked at: Chicago at both sizes)"
       ]
+    },
+    "cleveland-us": {
+      "tier": 2,
+      "log": [
+        "2026-10-22 · first cut · 152 cells a side (19.7 m) from Overture 2026-10-21.0 · 3277 buildings, 4469 green cells · 9% of its building cells dated · 128 KB (19 KB sent)",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 1,961 building cells that stood at the default two storeys take it (68% of its building cells at two storeys before, 31% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Cleveland at both sizes)",
+        "2026-10-22 · still wrong, biggest first: (1) the square is the museum's own: 3 km round the Cleveland Museum of Art, University Circle and the cemeteries east of it; downtown (the Terminal Tower, 216 m, and Key Tower, 289 m, 6.8 km west of its centre) and Lake Erie are outside it, so the tallest cell is 24 storeys (77 m) and it reads as a campus, not Cleveland's skyline (a city's square is chosen to frame its museums, not its skyline); (2) 9% of its building cells are dated (Wikidata's landmarks and the satellites' 1975 on): no Cuyahoga County record is read, so the other 91% stand from the dial's first year; (3) heights: 68% of its building cells stood at the default two storeys (Overture gives a height for few of its 3,277 buildings); 1,961 now take their pixel's average from GHS-BUILT-H, in flat patches about four cells across (a mean, not the buildings), and 31% are still at two (pixels the average puts under three storeys); (4) its water is 215 cells: Doan Brook through Rockefeller Park is a one-cell ribbon and Wade Lagoon a few cells, the lake and the Cuyahoga are outside; (5) a street is a whole 20 m cell, so Euclid Avenue (about 30 m) is one cell or two (checked at 390x844 and 1440x900 after the first cut and the heights repair, with the final drawing: all passed; screenshots looked at: Cleveland at both sizes)"
+      ],
+      "name": "Cleveland",
+      "n": 152,
+      "cell": 19.7,
+      "side": 3000,
+      "lat": 41.50904,
+      "lon": -81.61207,
+      "release": "2026-10-21.0",
+      "read": "2026-10-22",
+      "dated": "2026-10-22",
+      "buildings": 3277,
+      "green": 4469,
+      "dated_share": 0.094,
+      "kb": 128,
+      "gz": 20
     },
     "cologne-de": {
       "tier": 2,
@@ -230,7 +285,8 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 343 building cells taller, 95 lower; the tallest now 49 storeys (157 m), before 49 (157 m); the Cathedral's nave stands at 15-19 storeys, its transept at 33, between its 49-storey towers, where it was a 21-cell slab at the towers' 157 m; roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 96% of its building cells have no year (4% dated: Wikidata's landmarks and the satellites' 1975 on; no register of Cologne's buildings read, OpenStreetMap's dates not asked for), so the dial shows almost no growth; (2) 55% at two storeys, the default where Overture gives no height; (3) the Rhine is crossed (115 bridge cells) by decks at water height: the Hohenzollern Bridge's arches are not drawn; (4) its square (4 km round 50.927 N, 6.952 E) has the Cathedral and the Museum Ludwig at its north edge, Neustadt-Süd and Deutz in it: Altstadt-Nord, Ehrenfeld and Lindenthal lie outside; (5) the Rhine (9.9% of the square) is the sea's soil, in its deep tone where a cell has no dot, not black (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Cologne at both sizes)",
         "2026-10-21 · dated again with its runners' records · 6% of its building cells dated (4% at the last cut)",
-        "2026-10-21 · `--tunnels`: 78 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 78 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 7,526 building cells that stood at the default two storeys take it (55% of its building cells at two storeys before, 3% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Cologne at both sizes)"
       ],
       "name": "Cologne",
       "n": 200,
@@ -305,7 +361,8 @@
       "log": [
         "2026-10-21 · first cut · 152 cells a side (19.7 m) from Overture 2026-09-23.1 · 9015 buildings, 2776 green cells · 3% of its building cells dated · 131 KB (20 KB sent)",
         "2026-10-21 · `--tunnels`: 108 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · still wrong, most important first: (1) 79% of its building cells stand at the default two storeys: Overture gives few heights in Germany and no register is read (North Rhine-Westphalia's open LoD1 models not looked for yet); the tallest cell is 38 storeys; (2) 3% dated: the satellites (1975 on) and Wikidata's landmarks alone, no OpenStreetMap dates read for it yet (osm/REQUEST) and no state register; (3) the square, 3 km round the Kunstpalast, takes in the Altstadt and the Rhine's east bank but not the Medienhafen (1.7 km south and 2.2 km west of its centre) nor Oberkassel across the river; (4) the Rhine's bridges are one-cell decks at water height, with no piers or cables; (5) a street is a whole cell wide, so a 6-10 m lane reads twice as wide"
+        "2026-10-21 · still wrong, most important first: (1) 79% of its building cells stand at the default two storeys: Overture gives few heights in Germany and no register is read (North Rhine-Westphalia's open LoD1 models not looked for yet); the tallest cell is 38 storeys; (2) 3% dated: the satellites (1975 on) and Wikidata's landmarks alone, no OpenStreetMap dates read for it yet (osm/REQUEST) and no state register; (3) the square, 3 km round the Kunstpalast, takes in the Altstadt and the Rhine's east bank but not the Medienhafen (1.7 km south and 2.2 km west of its centre) nor Oberkassel across the river; (4) the Rhine's bridges are one-cell decks at water height, with no piers or cables; (5) a street is a whole cell wide, so a 6-10 m lane reads twice as wide",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 6,767 building cells that stood at the default two storeys take it (79% of its building cells at two storeys before, 2% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Dusseldorf at both sizes)"
       ],
       "name": "Dusseldorf",
       "n": 152,
@@ -321,6 +378,28 @@
       "dated_share": 0.031,
       "kb": 131,
       "gz": 20
+    },
+    "fort-worth-us": {
+      "tier": 2,
+      "log": [
+        "2026-10-22 · first cut · 224 cells a side (19.6 m) from Overture 2026-10-21.0 · 3759 buildings, 10339 green cells · 93% of its building cells dated · 289 KB (38 KB sent)",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 2,269 building cells that stood at the default two storeys take it (55% of its building cells at two storeys before, 35% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Fort Worth at both sizes)",
+        "2026-10-22 · still wrong, biggest first: (1) 35% of its building cells still stand at the default two storeys (55% before GHS-BUILT-H's average took 2,269 of them: Overture gives a height for few of Tarrant County's buildings and TxGIO's parcels hold no floors), so a street of houses reads at its pixel's mean; (2) years are one a parcel (TxGIO StratMap 2025 YEAR_BUILT, 93% dated): a parcel's buildings share its year, and the 7% on a parcel without one stand from the dial's first year; (3) the Kimbell Art Museum and the Modern Art Museum of Fort Worth, a few hundred metres east of the Amon Carter in the same Cultural District, are in the square but not named on it: museums.json lists only the Amon Carter; (4) the Trinity River and its forks are one-cell ribbons (1,347 water cells, 2.7% of the square) and the interstates on their viaducts through downtown are drawn at ground height; (5) a street is a whole 19.6 m cell, and the first cut is 20 m: the next passes raise it to 14 m (checked at 390x844 and 1440x900 after the first cut and the heights repair, with the final drawing: all passed; screenshots looked at: Fort Worth at both sizes)"
+      ],
+      "name": "Fort Worth",
+      "n": 224,
+      "cell": 19.6,
+      "side": 4400,
+      "lat": 32.75075,
+      "lon": -97.35044,
+      "release": "2026-10-21.0",
+      "read": "2026-10-22",
+      "dated": "2026-10-22",
+      "buildings": 3759,
+      "green": 10339,
+      "dated_share": 0.932,
+      "kb": 289,
+      "gz": 39
     },
     "houston-us": {
       "name": "Houston",
@@ -347,7 +426,8 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 107 building cells taller, 70 lower; the tallest now 95 storeys (304 m), before 95 (304 m); roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 46% of its building cells stand at two storeys, the default where Overture gives no height (car parks, low commercial); downtown's towers stand at Wikidata's heights, the tallest 95 storeys; (2) the bayous are 1-3 cell ribbons (0.8% water) and the freeway stacks are drawn at ground height; (3) 6% of its building cells have no year (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Houston at both sizes)",
         "2026-10-21 · dated again with its runners' records · 94% of its building cells dated (94% at the last cut)",
-        "2026-10-21 · `--tunnels`: 4 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 4 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 8,273 building cells that stood at the default two storeys take it (46% of its building cells at two storeys before, 26% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Houston at both sizes)"
       ]
     },
     "indianapolis-us": {
@@ -355,7 +435,8 @@
       "log": [
         "2026-10-21 · first cut · 152 cells a side (19.7 m) from Overture 2026-09-23.1 · 1626 buildings, 9688 green cells · 90% of its building cells dated · 118 KB (15 KB sent)",
         "2026-10-21 · `--tunnels`: 3 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · still wrong, most important first: (1) the square is the museum's own plot, its park with the river and the canal beside it, 6 km north of downtown: Indianapolis's towers are outside it, so it reads as green with a few blocks (a city's square is chosen to frame its museums, not its skyline); (2) 1,735 building cells only, from 1,626 buildings in Overture's square: the suburban streets read as scattered roofs; (3) 90% dated, but by the satellites alone (WSF 1985-2015, GHSL 1975 and 1980): no Marion County record read, so everything older than 1975 stands from the start; (4) 52% of its building cells at the default two storeys, none of its houses' storeys known; (5) a street is a whole cell wide"
+        "2026-10-21 · still wrong, most important first: (1) the square is the museum's own plot, its park with the river and the canal beside it, 6 km north of downtown: Indianapolis's towers are outside it, so it reads as green with a few blocks (a city's square is chosen to frame its museums, not its skyline); (2) 1,735 building cells only, from 1,626 buildings in Overture's square: the suburban streets read as scattered roofs; (3) 90% dated, but by the satellites alone (WSF 1985-2015, GHSL 1975 and 1980): no Marion County record read, so everything older than 1975 stands from the start; (4) 52% of its building cells at the default two storeys, none of its houses' storeys known; (5) a street is a whole cell wide",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 282 building cells that stood at the default two storeys take it (52% of its building cells at two storeys before, 42% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Indianapolis at both sizes)"
       ],
       "name": "Indianapolis",
       "n": 152,
@@ -370,7 +451,7 @@
       "green": 9688,
       "dated_share": 0.901,
       "kb": 118,
-      "gz": 15
+      "gz": 16
     },
     "london-gb": {
       "name": "London",
@@ -471,12 +552,12 @@
       "lon": 9.186,
       "release": "2026-09-23.1",
       "read": "2026-10-21",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 32185,
       "green": 24774,
-      "dated_share": 0.784,
+      "dated_share": 0.783,
       "kb": 1577,
-      "gz": 207,
+      "gz": 211,
       "log": [
         "2026-10-07 · first cut · 144 cells a side (47.9 m) from Overture 2026-09-23.0 · 8600 buildings · dated to 2026-10-08: 78% of its building cells",
         "2026-10-10 · raised to tier 2 · 344 cells a side (20.1 m) from Overture 2026-09-23.1 · 28704 buildings, 11646 green cells · 78% dated, 34235 cells' years carried from the last cut (ISTAT census 2011 (each block's buildings by period; which is which is not known) did not answer) · 777 KB (128 KB sent)",
@@ -493,7 +574,9 @@
         "2026-10-21 · raised to tier 3 · 496 cells a side (13.9 m) from Overture 2026-09-23.1 · 32185 buildings, 24774 green cells · 78% dated, 64497 cells' years carried from the last cut (ISTAT census 2011 (each block's buildings by period; which is which is not known) did not answer) · 1577 KB (209 KB sent)",
         "2026-10-21 · `--tunnels`: 3250 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
         "2026-10-21 · still wrong, most important first: (1) 78% dated, but the census blocks' years (which building is which is not known) were carried from the 20 m cut for 64,497 cells, because the runners' records are for the old grid: asked again on 21 Oct in records/REQUEST, `--redate` once they are in; (2) 51% of its building cells at the default two storeys: Overture gives few heights in Italy (the ISTAT census sections may count a block's floors: to be checked), the tallest cell 71 storeys; (3) the Cerchia dei Navigli, covered, is now drawn as the streets over it, while the open Naviglio Grande and Pavese and the Darsena are one-cell ribbons; (4) bridge decks, elevated rail and the railway cuttings are at ground or water height; (5) a street is a whole cell wide. Its covered watercourses (3,250 water cells, mostly under streets) were blue lines through the old city until the `--tunnels` repair",
-        "2026-10-21 · dated again (its years had been carried) · 78% of its building cells dated (78% at the last cut)"
+        "2026-10-21 · dated again (its years had been carried) · 78% of its building cells dated (78% at the last cut)",
+        "2026-10-22 · dated again with its runners' records · 78% of its building cells dated (78% at the last cut)",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 42,732 building cells that stood at the default two storeys take it (51% of its building cells at two storeys before, 3% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Milan at both sizes)"
       ]
     },
     "munich-de": {
@@ -533,7 +616,8 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 56 building cells taller, 0 lower; the tallest now 36 storeys (115 m), before 36 (115 m); roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 74% of its building cells stand at two storeys, the default where Overture gives no height; (2) 2% of its building cells dated (Wikidata's landmarks and the satellites' 1975 on), so the dial shows almost no growth; (3) its square (3.0 km round Yale) holds the harbour only as a corner (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: New Haven at both sizes)",
         "2026-10-21 · dated again with its runners' records · 5% of its building cells dated (5% at the last cut)",
-        "2026-10-21 · `--tunnels`: 1 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 1 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 3,272 building cells that stood at the default two storeys take it (74% of its building cells at two storeys before, 25% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: New Haven at both sizes)"
       ],
       "name": "New Haven",
       "n": 152,
@@ -558,11 +642,11 @@
       "side": 8000,
       "lat": 40.74899,
       "lon": -73.98445,
-      "release": "2026-09-23.1",
-      "read": "2026-10-14",
-      "dated": "2026-10-21",
+      "release": "2026-10-21.0",
+      "read": "2026-10-22",
+      "dated": "2026-10-22",
       "buildings": 47103,
-      "green": 25317,
+      "green": 25582,
       "dated_share": 0.934,
       "kb": 1899,
       "gz": 305,
@@ -574,7 +658,9 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 4693 building cells taller, 6223 lower; the tallest now 148 storeys (474 m), before 148 (474 m); the Empire State Building rises in setbacks (5, 23-36 and 80-103 storeys to a 143-storey spire cell) where it was one slab of 37 cells at 138; roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) years are one a tax lot (PLUTO): a lot's buildings share its year, a demolished building is absent and a rebuilt one takes the new year (7% have none); (2) its square (8 km: 40.713-40.785 N) cuts Central Park near 91st Street and ends at City Hall, so One World Trade Center (40.7127 N) is just outside it and the Financial District south of it; the tallest drawn is Central Park Tower (148 storeys, 474 m); (3) the FDR's viaducts are drawn at ground height, the East River's bridges (270 cells) at water height with no towers or cables, and the railways, the subway and the High Line not at all; (4) streets kept are a whole 14 m cell: the cross streets (18 m) read about right, the avenues (30 m) as two cells, lanes under 6 m are left out; (5) the Hudson and the East River (27.9% water) are the sea's soil, blue patches with white specks, in its deep tone where a cell has no dot, not black (checked at 390x844 and 1440x900 after the repair, with the final drawing: a first run, on a machine loaded to 19, took 4.1 s to make New York at 390x844 and did not see the hand reach the dial's year at either size, a second, alone, passed; screenshots looked at: New York at both sizes)",
         "2026-10-21 · dated again with its runners' records · 93% of its building cells dated (93% at the last cut)",
-        "2026-10-21 · `--tunnels`: 716 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 716 road cells in tunnels are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · read again · 568 cells a side (14.1 m) from Overture 2026-10-21.0 · 47103 buildings, 25582 green cells · 93% of its building cells dated (93% at the last cut) · 1899 KB (305 KB sent)",
+        "2026-10-22 · still wrong, biggest first: (1) years are one a tax lot (PLUTO): a lot's buildings share its year, a demolished building is absent and a rebuilt one takes the new year (7% have none); (2) its square (8 km: 40.713-40.785 N) cuts Central Park near 91st Street and ends at City Hall, so One World Trade Center (40.7127 N) stands on its last row, as a cell at 131 storeys (419 m) without its spire (541 m), and the Financial District is outside; (3) a spire over a building's own height by less than a half is not added: the Chrysler Building stands at 88 storeys (282 m) where Wikidata gives 319 m; (4) the FDR's viaducts are drawn at ground height, the East River's bridges at water height with no towers or cables, and the railways, the subway and the High Line not at all; (5) streets kept are a whole 14 m cell: the cross streets (18 m) read about right, the avenues (30 m) as two cells, lanes under 6 m are left out. Read again from Overture 2026-10-21.0 it changed 26 cells in all (15 became streets, one stopped being one, 10 green cells went, none a building): Overture's buildings are those of 2026-09-23.1 (checked at 390x844 and 1440x900 after the re-read, with the final drawing: all passed; screenshots looked at: New York at both sizes)"
       ]
     },
     "paris-fr": {
@@ -587,7 +673,7 @@
       "lon": 2.3351,
       "release": "2026-09-23.1",
       "read": "2026-10-15",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 54484,
       "green": 19479,
       "dated_share": 0.954,
@@ -605,9 +691,10 @@
         "2026-10-15 · cut again with its building parts and without its tunnels: the Eiffel Tower is a needle (103 storeys, 330 m) over a cross of 86-storey cells, a platform at 36-38 and its legs at 18-20 (it had been a 27-cell slab at 103), the Tour Montparnasse stands at 66 storeys, 2,254 building cells take the heights of their parts, 324 road cells in tunnels (the quais' among them) are off the surface, and the Seine is the sea's deep tone where a cell has no dot",
         "2026-10-15 · still wrong, biggest first: (1) 95% of its building cells are dated but 103,657 of the 109,166 take their years from the 20 m cut: the BDNB did not answer (its Paris communes are over a thousand groups each, so records/bdnb.json now asks GitHub's runners for the department's files and `--redate` takes them in once they are in), so the dating is APUR's periods and Wikidata's landmarks at the old grid's grain, not a year a building; (2) before 1800 stands as 1800 (the Atelier parisien's first class), so Paris's oldest quarters rise together on the dial; (3) the Seine (2.8% water) is crossed by decks at water height with no arches, and a covered road is left off the surface only where Overture flags it `is_tunnel`; (4) 9% at two storeys, the default where Overture gives no height, and the Eiffel Tower's legs and needle are single 14 m cells; (5) green is 7.9% of the square, the parks, gardens and cemeteries Overture's land use names: the street trees that make Paris green are not drawn (checked at 390x844 and 1440x900 after the final cut, with the final drawing; screenshots looked at: Paris at both sizes)",
         "2026-10-21 · dated again (its years had been carried) · 95% dated, 104108 cells' years carried from the last cut (BDNB (CSTB) did not answer)",
-        "2026-10-21 · `--tunnels`: 461 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 461 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · dated again (its years had been carried) · 95% dated, 104108 cells' years carried from the last cut (BDNB (CSTB) did not answer)"
       ],
-      "retries": 1
+      "retries": 2
     },
     "philadelphia-us": {
       "tier": 2,
@@ -650,7 +737,10 @@
         "2026-10-15 · still wrong, biggest first: (1) 43% of its building cells have no year (57% dated, from ISTAT's census blocks (each block's buildings by period, dealt to its cells in a shuffled order: right per block, not which building is which) and Wikidata's landmarks); (2) 51% at two storeys, the default where Overture gives no height: the centro storico's four- to six-storey blocks read low, no register of heights is read; (3) the Tiber is crossed (59 bridge cells) by decks at water level, and the lungotevere's sunken quays are not terrain; (4) the Forum and the Baths of Caracalla are open land, not ruins; the Vatican, a separate state with no Italian census, is dated by Wikidata and the satellites only (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Rome at both sizes)",
         "2026-10-21 · dated again with its runners' records · 59% of its building cells dated (59% at the last cut)",
         "2026-10-21 · `--tunnels`: 72 road cells in tunnels and 47 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · dated again with its runners' records · 59% of its building cells dated (59% at the last cut)"
+        "2026-10-21 · dated again with its runners' records · 59% of its building cells dated (59% at the last cut)",
+        "2026-10-22 · dated again with its runners' records · 59% of its building cells dated (59% at the last cut)",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 10,000 building cells that stood at the default two storeys take it (51% of its building cells at two storeys before, 12% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: its museum's name was shown at no heading on the phone, a fail, below; screenshots looked at: Rome at both sizes)",
+        "2026-10-22 · still wrong, biggest first: (1) its one museum's name is not shown on a phone: at 390x844 the check found Galleria Nazionale d'Arte Moderna Rome (38 letters, about 260 px) named at no heading in four quarter-turns, and FAILED; with the ground as it was before this pass's heights (its 10,000 cells at two storeys) it was named at the fourth heading, so the few pixels that taller cells under its mark probably add put it where no name fits beside it, above or below it, inside the band: skyline.js's label tries (right, left, above, below) have no fallback for a name nearly as wide as the screen; centring it above or below the mark, kept inside the band, would name it (not made: it changes the drawing, which asks the check on all 41 skylines at both sizes, hours in software GL; the museum is named by a first tap, and at 1440x900 it is named); (2) 59% of its building cells are dated (the ISTAT 2011 census blocks, which building is which is not known, Wikidata, OpenStreetMap and the satellites) and the other 41% stand from the dial's first year; (3) 12% of its building cells are at two storeys after GHS-BUILT-H's average took 10,000, so the old town reads at its pixels' mean heights, flat patches about four cells across, not its buildings; (4) the Tiber is a one to three cell ribbon and its bridges decks at water height; (5) a street is a whole 20 m cell (checked at 390x844 and 1440x900 after the heights repair: 1 failed, the one named above; screenshots looked at: Rome at both sizes)"
       ],
       "name": "Rome",
       "n": 272,
@@ -660,7 +750,7 @@
       "lon": 12.4822,
       "release": "2026-09-23.1",
       "read": "2026-10-10",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 14556,
       "green": 12485,
       "dated_share": 0.592,
@@ -731,7 +821,8 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 17 building cells taller, 35 lower; the tallest now 72 storeys (230 m), before 71 (227 m); roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 74% of its building cells stand at two storeys, the default where Overture gives no height, and no register of Seoul's buildings is read, so the apartment districts read low beside the landmarks Wikidata lifts (the Trade Tower, 227 m); (2) 7% of its building cells dated (Wikidata's landmarks and the satellites' 1975 on; no Korean register read, OpenStreetMap's dates not asked for), so the dial shows almost no growth; (3) its square (6.9 km round 37.524 N, 127.028 E) stops at 37.555 N and 127.067 E: Gyeongbokgung and Jongno lie north of it, Lotte World Tower east; (4) the Han is crossed (608 bridge cells) but the decks and the riverside expressways are drawn at water or ground height, no piers, no subway; (5) streets kept are a whole cell (20 m) wide, so Hannam's and Itaewon's lanes read about twice as wide as they are (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Seoul at both sizes)",
         "2026-10-21 · dated again with its runners' records · 27% of its building cells dated (7% at the last cut)",
-        "2026-10-21 · `--tunnels`: 290 road cells in tunnels and 325 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 290 road cells in tunnels and 325 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 18,837 building cells that stood at the default two storeys take it (74% of its building cells at two storeys before, 1% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Seoul at both sizes)"
       ],
       "name": "Seoul",
       "n": 344,
@@ -746,7 +837,7 @@
       "green": 13517,
       "dated_share": 0.271,
       "kb": 665,
-      "gz": 106
+      "gz": 110
     },
     "shanghai-cn": {
       "tier": 2,
@@ -756,7 +847,8 @@
         "2026-10-15 · its tunnels (384 road cells) are off the surface, its water is the sea's deep tone where a cell has no dot, and its building parts are read (53 cells take their parts' heights: few buildings in China are mapped in parts)",
         "2026-10-15 · still wrong, biggest first: (1) 96% of its building cells stand at two storeys, the default where Overture gives no height (it gives heights for few of China's buildings) and no register of China's building heights is read, so a district of six to thirty storeys is a low plain with a few towers; (2) its square (7.1 km round the Yuz Museum, 31.194 N 121.454 E) stops at 31.226 N and 121.491 E: the Bund and Lujiazui's towers (31.240 N, 121.500 E) are outside it; (3) 94% of its building cells have no year: 6% are dated (Wikidata's landmarks and the satellites; OpenStreetMap's dates have not been read for it); (4) the Huangpu's bridges and the Inner Ring's viaducts are decks at water and ground height, with no pylons, cables or legs; (5) a street is a whole cell wide wherever it is kept, so the lanes of the old French Concession read as roads twice as wide (checked at 390x844 and 1440x900 after the final cut, with the final drawing; screenshots looked at: Shanghai at both sizes)",
         "2026-10-21 · dated again with its runners' records · 7% of its building cells dated (6% at the last cut)",
-        "2026-10-21 · `--tunnels`: 2 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 2 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 32,178 building cells that stood at the default two storeys take it (96% of its building cells at two storeys before, 3% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Shanghai at both sizes)"
       ],
       "name": "Shanghai",
       "n": 352,
@@ -771,7 +863,7 @@
       "green": 8489,
       "dated_share": 0.067,
       "kb": 665,
-      "gz": 94
+      "gz": 103
     },
     "stockholm-se": {
       "tier": 2,
@@ -808,7 +900,8 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 606 building cells taller, 175 lower; the tallest now 104 storeys (333 m), before 104 (333 m); roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 77% of its building cells stand at two storeys, the default where Overture gives no height, and no open register of Tokyo's buildings is read; (2) 4% of its building cells dated (Wikidata's landmarks and the satellites' 1975 on), so the dial shows almost no growth; (3) the Skytree (634 m, 139.811 E) lies outside the square, Tokyo Tower (333 m) stands 150 m inside its south edge; (4) the rivers and moats (3.3% water) are 1-3 cell ribbons, the elevated expressways are drawn at ground height, the railways and the subway not at all (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Tokyo at both sizes)",
         "2026-10-21 · dated again with its runners' records · 8% of its building cells dated (8% at the last cut)",
-        "2026-10-21 · `--tunnels`: 263 road cells in tunnels and 339 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 263 road cells in tunnels and 339 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 45,036 building cells that stood at the default two storeys take it (77% of its building cells at two storeys before, 1% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Tokyo at both sizes)"
       ],
       "name": "Tokyo",
       "n": 384,
@@ -823,7 +916,7 @@
       "green": 17158,
       "dated_share": 0.077,
       "kb": 865,
-      "gz": 142
+      "gz": 149
     },
     "toronto-ca": {
       "tier": 2,
@@ -835,7 +928,8 @@
         "2026-10-15 · repaired in place (no new cut): the cells of buildings mapped in parts (building_part) take their parts' heights, and a landmark's height reaches where its parts stop short: 2208 building cells taller, 1073 lower; the tallest now 173 storeys (554 m), before 173 (554 m); the CN Tower is 3 cells at 116 storeys (371 m) with its 173-storey (554 m) mast one cell beside them, where it was a column of 4 cells at 173; roads in tunnels stay drawn on the surface until a city's next cut (`--heights` cannot bring them to a ground cut before: what lay under the road was not kept in it)",
         "2026-10-15 · still wrong, biggest first: (1) 66% of its building cells stand at two storeys, the default where Overture gives no height, and no open register of Toronto's buildings is read; (2) 3% of its building cells dated (Wikidata's landmarks and the satellites' 1975 on); (3) a mast is a whole 20 m cell: the CN Tower's 116-storey body stands as 3 cells with its 173-storey mast one cell beside them; (4) Lake Ontario (4.0% water) is the sea's soil, in its deep tone where a cell has no dot, not black (checked at 390x844 and 1440x900 after the repair, with the final drawing; screenshots looked at: Toronto at both sizes)",
         "2026-10-21 · dated again with its runners' records · 7% of its building cells dated (7% at the last cut)",
-        "2026-10-21 · `--tunnels`: 12 road cells in tunnels and 34 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed"
+        "2026-10-21 · `--tunnels`: 12 road cells in tunnels and 34 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 11,582 building cells that stood at the default two storeys take it (66% of its building cells at two storeys before, 27% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Toronto at both sizes)"
       ],
       "name": "Toronto",
       "n": 288,
@@ -850,7 +944,7 @@
       "green": 6848,
       "dated_share": 0.073,
       "kb": 480,
-      "gz": 68
+      "gz": 71
     },
     "venice-it": {
       "tier": 2,
@@ -861,7 +955,9 @@
         "2026-10-15 · still wrong, biggest first: (1) 94% of its building cells have no year: 6% are dated (Wikidata's landmarks and the satellites; the city's own records are not read, nor OpenStreetMap's dates); (2) 48% at two storeys, the default where Overture gives no height, while Venice is mostly three to five storeys; (3) its minor canals (the rii, 3-10 m) are gaps between buildings, not water cells: only the Grand Canal, the Giudecca Canal and the lagoon read, the Grand Canal a ribbon one or two cells wide; (4) its roads are 169 cells (0.7%), the causeway's and Piazzale Roma's: the calli and quays are left out; (5) the lagoon's other islands (Murano, San Michele, the Lido) are outside its 3 km square (checked at 390x844 and 1440x900 after the final cut, with the final drawing, and the 2D fallback at 1440x900; screenshots looked at: Venice at both sizes)",
         "2026-10-21 · dated again with its runners' records · 28% of its building cells dated (6% at the last cut)",
         "2026-10-21 · `--tunnels`: 3 water cells of covered watercourses (culverts, covered canals) are off the surface (green where the park is, else land, else a street where one covers it); nothing else in its ground changed",
-        "2026-10-21 · dated again with its runners' records · 28% of its building cells dated (28% at the last cut)"
+        "2026-10-21 · dated again with its runners' records · 28% of its building cells dated (28% at the last cut)",
+        "2026-10-22 · dated again with its runners' records · 28% of its building cells dated (28% at the last cut)",
+        "2026-10-22 · `--heights`: GHS-BUILT-H (JRC), the average net building height of each ~90 m pixel: 2,359 building cells that stood at the default two storeys take it (48% of its building cells at two storeys before, 14% now; a mean, not a building's height; at most 16 storeys); nothing else in its ground changed (checked at 390x844 and 1440x900 after it: all passed; screenshots looked at: Venice at both sizes)"
       ],
       "name": "Venice",
       "n": 152,
@@ -871,7 +967,7 @@
       "lon": 12.33235,
       "release": "2026-09-23.1",
       "read": "2026-10-15",
-      "dated": "2026-10-21",
+      "dated": "2026-10-22",
       "buildings": 3923,
       "green": 737,
       "dated_share": 0.277,

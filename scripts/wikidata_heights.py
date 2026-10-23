@@ -93,7 +93,7 @@ def landmarks(slug, box):
         d["fl"] = max(d["fl"], fl or 0)
     out = []
     for d in by.values():
-        if not d["cls"] & built:
+        if not d["cls"] & built or "Q19860854" in d["cls"]:      # Q19860854: destroyed building or structure
             continue
         if d["h"]:
             h = d["h"][max(d["h"])]                    # the preferred height, else the highest

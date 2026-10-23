@@ -24,6 +24,7 @@ Website.
 | **its green** | Parks, gardens, lawns, pitches, cemeteries and woods (Overture's land use and land) are cells of their own (`"g"`), drawn as the soil grown over, so Central Park, the Tuileries and Hyde Park read. |
 | **its coverage** | A city without a skyline still opens on the globe's own cells (~39 km each), the most pixelated of all: the next cities in order without one (cities with museums, then cities of galleries busy enough to be named on the globe; 111 in all, 16 read by 8 Oct 2026) are read each run, at 20 m. |
 | **its towers** | A cell says up to 260 storeys (832 m, `MAX_STOREYS`). It stopped at 74 (237 m) until 14 Oct 2026, when every tower above that — the Empire State Building, the Willis Tower, the Eiffel Tower, the CN Tower — was found standing at one height (11 of the 25 skylines then). And Overture's heights are mostly missing (Brussels: 93% of 100,000 buildings; a cell then stands at two storeys) or a landmark's own is a podium's or a machine's (the Willis Tower 31 m, Trump Tower 60 m, the Tour du Midi 19 m): so a landmark takes the height Wikidata gives it (`scripts/wikidata_heights.py`, CC0: `P2048` normalised to metres, the preferred statement, never a deprecated one; `P1101` floors only for a skyscraper) — the cells of the building its point stands in, within 22 m (or 1.5 cells) of the point, where the building's own height is missing or at most two thirds of it and 12 m lower. In Spain and France a cell that stands at the default two storeys takes its building's height from EUBUCCO's register (`scripts/eubucco_heights.py`, ODbL: Spain's Catastro floors, France's BD TOPO; the files are the ones the years are read from, `data/eubucco/`) where that is a storey higher or more — Madrid's cells at two storeys went from 64% to 17%, Paris's from 34% to 10%; EUBUCCO's heights for Brussels are not a register's (their median is 6 m, r = 0.35 with Overture's), so they are not used there or anywhere else — nor in Basel, which EUBUCCO's rough box for France takes in (its heights: median 7.5 m against Overture's 12.8, r = 0.37, 32% within 3 m): a place's slug must end -es or -fr (`eubucco_storeys`). `build_grounds.py --heights` does it for the grounds cut before (the taller of the old and new height; a ground cut or repaired so says it: `heights`, and from what: `heightsFrom`). |
+| **its heights** (22 Oct 2026) | Where Overture gives few heights and no register is read (Beijing's building cells stood 98% at two storeys, Shanghai's 96%, Antwerp's 86%, Brussels's 83%, Tokyo's 77%), a cell at the default two storeys takes the average net building height of its ~90 m pixel: GHS-BUILT-H R2023A, 2018 (Pesaresi et al., JRC, CC BY 4.0), from the JRC host the built-up surface comes from (`scripts/ghsl_heights.py`, the window of a place kept in `data/ghslh/<slug>.npz`; `ghsl_storeys` in `build_grounds.py`). Only in a city where two in five of its building cells or more still stand at the default after Overture's heights, Wikidata's landmarks and EUBUCCO's registers (elsewhere the defaults are the small buildings, which an average raises wrongly: Paris's register buildings under 10 m average 6.4 m where their pixel says 19.4), only up and only to 3 storeys or more, to at most 16 storeys (a pixel's tower pulls its average up), and not a building mapped in parts. **It is an average, not a building's height**, so unknown buildings are drawn at their neighbourhood's mean, in flat patches about six cells across. Measured: against Overture's own heights, in 90 m pixels, it follows them at r = 0.62 in Chicago and Los Angeles (ANBH 9-12 m: known 9.7 m; 12-16 m: 12.6 m; 25-60 m: 30 m in Los Angeles), 0.46 in Madrid, 0.23 in Berlin, 0.36 in Cleveland, 0.51 in Houston; against EUBUCCO's register building by building (Paris 69,487, Madrid 39,608) it has no skill between buildings (r = 0.05, 0.36) but its level is right (+1.8 m, +0.9 m): it lands within a storey of the register for 42% and 38% of buildings where the default two storeys does for 13% and 18% (mean error 5.4 and 5.5 m against 11.2 and 8.1 m). `build_grounds.py --heights` brought it to the 41 grounds (`ghsl`, `heightsFrom` say so; a ground without `ghsl` is read again for it, one that did not need it is marked all the same) and a new cut does it. 22 Oct 2026: 19 grounds took it, 261,882 cells in all (Tokyo 45,036, Milan 42,732, Brussels 35,984, Shanghai 32,178, Antwerp 20,008, Seoul 18,837, Toronto 11,582, Rome 10,000, Houston 8,273, Cologne 7,526, Düsseldorf 6,767, Basel 5,505, Beijing 4,623, New Haven 3,272, Bilbao 2,688, Venice 2,359, Fort Worth 2,269, Cleveland 1,961, Indianapolis 282). **A landmark that was never built or is gone is no landmark** (22 Oct 2026): Wikidata's `Q19860854` (destroyed building or structure) is left out of `wikidata_heights.py`'s landmarks; a never-built proposal with a height and a point is not marked by any class (Berlin's tallest cell, 176 m, is the Great Berlin Wheel, Q11744, a cancelled Ferris wheel on the Zoo's edge, stood in a tent's cell), so the next cut of a city is to be looked at for it. |
 | **its bridges** | A road was drawn over land only, so a river ran unbroken from bank to bank (the Han, the Seine, the Thames, the Rhine under the Hohenzollern Bridge). Overture flags a bridge on its segment (`road_flags` or, for a railway, `rail_flags`: `is_bridge`, the whole segment or the stretch between two fractions of its length): the road and main-line rail bridges of a city's square are drawn over its water, at the water's height (`bridge_mask`; footbridges, paths, trams and subways are left out, as their streets are). `build_grounds.py --bridges` does it for the grounds cut before (`bridges`). **Water that is dry:** a reservoir of half a square kilometre or more that Overture's land cover (ESA WorldCover, which has no water in it) covers four fifths of is land (`dry_basins`; Dallas's Trinity River Floodway, 1.9 km² of its square, had been a lake). |
 | **its parts** | A building mapped in parts (Overture's `building_part`, OpenStreetMap's building:part: tiers, towers, legs, spires, each with its top and, where it floats, its `min_height`) is drawn as them. Each cell takes the tallest part over it, not the whole footprint the building's top height: the Empire State Building was 37 cells at 138 storeys and the Eiffel Tower 27 at 103, one slab each; now the eleven tiers, and four legs, two platforms and a needle. A part off the ground (an arch, a skybridge) adds height to the building's own cells, never new ones; a tower or a mast thinner than a cell stands in the building's cell nearest it (a part under a twenty-fifth of a cell says nothing a cell holds); where no part reaches, the building's own height stands, unless that is the whole building's top (mapped on the outline for renderers that draw no parts: then its lowest part on the ground, its podium), and where the parts stop short of it (the Campanile's pyramid and angel) their tallest stands at it. Where a building's parts are mapped and its own height is missing, the parts are the height (Stockholm's Hötorget towers had stood at two storeys). `build_grounds.py --heights` brings it to the grounds cut before — up or down for the cells of a building with parts (`parts`), as a cut does. A low, wide landmark (under 60 m, over 10,000 m²: the Colosseum, a hall) takes Wikidata's height over its whole footprint, not within 22 m of its point. |
 | **its tunnels** | A road in a tunnel is not on the ground: Overture flags it on its segment (`road_flags`: `is_tunnel`, the whole segment or the stretch of it between two fractions of its length) and the stretch is left out of the road cells (`surface`), so the park, the square or the river over it shows (Madrid Río over the M-30, Boston's Greenway, Stockholm's motorway tunnels, the quais of Paris). **A watercourse under the ground is not on it either** (21 Oct 2026): Overture's water carries OpenStreetMap's `level` (negative below ground) and the source's `tunnel` tag (`underground`), and a culvert, a covered canal or a piped stream was drawn as a blue line through blocks and parks (San Francisco's creeks, Milan's covered navigli: 3,250 cells, most of them streets now). `build_grounds.py --tunnels` brings both to the grounds cut before (`tunnels`, `culverts` in the ground say so; `--run` does it first, after `--heights` and `--bridges`): it reads the water, the green and the street segments again, from the release the ground was read from, and a road cell no surface street covers (not a bridge deck) is green where the green polygons hold it, else land; a water cell only an underground watercourse made is a street where the surface has one, else green, else land; each cell given back to the land is tested by the sea rule against the terrain (land at or under 0.3 m is water again: Boston's harbour tunnels). Nothing else in the ground changes — its buildings, heights, terrain and years. 21 Oct 2026: 20 grounds had both done, 14 (cut since the tunnels) the culverts: 2,994 road cells off the surface (New York 716, Boston 489, Seoul 290, Antwerp 271, Tokyo 263, Brussels 257) and 12,144 water cells (Milan 3,250, Los Angeles 2,183, London 1,769, Brussels 1,004, San Francisco 703). |
@@ -119,26 +120,36 @@ as black voids between patches of blue; land keeps its black pores.
 - The buildings' pass (`docs/v2/models/REFINE.md`) no longer grows the
   skylines; this pass does.
 
-## Where the grounds are weakest (21 Oct 2026)
+## Where the grounds are weakest (21 Oct 2026, heights 22 Oct)
 
 What a source or a change in the drawing would improve most, from the grounds
 as they stand (counted from each ground's `tall` and `built` by
 `python3 scripts/ground_stats.py`). Look here first when choosing what to fix.
 
-- **Heights.** Over half of the building cells stand at the default two storeys
-  in Shanghai (96%: Overture gives a height for few of its buildings), Antwerp
-  (86%), Brussels (83%), Düsseldorf (79%), Tokyo (77%), New Haven and Seoul (74%),
-  Basel (67%), Toronto (66%), Cologne (55%), Indianapolis, Milan and Rome (51%),
-  Bilbao (46%): Overture has a height for few of their buildings and no register
-  of them is read (Wikidata's landmarks and the buildings' parts are; EUBUCCO's
-  registers only for Spain and France, and not the Basque Country's: Bilbao;
-  Milan's ISTAT census sections are said to count each block's buildings by floors
-  as well as by period (to be checked in the variables' descriptions), a candidate for `fetch_city_records.py --census`; North
+- **Heights.** Until 22 Oct 2026 over half of the building cells stood at the
+  default two storeys in Shanghai (96%: Overture gives a height for few of its
+  buildings), Antwerp (86%), Brussels (83%), Düsseldorf (79%), Tokyo (77%), New
+  Haven and Seoul (74%), Cleveland (68%), Basel (67%), Toronto (66%), Cologne and
+  Fort Worth (55%), Indianapolis, Milan and Rome (51%), Bilbao (46%), Beijing (98%,
+  new). Since then those cells take the average building height of their ~90 m
+  pixel (GHS-BUILT-H, "its heights", above): Shanghai, Tokyo, Seoul, Brussels,
+  Milan, Cologne, Düsseldorf and Antwerp are at 1-12% at two storeys, Beijing 11%,
+  Fort Worth 35%, Cleveland 31%, Toronto 27%, Houston 26%, Rome 12%. **That is a
+  mean, not a register:** a building is drawn at its neighbourhood's average, so a
+  street of two-storey houses between blocks reads as blocks, and a tower that
+  Overture has no height for (Shanghai's, Tokyo's, Seoul's) reads as its pixel's
+  average, 16 storeys at the most. A register of the buildings' own heights would
+  replace it: Milan's ISTAT census sections are said to count each block's
+  buildings by floors as well as by period (to be checked in the variables'
+  descriptions; a candidate for `fetch_city_records.py --census`), North
   Rhine-Westphalia's open LoD1 building models might give Düsseldorf's and
-  Cologne's heights (not looked for yet)).
-  Copenhagen's building register (BBR) and Basel's (GWR) date their cells and
-  probably hold floors too: not read for heights yet. No open register of
-  China's building heights is read (a candidate for `NETWORK.md`).
+  Cologne's heights (not looked for yet), Copenhagen's building register (BBR) and
+  Basel's (GWR) date their cells and probably hold floors too, and an open
+  source of China's building heights, for Beijing's and Shanghai's, is still to
+  be looked for (a candidate for `NETWORK.md`). Still at
+  two storeys by Overture's count, where most of a city's buildings do have a
+  height and the defaults are the small ones: Copenhagen (41%), Los Angeles and
+  London (40%), Munich (37%), Washington (33%), Dallas (33%), Seattle (30%).
 - **Parts.** Read since 15 Oct 2026, so a building mapped in parts has its
   tiers, legs and spires. About a tenth of New York's and Toronto's building
   cells took their parts' heights (10,916 and 3,281), 4-7% of Berlin's, Boston's,
@@ -151,7 +162,7 @@ as they stand (counted from each ground's `tall` and `built` by
   least: Torrespaña (231 m) is a column 20 m wide.
 - **Years.** Under a tenth of the building cells are dated in Düsseldorf (3%),
   New Haven (5%), Bilbao (5%), Cologne (6%), Toronto and Shanghai (7%), Tokyo and
-  Antwerp (8%): only Wikidata's landmarks, OpenStreetMap's dates and the
+  Antwerp (8%), Cleveland (9%, new 22 Oct): only Wikidata's landmarks, OpenStreetMap's dates and the
   satellites' (1975 on) reach them. OpenStreetMap's dates (`osm/dates/`) were read
   for every place on 16 Oct 2026 and the skylines dated again with them on 21 Oct
   (Seoul 7% to 27%, Venice 6% to 28%, Munich 5% to 13%, Dallas 8% to 11%,
@@ -184,6 +195,13 @@ as they stand (counted from each ground's `tall` and `built` by
   its skyline: Shanghai's (7.1 km round the Yuz Museum) stops at 31.226 N, short
   of the Bund and Lujiazui; London's at 0.088 W, short of the Shard and the
   City's towers.
+- **A museum's name on a phone** (22 Oct 2026, found by the check at Rome): `skyline.js` places a museum's name right of its
+  mark, else left, else above or below it (six tries), each inside the band and clear of the others; a name nearly as wide as the
+  screen (Galleria Nazionale d'Arte Moderna Rome, about 260 px on a band 390 wide) fits right of the mark only where it stands in
+  the band's left 117 px and left of it only in its right 117 px, so on a phone it was named at one heading of four and, after
+  the heights of 10,000 of Rome's cells changed (a few pixels of lift under its mark, probably), at none:
+  the check's "named" failed at 390x844. A seventh and eighth try, the name centred above or below the mark and kept inside the
+  band, would name it; it changes the drawing, so the check is to be run on every skyline at both sizes afterwards.
 - A source for any of these is looked for by the network research
   (`NETWORK.md`) and, where it is on a host the session cannot reach, read on
   GitHub's runners (`scripts/fetch_city_records.py`).

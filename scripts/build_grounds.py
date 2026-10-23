@@ -30,7 +30,7 @@ which Overture release it was read from and when ("release", "read");
 --release latest reads the newest release on the bucket.
 
     python3 scripts/build_grounds.py [--force] [--only slug] [--release latest|2026-09-23.1]
-    python3 scripts/build_grounds.py --heights [--only city-<key>]    # heights past 74 storeys; landmarks'; parts
+    python3 scripts/build_grounds.py --heights [--only city-<key>]    # heights past 74 storeys; landmarks'; parts; GHS-BUILT-H
     python3 scripts/build_grounds.py --bridges [--only city-<key>]    # road bridges over a city's water
     python3 scripts/build_grounds.py --tunnels [--only city-<key>]    # tunnels and culverts off the surface
 
@@ -306,6 +306,39 @@ def eubucco_storeys(b, box, kind, tall, gx, gy, to_local):
     print(f"  · EUBUCCO's register: {raised} building cells that stood at two storeys rise to their buildings' heights",
           flush=True)
     return raised
+
+
+GHSL_SHARE = 0.4              # a city where this share of its building cells stand at the default two storeys
+GHSL_MOST = 16                # the most storeys the average gives a cell (a pixel's tower pulls it up)
+
+
+def ghsl_storeys(b, box, kind, tall, gx, gy, to_deg, parted):
+    """Where most of a city's buildings have no height (two in five of its building cells or more stand at the
+    default two storeys: Overture gives few in China, Belgium, Japan, and no register is read), a cell at the
+    default takes the average net building height of its ~90 m pixel (GHS-BUILT-H 2018, JRC; ghsl_heights.py),
+    to at most 16 storeys, if that is a storey higher or more. Changes `tall`; returns the cells raised (0 where
+    the city's buildings mostly have heights), or None where the tile did not answer. A building mapped in
+    parts keeps its parts' heights. Elsewhere the defaults are the small buildings, which an average would
+    wrongly raise (Paris's under 10 m: 6 m on average, the pixel's 19 m)."""
+    try:
+        flat, b_ = tall.reshape(-1), kind.reshape(-1) == "b"
+        low = b_ & (flat <= 2 * FLOOR + 1e-6) & ~parted.reshape(-1)
+        if not b_.any() or (b_ & (flat <= 2 * FLOOR + 1e-6)).sum() < GHSL_SHARE * b_.sum():
+            return 0
+        import ghsl_heights
+        win = ghsl_heights.window(b["slug"], (box[1], box[0], box[3], box[2]))
+        if win is None:
+            return None
+        lon, lat = to_deg(gx.reshape(-1)[low], gy.reshape(-1)[low])
+        avg = np.minimum(ghsl_heights.at(win, lat, lon), GHSL_MOST * FLOOR)
+        rise = avg >= 3 * FLOOR
+        flat[np.flatnonzero(low)[rise]] = avg[rise]
+    except Exception as exc:             # the layer out of reach: the heights Overture has
+        print(f"  · GHS-BUILT-H not used: {type(exc).__name__}: {str(exc)[:80]}", flush=True)
+        return None
+    print(f"  · GHS-BUILT-H: {int(rise.sum())} building cells that stood at two storeys take their pixel's average height",
+          flush=True)
+    return int(rise.sum())
 
 
 def landmark_rises(b, box, geoms, to_m):
@@ -638,9 +671,12 @@ def build(b, only=None):
     eub = eubucco_storeys(b, box, kind, tall, gx, gy, to_local) if city else 0
     if eub:
         heights_from.append("EUBUCCO (ODbL)")
+    ghs = ghsl_storeys(b, box, kind, tall, gx, gy, to_deg, parted) if city else 0
+    if ghs:
+        heights_from.append("GHS-BUILT-H (JRC)")
     heights_read = landmarks and eub is not None      # both answered: the ground says its heights are read
     if only == "tall":           # the buildings and their heights alone (`--heights`)
-        return {"kind": "".join(kind.ravel()), "tall": storeys_of(tall), "landmarks": heights_read,
+        return {"kind": "".join(kind.ravel()), "tall": storeys_of(tall), "landmarks": heights_read, "ghsl": ghs is not None,
                 "heightsFrom": heights_from, "parted": np.flatnonzero(parted.ravel()).tolist()}
 
     at = terrain(box, cell, lat)
@@ -682,6 +718,7 @@ def build(b, only=None):
             "tunnels": datetime.date.today().isoformat(),
             "culverts": datetime.date.today().isoformat()} if city else {}),
         **({"heights": datetime.date.today().isoformat(), "heightsFrom": heights_from} if city and heights_read else {}),
+        **({"ghsl": datetime.date.today().isoformat()} if city and ghs is not None else {}),
     }
 
 
@@ -703,7 +740,7 @@ def repair_heights(places):
         if b.get("precision") != "city" or not path.exists():
             continue                   # a museum's plot draws no tower past a fifth of its width anyway
         old = json.loads(path.read_text(encoding="utf-8"))
-        if old.get("heights") and old.get("parts"):
+        if old.get("heights") and old.get("parts") and old.get("ghsl"):
             continue
         if old["n"] != (b.get("n") or GRID) or old["side"] != side_of(b):
             print(f"  · {b['slug']}: its grid is not the place's now: cut it again instead", flush=True)
@@ -756,6 +793,10 @@ def repair_one_heights(b, old, path, rel):
     if new["landmarks"]:                 # Wikidata and EUBUCCO answered: not asked again (else the next run tries)
         old["heights"] = datetime.date.today().isoformat()
         old["heightsFrom"] = new["heightsFrom"]
+    if new["ghsl"]:                      # GHS-BUILT-H answered, or was not wanted
+        old["ghsl"] = datetime.date.today().isoformat()
+        if "GHS-BUILT-H (JRC)" in new["heightsFrom"]:
+            old["heightsFrom"] = list(dict.fromkeys(old.get("heightsFrom", []) + ["GHS-BUILT-H (JRC)"]))
     path.write_text(json.dumps(old, separators=(",", ":")), encoding="utf-8")
     top = max(ord(c) - 48 for c in tall)
     print(f"  + {b['name']}: {raised} building cells rise (past 74 storeys, or to a landmark's height), "
