@@ -573,13 +573,14 @@ python3 scripts/sync_artsy_saves.py --full    # take Artsy's copy of every field
 python3 scripts/sync_artsy_saves.py --verify  # local consistency only, no network
 ```
 
-A run walks the **whole** collection — about 580 pages since the saving run, some
-fifty minutes (Artsy answers a deep page in about five seconds) — builds the complete set of saved ids, sets the saving run's aside (below),
-and diffs what is left against the raw dump in both directions. Missing saves are appended; works that are no longer saved are dropped.
-Then it rebuilds everything downstream in dependency order (database, thumbnails for
-the new works only, search page, voxels, objects page), re-derives the answer from
-disk, and **exits non-zero unless Artsy, the raw dump, the database and the objects
-page all agree.** A green run is checked, not assumed.
+A run walks the **whole** collection — about 580 pages since the saving run, some fifty
+minutes (Artsy answers a deep page in about five seconds) — builds the complete set of
+saved ids, sets the saving run's aside (below), and diffs what is left against the raw
+dump in both directions. Missing saves are appended; works that are no longer saved are
+dropped. Then it rebuilds everything downstream in dependency order (database,
+thumbnails for the new works only, search page, voxels, objects page), re-derives the
+answer from disk, and **exits non-zero unless Artsy, the raw dump, the database and the
+objects page all agree.** A green run is checked, not assumed.
 
 It used to read one page and stop once sixty already-known works had gone by. That
 cutoff was a guess about how far out of order a save can land, and a save landing
@@ -593,28 +594,29 @@ cheap invariant to check instead. Completeness has to be walked.
 **Only the works Matt saved himself.** From 1 to 14 Oct 2026 a run on his account saved
 every work by the artists he follows — 52,816 of them still saved, one block of the
 listing. He chose (22 Oct 2026) to keep them off for now. Their ids are in
-`data/follow_saves/run_ids.json`, which is private: it is gitignored here, copied in from
-the site's `data/` (or from the private repository `art-database-data`), and the script
-refuses to run without it, since the walk would otherwise add some fifty thousand works.
-The run's works are set aside by Artsy's `_id` (the slug `id` is what the raw dump is
-keyed on), and adding more than a tenth of the collection in one run needs
-`--allow-growth`, so a stale or wrong id file fails closed instead of letting them in.
-The walk still reads every page and only then sets them aside, so the diff stays exact
-over what is left; a work he saved by hand while the run was saving sits inside the block
+`data/follow_saves/run_ids.json`, which is private: it is gitignored here, copied in
+from the site's `data/` (or from the private repository `art-database-data`), and the
+script refuses to run without it, since the walk would otherwise add some fifty
+thousand works. The walk still reads every page and only then sets them aside, by
+Artsy's `_id` (the raw dump is keyed on the slug `id`), so the diff stays exact over
+what is left; a work he saved by hand while the run was saving sits inside the block
 and is set aside with it.
 
-Two guards (three with the growth guard above), because from here a truncated response and a mass un-save look identical:
-a page that re-serves records already seen aborts the walk **without writing
-anything** (a dropped connection, a timeout or a 5xx is tried again up to four times
-first), and dropping more than a tenth of the collection in one run needs
-`--allow-shrink`. Records already held keep their bytes and their order, so a run that
-changes nothing writes nothing and the LFS objects stay put.
+Three guards, because from here a truncated response, a mass un-save and a stale id
+file look like ordinary drift: a page that re-serves records already seen aborts the
+walk **without writing anything** (a dropped connection, a timeout or a 5xx is first
+tried again, up to four times); dropping more than a tenth of the collection in one run
+needs `--allow-shrink`; and adding more than a tenth needs `--allow-growth`, so a wrong
+or stale id file fails closed instead of letting the run's works in. Records already
+held keep their bytes and their order, so a run that changes nothing writes nothing and
+the LFS objects stay put.
 
 A daily Routine runs this at 07:23 UTC, fired into Matt's own conversation, which hands
 it to a helper: it commits and pushes anything that changed and republishes both
-artifacts. It stays silent on the usual "already level" outcome, and reports loudly on a
-non-zero exit. It was paused from 14 to 23 Oct 2026, when its first run met the saving
-run's fifty thousand works; it runs again on the works he saved himself.
+artifacts where the account can open them. It stays silent on the usual "already level"
+outcome, and reports loudly on a non-zero exit. It was paused from 14 to 23 Oct 2026,
+when its first run met the saving run's fifty thousand works; it runs again on the
+works he saved himself.
 
 It is worth saying what went wrong there once, since the Routine reporting SUCCESS is
 not the same as the collection being current: it fired daily for days while pointed at

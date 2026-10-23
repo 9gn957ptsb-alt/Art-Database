@@ -21,6 +21,11 @@ Two things are standing decisions rather than preferences:
   Artsy, the raw dump, the database and the objects page agree. No heuristic cutoff,
   no "probably caught it". If a change makes the sync cheaper by making it partial,
   it is the wrong change.
+- **Only the works Matt saved himself** (his choice, 22 Oct 2026). The run that saved every
+  work by the artists he follows (1-14 Oct 2026) is kept off: the sync walks every page,
+  then sets those works aside by their `_id`s in `data/follow_saves/run_ids.json`, which is
+  private, gitignored, and never committed. Never pass `--allow-growth`, or bring the run's
+  works in any other way, without his word.
 - **True isometry, not the 2:1 games convention.** All three axes foreshorten equally;
   edges run at exactly 30 degrees. See the header of `scripts/iso.py` for what that costs
   and why it is worth it.
