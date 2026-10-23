@@ -3,6 +3,10 @@
 Spoken, 21 Oct 2026, with the first logo (an orange-to-red "5s" with a violet-blue ribbon running
 through it, in a blue-violet rounded square). Lightly cleaned of filler; nothing added.
 
+## The slogan (23 Oct 2026)
+
+- "The slogan for this app will be: Entertain it All"
+
 ## The purpose (said after, the same day; it frames everything below)
 
 "This app really is going to capture any self-reflective process: what I have done so far with you
