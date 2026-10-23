@@ -18,7 +18,9 @@ The before and after numbers are an observed time series: never call a differenc
 
 2. Sessions: `list_sessions` (claude-code-remote, `mine: true`, `limit: 100`). Its result is saved to a file; copy
    that file to `$T/pages/list_sessions.txt`.
-3. Pages: split the session ids into groups of five and start one helper per group (Agent tool, subagent_type
+3. Pages: leave out `session_01UUJZZLGqPEMYKT7kGUUXxJ` (23 Oct 2026): its one 403 was a deliberate test of the
+   hook, not a trap met. The report still lists it, with nothing read; do not count it among the sessions read.
+   Split the other session ids into groups of five and start one helper per group (Agent tool, subagent_type
    "general-purpose", model "sonnet", run_in_background true) with the brief below, the group's ids put in. Wait
    for all of them.
 
