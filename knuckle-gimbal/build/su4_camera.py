@@ -6,7 +6,7 @@ if ok:
     ex, ey, ez = 0.845, 0.267, 0.461
     l = math.sqrt(ex * ex + ey * ey + ez * ez); ex, ey, ez = ex / l, ey / l, ez / l
     tx, ty, tz = 24.0 * MM, 0.0, 2.0 * MM
-    pts = [(x * MM, y * MM, z * MM) for x in (-39.0, 84.0) for y in (-81.7, 81.7) for z in (-28.3, 27.7)]
+    pts = [(x * MM, y * MM, z * MM) for x in (-39.0, 93.0) for y in (-81.7, 81.7) for z in (-28.3, 27.7)]
     upx, upy, upz = 0.0, 1.0, 0.0
     # right = up x forward-ish; build an orthonormal frame around the view direction
     fx, fy, fz = -ex, -ey, -ez

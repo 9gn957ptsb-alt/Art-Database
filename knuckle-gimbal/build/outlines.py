@@ -90,12 +90,51 @@ def carriage(cy, flip):
     p += [(SC - RO + CWR + CWR * math.cos(0.5 * math.pi + 0.5 * math.pi * i / 6), RO - CWR + CWR * math.sin(0.5 * math.pi + 0.5 * math.pi * i / 6)) for i in range(6)]
     p += [(SC - RO, RO - CWR - (RO - CWR) * i / 6) for i in range(6)]
     return ccw([(a, cy + sg * b) for a, b in p])
+# Fin on the palm face (w < WMIN) at each ring's outer end, between the ring finger and the little finger; it slides with its ring.
+FIN_IN, FIN_T, FIN_S0, FIN_S1 = 11.8, 3.5, 22.0, 36.0     # inner face from the ring centre, thickness, base span in s
+ROOT_IN, ROOT_H, FIN_H, FIN_TIP = 11.85, 1.5, 10.0, 2.5   # root clears the liner (LO); blade height; tip narrowing per side
+W_FACE = WMIN - 0.3                                       # carriage palm face; the root sits on it
+def fillet(poly, radii, step):
+    # round the corners of a closed polygon; radius 0 leaves a corner sharp. Keep step coarse: SketchUp merges edges under 0.03 mm
+    out = []
+    for i in range(len(poly)):
+        p, c, q = poly[i - 1], poly[i], poly[(i + 1) % len(poly)]; r = radii[i]
+        if r <= 0:
+            out.append(c); continue
+        a = (p[0] - c[0], p[1] - c[1]); b = (q[0] - c[0], q[1] - c[1])
+        la, lb = math.hypot(*a), math.hypot(*b); a = (a[0] / la, a[1] / la); b = (b[0] / lb, b[1] / lb)
+        th = math.acos(max(-1.0, min(1.0, a[0] * b[0] + a[1] * b[1]))); d = r / math.tan(th / 2)
+        bis = (a[0] + b[0], a[1] + b[1]); lbis = math.hypot(*bis); h = r / math.sin(th / 2)
+        o = (c[0] + bis[0] / lbis * h, c[1] + bis[1] / lbis * h)
+        t0, t1 = (c[0] + a[0] * d, c[1] + a[1] * d), (c[0] + b[0] * d, c[1] + b[1] * d)
+        a0, a1 = math.atan2(t0[1] - o[1], t0[0] - o[0]), math.atan2(t1[1] - o[1], t1[0] - o[0])
+        while a1 - a0 > math.pi: a1 -= 2 * math.pi
+        while a0 - a1 > math.pi: a1 += 2 * math.pi
+        out += arcpts(o[0], o[1], r, a0, a1, step) + [t1]
+    return out
+def fin_root(cy, flip):
+    # carbon saddle on the carriage's outer wall: inner edge follows the liner, outer edge is the blade's outer face
+    sg = -1.0 if flip else 1.0
+    arc = [(s, -math.sqrt(ROOT_IN ** 2 - (s - SC) ** 2)) for s in [FIN_S1 - (FIN_S1 - FIN_S0) * i / 10 for i in range(11)]]
+    corners = [(FIN_S0, -(FIN_IN + FIN_T)), (FIN_S1, -(FIN_IN + FIN_T))]
+    p = fillet(corners + arc, [1.5, 1.5, 0.6] + [0] * 9 + [0.6], 0.4)     # coarse arc so the acute ends can be rounded
+    return ccw([(a, cy + sg * b) for a, b in p])
+def fin_blade():
+    # silicone blade in the (s, w) plane; it is extruded along y through the fin's thickness
+    w0 = W_FACE - ROOT_H; w1 = w0 - FIN_H
+    p = [(FIN_S0, w0), (FIN_S1, w0), (FIN_S1 - FIN_TIP, w1), (FIN_S0 + FIN_TIP, w1)]
+    return ccw(fillet(p, [0, 0, 3.0, 3.0], 0.4))
 def grip_parts():
-    # name -> (material, group, outline, holes, R, RH, wbot, wt0, wt1, nq)
+    # name -> (material, group, outline, holes, R, RH, wbot, wt0, wt1, nq, swap)
+    # swap: the outline is (s, w) and the plate runs along y between wbot and wt0 (the fin blades)
     P = {}
-    P["Grip Body"] = ("si", "knuckle", body_outline(), [cw(stadium(SC - WALL + 1.4, 132))], 3.0, 2.0, WMIN, WT0, WT1, 4)
-    P["Track Frame"] = ("cf", "knuckle", ccw(stadium(SC - WALL + 1.3, 132)), [cw(frame_inner())], 0.3, 0.3, WMIN + 0.3, WT0 - 0.3, WT1, 2)
+    P["Grip Body"] = ("si", "knuckle", body_outline(), [cw(stadium(SC - WALL + 1.4, 132))], 3.0, 2.0, WMIN, WT0, WT1, 4, False)
+    P["Track Frame"] = ("cf", "knuckle", ccw(stadium(SC - WALL + 1.3, 132)), [cw(frame_inner())], 0.3, 0.3, WMIN + 0.3, WT0 - 0.3, WT1, 2, False)
     for tag, cy, flip in (("Bottom", Y_HOME, False), ("Top", -Y_HOME, True)):
-        P["Ring Slider " + tag] = ("cf", "ring" + tag[0], carriage(cy, flip), [cw(circle(cy, RI))], 0.5, 0.5, WMIN - 0.3, WT0 + 0.3, WT1, 2)
-        P["Ring Liner " + tag] = ("si", "ring" + tag[0], ccw(circle(cy, LO)), [cw(circle(cy, LI))], 0.3, 0.6, WMIN - 0.6, WT0 + 0.6, WT1, 2)
+        sg = -1.0 if flip else 1.0
+        P["Ring Slider " + tag] = ("cf", "ring" + tag[0], carriage(cy, flip), [cw(circle(cy, RI))], 0.5, 0.5, WMIN - 0.3, WT0 + 0.3, WT1, 2, False)
+        P["Ring Liner " + tag] = ("si", "ring" + tag[0], ccw(circle(cy, LO)), [cw(circle(cy, LI))], 0.3, 0.6, WMIN - 0.6, WT0 + 0.6, WT1, 2, False)
+        P["Ring Fin Root " + tag] = ("cf", "ring" + tag[0], fin_root(cy, flip), [], 0.4, 0.4, W_FACE - ROOT_H, W_FACE, 0.0, 2, False)
+        ya, yb = cy - sg * FIN_IN, cy - sg * (FIN_IN + FIN_T)
+        P["Ring Fin " + tag] = ("si", "ring" + tag[0], fin_blade(), [], 1.2, 1.2, min(ya, yb), max(ya, yb), 0.0, 4, True)
     return P

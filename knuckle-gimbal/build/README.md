@@ -7,7 +7,7 @@ How `../sketchup/knuckle.skp` and the web viewer (https://claude.ai/artifact/USq
 Run these with the Trimble SketchUp connector's `build_model` tool, pasting each file's text as the code, in order. Sessions come back empty after about 30 minutes idle, so run the steps back to back.
 
 1. `su1_base.py` with `clean: true`: materials, shared helpers, the iPhone reference, the puck, the arm and the hinge.
-2. `su2_grip.py`: the silicone body, the carbon track, and two ring sliders with liners.
+2. `su2_grip.py`: the silicone body, the carbon track, and two ring sliders with liners and fins.
 3. `su3_style.py`, then `su4_camera.py`: the studio style and the upright camera.
 4. `save_model` with the filename `knuckle.skp`. The download link redirects, so fetch it with `curl -L`. Its thumbnail is `../sketchup/knuckle.png`.
 5. `su5_export.py`: every face for the viewer. The result is too big to show, so it is saved to a tool-results file.

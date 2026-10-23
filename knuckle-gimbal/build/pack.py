@@ -7,7 +7,8 @@ GROUP = {"MagSafe Face":"rotor","Motor Rotor Can":"rotor","Motor Stator":"stator
          "Puck Shell":"shell","USB-C Port":"shell","Mode Button":"shell","Status LED":"shell","Slide Rail":"shell",
          "Arm Stage 1":"stage1","Arm Stage 2":"stage2","End Block":"stage2","Hinge Lug Top":"stage2","Hinge Lug Bottom":"stage2",
          "Hinge Bolt M2":"stage2","Bolt Head":"stage2","Nyloc Nut":"stage2","Grip Body":"knuckle","Grip Core Tab":"knuckle","Hinge Barrel":"knuckle",
-         "Track Frame":"knuckle","Ring Slider Bottom":"ringB","Ring Liner Bottom":"ringB","Ring Slider Top":"ringT","Ring Liner Top":"ringT"}
+         "Track Frame":"knuckle","Ring Slider Bottom":"ringB","Ring Liner Bottom":"ringB","Ring Slider Top":"ringT","Ring Liner Top":"ringT",
+         "Ring Fin Root Bottom":"ringB","Ring Fin Bottom":"ringB","Ring Fin Root Top":"ringT","Ring Fin Top":"ringT"}
 def tri_face(outer, inners, n):
     n = np.array(n, float); n /= np.linalg.norm(n)
     a = np.array([1.0, 0, 0]) if abs(n[0]) < 0.9 else np.array([0, 1.0, 0])
