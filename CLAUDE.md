@@ -12,6 +12,12 @@ only for what only their words can give. Anything they must paste elsewhere goes
 code block, with where to paste it ("send it to me like that so I get exactly what you want and it's
 easiest for me to do it", 23 Oct 2026).
 
+Before working, read START-HERE.md in the "Dimensionalism Chat Archive" folder inside the artist's
+Google Drive "Obsidian Vault" folder (search Drive for START-HERE.md), and follow it. The folder is a
+live copy of their Dimensionalism chat (transcript/, attachments/): search it, never edit it. The live
+documents (Morphology.md, Notes.md, dimensionalism-questions.md, later-tasks.md) are in the Obsidian
+Vault itself: follow their instructions and use the artist's exact wording, never paraphrased.
+
 Storage and money (the artist, 23 Oct 2026): "You have to let me know any potentially outrageous
 storage action or something that is going to charge me money". Before anything that takes a lot of
 space somewhere (Drive, a repository, an artifact) or could bill them (paid plans, extra usage,
