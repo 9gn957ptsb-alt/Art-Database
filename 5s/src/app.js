@@ -1370,6 +1370,8 @@
     const ex = example;
     const el = playHost('map');
     ui.play = PL.mountMap(el, { saga: (ex ? EX : S).saga, onLevel: openLevel, onBack: backToBoard, onKingdom: () => openKingdom(null) });
+    const nb = $('#view-set .fp-node.is-next button');   // the button that opened it is gone: focus would fall to the page
+    if (nb) nb.focus({ preventScroll: true });
   }
 
   // The kingdom map (SPEC "Set: the clock and the kingdom"): every level won is one of your things built on
@@ -1389,6 +1391,7 @@
       onLevel: openLevel, onBack: backToBoard, onList: openList,
       onHome: () => showView('seed', { focus: true }),   // leaving Set gives the kingdom way to the board
     });
+    $('#view-set .fk-play').focus({ preventScroll: true });   // as the board's Play: the button that opened it is gone
   }
 
   function openLevel(n) {
@@ -4008,6 +4011,7 @@
     if (ui.play) { stopPlay(); ui.setMode = 'board'; }
     example = !!on;
     ui.room = null; ui.roomKey = null; ui.seedKey = null; ui.confirm = null; ui.swatch = null; ui.splitAll = {};
+    ui.reveal = null;   // an area found in the other taste's saga is not this one's
     updateChrome();
     renderView();
     say(on ? 'Showing an example taste. It isn’t yours and is never saved.' : 'Back to your own taste.');

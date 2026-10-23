@@ -2367,10 +2367,14 @@ for (const cfg of CONFIGS) {
       await page.waitForSelector('#view-set .fk-isle.is-drawn');
       await noHScroll(page, 'set kingdom');
       await shot('44b-set-kingdom');
+      const focused = () => page.evaluate(() => document.activeElement.className + ' ' + document.activeElement.textContent.trim());
+      assert.match(await focused(), /fk-play.* Play level 1$/, 'the focus on Play, not left on the page (the button that opened the kingdom is gone)');
       await page.click('#view-set .fk-list');
       await page.waitForSelector('#view-set .fp-mapview .fp-kingdom');
+      assert.equal(await focused(), ' 1', 'the list: the focus on the next level');
       await page.click('#view-set .fp-mapview .fp-kingdom');
       await page.waitForSelector('#view-set .fk');
+      assert.match(await focused(), /fk-play/);
       await page.click('#view-set .fk .fp-back');
       await page.waitForSelector('#view-set .fb-tile[data-id]');
       const now = await saved();
