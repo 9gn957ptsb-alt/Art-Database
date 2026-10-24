@@ -497,12 +497,11 @@
 
   // ---------------------------------------------------------------- the five
 
+  // A five Sort deals anew when it opens: none, another day's, or one naming a card the deck no longer has.
+  const staleFive = (st) => !st.five || st.five.day !== F.dayOf(now()) || st.five.ids.some((id) => !F.card(st, deck, id));
   function ensureFive() {
     if (!deck) return;
-    const day = F.dayOf(now());
-    const five = S.five;
-    const broken = five && five.ids.some((id) => !F.card(S, deck, id));
-    if (!five || broken || five.day !== day) {
+    if (staleFive(S)) {
       S = F.startFive(S, deck, now(), RL.ask(S, deck));   // one card of the five may follow from what they related in Set
       persist();
     }
@@ -1544,12 +1543,15 @@
         const after = cur();
         return Object.assign({}, rec, {
           saga, build: { ways, storeys: ways.map((id) => RL.storeys(after, n, id)) },
-          ask: RL.ask(after, deck).length > 0, sortAFive: RL.unsetShare(setTable(after)) < 0.5,
+          // the promise only when Sort's next five, dealt anew (stale, or this one sorted), will hold a card from Set; Sort is never the example's
+          ask: !example && (staleFive(S) || F.fiveDone(S)) && !!F.startFive(S, deck, now(), RL.ask(S, deck)).five.ask,
+          sortAFive: RL.unsetShare(setTable(after)) < 0.5,
         });
       },
       onBuild: (id) => save({ saga: MX.build(cur().saga, n, id) }),
       onKingdom: () => openKingdom(n),
       onNext: (m) => openLevel(m), onMap: () => openKingdom(n), onBoard: backToBoard,
+      onSort: () => { stopPlay(); ui.setMode = 'board'; showView('sort', { focus: true }); },   // the level is done: Set opens on the board, not on it
     }));
   }
 

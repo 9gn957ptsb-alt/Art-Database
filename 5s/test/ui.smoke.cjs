@@ -35,7 +35,8 @@
  * the mist; level 5 played by keys in time builds what stayed (its height from its relations), Another way changes
  * it, Split is found; a mist button opens level 6 led by that thing; the clock off; all of it after a reload. With
  * nothing judged no home island; a building whose thing names no card, a plain house; Reduce Motion followed live;
- * a level under six kept is the first board; a win of level 1000 claims nothing.
+ * a level under six kept is the first board; a win of level 1000 claims nothing. A level end's Sort a five leaves the
+ * level (Set opens on the board), and its line about Sort's next five holds; the kingdom's mist opens in view.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -2448,6 +2449,11 @@ for (const cfg of CONFIGS) {
       await page.waitForSelector('#view-set .fk-isle.is-drawn');
       await noHScroll(page, 'set kingdom');
       await shot('44b-set-kingdom');
+      // the mist opens in view, inside the map and clear of its foot (at 1280 x 800 it opened above the map)
+      assert.equal(await page.evaluate(() => {
+        const q = (s) => document.querySelector('#view-set ' + s).getBoundingClientRect(), r = q('.fk-mist button'), m = q('.fk-map'), f = q('.fk-foot');
+        return r.left >= m.left && r.right <= m.right && r.top >= m.top && r.bottom <= f.top ? '' : 'the mist at ' + [r.left, r.top, r.right, r.bottom].map(Math.round) + ', the map ' + [m.left, m.top, m.right, f.top].map(Math.round);
+      }), '');
       const focused = () => page.evaluate(() => document.activeElement.className + ' ' + document.activeElement.textContent.trim());
       assert.match(await focused(), /fk-play.* Play level 1$/, 'the focus on Play, not left on the page (the button that opened the kingdom is gone)');
       await page.click('#view-set .fk-list');
@@ -2594,6 +2600,92 @@ test('Set: the first board under six, Sort counting down to it, one card of the 
     await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
     assert.equal(await page.evaluate(() => document.getElementById('view-set').hidden), false);
     assert.match(await page.textContent('dialog.fp-sheet[open]'), /Level 1/);
+    assert.deepEqual(page.errors(), []);
+  } finally {
+    await ctx.close();
+  }
+});
+
+// A level end, then Sort (the verifier, 23 Oct 2026): Sort a five leaves the finished level, so Set opens on the board,
+// not on that level frozen; and the end promises a card from Set only when the five Sort will show holds one: a five
+// sorted today is followed by a new one (the promise kept), a five not yet sorted stays as it is (no promise).
+test('Set: a level end\'s Sort a five leaves the level, and its promise of a card from Set holds', { timeout: 150000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light' });
+  const tabsShown = () => page.$eval('.tabs', (n) => getComputedStyle(n).display !== 'none');
+  const PROMISE = /Your next five in Sort holds one that follows from what you made here\./;
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    // six kept pictures of six works, each one the lookers paired with something not kept (so Set has a card to ask with)
+    const partners = (id) => (deck.rhymes || []).filter((r) => r[0] === id || r[1] === id).map((r) => (r[0] === id ? r[1] : r[0]));
+    const work = (id) => deck.cards.find((c) => c.id === id).work;
+    const kept = [];
+    for (const kind of ['image', 'space', 'object', 'surface', 'image', 'space', 'object', 'surface']) {
+      const c = deck.cards.find((x) => x.kind === kind && x.img && partners(x.id).length && !kept.includes(x.id) && !kept.some((k) => work(k) === x.work || partners(k).includes(x.id)));
+      if (c && kept.length < 6) kept.push(c.id);
+    }
+    assert.equal(kept.length, 6, 'six pictures the lookers paired: ' + kept);
+    // today's five sorted (five of them kept), one more kept; eight of their fifteen pairs already said, so the end offers Sort a five
+    let st = Object.assign(FiveS.newState(), { five: { ids: kept.slice(0, 5), day: FiveS.dayOf(Date.now()), n: 1, i: 0 } });
+    st.seen = Object.assign({}, st.seen, { intro: 1 });
+    const t0 = Date.now() - 60000;
+    kept.forEach((id, k) => { st = FiveS.judge(st, deck, id, true, 1500, t0 + k * 1000).state; });
+    let assoc = [];
+    [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [1, 2], [1, 3], [1, 4]].forEach(([a, b], k) => { assoc = RL.relate(assoc, kept[a], kept[b], 1, 2, Math.floor(t0 / 1000) - 3600 + k); });
+    st = Object.assign({}, st, { assoc });
+    assert.equal(FiveS.fiveDone(st), true);
+    assert.equal(tableOf(st, deck).pool.length, 6);
+    await seedState(page, st);
+    await page.goto(BASE + '#set');
+    await page.waitForSelector('#view-set [data-act="set-play"]');
+    const playOut = async (n) => {
+      const plan = planLevel(await savedState(page), deck, n, 2);
+      await page.click('#view-set [data-act="set-play"]');
+      await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
+      assert.match(await page.textContent('dialog.fp-sheet[open]'), new RegExp('^Level ' + n + '(?!\\d)'));
+      await page.click('dialog.fp-sheet[open] [data-play]');
+      await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
+      for (const [k, m] of plan.moves.entries()) {
+        await cell(page, m.i).click(); await cell(page, m.j).click();
+        await sayAlikeInLine(page);
+        if (k < plan.moves.length - 1) await afterMove(page, null, m.togo);
+      }
+      await page.waitForSelector('dialog.fp-sheet[open] [data-sort]', { timeout: 60000 });
+      assert.match(await page.textContent('dialog.fp-sheet[open]'), new RegExp('Level ' + n + ' done\\.'));
+      return page.textContent('dialog.fp-sheet[open]');
+    };
+
+    // Level 1 after today's five was sorted: Sort's next five is dealt anew, and it holds a card from Set.
+    const end1 = await playOut(1);
+    let now = FiveS.migrate(await savedState(page));
+    assert.equal(typeof FiveS.startFive(now, deck, Date.now(), RL.ask(now, deck)).five.ask, 'string', 'the next five will hold a card from Set');
+    assert.match(end1, PROMISE);
+    // Sort a five: Sort, then Set opens on the board, not on the level just finished.
+    await page.click('dialog.fp-sheet[open] [data-sort]');
+    await page.waitForFunction(() => !document.getElementById('view-sort').hidden);
+    await tab(page, 'set');
+    await page.waitForSelector('#view-set [data-act="set-play"]', { timeout: 5000 });
+    assert.equal(await page.locator('#view-set .fp-set').count(), 0, 'the finished level is gone');
+    assert.equal(await tabsShown(), true, 'the tab bar shows');
+    assert.match(await page.textContent('#view-set [data-act="set-play"]'), /Play level 2/);
+    // And the promise holds: the next five holds the card from Set.
+    await tab(page, 'sort');
+    await page.waitForSelector('#summary:not([hidden]) [data-act="another"]');
+    await page.click('#summary [data-act="another"]');
+    await page.waitForSelector('#stack .card.is-top');
+    const five = (await savedState(page)).five;
+    assert.equal(typeof five.ask, 'string', 'the five holds a card from Set');
+
+    // Level 2 with that five not yet sorted: Sort shows it as it is, so the end makes no promise.
+    await tab(page, 'set');
+    const end2 = await playOut(2);
+    now = FiveS.migrate(await savedState(page));
+    assert.ok(RL.ask(now, deck).length > 0, 'Set has cards to ask with');
+    assert.doesNotMatch(end2, PROMISE);
+    await page.click('dialog.fp-sheet[open] [data-sort]');
+    await page.waitForSelector('#stack .card.is-top');
+    assert.deepEqual((await savedState(page)).five, five, 'the five as it was');
+    await tab(page, 'set');
+    await page.waitForSelector('#view-set [data-act="set-play"]', { timeout: 5000 });
     assert.deepEqual(page.errors(), []);
   } finally {
     await ctx.close();

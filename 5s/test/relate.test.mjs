@@ -202,8 +202,8 @@ test('back into Sort: ask follows the latest relations, one slot of the next fiv
 test('the kingdom from what they related: storeys, ties between buildings, island lines in their words, the mist', () => {
   const st = F.migrate(keeping()), T = RL.table(st, deck, []), [a, b, c, d, e, q, r] = T.pool;
   st.saga = Object.assign({}, st.saga, { stars: [3, 1, 1, 1, 1, 1], built: [a, b, null, c, d, e] });
-  const none = RL.kingdom(st, deck, []);
-  assert.deepEqual(none, { storeys: [3, 1, 1, 1, 1, 1], ties: [], said: {}, mist: { n: T.pool.length, ids: T.pool.slice(0, 3) } }, 'no relations: old heights, nothing tied, all in the mist');
+  const none = RL.kingdom(st, deck, []), standing = new Set([a, b, c, d, e]), unbuilt = T.pool.filter((id) => !standing.has(id));
+  assert.deepEqual(none, { storeys: [3, 1, 1, 1, 1, 1], ties: [], said: {}, mist: { n: unbuilt.length, ids: unbuilt.slice(0, 3) } }, 'no relations: old heights, nothing tied, all but the buildings in the mist');
   st.assoc = MX.addAssociations(st.assoc, [a, c], 5);   // a v12 pairing: not a relation
   st.assoc = RL.relate(st.assoc, b, c, 1, 2, 10);
   st.assoc = RL.relate(st.assoc, d, a, -1, 0, 11);
@@ -217,6 +217,17 @@ test('the kingdom from what they related: storeys, ties between buildings, islan
   const set = new Set([a, b, c, d, e, q, r]);
   assert.deepEqual(K.mist, { n: T.pool.length - set.size, ids: T.pool.filter((id) => !set.has(id)).slice(0, 3) }, 'what is not set yet');
   assert.deepEqual(K.storeys, [1, 2, 3, 4, 5, 6].map((n) => RL.storeys(st, n)), 'the same rule as storeys');
+});
+
+// v12 built in the shape game, with five-long pairings only: its buildings are set, though not related.
+test('a v12 saga\'s buildings are set: out of the mist, and never a way in "not set yet"', () => {
+  const st = F.migrate(keeping()), T0 = RL.table(st, deck, []), [a, b] = T0.pool;   // the newest kept, built
+  st.assoc = MX.addAssociations(st.assoc, [a, b], 5);
+  st.saga = Object.assign({}, st.saga, { stars: [3, 2], best: [9000, 6000], time: [0, 0], built: [a, b] });
+  const rest = T0.pool.filter((id) => id !== a && id !== b);
+  assert.deepEqual(RL.kingdom(st, deck, []).mist, { n: rest.length, ids: rest.slice(0, 3) }, 'what stands is not under the mist');
+  const T = RL.table(st, deck, []), fresh = (id, why) => (id === a || id === b) && why === 'fresh';
+  for (const n of [1, 2, 3]) assert.ok(!RL.leads(T, n).some((l) => fresh(l.id, l.why)), 'level ' + n + ': no building is "Kept, not set yet."');
 });
 
 test('Sort from Set: one card a five, named in five.ask; without pairings made in Set every five is as before', () => {

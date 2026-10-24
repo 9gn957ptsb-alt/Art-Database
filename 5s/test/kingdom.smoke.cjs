@@ -475,6 +475,8 @@ test('Set, inside out: storeys from relations, ties, the islands\' lines and the
     const mist = await page.$$eval('.fk-mist button', (bs) => bs.map((b) => [b.dataset.lead, b.getAttribute('aria-label')]));
     assert.deepEqual(mist.map((m) => m[0]), h.inside.mist.things.map((t) => t.id));
     assert.deepEqual(mist.map((m) => m[1]), h.inside.mist.things.map((t) => 'Play level 9 around ' + t.name));
+    // it opens in view with the next level (at 1280 x 800 the mist opened above the map)
+    assert.deepEqual([await clear(page, '.fk-mist button'), await clear(page, '[data-n="9"]')], ['', ''], 'the mist and level 9 in view at ' + mode.w);
     await page.locator('.fk-mist button').first().focus(); await settle(page);   // a focused control is panned into view
     assert.equal(await clear(page, '.fk-mist button'), '');
     await page.keyboard.press('Enter');

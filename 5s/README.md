@@ -121,16 +121,18 @@ and the data file door works without it. Paste a link itself works without it to
 words, Define through `sample`, or a pasted picture); the connector adds the page's own picture and
 facts, and whole boards and channels (SPEC.md, "As built, 22 Oct 2026").
 
-**Two publishes, because of the file count.** The page plus 465 supporting files is 466 files (about
+**Two publishes, because of the file count.** The page plus 467 supporting files is 468 files (about
 18 MB). One publish sends at most 255 files; a version holds up to 511.
 
-1. Publish the page with the eleven scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, and the Image,
-   Object and Space card images (`img/i*.webp`, `img/o*.webp`, `img/s*.webp`): 255 files (the most one
-   publish takes).
-2. Publish again to the same URL with the 80 Surface crops (`img/u*.webp`) and the bookmarks' 131
-   images (`img/b*.webp`, `img/m*.webp`): 211 files. Files left out of a publish are kept.
+1. Publish the page with the thirteen scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, the Image and
+   Object card images (`img/i*.webp`, `img/o*.webp`) and the bookmarks' 66 Spaces and Objects (`img/b*.webp`):
+   243 files.
+2. Publish again to the same URL with the 80 Space card images (`img/s*.webp`), the 80 Surface crops
+   (`img/u*.webp`) and the bookmarks' 65 Surfaces (`img/m*.webp`): 225 files. Files left out of a
+   publish are kept.
 
-Between the two publishes, Surface cards and the bookmarks have no image. Publish the second batch right away.
+Between the two publishes, Space and Surface cards (the bookmarks' Surfaces too) have no image. Publish
+the second batch right away.
 
 Size limits are not a concern: the page is about 90 KB, the largest file is the atlas at about
 1 MB, and the whole set is about 18 MB.

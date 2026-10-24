@@ -379,6 +379,18 @@
     // A new area found opens on its first level: on the level that found it, the new island was half off a phone's screen.
     const first = nodeOf(o.reveal != null ? 5 * o.reveal + 1 : o.focus) || nodeOf(next);
     if (first) { tx = W / 2 - first.x * z; ty = (H - footH()) / 2 - first.y * z + PIN; }   // on its button: a phone on its side has 42 px above the foot
+    // The mist opens in view too (at 1280 x 800 it was above the map): over a level of the next area, the map zooms out
+    // (no lower than Z_MIN) until the mist and that island's name fit above the foot; the level's pin stays above the foot.
+    const mistEl = $('.fk-mist'), names = table.querySelectorAll('.fk-aname');
+    if (first && mistEl && names.length && Math.ceil(first.n / 5) === Math.ceil(next / 5)) {
+      clampView(); paint();
+      const m = map.getBoundingClientRect(), r = mistEl.getBoundingClientRect(), a = names[names.length - 1].getBoundingClientRect();
+      if (r.top < m.top + 8) {
+        const top = (r.top - m.top - ty) / z;   // the mist's top, in world px
+        z = clamp((H - footH() - 8 - a.height) / ((a.top - r.top) / z), Z_MIN, z);
+        tx = W / 2 - first.x * z; ty = Math.min(8 - top * z, H - footH() - first.y * z);
+      }
+    }
     place();
     if (ro) ro.observe(map);
     if (o.reveal != null) { const w = 'A new area: ' + areaOf(o.reveal).name + '.'; setTimeout(() => { live.textContent = w; }, 400); }

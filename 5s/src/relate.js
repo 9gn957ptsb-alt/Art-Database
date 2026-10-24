@@ -174,14 +174,14 @@
   function leads(T, n) {
     const R = rels(T, null), deg = (id) => R.filter((r) => r.a === id || r.b === id).length;
     const rest = new Set([T.built[n - 2], T.built[n - 3], T.built[n - 4]].filter(Boolean));
-    const ok = (id) => !rest.has(id);
+    const ok = (id) => !rest.has(id), set = (id) => deg(id) > 0 || T.built.indexOf(id) >= 0;   // a building (v12's too) is set, though not related
     const list = [];
     if (Math.floor((n - 1) / 5) === 4) T.pool.filter((id) => T.src[id] === 'own').sort((a, b) => deg(a) - deg(b)).forEach((id) => list.push({ id, why: 'brought' }));
-    T.turns.filter((id) => ok(id) && !deg(id)).forEach((id) => list.push({ id, why: 'turn' }));
-    T.pool.filter((id) => ok(id) && !deg(id)).forEach((id) => list.push({ id, why: 'fresh' }));
+    T.turns.filter((id) => ok(id) && !set(id)).forEach((id) => list.push({ id, why: 'turn' }));
+    T.pool.filter((id) => ok(id) && !set(id)).forEach((id) => list.push({ id, why: 'fresh' }));
     const st = T.built[n - 2];
     if (st && T.pool.indexOf(st) >= 0) list.push({ id: st, why: 'stayed' });
-    T.pool.filter((id) => ok(id) && deg(id)).sort((a, b) => deg(a) - deg(b) || T.rank[a] - T.rank[b]).forEach((id) => list.push({ id, why: 'thin' }));
+    T.pool.filter((id) => ok(id) && set(id)).sort((a, b) => deg(a) - deg(b) || T.rank[a] - T.rank[b]).forEach((id) => list.push({ id, why: 'thin' }));
     if (!list.length) T.pool.forEach((id) => list.push({ id, why: 'thin' }));   // everything rests: anything leads
     const out = [];
     const add = (x) => { if (x && out.length < 3 && !out.some((y) => y.id === x.id)) out.push(x); };
@@ -367,7 +367,7 @@
   /** kingdom(state, deck, own) -> {storeys, ties, said, mist}: what the kingdom map draws from the person's relations.
    *  storeys: [1..3] a won level; ties: [[n, m, s]] two levels whose buildings they related (s 1 alike, -1 unlike);
    *  said: {k: 'Mostly alike in line'} what they said most about island k's buildings, in their words, never the lookers';
-   *  mist: {n, ids} the kept pictures not set beside anything yet (ids: the newest three), each a way into the next level. */
+   *  mist: {n, ids} the kept pictures not set beside anything yet nor built (ids: the newest three), each a way into the next level. */
   function kingdom(state, deck, own) {
     const st = FiveS.migrate(state), won = st.saga.stars.length, bl = st.saga.built.slice(0, won);
     const R = st.assoc.filter((e) => e.length === 7), at = {}, ties = [], lines = {};
@@ -382,7 +382,7 @@
       if (top) lines[k] = 'Mostly ' + top;
     }
     const related = new Set(R.map((e) => e[0]).concat(R.map((e) => e[1])));
-    const unset = table(st, deck, own).pool.filter((id) => !related.has(id));
+    const unset = table(st, deck, own).pool.filter((id) => !related.has(id) && bl.indexOf(id) < 0);   // a building (v12's too) is set
     return { storeys: st.saga.stars.map((_, i) => tall(st, i, bl[i] || null)), ties, said: lines, mist: { n: unset.length, ids: unset.slice(0, 3) } };
   }
 
