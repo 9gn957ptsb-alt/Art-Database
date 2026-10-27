@@ -4,13 +4,13 @@
    be very simple objects, almost like an homage site").
 
    The figures are homage.json's (scripts/figure_three.py): the first, six bars whose ends meet only down
-   the diagonal, the block every place is built of, which closes from above; the second, being made in the
-   game's own session, its plinth empty until homage.json gives it; the third, the same six bars made one
+   the diagonal, the block every place is built of, which closes from above; the second, the third study of
+   the figure (the figure and Bent: every point moved along the line of sight by a bow), which closes level; the third, the same six bars made one
    closed thing by a curve, which closes from below. Each is its drawing from one point only, and each
    structure is little more than that point made a place to stand, white, before a limestone support:
 
      the first   on a pin over a square of limestone, looked down on from a white step;
-     the second  a limestone plinth, empty, a white stone before it;
+     the second  on a pin over a limestone plinth, a white stone before it (empty while homage.json has none);
      the third   hung on a thread under the lintel of a limestone gate, looked up at from a white stone.
 
    From its stone each figure is its drawing exactly. It is drawn in towards that eye as the figure in the
@@ -201,7 +201,15 @@
       // (where it settles is the same wherever the row goes, and its drawing-in only moves with the eye: both kept,
       // for the rows a place is searched for)
       var st = f.settled || (f.settled = settle(f.shape, f.frame, h, s || -0.0001, hang, hang ? LINTEL : 0));
-      if (!rest && !hang) { st = { d: 3, y: eyeH, along: 0 }; }
+      // Level (the second): on a pin over its plinth, its lowest point PIN over the plinth's block, a block over the
+      // ground; looked at from its stone a little up, as near level as that leaves it.
+      if (!rest && !hang) {
+        st = f.level || (f.level = (function () {
+          var y = eyeH;
+          for (var it = 0; it < 6; it += 1) { y += 1 + PIN - ends(drawIn(f.shape, f.frame, [0, h, 0], [0, y, -3])).low[1]; }
+          return { d: 3, y: y, along: 0 };
+        })());
+      }
       if (!(st.d > 0)) { ok = false; why = why || "mount"; return; }   // (too large to be looked down on from its step)
       var us = -round(st.d + st.along), E = point(us, v, base + h), C = point(us + st.d, v, base + st.y);
       if (us > (rest ? -3 : -2)) { ok = false; why = why || "close"; return; }
@@ -240,7 +248,8 @@
       } else {
         for (var a3 = -1; a3 <= 1; a3 += 1) { for (var b3 = -1; b3 <= 1; b3 += 1) { use(a3, v + b3, CLEAR); set(a3, v + b3, top, B.LIME); } }
         set(0, v, top + 1, B.LIME);
-        labels.push([cell(0, v), names[i] + "'s plinth"]);
+        parts.push(rod(q.low[0], q.low[2], gs + 1, q.low[1]));
+        labels.push([cell(0, v), names[i] + "'s plinth · looked at from the white stone"]);
       }
       // The way from the stone to it, open, and the stone: a white step, or white in the ground.
       for (var k = us; k <= -2; k += 1) { use(k, v, rest ? 4 : CLEAR); }

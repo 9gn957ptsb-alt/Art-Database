@@ -224,8 +224,15 @@ cover the glass), lifted clear of his head, out to his left and down, so it neve
 body, raises his right arm, the upper arm level out to his right and the forearm as upright as its bend lets it, a
 pearl in the glove, and faces the mark; the stick walks him as before, sideways too, and the camera no longer swings
 round behind him. The mark is the figure, the block's own seen down its diagonal, white and grey as light over a
-keyline of black, its aim point the crux, the figure's undrawn apex, at the middle of the screen; from the crux hang
-its holding circles, 8, 13 and 21, and their feet are the holdover marks, each labelled with the range at which the
+keyline of black, its aim point the crux, the figure's undrawn apex, at the middle of the screen. On the crux is **his
+nose** (the artist, 23 Oct 2026: "Use his nose, as if looking transparently through his head and his nose is a small
+contour like a section cut that gets filled when poche-ing a wall in an architecture section, to establish a usable
+point to aim when firing or throwing something"): the covers paint him no nose, so it is where one would be, its
+bridge between his eyes, which lie on the head's equator and so on the sight's line. Seen through the glass it is cut,
+as a wall is in a section, and poché'd: the drawing's black inside the mark's white-over-black contour, the one solid
+thing in the window. Its outline is the figure's own (an equilateral triangle 8 thirds of a block across, the drawing)
+at three thirds, its apex the crux, so it fills the figure's undrawn apex down to where the figure opens; where it
+points is where a pearl goes, and in space where the guns fire. From the crux hang its holding circles, 8, 13 and 21, and their feet are the holdover marks, each labelled with the range at which the
 throw comes down through it, worked out from the arc as you aim. The figure closes into the drawing when the aim is
 still and opens into its bars as it turns; still, a ring on the ground says where the pearl comes down; under the
 glass, in words, what the mark is on, how far, what it came from and the relation that put it there (a work says how
@@ -293,8 +300,10 @@ world that presents the three figurations of the impossible triangle They should
 each other and be very simple objects, almost like an homage site").
 
 **The three.** The first is the block's own figure, six square bars whose ends meet only down the
-diagonal, closing from above, as the site draws its buildings. The second is being made in the game's
-own session; its plinth stands empty until `homage.json` gives it. The third (`scripts/figure_three.py`)
+diagonal, closing from above, as the site draws its buildings. The second is the third study of the figure,
+after the figure and Bent: the same beams, every point moved along the line of sight by a bow across the drawing
+and a lean up it, so that from its stone they are straight and it is the drawing, and a step aside they curve away
+(`scripts/figure_three.py` `second`, from `figure_studies.py`'s Bent). The third (`scripts/figure_three.py`)
 is the first's six bars made one closed thing by a curve: every point of a figure may slide along the
 line of sight without changing the drawing, so each tribar gives up its rise round its own loop, a
 third a beam, in the beams' middles, its joints held square, until each cut's two ends lie EPS (0.3 of
@@ -319,7 +328,8 @@ sight, near the middle at its own size (a projective map, so faces stay flat). O
 come apart; back on it, it closes. Looked down on and up at along the diagonal's slope (35.26°):
 
 - **the first**, on a pin in a limestone square sunk a block, looked down on from a white step;
-- **the second**, a limestone plinth, empty, a white stone three blocks before it;
+- **the second**, on a pin over a limestone plinth, looked at from a white stone three blocks before it,
+  as near level as its pin leaves it;
 - **the third**, on a thread under the lintel of a limestone gate five blocks high, looked up at from
   a white stone.
 
@@ -356,6 +366,94 @@ tree: within twelve metres of the trunk where the place leaves room (the ground 
 to three blocks), there without the sphere if it alone does not fit, and only then further out; clear of the wreck
 and of the homage. It stands in every world, not only the first. `node scripts/check_homage.js --studies` plans it
 with the homage in every place and checks each figure against its drawing from its stone.
+
+## Ten coins, the guards, and half the space
+
+The artist, 21 Oct 2026: "I want you to point coins like sonic the video game all through the space, inside and
+outside the architecture, also cut the surrounding space down in half for now to make the development of it more
+efficient. Make sure I am able to collect the coins in [either] the holographic mode or 3rd person mode and that you
+keep a tally of my coins ... For now have collecting all 10 coins equivalent to achieving building the rocket ship and
+blasting off into space—it's an alternative way of beating the game."
+
+**Half the space.** A building's or a new form's place is its model and half the ground it had round it
+(`place.js` `halfSurround`: 256 before, now (256 + the model's span) / 2 to the next 16, so 144 to 192 m across; a
+museum's 320–512 the same way); a city is 192 m, its crash park found by building counts scaled to the smaller
+window and its pieces' outer limits halved. The model's plot, the crash site, the homage and the studies' row are
+kept whole (`node scripts/check_coins.js` builds all 51 escapes and, with `--cities`, the 28 cities).
+
+**The coins** (`place.js` `coins`, by rule, no draw: the same place and works give the same ten): five inside, before
+the five largest works hung, where one stands to read a label, no two nearer than his reach (6 m), and short of five
+on the floors of the largest rooms, then the grass of the plot, each as far as can be from the coins before it; five
+outside, at a third and two thirds of the way from where you wake to the door (Sonic's line of rings leading in), on
+the building's highest roof, over the middle of its pool (or on its grass), and on the crown of your tree. Each is at
+his head's height over where he would stand and says where it is and why. A coin is his head's outline built of his
+cells, as a Sonic ring is a ring: 7 cells out (his head's radius in his unit), its hole a thrown pearl's (3), 2
+thick, in the guitar rib's gold; all ten turn once in two beats, still under reduced motion. The body takes one its
+box passes through; the hologram one its head's sphere sweeps through (from where it was the frame before, so it is
+not flown past); nothing is taken while the body follows the head. The tally is in the header ("Coins 3 of 10") and in
+Notes, the toast says each, the direction line points to a coin nearer than where it would point, a tap or the
+crosshair says what one is; the save keeps them. The tenth builds the rocket at the wreck, as the four pieces do
+(`ready`), and Launch is offered; the end says your ten coins built it.
+
+**The guards** (the artist, the same day: "Think of Mr Pearl like the golden snitch from harry potter right now, there
+are people trying to grab me"): the guards the alarms bring, now seen, one for each ground-floor room the works hang in,
+three at most (`place.js` `guards`), each walking its round of its room's reading spots, a beat at each, built of his
+own grids in the drawing's grey with a head that is a sphere of his cells (the one perfect sphere stays his). They walk
+the plot a block up or down a step, never in water (`stands`, `field`), at his walk over φ² on their rounds and over φ
+chasing, so he outwalks them by φ and the hologram outflies them. They see as far as a label is read (9 m) across the
+game's view (70°), from his eye's height, glass and leaves seen through; seen, he is chased where he was last seen, a
+bar unseen they go back. In reach (his box and theirs a step apart) their arms rise for a beat; still in reach, they
+have hold of him: an alarm, and the last coin he took goes back where it lay (Sonic's ring loss), that guard stands a
+bar and none grabs again within it; the third alarm walks him out, all he found and took kept. Where they cannot walk
+(water, two blocks up, off the plot) they stop and look at him. A wrong look behind a work sends them to it. While the
+head is out they watch the body, and a grab of the body puts him under his tree. The direction line names a guard
+chasing; a tap on one says what it is.
+
+## The ride, and space
+
+**The fire.** The rocket built (by the four pieces or the ten coins), Launch asks for its engine's fire to be
+struck (the artist, 21 Oct 2026: "There should be a really unique animation of when Mr. Pearl needs to start a
+fire, similar to the animation in which the NASA pictures from the artist website come to be animated ... sparks
+made of galaxies that are animated and fade out very quickly. Nonetheless shine from a bright light that builds as
+you swing more and more your finger or cursor around, and eventually, with enough movement from the finger, there
+generates enough friction in the game where a fire is started"). Every swing of a finger or the cursor over the
+view is friction: its length in screen heights adds to the heat, which cools by itself over a bar, so only a swing
+kept up gets there (φ³, 4.24). Sparks made of galaxies fly off the finger, each a little two-armed spiral of the
+deep-space photographs' own lights (the remains' stars, a CSS pixel, two where they bloom, warm gold and blue white,
+added as light adds), and are gone in a beat; a light gathers where the finger swings, as large and as bright as
+the heat is near the fire. A tap, Space or Enter strikes too (φ⁻² a time), for a hand that cannot swing. Struck,
+the flame leaves the engine in triangles and he rides it.
+
+**The ride.** The camera behind its nose as far as the rocket is tall, it climbs as it always has, and the stick
+moves it across at his walk within the crash site's clearing (14 m round the crash, 20 in a city), until it passes the height of the figure in the sky over the wreck ("a certain threshold in the
+sky"): there control goes, the camera stops and watches it go, and at twice that height and the rocket's own, space.
+
+Space (the artist, 21 Oct 2026, in the scoping note `notes/holographic-mr-pearl/specs/COINS-AND-SPACE.md`): he comes to there as he did under the tree, the eyes
+opening, before the stick is his; then third person behind him in the pilot seat, the camera as far behind his head
+as the third person's is at rest, his head AIM below the centre, the rocket he built lying along his way under him,
+its two guns' red tips either side of him, the windshield's frame in the figure's three tones, and the sight's mark (its
+figure and holding circles, at the sight's size) slightly below the centre (AIM / φ², 7.4°). The stick flies the ship
+(at his turn over φ³; it flies at the hologram's speed, 22.5 m/s); a tap, the jump or Space fires both guns, whose
+shots converge on the mark's line at FAR / φ³ (99 m) and cross the far plane in a beat, one a half beat. The enemies
+are the unit's block made the sphere study's size (3 m), coming in at the ship and across it at its speed over φ, two
+at a time from FAR / φ ahead, each held in a triangle on the windshield; a shot within a block's half diagonal brings
+one down, its six bars flying. The header counts them ("Space · 3 of 10 down"). The tenth down, one comes head on
+(not to be brought down) and fires; hit, the ship tumbles for a bar and
+he comes down hard again: the place built anew, the pieces and the coins where they lay, the rocket to build again by
+either way; what he read is kept. The stars and three galaxies are drawn as the unit, triangles: the deep-space
+photographs the site shows cannot come into an Artifact.
+
+## Painted as Cézanne paints (a first pass)
+
+CLAUDE.md: "It is rendered as Cézanne paints" (the artist, 15 Oct 2026, sending two Cézanne-like paintings: a
+watercolour of overlapping translucent diamond washes, an oil of short dabs with warm lights and blue-violet shades).
+The blocks' shader (`FS`, `paint`) models form by warm and cool, not by dark and light alone: the faces the drawing
+makes white are warmed toward his light, those it makes black cooled toward blue-violet. Over every face, anchored to
+it so they move with the world and not the screen, three washes of translucent diamonds (φ⁻¹, 1 and φ² m across, one
+turned 36°), each diamond its own tint between the warm and the cool, mixing into new colours where they overlap, and
+over them short dabs; a wash fades where its diamonds would be under four pixels. His body is painted the same way;
+his head alone is left unpainted. `Rocket.debug().paint(0)` shows the drawing alone. It is quiet still: the washes
+are a tint over the drawing's tones, not yet the paintings' strokes.
 
 ## Escapes made from what the site holds
 
@@ -476,7 +574,7 @@ aiming; Escape lowers it.
   (`clueSet`), the adventure for a place and a seed (`make`).
 - `place.js` — the place in blocks, no DOM: the ground and its lots, the model, the rooms carved
   or hollowed and named, the crash site, the works hung (`hang`), the pieces hidden and the notes
-  left (`hide`), which section a block came from (`partAt`). Both run in Node, so a test can
+  left (`hide`), which section a block came from (`partAt`), the ten coins (`coins`), the guards and their ways (`guards`, `stands`, `field`). Both run in Node, so a test can
   build every place without a page.
 - `forms.js` — the new forms, no DOM: the sections sorted by what each can be (`load`), a
   section's blocks (`stampOf`), a roof drawn again at a new size (`roofOver`), a house of new
@@ -494,7 +592,7 @@ aiming; Escape lowers it.
   page's marks (`blockMark()`, the model seen down its diagonal), the figure in the sky
   (`figureBeams`, `drawnIn`, `placeSky`), the homage's figures (`HOM_VS`, `homageUpload`), the works'
   pictures, the hand, the opening, the labels and the notes, the sight (`raiseSight`, `sightCam`, `drawSight`) and
-  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the rocket, the start screen.
+  the pearls he throws (`launchFrom`, `stepPearl`, `struck`), the coins (`coinGrid`, `coinsStep`, `takeCoin`, `drawCoins3`), the guards (`initGuards`, `guardsStep`, `sees`, `grab`, `drawGuards`), the ride and space (`launch`, `rideCam`, `spaceBegin`, `spaceStep`, `spaceFrame`, `crash`), the rocket, the start screen.
 - `pearl.js` — Mr Pearl, no DOM: his body built of the unit from his form (`build`), the walk (`pose`, with the
   throwing arm, `act.right`, `act.fling`, and `build`'s `throwArm`; `phaseStep`), his place in the world (`place`),
   and his head's own program (`HEAD_FS`, the true sphere). `rocket.js` draws them (`drawPearl`) and holds the views
@@ -509,7 +607,7 @@ aiming; Escape lowers it.
   `python3 scripts/build_adventures.py`.
 
 Where you had got to in an adventure (the pieces found, the notes read, the works looked behind,
-the alarms) is kept in the browser, and comes back when you open the same adventure again.
+the alarms, the coins) is kept in the browser, and comes back when you open the same adventure again.
 
 ## Straight in: Rocket as an Artifact
 
