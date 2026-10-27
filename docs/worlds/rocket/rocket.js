@@ -3400,6 +3400,9 @@
       veil.sort(function (a, b) { return b.d - a.d; }).forEach(function (e) {
         if (e.pearl) { drawPearl(now, true); return; }
         gl.uniform3f(U.uOff, e.rx || 0, e.lift, e.rz || 0);
+        // its grid's origin, as its own pass had it, so the veil's paint is the face's (the rocket's rides with it)
+        if (e.ch === rocketCh) { gl.uniform3f(U.uOrg, rocketCh.org[0] + (e.rx || 0), rocketCh.org[1] + e.lift, rocketCh.org[2] + (e.rz || 0)); }
+        else { gl.uniform3f(U.uOrg, 0, 0, 0); }
         gl.bindVertexArray(e.ch.vao);
         gl.drawElements(gl.TRIANGLES, e.ch.vcount, gl.UNSIGNED_INT, e.ch.count * 4);
       });
@@ -3911,8 +3914,9 @@
       if (intro) { if (performance.now() - intro.t0 > 600) { intro.t0 -= 9600; } return; }
       if (e.pointerType === "touch") { touchy = true; document.body.dataset.touch = "true"; $("tag").hidden = true; }
       try { canvas.setPointerCapture(e.pointerId); } catch (er) { /* a pointer a test dispatched */ }
-      // The left of a phone's screen is the stick; anywhere else turns the view, and a tap acts.
-      if (touchy && e.clientX < window.innerWidth * 0.4 && e.clientY > window.innerHeight * 0.45 && !stick) {
+      // The left of a phone's screen is the stick; anywhere else turns the view, and a tap acts. (While the fire is asked
+      // for there is nothing to walk: a touch there is a tap or a swing like any other.)
+      if (!ignite && touchy && e.clientX < window.innerWidth * 0.4 && e.clientY > window.innerHeight * 0.45 && !stick) {
         stick = { id: e.pointerId, x: e.clientX, y: e.clientY };
         water.down(e.clientX, e.clientY, performance.now() / 1000);
         $("notes").hidden = true;
@@ -3938,7 +3942,9 @@
     canvas.addEventListener("pointermove", function (e) {
       // the fire: each finger's (or the cursor's) own path rubs; the way between two fingers, or from where one lifted
       // to where it comes down again, is not friction
-      if (ignite) { var pp = ignite.ptr || (ignite.ptr = {}), lp = pp[e.pointerId]; pp[e.pointerId] = [e.clientX, e.clientY]; if (lp) { igniteRub(lp[0], lp[1], e.clientX, e.clientY); } return; }
+      // (a finger's look is kept where it is, so one still down when the ride begins does not swing the camera by the
+      // whole swing)
+      if (ignite) { var pp = ignite.ptr || (ignite.ptr = {}), lp = pp[e.pointerId], l0 = look[e.pointerId]; pp[e.pointerId] = [e.clientX, e.clientY]; if (l0) { l0.x = e.clientX; l0.y = e.clientY; } if (lp) { igniteRub(lp[0], lp[1], e.clientX, e.clientY); } return; }
       if (stick && e.pointerId === stick.id) {
         var dx = e.clientX - stick.x, dy = e.clientY - stick.y, L = min(water.REACH, hypot(dx, dy)), a = Math.atan2(dy, dx);
         input.side = Math.cos(a) * L / water.REACH; input.fwd = -Math.sin(a) * L / water.REACH;

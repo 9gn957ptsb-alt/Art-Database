@@ -78,7 +78,8 @@ const swing = (P, turnsPerSec, secs) => P.evaluate((a) => new Promise((done) => 
   r = await D(() => ({ ride: !!window.Rocket.debug().ride(), ig: !!window.Rocket.debug().ignite(), toasts: window.__toasts.slice() }));
   check(r.ride && !r.ig && r.toasts.some((t) => t.indexOf("Struck") === 0), "struck, he rides it up");
   check(errors.length === 0, "no page errors " + JSON.stringify(errors));
-  // taps strike it too, however slowly they come: a fresh page; eleven Space presses half a bar apart do not, the twelfth does
+  // taps strike it too, however slowly they come: a fresh page; eleven taps (Space on a computer, the lower left of a phone)
+  // half a bar apart do not, the twelfth does
   await P.reload({ waitUntil: "load" });
   await P.waitForFunction(() => { const b = document.getElementById("begin"); return (b && !b.disabled) || (window.Rocket && window.Rocket.debug().place); }, null, { timeout: 180000 });
   if (await D(() => { const b = document.getElementById("begin"); return !!b && !b.disabled && !b.closest("[hidden]"); })) { await P.click("#begin"); }
@@ -87,10 +88,15 @@ const swing = (P, turnsPerSec, secs) => P.evaluate((a) => new Promise((done) => 
   await P.waitForFunction(() => !window.Rocket.debug().intro(), null, { timeout: 600000 });
   await D(() => { const d = window.Rocket.debug(); document.getElementById("notes").hidden = true; d.guards().forEach((g) => Object.assign(g, { mode: "hold", holdT: 1e9 })); d.coins().list.forEach((q, i) => d.takeCoin(i)); window.__toasts.length = 0; d.launch(); });
   await frames(P, 4);
-  for (let i = 0; i < 11; i += 1) { await P.keyboard.press(" "); await frames(P, 38); }
+  // (a phone taps in the lower left, where the stick is when there is something to walk; a computer presses Space)
+  const tap = view === "phone"
+    ? (i) => D((i) => { const cv = document.getElementById("view"), o = { pointerId: 90 + i, pointerType: "touch", clientX: innerWidth * 0.15, clientY: innerHeight * 0.85, bubbles: true };
+        cv.dispatchEvent(new PointerEvent("pointerdown", o)); cv.dispatchEvent(new PointerEvent("pointerup", o)); }, i)
+    : () => P.keyboard.press(" ");
+  for (let i = 0; i < 11; i += 1) { await tap(i); await frames(P, 38); }
   r = await D(() => { const i = window.Rocket.debug().ignite(); return i ? { struck: !!i.struck, taps: i.taps, E: i.E } : null; });
   check(r && !r.struck && r.taps === 11, "eleven taps half a bar apart: not yet (" + JSON.stringify(r) + ")");
-  await P.keyboard.press(" "); await frames(P, 2);
+  await tap(11); await frames(P, 2);
   r = await D(() => { const i = window.Rocket.debug().ignite(); return i ? { struck: !!i.struck, taps: i.taps } : { gone: true }; });
   check(r.struck, "the twelfth strikes it (" + JSON.stringify(r) + ")");
   check(errors.length === 0, "no page errors after the taps " + JSON.stringify(errors));
