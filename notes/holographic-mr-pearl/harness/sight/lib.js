@@ -70,7 +70,14 @@ async function arena(G, LEN, WIDE) {
     return best;
   }, { LEN, WIDE });
   if (!site) { throw new Error("no arena"); }
-  const changed = await G.D((a) => {
+  site.changed = await level(G, site, LEN, WIDE);
+  const cell = (s, q, dy) => [site.x + site.ax * s + site.px * (q || 0), site.y + (dy || 0), site.z + site.az * s + site.pz * (q || 0)];
+  return { site, cell };
+}
+// the run made level again: its floor whole and 16 cells of air over it (a pearl breaks what it strikes)
+function level(G, site, LEN, WIDE) {
+  WIDE = WIDE || 2;
+  return G.D((a) => {
     const d = window.Rocket.debug(), w = d.w, S = w.SOLID, s0 = a.site, cols = {};
     const g = S[w.get(s0.x, s0.y - 1, s0.z)] ? w.get(s0.x, s0.y - 1, s0.z) : 1;
     for (let s = -3; s <= a.LEN; s++) for (let q = -a.WIDE; q <= a.WIDE; q++) {
@@ -81,9 +88,6 @@ async function arena(G, LEN, WIDE) {
     Object.keys(cols).forEach((c) => { const [x, z] = c.split(",").map(Number); d.remeshAt(x, z); });
     return Object.keys(cols).length;
   }, { site, LEN, WIDE });
-  site.changed = changed;
-  const cell = (s, q, dy) => [site.x + site.ax * s + site.px * (q || 0), site.y + (dy || 0), site.z + site.az * s + site.pz * (q || 0)];
-  return { site, cell };
 }
 // stood at a point facing yaw with the pitch given, the camera's blend ended
 function stand(G, q) {
@@ -101,7 +105,7 @@ async function recorder(G) {
     (function rec() {
       if (window.__recOn) {
         const d = window.Rocket.debug(), s = d.sight();
-        window.__rec.push({ f: window.__frames, V: window.__V, n: d.pearls().length, carried: d.carried(), ease: s.ease, up: s.up, next: s.next, ready: s.ready, fling: s.fling,
+        window.__rec.push({ f: window.__frames, V: window.__V, n: d.thrownN ? d.thrownN() : d.pearls().length, carried: d.carried(), ease: s.ease, up: s.up, next: s.next, ready: s.ready, fling: s.fling,
           yaw: d.P.yaw, pitch: d.P.pitch, walked: d.P.walked, x: d.P.x, z: d.P.z, theta: s.theta, turn: s.turn, swing: d.swing() && { u: d.swing().u, ret: d.swing().ret } });
       }
       requestAnimationFrame(rec);
@@ -110,4 +114,4 @@ async function recorder(G) {
 }
 const recOn = (G, on) => G.D((on) => { window.__rec = []; window.__recOn = on; }, on);
 const recs = (G) => G.D(() => window.__rec.slice());
-module.exports = { start, endBlend, arena, stand, setB, recorder, recOn, recs, frames };
+module.exports = { start, endBlend, arena, level, stand, setB, recorder, recOn, recs, frames };

@@ -190,7 +190,7 @@
 
   /* ---- the palette: one id per plain colour, K ids for each pearl cloth ------------------------------- */
   function palette(spec, opts) {
-    var P = spec.palette, F = P.film, K = P.K, pal = [[0, 0, 0, 0]], ids = {}, tints = {}, lean = {}, skip = (opts && opts.skip) || [];
+    var P = spec.palette, F = P.film, K = P.K, pal = [[0, 0, 0, 0]], ids = {}, tints = {}, lean = {}, grain = {}, skip = (opts && opts.skip) || [];
     // ids the game's block shader reads as no block (6 water: open; 26 a note: paper) are left as holes in his palette
     var free = function () { while (skip.indexOf(pal.length) >= 0) { pal.push([0, 0, 0, 0]); } return pal.length; };
     // the film's colour at normal incidence for the K thickness bins, as the head's ambient term has it:
@@ -212,6 +212,11 @@
     };
     Object.keys(P.groups).forEach(function (g) {
       var G = P.groups[g], m = lift(hex(G.srgb));
+      // a wood striped along its grain (the bass's koa): one id to each tone, chosen by stripe in build()
+      if (G.grain) {
+        ids[g] = G.grain.tones.map(function (t) { var c = lift(hex(t)).map(function (v) { return Math.round(v * 255); }), id = free(); pal.push([c[0], c[1], c[2], 0]); return id; });
+        grain[g] = G.grain; return;
+      }
       if (!G.film) { var t0 = m.map(function (v) { return Math.round(v * 255); }); ids[g] = [free()]; pal.push([t0[0], t0[1], t0[2], 0]); return; }
       ids[g] = []; tints[g] = [];
       // the cloth leans as the film leans at each thickness (colour x film colour / its mean), in OKLab ab only (its
@@ -228,7 +233,7 @@
       lean[g] = sc;
     });
     if (pal.length > 64) { throw new Error("palette over 64 ids"); }
-    return { pal: pal, ids: ids, tints: tints, K: K, lean: lean };
+    return { pal: pal, ids: ids, tints: tints, K: K, lean: lean, grain: grain };
   }
 
   /* ---- the frames ------------------------------------------------------------------------------------ */
@@ -295,8 +300,19 @@
     });
     // a colour for each cell: plain, or the cloth's tint where the film's thickness noise puts it
     var K = PAL.K, counts = {};
+    // the grain's stripes run along the primitive it names (its first axis), so they change across its second: a
+    // stripe each period_m, its tone by the stripe's number
+    var across = {};
+    Object.keys(PAL.grain).forEach(function (g) {
+      var pr = prims.filter(function (q) { return q.part === PAL.grain[g].along; })[0];
+      across[g] = pr && pr.R ? [pr.R[0][1], pr.R[1][1], pr.R[2][1]] : [1, 0, 0];
+    });
     cells.forEach(function (c) {
       var g = c[4], list = PAL.ids[g] || PAL.ids.jacket;
+      if (PAL.grain[g]) {
+        var s = floor(dot(c[5], across[g]) / PAL.grain[g].period_m), hsh = Math.sin(s * 12.9898 + 78.233) * 43758.5453;
+        c.push(list[clamp(floor((hsh - floor(hsh)) * list.length), 0, list.length - 1)]); return;
+      }
       if (list.length === 1) { c.push(list[0]); return; }
       var pp = c[5], z = fbm([pp[0] / headR * F.freq + 3.1, pp[1] / headR * F.freq + 7.7, pp[2] / headR * F.freq + 1.3]);
       var k = clamp(floor(cdf(z) * K), 0, K - 1);

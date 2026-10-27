@@ -126,10 +126,10 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
     R.cases.drag = {};
     const drag = async (dx, dy) => {
       const x0 = phone ? 300 : K.W * 0.62, y0 = phone ? 400 : K.H * 0.4;
-      const a = await geo(), c0 = await D(() => window.Rocket.debug().carried());
+      const a = await geo(), c0 = await D(() => (5 - window.Rocket.debug().thrownN()));
       if (phone) { await G.touch("touchStart", [{ x: x0, y: y0, id: 9 }]); await G.touch("touchMove", [{ x: x0 + dx, y: y0 + dy, id: 9 }]); await G.touch("touchEnd", []); }
       else { await P.mouse.move(x0, y0); await P.mouse.down(); await P.mouse.move(x0 + dx, y0 + dy); await P.mouse.up(); }
-      const b = await geo(), c1 = await D(() => window.Rocket.debug().carried());
+      const b = await geo(), c1 = await D(() => (5 - window.Rocket.debug().thrownN()));
       return { dyaw: b.P.yaw - a.P.yaw, dpitch: b.P.pitch - a.P.pitch, thrown: c0 - c1 };
     };
     await L.stand(G, Object.assign({}, home, { pitch: 0 })); await raiseNow();
@@ -158,7 +158,7 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
     const s = await S(), g = await geo(), ang = deg(Math.acos(Math.min(1, dot(g.f, sub(face, g.eye)) / len(sub(face, g.eye)))));
     if (phone) { await G.touch("touchEnd", []); } else { await P.mouse.up(); }
     await frames(3);
-    const c = await D(() => window.Rocket.debug().carried());
+    const c = await D(() => (5 - window.Rocket.debug().thrownN()));
     await shot("14b_hold_after", 1);
     const onIt = s.hit && s.hit.x === tgt[0] && s.hit.y === tgt[1] && s.hit.z === tgt[2];
     R.cases.hold = { face, screen: sc, fromMark, turnAt22: mid.turn, hit: s.hit, angleDeg: ang, carried: c };
@@ -201,42 +201,42 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
     await L.stand(G, Object.assign({}, home, { pitch: 0 })); await raiseNow(); await frames(4);
     const pr = await D(() => window.Rocket.debug().predict());
     await tap();
-    const a = await D(() => { const d = window.Rocket.debug(); return { carried: d.carried(), n: d.pearls().length, H: d.pearls()[0] && d.pearls()[0].from.H, hand: d.hand() }; });
+    const a = await D(() => { const d = window.Rocket.debug(); return { thrown: d.thrownN(), n: d.pearls().length, H: d.pearls()[0] && d.pearls()[0].from.H, hand: d.hand() }; });
     await D(() => window.Rocket.debug().holdFling(0.25)); await frames(1);
     await shot("11_fling_quarter_pearl_out", 0);
     await D(() => window.Rocket.debug().holdFling(null));
-    await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.first; }, null, { timeout: 600000 });
-    const first = (await D(() => window.Rocket.debug().pearls()[0].first)), err = len(sub([first.x, first.y, first.z], [pr.at.x, pr.at.y, pr.at.z]));
+    await P.waitForFunction(() => window.Rocket.debug().firsts().length >= 1, null, { timeout: 600000 });
+    const first = (await D(() => window.Rocket.debug().firsts()[0])), err = len(sub([first.x, first.y, first.z], [pr.at.x, pr.at.y, pr.at.z]));
     R.cases.throw = { tap: a, predicted: pr.at, first, err, launch: pr.L && { th: deg(pr.L.th), vel: pr.L.vel } };
-    check(a.carried === 4 && a.n === 1, (phone ? "a tap" : "a left click") + " with the sight up throws at once (carried " + a.carried + ", " + a.n + " out)");
+    check(a.thrown === 1 && a.n === 1, (phone ? "a tap" : "a left click") + " with the scope up throws at once (" + a.thrown + " thrown, " + a.n + " out)");
     check(a.H && len(sub(a.H, a.hand)) < 1e-9, "the pearl leaves from his raised glove (from.H = hand())");
     check(err < 0.01, "its first touch " + (err * 1000).toFixed(2) + " mm from predict()'s, " + Math.hypot(first.x - home.x, first.z - home.z).toFixed(2) + " m off, launched " + deg(pr.L.th).toFixed(2) + " deg");
     if (!phone) {
       await frames(21);
-      await P.keyboard.press("t"); const c1 = await D(() => window.Rocket.debug().carried());
+      await P.keyboard.press("t"); const c1 = await D(() => window.Rocket.debug().thrownN());
       await frames(21);
       await D(() => document.activeElement && document.activeElement.blur());
-      await P.keyboard.press("Enter"); const c2 = await D(() => window.Rocket.debug().carried());
+      await P.keyboard.press("Enter"); const c2 = await D(() => window.Rocket.debug().thrownN());
       await frames(21);
       await D(() => document.getElementById("notes-btn").focus());
       await P.keyboard.press("Enter"); await frames(2);
-      const c3 = await D(() => ({ carried: window.Rocket.debug().carried(), notes: !document.getElementById("notes").hidden }));
+      const c3 = await D(() => ({ thrown: window.Rocket.debug().thrownN(), notes: !document.getElementById("notes").hidden }));
       await D(() => { document.getElementById("notes").hidden = true; document.activeElement.blur(); });
       R.cases.throw.keys = { T: c1, Enter: c2, notesEnter: c3 };
-      check(c1 === 3 && c2 === 2, "T and Enter throw (carried " + c1 + ", then " + c2 + ")");
-      check(c3.carried === 2 && c3.notes, "Enter with the focus on Notes opens Notes and throws nothing (" + JSON.stringify(c3) + ")");
+      check(c1 === 2 && c2 === 3, "T and Enter throw (" + c1 + " thrown, then " + c2 + ")");
+      check(c3.thrown === 3 && c3.notes, "Enter with the focus on Notes opens Notes and throws nothing (" + JSON.stringify(c3) + ")");
     }
   }
   // ---- 7. one a beat, the kept tap
   {
     R.cases.rate = {};
     await clear(); await frames(21);
-    await L.recOn(G, true);
+    await L.recOn(G, true); await frames(2);   // (a record before the tap: the throw's own frame is the last at or before it)
     await tap();
     const t1 = await D(() => ({ f: window.__frames, thrown: window.Rocket.debug().sight().thrown }));
     await frames(3); await tap();
     const kept = (await S()).next;
-    await P.waitForFunction(() => window.Rocket.debug().pearls().length >= 2, null, { timeout: 600000 });
+    await P.waitForFunction(() => window.Rocket.debug().thrownN() >= 2, null, { timeout: 600000 });
     await frames(2);
     let rec = await L.recs(G); await L.recOn(G, false);
     // the frame the first was thrown in: the last recorded at or before its time (read from outside after the tap, a
@@ -261,7 +261,7 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       go();
     }), { type: phone ? "touch" : "mouse", x: TX, y: TY });
     await frames(30);
-    const five = await D(() => 5 - window.Rocket.debug().carried());
+    const five = await D(() => window.Rocket.debug().thrownN());
     R.cases.rate.five = { thrown: five, tapFrames: tapF };
     check(five === 2, "five taps in a beat (at frames " + tapF.join(", ") + ") throw two (" + five + ")");
     // a tap at the raise's frame 5 is thrown when the arm is up
@@ -270,7 +270,7 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
     const kr = await key("r");
     await frames(5); await tap();
     const keptR = (await S()).next;
-    await P.waitForFunction(() => window.Rocket.debug().pearls().length >= 1, null, { timeout: 600000 });
+    await P.waitForFunction(() => window.Rocket.debug().thrownN() >= 1, null, { timeout: 600000 });
     await frames(2);
     rec = await L.recs(G); await L.recOn(G, false);
     const fr = rec.find((r) => r.n >= 1), exR = rec.find((r) => r.V >= kr.now + K.sc.T_VIEW * 1000);
@@ -287,8 +287,8 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       await L.stand(G, Object.assign({}, home, { pitch: rad(pitch) })); await frames(6);
       const s = await S();
       await D(() => window.Rocket.debug().throwAt());
-      await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.first; }, null, { timeout: 600000 });
-      const p = (await D(() => window.Rocket.debug().pearls()[0])), r = [Math.cos(p.from.yaw), 0, Math.sin(p.from.yaw)];
+      await P.waitForFunction(() => window.Rocket.debug().firsts().length >= 1, null, { timeout: 600000 });
+      const fp = (await D(() => window.Rocket.debug().firsts()[0])), p = { first: fp, from: fp.from }, r = [Math.cos(p.from.yaw), 0, Math.sin(p.from.yaw)];
       const lat = dot(sub([p.first.x, p.first.y, p.first.z], p.from.eye), r), handLat = dot(sub(p.from.H, p.from.eye), r);
       const res = { at: s0, pitch, hitWall: s.hit && Math.abs((s.hit.x - site.x) * site.ax + (s.hit.z - site.z) * site.az - s0) < 0.5, range: Math.hypot(p.first.x - home.x, p.first.z - home.z), lateralCm: lat * 100, parallelCm: handLat * 100, firstCell: p.first.cell };
       R.cases.converge.push(res);
@@ -299,6 +299,7 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
   }
   // ---- 9. the feet, and the farthest throw
   {
+    await L.level(G, site, 44);   // (the pearls thrown so far broke the floor where they came down)
     const table = [[0, [10.44, null, null], 12.58], [10, [10.24, 12.66, 16.5], 20.78], [20, [9.84, 12.17, 15.72], 28.43], [45, [8.06, 10.05, 12.89], 34.84], [39.5, null, 35.32]];
     R.cases.feet = [];
     for (const [pitch, feet, lands] of table) {
@@ -371,13 +372,14 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       await frames(3);
       const al0 = await D(() => window.Rocket.debug().alarms()); await toasts();
       await D(() => window.Rocket.debug().throwAt());
-      await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.first; }, null, { timeout: 600000 });
+      await P.waitForFunction(() => window.Rocket.debug().firsts().length >= 1, null, { timeout: 600000 });
       await frames(3);
-      const al1 = await D(() => window.Rocket.debug().alarms()), said = await toasts(), label = await D(() => document.getElementById("label").hidden);
+      const al1 = await D(() => window.Rocket.debug().alarms()), said = await toasts(), label = await D(() => document.getElementById("label").hidden), fw = await D(() => window.Rocket.debug().firsts()[0]);
       await shot("13_landed_on_work_toast", 0);
       R.cases.lands.work = { title: work.title, dist: work.dist, tag: sNow.tag, hit: sNow.hit, landOnWork: !!(s && s.land && onWork(s.land)), alarms: [al0, al1], said, labelHidden: label };
-      check(sNow.hit && sNow.hit.work === work.title && /One of the works he saved/.test(sNow.tag), "the crux on " + work.title + " " + work.dist.toFixed(1) + " m off, the tag says what it is (" + sNow.tag + ")");
-      check(al0 === al1 && label && said.some((t) => t.indexOf("Your pearl struck " + work.title) === 0), "the pearl struck the work: " + JSON.stringify(said) + "; alarms " + al0 + " -> " + al1 + ", the label closed");
+      check(sNow.hit && sNow.hit.work === work.title && /One of the works he saved/.test(sNow.say) && !sNow.tag, "the crux on " + work.title + " " + work.dist.toFixed(1) + " m off: what it is, for a screen reader only (" + sNow.say + ")");
+      // (the work keeps its wall: the pearl comes back off it, and nothing is said; 26 Oct 2026)
+      check(al0 === al1 && label && fw.work && !fw.broke && !said.some((t) => /^Your pearl/.test(t)), "the pearl strikes the work and comes back off it, its wall whole, nothing said: " + JSON.stringify(said) + "; alarms " + al0 + " -> " + al1 + ", the label closed");
       await lowerNow(); await clear();
     }
     // a piece lying as a block: one of his, on the arena (the piece is the rocket's own; the copy stands in for where
@@ -394,13 +396,13 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       await shot("08_on_a_piece", 1);
       await toasts();
       await D(() => window.Rocket.debug().throwAt());
-      await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.first; }, null, { timeout: 600000 });
+      await P.waitForFunction(() => window.Rocket.debug().firsts().length >= 1, null, { timeout: 600000 });
       await frames(12);
-      const r = await D((k) => { const d = window.Rocket.debug(); return { marked: !!d.marked()[k], found: d.found.slice(), near: document.getElementById("near").textContent, name: d.adv.pieces[k].name, first: d.pearls()[0].first }; }, pc.k);
+      const r = await D((k) => { const d = window.Rocket.debug(); return { found: d.found.slice(), name: d.adv.pieces[k].name, first: d.firsts()[0] }; }, pc.k);
       const said = await toasts();
       R.cases.lands.piece = Object.assign({ k: pc.k, tag: sNow.tag, said }, r);
-      check(r.marked && r.found.indexOf(pc.k) < 0 && said.some((t) => /Your pearl rang on a piece of your rocket/.test(t)), "a piece: it rings (" + JSON.stringify(said) + "), marked, not taken");
-      check(r.near.indexOf(r.name.replace(/^The /, "")) >= 0, "the arrow at the top names the marked piece first (" + r.near + ")");
+      // (a pearl breaks what it strikes: the piece is broken free and found, as the smash finds it)
+      check(r.found.indexOf(pc.k) >= 0 && r.first.broke, "a piece: the pearl breaks it free, found (" + JSON.stringify(said) + ")");
       await L.setB(G, [c], 0); await lowerNow(); await clear();
     }
     // water: a pool two deep at 10 to 13 m
@@ -424,7 +426,7 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       const p = await D(() => window.Rocket.debug().pearls()[0]), said = await toasts(), bottom = site.y - 2, R0 = 3 * K.sc.U * 0 + 3 * Math.pow(PHI, -7);
       R.cases.lands.water = { tag: sNow.tag, hit: sNow.hit, rest: [p.x, p.y, p.z], wet: p.wet, bottom, said, dy: p.y - (bottom + R0) };
       check(sNow.hit && sNow.hit.water, "the crux on the water (" + sNow.tag + ")");
-      check(p.wet && Math.abs(p.y - (bottom + R0)) < 0.01 && said.some((t) => /^Your pearl sinks/.test(t)) && !said.some((t) => /^Your pearl struck/.test(t)), "water: it sinks and lies on the bottom (y " + p.y.toFixed(4) + ", bottom + R " + (bottom + R0).toFixed(4) + "), " + JSON.stringify(said));
+      check(p.wet && Math.abs(p.y - (bottom + R0)) < 0.01 && !said.some((t) => /^Your pearl/.test(t)), "water: it sinks, breaks nothing there, and lies on the bottom (y " + p.y.toFixed(4) + ", bottom + R " + (bottom + R0).toFixed(4) + "), " + JSON.stringify(said));
       await putBack(pool, wasPool); await putBack(floorC, wasFloor); await lowerNow(); await clear();
     }
     // a block (brick, of no section): what it struck, by name
@@ -435,11 +437,11 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       await aimLand([c[0] + 0.5 - site.ax * 0.5, c[1] + 1, c[2] + 0.5 - site.az * 0.5], (q) => nearCell(c)(q) || nearCell(c2)(q));
       await toasts();
       await D(() => window.Rocket.debug().throwAt());
-      await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.first; }, null, { timeout: 600000 });
+      await P.waitForFunction(() => window.Rocket.debug().firsts().length >= 1, null, { timeout: 600000 });
       await frames(2);
-      const said = await toasts(), first = await D(() => window.Rocket.debug().pearls()[0].first);
-      R.cases.lands.block = { said, first };
-      check(said.some((t) => /^Your pearl struck /.test(t)) && first.b === 9, "a block: " + JSON.stringify(said));
+      const said = await toasts(), first = await D(() => window.Rocket.debug().firsts()[0]), now = await D((q) => window.Rocket.debug().w.get(q[0], q[1], q[2]), first.cell);
+      R.cases.lands.block = { said, first, now };
+      check(first.b === 9 && first.broke && now === 0 && !said.some((t) => /^Your pearl/.test(t)), "a block: the pearl breaks it (" + JSON.stringify(first.cell) + " now " + now + "), nothing said");
       await L.setB(G, [c, c2], 0); await lowerNow(); await clear();
     }
     // a note lying on the ground 7 m off, as the place lays them (a sheet in the air cell over a block): the pearl
@@ -453,76 +455,25 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
       say("note aim " + JSON.stringify(sl && sl.land));
       await toasts();
       await D(() => window.Rocket.debug().throwAt());
-      await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.first; }, null, { timeout: 600000 });
+      await P.waitForFunction(() => window.Rocket.debug().firsts().length >= 1, null, { timeout: 600000 });
       await frames(3);
-      const p = await D(() => window.Rocket.debug().pearls()[0]), said = await toasts();
-      R.cases.lands.note = { first: p.first, said };
-      check(p.first.note && said.some((t) => /^Your pearl fell on a note/.test(t)), "a note: the pearl falls on it and says so (" + JSON.stringify(said) + ")");
+      const fn = await D(() => window.Rocket.debug().firsts()[0]), said = await toasts(), below = await D((q) => window.Rocket.debug().w.get(q[0], q[1] - 1, q[2]), nc), at = await D((q) => window.Rocket.debug().w.get(q[0], q[1], q[2]), nc);
+      R.cases.lands.note = { first: fn, said, below, at };
+      // (it passes the sheet and breaks the block under it, and the note comes down into its place)
+      check(fn.broke && below === 26 && at === 0, "a note: the pearl breaks the block under it and the note comes down into its place (" + JSON.stringify({ cell: fn.cell, below, at }) + ")");
       await putBack([nc], wasN); await lowerNow(); await clear();
     }
   }
-  // ---- 11. back in the glove: walked into, tapped with the sight lowered, not through a wall
+  // ---- 11, 12. no end of them (26 Oct 2026: "I want infinite pearls to throw"): none is picked up again; a sixth, a
+  // twentieth, there is always another, and no line counts them
   {
     R.cases.back = {};
-    await clear();
-    await L.stand(G, Object.assign({}, home, { pitch: -0.2 })); await raiseNow();
-    await D(() => window.Rocket.debug().throwAt());
-    await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.state === "rest"; }, null, { timeout: 600000 });
-    const p0 = await D(() => window.Rocket.debug().pearls()[0]);
-    await lowerNow();
-    // walk into it: stood two metres short of it, facing it, W held
-    const dx = p0.x - home.x, dz = p0.z - home.z, Ld = Math.hypot(dx, dz), yaw = Math.atan2(dx, -dz);
-    await L.stand(G, { x: p0.x - dx / Ld * 2, y: home.y, z: p0.z - dz / Ld * 2, yaw, pitch: -0.229 }); await frames(2); await toasts();
-    await P.keyboard.down("w");
-    await P.waitForFunction(() => window.Rocket.debug().carried() === 5, null, { timeout: 120000 }).catch(() => {});
-    await P.keyboard.up("w");
-    const c1 = await D(() => window.Rocket.debug().carried()), s1 = await toasts();
-    R.cases.back.walked = { carried: c1, said: s1 };
-    check(c1 === 5 && s1.some((t) => /^A pearl back in your hand: 5 of 5/.test(t)), "walked into, a pearl is back in the glove (" + JSON.stringify(s1) + ")");
-    // a tap on one 3 m off, the sight lowered
-    const tapOn = async (q) => {
-      if (phone) { const sc = await D((p) => window.Rocket.debug().screenOf(p), q); await tap(sc[0], sc[1]); return sc; }
-      // on a computer the click acts at the crosshair: the look turned till the crosshair is on it
-      for (let i = 0; i < 6; i++) { await D((p) => { const d = window.Rocket.debug(), e = d.cam().eye, v = [p[0] - e[0], p[1] - e[1], p[2] - e[2]]; d.P.yaw = Math.atan2(v[0], -v[2]); d.P.pitch = Math.atan2(v[1], Math.hypot(v[0], v[2])); }, q); await frames(2); }
-      await tap(); return null;
-    };
-    await L.stand(G, Object.assign({}, home, { pitch: -0.5 })); await raiseNow();
-    await aimLand(cell(3, 0, 0).map((v, i) => v + (i === 1 ? 0 : 0.5)), (q) => Math.hypot(q.x - home.x, q.z - home.z) < 3.6);
-    await D(() => window.Rocket.debug().throwAt());
-    await P.waitForFunction(() => { const p = window.Rocket.debug().pearls()[0]; return p && p.state === "rest"; }, null, { timeout: 600000 });
-    const p1 = await D(() => window.Rocket.debug().pearls()[0]);
-    await lowerNow();
-    // stood 3 m short of where it lies, facing it
-    const ex = p1.x - home.x, ez = p1.z - home.z, el = Math.hypot(ex, ez), near = { x: p1.x - ex / el * 3, y: home.y, z: p1.z - ez / el * 3, yaw: Math.atan2(ex, -ez), pitch: -0.229 };
-    const dist1 = 3;
-    // a wall between first: the tap meets the wall, nothing back
-    const mid = [Math.floor((near.x + p1.x) / 2), home.y, Math.floor((near.z + p1.z) / 2)], wallB = [mid, [mid[0], mid[1] + 1, mid[2]], [mid[0], mid[1] + 2, mid[2]]];
-    await L.stand(G, near); await frames(2);
-    await L.setB(G, wallB, 9); await frames(3);
-    const cw0 = await D(() => window.Rocket.debug().carried());
-    await tapOn([p1.x, p1.y, p1.z]); await frames(3);
-    const cw1 = await D(() => window.Rocket.debug().carried());
-    await P.waitForFunction(() => !window.Rocket.debug().swing(), null, { timeout: 600000 });
-    await L.setB(G, wallB, 0); await frames(3);
-    R.cases.back.wall = { dist: dist1, before: cw0, after: cw1 };
-    check(cw1 === cw0, "a tap on a pearl behind a wall: nothing back (carried " + cw0 + " -> " + cw1 + ")");
-    await L.stand(G, near); await frames(3); await toasts();
-    await tapOn([p1.x, p1.y, p1.z]); await frames(3);
-    const ct = await D(() => window.Rocket.debug().carried()), st = await toasts();
-    R.cases.back.tapped = { dist: dist1, carried: ct, said: st };
-    check(ct === cw0 + 1, "the sight lowered, a tap on one " + dist1.toFixed(1) + " m off takes it back (" + cw0 + " -> " + ct + ")");
-  }
-  // ---- 12. none left
-  {
     await clear(); await L.stand(G, Object.assign({}, home, { pitch: 0.2 })); await raiseNow();
-    for (let i = 0; i < 5; i++) { await D(() => window.Rocket.debug().throwAt()); await frames(21); }
     await toasts();
-    const sixth = await D(() => window.Rocket.debug().throwAt()), said = await toasts();
-    await frames(3);
-    const s = await S();
-    R.cases.none = { sixth, said, tag: s.tag };
-    check(!sixth && said.indexOf("No pearl in your hand: pick one up again where it lies (walk to it, or tap it with the sight lowered).") >= 0, "the sixth throw: none left (" + JSON.stringify(said) + ")");
-    check(/No pearl in your hand: walk to one, or tap it with the sight lowered/i.test(s.tag), "the tag's act line says so (" + s.tag + ")");
+    for (let i = 0; i < 8; i++) { await D(() => window.Rocket.debug().throwAt()); await frames(21); }
+    const said = await toasts(), n = await D(() => window.Rocket.debug().thrownN()), shown = await D(() => !document.getElementById("pearls").hidden);
+    R.cases.none = { thrown: n, said, shown };
+    check(n === 8 && !said.some((t) => /No pearl/.test(t)) && !shown, "eight thrown a beat apart, all of them; no count shown (" + JSON.stringify(R.cases.none) + ")");
     await lowerNow(); await clear();
   }
   // ---- 13. the smash and the throw
@@ -541,12 +492,12 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
     R.cases.smash = { started: !!sw0, ret: sw1 && sw1.ret, id, ease: s.ease, after: sw2 };
     check(!!sw0 && sw1 && sw1.ret && id === 9 && s.ease === 1 && !sw2, "sight down a tap starts a swing; raised at u 0.5 the swing is let go (ret), the block stands, the arm comes up (ease " + s.ease + ")");
     // with the sight up, a tap on that block throws
-    const c0 = await D(() => window.Rocket.debug().carried());
+    const c0 = await D(() => window.Rocket.debug().thrownN());
     if (phone) { const sc = await D((p) => window.Rocket.debug().screenOf(p), face); await tap(sc[0], sc[1]); } else { await tap(); }
     await frames(2);
-    const r = await D(() => ({ carried: window.Rocket.debug().carried(), swing: window.Rocket.debug().swing() }));
+    const r = await D(() => ({ thrown: window.Rocket.debug().thrownN(), swing: window.Rocket.debug().swing() }));
     R.cases.smash.up = Object.assign({ before: c0 }, r);
-    check(r.carried === c0 - 1 && !r.swing, "sight up, a tap on that block throws, no swing (" + JSON.stringify(R.cases.smash.up) + ")");
+    check(r.thrown === c0 + 1 && !r.swing, "sight up, a tap on that block throws, no swing (" + JSON.stringify(R.cases.smash.up) + ")");
     await frames(20); await L.setB(G, [c], 0); await lowerNow(); await clear();
   }
   // ---- 14. the hologram: no sight, no throw
@@ -650,7 +601,7 @@ const deg = (r) => r * 180 / Math.PI, rad = (d) => d * Math.PI / 180;
     await D(() => window.Rocket.debug().throwAt()); const t1 = await D(() => ({ f: window.__frames, thrown: window.Rocket.debug().sight().thrown }));
     await frames(1); const fl = (await S()).fling;
     await D(() => window.Rocket.debug().throwAt());
-    await P.waitForFunction(() => window.Rocket.debug().pearls().length >= 2, null, { timeout: 600000 }); await frames(1);
+    await P.waitForFunction(() => window.Rocket.debug().thrownN() >= 2, null, { timeout: 600000 }); await frames(1);
     const rec = await L.recs(G); await L.recOn(G, false);
     const f2 = rec.find((r) => r.n >= 2);
     R.cases.reduced = { blend: g.blend, ease: s.ease, theta: sd.theta, land: !!sd.land, fling: fl, second: f2 && f2.f - t1.f };

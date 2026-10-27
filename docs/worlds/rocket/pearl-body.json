@@ -377,7 +377,7 @@
     ],
     "ra": 0.18472,
     "rb": 0.18472,
-    "relation": "acoustic guitar body: lower bout; long axis and size fitted to the cover-1 silhouette; its back rests on the belly"
+    "relation": "the bass's body: lower bout; long axis and size fitted to the cover-1 silhouette; its back rests on the belly"
    },
    {
     "part": "guitar_upper_bout",
@@ -432,13 +432,48 @@
     "relation": "the waist between the bouts"
    },
    {
+    "part": "guitar_strings",
+    "group": "string",
+    "kind": "capsule",
+    "a": [
+     -0.1332,
+     -0.17339,
+     0.64666
+    ],
+    "b": [
+     0.5631,
+     -0.22131,
+     0.9577
+    ],
+    "r": 0.0215,
+    "relation": "the four strings, bridge to nut, as one band two of his cells wide (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
+   },
+   {
+    "part": "guitar_rosette",
+    "group": "rosette",
+    "kind": "cappedcone",
+    "a": [
+     0.00947,
+     -0.17522,
+     0.70847
+    ],
+    "b": [
+     0.00363,
+     -0.20926,
+     0.71414
+    ],
+    "ra": 0.0772,
+    "rb": 0.0772,
+    "relation": "the rosette round the sound hole, a cell wide (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
+   },
+   {
     "part": "guitar_soundhole",
     "group": "dark",
     "kind": "cappedcone",
     "a": [
-     0.00407,
-     -0.20668,
-     0.71371
+     0.00947,
+     -0.17522,
+     0.70847
     ],
     "b": [
      0.00363,
@@ -447,16 +482,16 @@
     ],
     "ra": 0.0428,
     "rb": 0.0428,
-    "relation": "sound hole (cover 2 shows it; cover 1 hides it under the hand)"
+    "relation": "sound hole (cover 2 shows it; cover 1 hides it under the hand); the bass's is round, as the covers'"
    },
    {
     "part": "guitar_bridge",
     "group": "dark",
     "kind": "roundbox",
     "c": [
-     -0.13727,
-     -0.19713,
-     0.65062
+     -0.1352,
+     -0.18506,
+     0.64861
     ],
     "R": [
      [
@@ -478,10 +513,78 @@
     "half": [
      0.01223,
      0.06929,
-     0.00509
+     0.0175
     ],
     "round": 0.00204,
-    "relation": "bridge"
+    "relation": "bridge: dark wood with four pins (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'); the covers' was brass)"
+   },
+   {
+    "part": "guitar_pin_2",
+    "group": "pin",
+    "kind": "capsule",
+    "a": [
+     -0.13427,
+     -0.20307,
+     0.64275
+    ],
+    "b": [
+     -0.13027,
+     -0.17973,
+     0.63886
+    ],
+    "r": 0.004,
+    "relation": "the bridge's middle pins of four, 1.9 cm apart; the outer two would merge with them at his cell's size (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
+   },
+   {
+    "part": "guitar_pin_3",
+    "group": "pin",
+    "kind": "capsule",
+    "a": [
+     -0.1416,
+     -0.19897,
+     0.65979
+    ],
+    "b": [
+     -0.1376,
+     -0.17563,
+     0.6559
+    ],
+    "r": 0.004,
+    "relation": "the bridge's middle pins of four, 1.9 cm apart; the outer two would merge with them at his cell's size (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
+   },
+   {
+    "part": "guitar_preamp",
+    "group": "preamp",
+    "kind": "roundbox",
+    "c": [
+     -0.00355,
+     -0.13542,
+     0.85054
+    ],
+    "R": [
+     [
+      0.907345,
+      -0.385838,
+      -0.166896
+     ],
+     [
+      -0.087156,
+      0.215728,
+      -0.972556
+     ],
+     [
+      0.411253,
+      0.89699,
+      0.162112
+     ]
+    ],
+    "half": [
+     0.045,
+     0.012,
+     0.03
+    ],
+    "round": 0.004,
+    "relation": "the preamp's panel (ES2) on the upper bout's bass side (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
    },
    {
     "part": "guitar_neck",
@@ -566,7 +669,7 @@
      0.92052
     ],
     "r": 0.00856,
-    "relation": "tuners, three a side (both covers)"
+    "relation": "tuners, two a side (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'); the covers' guitar had three)"
    },
    {
     "part": "guitar_tuner_1l",
@@ -583,7 +686,7 @@
      1.02888
     ],
     "r": 0.00856,
-    "relation": "tuners, three a side (both covers)"
+    "relation": "tuners, two a side (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'); the covers' guitar had three)"
    },
    {
     "part": "guitar_tuner_2r",
@@ -600,7 +703,7 @@
      0.94063
     ],
     "r": 0.00856,
-    "relation": "tuners, three a side (both covers)"
+    "relation": "tuners, two a side (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'); the covers' guitar had three)"
    },
    {
     "part": "guitar_tuner_2l",
@@ -617,41 +720,7 @@
      1.049
     ],
     "r": 0.00856,
-    "relation": "tuners, three a side (both covers)"
-   },
-   {
-    "part": "guitar_tuner_3r",
-    "group": "tuner",
-    "kind": "capsule",
-    "a": [
-     0.69396,
-     -0.26334,
-     0.9772
-    ],
-    "b": [
-     0.70104,
-     -0.2673,
-     0.96075
-    ],
-    "r": 0.00856,
-    "relation": "tuners, three a side (both covers)"
-   },
-   {
-    "part": "guitar_tuner_3l",
-    "group": "tuner",
-    "kind": "capsule",
-    "a": [
-     0.6615,
-     -0.24519,
-     1.05266
-    ],
-    "b": [
-     0.65442,
-     -0.24123,
-     1.06911
-    ],
-    "r": 0.00856,
-    "relation": "tuners, three a side (both covers)"
+    "relation": "tuners, two a side (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'); the covers' guitar had three)"
    },
    {
     "part": "shoulder_right",
@@ -1296,11 +1365,22 @@
     "strap_"
    ],
    "paint": [
+    "guitar_strings",
+    "guitar_rosette",
     "guitar_soundhole",
-    "guitar_bridge"
+    "guitar_bridge",
+    "guitar_pin_2",
+    "guitar_pin_3",
+    "guitar_preamp"
    ],
    "paint_group": {
-    "guitar_bridge": "bridge"
+    "guitar_rosette": "rosette",
+    "guitar_soundhole": "dark",
+    "guitar_bridge": "bridge",
+    "guitar_strings": "string",
+    "guitar_pin_2": "pin",
+    "guitar_pin_3": "pin",
+    "guitar_preamp": "preamp"
    },
    "rim": {
     "prims": [
@@ -1312,7 +1392,8 @@
     "group": "rib",
     "cos_max": 0.5
    },
-   "joint": "spine"
+   "joint": "spine",
+   "note": "the Taylor GS Mini-e Koa Bass (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
   },
   {
    "name": "hat",
@@ -1520,42 +1601,76 @@
     "relation": "the jacket's: cover 2 shows hat, suit and shoes as one pearl cloth; cover 1's 883 shoe pixels (#9f9aab) are the flare's shadow on them"
    },
    "guitar": {
-    "srgb": "#a08c8a",
-    "film": true
+    "srgb": "#b5652c",
+    "film": false,
+    "grain": {
+     "tones": [
+      "#c27838",
+      "#a9592a",
+      "#8d4622",
+      "#b86a33"
+     ],
+     "along": "guitar_waist",
+     "period_m": 0.0172
+    },
+    "relation": "koa, its top and back striped along the grain: four tones read from the photograph's top (light amber to dark brown), a stripe of grain to half a cell (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
    },
    "glove": {
     "srgb": "#dbd2b7",
     "film": false
    },
    "fretboard": {
-    "srgb": "#553c2e",
-    "film": false
+    "srgb": "#241915",
+    "film": false,
+    "relation": "ebony fretboard and headstock face (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
    },
    "tuner": {
-    "srgb": "#c8b3a4",
-    "film": false
+    "srgb": "#c9c5c0",
+    "film": false,
+    "relation": "chrome tuners (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
    },
    "strap": {
     "srgb": "#503f35",
     "film": false
    },
    "dark": {
-    "srgb": "#473d38",
-    "film": false
+    "srgb": "#140e0c",
+    "film": false,
+    "relation": "the sound hole's dark"
    },
    "rib": {
-    "srgb": "#daa06c",
+    "srgb": "#8a4622",
     "film": false,
-    "relation": "the guitar's gold sides: the median of the warm (hue 18-58 deg), saturated (S > 0.25) pixels of the lower bout's rim band on cover 1 (1112 of 4725 px, x 460-595, v 895-930)"
+    "relation": "the sides, koa seen aslant: the photograph's sides, darker than the top (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'); the covers' were gold)"
    },
    "bridge": {
-    "srgb": "#8b6443",
+    "srgb": "#2a1c16",
     "film": false,
-    "relation": "the bridge's brass: median of its warm saturated pixels on cover 1 (539 px)"
+    "relation": "the bridge's dark wood (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
    },
    "neck": {
     "srgb": "#251713",
     "film": false
+   },
+   "rosette": {
+    "srgb": "#e2d7c4",
+    "film": false,
+    "relation": "the rosette's light ring (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
+   },
+   "string": {
+    "srgb": "#d9cdb4",
+    "film": false,
+    "relation": "the strings, phosphor bronze in the light (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
+   },
+   "pin": {
+    "srgb": "#efe7d8",
+    "film": false,
+    "relation": "the bridge pins, ivory white (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
+   },
+   "preamp": {
+    "srgb": "#151515",
+    "film": false,
+    "relation": "the preamp's black panel (the artist, 26 Oct 2026, with the Taylor GS Mini-e Koa Bass ('Make sure this is the bass Mr Pearl is holding'))"
    }
   },
   "film": {
