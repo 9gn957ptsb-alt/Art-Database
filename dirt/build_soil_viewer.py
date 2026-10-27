@@ -2545,16 +2545,74 @@ showAll.addEventListener("click", letGo);
 // DRIFT's glyphs are Glyph Light's finest set, so its textures keep as many steps of light as glyphs can give; DRIFT
 // Poetry's are the poems themselves, running through the cells in reading order, each letter in the colour of the
 // ground under it and gone where the ground is dark.
+// Since 27 Oct 2026 the plane is a storyboard, and Glyph Light is walked through all its sliders along the story (Aries:
+// "Make sure you are using the full dimensionality of the Glygh Light artifact. Make sure all of the changes available
+// through the provided slide bars are being implemented in all of the artifacts ... Keep in mind that the infinite
+// texture that you are displaying is a storyboard and someone's thumb is the direction of how the story plays out").
+// The glyphs are pinned to the plane (origin), and each of the ground's frames, 377 cells square (regionAt in
+// ground-gl.js), is a point in the sliders' space: frame k = n + 13m takes story(k) below, so a swipe flips through
+// them as a thumb flips a flip book, still while the thumb is. A glyphlight.js without GlyphLight.motions (from before
+// it took frames) is called as it was; DRIFT Poetry's layer.js hands its own frames, text and origin over as
+// window.DRIFT_GLYPHS_OPTIONS, laid over these.
 addEventListener("load", () => {
   const stage = document.getElementById("stage");
   if (!window.GlyphLight || !stage) return;
   const canvases = () => [...stage.querySelectorAll("canvas")].filter((c) => !c.__glyphs);
   const poems = document.querySelector('section[aria-label^="The poems of Picture Poetry"]');
   const text = poems ? [...poems.querySelectorAll("p")].map((p) => [...p.childNodes].map((n) => n.textContent).join(" ")).join(" ") : "";
-  const all = canvases();
-  window.GLYPHS = GlyphLight.create(Object.assign({ host: stage, after: all[all.length - 1], sources: canvases,
-    cell: (w) => (w < 600 ? 5 : 6) * (text ? 1.4 : 1) },
-    text ? { style: "text", text } : { style: "ascii", set: GlyphLight.SETS.fine }));
+  const all = canvases(), M = GlyphLight.motions;
+  const was = { host: stage, after: all[all.length - 1], sources: canvases, cell: (w) => (w < 600 ? 5 : 6) * (text ? 1.4 : 1) };
+  if (!M) {
+    window.GLYPHS = GlyphLight.create(Object.assign(was, text ? { style: "text", text } : { style: "ascii", set: GlyphLight.SETS.fine }));
+    return;
+  }
+  // DRIFT's story in Glyph Light's sliders. The continuous ones are slow waves, each round in a Fibonacci number of
+  // frames of its own (and its own phase, a golden angle on from the last), so every combination comes round: exposure
+  // ±0.5 EV in 13, contrast 1 to 1.6 in 21, midtones 0.75 to 1.35 in 34, detail 0 to 1.2 in 55, the glow 0.35 to 0.85
+  // by the pulse in 8, the glow starting at 0.6 to 0.85 in 89, the picture under the glyphs 0 to 0.38 in 144. The
+  // discrete ones come in runs of Fibonacci lengths, the first the longest: styles (ascii 34, dots 13, grain 5, scan 3
+  // frames), glyph sets (fine 21, the default 13, blocks 8, binary 5, kana 3, kanji 2), colours (full 21, gold 8, blue
+  // 5, mono 3), and inverted three frames in 89. Glyph Light's video motions are laid out in place of time: push in as
+  // density, its glyphs a step larger at each of a run's three frames (5, 8 then 13 CSS px, or the overlay's three
+  // levels), as the ground's painting is pushed in by phi at each; shimmer seeded by the frame; reveal opening each chapter of 34 frames, and closing towards its end, so
+  // no frame jumps from light to dark; pulse as the glow. And no frame is unreadably dark or blown out: its exposure is
+  // held so that the ground's lights (0.9) stay at phi^-2 or above and its middles (phi^-1) at 0.95 or below, whatever
+  // the frame's contrast and midtones (Glyph Light's tone: times 2^EV, contrast about the middle, then the power
+  // 1/midtones). Each frame is a still point (motion comes from the thumb), blended or dissolved into the next across
+  // the gutter between them by glyphlight.js.
+  const PHI = (1 + Math.sqrt(5)) / 2, GA = 2 * Math.PI / (PHI * PHI), CELLS = [5, 8, 13], SETS = GlyphLight.SETS;
+  const mod = (a, n) => ((a % n) + n) % n;
+  const wave = (k, n, lo, hi, ph) => lo + (hi - lo) * (0.5 - 0.5 * Math.cos(2 * Math.PI * (k + 0.5) / n + ph * GA));
+  const run = (k, list) => {
+    let c = mod(k, list.reduce((s, r) => s + r[1], 0));
+    for (const [v, n] of list) { if (c < n) return v; c -= n; }
+  };
+  const STYLES = [["ascii", 34], ["dots", 13], ["grain", 5], ["scan", 3]];
+  const GLYPH_SETS = [["fine", 21], ["ascii", 13], ["blocks", 8], ["binary", 5], ["kana", 3], ["kanji", 2]];
+  const COLOURS = [["full", 21], ["gold", 8], ["blue", 5], ["mono", 3]];
+  function story(k) {
+    const j = mod(k, 3), c = mod(k, 34), edge = Math.min(c + 0.5, 34 - c - 0.5);         // frames from the chapter's ends
+    const reveal = M.reveal(Math.min(0.75, edge / 3));
+    const pulse = Math.min(1, Math.max(0, (M.pulse((mod(k, 8) + 0.5) / 16).gain - 0.35) / 1.1));   // its swing, 0 to 1
+    const s = Object.assign({
+      style: run(k, STYLES), set: SETS[run(k, GLYPH_SETS)], mode: run(k, COLOURS), invert: mod(k, 89) >= 55 && mod(k, 89) < 58,
+      contrast: wave(k, 21, 1, 1.6, 1), gamma: wave(k, 34, 0.75, 1.35, 2), detail: wave(k, 55, 0, 1.2, 3),
+      glow: 0.35 + 0.5 * pulse, thresh: wave(k, 89, 0.6, 0.85, 4), under: wave(k, 144, 0, 0.38, 5),
+      cell: CELLS[j], level: j,                                  // the push in: a cell size, or a level of the overlay's
+    }, M.push ? M.push((j + 0.5) / 3) : {}, M.shimmer(k), { gain: reveal.gain == null ? 1 : reveal.gain });
+    const ev = (x, y) => Math.log2(((y ** s.gamma - 0.5) / s.contrast + 0.5) / x);       // the exposure taking x to y
+    const held = (e) => Math.min(ev(1 / PHI, 0.95), Math.max(ev(0.9, 1 / (PHI * PHI)), e));
+    s.exposure = held(wave(k, 13, -0.5, 0.5, 0));
+    s.ev = held(s.exposure + (reveal.ev || 0)) - s.exposure;                              // the reveal, held too
+    return s;
+  }
+  // The plane's frames in CSS px: the page's view (vx, vy, in cells) and its cells to a CSS px.
+  const origin = () => { const s = cellsPerCss(); return { x: vx / s, y: vy / s }; };
+  const region = { get w() { return 377 / cellsPerCss(); }, get h() { return 377 / cellsPerCss(); } };
+  window.GLYPHS = GlyphLight.create(Object.assign(was, { origin },
+    text ? { style: "text", text }
+      : { style: "ascii", set: SETS.fine, cell: CELLS[0], cells: CELLS, region, levels: "frozen", field: (i, j) => story(i + 13 * j) },
+    window.DRIFT_GLYPHS_OPTIONS || {}));
 });
 </script>
 """

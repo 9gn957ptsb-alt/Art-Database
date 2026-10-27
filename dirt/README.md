@@ -432,7 +432,8 @@ Rothko alike into beige; they are measured from the pixels now (above), the 22 d
 and blue, Albers's purple and orange, Rothko's maroon, Kusama's yellow and red. And the roster had fourteen artists in
 ten compositions, five of them sharing the net and six a band on white; it has 55 now, the 41 most-saved artists not yet
 in DIRT added at once (Richard Diebenkorn, Peter Doig, Robert Rauschenberg, Graham Sutherland, Gabriel Orozco, Brice Marden, Edgar Degas, Julian Schnabel, Stanley William Hayter, Childe Hassam, Anselm Kiefer, Emil Nolde, Gregory Horndeski, Hiroyuki Hamada, Mark Bradford, Auguste Rodin, Alfred Stieglitz, Hans Bellmer, Odilon Redon, Robert Motherwell, Alex Da Corte, Pietro Consagra, Rembrandt van Rijn, Georges Mathieu, JFK Turner, Jean-Michel Basquiat, Beatrice Meoni, Carl Holty, Le Corbusier, M. C. Escher, Marcel Duchamp, Charline von Heyl, Conrad Marca-Relli, Dorothy Napangardi, Eva Schlegel, Richard Prince, Richard Serra, Dan Walsh, Eddie Martinez, John Chamberlain, Wifredo Lam), and nine compositions after bodies of work (above). Each minimal area takes an artist of its
-rung, so most now take one of the roster, and no two neighbours need look alike.
+rung, so most now take one of the roster, and no two neighbours need look alike (since 27 October 2026 they come in
+story order, each sharing a colour with the last: "A storyboard", below).
 
 **Another place each time, fewer lines, one wash, faint faces** (9 October 2026: "it opens to the same thing every time
 ... There is a spinning thin line animation ... please get rid of that. I still feel like the overall texture is too
@@ -775,6 +776,37 @@ with no artist of their own, so DRIFT lends them as it lends any quilt: hung on 
 light it replaces, a piece torn into the collage. The first, on 27 October, quilted 49 screenshots from seven bodies
 of work into six quilts, so about one hang, light or torn piece in seven is a screenshot. More are still being read
 back from the older transcripts, and each week the coworker brings in the week's (`artists/COWORKER.md`, 4b).
+
+**A storyboard** (27 October 2026: "Keep in mind that the infinite texture that you are displaying is a storyboard and
+someone's thumb is the direction of how the story plays out. Have this inform the juxtapositions that you generate to
+create that infinite texture in what is next to what in a progression sense almost like a flip book but instead of each
+sticky note being behind the other, they are placed side-by-side"). The plane is read as a strip of frames, 377 cells
+square (about a phone's screen; two to four side by side on a desktop), and its x axis is the story: forward is east,
+the thumb dragging from right to left as a book's leaf turns, and each row down begins 13 frames further on, so moving
+down skips ahead. Frame (n, m) is moment k = n + 13m. Neighbouring frames are successive moments, moment-to-moment in
+Scott McCloud's terms (*Understanding Comics*, 1993), where they had been strangers (a calm region's east neighbour had
+the same artist one time in 43), so a swipe plays them as a thumb plays a flip book, and holding still holds one.
+- *The calm country in story order.* Each calm region (about nine in ten of the plane) is a frame: its seed keeps to
+  the middle 0.38 of its square across (0.8 until now; down it still scatters), so the columns read as frames while the
+  joins between them stay washes. Its artist comes by k, not by a hash: within each rung the artists follow a chain in
+  which each shares a colour with the last (the nearest pair of their middle and vivid colours, worked out by the page
+  from the 22's colours and the roster's), round in a loop, and each holds for a run of three frames, one painting
+  pushed in by φ at each frame, as Glyph Light's "push in" laid out in the ground, before the next in the chain takes
+  over. (DRIFT Poetry keeps its paintings unpushed for now, since its letters are written along their lines.)
+- *Glyph Light walked by the thumb.* The glyphs are pinned to the plane, and each frame is one point in all of Glyph
+  Light's sliders, so the whole range is walked frame by frame and every combination comes round: exposure (±0.5 EV,
+  13 frames round), contrast (1 to 1.6, 21), midtones (0.75 to 1.35, 34), detail (0 to 1.2, 55), the glow (0.35 to
+  0.85, pulsing every 8), where it starts (0.6 to 0.85, 89) and the picture under the glyphs (0 to 0.38, 144), each a
+  slow wave; and in runs of Fibonacci lengths, the style (ascii 34 frames, dots 13, grain 5, scan 3), the glyph set
+  (fine 21, the default 13, blocks 8, binary 5, kana 3, kanji 2), the colour (full 21, gold 8, blue 5, mono 3), and
+  inverted three frames in 89. Its video motions are laid out in place of time: push in as density (the glyphs a step
+  larger at each frame of a run, as its painting grows), shimmer seeded by the frame, reveal opening each chapter of 34
+  frames and closing at its end (so no frame jumps from light to dark), the pulse as the glow. Every frame's exposure
+  is held so that no frame goes unreadably dark or blown out (the ground's lights stay at φ⁻² or above, its middles at
+  0.95 or below). Between frames glyphlight.js blends the continuous settings across the gutter and dissolves the rest
+  by a dither, so no line is drawn between them. Until glyphlight.js has its frames, the glyphs are read as before.
+- *Publishing.* `engine/splice.py` now puts this repository's glyphlight.js and the page's glyphs loader in with the
+  engine, so a change to either reaches DRIFT without the full rebuild.
 
 **Depth without distance.** DRIFT has no zoom and wants none: nothing on it is understood by coming nearer or going
 farther (the Artist Website's globe is where distance means something). So every scale is on the screen at once.

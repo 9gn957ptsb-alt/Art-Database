@@ -253,6 +253,7 @@ uniform vec2 uHalf;                 // half the view, in cells
 uniform int uTier;                  // how much this device can draw smoothly: 3 everything, 0 the least (see the page)
 uniform sampler2D uRoster;          // the roster (dirt/artists/roster.json): 6 texels an artist, sorted by rung
 uniform int uRAt[5];                // where each rung's artists begin on it
+uniform ivec4 uChain[32];           // the calm regions' story: each rung's artists in the order they follow (minimalOf)
 float gCov = 0.0;                   // the marks the last sheet painted here, and in what colour
 vec3 gMark = vec3(0);         // uForce: one grammar everywhere, for looking at it (#g0 to #g4)
 uniform ivec2 uGram[5];             // each grammar's works: first row, count
@@ -1866,31 +1867,53 @@ vec3 rostered(int j, vec2 q, uint h, float t) {
   }
   return c;
 }
-/** The artist a minimal area of complexity cx takes, by its rung, and h: one of the 22, or from the roster (100 on). */
-int minimalOf(float cx, uint h) {
+/** The run of three frames of the story that frame k is in (see regionAt). */
+int storyRun(int k) { return k >= 0 ? k / 3 : -((2 - k) / 3); }
+/** The artist a minimal area of complexity cx takes, by its rung, and its frame k of the story: one of the 22, or from
+ *  the roster (100 on). Since 27 Oct 2026 in story order, not by a hash: within each rung its artists follow a chain
+ *  (uChain, put in order by the page, each sharing a colour with the last), each holding for a run of three frames
+ *  before the next in the chain takes over. */
+int minimalOf(float cx, int k) {
   int r = cx < RUNG_C[0] ? 0 : cx < RUNG_C[1] ? 1 : cx < RUNG_C[2] ? 2 : 3;
-  int nb = RUNG_AT[r + 1] - RUNG_AT[r], nr = uRAt[r + 1] - uRAt[r], i = int(h % uint(nb + nr));
-  return i < nb ? RUNG[RUNG_AT[r] + i] : 100 + uRAt[r] + i - nb;
+  int n = RUNG_AT[r + 1] - RUNG_AT[r] + uRAt[r + 1] - uRAt[r], q = storyRun(k);
+  q -= n * (q >= 0 ? q / n : -((n - 1 - q) / n));                   // q mod n (GLSL's % is undefined below 0)
+  int i = min(RUNG_AT[r] + uRAt[r] + q, 127);
+  return uChain[i >> 2][i & 3];
 }
 
 // The large regions of the ladder's minimal rungs (9 Oct 2026): a seed in each 377-cell square, scattered, the edges
 // between them wandering; for a point, its region's seed and the next, and how far in from the edge between them it is.
-struct Region { vec2 C1, C2; uint h1, h2; float d; };
+// Since 27 Oct 2026 they are a storyboard's frames, laid side by side (Aries: "the infinite texture that you are
+// displaying is a storyboard and someone's thumb is the direction of how the story plays out ... almost like a flip
+// book but instead of each sticky note being behind the other, they are placed side-by-side"). The square (n, m) is
+// frame k = n + 13m of the story (k1, k2), so the story reads on eastward a frame at a time, and each row down begins
+// 13 frames (a Fibonacci step) further on. Its seed keeps to the middle 0.38 of its square across (0.8 until then, as it
+// still is down), so the columns read as frames while the joins between them stay washes. A frame's choices (h1, h2)
+// are its run's, so the three frames of a run show one painting, pushed in by phi at each (z = phi^-j at the run's j-th
+// frame: Glyph Light's "push in", laid out in the ground). (In DRIFT Poetry not yet: its letters are written along the
+// paintings' lines at their scale of 0.55 by its own code, which can take up z.)
+struct Region { vec2 C1, C2; uint h1, h2; float d; int k1, k2; float z; };
 Region regionAt(vec2 p) {
   const float RG = 377.0;
   vec2 pw = p + 34.0 * (vec2(vnoise(p, 144.0, 5201u), vnoise(p, 144.0, 5202u)) - 0.5);
   ivec2 g0 = ivec2(floor(pw / RG));
-  Region r = Region(vec2(0.0), vec2(1e6), 0u, 0u, 0.0);
+  Region r = Region(vec2(0.0), vec2(1e6), 0u, 0u, 0.0, 0, 0, 1.0);
   float d1 = 1e18, d2 = 1e18;
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 c = g0 + ivec2(i, j);
     uint h = h3(c.x, c.y, 5203u);
-    vec2 C = (vec2(c) + 0.5 + 0.8 * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * RG;
+    vec2 C = (vec2(c) + 0.5 + vec2(0.38, 0.8) * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * RG;
+    int k = c.x + 13 * c.y;
     float dd = dot(pw - C, pw - C);
-    if (dd < d1) { d2 = d1; r.C2 = r.C1; r.h2 = r.h1; d1 = dd; r.C1 = C; r.h1 = h; }
-    else if (dd < d2) { d2 = dd; r.C2 = C; r.h2 = h; }
+    if (dd < d1) { d2 = d1; r.C2 = r.C1; r.k2 = r.k1; d1 = dd; r.C1 = C; r.k1 = k; }
+    else if (dd < d2) { d2 = dd; r.C2 = C; r.k2 = k; }
   }
   r.d = (d2 - d1) / (2.0 * max(length(r.C1 - r.C2), 1.0));
+  r.h1 = h3(storyRun(r.k1), 0, 5204u); r.h2 = h3(storyRun(r.k2), 0, 5204u);
+#if !WORDS
+  int j = r.k1 - 3 * storyRun(r.k1);
+  r.z = j == 0 ? 1.0 : j == 1 ? P1 : P2;
+#endif
   return r;
 }
 /** An artist's wash: their light colour with a little of their middle one, as paint thinned with water. */
@@ -1982,7 +2005,7 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
       // (painted by the minimal pass, GROUND_MINIMAL, glazed over this pass: here only its artist's wash, for the seams
       // and for when that pass is not there)
       Region rg = regionAt(gTrue);
-      int am = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.h1);
+      int am = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.k1);
       A = B = washOf(am);
       gGram = 40 + am;
 #if WORDS
@@ -3072,6 +3095,7 @@ precision highp int;
 precision highp sampler2D;
 uniform sampler2D uRoster;
 uniform int uRAt[5];
+uniform ivec4 uChain[32];
 uniform ivec2 uCell0;
 uniform float uTime;
 uniform int uTaps;
@@ -3094,10 +3118,10 @@ void main() {
   if (vd.on) cover *= smoothstep(vd.R - 21.0, vd.R, voidRim(vd, p));
   if (cover <= 0.0) discard;
   Region rg = regionAt(p);
-  int a1 = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.h1);
-  int a2 = minimalOf(min(complexityBare(rg.C2), RUNG_C[3] - 0.001), rg.h2);
+  int a1 = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.k1);
+  int a2 = minimalOf(min(complexityBare(rg.C2), RUNG_C[3] - 0.001), rg.k2);
   vec3 w1 = washOf(a1), w2 = washOf(a2);
-  vec2 q = (p - rg.C1) * 0.55;
+  vec2 q = (p - rg.C1) * 0.55 * rg.z;                                // (pushed in along its run: regionAt)
   // (the golden kaleidoscope of v80 was here; since 23 Oct 2026 the kaleidoscopes are stars, in the pixel pass:
   // STARS_GLSL.) The painting, softened by looking uTaps times on a sunflower, a golden angle round from the last look
   // and farther out by the square root, as seeds are set, 2.9 units out at most (1.8 until v80), and averaged, so no
@@ -4574,6 +4598,52 @@ void main() {
 }`;
 
 /**
+ * The calm regions' story (27 Oct 2026; minimalOf and regionAt): each rung's artists in the order they follow one
+ * another, each sharing a colour with the last. Two artists are as near as the nearest pair of their middle and vivid
+ * colours (CIELAB, ΔE 1976); their darks and lights, near black and near white for most, would make anyone near. Each
+ * rung's chain is a loop, as the story comes round: nearest neighbour first, from the rung's first artist, then
+ * untangled (2-opt), so that it also closes on a near colour. The 22 drawn by hand are read from MINI and RUNG in the
+ * shader's source, so their colours are written once. `ro` is the roster sorted by rung, as its texture is. Returns the
+ * artists (0 to 21, or 100 + their row on that texture) in the slots minimalOf reads, 128 at most.
+ */
+function storyChain(ro) {
+  const ints = (name) => (new RegExp(`const int ${name}\\[\\d+\\] = int\\[\\d+\\]\\(([^)]*)\\)`).exec(GROUND_FS) || ["", ""])[1].split(",").map(Number);
+  const RUNG = ints("RUNG"), AT = ints("RUNG_AT");
+  const mini = [...(/const vec3 MINI\[88\] = vec3\[88\]\(([\s\S]*?)\);/.exec(GROUND_FS) || ["", ""])[1].matchAll(/vec3\((\d+), (\d+), (\d+)\)/g)].map((m) => [+m[1], +m[2], +m[3]]);
+  const lin = (v) => ((v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+  const lab = (c) => {
+    const [r, g, b] = c.map(lin), x = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047), y = f(0.2126 * r + 0.7152 * g + 0.0722 * b);
+    return [116 * y - 16, 500 * (x - y), 200 * (y - f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883))];
+  };
+  const keys = (a) => [1, 3].map((i) => (a < 100 ? mini[a * 4 + i] : ro[a - 100].palette[i])).filter(Boolean).map(lab);
+  const out = new Int32Array(128);
+  let at = 0;
+  for (let r = 0; r < 4; r++) {
+    const pool = RUNG.slice(AT[r], AT[r + 1]).concat(ro.map((x, i) => (x.rung === r ? 100 + i : -1)).filter((a) => a >= 0));
+    const K = new Map(pool.map((a) => [a, keys(a)]));
+    const d = (a, b) => Math.min(...K.get(a).flatMap((p) => K.get(b).map((q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]))));
+    const ch = pool.slice(0, 1), left = pool.slice(1);
+    while (left.length) {
+      const z = ch[ch.length - 1];
+      let b = 0;
+      left.forEach((a, i) => { if (d(z, a) < d(z, left[b])) b = i; });
+      ch.push(left.splice(b, 1)[0]);
+    }
+    const n = ch.length;
+    for (let better = true; better; ) {
+      better = false;
+      for (let i = 0; i < n - 2; i++) for (let j = i + 2; j < n - (i === 0 ? 1 : 0); j++) {
+        const a = ch[i], b = ch[i + 1], c = ch[j], e = ch[(j + 1) % n];
+        if (d(a, c) + d(b, e) < d(a, b) + d(c, e) - 1e-9) { ch.splice(i + 1, j - i, ...ch.slice(i + 1, j + 1).reverse()); better = true; }
+      }
+    }
+    for (const a of ch) { if (at < 128) out[at] = a; at++; }
+  }
+  return out;
+}
+
+/**
  * The ground painted on the GPU under the page's canvas, or null where there is no WebGL2 or only a software renderer
  * (which the canvas path outpaces), unless `force`. `hold` keeps every passage in its colours as grown, for comparing
  * with the workers' own pixels.
@@ -4959,6 +5029,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, 6, Math.max(1, ro.length));
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 6, Math.max(1, ro.length), gl.RGBA, gl.FLOAT, rd);
     pending.rAt = [0, 1, 2, 3, 4].map((r) => ro.filter((x) => x.rung < r).length);
+    pending.chain = storyChain(ro);                                  // the order the calm regions' artists come in
     // The quilts: a layer each, filled once their images arrive (published beside the page, in quilts/).
     gl.activeTexture(gl.TEXTURE9); tQuilt = tex(gl.TEXTURE_2D_ARRAY);
     gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, gl.RGBA8, 1, 1, 1);
@@ -4992,7 +5063,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
     if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i, pending.j].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
-    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier", "uWordsOn"]);
+    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uChain", "uTier", "uWordsOn"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster", "uWTime", "uWSpread", "uWG", "uTime", "uHold", "uStars", "uStarK", "uCellN"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
@@ -5025,7 +5096,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     }
     gl.useProgram(cellProg);
     gl.uniform1i(U.uCells, 0); gl.uniform1i(U.uEnts, 1); gl.uniform1i(U.uSlots, 2); gl.uniform1i(U.uVivid, 3); gl.uniform1i(U.uArt, 6); gl.uniform1i(U.uWorks, 7);
-    gl.uniform1i(U.uRoster, 8); gl.uniform1iv(U.uRAt, pending.rAt); 
+    gl.uniform1i(U.uRoster, 8); gl.uniform1iv(U.uRAt, pending.rAt); gl.uniform4iv(U.uChain, pending.chain);
     gl.uniform1i(U.uNV, vivid.length);
     gl.uniform3f(U.uGround, ground[0], ground[1], ground[2]);
     gl.uniform1f(U.uHold, hold || reduced ? 1 : 0);                  // with reduced motion, the colours stay as grown
@@ -5034,8 +5105,8 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const forced = /(?:^|&)g([0-9]+)(?:&|$)/.exec(location.hash.slice(1));
     gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
     edgeOn = pending.artOn === 1 && !forced;                         // edges as grey gradients, drawn after the artists
-    const jj = finish(pending.j, ["uRoster", "uRAt", "uCell0", "uTime", "uTaps", "uWordsOn"]);   // the minimal areas' pass
-    if (jj) { [minimalProg, Mi] = jj; gl.useProgram(minimalProg); gl.uniform1i(Mi.uRoster, 8); gl.uniform1iv(Mi.uRAt, pending.rAt); }
+    const jj = finish(pending.j, ["uRoster", "uRAt", "uChain", "uCell0", "uTime", "uTaps", "uWordsOn"]);   // the minimal areas' pass
+    if (jj) { [minimalProg, Mi] = jj; gl.useProgram(minimalProg); gl.uniform1i(Mi.uRoster, 8); gl.uniform1iv(Mi.uRAt, pending.rAt); gl.uniform4iv(Mi.uChain, pending.chain); }
     gl.useProgram(pxProg);
     gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
     gl.uniform1f(V.uHold, hold || reduced ? 1 : 0);                  // the stars hold still with reduced motion
