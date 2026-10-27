@@ -47,7 +47,9 @@ const VERB = {
   kolla: [() => 'img { rotate: -2deg; box-shadow: .2em .3em 0 #0003; margin: -1em; }', 'pictures glued on askew, with a shadow (kolla, glue)'],
 };
 
-export const WHERE = Object.freeze({ css: 'a stylesheet', glsl: 'a shader (Shadertoy: a new shader, replace mainImage)' });
+export const WHERE = Object.freeze({ css: 'a stylesheet', glsl: 'a shader (Shadertoy)' });   // a few words: it sits on the tile
+// How to use it, where there is room (the line whole, its reveal, the chat).
+export const HOW = Object.freeze({ glsl: 'On Shadertoy, start a new shader and replace its mainImage with this line' });
 export const TEMPLATES = Object.freeze(['gr', 'gl', 'fl', 'wv', ...Object.values(COMP).map(([t]) => t)]);
 export const MADE = /^l([a-z]{2})([bcimosu]\d{1,6})?(w[a-z]{1,20})?$/;   // a made line's id
 

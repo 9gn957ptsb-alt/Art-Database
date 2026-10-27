@@ -76,8 +76,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--fg); o
 .acts button { flex: 1; min-width: 0; min-height: 44px; padding: 0 4px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); font-weight: 600; cursor: pointer; }
 .acts .keep { background: var(--inv); color: var(--inv-fg); border-color: var(--inv); }
 .acts button:disabled { opacity: .5; cursor: default; }
-.said p { margin: 0; padding: 2px 2px 0; font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.said p { margin: 0; padding: 2px 2px 0; font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.said p.from { -webkit-line-clamp: 1; }   /* answered tiles stay short; the whole of both is a tap away, full screen */
 .said b { font-weight: 600; }
+.said p.from { color: var(--muted); }
 body.old .acts button, body.old .next { opacity: .4; pointer-events: none; }
 
 /* Full screen: one thing, whole. A wide page on an upright screen is turned to fill it; two fingers zoom, one moves. */
@@ -231,6 +233,10 @@ function paintFoot(t) {
   if (short) p.append(" " + short);
   p.title = details(t).join("\n");
   f.append(p);
+  // Where it came from, when it came from something kept: the line alone ("Made from a space you kept in round 1: …"),
+  // which already names the round; the label would say it twice and cost a line of height on a phone.
+  const from = t.reveal && t.reveal.from;
+  if (from && from.line) f.append(el("p", "from", str(from.line, 160)));
 }
 
 /* What it was, after the answer. brief: one line for the tile. details: everything, for full screen. */
@@ -390,12 +396,16 @@ function drawPage(t) {
   return box;
 }
 
-/* A page link lasts a day. A card opened again later asks play_fives for its round once, only while the round
-   still has a thing to answer (then play_fives gives the same round back and deals nothing), and takes the same
-   page's new link. */
+/* A page link lasts a day. A card opened again later reads the state first (get_state, read only): only while its
+   round is still the one on show, with a thing to answer, does it ask play_fives for the round (which then gives the
+   same round back and deals nothing), and takes the same page's new link. Else play_fives would deal the next round,
+   or start a new game, with no card to show it. */
 async function freshPage(t) {
   if (!host.caps.serverTools || old || things.every((x) => x.answer != null)) return null;
   try {
+    const st = ((await request("tools/call", { name: "get_state", arguments: {} }) || {}).structuredContent || {}).state;
+    const g = st && st.game;
+    if (!g || +g.at !== seq || typeof g.k !== "string" || g.k.slice(-5).indexOf("-") < 0) return null;
     const sc = (await request("tools/call", { name: "play_fives", arguments: {} }) || {}).structuredContent;
     const same = sc && sc.game && +sc.game.seq === seq && Array.isArray(sc.things) && sc.things.find((x) => x && x.thing === t.thing);
     const u = same && url(same.image);
@@ -447,14 +457,17 @@ function drawSpace(t) {
 }
 
 /* ---- Keep or Pass: recorded the moment it is tapped. The card calls judge itself (the host proxies
-   tools/call to the connector); without serverTools it says the answer in the chat and Claude records it. */
+   tools/call to the connector); without serverTools it says the answer in the chat and Claude records it.
+   One judge call at a time, in the order tapped: each tap waits for the call before it. */
+let queue = Promise.resolve();
+const inTurn = (f) => (queue = queue.then(f, f));
 async function answer(t, keep) {
   if (t.answer != null || t.busy || old) return;
   t.busy = true;
   t.$.foot.querySelectorAll("button").forEach((b) => (b.disabled = true));
   try {
     if (host.caps.serverTools) {
-      const r = await request("tools/call", { name: "judge", arguments: { card: t.thing, keep } });
+      const r = await inTurn(() => request("tools/call", { name: "judge", arguments: { card: t.thing, keep } }));
       const sc = r && r.structuredContent;
       if (!sc || r.isError || sc.ok === false) throw new Error("refused");
       record(t, typeof sc.kept === "boolean" ? sc.kept : keep, sc.reveal, false, sc);
@@ -482,7 +495,9 @@ function record(t, keep, reveal, fromSibling, sc) {
   fit();
 }
 
-/* The round's end: one line into Claude's context, and one button that asks Claude for the next round. */
+/* The round's end: one line into Claude's context, and one button that asks Claude for the next round. The context
+   carries the kept line and where each thing came from; at the game's end, the game: kept by kind, every kept line,
+   and what moved from round to round, in the message too. */
 function roundDone(sc) {
   if (ended) return;
   ended = true;
@@ -491,12 +506,15 @@ function roundDone(sc) {
   const kept = list(true), passed = list(false);
   const names = (ts) => ts.map(the).join(", ") || "nothing";
   const text = "Round " + r + " of " + of + " done. Kept: " + names(kept) + ". Passed: " + names(passed) + ".";
-  const lines = kept.filter((t) => t.kind === "line" && t.code).map((t) => t.code);
-  if (host.caps.updateModelContext) request("ui/update-model-context", {
-    content: [{ type: "text", text: text + (lines.length ? "\nThe kept line of code, to give again in a code block:\n" + lines.join("\n") : "") }],
-    structuredContent: { round: r, of, kept: kept.map((t) => t.thing), passed: passed.map((t) => t.thing) }
-  }).catch(() => {});
   const g = sc && sc.game_sorted, all = g && Number.isFinite(+g.kept) ? +g.kept : null;
+  const lines = kept.filter((t) => t.kind === "line" && t.code).map((t) => t.code);
+  const from = things.filter((t) => t.reveal && t.reveal.from && t.reveal.from.line).map((t) => KIND[t.kind].label + ": " + str(t.reveal.from.line, 200));
+  const more = last && g ? gameWords(g) : (lines.length ? "\nThe kept line of code, to give again in a code block:\n" + lines.join("\n") : "") +
+    (from.length ? "\nWhere they came from:\n" + from.join("\n") : "");
+  if (host.caps.updateModelContext) request("ui/update-model-context", {
+    content: [{ type: "text", text: text + more }],
+    structuredContent: Object.assign({ round: r, of, kept: kept.map((t) => t.thing), passed: passed.map((t) => t.thing) }, last && g ? { game_sorted: g } : {})
+  }).catch(() => {});
   $("round").textContent = last && all != null ? "Game done · kept " + all + " of " + (+g.of || of * 5) : "Round " + r + " done · kept " + kept.length + " of " + things.length;
   $("prog").hidden = true;
   const next = $("next");
@@ -506,9 +524,20 @@ function roundDone(sc) {
   next.onclick = () => {
     if (!host.caps.message) return say(last ? "Say “that's the game” in the chat." : "Say “next round” in the chat.");
     next.disabled = true;
-    request("ui/message", { role: "user", content: [{ type: "text", text: text + (last ? " That was the last round." : " Next round.") }] })
+    request("ui/message", { role: "user", content: [{ type: "text", text: text + (last ? " That was the last round." + (g ? gameWords(g) : "") : " Next round.") }] })
       .then(() => { next.textContent = "Sent"; }, () => { next.disabled = false; });
   };
+}
+
+/* The game's end in words (judge's game_sorted): kept by kind, what moved from round to round, every kept line. */
+function gameWords(g) {
+  const by = g.by_kind || {}, n = (k) => Math.max(0, Math.floor(+by[k] || 0));
+  const kinds = Object.keys(KIND).filter((k) => n(k) > 0).map((k) => n(k) + " " + (k === "line" ? (n(k) === 1 ? "line of code" : "lines of code") : KIND[k].noun + (n(k) === 1 ? "" : "s")));
+  const from = (Array.isArray(g.from) ? g.from : []).map((x) => str(x, 240)).filter(Boolean);
+  const lines = (Array.isArray(g.lines) ? g.lines : []).map((l) => str(l && l.code, 2000)).filter(Boolean);
+  return "\nThe game: kept " + (+g.kept || 0) + " of " + (+g.of || 25) + (kinds.length ? ": " + kinds.join(", ") : "") + "." +
+    (from.length ? "\nWhat moved from round to round:\n" + from.join("\n") : "") +
+    (lines.length ? "\nEvery kept line, to give again, each in its own code block:\n" + lines.join("\n") : "");
 }
 
 /* ---- Full screen: the picture or the page whole (zoom and move), or the building to go into. */
@@ -589,7 +618,9 @@ function caption(t) {
       : "Most of these buildings are solid models, so this stands you under cover beside it. Drag to look round · " + (touch ? "tap" : "click") + " a floor to step there.", "muted");
   } else if (extra) {
     add("Its building. Drag to turn it · " + (touch ? "tap" : "click") + " to go in.", "muted");
-  } else if (t.answer == null && t.kind !== "line") {
+  } else if (t.kind === "line") {
+    add([t.where && "For " + str(t.where, 120) + ".", t.how && str(t.how, 160) + "."].filter(Boolean).join(" "), "muted");
+  } else if (t.answer == null) {
     add(touch ? "Pinch to come closer · drag to move · double tap to zoom." : "Scroll to come closer · drag to move · double click to zoom.", "muted");
   }
   // The page's own building, a space inside a page: after the answer, so its name stays in the reveal.
@@ -750,10 +781,11 @@ function fit() {
 }
 const MH = () => (matchMedia("(min-width: 560px)").matches ? 200 : 168);   // the stylesheet's --mh
 // Two rows of tiles take --mh, so each takes half of what is over the cap (and gives back half of what is under).
+// No cap from the host (it need not send one): assume a phone's inline cap, so the word's Keep never sits below it.
+const CAP = 600;
 function shrink() {
-  const d = host.ctx.containerDimensions, cap = d && +d.maxHeight, root = document.documentElement;
-  if (!cap) root.style.removeProperty("--mh");
-  else if (!shown && things.length) {
+  const d = host.ctx.containerDimensions, cap = (d && +d.maxHeight) || CAP, root = document.documentElement;
+  if (!shown && things.length) {
     const now = parseFloat(getComputedStyle(root).getPropertyValue("--mh")) || MH();
     const want = Math.round(Math.min(MH(), Math.max(96, now - (Math.ceil(root.getBoundingClientRect().height) - cap) / 2)));
     if (want !== Math.round(now)) root.style.setProperty("--mh", want + "px");

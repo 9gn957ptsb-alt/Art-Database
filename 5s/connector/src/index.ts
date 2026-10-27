@@ -131,8 +131,9 @@ export class FiveSPerson extends DurableObject<Env> {
 		return this.storeFor(uid).get(key);
 	}
 
-	async put(uid: string, key: string, value: string): Promise<void> {
-		await this.storeFor(uid).put(key, value);
+	/** base: write only while the stored rev is still base (person.js); false when it has changed. */
+	async put(uid: string, key: string, value: string, base?: number): Promise<boolean> {
+		return this.storeFor(uid).put(key, value, base);
 	}
 }
 

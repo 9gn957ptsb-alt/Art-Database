@@ -129,8 +129,10 @@ window.mount = function (result, said) {
         reply({ mode });
         return post({ jsonrpc: "2.0", method: "ui/notifications/host-context-changed", params: ctx() });
       case "tools/call":
+        window.busy = (window.busy || 0) + 1; window.most = Math.max(window.most || 0, window.busy);
         try { return reply(await window.callTool(m.params.name, m.params.arguments || {})); }
         catch (err) { return post({ jsonrpc: "2.0", id: m.id, error: { code: -32603, message: String(err) } }); }
+        finally { window.busy--; }
       case "ui/message": {
         const p = document.createElement("p"); p.className = "user"; p.textContent = m.params.content.map((c) => c.text).join(" ");
         document.getElementById("chat").appendChild(p);
@@ -225,8 +227,12 @@ async function setUp({ width, height, touch, theme, clipboard }) {
     async play(said, patch) {
       const r = await callTool('play_fives');
       assert.equal(r.isError, undefined, r.content && r.content[0].text);
-      for (const t of r.structuredContent.things) if (t.kind === 'picture' && t.image) pictures.set(t.image, t.thing);
       if (patch) await patch(r);
+      return out.mount(r, said);
+    },
+    /** A card for a result Claude was given before (a chat opened again later): mounted, nothing called. */
+    async mount(r, said) {
+      for (const t of r.structuredContent.things) if (t.kind === 'picture' && t.image) pictures.set(t.image, t.thing);
       const n = await page.evaluate(([res, s]) => window.mount(res, s), [r, said]);
       const handle = await page.waitForSelector(`.card:nth-of-type(${n}) iframe`);
       // The chat brings the new card into view (a frame out of view gets no animation frames).
@@ -292,6 +298,7 @@ test('at 390 by touch, light: a round of five together, answered in any order, t
   if (await frame.locator('.k-line .clipped').count()) {
     await s.page.waitForFunction(() => !!document.querySelector('.card.full'));
     assert.equal(await frame.locator('#stage .whole').textContent(), things[1].code);
+    assert.match(await frame.locator('#cap').textContent(), /^For \S/, 'where it goes, under the line whole');
     await s.shot('390-2-line-whole');
     await frame.locator('#back').tap();
     await s.page.waitForFunction(() => !document.querySelector('.card.full'));
@@ -390,13 +397,44 @@ test('at 390 by touch, light: a round of five together, answered in any order, t
   });
   await stale.frame.waitForFunction(() => { const i = document.querySelector('.k-page img'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 20000 });
   const asked = (await s.log('tools/call')).slice(before).map((l) => l.params.name);
-  assert.deepEqual(asked, ['play_fives'], 'one play_fives, nothing judged');
+  assert.deepEqual(asked, ['get_state', 'play_fives'], 'its round still on show (read only), then one play_fives, nothing judged');
   assert.equal((await s.callTool('get_state')).structuredContent.state.game.ids.length, 10, 'and nothing new dealt');
 
   // The twin cards of round 2 share their answers.
   await two.frame.locator('.k-word .keep').tap();
   await stale.frame.waitForFunction(() => document.querySelector('.k-word .said'));
   assert.equal(await two.frame.locator('#count').textContent(), '1 of 5');
+
+  // Where it came from (the inside out): under the tile's reveal, and to Claude at the round's end.
+  for (const k of ['line', 'picture', 'space', 'page']) await two.frame.locator('.k-' + k + ' .keep').tap();
+  await two.frame.waitForSelector('#next:not([hidden])');
+  assert.match(await two.frame.locator('.k-line .from').textContent(), /^Made from .+ you kept in round 1/);
+  await s.shot('390-8-round-2-from', s.tile(two.frame, 'line'));
+  const ctx2 = (await s.log('ui/update-model-context', two.n)).map((l) => l.params.content[0].text);
+  assert.equal(ctx2.length, 1);
+  assert.ok(ctx2[0].includes('\nWhere they came from:\n'), ctx2[0]);
+  assert.match(ctx2[0], /^A line of code: Made from /m);
+
+  // Rounds 3 and 4 answered in words, as Claude records them; round 5 on the card ends the game, and Claude gets its summary.
+  for (let round = 3; round <= 4; round++) {
+    const p = await s.callTool('play_fives');
+    for (const t of p.structuredContent.things) await s.callTool('judge', { card: t.thing, keep: true });
+  }
+  const five = await s.play('Round 5 of 5.');
+  assert.equal(five.r.structuredContent.game.round, 5);
+  await five.frame.evaluate(() => document.querySelectorAll('.acts .keep').forEach((b) => b.click()));
+  await five.frame.waitForSelector('#next:not([hidden])');
+  assert.match(await five.frame.locator('#round').textContent(), /^Game done · kept 24 of 25$/);
+  const end = (await s.log('ui/update-model-context', five.n)).map((l) => l.params.content[0].text);
+  assert.equal(end.length, 1);
+  assert.match(end[0], /\nThe game: kept 24 of 25: 5 pictures, 5 lines of code, 4 spaces, 5 pages, 5 words\./);
+  assert.match(end[0], /\nWhat moved from round to round:\nRound 2, a line of code: Made from /);
+  assert.match(end[0], /\nEvery kept line, to give again, each in its own code block:\n/);
+  await five.frame.locator('#next').tap();
+  await five.frame.waitForFunction(() => document.getElementById('next').textContent === 'Sent');
+  const last = (await s.log('ui/message', five.n)).map((l) => l.params.content[0].text);
+  assert.match(last[0], /That was the last round\.\nThe game: kept 24 of 25/);
+  assert.match(last[0], /What moved from round to round:/);
 
   const bad = s.hits.filter((h) => !DECLARED.has(new URL(h).origin));
   assert.deepEqual(bad, [], 'only declared origins were asked');
@@ -452,11 +490,11 @@ test('at 1280 by mouse, dark: the same card, by click, wheel and keyboard; copy 
   await frame.locator('#back').click();
   await s.page.waitForFunction(() => !document.querySelector('.card.full'));
 
-  // Keep and Pass by click, in another order.
-  for (const [kind, keep] of [['page', true], ['line', false], ['picture', false], ['word', true], ['space', true]]) {
-    await s.tile(frame, kind).locator(keep ? '.keep' : '.pass').click();
-    await frame.waitForFunction((k) => document.querySelector('.k-' + k + ' .said'), kind);
-  }
+  // Keep and Pass, in another order, all five in the same moment: the judge calls go one at a time, in order.
+  await frame.evaluate(() => { for (const [k, keep] of [['page', 1], ['line', 0], ['picture', 0], ['word', 1], ['space', 1]]) document.querySelector('.k-' + k + (keep ? ' .keep' : ' .pass')).click(); });
+  await frame.waitForFunction(() => document.querySelectorAll('.said').length === 5);
+  assert.equal(await s.page.evaluate(() => window.most), 1, 'never two judge calls at once');
+  assert.equal((await s.callTool('get_state')).structuredContent.state.game.k, '00111', 'every answer saved');
   const judged = (await s.log('tools/call', n)).map((l) => [l.params.name, l.params.arguments.card]);
   assert.deepEqual(judged, [['judge', things[3].thing], ['judge', things[1].thing], ['judge', things[0].thing], ['judge', things[4].thing], ['judge', things[2].thing]]);
   assert.equal((await s.log('ui/update-model-context', n)).length, 1);
@@ -473,6 +511,15 @@ test('at 1280 by mouse, dark: the same card, by click, wheel and keyboard; copy 
   await s.page.waitForTimeout(900);
   await s.shot('1280-6-page-building');
   await frame.locator('#back').click();
+
+  // The same round's card opened again later (its result from before, its page link run out), the round sorted since:
+  // the card reads the state, and neither deals a round nor starts a game.
+  const before = (await s.log('tools/call')).length, old = JSON.parse(JSON.stringify(r)), oldPage = old.structuredContent.things[3];
+  oldPage.image = oldPage.open = await cardUrls(ORIGIN, SECRET).page(oldPage.thing, s.clock.t - 2 * DAY);
+  const again = await s.mount(old);
+  await again.frame.waitForFunction(() => /run out/.test(document.querySelector('.k-page .hint').textContent), null, { timeout: 20000 });
+  assert.deepEqual((await s.log('tools/call')).slice(before).map((l) => l.params.name), ['get_state'], 'only a read');
+  assert.equal((await s.callTool('get_state')).structuredContent.state.game.ids.length, 5, 'nothing dealt');
 
   // Nothing undeclared: an image and a fetch to another origin are refused by the CSP.
   const neg = await frame.evaluate(async () => ({

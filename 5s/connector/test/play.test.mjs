@@ -2,10 +2,12 @@
 // the reveals come after, and the same game plays in words where the round card can't show.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { ctxFor, gameCtx, call, playFives, ORIGIN, PAGE_DIR, PAGE_SECRET, DAY } from './helpers.mjs';
+import { ctxFor, gameCtx, call, playFives, ORIGIN, PAGE_DIR, PAGE_SECRET, DAY, CONNECTOR, FIVES } from './helpers.mjs';
 import { TOOLS, SERVER_INSTRUCTIONS, registerTools } from '../src/tools.js';
 import { TOOL_META, pageKey, checkPage } from '../src/card.js';
 
@@ -311,4 +313,51 @@ test('typed play still works beside the card: next_five\'s fives and a game shar
   assert.equal(p.data.things.length, 5);
   const st = await stateOf(ctx);
   assert.equal(st.five.i, 5, 'the five is as it was');
+});
+
+test('judge calls at the same moment (quick taps, or a tap while Claude records a typed answer) all stand', async () => {
+  const { ctx } = gameCtx();
+  const p = await call(ctx, 'play_fives');
+  const rs = await Promise.all(p.data.things.map((t) => call(ctx, 'judge', { card: t.thing, keep: true })));
+  assert.ok(rs.every((r) => r.data.kept === true && !r.isError), rs.map((r) => r.summary).join(' | '));
+  const st = await stateOf(ctx);
+  assert.equal(st.game.k, '11111', 'every answer saved');
+  assert.equal(st.j.length, 2, 'the picture and the space in j');
+  assert.equal((await call(ctx, 'play_fives')).data.game.round, 2, 'the next round, not the same one again');
+});
+
+test('a shader line: where it goes in a few words, how to use it in its view, its reveal and the words', async () => {
+  const { ctx } = gameCtx();
+  let shader = null;
+  for (let r = 0; r < 5 && !shader; r++) {
+    const p = await call(ctx, 'play_fives');
+    const l = p.data.things[1];
+    if (l.lang === 'glsl') shader = { l, p };
+    else for (const t of p.data.things) await call(ctx, 'judge', { card: t.thing, keep: true });
+  }
+  assert.ok(shader, 'a game keeping everything meets a shader line');
+  const { l, p } = shader;
+  assert.equal(l.where, 'a shader (Shadertoy)');
+  assert.match(l.how, /^On Shadertoy, start a new shader and replace its mainImage with this line$/);
+  assert.ok(p.summary.includes('for a shader (Shadertoy), in its own glsl code block (' + l.how + '): void mainImage'), p.summary);
+  assert.equal((await call(ctx, 'judge', { card: l.thing, keep: true })).data.reveal.how, l.how);
+  assert.equal(p.data.things[0].how, undefined, 'only lines carry how');
+});
+
+test('the docs: a deploy builds the game\'s things before the deck, and the spec holds the game\'s state', () => {
+  const readme = readFileSync(join(CONNECTOR, 'README.md'), 'utf8');
+  const step4 = readme.slice(readme.indexOf('### 4. The commands a session runs'), readme.indexOf('### 5.'));
+  const block = step4.slice(step4.indexOf('```sh'), step4.indexOf('```', step4.indexOf('```sh') + 5));
+  const after = readme.slice(readme.indexOf('**After a change**'), readme.indexOf('### 6.'));
+  for (const text of [block, after]) {
+    assert.ok(text.includes('npm run things') && text.indexOf('npm run things') < text.indexOf('npm run deck'), text.slice(0, 200));
+  }
+  assert.match(step4, /data\/5s\/fives\//, 'says where the things are read from');
+  assert.match(step4, /the game's things: 14 lines, 80 words, 6 pages, 29 spaces/, 'and what npm run deck should print');
+  const spec = readFileSync(join(FIVES, 'SPEC.md'), 'utf8');
+  const at = spec.indexOf('### Let\'s play fives, through the connector');
+  assert.ok(at > 0, 'the spec has the game\'s section');
+  const game = spec.slice(at, spec.indexOf('\n### ', at + 5));
+  for (const s of ['play_fives', '"game"', '"things"', 'at most 25', 'at most 1,000', 'oldest dropped']) assert.ok(game.includes(s), s);
+  assert.doesNotMatch(game.replace(/`[^`]*`/g, ''), /\b5s\b/, 'no written app name in the new section');
 });

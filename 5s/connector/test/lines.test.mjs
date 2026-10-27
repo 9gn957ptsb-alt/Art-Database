@@ -2,7 +2,7 @@
 // remake themselves from their id, and every line passes safe() before anyone can copy it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { draft, lineFor, madeLine, safe, TEMPLATES, MADE } from '../src/lines.js';
+import { draft, lineFor, madeLine, safe, TEMPLATES, MADE, WHERE, HOW } from '../src/lines.js';
 
 // Made-up things, no artist material: a card with every composition and a feel, and two words.
 const rug = { id: 'o001', colours: ['#623322', '#fdfcfc', '#c32f28'], feel: ['muted'],
@@ -59,4 +59,10 @@ test('safe() refuses what reaches outside the page, and lets plain lines through
   assert.equal(safe('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M 1 1 L 9 9"/></svg>'), null);
   assert.equal(safe('img { filter: hue-rotate(137.5deg); }'), null);
   assert.equal(safe('void mainImage(out vec4 o, in vec2 p) { o = vec4(1.0); }'), null);
+});
+
+test('where a line goes fits its tile in a few words; how to use a shader is kept for where there is room', () => {
+  for (const [lang, where] of Object.entries(WHERE)) assert.ok(where.length <= 24, lang + ': ' + where);
+  assert.equal(lineFor('gl', rug, null).where, 'a shader (Shadertoy)');
+  assert.match(HOW.glsl, /new shader and replace its mainImage/);
 });

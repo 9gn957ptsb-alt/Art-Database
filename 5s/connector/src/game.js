@@ -134,19 +134,27 @@ const DEAL = {
     const holds = (w) => (pick.words || []).includes(w);
     return [pick.id, s.words.find(holds) || [...kept].reverse().find(holds) || null];
   },
-  // A neighbour of the newest word kept in this game; else the word a kept picture's composition or feel leads to; else a
-  // neighbour of a word kept before; else a word not seen yet, away from the family of a word passed in this game.
+  // A word never met: a neighbour of the newest word kept in this game; else the word a kept picture's composition or feel
+  // leads to; else a neighbour of a word kept before; else any, away from the family of a word passed in this game.
+  // Only once every word is met: the same three ways, then any, to a word not passed (80 words: about 16 games).
   word(st, deck, s) {
     const C = cat(deck);
     const fresh = (id) => C.word.has(id) && !s.in.has(id) && s.things[id] !== 0;
-    for (const k of s.words) for (const n of (C.word.get(k) || {}).leads || []) if (fresh(n)) return [n, k];
-    for (const c of s.cards) for (const w of (c.comp || []).concat(c.feel || [])) if (fresh(C.pics[w])) return [C.pics[w], c.id];
+    const unmet = (id) => fresh(id) && s.things[id] === undefined;
     const before = Object.keys(s.things).filter((id) => thingKind(id) === 'word' && s.things[id] === 1).reverse();
-    for (const k of before) for (const n of (C.word.get(k) || {}).leads || []) if (fresh(n)) return [n, k];
+    const near = (ok) => {
+      for (const k of s.words) for (const n of (C.word.get(k) || {}).leads || []) if (ok(n)) return [n, k];
+      for (const c of s.cards) for (const w of (c.comp || []).concat(c.feel || [])) if (ok(C.pics[w])) return [C.pics[w], c.id];
+      for (const k of before) for (const n of (C.word.get(k) || {}).leads || []) if (ok(n)) return [n, k];
+      return null;
+    };
+    const close = near(unmet);
+    if (close) return close;
     const away = new Set([...s.passed].filter((id) => C.word.has(id)).flatMap((id) => C.word.get(id).families || []));
-    const words = shuffled(C.words, s.rng), unseen = (w) => !s.in.has(w.id) && s.things[w.id] === undefined;
-    const pick = words.find((w) => unseen(w) && !(w.families || []).some((f) => away.has(f))) || words.find(unseen) || words.find((w) => fresh(w.id)) || words.find((w) => !s.in.has(w.id)) || words[0];
-    return [pick.id, null];
+    const words = shuffled(C.words, s.rng), unseen = (w) => unmet(w.id);
+    const pick = words.find((w) => unseen(w) && !(w.families || []).some((f) => away.has(f))) || words.find(unseen);
+    if (pick) return [pick.id, null];
+    return near(fresh) || [(words.find((w) => fresh(w.id)) || words.find((w) => !s.in.has(w.id)) || words[0]).id, null];
   },
 };
 

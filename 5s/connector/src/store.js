@@ -64,14 +64,20 @@ export class StoreError extends Error {
 export function guardedStore(store) {
   return {
     get: async (k) => { try { return await store.get(k); } catch (e) { throw new StoreError('get', e); } },
-    put: async (k, v) => { try { return await store.put(k, v); } catch (e) { throw new StoreError('put', e); } },
+    put: async (k, v, base) => { try { return await store.put(k, v, base); } catch (e) { throw new StoreError('put', e); } },
   };
 }
 
-/** A store in memory, for tests. `map` is exposed so tests can look inside. */
+/** The rev of a stored record's text (0 when nothing is stored). */
+export const revOf = (text) => (text ? Number(JSON.parse(text).rev) || 0 : 0);
+
+/** A store in memory, for tests. `map` is exposed so tests can look inside. put(k, v, base): see writeState. */
 export function memoryStore() {
   const map = new Map();
-  return { map, get: async (k) => (map.has(k) ? map.get(k) : null), put: async (k, v) => { map.set(k, String(v)); } };
+  return {
+    map, get: async (k) => (map.has(k) ? map.get(k) : null),
+    put: async (k, v, base) => { if (base != null && revOf(map.get(k)) !== base) return false; map.set(k, String(v)); return true; },
+  };
 }
 
 /** Today's counts from a record's `use` (zero on a new day). */
@@ -89,9 +95,10 @@ export async function readState(store, uid) {
 }
 
 /**
- * writeState(store, uid, state, rev, now, {use, hubSave, brought}) -> the record written. The caller
+ * writeState(store, uid, state, rev, now, {use, hubSave, brought, base}) -> the record written. The caller
  * decides rev and passes the `use` it read; hubSave counts a save to GitHub, brought how many pictures
- * bring_in read. Throws LimitError past a cap.
+ * bring_in read. base, the rev the caller read: when the stored rev is no longer that (another call saved
+ * meanwhile), nothing is written and it returns null. Throws LimitError past a cap.
  */
 export async function writeState(store, uid, state, rev, now, opts) {
   const o = opts || {};
@@ -104,8 +111,7 @@ export async function writeState(store, uid, state, rev, now, opts) {
   if (byteLength(text) > MAX_STATE_BYTES + 4096) {
     throw new LimitError('size', 'Your database is full: its state would be over 1 MB, more than can be kept.', 'Remove some notes or brought-in things in the app; brought-in images belong there, not in the state.');
   }
-  await store.put(stateKey(checkUid(uid)), text);
-  return rec;
+  return (await store.put(stateKey(checkUid(uid)), text, o.base)) === false ? null : rec;
 }
 
 export async function readRepos(store, uid) {

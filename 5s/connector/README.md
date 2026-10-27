@@ -76,6 +76,14 @@ colours.").
 - **One answer a thing.** A second `judge` on a thing of the game records nothing and gives its first
   answer again, so the card's tap and a typed "keep" never count twice. A line, page or word that isn't
   on show is refused. A picture or space waiting in today's five too counts once for both.
+- **Answers at the same moment** (two quick taps, a tap and a typed answer) all stand: the card sends
+  its `judge` calls one at a time, and a save lands only on the rev it read (`src/person.js`), else the
+  tool reads the newer state and makes its change again, up to five tries.
+- **New words first.** A word follows what was kept, but only a word not met before while one is left
+  (80 words, five a game: about 16 games), then a word not passed.
+- **What Claude hears from the card** at a round's end: what was kept and passed, the kept line, and
+  where each thing came from; at the game's end, the game: kept by kind, every kept line, and what moved
+  from round to round (in the message too).
 - **What is saved** (`src/game.js`, connector only; the app keeps both fields as they are): pictures
   and spaces are deck cards, judged into `j` as Sort judges them; lines, pages and words go in
   `things` (`{id: 1 or 0}`, the latest answer each, at most 1,000, the oldest dropped first); the game
@@ -460,8 +468,11 @@ npx wrangler whoami
 # here: it is kept in a Durable Object, which `wrangler deploy` sets up by itself (wrangler.jsonc).
 npx wrangler kv namespace create fives-oauth    # copy the printed id into wrangler.jsonc, binding OAUTH_KV
 
-# The artist's deck, trimmed (needs 5s/dist/deck.json: see "The deck" below).
-npm run deck
+# The game's things first, then the artist's deck, trimmed (see "The deck" below). things reads
+# data/5s/fives/, gathered by hand and gitignored, so it is only where it was gathered: deploy from that
+# container, or copy the folder over first. deck needs 5s/dist/deck.json.
+npm run things
+npm run deck        # prints: the game's things: 14 lines, 80 words, 6 pages, 29 spaces
 npm test
 
 # Deploy first (a secret can only be set on a Worker that exists), then the three secrets.
@@ -507,8 +518,9 @@ wrangler: put the Cloudflare token in the environment instead, as the variable
 `CLOUDFLARE_API_TOKEN` (step 3, Environment variables), drop the `export CLOUDFLARE_API_TOKEN` line,
 and start a new session. wrangler then reads it itself; the session still never prints it.
 
-**After a change** to the connector, the engine, `hub.js` or `hubpage.js`, or a rebuilt deck: `npm run
-deck && npm test && npx wrangler deploy`. The secrets and the KV namespace stay.
+**After a change** to the connector, the engine, `hub.js` or `hubpage.js`, or a rebuilt deck:
+`npm run things && npm run deck && npm test && npx wrangler deploy` (things needs `data/5s/fives/`, as
+above). The secrets and the KV namespace stay.
 
 ### 6. In Claude
 
@@ -621,8 +633,13 @@ things) or a space the deck doesn't have.
 | `src/fake-web.js` | a fake public web (Are.na, Pinterest, Flickr, Tumblr, pages, pictures, redirects into private networks, huge and slow sites, its own DNS) for tests and the dev bypass |
 | `scripts/make-pictures.py`, `test/pictures.mjs` | PNG and JPEG files made by Pillow, with Pillow's decoding of each, for the decoders' tests |
 | `test/*.test.mjs` | `npm test`: every tool, the engine against the app, the protocol, the hub, the sign-in helpers, session binding (`session.test.mjs`), the adversarial review's findings (`review.test.mjs`), and Connect your apps (`connect.test.mjs`: every source, every way an address can point somewhere private, the caps, what is stored), and the security review of Connect your apps (`hostile.test.mjs`: pages and feeds that would hang the parsers, a Content-Type written to Claude, pictures whose headers lie about their size, broken %-escapes, IPv4 inside IPv6), and the free plan (`free.test.mjs`: the person's store on node:sqlite, the cost arithmetic, smaller copies, page facts, a brought thing's facts), and "let's play fives" (`game.test.mjs`: the deal and the state; `play.test.mjs`: `play_fives` and `judge` over the tools, on a made-up catalogue) |
+| `src/card.js` | the round card's side of the Worker: the `ui://fives/round.html` resource's CSP and clipboard permission, the links `play_fives` hands out, and the `/pp/` answer: a Picture Poetry page or its building only through a link signed for a day, from a folder only the Worker knows, with CORS |
+| `web/round.html` | the round card, an MCP App shown under `play_fives`: the five things together, Pass and Keep under each (each a `judge` call the moment it is tapped), the thing itself the other control (tap the line to copy it, the building to go in, the picture or the page to see it whole, two fingers to read it) |
+| `web/space.html`, `web/space.js` | the space viewer page (`/s/space?m=<deck id>`) and the drawing the card shares; `npm run things` copies them into `public/s/` |
+| `public/` | the Worker's static files, built by `npm run things` and gitignored, all but `.assetsignore`, which keeps the folder (wrangler needs it); `/s/` is served as files (free), `/pp/` only through the Worker |
 | `test/smoke.mjs` | `npm run smoke`: the Worker itself under `wrangler dev` (see below) |
-| `wrangler.jsonc` | the Worker: name `fives-connector`, the two Durable Objects (`FiveSMCP`, `FiveSPerson`), the one KV namespace (`OAUTH_KV`), the three rate limits, `COLOUR_BUDGET_PX` `"0"` |
+| `test/card.ui.mjs` | `node --test test/card.ui.mjs`: the round card in a stand-in host that speaks MCP Apps (Playwright), at 390 by touch and 1280 by mouse, with screenshots (`SHOTS`); needs the built catalogue |
+| `wrangler.jsonc` | the Worker: name `fives-connector`, the two Durable Objects (`FiveSMCP`, `FiveSPerson`), the one KV namespace (`OAUTH_KV`), the three rate limits, `COLOUR_BUDGET_PX` `"0"`, and the static files in `public/` (every `/pp/` request goes to the Worker first) |
 | `.dev.vars.example` | placeholders for `wrangler dev`; copy to `.dev.vars` (gitignored) |
 
 ## Develop and test
@@ -648,6 +665,9 @@ the GitHub token nor the client secret nor the cookie key was ever stored. Conne
 workerd: `read_link` reads a Pinterest board and a web page, `bring_in` adds two pictures with their
 colours read there, `item_image` hands one back as an image, a link that redirects to the cloud
 metadata address is refused, and the local storage holds the pictures' addresses, never the pictures.
+Let's play fives, with the catalogue built: the round card's resource and its CSP, a round over MCP,
+a space's model and the viewer page with CORS, and a page only through its signed link (no signature,
+a changed one, the pages' folder by name or by an odd spelling of it are all refused).
 
 **The dev bypass** is for local tests only: when `.dev.vars` sets `DEV_FAKE_USER` (`login` or
 `id:login`, or a comma-separated list of them; a request picks a listed person with the header

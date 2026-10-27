@@ -22,7 +22,7 @@ import { quoted, safeUrl, turnSentence, describeBefore, dateText, colourOf, KIND
 import { checkName, fixName, isPagesName, pagesName, sameName, hubAddress, repoUrl, pagesSettingsUrl } from './names.js';
 import * as hubpage from './hubpage.js';
 import * as Game from './game.js';
-import { MADE } from './lines.js';
+import { MADE, HOW } from './lines.js';
 import { TOOL_META } from './card.js';
 import FiveSHub, { isHubError } from './hub.js';
 
@@ -96,11 +96,16 @@ function keptDeckCards(st, deck) {
  * LimitError, which the tool answers in plain words (execute()).
  */
 async function update(ctx, fn, opts) {
-  const cur = await readState(ctx.store, ctx.user.id);
-  const r = (await fn(cur.state, cur)) || {};
-  if (!r.state) return Object.assign({ rev: cur.rev }, r);
-  const rec = await writeState(ctx.store, ctx.user.id, r.state, cur.rev + 1, nowOf(ctx), { use: cur.use, hubSave: !!(opts && opts.hubSave), brought: (opts && opts.brought) | 0 });
-  return Object.assign({}, r, { rev: rec.rev });
+  // Calls at the same moment (two taps on the card, a tap and a typed answer) each read and write the whole state:
+  // a write lands only on the rev it read, else fn runs again on the newer state (a round's five at once: five tries).
+  for (let tries = 1; ; tries++) {
+    const cur = await readState(ctx.store, ctx.user.id);
+    const r = (await fn(cur.state, cur)) || {};
+    if (!r.state) return Object.assign({ rev: cur.rev }, r);
+    const rec = await writeState(ctx.store, ctx.user.id, r.state, cur.rev + 1, nowOf(ctx), { use: cur.use, hubSave: !!(opts && opts.hubSave), brought: (opts && opts.brought) | 0, base: cur.rev });
+    if (rec) return Object.assign({}, r, { rev: rec.rev });
+    if (tries >= 5) throw new StoreError('put', new Error('the state changed under five tries'));
+  }
 }
 
 /** Before anything goes to GitHub: refuse when today's caps are reached, so nothing is half done. */
@@ -294,7 +299,7 @@ async function thingView(ctx, st, g, i, now) {
     const { card: _c, position: _p, kind: cardKind, ...shown } = cardBefore(st, deck, id, 'round ' + (Game.roundOf(i) + 1));
     Object.assign(o, shown, { card_kind: cardKind, w: t.w || null, h: t.h || null });
   } else if (kind === 'line') {
-    Object.assign(o, { code: t.line, lang: t.lang, where: t.where, show: 'Show the line alone in its own code block (' + t.lang + '), so it can be copied, and say where it goes. Nothing else.' });
+    Object.assign(o, { code: t.line, lang: t.lang, where: t.where, how: HOW[t.lang] || null, show: 'Show the line alone in its own code block (' + t.lang + '), so it can be copied, and say where it goes. Nothing else.' });
   } else if (kind === 'space') {
     const room = Game.cat(deck).rooms.has(id);
     Object.assign(o, spaceLinks(ctx, id), { room, go_in: GO_IN(room), show: 'Give the link to the space: it turns, and Go in. No name.' });
@@ -314,7 +319,7 @@ async function thingView(ctx, st, g, i, now) {
 async function revealThing(ctx, st, i, id, t, now) {
   const kind = Game.kindAt(i);
   if (kind === 'picture') return reveal(t);
-  if (kind === 'line') return { code: t.line, lang: t.lang, where: t.where, does: t.does, source: quoted(t.source, 120) || null, made: MADE.test(id) };
+  if (kind === 'line') return { code: t.line, lang: t.lang, where: t.where, how: HOW[t.lang] || null, does: t.does, source: quoted(t.source, 120) || null, made: MADE.test(id) };
   if (kind === 'space') return Object.assign(reveal(t), { place: quoted(t.place, 60) || null }, spaceLinks(ctx, id), { room: Game.cat(ctx.deck).rooms.has(id) });
   if (kind === 'page') {
     const buildings = [];
@@ -386,7 +391,7 @@ function thingWords(t) {
     if (!t.image) return head + ': no picture, three colours as bands 3:2:1: ' + t.colours.map((c) => c.name + ' ' + c.hex).join(', ') + '.';
     return head + ': ' + t.image + (t.crop ? ' (show only its crop: data.things[0].crop)' : '');
   }
-  if (t.kind === 'line') return head + ', for ' + t.where + ', in its own ' + t.lang + ' code block: ' + t.code;
+  if (t.kind === 'line') return head + ', for ' + t.where + ', in its own ' + t.lang + ' code block' + (t.how ? ' (' + t.how + ')' : '') + ': ' + t.code;
   if (t.kind === 'space') return head + ': ' + t.open + ' (it turns. ' + t.go_in + ')';
   if (t.kind === 'page') return head + ': ' + t.open + (t.seen_before ? ' (seen in an earlier game)' : '');
   return head + ': ' + t.word;
@@ -760,6 +765,7 @@ export const TOOLS = [
       const now = nowOf(ctx);
       let res = null, c = null, inFive = false, played;
       const r = await update(ctx, (st) => {
+        res = null; c = null; played = undefined;   // run again when another call saved first
         const at = st.five ? st.five.ids.indexOf(args.card) : -1;
         inFive = at >= 0 && at >= st.five.i;
         if (inFive && at > st.five.i) {

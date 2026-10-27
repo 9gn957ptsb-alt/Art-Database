@@ -18,6 +18,8 @@
  * to move, and reading KV for it would cost a second namespace and a read for every new person.
  */
 
+import { revOf } from './store.js';
+
 export const PERSON_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY NOT NULL, v TEXT NOT NULL) WITHOUT ROWID',
 ];
@@ -60,11 +62,19 @@ export function personStore(sql, opts) {
       counts.read += r.length;
       return r[0] ? r[0].v : null;
     },
-    async put(k, v) {
+    // base (optional): write only while the stored rev is still base, else false. No await between the read and the
+    // write, so no other call to this object comes in between.
+    async put(k, v, base) {
       check(k);
       if (typeof v !== 'string') throw new Error('a stored value is text');
+      if (base != null) {
+        const r = rows(sql.exec('SELECT v FROM kv WHERE k = ?', k));
+        counts.read += r.length;
+        if (revOf(r[0] ? r[0].v : null) !== base) return false;
+      }
       sql.exec('INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v', k, v);
       counts.written += 1;
+      return true;
     },
   };
 }
@@ -78,6 +88,6 @@ export function personRpcStore(namespace, uid) {
   const stub = namespace.get(namespace.idFromName(name));
   return {
     get: (k) => stub.get(String(uid), k),
-    put: (k, v) => stub.put(String(uid), k, v),
+    put: (k, v, base) => stub.put(String(uid), k, v, base),
   };
 }

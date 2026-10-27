@@ -124,6 +124,25 @@ test('across games: a word and a page follow what was kept before', () => {
   assert.equal(open(s, deck, NOW).state.game.ids[8] !== 'p2', true, 'a page is not dealt twice in a game');
 });
 
+test('new words game after game: a keep-everything player meets every word before one comes again', () => {
+  const met = (d, games) => {
+    let st = F.newState();
+    const seen = new Set();
+    for (let n = 0; n < games * 5; n++) {
+      st = open(st, d, NOW).state;
+      for (const [i, id] of st.game.ids.entries()) if (st.game.k[i] === '-') {
+        if (kindAt(i) === 'word') seen.add(id);
+        st = answer(st, d, id, true, 0, NOW).state;
+      }
+    }
+    return seen.size;
+  };
+  assert.equal(met(deck, 2), deck.things.words.length, 'nine words in two games');
+  const ring = Array.from({ length: 40 }, (_, n) => ({ id: 'wring' + n, face: 'Ring', lang: 'Latin', parts: 'ring', families: ['f' + (n % 7)],
+    reveal: 'a made-up root.', leads: ['wring' + ((n + 1) % 40), 'wring' + ((n + 39) % 40)] }));
+  assert.equal(met({ ...deck, things: { ...deck.things, words: ring } }, 6), 30, 'thirty words in six games');
+});
+
 test('passing everything: lines are curated, and nothing says it came from anything', () => {
   const { st, log } = play(() => false);
   assert.ok(log.filter((x) => x.kind === 'line').every((x) => /^l\d{3}$/.test(x.id)));

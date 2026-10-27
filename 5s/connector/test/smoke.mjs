@@ -10,6 +10,10 @@
 //     src/web.js), bring_in adds two of its pictures with their colours read inside workerd,
 //     item_image hands one back as an image, a link that redirects into a private network is
 //     refused, and the local storage keeps the pictures' addresses, never the pictures.
+//     Let's play fives (with the catalogue built): the round card's ui:// resource and its CSP, a round over
+//     MCP, a space's model and the viewer with CORS, a page only through its signed link (with CORS; unsigned,
+//     changed, the folder's own path and odd spellings of it refused), and its building, signed; a round's five
+//     judged at the same moment all saved.
 //  2. Real sign-in (no DEV_FAKE_USER, port 8802 or SMOKE_PORT + 2): /mcp without a token is 401 with the OAuth
 //     discovery Claude follows, dynamic client registration works, /authorize shows "Connect 5s",
 //     and approving it sends the browser to GitHub's own sign-in page with the right scopes and PKCE.
@@ -294,7 +298,13 @@ async function devBypass() {
     assert.ok(where.length > 0 && where.every((f) => /FiveSPerson/.test(f)), where.join(', '));
     assert.ok(filesHolding(state, 'artist-dev.github.io').some((f) => /FiveSPerson/.test(f)), 'the hub 5s made, in the person\'s object');
   });
-  if (PAGE_DIR) check('no log or local storage holds the pages\' folder name', () => assert.deepEqual(filesHolding(DIR, PAGE_DIR), []));
+  if (PAGE_DIR) check('the Worker never writes the pages\' folder name: not in stored state, not in its own log lines', () => {
+    // Local traces keep the Worker's own fetch from its static files (on Cloudflare, only the account sees them).
+    assert.deepEqual(filesHolding(state, PAGE_DIR).filter((f) => !/[\\/]observability[\\/]/.test(f)), []);
+    // The request lines for the odd paths this smoke sent with the folder in them are the only ones.
+    const lines = readFileSync(join(DIR, 'bypass.log'), 'utf8').split('\n').filter((l) => l.includes(PAGE_DIR));
+    assert.ok(lines.length > 0 && lines.every((l) => /^\[wrangler:info\] GET \S+ \d{3} /.test(l)), lines.length + ' lines');
+  });
   check('local storage keeps the brought pictures\' addresses, never the pictures', () => {
     assert.ok(filesHolding(state, 'https://i.pinimg.com/736x/ab/cd/ef/bowl.jpg').length > 0, 'the scan reads the stored state');
     assert.ok(pictureSample && pictureSample.length > 80);
@@ -311,9 +321,16 @@ let pictureSample = null;
 const PAGE_DIR = (JSON.parse(readFileSync(join(CONNECTOR, 'src', 'deck.generated.json'), 'utf8')).things || {}).pageDir || '';
 const CARD_ORIGIN = { Origin: 'https://0123abcd.claudemcpcontent.com' };   // the card's frame is another origin
 
-/** A GET sent with its path exactly as written (fetch would tidy //, ./ and ../ away). */
-const rawGet = (port, path) => new Promise((res, rej) => {
-  const r = request({ host: '127.0.0.1', port, path, method: 'GET', headers: { Host: 'localhost:' + port } }, (x) => { x.resume(); x.on('end', () => res(x.statusCode)); });
+/** A GET sent with its path exactly as written (fetch would tidy //, ./ and ../ away); a redirect is followed, and both statuses kept. */
+const rawGet = (port, path, hops = 2) => new Promise((res, rej) => {
+  const r = request({ host: '127.0.0.1', port, path, method: 'GET', headers: { Host: 'localhost:' + port } }, (x) => {
+    x.resume();
+    x.on('end', () => {
+      const to = x.headers.location;
+      if (x.statusCode >= 300 && x.statusCode < 400 && to && hops) rawGet(port, new URL(to, 'http://localhost:' + port).pathname + new URL(to, 'http://x').search, hops - 1).then((n) => res(x.statusCode + '>' + n), rej);
+      else res(String(x.statusCode));
+    });
+  });
   r.on('error', rej);
   r.end();
 });
@@ -385,8 +402,9 @@ async function fives(client, base, tools) {
     '/%70p/' + PAGE_DIR + '/' + file, '/PP/' + PAGE_DIR + '/' + file, '//pp/' + PAGE_DIR + '/' + file, '/pp%2f' + PAGE_DIR + '/' + file]) refused[path] = await rawGet(+new URL(base).port, path);
   refused.bent = (await fetch(bent)).status;
   console.log('      ' + Object.entries(refused).map(([p, st]) => p.replace(PAGE_DIR, '<folder>').replace(sig, '?<signed>') + ' ' + st).join(', '));
+  // An odd spelling of the folder's path may be redirected to its plain spelling, which the Worker refuses.
   check('a page is never served unsigned: no signature, a changed one, the folder\'s own path, or an odd spelling of it', () => {
-    for (const [path, status] of Object.entries(refused)) assert.ok([400, 403, 404].includes(status), (path === 'bent' ? path : path.replace(PAGE_DIR, '<folder>')) + ' -> ' + status);
+    for (const [path, status] of Object.entries(refused)) assert.match(String(status), /(^|>)(400|403|404)$/, path.replace(PAGE_DIR, '<folder>') + ' -> ' + status);
   });
 
   // Answer the round, any order: the page first, so its reveal hands out its building.
@@ -420,6 +438,16 @@ async function fives(client, base, tools) {
   });
   const two = await client.callTool({ name: 'play_fives', arguments: {} });
   check('play_fives again deals round 2', () => assert.equal(two.structuredContent.game.round, 2));
+  // Quick taps, or a tap while Claude records a typed answer: judge calls at the same moment, each a read and a write of
+  // the person's object over RPC. A write lands only on the rev it read, so none undoes another.
+  const all = await Promise.all(two.structuredContent.things.map((t) => client.callTool({ name: 'judge', arguments: { card: t.thing, keep: true } })));
+  const after = (await client.callTool({ name: 'get_state', arguments: {} })).structuredContent.state.game;
+  const three = await client.callTool({ name: 'play_fives', arguments: {} });
+  check('round 2\'s five judged at the same moment: every answer saved, then round 3', () => {
+    assert.ok(all.every((r) => !r.isError), all.map((r) => r.content[0].text).join(' | '));
+    assert.equal(after.k.slice(5, 10), '11111');
+    assert.equal(three.structuredContent.game.round, 3);
+  });
 }
 
 // A person's 5s as the app puts it, with a note to find on disk.

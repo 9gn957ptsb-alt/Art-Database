@@ -74,6 +74,21 @@ test('person store: the tools run on it as on any store (a five, a thing brought
   assert.ok(gh.calls.length > 0);
 });
 
+test('person store: a save lands only on the rev it read, so calls at the same moment never undo each other', async () => {
+  const sql = doSql();
+  const s = personStore(sql, { uid: UID }), k = 'state:' + UID;
+  assert.equal(await s.put(k, '{"rev":1}', 0), true, 'the first save, on nothing stored');
+  assert.equal(await s.put(k, '{"rev":1,"other":1}', 0), false, 'a save read before it: refused');
+  assert.equal(await s.get(k), '{"rev":1}');
+  assert.equal(await s.put(k, '{"rev":2}', 1), true);
+  assert.equal(await s.put(k, '{"rev":3}'), true, 'without a base, as before');
+  // Through the tools, on the person's store: a round's five answers sent at once all stand.
+  const { ctx } = gameCtx({ store: guardedStore(personStore(doSql(), { uid: UID })) });
+  const p = await call(ctx, 'play_fives');
+  await Promise.all(p.data.things.map((t) => call(ctx, 'judge', { card: t.thing, keep: false })));
+  assert.equal((await call(ctx, 'get_state')).data.state.game.k, '00000');
+});
+
 test('the person\'s Durable Object is reached by name, one call per read or save', async () => {
   const calls = [];
   const ns = {
