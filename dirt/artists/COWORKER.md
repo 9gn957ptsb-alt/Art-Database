@@ -92,14 +92,31 @@ those list (`quilts/qNN.jpg`, `antiquity/aNN.jpg`, `faces/faces.jpg`), and copy 
 in the saved paintings, the boxes the plane may centre a clod on) into `dirt/private/faces.json`. Check that every listed file arrived. **If any is missing, do not rebuild or republish:**
 the roster is committed, and the next session that has the files picks it up; say so in the final line.
 
+**4b. The week's screenshots come in as the artists do.** Aries, 27 Oct 2026: "I want you to collage all of the
+screenshots that you sent me throughout my code sessions start implementing those screenshots into DRIFT just like you
+implement Artist works from Artsy." The screenshots Claude has sent Aries are kept beside the page in the artifact
+(`screens/`, with `screens/screens.json`) and quilted by session, as an artist's works are (`artists/screens.py`, and
+`quilt.py --screens`, which says how). Each week, after 4a: read `screens/screens.json` and every file it lists into
+`dirt/private/screens/`. Then, for each of Aries's sessions (`list_sessions`, `mine: true`) updated since the newest
+`at` in screens.json, this one aside, page `list_events` back from its newest event (`limit: 100`, `before_id` the
+page's `first_id`) until its events are older than that `at`. Run
+`python3 dirt/artists/screens.py page <session id> <the saved page> dirt/private/screens-work` on each page the
+harness saves to a file (a page that comes back inline is small and holds no image: take its `first_id` and go on).
+Write `dirt/private/screens-work/titles.json`, each session id to its title, then run
+`python3 dirt/artists/screens.py join dirt/private/screens-work dirt/private/screens`. It adds each image sent that
+Claude had looked at first (the others are lost, and it names them). If it added any, run
+`python3 dirt/artists/quilt.py --screens dirt/private/screens --out dirt/private/quilts` before `build_soil_viewer.py`,
+and publish the new and changed files with the page: `quilts/quilts.json`, the screens' quilts, and the new `screens/`
+files with `screens/screens.json`.
+
 Then publish `dirt/private/collection-soil.html` to the existing DIRT artifact,
-https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k (read it first, then publish with that `url`, passing no `files`:
-the images and their JSON already there are kept). If the rebuild or the publish cannot be done in that session, the
+https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k (read it first, then publish with that `url`, passing no `files`
+but 4b's: the images and their JSON already there are kept). If the rebuild or the publish cannot be done in that session, the
 roster is still committed and the next rebuild picks it up.
 
 Then bring DRIFT Poetry into step: it is DRIFT's page with the pages of Picture Poetry laid on it, built from DRIFT
 as just published, so follow `dirt/poetry/UPDATE.md` (https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp). If it
 cannot be done, DRIFT Poetry stays a version behind until the next session that can; say so.
 
-Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), their plants and characters, and whether
-DRIFT and DRIFT Poetry were republished.
+Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), their plants and characters, how many
+screenshots came in (and how many were lost), and whether DRIFT and DRIFT Poetry were republished.

@@ -761,6 +761,21 @@ and are never committed:
 
 `#formal` puts the formal end everywhere, for looking at it.
 
+**The screenshots, quilted as works are** (27 October 2026: "I want you to collage all of the screenshots that you
+sent me throughout my code sessions start implementing those screenshots into DRIFT just like you implement Artist
+works from Artsy"). Claude sends Aries screenshots as it works: a building's roof before and after, a grip in a hand,
+a theatre's dioramas, the site going down into a city. A file sent is not kept: the session's record holds only its
+name and caption, and the container it was in is gone. But Claude looks at an image before sending it, and that look
+keeps the image in the transcript, scaled to at most 2000 pixels; `artists/screens.py` finds it, by the same path or
+the same size, before the send, in the same session. An image sent without a look is lost. With the renders shown in
+artifacts and the screenshots once committed, they are kept beside the page (`screens/`, private, never committed).
+Each session's screenshots are quilted together as an artist's works are (`quilt.py --screens`): one session is one
+body of work, at most 13 to a quilt, and the sessions with fewer than three are pooled. The quilts join the artists'
+with no artist of their own, so DRIFT lends them as it lends any quilt: hung on a gallery wall, a painting in the
+light it replaces, a piece torn into the collage. The first, on 27 October, quilted 49 screenshots from seven bodies
+of work into six quilts, so about one hang, light or torn piece in seven is a screenshot. More are still being read
+back from the older transcripts, and each week the coworker brings in the week's (`artists/COWORKER.md`, 4b).
+
 **Depth without distance.** DRIFT has no zoom and wants none: nothing on it is understood by coming nearer or going
 farther (the Artist Website's globe is where distance means something). So every scale is on the screen at once.
 Here and there a window opens, one in each 233-cell square where the plane is deep enough, 34 to 144 cells across,

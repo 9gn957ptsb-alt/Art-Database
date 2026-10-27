@@ -11,9 +11,10 @@ A kin quilt does the same across two artists, the first on the left and the seco
 one painter becomes another through the regions of their works that continue each other.
 
 Images come from the private cache (dirt/studies/brief.py fills it) and quilts are written to dirt/private/quilts/;
-neither is ever committed.
+neither is ever committed. The screenshots Claude sent Aries (screens.py) are quilted the same way, added after them:
 
     python3 dirt/artists/quilt.py --db artworks.db --cache dirt/private/briefs --out dirt/private/quilts
+    python3 dirt/artists/quilt.py --screens dirt/private/screens --out dirt/private/quilts
 """
 
 import argparse
@@ -33,20 +34,20 @@ LONG = 377                         # works are read at this size (their long sid
 def works(db, cache, artist, per):
     rows = db.execute("select medium, save_rank from artworks where artist_name = ? order by save_rank", (artist,)).fetchall()
     rows = [r for r in rows if not any(p in (r[0] or "").lower() for p in PHOTO)][:per]
-    out = []
-    for med, rank in rows:
-        f = cache / f"{rank:05d}.jpg"
-        if not f.exists() or f.stat().st_size < 1000:
-            continue
-        im = Image.open(f).convert("RGB")
-        s = LONG / max(im.size)
-        im = im.resize((max(B + 1, round(im.width * s)), max(B + 1, round(im.height * s))), Image.LANCZOS)
-        a = np.asarray(im).astype(np.float32)
-        cy, cx = a.shape[0] // 21 + 3, a.shape[1] // 21 + 3
-        a = a[cy:-cy, cx:-cx]                                        # a margin off every edge: frames, mats, the wall
-        if a.shape[0] > B + 2 and a.shape[1] > B + 2:
-            out.append(a)
-    return out
+    return [a for a in (read(cache / f"{rank:05d}.jpg") for med, rank in rows) if a is not None]
+
+
+def read(f):
+    """A work as the quilt reads it: its long side LONG pixels, a margin off every edge (frames, mats, the wall)."""
+    if not f.exists() or f.stat().st_size < 1000:
+        return None
+    im = Image.open(f).convert("RGB")
+    s = LONG / max(im.size)
+    im = im.resize((max(B + 1, round(im.width * s)), max(B + 1, round(im.height * s))), Image.LANCZOS)
+    a = np.asarray(im).astype(np.float32)
+    cy, cx = a.shape[0] // 21 + 3, a.shape[1] // 21 + 3
+    a = a[cy:-cy, cx:-cx]
+    return a if a.shape[0] > B + 2 and a.shape[1] > B + 2 else None
 
 
 def min_cut(err):
@@ -142,16 +143,49 @@ def quilt(pools, n, rng, mix=None):
     return np.clip(canvas, 0, 255).astype(np.uint8)
 
 
+def screens(src, out, n, per, rng):
+    """The screenshots Claude sent Aries (screens.py), quilted as an artist's works are. Aries, 27 Oct 2026: "collage all
+    of the screenshots that you sent me throughout my code sessions start implementing those screenshots into DRIFT just
+    like you implement Artist works from Artsy." Each session's screenshots (by its title: a project, as a body of work
+    is an artist's) make quilts of at most `per`, in the order they were sent; the sessions with fewer than three are
+    pooled into one. They join the artists' quilts in out/quilts.json, after them, with no artist (so DRIFT lends them
+    as it lends any quilt: to its hangs, its light and its collage), and replace the screenshots' quilts made before."""
+    shots = json.loads((src / "screens.json").read_text())
+    by = {}
+    for h in shots:
+        by.setdefault(h.get("title") or "", []).append(h)
+    small = sorted((h for g in by.values() if len(g) < 3 for h in g), key=lambda h: h["at"])
+    sets = [(t, g) for t, g in by.items() if len(g) >= 3] + ([("several sessions", small)] if len(small) >= 3 else [])
+    made = [q for q in json.loads((out / "quilts.json").read_text()) if "screens" not in q]
+    for title, g in sets:
+        k = -(-len(g) // per)                                        # as many quilts as it takes, as even as they go
+        for part in (g[i * len(g) // k:(i + 1) * len(g) // k] for i in range(k)):
+            pool = [a for a in (read(src / h["file"]) for h in part) if a is not None]
+            if len(pool) < 3:
+                continue
+            f = f"q{len(made):02d}.jpg"
+            Image.fromarray(quilt([pool], n, rng)).save(out / f, quality=88)
+            made.append({"file": f, "artists": [], "screens": title, "from": [h["file"] for h in part]})
+            print("screens quilt", f, title, len(pool), flush=True)
+    (out / "quilts.json").write_text(json.dumps(made, indent=1, ensure_ascii=False))
+    print(sum("screens" in q for q in made), "screens quilts of", len(made), "in", out)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--db", required=True)
-    ap.add_argument("--cache", required=True)
+    ap.add_argument("--screens", help="the screenshots (screens.py's folder): quilt only them, into --out's quilts.json")
+    ap.add_argument("--db", required=False)
+    ap.add_argument("--cache", required=False)
     ap.add_argument("--out", required=True)
     ap.add_argument("--briefs", default=str(HERE.parent / "studies" / "briefs.json"))
     ap.add_argument("--n", type=int, default=8, help="patches a side (8: 440 pixels)")
     ap.add_argument("--per", type=int, default=13)
     ap.add_argument("--artists", type=int, default=16)
     args = ap.parse_args()
+    if args.screens:
+        return screens(Path(args.screens), Path(args.out), args.n, args.per, np.random.default_rng(13))
+    if not args.db or not args.cache:
+        ap.error("--db and --cache, or --screens")
     db, cache, out = sqlite3.connect(args.db), Path(args.cache), Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     briefs = json.loads(Path(args.briefs).read_text())["artists"]
