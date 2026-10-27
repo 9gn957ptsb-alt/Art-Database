@@ -22,7 +22,7 @@ const PICTURES = ['https://d32dm0rphc51dk.cloudfront.net', 'https://s3.amazonaws
 export function cardMeta(origin) {
   return {
     ui: {
-      csp: { resourceDomains: [origin, THREE, ...PICTURES], connectDomains: [origin] },
+      csp: { resourceDomains: [origin, THREE, ...PICTURES].filter(Boolean), connectDomains: origin ? [origin] : [] },
       permissions: { clipboardWrite: {} },
       prefersBorder: true,
     },

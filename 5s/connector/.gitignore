@@ -5,4 +5,6 @@ node_modules/
 !.dev.vars.example
 src/deck.generated.json
 # The Worker's static files, built by npm run things from git-ignored data/5s/fives/ (models, pages): never committed
-public/
+# (all but .assetsignore, which keeps the folder in git: wrangler dev and deploy need it, even before npm run things)
+public/*
+!public/.assetsignore

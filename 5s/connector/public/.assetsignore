@@ -1,0 +1,2 @@
+# Kept in git so public/ always exists (wrangler needs the folder). Everything else here is built by
+# npm run things, git-ignored, and never committed. This file itself is never served.

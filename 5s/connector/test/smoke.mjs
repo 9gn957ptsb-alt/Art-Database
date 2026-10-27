@@ -109,9 +109,9 @@ async function devBypass() {
     const transport = new StreamableHTTPClientTransport(new URL(w.base + '/mcp'));
     await client.connect(transport);
     const { tools } = await client.listTools();
-    check('tools/list gives the ten tools, and Connect your apps\' three', () => assert.deepEqual(tools.map((t) => t.name),
+    check('tools/list gives the ten tools, Connect your apps\' three, and play_fives', () => assert.deepEqual(tools.map((t) => t.name),
       ['get_taste', 'aesthetic_brief', 'next_five', 'judge', 'get_seed', 'hub_status', 'make_hub', 'save_hub', 'get_state', 'put_state',
-        'read_link', 'bring_in', 'item_image']));
+        'read_link', 'bring_in', 'item_image', 'play_fives']));
 
     const five = await client.callTool({ name: 'next_five', arguments: {} });
     const cards = five.structuredContent.cards;
@@ -264,6 +264,7 @@ async function devBypass() {
       assert.ok(inside.structuredContent.resolution);
     });
     pictureSample = Buffer.from(pic.structuredContent.image.split(',')[1], 'base64').subarray(600, 680).toString('base64');
+    await fives(client, w.base, tools);
     await other.close();
     await client.close();
 
@@ -293,6 +294,7 @@ async function devBypass() {
     assert.ok(where.length > 0 && where.every((f) => /FiveSPerson/.test(f)), where.join(', '));
     assert.ok(filesHolding(state, 'artist-dev.github.io').some((f) => /FiveSPerson/.test(f)), 'the hub 5s made, in the person\'s object');
   });
+  if (PAGE_DIR) check('no log or local storage holds the pages\' folder name', () => assert.deepEqual(filesHolding(DIR, PAGE_DIR), []));
   check('local storage keeps the brought pictures\' addresses, never the pictures', () => {
     assert.ok(filesHolding(state, 'https://i.pinimg.com/736x/ab/cd/ef/bowl.jpg').length > 0, 'the scan reads the stored state');
     assert.ok(pictureSample && pictureSample.length > 80);
@@ -302,6 +304,123 @@ async function devBypass() {
 }
 
 let pictureSample = null;
+
+// "Let's play fives": the round card's resource (index.ts, card.js), a round over MCP, the Worker's static files
+// with CORS, and the Picture Poetry pages only through a signed link. Without the catalogue (npm run things, then
+// npm run deck) play_fives says it isn't set up and /pp/ serves nothing.
+const PAGE_DIR = (JSON.parse(readFileSync(join(CONNECTOR, 'src', 'deck.generated.json'), 'utf8')).things || {}).pageDir || '';
+const CARD_ORIGIN = { Origin: 'https://0123abcd.claudemcpcontent.com' };   // the card's frame is another origin
+
+/** A GET sent with its path exactly as written (fetch would tidy //, ./ and ../ away). */
+const rawGet = (port, path) => new Promise((res, rej) => {
+  const r = request({ host: '127.0.0.1', port, path, method: 'GET', headers: { Host: 'localhost:' + port } }, (x) => { x.resume(); x.on('end', () => res(x.statusCode)); });
+  r.on('error', rej);
+  r.end();
+});
+
+async function fives(client, base, tools) {
+  const play = await client.callTool({ name: 'play_fives', arguments: {} });
+  if (!PAGE_DIR) {
+    check('play_fives without the catalogue: not set up, in plain words', () => assert.equal(play.structuredContent.error, 'not set up'));
+    const none = (await fetch(base + '/pp/p1.jpg')).status;
+    check('/pp/ serves nothing without the catalogue', () => assert.notEqual(none, 200));
+    return;
+  }
+  const meta = tools.find((t) => t.name === 'play_fives')._meta || {};
+  check('play_fives carries the round card (_meta.ui.resourceUri)', () => assert.equal(meta.ui.resourceUri, 'ui://fives/round.html'));
+  const { resources } = await client.listResources();
+  const read = await client.readResource({ uri: 'ui://fives/round.html' });
+  const res = read.contents[0];
+  check('the card is a ui:// resource, the MCP Apps type, with its CSP for this Worker and the clipboard', () => {
+    assert.ok(resources.some((r) => r.uri === 'ui://fives/round.html'));
+    assert.equal(res.mimeType, 'text/html;profile=mcp-app');
+    assert.equal(res.text, readFileSync(join(CONNECTOR, 'web', 'round.html'), 'utf8'));
+    assert.deepEqual(res._meta.ui.csp.connectDomains, [base]);
+    assert.equal(res._meta.ui.csp.resourceDomains[0], base);
+    assert.deepEqual(res._meta.ui.permissions, { clipboardWrite: {} });
+  });
+
+  const d = play.structuredContent, [pic, line, space, page, word] = d.things;
+  console.log('      ' + play.content[0].text.split('\n').slice(0, 6).join('\n      '));
+  check('play_fives: a round of five together, in order, linked to this Worker; no folder name anywhere', () => {
+    assert.equal(play.isError, undefined, play.content[0].text);
+    assert.deepEqual(d.things.map((t) => t.kind), ['picture', 'line', 'space', 'page', 'word']);
+    assert.equal(space.model, base + '/s/m/' + space.thing + '.json');
+    assert.equal(space.open, base + '/s/space?m=' + space.thing);
+    assert.match(page.image, new RegExp('^' + base + '/pp/p[1-6]\\.jpg\\?e=\\d{10}&s=[\\w-]{22}$'));
+    assert.ok(!JSON.stringify(play).includes(PAGE_DIR));
+    assert.ok(line.code && word.word && (pic.image || pic.colours));
+  });
+
+  const model = await fetch(space.model, { headers: CARD_ORIGIN });
+  const viewer = await fetch(space.open, { redirect: 'manual' });
+  const drawing = await fetch(base + '/s/space.js', { headers: CARD_ORIGIN });
+  const spec = await model.json(), viewerPage = await viewer.text();
+  check('a space\'s model is served by deck id with CORS, holding only what the drawing reads', () => {
+    assert.equal(model.status, 200);
+    assert.equal(model.headers.get('access-control-allow-origin'), '*');
+    assert.deepEqual(Object.keys(spec).sort(), ['ground', 'parts', 'site', 'voxel']);
+    assert.equal(drawing.status, 200);
+    assert.equal(drawing.headers.get('access-control-allow-origin'), '*');
+  });
+  check('the viewer page answers at /s/space?m= itself (no redirect)', () => {
+    assert.equal(viewer.status, 200);
+    assert.match(viewerPage, /<title>A space<\/title>/);
+  });
+
+  const img = await fetch(page.image, { headers: CARD_ORIGIN });
+  const bytes = Buffer.from(await img.arrayBuffer());
+  check('a page through its signed link: the picture, with CORS, kept only by the person\'s browser', () => {
+    assert.equal(img.status, 200);
+    assert.equal(img.headers.get('content-type'), 'image/jpeg');
+    assert.equal(img.headers.get('access-control-allow-origin'), '*');
+    assert.equal(img.headers.get('cache-control'), 'private, max-age=3600');
+    assert.equal(bytes[0], 0xff); assert.equal(bytes[1], 0xd8);
+  });
+  const u = new URL(page.image), file = u.pathname.slice('/pp/'.length), sig = u.search;
+  const bent = page.image.replace(/s=(.)/, (m, c) => 's=' + (c === 'A' ? 'B' : 'A'));
+  const refused = {};
+  for (const path of ['/pp/' + file, '/pp/' + PAGE_DIR + '/' + file, '/pp/' + PAGE_DIR + '/' + file + sig, '/pp/' + file.replace('p', 'P') + sig,
+    '/%70p/' + file + sig, '//pp/' + file + sig, '/PP/' + file + sig, '/pp/./' + PAGE_DIR + '/' + file, '/s/../pp/' + PAGE_DIR + '/' + file, '/pp/%2e/' + PAGE_DIR + '/' + file,
+    '/%70p/' + PAGE_DIR + '/' + file, '/PP/' + PAGE_DIR + '/' + file, '//pp/' + PAGE_DIR + '/' + file, '/pp%2f' + PAGE_DIR + '/' + file]) refused[path] = await rawGet(+new URL(base).port, path);
+  refused.bent = (await fetch(bent)).status;
+  console.log('      ' + Object.entries(refused).map(([p, st]) => p.replace(PAGE_DIR, '<folder>').replace(sig, '?<signed>') + ' ' + st).join(', '));
+  check('a page is never served unsigned: no signature, a changed one, the folder\'s own path, or an odd spelling of it', () => {
+    for (const [path, status] of Object.entries(refused)) assert.ok([400, 403, 404].includes(status), (path === 'bent' ? path : path.replace(PAGE_DIR, '<folder>')) + ' -> ' + status);
+  });
+
+  // Answer the round, any order: the page first, so its reveal hands out its building.
+  const order = [page, word, pic, line, space];
+  let last = null, pageReveal = null;
+  for (const t of order) {
+    last = await client.callTool({ name: 'judge', arguments: { card: t.thing, keep: t !== space } });
+    if (t === page) pageReveal = last.structuredContent.reveal;
+  }
+  const building = pageReveal && pageReveal.buildings && pageReveal.buildings[0];
+  const bm = building && await fetch(building.model, { headers: CARD_ORIGIN });
+  const pre = building && await fetch(building.model, { method: 'OPTIONS', headers: Object.assign({ 'Access-Control-Request-Method': 'GET' }, CARD_ORIGIN) });
+  check('the page\'s reveal names its building and links its model, signed, with CORS (a space inside a page)', () => {
+    assert.ok(building && building.name);
+    assert.match(building.model, new RegExp('^' + base + '/pp/m/p[1-6][a-z]\\.json\\?e=\\d{10}&s=[\\w-]{22}$'));
+    assert.match(building.open, new RegExp('^' + base + '/s/space\\?pp=p[1-6][a-z]&e=\\d{10}&s=[\\w-]{22}$'));
+    assert.equal(bm.status, 200);
+    assert.equal(bm.headers.get('access-control-allow-origin'), '*');
+    assert.equal(pre.status, 204);
+    assert.equal(pre.headers.get('access-control-allow-origin'), '*');
+  });
+  check('judge ×5 on the round\'s things: recorded, and the round sorted on the fifth', () => {
+    assert.equal(last.isError, undefined, last.content[0].text);
+    assert.equal(last.structuredContent.round_sorted.round, 1);
+    assert.equal(last.structuredContent.round_sorted.kept.length, 4);
+  });
+  const again = await client.callTool({ name: 'judge', arguments: { card: line.thing, keep: false } });
+  check('a thing already answered records nothing (the card and a typed answer can\'t both count)', () => {
+    assert.equal(again.structuredContent.repeat, true);
+    assert.equal(again.structuredContent.kept, true);
+  });
+  const two = await client.callTool({ name: 'play_fives', arguments: {} });
+  check('play_fives again deals round 2', () => assert.equal(two.structuredContent.game.round, 2));
+}
 
 // A person's 5s as the app puts it, with a note to find on disk.
 const MARK = 'kept-in-the-persons-own-object';

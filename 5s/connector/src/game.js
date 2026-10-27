@@ -164,15 +164,17 @@ function dealAt(st, deck, g, i, now) {
 export function open(state, deck, now) {
   const st = FiveS.migrate(state);
   let g = gameOf(st);
+  // at is the card's seq: a later round, even of a new game in the same second, always has a larger one.
+  const at = Math.max(Math.floor(now / 1000), ((g && Number(g.at)) || 0) + 1);
   const started = !g || isDone(g);
-  if (started) g = { day: FiveS.dayOf(now), at: Math.floor(now / 1000), ids: [], k: '', from: [] };
+  if (started) g = { day: FiveS.dayOf(now), at, ids: [], k: '', from: [] };
   const start = Math.floor(g.ids.length / 5) * 5;
   const dealt = g.ids.length === start && (start === 0 || roundDone(g, roundOf(start - 1)));
   let changed = started || dealt;
   if (dealt || g.ids.length > start) {
     // a new round, or the rest of one cut short
     for (let i = g.ids.length; i < start + 5; i++) g = dealAt(st, deck, g, i, now);
-    g = Object.assign({}, g, { at: Math.floor(now / 1000) });
+    g = Object.assign({}, g, { at });
     changed = true;
   } else {
     for (let i = start - 5; i < start; i++) if (g.k[i] === '-' && !thing(st, deck, g.ids[i])) { g = dealAt(st, deck, g, i, now); changed = true; }

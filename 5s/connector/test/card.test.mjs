@@ -126,6 +126,8 @@ test('the card and the viewer: text only, the same pinned three.js, nothing writ
   const pins = (s) => (s.match(/three@0\.147\.0\/[\w/.]+\.js["\s,]*(?:integrity=)?"sha384-[\w+/=]{64}"/g) || []).map((x) => x.replace(/integrity=|["\s,]/g, ''));
   assert.equal(pins(card).length, 2);
   assert.deepEqual(pins(card), pins(viewer), 'the card and the viewer load the same files with the same hashes');
+  // A top-level const, let, class or function of these names would hide the scripts' own globals from space.js.
+  assert.doesNotMatch(card, /^(const|let|class|function)\s+(THREE|Models|FivesSpace)\b/m, 'the card leaves THREE, Models and FivesSpace to their scripts');
   // The only buttons on the inline card: Pass (or Let go) and Keep under each thing, and the way to the next round.
   const buttons = card.match(/el\("button", "[^"]*", [^)]*\)/g) || [];
   assert.deepEqual(buttons.map((b) => b.split('"')[3]), ['pass', 'keep']);

@@ -34,6 +34,7 @@ html, body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/
 body { padding: 12px; }
 [hidden] { display: none !important; }
 button { font: inherit; color: inherit; }
+button, [role=button] { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
 .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; margin: 0 2px 10px; }
@@ -59,9 +60,12 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--fg); o
 .crop { background-repeat: no-repeat; }
 .bands { position: absolute; inset: 0; display: flex; flex-direction: column; }
 .bands i { display: block; }
-.code { display: flex; flex-direction: column; justify-content: space-between; align-items: stretch; gap: 8px; padding: 12px; }
-.code pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 12px/1.45 var(--mono); user-select: all; -webkit-user-select: all; }
-.code .where { color: var(--muted); font-size: 12px; }
+/* The line never sizes its tile: it sits inside it, as large as fits (12 px down to 9), else it fades out. */
+.code .in { position: absolute; inset: 12px; display: flex; flex-direction: column; gap: 6px; }
+.code .fit { flex: 1; min-height: 0; overflow: hidden; }
+.code pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 12px/1.4 var(--mono); }
+.code.clipped .fit { -webkit-mask-image: linear-gradient(#000 65%, transparent); mask-image: linear-gradient(#000 65%, transparent); }
+.code .where { flex: none; color: var(--muted); font-size: 12px; line-height: 1.3; }
 .word { padding: 12px 16px; font: 400 36px/1.1 var(--serif); text-align: center; overflow-wrap: anywhere; letter-spacing: .01em; }
 .space canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
 .hint { position: absolute; left: 6px; bottom: 6px; max-width: calc(100% - 12px); margin: 0; padding: 3px 9px; border-radius: 999px;
@@ -81,6 +85,8 @@ body.old .acts button, body.old .next { opacity: .4; pointer-events: none; }
 .stage { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
 .paper { position: absolute; left: 50%; top: 50%; }
 .paper img { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+.whole { position: absolute; left: calc(var(--sa-l) + 16px); right: calc(var(--sa-r) + 16px); top: calc(var(--sa-t) + 66px); bottom: calc(var(--sa-b) + 16px);
+  margin: 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 15px/1.5 var(--mono); touch-action: pan-y; }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 .back, .alt { position: absolute; top: calc(var(--sa-t) + 10px); min-height: 44px; padding: 0 16px; border: 1px solid var(--line);
   border-radius: 999px; background: var(--pill); font-weight: 500; cursor: pointer; }
@@ -161,7 +167,7 @@ const KIND = {
   picture: { label: "A picture", noun: "picture" }, line: { label: "A line of code", noun: "line of code" },
   space: { label: "A space", noun: "space" }, page: { label: "A page", noun: "page" }, word: { label: "A word", noun: "word" }
 };
-const THREE = [
+const THREE_JS = [   // not "THREE": a global const of that name would hide three.js's own from space.js
   ["https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js", "sha384-vV17nr/rMaJqmeZkFUzXLpHdQ+ME5QHKdydaqqN+3Ga39RJlNrTatJxHwGV4ml2C"],
   ["https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js", "sha384-I0DMsfimAPIqWT8lF+oA997gRgdUi3jhidoTq3fN0zmn35smXZukD01FLnsPRU9i"]
 ];
@@ -320,22 +326,41 @@ function cropTo(box, img, c) {
 }
 
 function drawLine(t) {
-  const box = el("button", "media code");
+  const box = el("button", "media code"), inner = el("div", "in"), fits = el("div", "fit");
   box.type = "button";
   const code = str(t.code, 2000);
   const pre = el("pre"); pre.append(el("code", null, code));
-  const where = el("span", "where", (t.where ? "For " + str(t.where, 120) : "A line") + " · tap to copy");
-  box.append(pre, where);
+  const where = el("span", "where", (t.where ? "For " + str(t.where, 120) : "A line") + " · " + (touchy() ? "tap" : "click") + " to copy");
+  fits.append(pre);
+  inner.append(fits, where);
+  box.append(inner);
   box.setAttribute("aria-label", "A line of code. Tap to copy it.");
-  box.onclick = () => copyLine(code, pre, where);
+  // A tap copies it; a line too long for its tile is shown whole as well.
+  box.onclick = () => { copyLine(code, pre, where); if (box.classList.contains("clipped")) openFull(t); };
   return box;
+}
+function fitCode() {
+  for (const box of document.querySelectorAll(".code")) {
+    const pre = box.querySelector("pre"), room = box.querySelector(".fit").clientHeight + 1;
+    let px = 12;
+    pre.style.fontSize = px + "px";
+    while (px > 9 && pre.offsetHeight > room) pre.style.fontSize = --px + "px";
+    box.classList.toggle("clipped", pre.offsetHeight > room);
+  }
 }
 /* The Clipboard API when the host grants clipboard-write, else the selection, else say how. */
 function copyLine(text, pre, where) {
   const was = where.dataset.was || (where.dataset.was = where.textContent);
   const told = (s) => { where.textContent = s; clearTimeout(where._t); where._t = setTimeout(() => (where.textContent = was), 1800); };
   const select = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
-  const legacy = () => { select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { /* not allowed */ } told(ok ? "Copied" : "Selected: copy it"); window.copied = ok ? "execCommand" : "selected"; };
+  const legacy = () => {
+    select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { /* not allowed */ }
+    if (ok) getSelection().removeAllRanges();   // left selected only when the person must copy it themselves
+    told(ok ? "Copied" : "Selected: copy it");
+    window.copied = ok ? "execCommand" : "selected";
+  };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { told("Copied"); window.copied = "clipboard"; }, legacy);
   else legacy();
 }
@@ -349,14 +374,35 @@ function drawPage(t) {
   const img = el("img");
   img.alt = "";
   img.referrerPolicy = "no-referrer";
-  const hint = el("p", "hint", "Tap to read");
-  img.onerror = () => { img.remove(); hint.textContent = "This page's link has run out. Say “play fives” for a fresh one."; };
+  // Six pages, so from the second game they come round again: say so.
+  const hint = el("p", "hint", t.seen_before ? "Seen in an earlier game · " + (touchy() ? "tap" : "click") + " to read" : (touchy() ? "Tap" : "Click") + " to read");
+  let tried = false;
+  img.onerror = async () => {
+    const fresh = !tried && await freshPage(t);
+    tried = true;
+    if (fresh) { t.image = fresh; img.src = fresh; return; }
+    img.remove(); hint.textContent = "This page's link has run out. Say “play fives” for a fresh one.";
+  };
   img.src = src;
   box.append(img, hint);
   box.setAttribute("aria-label", "A page: a poem, a picture and their layout. Tap to read it.");
   box.onclick = () => openFull(t);
   return box;
 }
+
+/* A page link lasts a day. A card opened again later asks play_fives for its round once, only while the round
+   still has a thing to answer (then play_fives gives the same round back and deals nothing), and takes the same
+   page's new link. */
+async function freshPage(t) {
+  if (!host.caps.serverTools || old || things.every((x) => x.answer != null)) return null;
+  try {
+    const sc = (await request("tools/call", { name: "play_fives", arguments: {} }) || {}).structuredContent;
+    const same = sc && sc.game && +sc.game.seq === seq && Array.isArray(sc.things) && sc.things.find((x) => x && x.thing === t.thing);
+    const u = same && url(same.image);
+    return u && u !== t.image ? u : null;
+  } catch (e) { return null; }
+}
+const touchy = () => host.ctx.deviceCapabilities ? !!host.ctx.deviceCapabilities.touch : matchMedia("(pointer: coarse)").matches;
 
 /* ---- A space: the building in blocks, still until a sideways drag turns it (a vertical drag is the chat's).
    A tap goes in, full screen. three.js comes from jsdelivr with integrity hashes; models.js, space.js and the
@@ -374,7 +420,7 @@ async function building(model) {
   const assets = new URL(model).origin + "/s/";
   const [spec] = await Promise.all([
     fetch(model).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }),
-    THREE.concat([[assets + "models.js"], [assets + "space.js"]]).reduce((p, [s, i]) => p.then(() => script(s, i)), Promise.resolve())
+    THREE_JS.concat([[assets + "models.js"], [assets + "space.js"]]).reduce((p, [s, i]) => p.then(() => script(s, i)), Promise.resolve())
   ]);
   return spec;
 }
@@ -392,7 +438,7 @@ function drawSpace(t) {
   building(model).then((spec) => {
     if (old) return;
     const canvas = el("canvas");
-    box.replaceChildren(canvas, el("p", "hint", "Drag to turn · tap to go in"));
+    box.replaceChildren(canvas, el("p", "hint", "Drag to turn · " + (touchy() ? "tap" : "click") + " to go in"));
     t.$.canvas = canvas;
     t.space = FivesSpace.mount(canvas, spec, { flat: true, bg: getComputedStyle(box).backgroundColor, onTap: () => goIn(t) });
     window.spaces = (window.spaces || 0) + 1;
@@ -487,6 +533,8 @@ async function openFull(t) {
     t.space.flat(false);
     t.space.size();
     t.space.walked = t.space.walk();
+  } else if (t.kind === "line") {
+    $("stage").replaceChildren(el("pre", "whole", str(t.code, 2000)));
   } else {
     zoom = zoomer($("stage"), url(t.image), t.kind === "page");
   }
@@ -504,7 +552,7 @@ async function closeFull(fromHost) {
     t.space.spin();
     requestAnimationFrame(() => t.space && t.space.size());
   }
-  zoom = null;
+  unzoom();
   $("stage").replaceChildren();
   $("cap").replaceChildren();
   $("full").hidden = true;
@@ -525,7 +573,7 @@ $("back").onclick = () => closeFull(false);
 function caption(t) {
   const cap = $("cap");
   cap.replaceChildren();
-  const touch = host.ctx.deviceCapabilities ? !!host.ctx.deviceCapabilities.touch : matchMedia("(pointer: coarse)").matches;
+  const touch = touchy();
   const add = (s, cls) => { if (s) cap.append(el("p", cls, s)); };
   if (t.answer != null) {
     const head = el("p");
@@ -536,12 +584,12 @@ function caption(t) {
     d.slice(1).forEach((s) => add(s));
   }
   if (t.kind === "space" && !extra) {
-    add(!t.space.walked ? "Drag to turn it · pinch to come closer."
-      : t.room ? "Inside, where the model is cut away. Drag to look round · tap a floor to step there."
-      : "Most of these buildings are solid models, so this stands you under cover beside it. Drag to look round · tap a floor to step there.", "muted");
+    add(!t.space.walked ? "Drag to turn it · " + (touch ? "pinch" : "scroll") + " to come closer."
+      : t.room ? "Inside, where the model is cut away. Drag to look round · " + (touch ? "tap" : "click") + " a floor to step there."
+      : "Most of these buildings are solid models, so this stands you under cover beside it. Drag to look round · " + (touch ? "tap" : "click") + " a floor to step there.", "muted");
   } else if (extra) {
-    add("Its building. Drag to turn it · tap to go in.", "muted");
-  } else if (t.answer == null) {
+    add("Its building. Drag to turn it · " + (touch ? "tap" : "click") + " to go in.", "muted");
+  } else if (t.answer == null && t.kind !== "line") {
     add(touch ? "Pinch to come closer · drag to move · double tap to zoom." : "Scroll to come closer · drag to move · double click to zoom.", "muted");
   }
   // The page's own building, a space inside a page: after the answer, so its name stays in the reveal.
@@ -554,7 +602,7 @@ function caption(t) {
 function showBuilding(t, model) {
   const stage = $("stage"), canvas = el("canvas");
   stage.replaceChildren(el("p", "note", "Building the space"));
-  zoom = null;
+  unzoom();
   building(model).then((spec) => {
     if (shown !== t) return;
     stage.replaceChildren(canvas);
@@ -569,6 +617,11 @@ function showPage(t) {
   caption(t);
 }
 
+function unzoom() {
+  const st = $("stage");
+  zoom = null;
+  st.onpointerdown = st.onpointermove = st.onpointerup = st.onpointercancel = st.onwheel = null;
+}
 /* Two fingers zoom and one moves (or the wheel and a drag, with a mouse); a double tap zooms in or back.
    The image sits on a "paper" the size of the stage, turned a quarter when a wide page meets an upright screen. */
 function zoomer(stage, src, turnable) {
@@ -695,16 +748,21 @@ function fit() {
     width: document.documentElement.scrollWidth, height: Math.ceil(document.documentElement.getBoundingClientRect().height)
   }));
 }
+const MH = () => (matchMedia("(min-width: 560px)").matches ? 200 : 168);   // the stylesheet's --mh
+// Two rows of tiles take --mh, so each takes half of what is over the cap (and gives back half of what is under).
 function shrink() {
-  const d = host.ctx.containerDimensions, cap = d && +d.maxHeight;
-  const root = document.documentElement;
-  root.style.removeProperty("--mh");
-  if (!cap || shown || !things.length) return fit();
-  const over = Math.ceil(root.getBoundingClientRect().height) - cap;
-  if (over > 0) root.style.setProperty("--mh", Math.max(96, parseFloat(getComputedStyle(root).getPropertyValue("--mh")) - over / 2) + "px");
+  const d = host.ctx.containerDimensions, cap = d && +d.maxHeight, root = document.documentElement;
+  if (!cap) root.style.removeProperty("--mh");
+  else if (!shown && things.length) {
+    const now = parseFloat(getComputedStyle(root).getPropertyValue("--mh")) || MH();
+    const want = Math.round(Math.min(MH(), Math.max(96, now - (Math.ceil(root.getBoundingClientRect().height) - cap) / 2)));
+    if (want !== Math.round(now)) root.style.setProperty("--mh", want + "px");
+  }
+  fitCode();
   fit();
 }
-new ResizeObserver(fit).observe(document.body);
+let shrinking = 0;
+new ResizeObserver(() => { cancelAnimationFrame(shrinking); shrinking = requestAnimationFrame(shrink); }).observe(document.body);
 
 /* ---- Connect: ui/initialize, then ui/notifications/initialized; the host then sends the tool's result. */
 request("ui/initialize", {

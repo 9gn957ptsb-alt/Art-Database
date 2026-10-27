@@ -75,12 +75,12 @@ colours.").
 
 - **One answer a thing.** A second `judge` on a thing of the game records nothing and gives its first
   answer again, so the card's tap and a typed "keep" never count twice. A line, page or word that isn't
-  on show is refused.
+  on show is refused. A picture or space waiting in today's five too counts once for both.
 - **What is saved** (`src/game.js`, connector only; the app keeps both fields as they are): pictures
   and spaces are deck cards, judged into `j` as Sort judges them; lines, pages and words go in
   `things` (`{id: 1 or 0}`, the latest answer each, at most 1,000, the oldest dropped first); the game
   is `game` (`{day, at, ids, k, from}`: 25 things at most, one answer and one source each).
-  `put_state` checks both (`src/validate.js`).
+  `put_state` checks both (`src/validate.js`), and keeps both when a state comes without them.
 - **The streak** counts a sorted round, as it counts a sorted five. A game left unfinished waits; once
   finished, the next `play_fives` starts a new one.
 - **What it can and can't do yet.** There are six pages, so from the second game they repeat. Most

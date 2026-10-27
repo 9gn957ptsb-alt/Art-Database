@@ -70,6 +70,7 @@ test('play_fives: a round of five together, in the artist\'s order, no names; as
   // the words fallback: each thing as Claude can pass it on
   assert.ok(p.summary.includes(pic.image) && p.summary.includes(line.code) && p.summary.includes(space.open) && p.summary.includes(page.open) && p.summary.includes(word.word));
   assert.match(p.data.how_to, /own code block/);
+  assert.ok(p.data.things.every((t) => p.summary.includes('(' + t.thing + ')')), 'each thing\'s id, for judge');
   const rev = (await call(ctx, 'get_state')).data.rev, writes = [...store.map.values()].join('');
   const again = await call(ctx, 'play_fives');
   assert.deepEqual(again.data.things, p.data.things);
@@ -107,18 +108,28 @@ test('no name before the answer in any kind, and the names after', async () => {
   assert.equal(again.data.game.round, 2, 'the round was sorted: the next is dealt');
 });
 
-test('judge on a game thing: a second answer records nothing; a thing not on show is refused', async () => {
+test('judge on a game thing: a second answer records nothing, for every kind; a thing not on show is refused', async () => {
   const { ctx } = gameCtx();
   const p = await call(ctx, 'play_fives');
   const word = p.data.things[4];
   const first = await call(ctx, 'judge', { card: word.thing, keep: true });
   assert.deepEqual([first.data.kept, first.data.repeat, first.data.round.answered], [true, false, 1]);
-  const rev = (await call(ctx, 'get_state')).data.rev;
+  let rev = (await call(ctx, 'get_state')).data.rev;
   const typed = await call(ctx, 'judge', { card: word.thing, keep: false });   // "pass" typed in the chat after the card's Keep
   assert.deepEqual([typed.data.kept, typed.data.repeat], [true, true]);
   assert.match(typed.summary, /^Already answered: Kept/);
   assert.equal((await call(ctx, 'get_state')).data.rev, rev, 'nothing written');
   assert.equal(typed.data.reveal.word, word.word);
+  for (const t of p.data.things.slice(0, 4)) {
+    await call(ctx, 'judge', { card: t.thing, keep: false });
+    const st = await call(ctx, 'get_state');
+    const again = await call(ctx, 'judge', { card: t.thing, keep: true });
+    assert.deepEqual([again.data.kind, again.data.kept, again.data.repeat], [t.kind, false, true], t.kind);
+    assert.ok(again.data.reveal, t.kind + ': its reveal again');
+    assert.deepEqual((await call(ctx, 'get_state')).data, st.data, t.kind + ': nothing written');
+  }
+  assert.equal((await stateOf(ctx)).j.length, 2, 'the picture and the space once each');
+  rev = (await call(ctx, 'get_state')).data.rev;
   const notOnShow = ['wchaos', 'wtime', 'wobject'].find((w) => !p.data.things.some((t) => t.thing === w));
   for (const id of [notOnShow, 'l004x', 'p6'].filter((x) => !p.data.things.some((t) => t.thing === x))) {
     const r = await call(ctx, 'judge', { card: id, keep: true });
@@ -155,6 +166,63 @@ test('a whole game over the tools: rounds sorted with the kept lines, the game s
   assert.deepEqual(st.days.length, 1, 'the day counted once');
   const next = await call(ctx, 'play_fives');
   assert.deepEqual([next.data.game.started_now, next.data.game.round, next.data.game.judged], [true, 1, 0]);
+});
+
+test('in words alone: a round plays from the text of play_fives, as a chat without the card sees it', async () => {
+  const { ctx } = gameCtx();
+  const p = await call(ctx, 'play_fives');
+  const lines = p.summary.split('\n').filter((x) => /^\d\. /.test(x));
+  assert.equal(lines.length, 5);
+  assert.match(lines[0], /^1\. A picture \(\w+\): https:\/\//, 'the picture\'s address, as next_five gives it');
+  assert.match(lines[1], /^2\. A line of code \(l\w+\), for a stylesheet, in its own css code block: body \{/);
+  assert.match(lines[2], new RegExp('^3\\. A space \\(\\w+\\): ' + ORIGIN + '/s/space\\?m=\\w+ \\(it turns\\. Go in stands you '));
+  assert.match(lines[3], new RegExp('^4\\. A Picture Poetry page \\(p\\d\\): ' + ORIGIN + '/pp/p\\d\\.jpg\\?e='));
+  assert.match(lines[4], /^5\. A word \(w[a-z]+\): [A-Z][a-z]+$/);
+  const outs = [];
+  for (const x of lines) outs.push(await call(ctx, 'judge', { card: /\((\w+)\)/.exec(x)[1], keep: true }));
+  assert.ok(outs.every((o) => o.data.ok && !o.data.repeat));
+  assert.match(outs[4].summary, /Round 1 of 5 sorted: kept 5 of 5/);
+  assert.match(outs[4].summary, /propose one kept thing through another if two fit .*, then call play_fives for round 2\./, 'things into things, once a round');
+  const after = await call(ctx, 'play_fives');
+  assert.match(after.summary, /^Your game of fives: round 2 of 5\. /);
+  assert.ok(after.summary.split('\n').filter((x) => /^\d\. /.test(x)).every((x) => !/: (kept|passed)\.$/.test(x)), 'round 2 is all open');
+});
+
+test('a picture waiting in today\'s five too counts once for both', async () => {
+  const { ctx } = gameCtx();
+  const f = await call(ctx, 'next_five');
+  const p = await call(ctx, 'play_fives');
+  const shared = p.data.things[0].thing;
+  assert.ok(f.data.cards.some((c) => c.card === shared), 'the game\'s picture is one of the five (both deal Sort\'s next five)');
+  const j = await call(ctx, 'judge', { card: shared, keep: true });
+  assert.deepEqual([j.data.kind, j.data.kept, j.data.round.answered], ['picture', true, 1]);
+  let st = await stateOf(ctx);
+  assert.equal(st.j.length, 1, 'one judgment');
+  assert.deepEqual([st.five.i, st.five.ids[0], st.game.k[0]], [1, shared, '1'], 'the five moved on past it, and the game has it');
+  const next = await call(ctx, 'next_five');
+  assert.ok(!next.data.cards.some((c) => c.card === shared), 'the five doesn\'t ask again');
+  assert.equal((await call(ctx, 'judge', { card: shared, keep: false })).data.repeat, true, 'a second answer still records nothing');
+  st = await stateOf(ctx);
+  assert.equal(st.j.length, 1);
+  // a five that deals the card again after the game answered it: the five's answer counts, the game's stands
+  const g = await call(ctx, 'get_state');
+  await call(ctx, 'put_state', { state: { ...g.data.state, five: { ...st.five, ids: [shared].concat(st.five.ids.slice(1)), i: 0 } }, base: g.data.rev });
+  const again = await call(ctx, 'judge', { card: shared, keep: false });
+  assert.deepEqual([again.data.in_five, again.data.five.judged], [true, 1], 'the five moves on');
+  st = await stateOf(ctx);
+  assert.deepEqual([st.j.length, st.game.k[0]], [2, '1']);
+});
+
+test('put_state from an app that doesn\'t know the game keeps the game and things', async () => {
+  const { ctx } = gameCtx();
+  await playRound(ctx, () => true);
+  const g = await call(ctx, 'get_state');
+  const { game, things, ...older } = g.data.state;
+  assert.ok(game && Object.keys(things).length === 3);
+  const put = await call(ctx, 'put_state', { state: older, base: g.data.rev });
+  assert.equal(put.data.ok, true, put.summary);
+  const st = await stateOf(ctx);
+  assert.deepEqual([st.game, st.things], [game, things]);
 });
 
 test('the reveal says where a thing came from, after the answer only', async () => {

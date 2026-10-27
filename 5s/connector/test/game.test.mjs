@@ -52,7 +52,10 @@ test('the five of a round come together, answered in any order; the next round w
   st = answer(st, deck, st.game.ids[1], true, 0, NOW).state;
   const next = open(st, deck, NOW);
   assert.deepEqual([next.dealt, next.state.game.ids.length, next.state.game.k.slice(5)], [true, 10, '-----']);
-  assert.ok(next.state.game.at >= st.game.at);
+  assert.ok(next.state.game.at > st.game.at, 'a later round has a larger seq, even in the same second');
+  const done = play(() => true).st, fresh = open(done, deck, NOW);
+  assert.ok(fresh.started && fresh.state.game.at > done.game.at, 'and so does a new game');
+  assert.equal(open(fresh.state, deck, NOW).state.game.at, fresh.state.game.at, 'the round on show keeps its seq');
 });
 
 test('a repeat answer records nothing; only things in the game can be answered', () => {
