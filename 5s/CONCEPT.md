@@ -121,6 +121,13 @@ a move):
   opportunity to select specific objects that they like and with set, we are taking it a step further
   and then allowing users to establish relationships between the objects, they have chosen to like"
 
+On Set's See it as a room, 27 Oct 2026:
+
+- "Keep in mind that some of the objects being proposed in Sort are architectural structures. So when
+  you get to set and an option is to see it as a room, I want you to use any architectural structure.
+  That is one of the objects as the room. This goes for other objects, being proposed and chosen,
+  identify what the object is in, see its relation to setting up a space in seeing things as rooms."
+
 ## Let's play fives, through the connector: five kinds of thing (23 Oct 2026)
 
 Spoken, as received (the transcription's spellings kept):
