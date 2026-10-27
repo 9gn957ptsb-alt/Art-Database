@@ -27,7 +27,8 @@ coming round whole. Three mirrors in a golden triangle (36°, 72°, 72°) never 
 Penrose's rhombs come at 36° and 72°. And rings or echoes can scale by φ. DRIFT adds its own:
 
 - **Magnitudes.** The stars come in three classes (13, 8 and 5 cells), their shares φ⁻⁴, φ⁻³ and φ⁻¹, their
-  strengths φ⁻², φ⁻³ and φ⁻⁴; one class to the next is φ² in light, near Pogson's 2.512 a magnitude.
+  strengths φ⁻¹, φ⁻² and φ⁻³ (φ times more at the plane's night); with their areas, one class to the next is about
+  φ³ in light, so the classes step as magnitudes do (Pogson's 2.512 a magnitude), a little more steeply.
 - **Fibonacci into Fibonacci.** A star gathers φ² as far as it reaches: 34 cells into 13, 21 into 8, 13 into 5.
 - **Showers.** Stars stand on a 55-cell lattice and are thinned by a field 610 cells across.
 
@@ -57,7 +58,7 @@ Penrose's rhombs come at 36° and 72°. And rings or echoes can scale by φ. DRI
 | Date | Where | What | Flag | From the site |
 | --- | --- | --- | --- | --- |
 | 9 Oct 2026 | The calm regions, φ⁻⁴ of them | The golden kaleidoscope: five mirrors at 36° round a region's middle, each ring φ times nearer holding the ring outside it, laid on at φ⁻¹. A bullseye 520 cells across, wider than a phone; taken back on 27 Oct | none (gone) | the pulse's fold, 9 Oct |
-| 27 Oct 2026 | The calm country, in showers | Kaleidoscopes as small as stars: on a 55-cell lattice, φ⁻¹ kept and thinned into showers by a 610-cell field; three magnitudes (13, 8, 5 cells; 5, 3, 2 mirrors); each gathers the ground φ² as far as it reaches, every image dimmer and greener for the mirrors it came through, lifted toward light most on dark ground. Each holds still and, once in about 987 s at its own moment, turns φ⁻² of an image over φ seconds as its light swells a little (`STARS_GLSL`). The singularities' mirror glint down to φ⁻⁵ | `stars` | the pulse's 36° fold (9 Oct); the sunflower's seeds (14 Oct) |
+| 27 Oct 2026 | The calm country, in showers | Kaleidoscopes as small as stars: on a 55-cell lattice, φ⁻¹ kept and thinned into showers by a 610-cell field; three magnitudes (13, 8, 5 cells; 5, 3, 2 mirrors); each gathers the ground φ² as far as it reaches, every image dimmer and greener for the mirrors it came through, lifted toward light most on dark ground, and coming out at the plane's night. Each holds still and, once in about 987 s at its own moment, turns φ⁻² of an image over φ seconds as its light swells a little (`STARS_GLSL`). The singularities' mirror glint down to φ⁻⁵ | `stars` | the pulse's 36° fold (9 Oct); the sunflower's seeds (14 Oct) |
 
 ## Still to come
 

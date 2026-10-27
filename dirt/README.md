@@ -517,15 +517,17 @@ three magnitudes:
 
 | | share | radius (cells) | mirrors | strength |
 |---|---|---|---|---|
-| brilliant | φ⁻⁴ | 13 | 5 (the pentagon's ten images; cos 36° = φ/2) | φ⁻² |
-| middling | φ⁻³ | 8 | 3 (Brewster's 60°) | φ⁻³ |
-| faint | φ⁻¹ | 5 | 2 | φ⁻⁴ |
+| brilliant | φ⁻⁴ | 13 | 5 (the pentagon's ten images; cos 36° = φ/2) | φ⁻¹ |
+| middling | φ⁻³ | 8 | 3 (Brewster's 60°) | φ⁻² |
+| faint | φ⁻¹ | 5 | 2 | φ⁻³ |
 
 Each gathers the ground φ² as far as it reaches (Fibonacci into Fibonacci: 34 cells into 13, 21 into 8, 13 into 5),
 every image as much dimmer and greener as the mirrors it has come through, its colours a little fuller and lifted
-toward light, most where the ground is dark (a star shows most at night), and falls smoothly to nothing at its rim,
+toward light, most where the ground is dark, and falls smoothly to nothing at its rim,
 as a star's image does without its halo (King, "The profile of a star image", 1971). Their radii are the same in CSS
-pixels on every screen. A retina laptop holds about thirty, a phone about seven, and some views none. Each star holds
+pixels on every screen. By day they are faint rosettes you see only if you look; at the plane's night (233 seconds
+round) they come out, φ times stronger and lifted φ⁻² more toward light, as stars do. A retina laptop holds about
+thirty, a phone about seven, and some views none. Each star holds
 still. Once in about 987 seconds, at its own moment, its object turns φ⁻² of an image, a dissolve over φ seconds as
 its light swells a little. That is the very small, brilliant change: in a laptop view one happens somewhere about
 every half minute, and with reduced motion none does. The singularities keep their tubes, but the glint along their

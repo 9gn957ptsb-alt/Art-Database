@@ -2628,8 +2628,10 @@ if (typeof location !== "undefined") for (const k of ((location.hash.match(/(?:^
 // pentagon's ten images, cos 36 degrees = phi / 2), phi^-3 middling (8 cells, 3 mirrors, Brewster's 60 degrees),
 // the rest faint (5 cells, 2 mirrors); each gathers phi^2 as far as it reaches (Fibonacci into Fibonacci: 34 into 13,
 // 21 into 8, 13 into 5), every image dimmer and greener for the mirrors it has come through, its colours a little
-// fuller (chroma times sqrt(phi)) and lifted toward light, most where the ground is dark, laid on at phi^-2, phi^-3,
-// phi^-4 and falling smoothly to nothing at its rim (a star's core without its aureole; King 1971). Each holds still;
+// fuller (chroma times sqrt(phi)) and lifted toward light, most where the ground is dark, laid on at phi^-1, phi^-2,
+// phi^-3 and falling smoothly to nothing at its rim (a star's core without its aureole; King 1971). By day they are
+// faint rosettes you see only if you look; at the plane's night (233 seconds round) they come out, phi times
+// stronger and lifted phi^-2 more toward light, as stars do. Each holds still;
 // once in about 987 seconds (776 to 1255, its own phase) its object turns phi^-2 of an image, dissolving over phi
 // seconds as its light swells a little: the very small, brilliant change. With reduced motion none turns.
 const STARS_GLSL = `
@@ -2681,8 +2683,10 @@ vec4 star(vec2 pc, float alpha, vec2 tsz) {
   if (e < 1.0) s = mix(sLook(C, d, n, th, psi - dl, tsz), s, e);    // a dissolve, never a sweep
   float l = dot(s, vec3(0.3, 0.59, 0.11));
   s = clamp(l + (s - l) * 1.272020, 0.0, 1.0);
-  s = mix(s, S_WHITE, P1 * (1.0 - l) * (1.0 + P1 * max(sin(3.14159265 * e), 0.0)));   // its light: most on dark ground
-  return vec4(s, pow(P1, float(M + 2)) * pow(1.0 - x2, 2.618034) * k);
+  // its light: most on dark ground, and at the plane's night (the first pass's, 233 seconds round), when stars come out
+  float night = uHold > 0.5 ? 0.0 : smoothstep(0.55, 0.95, 0.5 - 0.5 * cos(6.2832 * uTime / 233.0));
+  s = mix(s, S_WHITE, clamp((P1 * (1.0 - l) + P2 * night) * (1.0 + P1 * max(sin(3.14159265 * e), 0.0)), 0.0, 1.0));
+  return vec4(s, pow(P1, float(M + 1)) * (1.0 + P1 * night) * pow(1.0 - x2, 2.618034) * k);
 }
 `;
 const GROUND_PX_STARS = (() => {
