@@ -529,7 +529,8 @@ pixels on every screen. A retina laptop holds about thirty, a phone about seven,
 still. Once in about 987 seconds, at its own moment, its object turns φ⁻² of an image, a dissolve over φ seconds as
 its light swells a little. That is the very small, brilliant change: in a laptop view one happens somewhere about
 every half minute, and with reduced motion none does. The singularities keep their tubes, but the glint along their
-mirrors comes down from 0.42 to φ⁻⁵. `#nostars` shows the plane without them, for comparing.
+mirrors comes down from 0.42 to φ⁻⁵. `#nokal=stars` shows the plane without them, for comparing. The stars are the first of DRIFT's kaleidoscopes
+to come by its own routine, slowly, one at a time, alongside the Artist Website's (`KALEIDOSCOPE.md`).
 
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was

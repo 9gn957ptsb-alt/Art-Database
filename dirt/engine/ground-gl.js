@@ -2610,6 +2610,13 @@ function fsPart(from, to) {
 //     capitals, the crossed-out row still crossed)
 //   the worlds: the gesture, the one line through every world, carrying the poems along it a line at a time.
 // And the swimmers write lines in their wake (VERSE_VS and VERSE_FS, below, and groundGL's verse).
+// ---- DRIFT's kaleidoscopes, one a flag (dirt/KALEIDOSCOPE.md, the ledger its routine keeps): false takes one back and
+// nothing else changes; #nokal=name,name leaves them out, for comparing
+const KALEIDOSCOPES = {
+  stars: true,                      // 27 Oct 2026: showers of kaleidoscopes as small as stars, in the calm country
+};
+if (typeof location !== "undefined") for (const k of ((location.hash.match(/(?:^|[#&])nokal=([\w,]+)/) || [])[1] || "").split(",")) if (k in KALEIDOSCOPES) KALEIDOSCOPES[k] = false;
+
 // ---- the stars: kaleidoscopes as small as stars ------------------------------------------------------------------
 // Aries, 23 Oct 2026: "The kaleidoscopes are too obvious in DRIFT. make them much more subtle, remember to implement
 // the golden ratio and perhaps give me showers of kaleidoscopes but each one is like a star in the sky and shows a
@@ -4589,7 +4596,6 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   const noLight = /(?:^|&)nolight(?:&|$)/.test(location.hash.slice(1));   // #nolight: the plane without the light, for looking
   const noCollage = /(?:^|&)nocollage(?:&|$)/.test(location.hash.slice(1));   // #nocollage: without the collage
   const noWater = /(?:^|&)nowater(?:&|$)/.test(location.hash.slice(1));   // #nowater: without the watercolour
-  const noStars = /(?:^|&)nostars(?:&|$)/.test(location.hash.slice(1));   // #nostars: without the stars, for comparing
   let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
@@ -5327,7 +5333,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     gl.uniform1f(V.uTime, t);
     gl.uniform2f(V.uCellN, cw, ch);
     gl.uniform1f(V.uStarK, Math.min(1, cv.width / Math.max(1, cv.clientWidth) / 2));
-    gl.uniform1i(V.uStars, minimalProg && edgeOn && !earth && !(anom[2] > 0) && !noStars ? (tier >= 2 ? 3 : 1) : 0);
+    gl.uniform1i(V.uStars, minimalProg && edgeOn && !earth && !(anom[2] > 0) && KALEIDOSCOPES.stars ? (tier >= 2 ? 3 : 1) : 0);
     if (WORDS) {
       gl.uniform1f(V.uWOn, wk);
       gl.uniform1f(V.uWTime, t);
