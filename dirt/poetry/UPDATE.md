@@ -51,7 +51,10 @@ repository.
    what its data says about each page (`pages.json`), its buildings and the book's notes on everything on its pages
    (`buildings.json`, printed in the books the plots open into) and the code that draws the buildings (`models.js`).
    The creatures walk while they are photographed: if the creatures' sheet the build makes looks wrong (a creature cut
-   in half), keep the last build's `overlays/` (copy `dirt/private/poetry/` to the scratchpad before capturing).
+   in half), keep the last build's `overlays/` (copy `dirt/private/poetry/` to the scratchpad before capturing). A
+   session coming fresh has no last overlays: capture again a few times into the scratchpad instead and keep, page by
+   page, the `over-N.png` whose creatures lie most within their boxes (pages.json's `box`es: least of each creature
+   spilling out round its box).
 
 6. **The poems.** The poems exist only in the page images. For a page that is new (it has no entry in `poems.json`;
    the build refuses to run without one), read its poem from its image (crop it at full size and look) and add an
@@ -76,7 +79,10 @@ repository.
    ```
 
    MorphoLex (6.8 MB, the scratchpad only) is how the spirit postures the breath (README, "The spirit's postures"): it
-   prints how many of the poems' words it found, shed and rooted. Without `--morpholex` the lines breathe as before.
+   prints how many of the poems' words it found, shed and rooted, and how many of DRIFT's paintings share a root with
+   them (`the kin`, Morphology's order between the plots). Always pass it: without `--morpholex` the build drops both
+   (the lines breathe as before and the swimmers keep DRIFT's own choice between the plots). The paradise book
+   (`books/`) and Glyph Light (in DRIFT's own page) come in with no option.
 
    Each page's photograph is cut from its image (where Picture Poetry's data sets it, or else the largest patch of the
    page unlike its paper) and its creatures from its overlay: read the printed sizes and look at any photograph that
@@ -97,7 +103,10 @@ repository.
    book (`window.DRIFT_POETRY.book()` gives `{ open, busy, wide, pos, pages }`), at a phone's size and a desktop's:
    look at the cover, the first leaf, the poem (its indents as on its page, nothing cut off) and the last leaf, turn
    every leaf, and close it (Escape): it must lie down where it was, and `open` be false. A photograph of Picture
-   Poetry must arrive torn out near where the visit begins, a few seconds after the ground is painted.
+   Poetry must arrive torn out near where the visit begins, a few seconds after the ground is painted. DRIFT's page
+   lays Glyph Light over all of it (`window.GLYPHS`, its text the poems): `GLYPHS.set({ active: () => false })` shows
+   the plane under the glyphs. On a software GPU (`--use-angle=swiftshader --enable-unsafe-swiftshader`, as
+   `dirt/engine/check_kaleidoscope.js` launches it) the page takes minutes to load: keep the views few and small.
 
 9. **Publish it** to DRIFT Poetry's url with the Artifact tool: `file_path` `<scratch>/drift-poetry/index.html`, and
    `files` mapping every `poetry/...` file of the build to its path (`photo-N.jpg`, `creatures.png`, `poems.json`,
