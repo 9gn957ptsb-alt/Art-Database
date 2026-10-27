@@ -30,6 +30,11 @@ const HOSTILE = {
   'pairings that are not pairs': { assoc: [['i001'], 5] },
   'a saga that is a list': { saga: [] },
   'a painting whose cells are not colours': { paintings: [{ at: 1, n: 7, cols: 2, rows: 2, c: 'not hex' }] },
+  // fives through the connector (src/game.js): put_state took any game and things before the game shipped
+  'a game whose ids are not a list': { game: { ids: 'not a list' } },
+  'a game with more answers than things': { game: { day: '2026-10-24', ids: ['i001'], k: '11', from: [''] } },
+  'things that name a script': { things: { '<script>': 'x' } },
+  'things that are deck cards': { things: { i001: 1 } },
 };
 
 test('put_state refuses states that would break the tools, in a sentence, and writes nothing', async () => {

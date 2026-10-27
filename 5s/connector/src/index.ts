@@ -21,8 +21,14 @@ import { createFakeGitHub } from "./fake-github.js";
 import { createWeb } from "./web.js";
 import { createFakeWeb } from "./fake-web.js";
 import { serveBound, scheduleEnd, endSession } from "./session";
+// The round card for play fives (an MCP App), its links, and the signed Picture Poetry pages (card.js).
+import { ROUND_URI, ROUND_MIME, cardMeta, cardUrls, servePage } from "./card.js";
+import ROUND_HTML from "../web/round.html";
 // The artist's deck, trimmed for the connector by `npm run deck` (gitignored: data derived from Artsy and The Architectural Authority).
 import deck from "./deck.generated.json";
+
+// The pages' folder in public/pp/, made by npm run things: only the Worker knows it. Never in a result, link or log.
+const PAGE_DIR = (deck as { things?: { pageDir?: string } }).things?.pageDir || "";
 
 const VERSION = "0.1.0";
 const DEV_TOKEN = "dev-fake-token";
@@ -58,6 +64,10 @@ export class FiveSMCP extends McpAgent<Env, Record<string, never>, Props> {
 
 	async init() {
 		registerTools(this.server, () => this.toolContext());
+		// The round card play_fives points at: the five things together, Keep or Pass on each.
+		this.server.registerResource("Round", ROUND_URI, { mimeType: ROUND_MIME, description: "A round of fives: five things together, Keep or Pass on each." }, async () => ({
+			contents: [{ uri: ROUND_URI, mimeType: ROUND_MIME, text: ROUND_HTML, _meta: cardMeta(this.props?.origin || "") }],
+		}));
 		// This object is deleted a day after it starts, so sessions never fill Workers Free's 5 GB (session.ts).
 		await scheduleEnd(this);
 	}
@@ -91,7 +101,9 @@ export class FiveSMCP extends McpAgent<Env, Record<string, never>, Props> {
 		// The person's 5s lives in their own SQLite-backed Durable Object (FiveSPerson, person.js), not in
 		// this session's object: a person opens a new session each time, their 5s stays in one place.
 		const store = guardedStore(personRpcStore(this.env.PERSON, p.id));
-		return { store, deck, github, user: { id: p.id, login: p.login }, web, limitWeb, colourBudgetPx };
+		// The links play_fives hands out (the space viewer and models, signed page links); undefined without an origin.
+		const urls = cardUrls(p.origin, this.env.COOKIE_ENCRYPTION_KEY);
+		return { store, deck, github, user: { id: p.id, login: p.login }, web, limitWeb, colourBudgetPx, urls };
 	}
 }
 
@@ -173,6 +185,8 @@ const boundMcp = {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext & { props?: Props }) {
 		const person = ctx.props && ctx.props.id;
 		if (!person) return plain(401, "Not signed in.");
+		// The session learns the Worker's own address from the request Cloudflare routed here, not from the client.
+		ctx.props = Object.assign({}, ctx.props, { origin: new URL(request.url).origin });
 		if (env.RATE_LIMIT_PERSON && !(await env.RATE_LIMIT_PERSON.limit({ key: "person:" + person })).success) {
 			return plain(429, "A lot of requests are coming from you. Wait a minute and try again.", { "Retry-After": "60" });
 		}
@@ -243,6 +257,8 @@ export default {
 				return Response.json((await env.OAUTH_KV.get(DEV_FAKE_KEY, "json")) || {});
 			}
 		}
+		// Picture Poetry pages and their buildings: only through a signed link (card.js); run_worker_first sends all of /pp/ here.
+		if (url.pathname === "/pp" || url.pathname.startsWith("/pp/")) return servePage(request, env, PAGE_DIR, env.COOKIE_ENCRYPTION_KEY);
 		if (env.RATE_LIMIT_SIGNIN && SIGNIN_PATHS.has(url.pathname)) {
 			const from = request.headers.get("cf-connecting-ip") || "unknown";
 			if (!(await env.RATE_LIMIT_SIGNIN.limit({ key: "signin:" + from })).success) {

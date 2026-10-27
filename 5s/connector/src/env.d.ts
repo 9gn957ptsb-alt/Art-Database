@@ -19,4 +19,12 @@ interface Env {
 	COLOUR_BUDGET_PX?: string;
 	/** Reads of other sites (read_link, bring_in, item_image) a minute per person. */
 	RATE_LIMIT_WEB?: RateLimit;
+	/** The static files (wrangler.jsonc "assets", public/): the space viewer, the models, and the pages behind /pp/. */
+	ASSETS?: Fetcher;
+}
+
+/** The round card (web/round.html), bundled as text by wrangler's default rule for .html. */
+declare module "*.html" {
+	const text: string;
+	export default text;
 }

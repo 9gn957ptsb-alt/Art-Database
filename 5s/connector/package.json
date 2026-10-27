@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "deck": "node scripts/build-deck.mjs",
+    "things": "node scripts/build-things.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "node --test test/*.test.mjs",

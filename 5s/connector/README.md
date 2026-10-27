@@ -29,8 +29,8 @@ about itself: a refusal names a file's type only when it is a type 5s knows (`sr
 | --- | --- | --- | --- |
 | `get_taste` | none | judged, kept, keep rate, speed; positive and negative space; philosophy lines; turns (with their works); leanings by era, place, material, quality, movement, subject, colour; palette; streak; seed code | whenever the person asks for anything with an aesthetic: a sofa, a website, a gift, a room, an outfit, a trip |
 | `aesthetic_brief` | `for` (what it is for, ≤ 200 characters) | `brief` (paste-able text), what it leans toward, materials, palette, what to avoid (negative space), three reference works they kept (their pages on Artsy or The Architectural Authority, and images) | to hand their taste to a designer, a shop, an image tool, a search |
-| `next_five` | none | the five in progress (or a new one): five cards, one per kind, each with an image address (Artsy's CDN, or a bookmarked building's own photo; a Surface with its crop; a Colour as three bands, 3:2:1), colours and materials in words, and **no names** | to play 5s in the chat |
-| `judge` | `card`, `keep` (true/false), `ms` (only if measured) | the reveal (title, artist (a building's architect), date, medium, `source` (`Artsy` or `Architectural Authority`), `url` (its page there; Artsy cards also keep `artsy_url`), image), whether it was a turn (with the app's sentence: "You kept this though you pass most Geometric works (kept 1 of 6)."), the five's progress, and "Five sorted" at the end | after each Keep or Pass |
+| `next_five` | none | the five in progress (or a new one): five cards, one per kind, each with an image address (Artsy's CDN, or a bookmarked building's own photo; a Surface with its crop; a Colour as three bands, 3:2:1), colours and materials in words, and **no names** | to sort five pictures in the chat |
+| `judge` | `card` (a card from `next_five`, or a thing from `play_fives`), `keep` (true/false), `ms` (only if measured) | the reveal (title, artist (a building's architect), date, medium, `source` (`Artsy` or `Architectural Authority`), `url` (its page there; Artsy cards also keep `artsy_url`), image), whether it was a turn (with the app's sentence: "You kept this though you pass most Geometric works (kept 1 of 6)."), the five's progress, and "Five sorted" at the end; for a thing of the game, its reveal and the round's progress (below) | after each Keep or Pass |
 | `get_seed` | none | the 5s seed (`format: "5s-seed"`), aesthetics only: notes left out | to take their taste elsewhere |
 | `hub_status` | none | whether they have a hub, its name, address, when it was last saved, and whether the seed changed since | before making or saving a hub |
 | `make_hub` | `name` (optional; default `<login>.github.io`), `include_notes`, `private` | makes a public repository on their account with `index.html` (the hub page), `seed.json`, `README.md` and `.nojekyll`, turns its address on, and returns the address | when they ask for their hub (Claude asks first: it publishes) |
@@ -40,6 +40,7 @@ about itself: a refusal names a file's type only when it is a type 5s knows (`sr
 | `read_link` | `url` (a board, channel, blog, feed, page or picture address, ≤ 2048 characters; `https://` is added when missing, `http://` upgraded) | the pictures that public link offers (at most 60), each `{image, thumb, title, link, source}`, and where they come from; for a single page, also `page`: what the page says the thing on it is (below); **nothing is added** | "add my Are.na channel", "add my Pinterest board", "add this page": Claude shows the person what is there and asks which to add |
 | `bring_in` | `items` (1–60, each `{image, source, title?, link?, thumb?, kind?}`, as `read_link` gave them or any https picture address; `image` may be `null` for a thing known by its `link` alone; and, per item, what the thing is: `maker`, `date`, `year`, `medium`, `place`, `about`, `category`, `era`, `genes`, `materials`, `colours` with `coloursEstimated`, `definedBy`), `kind` (`image`, `object` or `space`; default `image`) | `added` (each with its id, name, source, addresses, its three colours in words, its surface `crop` and `texture`, or `colours_pending` and why; `no_picture` for a thing kept by its link; `facts` it now keeps and `left_out` for any given that weren't the deck's words), `skipped` (each with why), `remaining` (not read this time: call again with them), today's count | after the person confirms which pictures (or things) to add |
 | `item_image` | `id` (a brought-in thing's id, like `yk2q7a`) | `image`: the picture as a `data:` URL (as it is when small; a JPEG at most 720 px and about 130 KB when it had to be made smaller; on Workers Free, the smaller copy the picture's own site keeps, with `smaller_copy_from`), its type, size and pixel size; also attached as an image Claude can see | the 5s app, to show a brought picture and read its colours when they are pending; Claude, to look at one |
+| `play_fives` | none | the round on show (or the next one, or a new game): five things together, in this order: a picture, a line of code, a space, a Picture Poetry page, a word, with **no names**; the links to show them; the round card (`ui://fives/round.html`) | when the person says "let's play fives" |
 
 Refusals come back as tool errors with `why` and `resolution`: a name GitHub won't take (with a
 fixed one, e.g. `"my hub"` → `"my-hub"`), a private hub (see below), a repository 5s didn't make, a
@@ -56,6 +57,37 @@ app's [`../src/hub.js`](../src/hub.js) (`FiveSHub.api`) and the hub page is the 
 for the chat: a judgment made in chat records no time (it can't be measured), so the first
 philosophy line leaves out "you usually decide in … seconds" until timed judgments exist; and
 `judge` accepts the five's cards in any order (the app always shows them in order).
+
+### Let's play fives (`play_fives`)
+
+A game is five rounds. A round is five things on one card, in the artist's order: a picture (Sort's
+kind for the round, dealt by the engine's own five), a line of code, a space (one of the bookmark
+buildings, as a model to turn and go into), a Picture Poetry page and a word from Morphology. The
+person answers Keep or Pass on each, in any order: in the round card where Claude shows it, or in
+words where it can't (the picture's address, the line in a code block, the space and the page as
+links, the word itself). The round is sorted when all five are answered; Claude then gives each kept
+line again in its own code block, and the next `play_fives` deals the next round from what was kept
+and passed before it (a line made from a kept picture's colours, composition or feel, or a kept
+word's root; a space sharing a kept card's material; a page holding a kept word; a kept word's
+neighbour). Nothing in a round follows from answers in the same round. Names come only in a thing's
+reveal, after its answer, with where it came from ("Made from a picture you kept in round 1: its
+colours.").
+
+- **One answer a thing.** A second `judge` on a thing of the game records nothing and gives its first
+  answer again, so the card's tap and a typed "keep" never count twice. A line, page or word that isn't
+  on show is refused.
+- **What is saved** (`src/game.js`, connector only; the app keeps both fields as they are): pictures
+  and spaces are deck cards, judged into `j` as Sort judges them; lines, pages and words go in
+  `things` (`{id: 1 or 0}`, the latest answer each, at most 1,000, the oldest dropped first); the game
+  is `game` (`{day, at, ids, k, from}`: 25 things at most, one answer and one source each).
+  `put_state` checks both (`src/validate.js`).
+- **The streak** counts a sorted round, as it counts a sorted five. A game left unfinished waits; once
+  finished, the next `play_fives` starts a new one.
+- **What it can and can't do yet.** There are six pages, so from the second game they repeat. Most
+  spaces are solid models: Go in stands you under cover beside them; four are rooms you stand inside.
+  The 29 spaces last about six games, then the oldest third comes round again.
+- Without the catalogue (`npm run things`, then `npm run deck`) or the Worker's links, `play_fives`
+  says the game isn't set up, and `next_five` plays as before.
 
 ### Connect your apps (`read_link`, `bring_in`, `item_image`)
 
@@ -253,6 +285,9 @@ judgments, 120 brought-in things, 80 notes, 20 sets and a hub, an 84 KB state, t
 | `bring_in` (colours left to the app) | 6.4 | 2.7 | 6.2 |
 | `item_image` | 3.5 | 1.8 | 4.5 |
 | `item_image` (asking the site for a smaller copy) | 6.6 | 4.1 | 8.7 |
+| `play_fives` (dealing a round) | 21 | 7.7 | 15 |
+| `play_fives` (the same round again) | 4.2 | 0.8 | 4.4 |
+| `judge` (a thing of the game) | 15 | 1.9 | 9.1 |
 | `get_taste` | 57 | 40 | 58 |
 | `aesthetic_brief` | 33 | 34 | 43 |
 | `get_seed` | 55 | 51 | 72 |
@@ -260,7 +295,8 @@ judgments, 120 brought-in things, 80 notes, 20 sets and a hub, an 84 KB state, t
 | `make_hub` | 190 | 122 | 196 |
 
 (Measured 22 Oct 2026; the times move by a few milliseconds from run to run. Measured again with the
-531-card deck, the artist's Architectural Authority buildings in: every tool within that noise.)
+531-card deck, the artist's Architectural Authority buildings in: every tool within that noise. The
+game's rows: 24 Oct 2026, the same person, 15 rounds.)
 
 Every Worker-side path stays well under 10 ms. The tools run in the Durable Object, whose limit is
 30 seconds of CPU per request on Cloudflare's Durable Objects limits page; the five whose usual
@@ -289,7 +325,13 @@ week. That is 2 × 4 session requests + 9 tool calls = 17 requests to `/mcp`, an
 | 1,000 KV deletes, 1,000 KV lists | none on an ordinary day; a sign-in deletes 2 and lists 1 (5 and 2 when it replaces an earlier sign-in of the same app) | 200 sign-ins a day by deletes, 500 by lists: more than KV's writes allow (below) |
 
 So **about 1,400 people a day** can each play a five, sync the app and bring something in, every
-day, on the free plan; a person who only opens the app uses less. The person's own caps (500 saves,
+day, on the free plan; a person who only opens the app uses less.
+
+**A game of fives** (`play_fives`: 5 rounds, 25 answers, in one chat) uses what **2.6 ordinary days**
+use: 4 + 35 requests to `/mcp` (the round card's 5 reads counted as calls, so this errs high), 184
+Durable Object requests and 62 rows written. That is 0.18% of the day's free Durable Object
+requests, so the allowance everyone shares holds about 540 games a day, fewer as ordinary days take
+their part (`costs.js` `GAME`, `gameShare()`). The person's own caps (500 saves,
 300 pictures read, 120 requests a minute, 30 reads of other sites a minute) keep any one person or
 chat gone round in circles from using what everyone shares.
 
@@ -537,6 +579,17 @@ data derived from Artsy and The Architectural Authority, and the repository is p
 from a session that has it, or build it there first. For a local trial without the real deck:
 `npm run deck -- --fixture` (the synthetic 50-card test deck; never deploy that).
 
+`npm run things` builds the catalogue for "let's play fives": the curated lines of code, the 80
+Morphology words, the six Picture Poetry pages, the 29 bookmark buildings rated A or B and the
+picture-to-word matches. It reads the artist's material in `data/5s/fives/` and the built deck, and
+writes `data/5s/things.json` and the Worker's static files in `public/`: each building's model by
+deck id, stripped to what `models.js` reads, and the pages under a folder name only the Worker knows.
+All of it is gitignored. Run it before `npm run deck`. It refuses an unsafe line, a served model that
+holds a name or a coordinate, a page that keeps its metadata, and a place finer than a town.
+`npm run deck` then carries the catalogue into the bundle as `deck.things` (each card keeps its
+`comp` and `feel` for the made lines), and refuses a deck id starting with l, p or w (the game's own
+things) or a space the deck doesn't have.
+
 ## Files
 
 | Path | What it is |
@@ -557,6 +610,9 @@ from a session that has it, or build it there first. For a local trial without t
 | `src/names.js` | GitHub's naming rules (`FiveSHub.rules`) plus two guards (no leading `.`, no trailing `.git`), and the hub's addresses |
 | `src/words.js` | the app's sentences (turns, card descriptions) and `quoted()`, which makes other people's text one plain line |
 | `src/deck.js`, `scripts/build-deck.mjs` | `npm run deck` |
+| `scripts/build-things.mjs` | `npm run things` |
+| `src/game.js` | the game `play_fives` deals: a round of five things dealt from what was kept and passed before it, the answers, the streak, and the cap on `things` |
+| `src/lines.js` | the game's made lines (templates that turn a kept picture's colours, composition or feel, or a kept word's root, into one line of CSS or a shader) and `safe()`, the check every line passes before it is shown (`lines.test.mjs`) |
 | `src/fake-github.js` | a fake api.github.com for tests and the dev bypass; records every request |
 | `src/web.js` | reading the public web for Connect your apps: address checks, DNS over HTTPS, redirects checked hop by hop, byte caps, timeouts, a request budget per call |
 | `src/links.js` | what a link offers: Are.na, Pinterest, Flickr, Tumblr, feeds, pictures, pages |
@@ -564,7 +620,7 @@ from a session that has it, or build it there first. For a local trial without t
 | `src/bring.js` | the app's own [`../src/bring.js`](../src/bring.js) (`FiveSBring`: `newId` and its measures), imported unchanged |
 | `src/fake-web.js` | a fake public web (Are.na, Pinterest, Flickr, Tumblr, pages, pictures, redirects into private networks, huge and slow sites, its own DNS) for tests and the dev bypass |
 | `scripts/make-pictures.py`, `test/pictures.mjs` | PNG and JPEG files made by Pillow, with Pillow's decoding of each, for the decoders' tests |
-| `test/*.test.mjs` | `npm test`: every tool, the engine against the app, the protocol, the hub, the sign-in helpers, session binding (`session.test.mjs`), the adversarial review's findings (`review.test.mjs`), and Connect your apps (`connect.test.mjs`: every source, every way an address can point somewhere private, the caps, what is stored), and the security review of Connect your apps (`hostile.test.mjs`: pages and feeds that would hang the parsers, a Content-Type written to Claude, pictures whose headers lie about their size, broken %-escapes, IPv4 inside IPv6), and the free plan (`free.test.mjs`: the person's store on node:sqlite, the cost arithmetic, smaller copies, page facts, a brought thing's facts) |
+| `test/*.test.mjs` | `npm test`: every tool, the engine against the app, the protocol, the hub, the sign-in helpers, session binding (`session.test.mjs`), the adversarial review's findings (`review.test.mjs`), and Connect your apps (`connect.test.mjs`: every source, every way an address can point somewhere private, the caps, what is stored), and the security review of Connect your apps (`hostile.test.mjs`: pages and feeds that would hang the parsers, a Content-Type written to Claude, pictures whose headers lie about their size, broken %-escapes, IPv4 inside IPv6), and the free plan (`free.test.mjs`: the person's store on node:sqlite, the cost arithmetic, smaller copies, page facts, a brought thing's facts), and "let's play fives" (`game.test.mjs`: the deal and the state; `play.test.mjs`: `play_fives` and `judge` over the tools, on a made-up catalogue) |
 | `test/smoke.mjs` | `npm run smoke`: the Worker itself under `wrangler dev` (see below) |
 | `wrangler.jsonc` | the Worker: name `fives-connector`, the two Durable Objects (`FiveSMCP`, `FiveSPerson`), the one KV namespace (`OAUTH_KV`), the three rate limits, `COLOUR_BUDGET_PX` `"0"` |
 | `.dev.vars.example` | placeholders for `wrangler dev`; copy to `.dev.vars` (gitignored) |

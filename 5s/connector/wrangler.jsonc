@@ -46,6 +46,11 @@
   // Free allows 10 ms of CPU a request, so on Free it is "0": every brought picture's colours are then
   // read by the 5s app when it next opens. On Workers Paid delete this line (the default is 4000000).
   "vars": { "COLOUR_BUDGET_PX": "0" },
+  // The static files for play fives, built into git-ignored public/ by npm run things: the space viewer,
+  // models.js and the models under /s/ (free and unlimited: the Worker doesn't run), and the Picture Poetry
+  // pages under /pp/<a folder only the Worker knows>/. run_worker_first sends every /pp/ request to the
+  // Worker, which answers only a signed link (src/card.js) and refuses the folder's own path.
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/pp/*"] },
   "observability": { "enabled": true },
   "dev": { "port": 8800, "inspector_port": 8801 }
 }

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<title>A space</title>
+<style>
+/* One building, spun or walked through: the link a chat gives when the round card can't show.
+   No name on the page: in a round the reveal comes after. */
+:root { --bg: #ebe8e2; --fg: #23211e; --muted: #6b665e; --pill: rgba(246, 244, 240, 0.92); --line: #d4d0c8; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #161513; --fg: #ece8e0; --muted: #a29c91; --pill: rgba(33, 31, 28, 0.92); --line: #3a362f; }
+}
+:root[data-theme="dark"] { --bg: #161513; --fg: #ece8e0; --muted: #a29c91; --pill: rgba(33, 31, 28, 0.92); --line: #3a362f; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg);
+  font: 400 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+[hidden] { display: none !important; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.foot { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  display: grid; justify-items: center; gap: 8px; pointer-events: none; }
+.hint { margin: 0; max-width: 34em; padding: 4px 12px; border-radius: 14px; background: var(--pill); color: var(--muted); font-size: 13px; text-align: center; }
+.acts { display: flex; gap: 8px; pointer-events: auto; }
+button { min-height: 44px; min-width: 88px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--pill); color: var(--fg); font: inherit; cursor: pointer; }
+button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.say { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; margin: 0; text-align: center; color: var(--muted); }
+</style>
+</head>
+<body>
+<canvas id="view" aria-label="A building in blocks. Spin: drag to turn it, pinch to come closer. Go in: drag to look round, tap a floor to step there."></canvas>
+<p class="say" id="say">Building the space</p>
+<div class="foot" id="foot" hidden>
+  <p class="hint" id="hint"></p>
+  <div class="acts">
+    <button id="spin" aria-pressed="true">Spin</button>
+    <button id="walk" aria-pressed="false">Go in</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js" integrity="sha384-vV17nr/rMaJqmeZkFUzXLpHdQ+ME5QHKdydaqqN+3Ga39RJlNrTatJxHwGV4ml2C" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js" integrity="sha384-I0DMsfimAPIqWT8lF+oA997gRgdUi3jhidoTq3fN0zmn35smXZukD01FLnsPRU9i" crossorigin="anonymous"></script>
+<script src="models.js"></script>
+<script src="space.js"></script>
+<script>
+"use strict";
+// ?m=b001 (a space: public), or ?pp=p3a&e=&s= (a Picture Poetry page's building: signed, through the Worker).
+const q = new URLSearchParams(location.search), say = document.getElementById("say");
+const m = q.get("m") || "", pp = q.get("pp") || "", e = q.get("e") || "", s = q.get("s") || "";
+const src = /^[bcimosu]\d{1,6}$/.test(m) ? "m/" + m + ".json"
+  : /^p[1-6][a-z]$/.test(pp) && /^\d{10}$/.test(e) && /^[A-Za-z0-9_-]{22}$/.test(s) ? "/pp/m/" + pp + ".json?e=" + e + "&s=" + s : null;
+const SPIN = "Drag to turn it · pinch or scroll to come closer";
+const WALK = "Drag to look round · tap a floor to step there. Most of these buildings are solid models, so Go in stands you under cover beside them, or inside where one is cut away.";
+if (!src) say.textContent = "No space was named.";
+else fetch(src).then(r => { if (!r.ok) throw new Error(r.status === 403 ? "This link has run out. Ask for it again in the chat." : "This space could not be found."); return r.json(); }).then(spec => {
+  const canvas = document.getElementById("view");
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  const space = FivesSpace.mount(canvas, spec, { turn: true, bg });
+  const hint = document.getElementById("hint"), spinB = document.getElementById("spin"), walkB = document.getElementById("walk");
+  const press = (walking) => {
+    spinB.setAttribute("aria-pressed", !walking); walkB.setAttribute("aria-pressed", walking);
+    hint.textContent = walking ? WALK : SPIN;
+  };
+  spinB.onclick = () => { space.spin(); press(false); };
+  walkB.onclick = () => { if (space.walk()) press(true); };
+  walkB.hidden = !space.canWalk;
+  addEventListener("resize", () => space.size());
+  press(false);
+  say.hidden = true;
+  document.getElementById("foot").hidden = false;
+  window.ready = space;
+}).catch(err => { say.textContent = /^This/.test(err.message) ? err.message : "This space could not be built here."; });
+</script>
+</body>
+</html>

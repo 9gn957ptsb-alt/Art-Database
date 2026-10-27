@@ -110,3 +110,15 @@ export function capacity(day, plan) {
   const least = Object.entries(by).sort((a, b) => a[1] - b[1])[0];
   return { by, people: least[1], limit: least[0] };
 }
+
+/**
+ * A game of fives through the connector (play_fives, src/game.js): one chat session; 5 play_fives that each deal a
+ * round (each saves) and 25 judge (each saves); the round card read once a round, counted as 5 more calls (a read of
+ * the card does not read the person's 5s, so this errs high). Said as a share: what it uses of an ordinary day
+ * (PERSON_DAY) and of the day's free allowance, by the allowance that runs out first.
+ */
+export const GAME = Object.freeze(personDay({ sessions: 1, toolCalls: 5 + 25 + 5, saves: 5 + 25, refreshesPerDay: 0, bringIns: 0 }));
+export function gameShare(game, day, plan) {
+  const g = game || GAME, d = day || PERSON_DAY, p = plan || FREE_PLAN;
+  return { ofDay: +(g.doRequests / d.doRequests).toFixed(1), ofAllowance: +(100 * g.doRequests / p.doRequests).toFixed(2), gamesADay: Math.floor(p.doRequests / g.doRequests) };
+}

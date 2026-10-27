@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>A round</title>
+<style>
+/* A round of fives: the five things together, in the artist's order (a picture, a line of code, a space, a
+   page, a word), Pass or Keep under each, in any order. The thing itself is the only other control: tap the
+   picture or the page to see it whole, tap the line to copy it, tap the building to go in.
+   An MCP App view (ui://fives/round.html). Colours come from the host's style variables, with fallbacks. */
+:root {
+  --bg: var(--color-background-primary, #fff); --fg: var(--color-text-primary, #141413);
+  --muted: var(--color-text-tertiary, #73726c); --line: var(--color-border-tertiary, rgba(31,30,29,.15));
+  --well: var(--color-background-secondary, #f5f4ed); --inv: var(--color-background-inverse, #141413);
+  --inv-fg: var(--color-text-inverse, #fff); --pill: rgba(255,255,255,.92); --r: var(--border-radius-lg, 10px);
+  --sans: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  --mono: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --mh: 168px; --sa-t: 0px; --sa-r: 0px; --sa-b: 0px; --sa-l: 0px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: var(--color-background-primary, #30302e); --fg: var(--color-text-primary, #faf9f5);
+    --muted: var(--color-text-tertiary, #9c9a92); --line: var(--color-border-tertiary, rgba(222,220,209,.15));
+    --well: var(--color-background-secondary, #262624); --inv: var(--color-background-inverse, #faf9f5);
+    --inv-fg: var(--color-text-inverse, #141413); --pill: rgba(38,38,36,.92); }
+}
+:root[data-theme="dark"] { --bg: var(--color-background-primary, #30302e); --fg: var(--color-text-primary, #faf9f5);
+  --muted: var(--color-text-tertiary, #9c9a92); --line: var(--color-border-tertiary, rgba(222,220,209,.15));
+  --well: var(--color-background-secondary, #262624); --inv: var(--color-background-inverse, #faf9f5);
+  --inv-fg: var(--color-text-inverse, #141413); --pill: rgba(38,38,36,.92); }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/1.4 var(--sans); -webkit-text-size-adjust: 100%; }
+body { padding: 12px; }
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; margin: 0 2px 10px; }
+.round { margin: 0; font-weight: 600; font-size: 14px; }
+.prog { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.dots { display: flex; gap: 5px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line); }
+.dots i.passed { box-shadow: inset 0 0 0 1.5px var(--fg); }
+.dots i.kept { background: var(--fg); box-shadow: none; }
+.next { min-height: 44px; padding: 0 18px; border: 0; border-radius: var(--r); background: var(--inv); color: var(--inv-fg); font-weight: 600; cursor: pointer; }
+.next:disabled { opacity: .55; cursor: default; }
+.say { margin: 0 2px 10px; color: var(--muted); font-size: 13px; }
+.say:empty { display: none; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 10px; }
+@media (min-width: 560px) { :root { --mh: 200px; } .grid { grid-template-columns: repeat(3, 1fr); } .k-word { grid-column: span 2 !important; } }
+.tile { display: flex; flex-direction: column; min-width: 0; }
+.k-word { grid-column: 1 / -1; }
+.media { position: relative; flex: 1; min-height: var(--mh); width: 100%; margin: 0; padding: 0; border: 0; border-radius: var(--r);
+  background: var(--well); overflow: hidden; display: grid; place-items: center; text-align: left; cursor: pointer; }
+.k-word .media { min-height: 76px; cursor: default; }
+.media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+.crop { background-repeat: no-repeat; }
+.bands { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.bands i { display: block; }
+.code { display: flex; flex-direction: column; justify-content: space-between; align-items: stretch; gap: 8px; padding: 12px; }
+.code pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 12px/1.45 var(--mono); user-select: all; -webkit-user-select: all; }
+.code .where { color: var(--muted); font-size: 12px; }
+.word { padding: 12px 16px; font: 400 36px/1.1 var(--serif); text-align: center; overflow-wrap: anywhere; letter-spacing: .01em; }
+.space canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+.hint { position: absolute; left: 6px; bottom: 6px; max-width: calc(100% - 12px); margin: 0; padding: 3px 9px; border-radius: 999px;
+  background: var(--pill); color: var(--muted); font-size: 11.5px; line-height: 1.35; pointer-events: none; }
+.note { padding: 12px; margin: 0; color: var(--muted); font-size: 13px; text-align: center; }
+.foot { margin-top: 6px; min-height: 44px; }
+.acts { display: flex; gap: 6px; }
+.acts button { flex: 1; min-width: 0; min-height: 44px; padding: 0 4px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); font-weight: 600; cursor: pointer; }
+.acts .keep { background: var(--inv); color: var(--inv-fg); border-color: var(--inv); }
+.acts button:disabled { opacity: .5; cursor: default; }
+.said p { margin: 0; padding: 2px 2px 0; font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.said b { font-weight: 600; }
+body.old .acts button, body.old .next { opacity: .4; pointer-events: none; }
+
+/* Full screen: one thing, whole. A wide page on an upright screen is turned to fill it; two fingers zoom, one moves. */
+.full { position: fixed; inset: 0; z-index: 10; background: var(--bg); }
+.stage { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
+.paper { position: absolute; left: 50%; top: 50%; }
+.paper img { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.back, .alt { position: absolute; top: calc(var(--sa-t) + 10px); min-height: 44px; padding: 0 16px; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--pill); font-weight: 500; cursor: pointer; }
+.back { left: calc(var(--sa-l) + 10px); }
+.alt { right: calc(var(--sa-r) + 10px); }
+.cap { position: absolute; left: calc(var(--sa-l) + 10px); right: calc(var(--sa-r) + 10px); bottom: calc(var(--sa-b) + 10px); margin: 0 auto;
+  max-width: 36em; max-height: 38%; overflow: auto; padding: 8px 12px; border-radius: 12px; background: var(--pill); font-size: 13px; line-height: 1.4; }
+.cap:empty { display: none; }
+.cap p { margin: 0 0 4px; }
+.cap p:last-child { margin: 0; }
+.cap .muted { color: var(--muted); }
+body.in-full > :not(.full) { visibility: hidden; }
+</style>
+</head>
+<body>
+<header class="top">
+  <p class="round" id="round">A round</p>
+  <div class="prog" id="prog"><span class="dots" id="dots" aria-hidden="true"></span><span id="count"></span></div>
+  <button class="next" id="next" hidden>Next round</button>
+</header>
+<p class="say" id="say" aria-live="polite">Waiting for the round</p>
+<main class="grid" id="grid"></main>
+<div class="full" id="full" hidden>
+  <div class="stage" id="stage"></div>
+  <button class="back" id="back">Back</button>
+  <button class="alt" id="alt" hidden>Its building</button>
+  <div class="cap" id="cap" aria-live="polite"></div>
+</div>
+<script>
+"use strict";
+/* ---- The bridge: MCP Apps' JSON-RPC over postMessage (ext-apps protocol 2026-01-26), small enough to inline. */
+const PROTOCOL = "2026-01-26";
+let rpcId = 0;
+const waiting = new Map();
+function request(method, params) {
+  const id = ++rpcId;
+  parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+  return new Promise((ok, no) => waiting.set(id, { ok, no }));
+}
+function notify(method, params) { parent.postMessage({ jsonrpc: "2.0", method, params }, "*"); }
+function answerHost(id, result) { parent.postMessage({ jsonrpc: "2.0", id, result }, "*"); }
+const host = { caps: {}, ctx: {} };
+addEventListener("message", (e) => {
+  if (e.source !== parent) return;
+  const m = e.data;
+  if (!m || m.jsonrpc !== "2.0") return;
+  if (!m.method && m.id != null && waiting.has(m.id)) {
+    const w = waiting.get(m.id); waiting.delete(m.id);
+    return m.error ? w.no(m.error) : w.ok(m.result);
+  }
+  if (m.method === "ui/notifications/tool-result") return start(m.params);
+  if (m.method === "ui/notifications/host-context-changed") return context(m.params);
+  if (m.method === "ui/resource-teardown") { stopAll(); return answerHost(m.id, {}); }
+  if (m.method === "ping") return answerHost(m.id, {});
+});
+
+/* ---- Host context: theme, style variables, safe area, display mode, the inline height cap. */
+function context(c) {
+  if (!c) return;
+  const before = host.ctx.displayMode;
+  Object.assign(host.ctx, c);
+  const root = document.documentElement;
+  if (c.theme === "light" || c.theme === "dark") root.dataset.theme = c.theme;
+  const vars = c.styles && c.styles.variables;
+  if (vars) for (const k in vars) if (typeof vars[k] === "string" && /^--[a-z0-9-]+$/.test(k)) root.style.setProperty(k, vars[k]);
+  const s = c.safeAreaInsets;
+  if (s) for (const [k, v] of [["t", s.top], ["r", s.right], ["b", s.bottom], ["l", s.left]]) root.style.setProperty("--sa-" + k, Math.max(0, +v || 0) + "px");
+  // The host left full screen itself (its own close): come back inline too.
+  if (before === "fullscreen" && c.displayMode === "inline" && shown) closeFull(true);
+  if (c.containerDimensions) shrink();
+  if (shown) requestAnimationFrame(relayoutFull);
+}
+
+/* ---- The round. structuredContent: { game: {round, of, seq}, things: [five, in order] }.
+   Every string from it is set as text, never as HTML: titles in reveals are other people's words. */
+const $ = (id) => document.getElementById(id);
+const KIND = {
+  picture: { label: "A picture", noun: "picture" }, line: { label: "A line of code", noun: "line of code" },
+  space: { label: "A space", noun: "space" }, page: { label: "A page", noun: "page" }, word: { label: "A word", noun: "word" }
+};
+const THREE = [
+  ["https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js", "sha384-vV17nr/rMaJqmeZkFUzXLpHdQ+ME5QHKdydaqqN+3Ga39RJlNrTatJxHwGV4ml2C"],
+  ["https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js", "sha384-I0DMsfimAPIqWT8lF+oA997gRgdUi3jhidoTq3fN0zmn35smXZukD01FLnsPRU9i"]
+];
+// The connector's addresses are https; plain http only for a local test of the Worker.
+const url = (u) => typeof u === "string" && (/^https:\/\/[^\s"'<>]+$/.test(u) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/[^\s"'<>]*$/.test(u)) ? u : null;
+const hex = (h) => typeof h === "string" && /^#[0-9a-f]{6}$/i.test(h) ? h : null;
+const str = (v, n) => typeof v === "string" ? v.slice(0, n || 400) : "";
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function say(text) { $("say").textContent = text || ""; fit(); }
+
+let game = {}, things = [], seq = 0, old = false, ended = false;
+
+function start(result) {
+  const sc = result && result.structuredContent;
+  if (!sc || !Array.isArray(sc.things) || !sc.things.length) {
+    const words = result && Array.isArray(result.content) && result.content[0] && result.content[0].text;
+    return say(str(words, 300) || "Nothing to show here.");
+  }
+  stopAll();
+  game = sc.game || {};
+  // kept: null until answered, then true or false (a reopened card shows what was already answered).
+  things = sc.things.slice(0, 5).filter((t) => t && KIND[t.kind]).map((t) => Object.assign({}, t, { answer: typeof t.kept === "boolean" ? t.kept : null }));
+  ended = false;
+  say("");
+  $("round").textContent = "Round " + (+game.round || 1) + " of " + (+game.of || 5);
+  $("grid").replaceChildren(...things.map(tile));
+  dots();
+  elect(+game.seq || 0);
+  requestAnimationFrame(shrink);
+  if (things.every((t) => t.answer != null)) roundDone(null);
+}
+
+function tile(t) {
+  const sec = el("section", "tile k-" + t.kind);
+  sec.setAttribute("aria-label", KIND[t.kind].label);
+  const media = draw(t), foot = el("div", "foot");
+  t.$ = { sec, media, foot };
+  sec.append(media, foot);
+  paintFoot(t);
+  return sec;
+}
+const the = (t) => "the " + KIND[t.kind].noun;
+
+function paintFoot(t) {
+  const f = t.$.foot;
+  f.replaceChildren();
+  if (t.answer == null) {
+    f.className = "foot acts";
+    const pass = el("button", "pass", t.still_yours ? "Let go" : "Pass"), keep = el("button", "keep", "Keep");
+    pass.setAttribute("aria-label", pass.textContent + " " + the(t));
+    keep.setAttribute("aria-label", "Keep " + the(t));
+    pass.onclick = () => answer(t, false);
+    keep.onclick = () => answer(t, true);
+    f.append(pass, keep);
+    return;
+  }
+  f.className = "foot said";
+  const p = el("p");
+  p.append(el("b", null, t.answer ? "Kept." : t.still_yours ? "Let go." : "Passed."));
+  const short = brief(t);
+  if (short) p.append(" " + short);
+  p.title = details(t).join("\n");
+  f.append(p);
+}
+
+/* What it was, after the answer. brief: one line for the tile. details: everything, for full screen. */
+function brief(t) {
+  const r = t.reveal || {};
+  if (t.kind === "picture" || t.kind === "space") return [str(r.title, 120), str(r.artist, 80), str(r.date, 30)].filter(Boolean).join(", ");
+  if (t.kind === "line") return str(r.does, 200);
+  if (t.kind === "page") return [str(r.title, 80) || (t.reveal ? "Untitled" : ""), str(r.place, 60)].filter(Boolean).join(", ");
+  return str(r.text, 240);
+}
+function details(t) {
+  const r = t.reveal || {}, out = [];
+  const add = (s) => { if (s) out.push(s); };
+  if (t.kind === "picture" || t.kind === "space") { add(brief(t)); add(str(r.place, 60)); add(str(r.medium, 160)); add(str(r.source, 60)); }
+  else if (t.kind === "line") { add(str(r.does, 240)); add(str(r.source, 120)); }
+  else if (t.kind === "page") { add(brief(t)); if (Array.isArray(r.relations)) r.relations.slice(0, 6).forEach((x) => add(str(x, 240))); }
+  else add(str(r.text, 300));
+  // Where it came from, when it came from something kept: the inside out, said plainly ("… you kept in round 1 …").
+  if (r.from && r.from.line) add(str(r.from.line, 200));
+  return out;
+}
+
+function dots() {
+  const n = things.length || 5, done = things.filter((t) => t.answer != null).length;
+  $("dots").replaceChildren(...Array.from({ length: n }, (_, i) => {
+    const d = el("i"), a = things[i] && things[i].answer;
+    if (a === true) d.className = "kept"; else if (a === false) d.className = "passed";
+    return d;
+  }));
+  $("count").textContent = done + " of " + n;
+  $("prog").setAttribute("aria-label", done + " of " + n + " answered");
+}
+
+/* ---- Drawing each kind. */
+function draw(t) {
+  if (t.missing) return mediaNote("This one can't be shown here.");
+  if (t.kind === "picture") return drawPicture(t);
+  if (t.kind === "line") return drawLine(t);
+  if (t.kind === "space") return drawSpace(t);
+  if (t.kind === "page") return drawPage(t);
+  const box = el("div", "media"), w = el("div", "word", str(t.word, 40));
+  box.append(w);
+  return box;
+}
+function mediaNote(text) { const box = el("div", "media"); box.append(el("p", "note", text)); return box; }
+
+function bands(t, box) {
+  const cols = (Array.isArray(t.colours) ? t.colours : []).map((c) => ({ hex: hex(c && c.hex), share: +(c && c.share) || 1 })).filter((c) => c.hex);
+  if (!cols.length) return false;
+  const b = el("div", "bands");
+  for (const c of cols) { const i = el("i"); i.style.background = c.hex; i.style.flex = String(c.share); b.append(i); }
+  box.append(b);
+  return true;
+}
+
+function drawPicture(t) {
+  const box = el("button", "media pic");
+  box.type = "button";
+  const src = url(t.image);
+  if (!src) {
+    box.style.cursor = "default";
+    if (!bands(t, box)) box.append(el("p", "note", "No picture to show."));
+    if (t.still_yours) box.append(el("p", "hint", "Still yours?"));
+    box.setAttribute("aria-label", t.still_yours ? "One of your own things: still yours?" : "Three colours");
+    return box;
+  }
+  box.setAttribute("aria-label", "A picture. Tap to see it whole.");
+  const img = el("img");
+  img.alt = "";
+  img.referrerPolicy = "no-referrer";
+  const crop = t.crop && [t.crop.x, t.crop.y, t.crop.width, t.crop.height].every((v) => Number.isFinite(+v)) && +t.crop.width > 0 && +t.crop.height > 0 ? t.crop : null;
+  img.onerror = () => { img.remove(); bands(t, box); box.append(el("p", "hint", "The picture didn't load here.")); };
+  img.onload = () => { if (crop) cropTo(box, img, crop); };
+  img.src = src;
+  box.append(img);
+  box.onclick = () => openFull(t);
+  return box;
+}
+/* A Surface: only its crop, at its own shape, as large as the box allows. */
+function cropTo(box, img, c) {
+  const iw = img.naturalWidth, ih = img.naturalHeight, d = el("div", "crop");
+  const ratio = (c.width * iw) / (c.height * ih);
+  const place = () => {
+    const bw = box.clientWidth, bh = box.clientHeight, w = bw / bh > ratio ? bh * ratio : bw, h = w / ratio;
+    d.style.cssText = "position:absolute;width:" + w + "px;height:" + h + "px;left:" + (bw - w) / 2 + "px;top:" + (bh - h) / 2 + "px";
+    d.style.backgroundImage = 'url("' + img.src.replace(/"/g, "%22") + '")';
+    d.style.backgroundSize = (100 / c.width) + "% " + (100 / c.height) + "%";
+    d.style.backgroundPosition = (c.width < 1 ? c.x / (1 - c.width) * 100 : 0) + "% " + (c.height < 1 ? c.y / (1 - c.height) * 100 : 0) + "%";
+  };
+  img.replaceWith(d);
+  place();
+  new ResizeObserver(place).observe(box);
+}
+
+function drawLine(t) {
+  const box = el("button", "media code");
+  box.type = "button";
+  const code = str(t.code, 2000);
+  const pre = el("pre"); pre.append(el("code", null, code));
+  const where = el("span", "where", (t.where ? "For " + str(t.where, 120) : "A line") + " · tap to copy");
+  box.append(pre, where);
+  box.setAttribute("aria-label", "A line of code. Tap to copy it.");
+  box.onclick = () => copyLine(code, pre, where);
+  return box;
+}
+/* The Clipboard API when the host grants clipboard-write, else the selection, else say how. */
+function copyLine(text, pre, where) {
+  const was = where.dataset.was || (where.dataset.was = where.textContent);
+  const told = (s) => { where.textContent = s; clearTimeout(where._t); where._t = setTimeout(() => (where.textContent = was), 1800); };
+  const select = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+  const legacy = () => { select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { /* not allowed */ } told(ok ? "Copied" : "Selected: copy it"); window.copied = ok ? "execCommand" : "selected"; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { told("Copied"); window.copied = "clipboard"; }, legacy);
+  else legacy();
+}
+
+function drawPage(t) {
+  const box = el("button", "media page");
+  box.type = "button";
+  const src = url(t.image);
+  if (hex(t.ground)) box.style.background = t.ground;
+  if (!src) { box.append(el("p", "note", "The page can't be shown here.")); return box; }
+  const img = el("img");
+  img.alt = "";
+  img.referrerPolicy = "no-referrer";
+  const hint = el("p", "hint", "Tap to read");
+  img.onerror = () => { img.remove(); hint.textContent = "This page's link has run out. Say “play fives” for a fresh one."; };
+  img.src = src;
+  box.append(img, hint);
+  box.setAttribute("aria-label", "A page: a poem, a picture and their layout. Tap to read it.");
+  box.onclick = () => openFull(t);
+  return box;
+}
+
+/* ---- A space: the building in blocks, still until a sideways drag turns it (a vertical drag is the chat's).
+   A tap goes in, full screen. three.js comes from jsdelivr with integrity hashes; models.js, space.js and the
+   model from the connector's own static files. */
+const loaded = {};
+function script(src, integrity) {
+  return loaded[src] || (loaded[src] = new Promise((ok, no) => {
+    const s = document.createElement("script");
+    s.src = src; if (integrity) { s.integrity = integrity; s.crossOrigin = "anonymous"; }
+    s.onload = ok; s.onerror = () => { delete loaded[src]; no(new Error("script")); };
+    document.head.appendChild(s);
+  }));
+}
+async function building(model) {
+  const assets = new URL(model).origin + "/s/";
+  const [spec] = await Promise.all([
+    fetch(model).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }),
+    THREE.concat([[assets + "models.js"], [assets + "space.js"]]).reduce((p, [s, i]) => p.then(() => script(s, i)), Promise.resolve())
+  ]);
+  return spec;
+}
+const bgColour = () => getComputedStyle(document.body).backgroundColor;
+function drawSpace(t) {
+  const box = el("div", "media space");
+  const model = url(t.model);
+  const note = el("p", "note", model ? "Building the space" : "This space can't be drawn here. Its link is in the chat.");
+  box.append(note);
+  if (!model) return box;
+  box.tabIndex = 0;
+  box.setAttribute("role", "button");
+  box.setAttribute("aria-label", "A building in blocks. Drag sideways to turn it. Tap to go in.");
+  box.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goIn(t); } };
+  building(model).then((spec) => {
+    if (old) return;
+    const canvas = el("canvas");
+    box.replaceChildren(canvas, el("p", "hint", "Drag to turn · tap to go in"));
+    t.$.canvas = canvas;
+    t.space = FivesSpace.mount(canvas, spec, { flat: true, bg: getComputedStyle(box).backgroundColor, onTap: () => goIn(t) });
+    window.spaces = (window.spaces || 0) + 1;
+  }).catch(() => { note.textContent = "This space can't be drawn here. Its link is in the chat."; box.removeAttribute("role"); box.tabIndex = -1; });
+  return box;
+}
+
+/* ---- Keep or Pass: recorded the moment it is tapped. The card calls judge itself (the host proxies
+   tools/call to the connector); without serverTools it says the answer in the chat and Claude records it. */
+async function answer(t, keep) {
+  if (t.answer != null || t.busy || old) return;
+  t.busy = true;
+  t.$.foot.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  try {
+    if (host.caps.serverTools) {
+      const r = await request("tools/call", { name: "judge", arguments: { card: t.thing, keep } });
+      const sc = r && r.structuredContent;
+      if (!sc || r.isError || sc.ok === false) throw new Error("refused");
+      record(t, typeof sc.kept === "boolean" ? sc.kept : keep, sc.reveal, false, sc);
+    } else if (host.caps.message) {
+      await request("ui/message", { role: "user", content: [{ type: "text", text: (keep ? "Keep " : t.still_yours ? "Let go of " : "Pass ") + the(t) + "." }] });
+      record(t, keep, null, false, null);
+    } else {
+      t.busy = false; paintFoot(t);
+      say("Say Keep or Pass in the chat.");
+    }
+  } catch (e) {
+    t.busy = false; paintFoot(t);
+    say("That didn't reach your database. Say Keep or Pass in the chat.");
+  }
+}
+function record(t, keep, reveal, fromSibling, sc) {
+  t.busy = false;
+  t.answer = !!keep;
+  if (reveal && typeof reveal === "object") t.reveal = reveal;
+  paintFoot(t);
+  dots();
+  if (!fromSibling) post({ seq, thing: t.thing, keep: t.answer, reveal: t.reveal || null });
+  if (shown === t) caption(t);
+  if (things.every((x) => x.answer != null)) roundDone(sc);
+  fit();
+}
+
+/* The round's end: one line into Claude's context, and one button that asks Claude for the next round. */
+function roundDone(sc) {
+  if (ended) return;
+  ended = true;
+  const r = +game.round || 1, of = +game.of || 5, last = r >= of;
+  const list = (k) => things.filter((t) => t.answer === k);
+  const kept = list(true), passed = list(false);
+  const names = (ts) => ts.map(the).join(", ") || "nothing";
+  const text = "Round " + r + " of " + of + " done. Kept: " + names(kept) + ". Passed: " + names(passed) + ".";
+  const lines = kept.filter((t) => t.kind === "line" && t.code).map((t) => t.code);
+  if (host.caps.updateModelContext) request("ui/update-model-context", {
+    content: [{ type: "text", text: text + (lines.length ? "\nThe kept line of code, to give again in a code block:\n" + lines.join("\n") : "") }],
+    structuredContent: { round: r, of, kept: kept.map((t) => t.thing), passed: passed.map((t) => t.thing) }
+  }).catch(() => {});
+  const g = sc && sc.game_sorted, all = g && Number.isFinite(+g.kept) ? +g.kept : null;
+  $("round").textContent = last && all != null ? "Game done · kept " + all + " of " + (+g.of || of * 5) : "Round " + r + " done · kept " + kept.length + " of " + things.length;
+  $("prog").hidden = true;
+  const next = $("next");
+  next.hidden = false;
+  next.disabled = false;
+  next.textContent = last ? "Finish" : "Next round";
+  next.onclick = () => {
+    if (!host.caps.message) return say(last ? "Say “that's the game” in the chat." : "Say “next round” in the chat.");
+    next.disabled = true;
+    request("ui/message", { role: "user", content: [{ type: "text", text: text + (last ? " That was the last round." : " Next round.") }] })
+      .then(() => { next.textContent = "Sent"; }, () => { next.disabled = false; });
+  };
+}
+
+/* ---- Full screen: the picture or the page whole (zoom and move), or the building to go into. */
+let shown = null, zoom = null, extra = null;
+async function displayMode(mode) {
+  const avail = host.ctx.availableDisplayModes;
+  if (Array.isArray(avail) && !avail.includes(mode)) return null;
+  try { const r = await request("ui/request-display-mode", { mode }); return r && r.mode; } catch (e) { return null; }
+}
+async function openFull(t) {
+  if (old || shown) return;
+  shown = t;
+  document.body.classList.add("in-full");
+  $("full").hidden = false;
+  $("full").style.background = t.kind === "page" && hex(t.ground) ? t.ground : "";
+  $("alt").hidden = true;
+  await displayMode("fullscreen");
+  if (shown !== t) return;
+  if (t.kind === "space") {
+    const c = t.$.canvas;
+    $("stage").replaceChildren(c);
+    t.space.flat(false);
+    t.space.size();
+    t.space.walked = t.space.walk();
+  } else {
+    zoom = zoomer($("stage"), url(t.image), t.kind === "page");
+  }
+  caption(t);
+  $("back").focus();
+}
+async function closeFull(fromHost) {
+  const t = shown;
+  if (!t) return;
+  shown = null;
+  if (extra) { extra.stop(); extra = null; }
+  if (t.kind === "space" && t.space && t.$.canvas) {
+    t.$.media.prepend(t.$.canvas);
+    t.space.flat(true);
+    t.space.spin();
+    requestAnimationFrame(() => t.space && t.space.size());
+  }
+  zoom = null;
+  $("stage").replaceChildren();
+  $("cap").replaceChildren();
+  $("full").hidden = true;
+  document.body.classList.remove("in-full");
+  if (!fromHost) await displayMode("inline");
+  fit();
+  t.$.media.focus();
+}
+function relayoutFull() {
+  if (zoom) zoom.layout();
+  if (shown && shown.space && !extra) shown.space.size();
+  if (extra) extra.size();
+}
+addEventListener("resize", () => { if (shown) relayoutFull(); });
+addEventListener("keydown", (e) => { if (e.key === "Escape" && shown) closeFull(false); });
+$("back").onclick = () => closeFull(false);
+
+function caption(t) {
+  const cap = $("cap");
+  cap.replaceChildren();
+  const touch = host.ctx.deviceCapabilities ? !!host.ctx.deviceCapabilities.touch : matchMedia("(pointer: coarse)").matches;
+  const add = (s, cls) => { if (s) cap.append(el("p", cls, s)); };
+  if (t.answer != null) {
+    const head = el("p");
+    head.append(el("b", null, t.answer ? "Kept." : t.still_yours ? "Let go." : "Passed."));
+    const d = details(t);
+    if (d.length) head.append(" " + d[0]);
+    cap.append(head);
+    d.slice(1).forEach((s) => add(s));
+  }
+  if (t.kind === "space" && !extra) {
+    add(!t.space.walked ? "Drag to turn it · pinch to come closer."
+      : t.room ? "Inside, where the model is cut away. Drag to look round · tap a floor to step there."
+      : "Most of these buildings are solid models, so this stands you under cover beside it. Drag to look round · tap a floor to step there.", "muted");
+  } else if (extra) {
+    add("Its building. Drag to turn it · tap to go in.", "muted");
+  } else if (t.answer == null) {
+    add(touch ? "Pinch to come closer · drag to move · double tap to zoom." : "Scroll to come closer · drag to move · double click to zoom.", "muted");
+  }
+  // The page's own building, a space inside a page: after the answer, so its name stays in the reveal.
+  const b = t.kind === "page" && t.reveal && Array.isArray(t.reveal.buildings) && t.reveal.buildings[0];
+  const alt = $("alt");
+  alt.hidden = !(b && url(b.model));
+  alt.textContent = extra ? "The page" : "Its building";
+  alt.onclick = () => (extra ? showPage(t) : showBuilding(t, url(b.model)));
+}
+function showBuilding(t, model) {
+  const stage = $("stage"), canvas = el("canvas");
+  stage.replaceChildren(el("p", "note", "Building the space"));
+  zoom = null;
+  building(model).then((spec) => {
+    if (shown !== t) return;
+    stage.replaceChildren(canvas);
+    let s;
+    s = extra = FivesSpace.mount(canvas, spec, { turn: true, bg: getComputedStyle($("full")).backgroundColor, onTap: () => s.walk() });
+    caption(t);
+  }).catch(() => { stage.replaceChildren(el("p", "note", "Its building can't be drawn here.")); });
+}
+function showPage(t) {
+  if (extra) { extra.stop(); extra = null; }
+  zoom = zoomer($("stage"), url(t.image), true);
+  caption(t);
+}
+
+/* Two fingers zoom and one moves (or the wheel and a drag, with a mouse); a double tap zooms in or back.
+   The image sits on a "paper" the size of the stage, turned a quarter when a wide page meets an upright screen. */
+function zoomer(stage, src, turnable) {
+  const paper = el("div", "paper"), img = el("img");
+  img.alt = ""; img.draggable = false; img.referrerPolicy = "no-referrer";
+  paper.append(img);
+  stage.replaceChildren(paper);
+  let iw = 0, ih = 0, W = 1, H = 1, PW = 1, PH = 1, bw = 1, bh = 1, bx = 0, by = 0, s = 1, tx = 0, ty = 0, turn = false;
+  const pts = new Map();
+  let lastTap = 0, moved = false;
+  function layout() {
+    if (!iw) return;
+    W = stage.clientWidth; H = stage.clientHeight;
+    turn = turnable && H > W && iw > ih;
+    PW = turn ? H : W; PH = turn ? W : H;
+    const k = Math.min(PW / iw, PH / ih);
+    bw = iw * k; bh = ih * k; bx = (PW - bw) / 2; by = (PH - bh) / 2;
+    paper.style.width = PW + "px"; paper.style.height = PH + "px";
+    paper.style.transform = "translate(-50%, -50%)" + (turn ? " rotate(90deg)" : "");
+    img.style.width = bw + "px"; img.style.height = bh + "px";
+    s = 1; tx = 0; ty = 0;
+    paint();
+  }
+  function paint() {
+    const cw = bw * s, ch = bh * s;
+    tx = cw <= PW ? (PW - cw) / 2 - bx : Math.min(-bx, Math.max(PW - cw - bx, tx));
+    ty = ch <= PH ? (PH - ch) / 2 - by : Math.min(-by, Math.max(PH - ch - by, ty));
+    img.style.transform = "translate(" + (bx + tx) + "px, " + (by + ty) + "px) scale(" + s + ")";
+  }
+  // A point on the screen, in the paper's own axes (the paper is turned clockwise).
+  function local(x, y) {
+    const r = stage.getBoundingClientRect(), cx = x - r.left - W / 2, cy = y - r.top - H / 2;
+    return turn ? { x: cy + PW / 2, y: -cx + PH / 2 } : { x: cx + PW / 2, y: cy + PH / 2 };
+  }
+  function zoomAt(q, f) {
+    const s2 = Math.min(6, Math.max(1, s * f));
+    const px = (q.x - bx - tx) / s, py = (q.y - by - ty) / s;
+    tx = q.x - bx - px * s2; ty = q.y - by - py * s2; s = s2;
+    paint();
+  }
+  function pan(dx, dy) { if (turn) { tx += dy; ty -= dx; } else { tx += dx; ty += dy; } paint(); }
+  stage.onpointerdown = (e) => {
+    if (e.target.closest("button")) return;
+    try { stage.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) moved = false;
+  };
+  stage.onpointermove = (e) => {
+    const p = pts.get(e.pointerId);
+    if (!p) return;
+    if (pts.size === 1) {
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+      p.x = e.clientX; p.y = e.clientY;
+      return pan(dx, dy);
+    }
+    const [a, b] = Array.from(pts.values());
+    const d0 = Math.hypot(a.x - b.x, a.y - b.y), m0x = (a.x + b.x) / 2, m0y = (a.y + b.y) / 2;
+    p.x = e.clientX; p.y = e.clientY;
+    const d1 = Math.hypot(a.x - b.x, a.y - b.y), m1x = (a.x + b.x) / 2, m1y = (a.y + b.y) / 2;
+    moved = true;
+    pan(m1x - m0x, m1y - m0y);
+    if (d0 > 0) zoomAt(local(m1x, m1y), d1 / d0);
+  };
+  const up = (e) => {
+    if (!pts.delete(e.pointerId)) return;
+    if (e.type !== "pointerup" || moved || pts.size) return;
+    const now = performance.now();
+    if (now - lastTap < 320) { zoomAt(local(e.clientX, e.clientY), s > 1.05 ? 1 / s : 2.5); lastTap = 0; } else lastTap = now;
+  };
+  stage.onpointerup = up; stage.onpointercancel = up;
+  stage.onwheel = (e) => { e.preventDefault(); zoomAt(local(e.clientX, e.clientY), Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002))); };
+  img.onload = () => { iw = img.naturalWidth; ih = img.naturalHeight; layout(); };
+  img.src = src || "";
+  return { layout, get scale() { return s; }, get turned() { return turn; } };
+}
+
+function goIn(t) { if (t.space && !old) openFull(t); }
+
+/* ---- An older round card stops taking answers once a newer one is in the chat; a card for the same round
+   takes the answers given in its twin (every call mounts its own frame; frames of one connector share an origin). */
+let chan = null;
+function post(m) { try { if (chan) chan.postMessage(m); } catch (e) { /* closed */ } }
+function elect(n) {
+  seq = n;
+  try {
+    if (chan) chan.close();
+    chan = new BroadcastChannel("fives-round");
+    chan.onmessage = (e) => {
+      const m = e.data || {}, s = +m.seq || 0;
+      if (seq && s > seq) return retire();
+      if (s === seq && typeof m.thing === "string") {
+        const t = things.find((x) => x.thing === m.thing);
+        if (t && t.answer == null) record(t, !!m.keep, m.reveal, true, null);
+        return;
+      }
+      if (m.hello && s < seq) post({ seq });
+    };
+    post({ seq, hello: true });
+  } catch (e) { /* no BroadcastChannel: every card stays live, and judge answers a thing only once */ }
+}
+function retire() {
+  if (old) return;
+  old = true;
+  document.body.classList.add("old");
+  if (shown) closeFull(false);
+  stopAll();
+  say("A newer round is further down the chat.");
+}
+function stopAll() {
+  if (extra) { extra.stop(); extra = null; }
+  for (const t of things) if (t.space) {
+    t.space.stop(); t.space = null;
+    if (t.$ && t.$.media) t.$.media.replaceChildren(el("p", "note", old ? "A newer round is further down the chat." : ""));
+  }
+}
+
+/* ---- Height: the host sizes the frame to what the card says. Under a known cap, the pictures shrink first. */
+let fitting = 0;
+function fit() {
+  if (shown) return;
+  cancelAnimationFrame(fitting);
+  fitting = requestAnimationFrame(() => notify("ui/notifications/size-changed", {
+    width: document.documentElement.scrollWidth, height: Math.ceil(document.documentElement.getBoundingClientRect().height)
+  }));
+}
+function shrink() {
+  const d = host.ctx.containerDimensions, cap = d && +d.maxHeight;
+  const root = document.documentElement;
+  root.style.removeProperty("--mh");
+  if (!cap || shown || !things.length) return fit();
+  const over = Math.ceil(root.getBoundingClientRect().height) - cap;
+  if (over > 0) root.style.setProperty("--mh", Math.max(96, parseFloat(getComputedStyle(root).getPropertyValue("--mh")) - over / 2) + "px");
+  fit();
+}
+new ResizeObserver(fit).observe(document.body);
+
+/* ---- Connect: ui/initialize, then ui/notifications/initialized; the host then sends the tool's result. */
+request("ui/initialize", {
+  appInfo: { name: "round", version: "1.0.0" },
+  appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] },
+  protocolVersion: PROTOCOL
+}).then((r) => {
+  host.caps = (r && r.hostCapabilities) || {};
+  context(r && r.hostContext);
+  notify("ui/notifications/initialized", {});
+  fit();
+});
+</script>
+</body>
+</html>

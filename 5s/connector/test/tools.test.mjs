@@ -7,7 +7,8 @@ import { trimDeck } from '../src/deck.js';
 import { readRepos } from '../src/store.js';
 
 const SPEC_TOOLS = ['get_taste', 'aesthetic_brief', 'next_five', 'judge', 'get_seed', 'hub_status', 'make_hub', 'save_hub', 'get_state', 'put_state',
-  'read_link', 'bring_in', 'item_image']; // the last three: SPEC "Connect your apps" (Paste a link, Ask Claude)
+  'read_link', 'bring_in', 'item_image', // these three: SPEC "Connect your apps" (Paste a link, Ask Claude)
+  'play_fives']; // "let's play fives" through the connector: five kinds of thing (test/play.test.mjs)
 const SITE = LOGIN + '.github.io';
 const kindOf = (deck, id) => deck.cards.find((c) => c.id === id).kind;
 const req = (gh) => gh.calls.map((c) => c.method + ' ' + c.path);

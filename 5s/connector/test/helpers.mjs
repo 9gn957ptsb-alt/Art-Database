@@ -11,6 +11,7 @@ import { api } from '../src/hub.js';
 import { runTool } from '../src/tools.js';
 import { createWeb } from '../src/web.js';
 import { createFakeWeb } from '../src/fake-web.js';
+import { cardUrls } from '../src/card.js';
 
 export const here = dirname(fileURLToPath(import.meta.url));
 export const CONNECTOR = join(here, '..');
@@ -78,4 +79,51 @@ export async function playFives(ctx, n, keepRule) {
 export async function putState(ctx, state) {
   const g = await call(ctx, 'get_state');
   return call(ctx, 'put_state', { state, base: g.data.rev });
+}
+
+// ------------------------------------------------------------------ fives: five kinds (src/game.js)
+
+/** The Worker's links (card.js cardUrls), signed with a made-up secret. */
+export const ORIGIN = 'https://fives.example';
+export const PAGE_SECRET = 'a made-up secret, longer than thirty-two characters';
+
+/** The pages' secret folder in the made-up catalogue: it must never reach a result. */
+export const PAGE_DIR = 'f00dfacecafe0123456789abcdef0000';
+
+/**
+ * The fixture deck with a small made-up catalogue (dictionary words with made-up parts and leads, made-up
+ * pages and lines; no artist material) and a little more variety: each space a material of its own, the
+ * Images wood and canvas, one composition and one feel the line templates know.
+ */
+export function gameDeck() {
+  const MATS = ['wood', 'glass', 'stone', 'brick', 'concrete', 'steel'];
+  const full = fullFixture();
+  full.cards = full.cards.map((c) => (c.kind === 'space' ? { ...c, materials: [MATS[Number(c.id.slice(1)) % 6]] }
+    : c.kind === 'image' ? { ...c, materials: ['wood', 'canvas'], comp: (c.comp || []).concat(['a grid']), feel: (c.feel || []).concat(['muted']) } : c));
+  const word = (w, families, leads) => ({ id: 'w' + w, face: w[0].toUpperCase() + w.slice(1), lang: 'Latin', parts: w.slice(0, 3) + '·' + w.slice(3),
+    families, reveal: w.slice(0, 3) + '·' + w.slice(3) + ': a made-up root.', leads: leads.map((x) => 'w' + x) });
+  const things = {
+    version: 1, pageDir: PAGE_DIR,
+    lines: ['l001', 'l002', 'l003', 'l004'].map((id, n) => ({ id, lang: 'css', where: 'a stylesheet', line: 'body { background: #' + 'c32f28,1d4e89,f2c14e,3c3c3c'.split(',')[n] + '; }', does: 'the page in one colour', source: 'A made-up project' })),
+    words: [
+      word('attention', ['tendere'], ['intend']), word('intend', ['tendere'], ['attention']),
+      word('canopy', ['konops'], ['paradise']), word('paradise', ['daeza'], ['canopy']),
+      word('object', ['iacere'], ['subject']), word('subject', ['iacere'], ['object']),
+      word('linearity', ['linea'], []), word('chaos', ['khaos'], []), word('time', ['tima'], []),
+    ],
+    pics: { 'a round heart': 'wcanopy', shady: 'wchaos' },
+    spaces: ['s001', 's002', 's003', 's004', 's005', 's006', 's007', 's008', 's009', 's010'],
+    rooms: ['s004', 's007'],
+    pages: [1, 2, 3, 4, 5, 6].map((n) => ({ id: 'p' + n, title: n === 5 ? null : 'Made-up Page ' + n, wide: n % 2 === 0, w: n % 2 ? 1080 : 1920, h: n % 2 ? 1920 : 1080,
+      ground: '#eeeeee', place: n === 4 ? null : 'Made-up Town ' + n, buildings: [{ model: 'p' + n + 'a', name: 'Made-up Hall ' + n }],
+      relations: ['Made-up relation ' + n + '.'], words: n === 4 ? ['wintend'] : n === 2 ? ['wcanopy'] : ['wtime'] })),
+  };
+  return trimDeck(full, {}, null, things);
+}
+
+/** ctxFor() with the game's deck and links. */
+export function gameCtx(opts = {}) {
+  const r = ctxFor(Object.assign({ deck: gameDeck() }, opts));
+  r.ctx.urls = cardUrls(ORIGIN, PAGE_SECRET);
+  return r;
 }

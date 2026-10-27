@@ -14,6 +14,8 @@ export type Props = {
 	scopes?: string[];
 	/** Set only by the local dev bypass (DEV_FAKE_USER on localhost). */
 	dev?: boolean;
+	/** The Worker's own origin, added by the Worker to every /mcp request (never from the token): the round card's links. */
+	origin?: string;
 };
 
 export function getUpstreamAuthorizeUrl({

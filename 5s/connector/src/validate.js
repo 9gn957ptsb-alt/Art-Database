@@ -15,7 +15,8 @@ const SLOTS = ['wall', 'window', 'picture', 'floor', 'object'];
 const BUILT = /^[A-Za-z0-9_-]{1,10}$/;
 
 export const LIMITS = Object.freeze({ judgments: 50000, sets: 500, own: 1000, notes: 5000, days: 5000, text: 2000, name: 200, url: 2048,
-  assoc: 400, levels: 999, paintings: 24, words: 60, word: 24 });   // Set's game (SPEC "Set: the board and the game", "Data"): the app's own caps
+  assoc: 400, levels: 999, paintings: 24, words: 60, word: 24,   // Set's game (SPEC "Set: the board and the game", "Data"): the app's own caps
+  game: 25, things: 1000 });   // fives through the connector (src/game.js): a game's 25 things; the latest answers, about 20 KB, oldest dropped
 
 /**
  * What a brought-in thing may say about itself (SPEC "Connect your apps": a thing defined from a
@@ -140,6 +141,26 @@ function saga(g) {
   return '';
 }
 
+// Fives through the connector (src/game.js), kept only in the connector's state (the app keeps them untouched):
+// game {day, at, ids: things dealt (ids judge takes), k: 1 kept, 0 passed or - not yet, one per id, from: one per id, '' or an id}
+const THING = /^[a-z][a-z0-9]{1,24}$/;   // what judge takes
+function game(g) {
+  if (!isObj(g)) return 'state.game must be an object.';
+  if (!optStr(g.day, 20) || !optNum(g.at)) return 'state.game has a day or time of the wrong kind.';
+  if (!Array.isArray(g.ids) || g.ids.length > LIMITS.game || !g.ids.every((x) => typeof x === 'string' && THING.test(x))) return 'state.game.ids must be at most ' + LIMITS.game + ' ids.';
+  if (typeof g.k !== 'string' || g.k.length !== g.ids.length || !/^[01-]*$/.test(g.k)) return 'state.game.k must hold 1, 0 or - for each thing dealt.';
+  if (!(g.from == null || (Array.isArray(g.from) && g.from.length === g.ids.length && g.from.every((x) => x === '' || (typeof x === 'string' && THING.test(x)))))) return 'state.game.from must hold an id or nothing for each thing dealt.';
+  return '';
+}
+// things {id: 1 kept | 0 passed}: the latest answer on each line, page and word
+function things(t) {
+  if (!isObj(t)) return 'state.things must be an object.';
+  const keys = Object.keys(t);
+  if (keys.length > LIMITS.things) return 'state.things has more than ' + LIMITS.things + ' entries.';
+  if (!keys.every((x) => /^[lpw][a-z0-9]{1,24}$/.test(x) && (t[x] === 0 || t[x] === 1))) return 'state.things must map line, page and word ids to 1 or 0.';
+  return '';
+}
+
 function list(s, key, max, each) {
   const xs = s[key];
   if (xs === undefined) return '';
@@ -166,7 +187,9 @@ export function checkState(s, deck) {
     list(s, 'notes', LIMITS.notes, note) ||
     list(s, 'assoc', LIMITS.assoc, pairing) ||
     list(s, 'paintings', LIMITS.paintings, painting) ||
-    (s.saga != null ? saga(s.saga) : '');
+    (s.saga != null ? saga(s.saga) : '') ||
+    (s.game != null ? game(s.game) : '') ||
+    (s.things != null ? things(s.things) : '');
   if (why) return why;
   if (s.five != null) {
     const f = s.five;

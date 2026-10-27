@@ -2,11 +2,13 @@
 /* npm run deck: the artist's deck, trimmed for the connector, into src/deck.generated.json
  * (gitignored: it holds data derived from Artsy and The Architectural Authority, like 5s/dist/).
  *
- *   node scripts/build-deck.mjs [--deck PATH] [--db PATH] [--out PATH] [--fixture]
+ *   node scripts/build-deck.mjs [--deck PATH] [--db PATH] [--things PATH] [--out PATH] [--fixture]
  *
  * --deck     the app's built deck (default 5s/dist/deck.json, written by build_deck.py)
  * --db       the art database, for each Artsy work's image address on Artsy's CDN
  *            (default data/5s/artworks.db; without it the cards carry no image address)
+ * --things   the game's catalogue, built by npm run things (default data/5s/things.json; without it
+ *            play_fives says the game isn't set up, and next_five plays as before)
  * --out      default src/deck.generated.json
  * --fixture  use 5s/test/fixture/deck.json (synthetic; for local runs without the real deck)
  */
@@ -28,6 +30,7 @@ function arg(name, fallback) {
 const fixture = process.argv.includes('--fixture');
 const deckPath = arg('--deck', fixture ? join(FIVES, 'test', 'fixture', 'deck.json') : join(FIVES, 'dist', 'deck.json'));
 const dbPath = arg('--db', join(REPO, 'data', '5s', 'artworks.db'));
+const thingsPath = arg('--things', fixture ? null : join(REPO, 'data', '5s', 'things.json'));
 const outPath = arg('--out', join(CONNECTOR, 'src', 'deck.generated.json'));
 
 if (!existsSync(deckPath)) {
@@ -67,10 +70,21 @@ function readImages() {
 const needDb = deck.cards.some((c) => !/^https:\/\//.test(c.cdn || ''));
 const { images } = needDb ? readImages() : { images: {} };
 const wanted = Object.fromEntries(works.filter((w) => images[w]).map((w) => [w, images[w]]));
-const out = trimDeck(deck, wanted);
+const things = thingsPath && existsSync(thingsPath) ? JSON.parse(readFileSync(thingsPath, 'utf8')) : null;
+if (things) {
+  // The game's things take the ids l, p and w; every kind must have something to deal (src/game.js).
+  const bad = deck.cards.find((c) => /^[lpw]/.test(c.id));
+  if (bad) throw new Error('deck id ' + bad.id + ' starts with l, p or w: those are the game\'s lines, pages and words');
+  for (const k of ['lines', 'words', 'pages', 'spaces']) if (!Array.isArray(things[k]) || !things[k].length) throw new Error(thingsPath + ' has no ' + k);
+  const ids = new Set(deck.cards.map((c) => c.id));
+  const gone = things.spaces.concat(things.rooms || []).find((id) => !ids.has(id));
+  if (gone) throw new Error('space ' + gone + ' is not in the deck: run npm run things again');
+}
+const out = trimDeck(deck, wanted, null, things);
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, JSON.stringify(out));
 const im = out.images;
 console.log(`deck: ${out.cards.length} cards from ${deckPath}`);
 console.log(`image addresses (Artsy's CDN, the buildings' photos): ${im.from_deck} from the deck, ${im.from_db} from ${dbPath}, ${im.none} without`);
+console.log(things ? `the game's things: ${things.lines.length} lines, ${things.words.length} words, ${things.pages.length} pages, ${things.spaces.length} spaces` : `no game things (${thingsPath || 'none with --fixture'}): play_fives will say the game isn't set up`);
 console.log(`wrote ${outPath} (${Math.round(JSON.stringify(out).length / 1024)} KB)`);

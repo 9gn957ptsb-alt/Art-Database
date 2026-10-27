@@ -8,7 +8,7 @@ import { DatabaseSync } from 'node:sqlite';
 import FiveS from '../src/engine.js';
 import { personStore, personRpcStore, personName, PERSON_SCHEMA } from '../src/person.js';
 import { guardedStore, readState, writeState, readRepos, addRepo, memoryStore } from '../src/store.js';
-import { FREE_PLAN, TOKEN_LIFETIMES, PERSON_DAY, capacity, personDay, SIGNIN_KV_WRITES, REFRESH_KV_WRITES, SIGNIN_KV_DELETES, SIGNIN_KV_LISTS } from '../src/costs.js';
+import { FREE_PLAN, TOKEN_LIFETIMES, PERSON_DAY, capacity, personDay, SIGNIN_KV_WRITES, REFRESH_KV_WRITES, SIGNIN_KV_DELETES, SIGNIN_KV_LISTS, GAME, gameShare } from '../src/costs.js';
 import { smallerCopies, MIN_EDGE, SIZED_SITES } from '../src/sizes.js';
 import { parsePage, pageFacts } from '../src/links.js';
 import { checkState, deckVocab } from '../src/validate.js';
@@ -16,7 +16,7 @@ import { definedFacts, eraOfYear } from '../src/define.js';
 import { pictureBytes, sizedBytes, MISSING_COPIES, ODD_COPIES } from '../src/fake-web.js';
 import { dimensions } from '../src/pixels.js';
 import { TOOLS, CONNECT } from '../src/tools.js';
-import { ctxFor, call, playFives, UID, LOGIN, fixtureDeck, at } from './helpers.mjs';
+import { ctxFor, call, playFives, UID, LOGIN, fixtureDeck, at, gameCtx } from './helpers.mjs';
 
 // ------------------------------------------------------------------ a Durable Object's SQL, on node:sqlite
 
@@ -142,6 +142,41 @@ test('costs: the free plan\'s numbers, token lifetimes, and room for well over a
   // KV's deletes and lists (1,000 a day each) allow more sign-ins than its writes do, so writes are the limit.
   const byWrites = Math.floor(FREE_PLAN.kvWrites / (SIGNIN_KV_WRITES + 1));
   assert.ok(byWrites <= Math.floor(FREE_PLAN.kvDeletes / SIGNIN_KV_DELETES) && byWrites <= Math.floor(FREE_PLAN.kvLists / SIGNIN_KV_LISTS));
+});
+
+test('costs: a game of fives through the connector, as a share of an ordinary day and of the free allowance', () => {
+  // 5 play_fives that deal, 25 judge, 5 reads of the round card, in one session: 4 + 35 requests to /mcp
+  assert.deepEqual([GAME.workerRequests, GAME.doRequests, GAME.rowsWritten], [39, 39 * 3 + 2 + 35 + 30, 18 + 14 + 30]);
+  const s = gameShare();
+  assert.deepEqual(s, { ofDay: 2.6, ofAllowance: 0.18, gamesADay: 543 }, 'a game uses what 2.6 ordinary days use: 0.18% of the day\'s Durable Object requests');
+  assert.equal(capacity(GAME).limit, 'doRequests', 'requests, not rows written, run out first');
+  assert.ok(30 + 1 <= 500, 'a game\'s saves sit well inside one person\'s 500 a day');
+});
+
+test('CPU: dealing a round and judging a game thing stay inside what the README promises, for a person with 600 judgments', async () => {
+  const { ctx, deck, clock } = gameCtx();
+  let st = FiveS.newState();
+  for (let k = 0; k < 120; k++) {
+    st = FiveS.startFive(st, deck, clock.t - (120 - k) * 86400000);
+    for (const id of st.five.ids) st = FiveS.judge(st, deck, id, id.charCodeAt(3) % 2 === 1, 1500, clock.t - (120 - k) * 86400000).state;
+  }
+  assert.equal(st.j.length, 600);
+  await call(ctx, 'put_state', { state: st, base: 0 });
+  const times = { deal: [], judge: [] };
+  for (let r = 0; r < 10; r++) {
+    let t0 = process.cpuUsage();
+    const p = await call(ctx, 'play_fives');
+    times.deal.push(process.cpuUsage(t0).user / 1000);
+    for (const t of p.data.things) {
+      t0 = process.cpuUsage();
+      await call(ctx, 'judge', { card: t.thing, keep: t.position !== 3 });
+      times.judge.push(process.cpuUsage(t0).user / 1000);
+    }
+  }
+  const median = (xs) => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+  // README: a deal about 8 ms and a judge about 2 ms (median) on the 531-card deck; here generous for slower machines
+  assert.ok(median(times.deal) < 40, 'deal ' + median(times.deal) + ' ms');
+  assert.ok(median(times.judge) < 20, 'judge ' + median(times.judge) + ' ms');
 });
 
 // ------------------------------------------------------------------ smaller copies (sizes.js)
