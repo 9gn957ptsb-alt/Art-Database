@@ -298,8 +298,8 @@
 .fs-say2 { color: var(--ink-2, #57516A); }
 .fp-boost[aria-disabled="true"] { opacity: 0.45; }
 
-/* the board: places of 175 x 110 at 390 (more when the screen is taller), each picture whole inside its place */
-.fs-stage { position: relative; flex: 1 1 0; min-height: 346px; width: 100%; display: flex; justify-content: center; align-items: flex-start; }
+/* the board: places of 175 x 110 at 390 (more when the screen is taller, down to 72 tall when it is shorter: the boosters stay on screen), each picture whole inside its place */
+.fs-stage { position: relative; flex: 1 1 0; min-height: 232px; width: 100%; display: flex; justify-content: center; align-items: flex-start; }
 @media (min-width: 600px) { .fs-stage { min-height: 228px; } }
 .fs-board { position: relative; flex: none; }
 .fs-places { position: absolute; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -323,7 +323,7 @@
 .fs-ghost.fp-arrow { color: var(--iris-ink, #5B3BD6); text-shadow: none; }
 
 /* How do they go? The two side by side over the board, which steps back to 14 % */
-.fp-set.fs-saying .fs-board, .fp-set.fs-saying .fp-boosts { opacity: 0.14; }
+.fp-set.fs-saying .fs-board, .fp-set.fs-saying .fp-boosts, .fp-set.fs-saying.fs-up :is(.fp-top, .fp-status) { opacity: 0.14; }
 .fp-set.fs-saying .fs-say { visibility: hidden; }
 .fs-ask { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px 16px; background: color-mix(in srgb, var(--paper, #FAF9FC) 72%, transparent); }
 .fp-set:not([data-phase="idle"]) .fs-ghost { display: none; }

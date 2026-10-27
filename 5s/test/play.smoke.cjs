@@ -1100,6 +1100,39 @@ test('Set boosters by mouse at 1280: Pass, Turn (a turn noticed in words, Note w
   await ctx.close();
 });
 
+// On short screens and on a phone on its side (the verifier, 24 Oct 2026): the say panel opens with Alike and Unlike
+// on the screen, its in-what chips come into view once one is said, and on a short phone the boosters stay on screen.
+test('Set: Alike and Unlike on the screen at every size from 320 x 568 to 932 x 430, portrait and landscape', async () => {
+  const onScreen = (page, sel) => page.$$eval(sel, (es) => es.length > 0 && es.every((e) => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth; }));
+  for (const [w, h] of [[320, 568], [375, 553], [390, 664], [430, 932], [568, 320], [667, 375], [844, 390], [932, 430]]) {
+    const at = w + 'x' + h + ': ';
+    const { ctx, page, errors } = await open({ w, h, touch: true }, 'set=1', '#level=1');
+    await setLevel(page); await setPlay(page);
+    if (w < 568) assert.ok(await onScreen(page, '.fp-boosts'), at + 'the boosters on screen');
+    const A = await placeAt(page, 0), B = await placeAt(page, 1);
+    await page.touchscreen.tap(A.x, A.y); await sleep(120); await page.touchscreen.tap(B.x, B.y);
+    await phaseIs(page, 'saying'); await sleep(400);
+    assert.ok(await onScreen(page, '.fs-ask .fs-sbtn'), at + 'Alike and Unlike on screen');
+    const b = await page.locator('.fs-sbtn[data-s="1"]').boundingBox();
+    await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+    await page.waitForSelector('.fs-what .fs-chip');
+    assert.ok(await onScreen(page, '.fs-what .fs-q2'), at + 'Alike in what? on screen');
+    assert.ok(await onScreen(page, '.fs-what .fs-chips:first-of-type .fs-chip'), at + 'the first chips on screen');
+    if (w === 667) await shot(page, 'set-say-667x375');
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+  for (const [w, h] of [[320, 568], [667, 375], [932, 430]]) {   // the first board's panel: the page scrolls to the two
+    const { ctx, page, errors } = await open({ w, h, touch: true }, 'set=1&keep=4', '#first');
+    await page.waitForSelector('.fs-free .fs-pl');
+    await page.locator('.fs-pl[data-i="0"]').click(); await sleep(120); await page.locator('.fs-pl[data-i="1"]').click();
+    await phaseIs(page, 'saying'); await sleep(400);
+    assert.ok(await onScreen(page, '.fs-ask .fs-sbtn'), w + 'x' + h + ' first board: Alike and Unlike on screen');
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+});
+
 test('Set: the first board under six kept: pairing works, nothing leaves, no clock, Keep one in Sort', async () => {
   const { ctx, page, errors } = await open({ touch: true }, 'set=1&keep=4', '#first');
   await page.waitForSelector('.fs-free .fs-pl');

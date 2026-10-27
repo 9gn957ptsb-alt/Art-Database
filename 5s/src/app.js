@@ -1537,7 +1537,7 @@
         if (!r.won) { save({ saga: rec.saga }); return rec; }
         if (n > rec.saga.stars.length) { save({ saga: rec.saga }); return null; }   // past the 999 the saga keeps: unrecorded, so the end claims no building and no clock
         const ways = RL.ways(cur(), deck, r, cur().saga.built[n - 1]);
-        const saga = MX.build(rec.saga, n, ways[0] ?? null);
+        const saga = RL.build(rec.saga, n, ways[0] ?? null, sg);   // v12's height stays only under v12's building
         save({ saga });
         if (rec.first && n % 5 === 0) ui.reveal = n / 5;   // an area built: the next one comes out of the cloud
         const after = cur();
@@ -1548,7 +1548,7 @@
           sortAFive: RL.unsetShare(setTable(after)) < 0.5,
         });
       },
-      onBuild: (id) => save({ saga: MX.build(cur().saga, n, id) }),
+      onBuild: (id) => save({ saga: RL.build(cur().saga, n, id, sg) }),
       onKingdom: () => openKingdom(n),
       onNext: (m) => openLevel(m), onMap: () => openKingdom(n), onBoard: backToBoard,
       onSort: () => { stopPlay(); ui.setMode = 'board'; showView('sort', { focus: true }); },   // the level is done: Set opens on the board, not on it

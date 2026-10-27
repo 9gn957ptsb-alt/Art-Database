@@ -170,7 +170,7 @@
   }
   /** leads(table, n) -> [{id, why}] (<= 3): Irwin's three ways in; [0] leads unless the person chooses another.
    *  why: brought (Seed's levels) | turn (a keep against their pattern, not set yet) | fresh (kept, not set yet) |
-   *  stayed (what stayed last level) | thin (set beside the fewest). Things built in the last three levels rest. */
+   *  stayed (last level's building: what stayed, or what Another way or v12 built) | thin (set beside the fewest). Things built in the last three levels rest. */
   function leads(T, n) {
     const R = rels(T, null), deg = (id) => R.filter((r) => r.a === id || r.b === id).length;
     const rest = new Set([T.built[n - 2], T.built[n - 3], T.built[n - 4]].filter(Boolean));
@@ -359,11 +359,19 @@
   }
 
   // ---------------------------------------------------------------- the kingdom, grown from what the person related
-  // level i + 1's building: the relations its thing has gathered, 1 to 3; never under the height v12 gave it (saga.stars[i])
-  const tall = (st, i, thing) => Math.max(1, Math.min(3, Math.max(thing ? st.assoc.filter((e) => e.length === 7 && (e[0] === thing || e[1] === thing)).length : 0, st.saga.stars[i] | 0)));
+  // level i + 1's building: the relations its thing has gathered, 1 to 3; the one standing never under the height v12 gave it (saga.stars[i])
+  const tall = (st, i, thing) => Math.max(1, Math.min(3, Math.max(thing ? st.assoc.filter((e) => e.length === 7 && (e[0] === thing || e[1] === thing)).length : 0, thing === (st.saga.built[i] ?? null) ? st.saga.stars[i] | 0 : 0)));
   /** storeys(state, n, id?) -> 1..3: level n's building as id (else saga.built[n − 1]) would stand: the relations that
-   *  thing has gathered, 1 to 3. A building from before keeps its height: never under saga.stars[n − 1] as v12 wrote it. */
+   *  thing has gathered, 1 to 3. The building that stands keeps its height: never under saga.stars[n − 1] as v12 wrote it. */
   function storeys(state, n, id) { const st = FiveS.migrate(state); return tall(st, n - 1, id === undefined ? st.saga.built[n - 1] : id); }
+  /** build(saga, n, id, before) -> saga: MX.build, and the height v12 gave level n (saga.stars[n − 1] over 1) stays only
+   *  with v12's building: another thing built there drops it to 1, the won marker, and stands as its relations; Another
+   *  way round to the old building brings it back. before: the saga as the level opened. */
+  function build(saga, n, id, before) {
+    const s = MX.build(saga, n, id), i = n - 1;
+    if (i >= 0 && i < s.stars.length) s.stars[i] = s.built[i] === (before.built[i] ?? null) ? Math.max(s.stars[i], before.stars[i] | 0) : Math.min(s.stars[i], 1);
+    return s;
+  }
   /** kingdom(state, deck, own) -> {storeys, ties, said, mist}: what the kingdom map draws from the person's relations.
    *  storeys: [1..3] a won level; ties: [[n, m, s]] two levels whose buildings they related (s 1 alike, -1 unlike);
    *  said: {k: 'Mostly alike in line'} what they said most about island k's buildings, in their words, never the lookers';
@@ -390,11 +398,14 @@
   function saidText(vocab, aspectOf, s, w) { const t = said({ vocab, aspectOf: aspectOf || {} }, s, w); return t.charAt(0).toUpperCase() + t.slice(1) + '.'; }
 
   // ---------------------------------------------------------------- saving, and the person's words
-  /** relate(assoc, a, b, s, w, nowSec) -> assoc: the pairing counted (addAssociations) and its relation said on it. */
+  /** relate(assoc, a, b, s, w, nowSec) -> assoc: the pairing counted (addAssociations) and its relation said on it; at 400 it stays and another goes. */
   function relate(assoc, a, b, s, w, nowSec) {
-    const list = MX.addAssociations(assoc, [a, b], nowSec);
-    const e = list.find((x) => x[0] === (a < b ? a : b) && x[1] === (a < b ? b : a));
-    if (e) { e.length = 5; e.push(s === 1 ? 1 : -1, Number.isInteger(w) && w >= 0 ? w : 0); }
+    const x = a < b ? a : b, y = a < b ? b : a, is = (e) => e[0] === x && e[1] === y, had = (assoc || []).find(is);
+    // the pairing just said never goes at the cap: a heart holds it while the cap runs (a new one comes in at n 0; the count makes it 1)
+    const list = MX.addAssociations((assoc || []).map((e) => (is(e) ? [x, y, e[2], 1, e[4]] : e)).concat(had || x === y ? [] : [[x, y, 0, 1, nowSec]]), [x, y], nowSec);
+    if (list.length > 400) { const old = list.filter((e) => !is(e)).reduce((m, e) => (e[4] < m[4] ? e : m)); list.splice(list.indexOf(old), 1); }   // every other one hearted: the oldest goes
+    const e = list.find(is);
+    if (e) { e[3] = had ? had[3] : 0; e.length = 5; e.push(s === 1 ? 1 : -1, Number.isInteger(w) && w >= 0 ? w : 0); }
     return list;
   }
   /** addWord(words, text) -> {words, w} | {words, w: null}: a word the person says (theirs, or one of others' made
@@ -465,7 +476,7 @@
 
   const FiveSRelate = Object.freeze({
     version: 1, AREAS, COACH,
-    level, table, leads, newGame, chips, answer, say, pass, back, result, ways, storeys, kingdom, saidText,
+    level, table, leads, newGame, chips, answer, say, pass, back, result, ways, storeys, build, kingdom, saidText,
     relate, addWord, wordOf, ask, why, unsetShare,
   });
   if (typeof module === 'object' && module.exports) module.exports = FiveSRelate;

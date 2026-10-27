@@ -1426,7 +1426,7 @@
   // noticed in words and rewards nothing. The rules are FiveSRelate's (pure); this draws them, takes the gestures and
   // keeps the clock. It never writes state: the callbacks do (onRelate at once, every pairing).
 
-  const SET_WHY = { fresh: 'Kept, not set yet.', stayed: 'It stayed last level.', turn: 'A turn you kept in Sort.', thin: 'Set beside the fewest.', brought: 'Brought in by you.' };
+  const SET_WHY = { fresh: 'Kept, not set yet.', stayed: 'Your building from last level.', turn: 'A turn you kept in Sort.', thin: 'Set beside the fewest.', brought: 'Brought in by you.' };
   const SET_TAG = { again: 'Said before, it holds', turn: 'A turn', brought: 'Only you have this one', shared: 'Someone else too',
     apart: 'You see them apart', agree: 'Others’ words agree', yours: 'Your own eye', first: 'You’re the first' };
   const SET_HINT = 'Any two can go together. Which two would you hang side by side?';
@@ -1525,7 +1525,7 @@
       cols = (el.clientWidth || 390) >= 600 ? 3 : 2; rows = 6 / cols;
       const W = Math.min(840, stage.clientWidth || 358);
       pw = (W - GAP * (cols - 1)) / cols;
-      ph = free ? Math.round(Math.max(110, Math.min(220, pw * 0.63))) : Math.max(110, Math.floor((stage.clientHeight - GAP * (rows - 1)) / rows));
+      ph = free ? Math.round(Math.max(110, Math.min(220, pw * 0.63))) : Math.max(72, Math.floor((stage.clientHeight - GAP * (rows - 1)) / rows));   // under 110 only on a short phone, so the boosters show
       sizeTo(boardEl, W, rows * ph + GAP * (rows - 1));
     }
     const picEls = new Map();   // the board's pictures, one element a thing
@@ -1961,10 +1961,22 @@
       fitPair(a, b, askH(), Math.min(480, dip.clientWidth || 340));
       renderWhat();
       grow();
+      placeAsk($('.fs-two'));
       askEl.focus({ preventScroll: true });
       rise(from);
     }
     function grow() { if (free) box.style.minHeight = askEl.offsetTop + askEl.scrollHeight + 16 + 'px'; }
+    // A level's panel: from under the top bar to the foot of the screen. Where that is too short (a phone on its side)
+    // it rises over the top bar as far as it needs (the clock stands while it is open), then scrolls itself to e.
+    // The first board's panel grows the page instead, which scrolls to e.
+    function placeAsk(e) {
+      if (free) { if (e) e.scrollIntoView({ block: 'nearest' }); return; }
+      const s = box.scrollTop, need = askEl.firstChild.offsetHeight + 16, under = $('.fs-say').offsetTop;   // + its padding
+      const top = Math.max(s, Math.min(under, s + box.clientHeight - need));
+      askEl.style.top = top + 'px'; askEl.style.bottom = -s + 'px';
+      box.classList.toggle('fs-up', top < under);   // over the top bar, which steps back as the board does
+      askEl.scrollTop = e ? Math.max(askEl.scrollTop, Math.min(e.offsetTop - 8, e.offsetTop + e.offsetHeight + 16 - askEl.clientHeight)) : 0;
+    }
     function rise(from) {   // the two rise from their places; reduced motion: they appear in place
       const tos = Array.from(askEl.querySelectorAll('.fs-dipask > *')), rest = Array.from(askEl.querySelectorAll('.fs-askin > :not(.fs-dipask)'));
       if (reduce || !from) { askEl.style.opacity = 0; loop.run(150, (t) => { askEl.style.opacity = t; }).then(() => { askEl.style.opacity = ''; }); return; }
@@ -2003,6 +2015,7 @@
       ask.s = s;
       snd.play('match', s > 0 ? 3 : 1);
       renderWhat();
+      placeAsk($('.fs-what'));
     }
     function addWordThen(text) {
       const w = o.onWord ? o.onWord(text) : null;
@@ -2086,6 +2099,7 @@
       const nb = $('[data-note]');
       if (nb) nb.addEventListener('click', () => o.onNote({ ids: [m.x, m.y] }, nb));
       grow();
+      placeAsk(null);
       askEl.focus({ preventScroll: true });
       if (reduce) { askEl.style.opacity = 0; loop.run(150, (t) => { askEl.style.opacity = t; }).then(() => { askEl.style.opacity = ''; }); }
     }

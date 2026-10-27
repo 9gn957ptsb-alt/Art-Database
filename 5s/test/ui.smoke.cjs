@@ -2595,6 +2595,14 @@ test('Set: the first board under six, Sort counting down to it, one card of the 
     assert.ok(fromSeen && ready, 'the card from Set named, and the sixth keep');
     assert.equal(tableOf(await savedState(page), deck).pool.length, 6);
     await shot('52-sort-first-board-ready');
+    // every button of the ready strip on the screen, at 390 and at 320: they wrap
+    for (const w of [390, 320]) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await sleep(100);
+      const off = await page.$$eval('#strip .btn', (bs) => bs.filter((b) => { const r = b.getBoundingClientRect(); return r.left < 0 || r.right > innerWidth; }).map((b) => b.textContent));
+      assert.deepEqual(off, [], w + ': the ready strip\'s buttons on the screen');
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
     // Set them: level 1's card.
     await page.click('#strip [data-act="set-them"]');
     await page.waitForSelector('dialog.fp-sheet[open] [data-play]');
@@ -2868,6 +2876,74 @@ test('Set: the kingdom with nothing judged has no home; a building that names no
     await page.$eval('#view-set .fk-node button[data-n="2"]', (b) => b.click());
     await page.waitForSelector('#view-set .set-first [role="grid"]');
     assert.equal(await page.locator('dialog.fp-sheet[open]').count(), 0);
+    assert.deepEqual(page.errors(), []);
+  } finally {
+    await ctx.close();
+  }
+});
+
+// An old saga's levels replayed (the artist: a new building's storeys are its relations, old buildings keep theirs):
+// level 1's v12 building keeps v12's height; Another way builds another thing as tall as its relations, and round
+// again the old one is as tall as before; level 2's plain house built over at the win stands as its relations at once.
+test('Set: a v12 level replayed keeps v12\'s height only under v12\'s building; another thing built there is as tall as its relations', { timeout: 150000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light' });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const ex = FiveS.exampleState(deck, Date.now()), b1 = tableOf(ex, deck).pool[0];
+    const st = Object.assign({}, ex, { seen: Object.assign({}, ex.seen, { intro: 1 }), opts: Object.assign({}, ex.opts, { clock: 0 }),
+      saga: { stars: [3, 3], best: [9000, 9000], boost: { pass: 1, turn: 1, more: 1 }, plays: 2, day: null, time: [0, 0], built: [b1, null] } });
+    const words = ['one storey', 'two storeys', 'three storeys'], endSel = 'dialog.fp-sheet[open]';
+    const builtText = () => page.textContent(endSel + ' .fp-btext');
+    const play = async (n) => {
+      const plan = planLevel(await savedState(page) || st, deck, n, 2);
+      await page.click(endSel + ' [data-play]');
+      await page.waitForFunction(() => !document.querySelector('dialog.fp-sheet[open]'));
+      for (const [k, m] of plan.moves.entries()) {
+        await cell(page, m.i).click(); await cell(page, m.j).click();   // tap, then tap
+        await sayAlikeInLine(page);
+        if (k < plan.moves.length - 1) await afterMove(page, null, m.togo);
+      }
+      await page.waitForSelector(endSel + ' .fp-built', { timeout: 60000 });
+      return plan;
+    };
+    await lateDeck(page);
+    await seedState(page, st);
+    await page.goto(BASE + '#set');
+    await page.waitForSelector('#view-set .fb-tile[data-id]');
+    await page.click('#view-set [data-act="set-kingdom"]');
+    await page.waitForSelector('#view-set .fk-node button[data-n="1"]');
+    await page.$eval('#view-set .fk-node button[data-n="1"]', (b) => b.click());
+    await page.waitForSelector(endSel + ' [data-play]');
+    const p1 = await play(1);
+    let now = await savedState(page);
+    const ways = RL.ways(FiveS.migrate(now), deck, p1.res, b1);
+    assert.equal(ways[0], b1, 'the replay keeps its building');
+    assert.deepEqual([now.saga.built[0], now.saga.stars[0]], [b1, 3]);
+    assert.match(await builtText(), /, three storeys\.$/, 'v12\'s building keeps v12\'s height');
+    assert.ok(ways.length > 1, 'another way to build');
+    await page.click(endSel + ' [data-way]');
+    await page.waitForFunction((w) => JSON.parse(localStorage.getItem('5s.state.v1')).saga.built[0] === w, ways[1]);
+    now = await savedState(page);
+    const own = Math.max(1, Math.min(3, relations(now).filter((e) => e.includes(ways[1])).length));
+    assert.equal(now.saga.stars[0], 1, 'the old height went with the old building');
+    assert.deepEqual([RL.storeys(now, 1), RL.kingdom(FiveS.migrate(now), deck, ownIds(now, deck)).storeys[0]], [own, own], 'the new one stands as its relations');
+    assert.match(await builtText(), new RegExp(', ' + words[own - 1] + '\\.$'));
+    for (let i = 1; i < ways.length; i++) await page.click(endSel + ' [data-way]');   // round again to the old building
+    await page.waitForFunction((w) => JSON.parse(localStorage.getItem('5s.state.v1')).saga.built[0] === w, b1);
+    now = await savedState(page);
+    assert.deepEqual([now.saga.stars[0], RL.storeys(now, 1)], [3, 3], 'the old building, as tall as before');
+    assert.match(await builtText(), /, three storeys\.$/);
+    // Level 2, v12's plain house: the win builds what stayed over it, as tall as its relations.
+    await page.click(endSel + ' [data-next]');
+    await page.waitForSelector(endSel + ' [data-play]');
+    // level 1's building leads in as what it is (v12's, or one Another way chose), not as what stayed
+    assert.match(await page.textContent(endSel + ' .fs-way[data-lead="' + b1 + '"]'), /Your building from last level\.$/);
+    const p2 = await play(2);
+    now = await savedState(page);
+    const two = Math.max(1, Math.min(3, relations(now).filter((e) => e.includes(p2.res.stayed)).length));
+    assert.deepEqual([now.saga.built[1], now.saga.stars[1], RL.storeys(now, 2)], [p2.res.stayed, 1, two]);
+    assert.match(await builtText(), new RegExp(', ' + words[two - 1] + '\\.$'));
     assert.deepEqual(page.errors(), []);
   } finally {
     await ctx.close();

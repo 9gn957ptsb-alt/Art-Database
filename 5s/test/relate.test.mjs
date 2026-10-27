@@ -301,3 +301,41 @@ test('Turn brings back an earlier relation; Pass sets one beside nothing; unsetS
   assert.ok(p.game.passed.includes(g.slots[0]) && !p.game.made.length);
   assert.ok(RL.unsetShare(T) < 1 && RL.unsetShare(T) > 0.9);
 });
+
+test('relate at the 400 cap keeps the pairing just said; the oldest of the fewest goes', () => {
+  const id = (c, i) => c + String(i).padStart(3, '0');
+  const full = Array.from({ length: 400 }, (_, i) => [id('a', i), id('b', i), 2, 0, 1000 + i, 1, 2]);
+  full[7][4] = 10;   // the oldest
+  const out = RL.relate(full, 'y001', 'x001', -1, 3, 9999);
+  assert.equal(out.length, 400);
+  assert.deepEqual(out.find((e) => e[0] === 'x001'), ['x001', 'y001', 1, 0, 9999, -1, 3], 'the new relation is saved');
+  assert.ok(!out.some((e) => e[0] === 'a007'), 'the oldest goes');
+  assert.ok(F.migrate(Object.assign(F.newState(), { assoc: out })).assoc.some((e) => e[0] === 'x001'), 'and it loads');
+  // every other one hearted: the new one is still kept, the oldest goes
+  const hearted = full.map((e) => [e[0], e[1], e[2], 1, e[4], e[5], e[6]]);
+  const out2 = RL.relate(hearted, 'x001', 'y001', 1, 0, 9999);
+  assert.equal(out2.length, 400);
+  assert.deepEqual(out2.find((e) => e[0] === 'x001'), ['x001', 'y001', 1, 0, 9999, 1, 0]);
+  assert.ok(!out2.some((e) => e[0] === 'a007') && out2.filter((e) => e[3]).length === 399);
+  // one already there is counted in place, its heart kept, and nothing goes
+  const again = RL.relate(hearted, 'b005', 'a005', -1, 1, 9999);
+  assert.equal(again.length, 400);
+  assert.deepEqual(again[5], ['a005', 'b005', 3, 1, 9999, -1, 1]);
+});
+
+test('a v12 level keeps its height only under v12\'s building: another thing built there stands as its relations; Another way round brings it back', () => {
+  const st = F.migrate(keeping()), T = RL.table(st, deck, []);
+  const [p, q, r] = T.pool;
+  const S = F.migrate(Object.assign({}, st, { assoc: RL.relate([], q, r, 1, 2, 10), saga: Object.assign({}, st.saga, { stars: [3, 3], built: [p, null] }) }));
+  assert.deepEqual([RL.storeys(S, 1), RL.storeys(S, 2), RL.storeys(S, 1, q), RL.storeys(S, 2, r)], [3, 3, 1, 1], 'v12\'s building and plain house keep theirs; another thing: its one relation');
+  const before = S.saga, at = (saga) => Object.assign({}, S, { saga });
+  const s1 = RL.build(before, 1, q, before);
+  assert.deepEqual([s1.built[0], s1.stars], [q, [1, 3]], 'Another way: the old height goes with the old building');
+  assert.deepEqual([RL.storeys(at(s1), 1), RL.kingdom(at(s1), deck, []).storeys[0]], [1, 1], 'the new one stands as its relations');
+  const s2 = RL.build(s1, 1, p, before);
+  assert.deepEqual([s2.built[0], s2.stars, RL.storeys(at(s2), 1)], [p, [3, 3], 3], 'round again to the old building: its height is back');
+  assert.deepEqual(RL.build(before, 2, r, before).stars, [3, 1], 'a plain house built over');
+  assert.deepEqual(RL.build(before, 1, p, before), MX.build(before, 1, p), 'building what stands changes nothing');
+  assert.deepEqual(RL.build(before, 5, p, before), MX.build(before, 5, p), 'a level not won: nothing');
+  assert.deepEqual(before.stars, [3, 3], 'never mutates');
+});

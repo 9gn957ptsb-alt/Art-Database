@@ -90,7 +90,8 @@ Your hub's four steps in links mode (with GitHub's pages answered by a stand-in,
 Set: the board, Play opening level 1, a planned swap (touch at 390, the mouse at 1280) whose pairs are
 saved and cluster the board, the tab bar hiding during a level, the room and back, Example mode and
 nothing kept; Your kingdom and the list of levels from it; level 5 won against the clock building on
-its plot and finding the next area, Another way, the clock off, and a reload.
+its plot and finding the next area, Another way, the clock off, and a reload; an old saga's levels replayed,
+whose old height stays only under the building it was given to.
 
 ## Publish
 
