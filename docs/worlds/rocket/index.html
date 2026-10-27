@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="rocket.css">
 </head>
 <body>
-  <canvas id="view" aria-label="The place in blocks. Move with the stick or W A S D, drag to look, tap a work to read its label, tap a block to break it or place one; raise the sight (Sight, or R) and a tap throws a pearl where its mark is."></canvas>
+  <canvas id="view" aria-label="The place in blocks. Move with the stick or W A S D, drag to look, tap a work to read its label, tap a block to break it or place one; raise the scope (Scope, or R) and a tap throws a pearl where your nose points; as the hologram, a double tap takes your head there."></canvas>
   <canvas id="hud" aria-hidden="true"></canvas>
   <header class="top">
     <p class="where" id="where"></p>
@@ -42,7 +42,7 @@
     <div class="bar"><button class="pill" id="mode" aria-pressed="false">Break</button><div class="hotbar" id="hotbar" role="group" aria-label="Blocks to place"></div></div>
   </div>
   <div class="views" id="views">
-    <button class="vw" id="v-sight" aria-pressed="false" title="The sight: your head is the glass, and a tap or a click then throws a pearl where its mark is (R)"><span>Sight</span></button>
+    <button class="vw" id="v-sight" aria-pressed="false" title="The scope: your head is the glass and your nose the aim; a tap or a click then throws a pearl (R)"><span>Scope</span></button>
     <button class="vw" id="v-holo" aria-pressed="false" title="Holographic: the head leaves the body; pressed again, the body follows it and the view is third person (H)"><span>Holo</span></button>
   </div>
   <button class="jump" id="jump" aria-label="Jump">↑</button>
@@ -67,7 +67,7 @@
       <p class="preview" id="preview"></p>
       <div class="go"><button class="pill solid big" id="begin" disabled>Begin</button><button class="pill" id="surprise">Surprise me</button></div>
       <p class="status" id="status">Loading the places</p>
-      <p class="keys">Tap a work to read its label and look behind it; three wrong looks and the guards put you out. On a phone: the stick on the left, drag to look, tap. On a computer: W A S D, drag to look, click; space jumps, 1–5 picks a block, E switches break and place, N opens the notes. Holo (or H) sends your head out as the hologram; pressed again, your body follows it. Sight (or R, or the right button) raises the sight, your head the glass; then a tap, a click, T or Enter throws a pearl where its mark is.</p>
+      <p class="keys">Tap a work to read its label and look behind it; three wrong looks and the guards put you out. On a phone: the stick on the left, drag to look, tap. On a computer: W A S D, drag to look, click; space jumps, 1–5 picks a block, E switches break and place, N opens the notes. Holo (or H) sends your head out as the hologram; a double tap (or double click) takes it where you tap, onto a guard to ride it; pressed again, your body follows it. Scope (or R, or the right button) raises the scope, your head the glass and your nose the aim; then a tap, a click, T or Enter throws a pearl, as many as you like: a pearl breaks what it strikes, but metal and limestone send it back.</p>
     </div>
   </section>
   <section class="start" id="end" hidden>

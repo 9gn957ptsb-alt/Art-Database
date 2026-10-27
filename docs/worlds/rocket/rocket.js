@@ -750,7 +750,8 @@
   // On a stone of the homage, once each: which figure it is, and how it closes from there.
   function homageCheck() {
     if (intro || launched) { return; }
-    var st = stoneAt();
+    // (the homage's stones only: the studies' words are gone, the artist, 26 Oct 2026: "Get rid of this")
+    var st = homage && Homage.standing(homage, P.x, P.y, P.z);
     if (st && !st.told) { st.told = true; say(st.name + ". " + st.said, true); }
   }
   // The stone he stands on, of the homage or of the studies, if any.
@@ -850,12 +851,23 @@
     return { fwd: fwd, side: side, up: (input.jump || k[" "] ? 1 : 0) - (k.Shift || k.c ? 1 : 0) };
   }
   function turnTo(a, b, step) { var d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + max(-step, min(step, d)); }
+  // The dash (the artist, 27 Oct 2026: "When I am walking with Mr. Pearl, I want to be able to double tap with my right
+  // hand and he quickly dashes forward 10 feet"): ten feet, 3.048 m, along the way he walks, in half a beat, stopped by
+  // what it meets as his walk is; a swing a first tap began is let go.
+  var DASH = { D: 3.048, BEATS: 0.5 }, dash = null;   // (in beats: BEAT is set further on)
+  function dashOn() {
+    var L = hypot(P.vx, P.vz);
+    dash = { left: DASH.D, d: L > 0.1 ? [P.vx / L, P.vz / L] : [Math.sin(P.face), -Math.cos(P.face)] };
+    letGo();
+  }
   function physics(dt, c) {
     var fwd = c.fwd, side = c.side;
     P.wet = w.get(floor(P.x), floor(P.y + 0.6), floor(P.z)) === B.WATER;
     var speed = P.wet ? SWIM : WALK;
     P.vx = (Math.sin(P.yaw) * fwd + Math.cos(P.yaw) * side) * speed;
     P.vz = (-Math.cos(P.yaw) * fwd + Math.sin(P.yaw) * side) * speed;
+    // (the ten feet to the inch: the last frame takes only what is left)
+    if (dash && dt > 0) { var dv = min(DASH.D / (DASH.BEATS * BEAT), dash.left / dt); dash.left -= dv * dt; P.vx = dash.d[0] * dv; P.vz = dash.d[1] * dv; if (dash.left <= 1e-6) { dash = null; } }
     // He faces the way he walks (relative to the camera), or what he reaches for; while a swing is on, what it will
     // strike, walking or not (the legs walk on), and the camera keeps to the way he walks.
     // With the sight up he faces the mark, walking or not (the artist, 20 Oct 2026: "I want you to be able to aim at a
@@ -955,8 +967,6 @@
     if (ignite) { igniteTap(); return; }
     if (intro || launched || !vp) { return; }
     var dir = dirAt(px, py), hit = pick(dir);
-    // a pearl lying within his reach, tapped with the sight lowered, is back in his hand (the throw, 20 Oct 2026)
-    if (!Hd && takeTapped(dir, hit)) { return; }
     // a coin: what it is and where (it is taken by passing through it, not by a tap)
     var cq = coinAt(dir, hit);
     if (cq) { say(coinWords(cq)); return; }
@@ -969,7 +979,7 @@
     if (hit.painting) { showLabel(hit.painting); return; }
     if (hit.r > REACH) { return; }
     if (hit.b === B.NOTE) { readNote(hit.x, hit.y, hit.z); return; }
-    if (Hd) { barred(); return; }
+    if (Hd) { return; }   // (as the hologram a tap on a block is nothing; a double tap takes the head there)
     if (!(forcePlace || mode === "place")) {
       if (hit.b === B.BEDROCK) { return; }
       if (hangsOn(hit.x, hit.y, hit.z)) { say("A work hangs on this wall."); return; }
@@ -1162,6 +1172,14 @@
       return;
     }
     holoLeft = max(0, holoLeft - dt);
+    // Riding a guard (the artist, 26 Oct 2026: "I want to be able to ride the giant who walks around": next to the
+    // hologram, which is his head, a guard is a giant): the head on its hat as it walks its round; the stick held a
+    // moment after getting on takes it off.
+    if (Hd.on) {
+      var rg = Hd.on;
+      if (guards.indexOf(rg) < 0 || (abs(c.fwd) + abs(c.side) + abs(c.up) > 0.3 && now - Hd.onAt > 600)) { Hd.on = null; Hd.offAt = now; Hd.vy = WALK; }
+      else { seatOnGuard(); Hd.yaw = turnTo(Hd.yaw, P.yaw, TURN * dt); }
+    }
     if (holoLeft <= HOLO_T / 10 && !Hd.warned) { Hd.warned = true; say(round(holoLeft) + " seconds left as the hologram; then your body follows your head."); }
     if (holoLeft <= 0) { bringBody("time"); return; }
     // Free in three dimensions: forward along the look (up and down with it), sideways, the jump to rise and
@@ -1171,8 +1189,29 @@
     if (L > 1) { want = want.map(function (q) { return q / L; }); }
     var k = 1 - Math.exp(-dt / T_LIFT), hr = PEARL.headR;
     Hd.vx += (want[0] * V - Hd.vx) * k; Hd.vy += (want[1] * V - Hd.vy) * k; Hd.vz += (want[2] * V - Hd.vz) * k;
+    if (Hd.on) { return; }
     Hd.x = clampV(Hd.x + Hd.vx * dt, hr, w.SX - hr); Hd.y = clampV(Hd.y + Hd.vy * dt, 1 + hr, holoTop); Hd.z = clampV(Hd.z + Hd.vz * dt, hr, w.SZ - hr);
     Hd.yaw = turnTo(Hd.yaw, P.yaw, TURN * dt);
+    // come down onto a guard's hat (not within a second of getting off one), it is ridden
+    if (now - (Hd.offAt || -1e9) > 1000) { guards.forEach(function (g) { if (!Hd.on && hypot(Hd.x - g.x, Hd.z - g.z) < 0.45 && Hd.y > g.y + PEARL.headY && Hd.y < g.y + PEARL.top + 2 * hr) { mountGuard(g); } }); }
+  }
+  // the head on its guard's hat; again after the guards have walked, so it does not trail a frame behind
+  function seatOnGuard() { var g = Hd.on; Hd.x = g.x; Hd.y = g.y + PEARL.top + PEARL.headR; Hd.z = g.z; Hd.vx = Hd.vy = Hd.vz = 0; }
+  function mountGuard(g) {
+    Hd.on = g; Hd.onAt = performance.now(); Hd.vx = Hd.vy = Hd.vz = 0;
+    if (!Hd.rode) { Hd.rode = true; say("You ride a guard. Move to get off.", true); }
+  }
+  // The hologram's head taken to where a double tap points: the first thing the ray from the camera meets, out to
+  // the far distance, the head stopped its radius short of it (the sky: 60 m along the ray); a guard there, it rides
+  // it. Not swept on the way (headWas), so it takes no coin it jumps past.
+  function teleportHead(px, py) {
+    if (!Hd || Hd.phase !== "free" || !vp) { return; }
+    var d = dirAt(px, py), hit = cast(d, FAR, eye, 0), g = guardAt(d, hit, FAR), hr = PEARL.headR, t = hit ? max(0, hit.t - hr - 0.05) : 60;
+    headWas = null;
+    if (g) { mountGuard(g); return; }
+    Hd.on = null;
+    Hd.x = clampV(eye[0] + d[0] * t, hr, w.SX - hr); Hd.y = clampV(eye[1] + d[1] * t, 1 + hr, holoTop); Hd.z = clampV(eye[2] + d[2] * t, hr, w.SZ - hr);
+    Hd.vx = Hd.vy = Hd.vz = 0;
   }
   // "Choose to move Mr Pearl's body exactly there", and every way out of the hologram is that choice (artist,
   // 21 Oct 2026: "Wherever you move in the holographic view should be where you land when you switch back to any
@@ -1432,9 +1471,10 @@
      dead stop), turning at a turn a beat (half his shoulders' turn at the sweep's strike); they fall as anything falls
      here (in water as he sinks), lie where they land on a block's top, and are gone a beat after the strike, on the
      song's next beat (one flying into a block's side is gone at once). */
-  function burst(s, b) {
-    var e = 1 / 64, p1 = farEndAt(s, 1), p0 = farEndAt(s, 1 - e), dt = e * SWING / (P.wet ? SWIM / WALK : 1);
-    var v = hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]) / dt / 2, n = s.n;
+  function burst(s, b, speed) {
+    var v, n = s.n;
+    if (speed != null) { v = speed / 2; }   // (a pearl's: half its speed)
+    else { var e = 1 / 64, p1 = farEndAt(s, 1), p0 = farEndAt(s, 1 - e), dt = e * SWING / (P.wet ? SWIM / WALK : 1); v = hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]) / dt / 2; }
     var tn = tonesOf(w.pal[b] || [200, 200, 200]), tones = new Float32Array(9);
     for (var i = 0; i < 3; i += 1) { for (var j = 0; j < 3; j += 1) { tones[i * 3 + j] = tn[i][j] / 255; } }
     s.speed = v * 2;
@@ -1577,7 +1617,7 @@
   var sight = { up: false, t0: -1e9, told: false, hold: null, omega: 0, mx: 0, my: 1, lastYaw: 0, lastPitch: 0, theta: 0, hit: null,
                 arc: null, head: null, inHand: null, said: "", key: "", ring: null, thrown: -1e9, next: false, turn: null, flingHold: null, rmb: null, last: 0, feet: [], ringSaid: null, at: 0 };
   var figCache = {}, pearls = [], carried = THROW.CARRY, marked = {}, pearlCh = null, trailProg = null, TU = {}, trailBuf = null, trailVao = null;
-  var NO_PEARL = "No pearl in your hand: pick one up again where it lies (walk to it, or tap it with the sight lowered).";
+  var LYING = 13, firsts = [], thrownN = 0;   // (firsts, thrownN: every pearl's first touch and the throws, for the tests)   // pearls without end (the artist, 26 Oct 2026: "I want infinite pearls to throw"); F(7) of them lie about at most
   function sightOn() { return sight.up && !intro && !launched && !Hd; }
   // How far up the sight is, 0 to 1, for the arm, the hat, the glass and the camera's blend: over a switch of view
   // (T_VIEW), eased; at once under reduced motion; held for a photograph (holdView).
@@ -1631,7 +1671,7 @@
     }
     if (on) { document.body.dataset.sight = "true"; } else { delete document.body.dataset.sight; }
     $("v-sight").setAttribute("aria-pressed", String(on));
-    if (on && !sight.told) { sight.told = true; say(byTouch() ? "The sight: your head is the glass, your nose the aim. Drag to aim, or hold a point to bring it to the mark; tap to throw a pearl." : "The sight: your head is the glass, your nose the aim. Drag or the arrows aim; a click, T or Enter throws a pearl.", true); }
+    if (on && !sight.told) { sight.told = true; say(byTouch() ? "The scope: your head is the glass, your nose the aim. Drag to aim, or hold a point to bring it to the mark; tap to throw a pearl." : "The scope: your head is the glass, your nose the aim. Drag or the arrows aim; a click, T or Enter throws a pearl.", true); }
     drawCarry();
   }
   // At once (the head leaving, coming to, the launch): no blend, the arm and the hat back as they rest, no fling.
@@ -1673,7 +1713,6 @@
   function throwAt() {
     if (Hd) { barred(); return false; }
     if (!sightOn()) { return false; }
-    if (carried <= 0) { say(NO_PEARL); return false; }
     var now = performance.now();
     if (sightReady(now)) { return throwPearl(now); }
     sight.next = true;
@@ -1909,8 +1948,9 @@
     c.drawImage(fm.cv, cx - fm.ox / dpr, cy - fm.oy / dpr, fm.cv.width / dpr, fm.cv.height / dpr);
     noseMark(c, cx, cy, u, hair);
     // what the crux is on, then the arc a throw now would take (it heads for what the crux is on), a frame in three
-    var hit = sightPick(), info = sightInfo(hit);
+    var hit = sightPick(), info = sightInfo(hit), gq = guardAt(lookDir(camLast.yaw, camLast.pitch), hit, THROW.FAR);
     sight.hit = hit;
+    if (gq) { info = { kind: "guard", name: "A guard", sub: round(hypot(gq.x - P.x, gq.z - P.z)) + " m", from: guardWords(gq), rel: "" }; }
     if (!sight.arc || tick % 3 === 0) { sight.arc = predict(); }
     var arc = sight.arc;
     // the holdover marks: each circle's foot, and the range at which the arc comes down through its line
@@ -1980,13 +2020,15 @@
     }
     // the words, as page text under the window (read by a screen reader as they change)
     if (tag) {
-      var act = carried > 0 ? (byTouch() ? "Tap to throw" : "Click, T or Enter to throw") : "No pearl in your hand: walk to one, or tap it with the sight lowered";
+      var act = byTouch() ? "Tap to throw" : "Click, T or Enter to throw";
       var html = '<b>' + esc(info.name) + '</b><span>' + esc(info.sub || "") + '</span>' + (info.from ? '<span class="from">' + esc(info.from) + (info.rel ? ', ' + esc(info.rel) : '') + '</span>' : '') + '<span class="act">' + esc(act) + '</span>';
       if (sight.said !== html) { sight.said = html; tag.innerHTML = html; }
       // said aloud only when what it is on changes (or the glove empties), not at every metre
       var key = [info.name, info.from, info.rel, act].join(". ");
       if (sight.key !== key) { sight.key = key; $("sight-say").textContent = [info.name, info.sub, info.from && info.from + (info.rel ? ", " + info.rel : ""), act].filter(Boolean).join(". "); }
-      tag.hidden = !$("notes").hidden;   // (the notes, opened over it, are read instead)
+      // shown only on a character: a guard (the artist, 26 Oct 2026); what else the nose is on is said to a screen
+      // reader only (sight-say)
+      tag.hidden = !gq || !$("notes").hidden;
       // under the window, but never over the foot: at most the tag's own height above the foot's top, less the HUD's
       // 6 px gap (the views column's); pressed to the glass the window is the whole view, and the words then stand
       // just over the foot
@@ -1997,6 +2039,7 @@
       // 8 px clear of its frame, where the header and the arrow leave it room, else 6 px under the words (21 Oct 2026:
       // on a phone the words had covered the toast's first lines)
       var to = $("toast"), th = to ? to.offsetHeight || 40 : 0, over = wy - rw - fh - 8 - th, hd = 0;
+      if (tag.hidden) { tagTop = round(wy + rw + fh + 10) - (tag.offsetHeight || 90) - 6; }
       [document.querySelector(".top"), $("near")].forEach(function (el) { if (el && !el.hidden) { hd = max(hd, el.getBoundingClientRect().bottom); } });
       var under = tagTop + (tag.offsetHeight || 90) + 6, at = over >= hd + 6 ? over : under + th <= H - 8 ? under : null;
       if (to) { to.style.top = at == null ? "" : round(at) + "px"; to.style.bottom = at == null ? "" : "auto"; }
@@ -2094,9 +2137,10 @@
   }
   function throwPearl(now) {
     if (!sightOn() || !camLast || !eye) { return false; }
-    if (carried <= 0) { say(NO_PEARL); return false; }
     var L = launchFrom(eye, lookDir(camLast.yaw, camLast.pitch), sight.hit ? sight.hit.t : null);
-    carried -= 1; sight.thrown = now; sight.arc = null;
+    sight.thrown = now; sight.arc = null; thrownN += 1;
+    // the oldest lying gives way to the newest (none is picked up again: there are always more)
+    while (pearls.length >= LYING) { var old = pearls.filter(function (q) { return q.state === "rest"; })[0] || pearls[0]; pearls.splice(pearls.indexOf(old), 1); }
     pearls.push({ x: L.H[0], y: L.H[1], z: L.H[2], vx: L.vel[0], vy: L.vel[1], vz: L.vel[2], yaw: L.yaw, spin: 0, state: "fly", t: 0, bounces: 0,
                   trail: [[L.H[0], L.H[1], L.H[2], 0]], age: 0, from: { H: L.H, vel: L.vel, th: L.th, A: L.A, mv: L.mv, eye: eye.slice(), yaw: camLast.yaw, pitch: camLast.pitch }, first: null, wet: false });
     drawCarry();
@@ -2146,8 +2190,13 @@
       var q0 = at(lo), qh = at(hi), c = sphereHit(qh[0], qh[1], qh[2], r) || hit;
       p.x = q0[0]; p.y = q0[1]; p.z = q0[2]; p.vy += ay * lo; p.t += lo; left -= max(lo, 1e-5);
       var nl = hypot(c.n[0], c.n[1], c.n[2]), n = nl > 1e-9 ? [c.n[0] / nl, c.n[1] / nl, c.n[2] / nl] : (function () { var s = hypot(p.vx, p.vy, p.vz) || 1; return [-p.vx / s, -p.vy / s, -p.vz / s]; })();
+      // A pearl breaks what it strikes (the artist, 26 Oct 2026: "When I throw a pearl at a surface, it should break that
+      // surface. Although there should be special surfaces in which the pearl bounces back"): any block but those
+      // bounces() keeps, its six bars flying as the smash's do, and the pearl is spent in it.
+      // (one that has gone into water has lost its speed there: it comes down on the bottom and lies, as before)
+      if (!quiet && !p.wet && !bounces(c)) { if (!p.first) { p.first = { x: p.x, y: p.y, z: p.z, t: p.t, n: n, cell: [c.cx, c.cy, c.cz], b: w.get(c.cx, c.cy, c.cz), broke: true, from: p.from }; firsts.push(p.first); } breakBy(p, c, n); p.state = "gone"; break; }
       // the first touch says what it struck; one that came down through water has said so already (it sinks)
-      if (!p.first) { p.first = { x: p.x, y: p.y, z: p.z, t: p.t, n: n, cell: [c.cx, c.cy, c.cz], b: w.get(c.cx, c.cy, c.cz) }; if (!quiet && !p.wet) { struck(p, c, n); } }
+      if (!p.first) { p.first = { x: p.x, y: p.y, z: p.z, t: p.t, n: n, cell: [c.cx, c.cy, c.cz], b: w.get(c.cx, c.cy, c.cz), from: p.from }; if (!quiet) { firsts.push(p.first); } if (!quiet && !p.wet) { struck(p, c, n); } }
       var vn = p.vx * n[0] + p.vy * n[1] + p.vz * n[2];
       if (vn < 0) { p.vx = THROW.E * (p.vx - 2 * vn * n[0]); p.vy = THROW.E * (p.vy - 2 * vn * n[1]); p.vz = THROW.E * (p.vz - 2 * vn * n[2]); }
       p.bounces += 1;
@@ -2155,10 +2204,10 @@
     }
   }
   function stepPearls(dt) {
-    var r = pearlR();
     pearls.slice().forEach(function (p) {
       var t0 = performance.now();
       stepPearl(p, dt, false);
+      if (p.state === "gone") { pearls.splice(pearls.indexOf(p), 1); return; }
       p.spin += p.state === "rest" ? 0 : THROW.SPIN * dt;
       // the trail on its own clock, which runs on while it lies, so the last beat fades out after it lands (it had
       // stayed drawn and grown a point a frame for as long as it lay)
@@ -2166,17 +2215,37 @@
       if (p.state !== "rest") { p.trail.push([p.x, p.y, p.z, p.age]); }
       while (p.trail.length && p.trail[0][3] < p.age - THROW.TRAIL) { p.trail.shift(); }
       p.ms = performance.now() - t0;
-      // back in his hand when he walks into it (his body's box, 0.3 m round and 1.8 m tall, touches it)
-      if (p.state === "rest" && !Hd && hypot(p.x - P.x, p.z - P.z) < 0.3 + r && p.y > P.y - r && p.y < P.y + 1.8 + r) { takeBack(p); }
     });
   }
   function takeBack(p) {
     pearls.splice(pearls.indexOf(p), 1); carried = min(THROW.CARRY, carried + 1); drawCarry();
     say("A pearl back in your hand: " + carried + " of " + THROW.CARRY + ".", true);
   }
-  // What the pearl answers where it first touches: anything struck says what it came from (as a tap does), from
-  // any distance it reaches; it takes nothing, breaks nothing, places nothing and looks behind nothing.
+  // The surfaces a pearl comes back from: metal and limestone (the homage's strip and plinths, the studies'), the
+  // bedrock and the place's edges, and a wall a work hangs on (the work keeps it). Everything else it breaks.
+  function bounces(c) {
+    if (c.cx < 0 || c.cz < 0 || c.cx >= w.SX || c.cz >= w.SZ || c.cy < 0) { return true; }
+    var b = w.get(c.cx, c.cy, c.cz);
+    return b === B.METAL || b === B.LIME || b === B.BEDROCK || hangsOn(c.cx, c.cy, c.cz);
+  }
+  // The block a pearl breaks: gone, a piece in it found, else its bars flying out of the face it struck at half the
+  // pearl's speed (the bounce's e, as the smash's at half the guitar's).
+  function breakBy(p, c, n) {
+    var b = w.get(c.cx, c.cy, c.cz), k = PIECE_IDS.indexOf(b), ax = abs(n[0]) > abs(n[1]) ? (abs(n[0]) > abs(n[2]) ? 0 : 2) : (abs(n[1]) > abs(n[2]) ? 1 : 2), f = [0, 0, 0];
+    f[ax] = n[ax] > 0 ? 1 : -1;
+    w.set(c.cx, c.cy, c.cz, B.AIR);
+    // a note lying on it comes down into its place
+    if (w.get(c.cx, c.cy + 1, c.cz) === B.NOTE) {
+      w.set(c.cx, c.cy + 1, c.cz, B.AIR); w.set(c.cx, c.cy, c.cz, B.NOTE);
+      notes.forEach(function (q) { if (q.x === c.cx && q.y === c.cy + 1 && q.z === c.cz) { q.y = c.cy; } });
+    }
+    if (k >= 0) { collect(k); } else { burst({ x: c.cx, y: c.cy, z: c.cz, n: f }, b, hypot(p.vx, p.vy, p.vz)); }
+    remeshAt(c.cx, c.cz);
+  }
+  // What the pearl struck, where it first touches, kept on it (p.first: a work, a note); no longer said (the artist,
+  // 26 Oct 2026, wants words only for characters): the say below is this function's own, and quiet.
   function struck(p, c, n, what) {
+    var say = function () {};
     var m = me(), dist = round(hypot(p.x - m.x, p.z - m.z)), up = p.y - m.y > 3 ? ", " + round(p.y - m.y) + " m up" : "";
     if (what === "water") { say("Your pearl sinks, " + dist + " m off: swim down to it."); return; }
     if (c.cx < 0 || c.cz < 0 || c.cx >= w.SX || c.cz >= w.SZ) { say("Your pearl struck the edge of " + setting.name + ", " + dist + " m off" + up + "."); return; }
@@ -2209,6 +2278,7 @@
     ["RENDER", "render"], ["LOOSE", "loose earth"], ["WHITE", "a white wall"], ["RED", "a red wall"], ["BEDROCK", "the bedrock"], ["FLOOR", "the floorboards"], ["PLASTER", "a gallery's plaster"]]
     .forEach(function (q) { if (B[q[0]] != null) { STUFF[B[q[0]]] = q[1]; } });
   function rested(p) {
+    return;   // (no longer said: see struck)
     if (!(p.first && p.first.note) && w.get(floor(p.x), floor(p.y), floor(p.z)) === B.NOTE) { var m = me(); say("Your pearl lies on a note, " + round(hypot(p.x - m.x, p.z - m.z)) + " m off: go and read it."); }
   }
   // Tapping a pearl that lies within his reach, the sight lowered, takes it back (the ray from the camera, measured
@@ -2287,7 +2357,7 @@
   // How many are in his glove, as page text in the header, while the sight is up or any pearl is out.
   function drawCarry() {
     var el = $("pearls");
-    if (el) { el.textContent = "Pearls " + carried + " of " + THROW.CARRY; el.hidden = !sight.up && !pearls.length; }
+    if (el) { el.hidden = true; }   // (pearls without end: nothing to count)
   }
 
   /* ---- the ten coins ---------------------------------------------------------------------------------------------
@@ -2550,13 +2620,13 @@
     guards.forEach(function (g) { if (g.mode === "round") { g.mode = "go"; g.to = { x: s[0], z: s[1] }; } });
   }
   // The guard a ray from the eye meets first (its upright cylinder, his box's width, feet to hat top).
-  function guardAt(dir, hit) {
+  function guardAt(dir, hit, far) {
     var best = null;
     guards.forEach(function (g) {
       var ox = eye[0] - g.x, oz = eye[2] - g.z, a = dir[0] * dir[0] + dir[2] * dir[2], b = ox * dir[0] + oz * dir[2], c = ox * ox + oz * oz - 0.09, h = b * b - a * c;
       if (a < 1e-9 || h < 0) { return; }
       var t = (-b - Math.sqrt(h)) / a, y = eye[1] + dir[1] * t;
-      if (t < 0 || y < g.y || y > g.y + PEARL.top || (hit && hit.t < t) || t > LOOK + 6) { return; }
+      if (t < 0 || y < g.y || y > g.y + PEARL.top || (hit && hit.t < t) || t > (far || LOOK + 6)) { return; }
       if (!best || t < best.t) { best = { g: g, t: t }; }
     });
     return best && best.g;
@@ -3188,7 +3258,7 @@
     el.querySelector(".l-t").textContent = f.title || "Untitled";
     el.querySelector(".l-by").textContent = [f.artist, raw.date].filter(Boolean).join(", ");
     el.querySelector(".l-m").textContent = [raw.medium, raw.dims].filter(Boolean).join(" · ");
-    el.querySelector(".l-room").textContent = [upper(p.room.name), p.work.floorShown].filter(Boolean).join(" · ") || (place.kind === "museum" ? "" : setting.name);
+    el.querySelector(".l-room").textContent = riddleFor(p);
     var pic = $("l-pic");
     pic.alt = f.title || "";
     pic.src = f.image ? artOf(f.image) : "";
@@ -3201,6 +3271,25 @@
     if (window.innerWidth < 900) { $("notes").hidden = true; }
   }
   function closeLabel() { current = null; $("label").hidden = true; }
+  /* An easy riddle on every work's label, where a piece of the rocket still is (the artist, 26 Oct 2026: "give some
+     sort of riddle that is easy to solve that ties into the narrative of where the pieces for the rocket are. Overall,
+     keep things very easy to figure out for now"): the work's own when a piece is behind it, else the next piece not
+     yet found, by the work's place among those hung. A piece behind a work is told by the work (its artist, its room);
+     the others by the place they lie in (the roof, the pool, the garden). */
+  function riddleFor(p) {
+    var left = adv.pieces.filter(function (q) { return found.indexOf(q.k) < 0; });
+    if (!left.length) { return built ? "Every piece is found, and the rocket stands." : "Every piece is found: build the rocket at the wreck."; }
+    var own = left.filter(function (q) { return q.hide.type === "work" && q.hide.id === p.f.id; })[0];
+    var q = own || left[max(0, paintings.indexOf(p)) % left.length], piece = lower(q.name);
+    if (q.hide.type === "work") {
+      var pa = paintings.filter(function (x) { return x.f.id === q.hide.id; })[0];
+      if (!pa) { return "Riddle: a frame hides " + piece + ". Which one?"; }
+      return "Riddle: I hang in " + lower(pa.room && pa.room.name ? pa.room.name : "the place") + (pa.f.artist ? ", by " + pa.f.artist : "") + ", and " + piece + " hides behind me. Who am I?";
+    }
+    if (q.hide.type === "pool") { return "Riddle: I am water you can swim in, still and square, and " + piece + " sank to my floor. What am I?"; }
+    if (q.hide.type === "garden") { return "Riddle: trees drink from me and my earth is loose, and " + piece + " is buried in me. What am I?"; }
+    return "Riddle: rain lands on me first and no one walks on me, and " + piece + " rolled up onto me. What am I?";
+  }
   function lookBehind() {
     var p = current;
     if (Hd) { barred(); return; }
@@ -3282,7 +3371,7 @@
       else { physics(dt, hand); holoLeft = min(HOLO_T, holoLeft + HOLO_REFILL * dt); }
       swingStep(dt); sightStep(dt, now);
     }
-    shardsStep(dt); if (!intro && (!launched || ride)) { stepPearls(dt); } if (!intro && !launched) { coinsStep(); guardsStep(dt, now); }
+    shardsStep(dt); if (!intro && (!launched || ride)) { stepPearls(dt); } if (!intro && !launched) { coinsStep(); guardsStep(dt, now); if (Hd && Hd.on) { seatOnGuard(); } }
     pump(intro ? 14 : 6);
     var cw = canvas.width, chh = canvas.height, cam = camera(now, dt, eyeH, cw / chh);
     eye = cam.e;
@@ -3908,7 +3997,7 @@
     });
   }
   function wire() {
-    var stick = null, look = {};
+    var stick = null, look = {}, lastTap = null;
     canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
     canvas.addEventListener("pointerdown", function (e) {
       if (intro) { if (performance.now() - intro.t0 > 600) { intro.t0 -= 9600; } return; }
@@ -3979,6 +4068,16 @@
       if (!p || p.moved || performance.now() - p.t >= 450 || l.held) { return; }
       // with the sight up a tap or a click throws (the artist, 20 Oct 2026: "And when I click with the reflex sight up,
       // I am able to throw something"); else it acts where it was, as before
+      // As the hologram, a second tap within a beat and a finger's breadth of the first takes the head there (the
+      // artist, 26 Oct 2026: "When in holographic mode I want to be able to double tap with my right finger and teleport
+      // to wherever I am clicking while my left finger controls the joystick of my movements"); a computer's double
+      // click takes it where the crosshair is.
+      // Walking (his body moving), a double tap is the dash (dashOn); standing, taps are taps, as before.
+      var cr = canvas.getBoundingClientRect(), tx = touchy ? e.clientX : cr.left + cr.width / 2, ty = touchy ? e.clientY : cr.top + cr.height / 2, lt = lastTap, tn = performance.now();
+      var dbl = !!lt && tn - lt.t < BEAT * 1000 && hypot(e.clientX - lt.x, e.clientY - lt.y) < 40;
+      lastTap = dbl ? null : { t: tn, x: e.clientX, y: e.clientY };
+      if (dbl && Hd && Hd.phase === "free") { teleportHead(tx, ty); return; }
+      if (dbl && !Hd && !sightOn() && !intro && !launched && !ignite && hypot(P.vx, P.vz) > 0.5) { dashOn(); return; }
       if (sightOn()) { if (e.type === "pointerup") { throwAt(); } }
       else if (touchy) { act(e.clientX, e.clientY, false); }
       else { var r = canvas.getBoundingClientRect(); act(r.left + r.width / 2, r.top + r.height / 2, false); }
@@ -4315,6 +4414,8 @@
              space: function () { return space; }, ride: function () { return ride; }, ignite: function () { return ignite; }, igniteConsts: IGNITE, spaceConsts: function () { return { SPACE: SPACE, V: spaceV(), TURN: spaceTurn(), MARK: markDrop() }; },
              guards: function () { return guards; }, guardConsts: function () { return { GUARD: GUARD, reach: guardReach() }; }, sees: sees, stands: function () { return gStand; },
              paint: function (v) { if (v != null) { PAINT = v; } return PAINT; },
+             dash: function () { return dash; }, dashConsts: DASH,
+             firsts: function () { return firsts.slice(); }, thrownN: function () { return thrownN; },
              stone: function () { return onStone; }, px: function () { return pxW; }, putOut: putOut,
              bring: bringBody, home: goHome, harm: harmBody, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; },
              pearl: function () { return me3 && { ms: me3.ms, cells: me3.body.cells, parts: me3.parts.length, cell: me3.body.cell, PEARL: PEARL, throwArm: me3.body.throwArm }; },
@@ -4323,13 +4424,13 @@
                next: sight.next, thrown: sight.thrown, turn: !!sight.turn, aimAt: sight.turn && sight.turn.Q, rmb: !!sight.rmb, head: sight.head, inHand: sight.inHand, feet: sight.feet.slice(), ringSaid: sight.ringSaid,
                hit: sight.hit && { t: sight.hit.t, r: sight.hit.r, b: sight.hit.b, x: sight.hit.x, y: sight.hit.y, z: sight.hit.z, work: sight.hit.painting ? sight.hit.painting.f.title : null, water: !!sight.hit.water },
                land: sight.arc && sight.arc.at, launched: sight.arc && sight.arc.L && { th: sight.arc.L.th, vel: sight.arc.L.vel, H: sight.arc.L.H },
-               tag: $("sight-tag").hidden ? "" : $("sight-tag").textContent }; },
+               tag: $("sight-tag").hidden ? "" : $("sight-tag").textContent, say: $("sight-say").textContent }; },
              stick: function () { return water.busy(); }, raiseSight: raiseSight, throwAt: throwAt, sightAim: sightAimAt, predict: predict, hand: handAt,
              holdView: function (s) { sight.hold = s; if (blend) { blend.hold = s; } },
              holdFling: function (u) { sight.flingHold = u; },
              pearls: function () { return pearls.map(function (p) { return { x: p.x, y: p.y, z: p.z, vx: p.vx, vy: p.vy, vz: p.vz, state: p.state, t: p.t, wet: p.wet, first: p.first, from: p.from }; }); },
              carried: function (v) { if (v != null) { carried = v; drawCarry(); } return carried; }, marked: function () { return marked; },
-             clearPearls: function () { pearls.length = 0; carried = THROW.CARRY; drawCarry(); },
+             clearPearls: function () { pearls.length = 0; carried = THROW.CARRY; thrownN = 0; firsts.length = 0; drawCarry(); },
              sightConsts: { SIGHT_D: SIGHT_D, SIGHT_F: SIGHT_F, WIN: Math.asin(PEARL.headR / SIGHT_D), U: sightU(), THROW: THROW, HOLD: HOLD, HOLD_AT: HOLD_AT, HAT_DOFF: HAT_DOFF, HAT_LIFT: HAT_LIFT, BEAT: BEAT, T_VIEW: T_VIEW } };
   } };
   init();
