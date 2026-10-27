@@ -15,6 +15,7 @@
    where it stands worked into the artist's inks, it moves in its own gait
    (the fox trots, the bison walks, the squirrel bounds, the lizard scurries,
    the eagle flies up and away, the hummingbird darts up and away, the
+   firefly drifts up and away in a J, flashing, the
    starlings stream up and away in a murmuration, the slug crawls and goes
    back into the soil), and some leave
    something of their artist behind (Twombly's writing after the fox, the
@@ -2647,7 +2648,8 @@
      stags roar and walk side by side; slugs circle and lunge; squirrels
      chase round and round; starlings sing at each other, wings flicking;
      ocellated lizards gape and bite head to head; Anna's hummingbirds chase
-     each other round the territory, gorgets blazing.
+     each other round the territory, gorgets blazing; fireflies call and
+     answer, one's flash and the other's a second or two after.
      Drawn where the game's ritual box is, else at
      the middle of the screen. Resolves when it is over, with the line. */
   function meet(a, b, opts) {
@@ -2701,6 +2703,14 @@
           o.y = cy - 14 + Math.sin(a2 * 0.5 + (n ? 0.6 : 0)) * 16;
           o.dir = Math.sin(a2) > 0 ? -1 : 1;
           o.ritualNames = ["ritual" + (Math.floor(u * 24 + n) % 2), "stand0", "stand0"];
+        },
+        // Two fireflies face each other a little apart; one calls (the antennae up, its lamp lit if it is the hind's), the
+        // other answers after a pause of a second or two (Wikipedia, Photinus pyralis: a female's flash comes 1 to 2
+        // seconds after the male's), and they come nearer as they go on.
+        firefly: function (o, n, u) {
+          o.x = cx + (n ? 1 : -1) * (74 - 26 * Math.min(1, u * 1.6));
+          var phase = ((u * 7000) / 2600 + (n ? 0.45 : 0)) % 1;
+          o.ritualNames = [phase < 0.22 ? "ritual0" : "ritual1", "stand0", "stand0"];
         }
       }[kind] || function (o, n) { o.dir = n ? -1 : 1; o.ritualNames = ["look", "stand0", "stand0"]; };
       var rit = behaviour(A.ch.cs[0], "ritual");

@@ -50,6 +50,12 @@ idea of ritual and using the animals to generate games".
     the climb (offered 1,200 km or more from the last, the farthest first) and
     the one after it the dive (offered within 400 km of the leg's first stop,
     the nearest to it first); its ritual is the chase (`Characters.meet`).
+  - common eastern firefly — the J (Wikipedia, Photinus pyralis): a male's path
+    drops a little and climbs a long way, lighting on the upswing. Once its leg
+    has begun, the stops alternate: the drop (offered within 300 km of the last,
+    the nearest first), then the climb (offered 600 km or more from the last, the
+    nearest of those first); its ritual is the call and its answer
+    (`Characters.meet`).
   - red deer — the antler cycle by the real month: in rut (Sep–Nov) it goes
     where the crowds are; hard antlers (Dec–Mar) near ground; cast (Apr) a
     short leg; velvet (May–Aug) each stop a little further. Its picture in the

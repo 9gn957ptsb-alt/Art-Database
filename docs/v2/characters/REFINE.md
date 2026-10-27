@@ -358,6 +358,71 @@ soaked into raw canvas). `scripts/characters/hummingbird.py`:
   with photographs of a male hovering; change the geometry in `bird()` (the body is `F.path` and `F.ell`, the head
   `ellipse` at `F.pt(10.4, -0.5)`), never the agreed marks (`SEAMS`).
 
+## The common eastern firefly, dots and a flash
+
+The tenth of the cast, drawn on 23 Oct 2026 from the top of the backlog: Caponigro's firefly ("Dots: points of
+light in the dark, as his silver prints hold light"). DIRT's roster gives him grammar 2, dots (spacing, size): small
+marks on bare ground, measured from his 33 saved works (silver prints: #161515, a charcoal #454444, a near-white
+#f1f1f1, a warm dark #2e1d1c; *Galaxy Apple, New York City*, 1964, and *Reflecting Stream, Redding, CT*, 1968, are
+two of them). `scripts/characters/firefly.py`:
+
+- **Fine and on the clock**: 96 by 64 cells at one CSS pixel a cell (`CELL = 1`, `RLE = True`), the beetle about 66
+  cells long (a shield, an eye and a leg do not read at two pixels). Every pose is of 24 frames (`CYCLE`) that play on
+  the clock (`moves.live`: the page counts frames modulo 24), so one flash comes in each cycle (`LAMP`: up, held, down;
+  4 seconds at 6 frames a second, a little quicker than a real male's 5 to 7 so that a flash is seen in the seconds it is
+  on the screen). The wings and the antennae go round in the frames, the lamp goes up and down over all 24. `stand` is of
+  6 frames and `look` of 4, which divide 24.
+- **As a Photinus pyralis is made** (English Wikipedia, "Photinus pyralis", read on 23 Oct 2026): a small soft-bodied
+  beetle, 9 to 19 mm; a flat black or brown body whose wing covers (elytra) run the length of the thorax and abdomen
+  and have a yellow border; the head shield (pronotum) pale yellow with a black dot in the middle, surrounded by pink or
+  red; a light organ on the underside of the abdomen, along its last three segments in a male (one segment in a
+  female). The male patrols in flight in a J, lighting on the upswing, flashing every 5 to 7 seconds, "flying in a
+  nearly vertical orientation, their antennae held forward and stiff while their legs are held toward the body"; a
+  female waits on the vegetation and answers 1 to 2 seconds after his flash, twisting her abdomen toward it.
+- **A grain and a halftone** (`elytra_paint`, `halo`): the wing covers are a ladder of black-browns jittered cell by cell
+  (`hands` mode grain: photographs, 17 of his 33 works) with a few specks of silver; the lantern's light is a halftone
+  laid as a part with no edge of its own under the beetle, a cell lit where the light that reaches it beats a Bayer
+  threshold, so the points are large and close at the lamp and thin into the dark (the dots grammar, and what a print of
+  a light in the dark does). Its inks are his own where his works have them (`hands.inks_for` on the 89 colours of his
+  saved works: black-browns, greys, a warm tan, a pink, a chalk) and his lightest worked toward the border's yellow and
+  the lamp's yellow-green where they have none (none of his saved works is yellow or green, as none of Dalí's is blue).
+  The lamp's dots are pale: on a pale soil they quiet down (weak, said).
+- **Poses** (`poses()`): `trot` the patrol (in flight, as the hummingbird's and the eagle's: the body pitched up, the
+  wing covers lifted from the shoulder, the flying wings stained across the air as fans, the legs held toward the body,
+  the lamp lit on the upswing; it comes out of the wave flying and rises, `moves.leave` "rise"), `stand` on the ground
+  with six feet down, `back` the pause (hanging nearly upright, a flash of its own), `look` front on (the shield over
+  two eyes, the antennae up and out), `sit` low on the ground with the lamp answering once, and the ethogram's `act`
+  (the J in four frames), `play` (the answer) and `ritual` (the call).
+- **Native at Boston** (`native.key` `boston-us`: Caponigro's birthplace, Wikidata Q100; the article names no
+  Massachusetts record, only the eastern half of the continent, so no more is claimed). Boston's city has a ground dial
+  (`skyline.js`), so there the firefly is the dial's hand and a wave raises the plants alone (`check_characters.js`
+  expects that); the page's wave check stood Berkeley's place file in for Boston's to see it come out (a hand-run
+  stand-in, as `check_chosen_native.js` does for Los Angeles). It comes in his life's places and studios (`CAST` in
+  `placethen.js` and `studios.js`), in his published walks ("Caponigro by firefly"), followed (`Characters.lead`) and in
+  a chimera. `fireflies` is in `species.CAST`, so the generated fireflies of four other places (Bethesda, Flint,
+  Wellesley, Knoxville's born place) left the natives, and with them and Boston's former white-tailed deer the greedy
+  choice of animals shifted again across the east (79 place files); `build_character_index.py` was run after.
+- **Ethogram** (all from the article, read on 23 Oct 2026): the J (instinct), the answer (play: a female's; the drawing
+  is a male's, so the answering poses lend her his lamp), the call and the answer (ritual, `characters.js`'s `meet`:
+  one calls, the other's flash comes a pause later, each time nearer). **Corpse** (`corpse.js`, `offers`): the J — once
+  its leg has begun, the stops alternate, a drop within 300 km of the last, then a climb of 600 km or more.
+- **The chimera's parts** (`rig`, `level`): the beetle on the ground, walking in a tripod gait (the near front, the far
+  middle and the near hind leg step together, then the other three), the head the shield with its eye and antennae, the
+  body the wing covers over the thorax with the front and middle legs (the front legs start behind the neck's fold),
+  the hindquarters the abdomen with its lantern and the hind legs, so its lamp lights the end of any animal;
+  `CHIMERA_SCALE` 0.58 (0.86 drew the head twice a bison's). A raised wing cover belongs to the body only (cut at a
+  fold it would float).
+- **Weak**: the drawing is a male; no photograph was reached, so the shapes are drawn from the article's words and from
+  memory of the beetle; the flying wing is a thin membrane and a stained fan, not drawn vein by vein, its four states
+  chosen for how they read at six a second, not filmed; the head shield's black dot is drawn on top of the shield, as
+  seen from above and the side at once; a walking firefly is drawn only as a chimera's tripod gait (the page's
+  firefly comes out of the wave flying); the lamp's dots read on a dark ground and quiet down on a pale one; the
+  sprite is 136 KB (90 frames, run-length coded), the heaviest of the cast after the starling's and the fox's.
+- **Refining it**: `python3 scripts/build_characters.py --sprites` (about a minute), then render its frames large in the
+  module's own `INKS` (a small PIL script over `poses()` does) (a flash at frame 12, the answer at frame 8 of `sit`) and compare the shield,
+  the head, the lantern and the legs with photographs of a male in flight and at rest; change the geometry in
+  `beetle_body` (the frame `Fr` is in units of `K` = 1.65 cells), never the agreed `SEAMS`.
+
 ## Each run
 
 1. **Start clean.** `git fetch origin claude/artist-website-dev-s92irf` and
@@ -388,7 +453,7 @@ soaked into raw canvas). `scripts/characters/hummingbird.py`:
    grassland, are given ants and no plants at all, so a wave there raises
    none and `check_characters.js` expects none), say so to the DIRT session
    rather than patch it here.
-4. **Refine one of the nine drawn by hand** (the one refined longest ago),
+4. **Refine one of the ten drawn by hand** (the one refined longest ago; the daily pass of the scheduled helper refines three),
    as before: three rounds against the real animal and the artist's hand,
    in its `scripts/characters/<id>.py`; record `refined`, `passes`, `log`,
    `notes` in `characters.json`.

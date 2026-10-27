@@ -38,16 +38,17 @@ DARK = lambda *a: "k"
 
 
 def head(cx, cy, front=False):
+    g = 5 if WHOLE else 3          # the whole animal's head is a paper laid over the body's: a gap of ground round it
     if front:
-        skull = ellipse(cx, cy, 2.8, 2.6)
-        ears = union(triangle((cx - 2.8, cy - 0.6), (cx - 0.2, cy - 1.8), (cx - 2.0, cy - 6.0)),
-                     triangle((cx + 0.2, cy - 1.8), (cx + 2.8, cy - 0.6), (cx + 2.0, cy - 6.0)))
-        eyes = union(ellipse(cx - 1.5, cy - 0.5, 0.62, 0.62), ellipse(cx + 1.5, cy - 0.5, 0.62, 0.62))       # on cell centres
-        return [Part(ears, lambda x, y, l, i, j: "k" if y < cy - 4.2 else "R", 3), Part(skull, COAT, 3),
-                Part(clip(skull, ellipse(cx, cy + 1.7, 1.5, 1.0)), BELLY, 7),
-                Part(eyes, DARK, 8), Part(ellipse(cx, cy + 0.9, 0.5, 0.45), DARK, 8)]
+        skull = ellipse(cx, cy, 3.3, 2.9)
+        ears = union(triangle((cx - 3.3, cy - 0.5), (cx - 0.9, cy - 2.3), (cx - 3.1, cy - 5.6)),
+                     triangle((cx + 0.9, cy - 2.3), (cx + 3.3, cy - 0.5), (cx + 3.1, cy - 5.6)))
+        eyes = union(ellipse(cx - 1.7, cy - 0.5, 0.65, 0.65), ellipse(cx + 1.7, cy - 0.5, 0.65, 0.65))       # on cell centres
+        return [Part(ears, lambda x, y, l, i, j: "k" if y < cy - 4.1 else "R", g - 1 if WHOLE else 3), Part(skull, COAT, g),
+                Part(clip(skull, ellipse(cx, cy + 1.8, 1.9, 1.2)), BELLY, 7),
+                Part(eyes, DARK, 8), Part(ellipse(cx, cy + 0.9, 0.55, 0.5), DARK, 8)]
     skull = union(ellipse(cx, cy, 2.9, 2.6), ellipse(cx + 2.0, cy + 0.7, 1.6, 1.4))
-    ear = triangle((cx - 2.6, cy - 0.6), (cx + 0.6, cy - 1.8), (cx - 1.4, cy - 5.4))
+    ear = triangle((cx - 3.0, cy - 0.8), (cx + 1.0, cy - 1.9), (cx - 1.0, cy - 5.0))
 
     def paint(x, y, light, i, j):
         return "k" if y < cy - 4.2 else "R"
@@ -55,13 +56,13 @@ def head(cx, cy, front=False):
         # A chimera's head is seen on its own: the red squirrel's own marks,
         # cut as Matisse cut them — the ear's long dark tuft, a cream ring
         # round the eye, the cream of the chin, the nose a dark spot.
-        tuft = union(ear, triangle((cx - 2.2, cy - 3.8), (cx - 0.3, cy - 4.2), (cx - 1.5, cy - 6.6)))
+        tuft = union(ear, triangle((cx - 2.1, cy - 3.9), (cx + 0.1, cy - 4.5), (cx - 1.7, cy - 7.4)))
         ring = [] if WHOLE else [Part(ellipse(cx + 1.0, cy - 0.5, 1.0, 0.95), BELLY, 7)]     # at a cell of two pixels the ring is a white dot
-        return [Part(union(tuft, skull), lambda x, y, l, i, j: "k" if y < cy - 4.1 else "R", 3),
-                Part(clip(skull, ellipse(cx + 2.4, cy + 1.7, 1.7, 1.0)), BELLY, 6)] + ring + [
+        return [Part(union(tuft, skull), lambda x, y, l, i, j: "k" if y < cy - 4.3 else "R", g),
+                Part(clip(skull, ellipse(cx + 2.4, cy + 1.7, 1.7, 1.0)), BELLY, 6 if not WHOLE else 7)] + ring + [
                 Part(ellipse(cx + 1.1, cy - 0.5, 0.6, 0.62), DARK, 8),
                 Part(ellipse(cx + 3.5, cy + 0.5, 0.45, 0.4), DARK, 8)]
-    return [Part(union(ear, skull), paint, 3), Part(ellipse(cx + 1.0, cy - 0.4, 0.55, 0.55), DARK, 8)]
+    return [Part(union(ear, skull), paint, g), Part(ellipse(cx + 1.0, cy - 0.4, 0.55, 0.55), DARK, 8)]
 
 
 HEAD = False          # drawing a chimera's head (rig, slot "head")
@@ -100,7 +101,7 @@ def tail(points, r0=1.7, r1=2.5):
     """The tail: a broad plume, narrow at the root, fullest toward the tip, in yellow paper with a narrower orange
     one laid along it."""
     n = len(points)
-    prof = [1.3, 2.5, 3.1, 2.3, 1.6][:n] if n < 5 else [1.3, 2.3, 3.0, 3.0, 1.8]
+    prof = [1.9, 2.7, 3.2, 2.4, 1.6][:n] if n < 5 else [1.9, 2.5, 3.1, 3.0, 1.8]
     prof = [prof[min(i, len(prof) - 1)] for i in range(n)]
     outer = Part(frond(points, prof), TAIL, 1)
     inner = Part(frond(points[1:], [w * 0.38 for w in prof[1:]], lobe=2.6, amp=0.25), INNER, 1)
@@ -113,7 +114,7 @@ def bound_parts(k):
         bd = [Part(union(ellipse(19.0, 18.4, 4.6, 3.8), ellipse(22.6, 18.0, 2.6, 2.6)), COAT, 3)]
         hind = [Part(ellipse(17.0, 20.2, 3.0, 2.8), COAT, 3), Part(capsule((17.6, 23.4), (22.0, 24.0), 0.8, 0.6), COAT, 3)]
         fore = [Part(capsule((23.0, 20.0), (22.4, 24.0), 0.7, 0.6), COAT, 3)]
-        t = tail([(14.6, 18.4), (10.4, 15.6), (10.6, 10.6), (14.2, 8.0)])
+        t = tail([(15.4, 18.4), (10.4, 15.6), (10.0, 10.2), (12.6, 6.8), (14.4, 7.4)])
         h = head(25.6, 15.8)
     elif k == 1:
         bd = [Part(union(ellipse(20.0, 16.8, 5.6, 3.2, -0.25), ellipse(24.4, 15.2, 2.4, 2.2)), COAT, 3)]
@@ -134,8 +135,8 @@ def bound_parts(k):
         t = tail([(14.0, 14.6), (10.0, 12.6), (9.0, 8.4), (11.6, 5.6)])
         h = head(27.2, 15.6)
     # the cream underside, one paper laid along the lower edge of the body, from the chest to the haunch
-    under = {0: (20.6, 21.0, 4.0, 1.7, 0.0), 1: (20.6, 19.0, 4.8, 1.4, -0.25), 2: (20.6, 17.4, 5.4, 1.2, -0.08),
-             3: (20.8, 18.6, 4.6, 1.4, 0.3)}[k]
+    under = {0: (20.6, 22.0, 4.0, 1.9, 0.0), 1: (20.6, 19.7, 4.8, 1.7, -0.25), 2: (20.6, 18.0, 5.4, 1.5, -0.08),
+             3: (20.8, 19.6, 4.6, 1.7, 0.3)}[k]
     belly = Part(clip(bd[0].sdf, ellipse(*under)), BELLY, 3.5)
     limb(fore, "body"), limb(hind[1:], "hind")
     return t + fore + bd + [belly] + hind + h
@@ -146,19 +147,36 @@ def bound(k):
 
 
 def upright(front=False, eating=False):
-    """Sitting up on its haunches; eating, the paws at its mouth and the tail
-    curled up its back."""
-    body = union(ellipse(20.6, 18.0, 3.4, 5.0, 0.15), ellipse(19.4, 21.6, 3.8, 3.0))
-    belly = clip(body, ellipse(23.4, 19.0, 1.5, 4.2, 0.15))       # the cream down the front of the chest
-    foot = capsule((18.6, GROUND - 0.6), (23.4, GROUND - 0.5), 0.8, 0.6)
+    """Sitting up on its haunches: a pear, the haunch fat and low, the chest and back narrowing to a head held up, the
+    long hind feet flat on the ground in front of it, the paws up at the chest (at its mouth, eating); the tail
+    curled up its back in an S. Front on, the same pear seen square, a foot out each side."""
+    if front:
+        body = union(ellipse(22.0, 18.6, 3.5, 5.0), ellipse(22.0, 21.8, 4.9, 2.9))
+        belly = clip(body, ellipse(22.0, 19.2, 2.0, 4.6))
+        feet = [Part(capsule((17.2, GROUND - 0.5), (19.6, GROUND - 0.5), 0.8, 0.8), COAT, 3),
+                Part(capsule((24.4, GROUND - 0.5), (26.8, GROUND - 0.5), 0.8, 0.8), COAT, 3)]
+        paws = [Part(capsule((20.6, 16.4), (21.4, 14.2), 0.65, 0.6), COAT, 5), Part(capsule((23.4, 16.4), (22.6, 14.2), 0.65, 0.6), COAT, 5)]
+        t = tail([(18.6, 23.0), (14.2, 19.8), (13.2, 13.4), (16.0, 8.6)])
+        parts = t + [Part(body, COAT, 3), Part(belly, BELLY, 4)] + feet + paws + head(22.0, 11.0, front=True)
+        return unline(raster(parts, W, H, deep="."))
+    haunch = ellipse(18.4, 20.8, 4.7, 3.9)
+    back = capsule((19.4, 19.0), (21.6, 12.8), 3.3, 2.6)
+    chest = ellipse(22.2, 16.8, 2.6, 3.6)
+    body = union(haunch, back, chest)
+    belly = clip(body, ellipse(24.2, 17.8, 1.9, 4.2, 0.2))              # the cream down the front, cut to the body's edge
+    foot = capsule((17.4, GROUND - 0.6), (24.8, GROUND - 0.5), 0.85, 0.7)
     if eating:
-        t = tail([(16.6, 22.0), (13.4, 18.8), (14.0, 12.4), (17.4, 9.6), (19.2, 11.6)])
-        paws = capsule((22.0, 15.6), (23.8, 12.8), 0.7, 0.6)
+        t = tail([(16.4, 23.0), (12.8, 19.4), (12.8, 12.8), (16.2, 8.2), (19.4, 9.4)])
+        paws = capsule((22.8, 15.4), (24.8, 12.4), 0.7, 0.6)
+        food = Part(ellipse(25.6, 12.0, 1.1, 1.0), DARK, 9)             # a nut, held to the mouth
     else:
-        t = tail([(16.6, 22.0), (12.4, 19.6), (11.4, 13.6), (14.0, 9.6)])
-        paws = capsule((22.4, 16.2), (23.4, 18.0), 0.6, 0.5)
-    parts = t + [Part(body, COAT, 3), Part(belly, BELLY, 4), Part(foot, COAT, 3), Part(paws, COAT, 3)]
-    parts += head(22.0, 11.0, front=front) if front else head(22.4, 11.4)
+        t = tail([(16.4, 23.0), (12.4, 19.6), (11.8, 13.4), (14.4, 8.8)])
+        paws = capsule((23.0, 15.6), (24.6, 14.0), 0.7, 0.6)
+        food = None
+    parts = t + [Part(body, COAT, 3), Part(belly, BELLY, 4), Part(foot, COAT, 3), Part(paws, COAT, 5)]
+    parts += head(23.0, 10.6)
+    if food:
+        parts.append(food)
     return unline(raster(parts, W, H, deep="."))
 
 
@@ -169,9 +187,9 @@ def stand_parts(cy=15.4, flick=False, front=False, cx=25.8):
     if flick:
         t = tail([(14.8, 18.8), (10.2, 16.6), (9.2, 11.2), (11.4, 7.0)])
     else:
-        t = tail([(14.8, 18.8), (10.8, 16.0), (10.8, 10.8), (14.4, 7.6)])
+        t = tail([(15.4, 18.8), (10.8, 16.0), (10.0, 10.6), (12.6, 6.6), (14.6, 7.2)])
     limb(fore, "body"), limb(hind[1:], "hind")
-    return t + fore + bd + [Part(clip(bd[0].sdf, ellipse(20.6, 21.4, 4.2, 1.5)), BELLY, 3.5)] + hind + head(cx, cy, front=front)
+    return t + fore + bd + [Part(clip(bd[0].sdf, ellipse(20.6, 22.0, 4.2, 1.7)), BELLY, 3.5)] + hind + head(cx, cy, front=front)
 
 
 def stand():
