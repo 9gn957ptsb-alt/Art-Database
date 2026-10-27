@@ -525,7 +525,7 @@
     let here = 0, there = 0;
     ls.forEach((l, j) => { here += meter.measureText(l).width; there += P.x[j][1] - P.x[j][0]; });
     // (a line within 4 page pixels of the left is flush: the slant of an italic capital, not an indent)
-    const k = there ? here / there : 0, ind = P.x.map((e) => (e[0] < 4 ? 0 : e[0]) * k), most = Math.max(0, ...ind);
+    const k = there ? here / there : 0, ind = P.x.map((e) => (e[0] <= 4 ? 0 : e[0]) * k), most = Math.max(0, ...ind);
     const top = most > 0 ? Math.min(1, (measure * 0.382) / most) : 1;
     let f = top;
     ls.forEach((l, j) => { const w = meter.measureText(l).width; if (ind[j] > 0 && w < measure) f = Math.min(f, (measure - w - 2) / ind[j]); });
