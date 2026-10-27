@@ -504,7 +504,32 @@ power of φ, so the changes compound as an exponential does.
   every mirror it has come through, and the painting recedes down and down: depth made of reflection alone. Where one
   ring gives way to the next the two cross-fade, so no ring has an edge, and the whole is laid over the painting as a
   glaze, φ⁻¹ at the most, in the middle, gone toward the region's edge: the painting and its reflection both there, a
-  small presence of glass and mirrors, and as still as everything else.
+  small presence of glass and mirrors, and as still as everything else. (Until 27 October 2026: it read as a
+  bullseye 520 cells across, wider than a phone, and became the stars below.)
+
+**Kaleidoscopes as small as stars** (23 October 2026: "The kaleidoscopes are too obvious in DRIFT. make them much more
+subtle, remember to implement the golden ratio and perhaps give me showers of kaleidoscopes but each one is like a star
+in the sky and shows a very small but brilliant change"). The golden kaleidoscope is gone. In its place, laid over the
+wash at the pixel's own size (`STARS_GLSL` in `engine/ground-gl.js`), stars: one may stand in each 55-cell square,
+φ⁻¹ of them, thinned by a field 610 cells across into showers, so some shower lies over about two thirds of the plane
+and a dense heart over a seventh, and only in the calm country. Each is a kaleidoscope of the ground round it, in
+three magnitudes:
+
+| | share | radius (cells) | mirrors | strength |
+|---|---|---|---|---|
+| brilliant | φ⁻⁴ | 13 | 5 (the pentagon's ten images; cos 36° = φ/2) | φ⁻² |
+| middling | φ⁻³ | 8 | 3 (Brewster's 60°) | φ⁻³ |
+| faint | φ⁻¹ | 5 | 2 | φ⁻⁴ |
+
+Each gathers the ground φ² as far as it reaches (Fibonacci into Fibonacci: 34 cells into 13, 21 into 8, 13 into 5),
+every image as much dimmer and greener as the mirrors it has come through, its colours a little fuller and lifted
+toward light, most where the ground is dark (a star shows most at night), and falls smoothly to nothing at its rim,
+as a star's image does without its halo (King, "The profile of a star image", 1971). Their radii are the same in CSS
+pixels on every screen. A retina laptop holds about thirty, a phone about seven, and some views none. Each star holds
+still. Once in about 987 seconds, at its own moment, its object turns φ⁻² of an image, a dissolve over φ seconds as
+its light swells a little. That is the very small, brilliant change: in a laptop view one happens somewhere about
+every half minute, and with reduced motion none does. The singularities keep their tubes, but the glint along their
+mirrors comes down from 0.42 to φ⁻⁵. `#nostars` shows the plane without them, for comparing.
 
 **Taste: what Aries keeps.** The stills and recordings Aries keeps with DRIFT's **Still** and **Record** buttons are
 its references. Besides the download, each is stored with the artifact (its assets), with where and when it was

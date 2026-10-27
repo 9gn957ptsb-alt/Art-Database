@@ -122,6 +122,7 @@ uniform vec4 uSwim[5];              // the swimmers under the surface (SWIM): wh
 uniform vec4 uWake[40];             // and where each was, every half second for four seconds: where, how long ago (s)
 out vec4 outColour;
 /*WORDS_DECL*/
+/*STARS_DECL*/
 // Drawn after the artists, no edge is a hard line. Across every edge of every shape, in every world, lies a grey
 // gradient running the whole scale from dark to light, the same scale the artists make over the whole plane: the
 // smallest thing on the plane holds what the largest does. The gradient is found from the cells around the pixel
@@ -165,6 +166,7 @@ void main() {
     }
     soft /= sw;
     vec3 c = mix(own.rgb, soft, 0.764);                               // wet: the colours bleed (1 - phi^-3; phi^-1 until v80)
+    if (uStars > 0) { vec4 st = star(P * 0.5, own.a, tsz); c = mix(c, st.rgb, st.a); }   // the stars (STARS_GLSL)
     float edge = smoothstep(0.06, 0.5, length(gl) / 3.0);             // the rim of a wash
     float grain = wn(P, 2.0, 7u) * 0.6 + wn(P, 5.0, 8u) * 0.4;        // the paper's tooth, fixed to the plane
     float pool = wn(P, 89.0, 9u) * 0.62 + wn(P, 34.0, 10u) * 0.38;    // pigment settling unevenly as it dries
@@ -2537,9 +2539,10 @@ void main() {
     A = mix(A, min(A * 1.1 + 30.0, vec3(255.0)), glow); B = mix(B, min(B * 1.1 + 30.0, vec3(255.0)), glow);
   }
   // what is seen in the mirrors: each reflection takes a little of the light, and silvered glass leans green; and
-  // where a mirror's glass is, a glint that fades off it (a gradient, never a line)
+  // where a mirror's glass is, a glint that fades off it (a gradient, never a line; phi^-5 at most since 27 Oct 2026,
+  // when the kaleidoscopes became subtle, 0.42 before)
   if (gMirK > 0.0) { vec3 m = pow(vec3(0.93, 0.965, 0.955), vec3(gMirK)); A *= m; B *= m; }
-  if (gMirE < 2.5) { float s = 1.0 - gMirE / 2.5; s *= s * 0.42; A = mix(A, vec3(246.0, 251.0, 249.0), s); B = mix(B, vec3(246.0, 251.0, 249.0), s * 0.6); }
+  if (gMirE < 2.5) { float s = 1.0 - gMirE / 2.5; s *= s * P3 * P2; A = mix(A, vec3(246.0, 251.0, 249.0), s); B = mix(B, vec3(246.0, 251.0, 249.0), s * 0.6); }
   if (voidEdge > 0.0) { A = mix(A, voidCol, voidEdge); B = mix(B, voidCol, voidEdge); }
   // An artificial day and night on the plane, 233 seconds round: the ground dims and cools, then brightens.
   if (uEarth == 0 && uArtOn == 1 && uHold < 0.5) {
@@ -2554,13 +2557,12 @@ void main() {
 #if WORDS
   if (gWKind != 0u) {
     // How much of the letters will show. In a minimal area, as much of its painting as the minimal pass lays here (its
-    // cover, its thinning to its wash at its edge, its kaleidoscope's glass over it); on the gesture, what that pass
+    // cover, its thinning to its wash at its edge); on the gesture, what that pass
     // leaves of the world, and none where the cell is seen in a mirror or a singularity.
     float cover = (1.0 - smoothstep(RUNG_C[3] - 0.03, RUNG_C[3] + 0.16, cx)) * wVoid, v;
     if (gWKind == 1u) {
       float zone = 1.0 - smoothstep(RUNG_C[3] - 0.16, RUNG_C[3], cx);
-      float kal = unit(mixh(gWX + 99u)) < P4 ? P1 * (1.0 - smoothstep(89.0 * P1, 89.0 * PHI, length(gWQ))) : 0.0;
-      v = cover * zone * smoothstep(0.0, 144.0, gWD) * (1.0 - kal);
+      v = cover * zone * smoothstep(0.0, 144.0, gWD);
       gWOutM = uvec4(gWX, uint(gWA) | (1u << 24), floatBitsToUint(gWQ));
     } else {
       v = (1.0 - cover) * gWVis * (1.0 - voidEdge) * (gMirK > 0.0 || sg.on ? 0.0 : 1.0);
@@ -2608,7 +2610,82 @@ function fsPart(from, to) {
 //     capitals, the crossed-out row still crossed)
 //   the worlds: the gesture, the one line through every world, carrying the poems along it a line at a time.
 // And the swimmers write lines in their wake (VERSE_VS and VERSE_FS, below, and groundGL's verse).
-const GROUND_PX_USED = !WORDS ? GROUND_PX : (() => {
+// ---- the stars: kaleidoscopes as small as stars ------------------------------------------------------------------
+// Aries, 23 Oct 2026: "The kaleidoscopes are too obvious in DRIFT. make them much more subtle, remember to implement
+// the golden ratio and perhaps give me showers of kaleidoscopes but each one is like a star in the sky and shows a
+// very small but brilliant change." The golden kaleidoscope of v80 (a ten-image bullseye 520 cells across, in phi^-4
+// of the calm regions) is gone; in its place, drawn last over the wash at the pixel's own size, stars. One may stand
+// in each 55-cell square, phi^-1 of them, thinned by a field 610 cells across into showers (some shower over two
+// thirds of the plane, a heart in a seventh), and only in the calm country, where the minimal pass paints. Each is a
+// kaleidoscope of the ground round it: phi^-4 of them brilliant (13 cells across the radius, 5 mirrors: the
+// pentagon's ten images, cos 36 degrees = phi / 2), phi^-3 middling (8 cells, 3 mirrors, Brewster's 60 degrees),
+// the rest faint (5 cells, 2 mirrors); each gathers phi^2 as far as it reaches (Fibonacci into Fibonacci: 34 into 13,
+// 21 into 8, 13 into 5), every image dimmer and greener for the mirrors it has come through, its colours a little
+// fuller (chroma times sqrt(phi)) and lifted toward light, most where the ground is dark, laid on at phi^-2, phi^-3,
+// phi^-4 and falling smoothly to nothing at its rim (a star's core without its aureole; King 1971). Each holds still;
+// once in about 987 seconds (776 to 1255, its own phase) its object turns phi^-2 of an image, dissolving over phi
+// seconds as its light swells a little: the very small, brilliant change. With reduced motion none turns.
+const STARS_GLSL = `
+uniform float uTime, uHold, uStarK;
+uniform int uStars;                 // 0: none; else the looks a star's pixel takes (1; 3 from tier 2)
+uniform vec2 uCellN;                // the cells drawn this frame (cw, ch): the cells' texture holds nothing valid beyond
+const float S_L = 55.0;
+// three looks on a sunflower (Vogel 1979): j golden angles round, (phi / 2) sqrt((j + 1/2) / 3) cells out
+const vec2 S_TAP[3] = vec2[3](vec2(0.330280, 0.0), vec2(-0.421820, 0.386422), vec2(0.064566, -0.735700));
+const vec3 S_WHITE = vec3(1.0, 0.988235, 0.956863);                 // (255, 252, 244)
+vec3 sLook(vec2 C, vec2 d, float n, float th, float psi, vec2 tsz) {
+  float r2 = dot(d, d), w = 3.14159265 / n;
+  float a = mod((r2 > 1e-8 ? atan(d.y, d.x) : 0.0) - th, 6.2831853), i = floor(a / w), f = a - i * w;
+  if (mod(i, 2.0) > 0.5) f = w - f;                                  // every other image the mirror image
+  float an = th + psi + f;
+  vec2 s = C - vec2(uCell0) + 2.618034 * sqrt(r2) * vec2(cos(an), sin(an));
+  vec3 k = vec3(0.0);
+  for (int j = 0; j < uStars; j++)                                   // (an explicit level: this runs only on some pixels)
+    k += textureLod(uB, clamp(s + (uStars == 1 ? vec2(0.0) : S_TAP[j]), vec2(0.5), uCellN - 0.5) / tsz, 0.0).rgb;
+  return k / float(uStars) * pow(vec3(0.93, 0.965, 0.955), vec3(min(i, 2.0 * n - i)));   // the mirrors it came through
+}
+vec4 star(vec2 pc, float alpha, vec2 tsz) {
+  ivec2 sq = ivec2(floor(pc / S_L));
+  uint h = h3(sq.x, sq.y, 46368u);
+  float u = unit(h);
+  if (u >= P1) return vec4(0.0);
+  uint g = mixh(h + 1u);
+  float um = float(g & 0xFFFFu) / 65536.0;
+  int M = um < P4 ? 0 : um < P2 ? 1 : 2;
+  float R = (M == 0 ? 13.0 : M == 1 ? 8.0 : 5.0) * uStarK;
+  vec2 C = vec2(sq) * S_L + R + vec2(float((g >> 16) & 255u), float(g >> 24)) / 255.0 * (S_L - 2.0 * R), d = pc - C;
+  float x2 = dot(d, d) / (R * R);
+  if (x2 >= 1.0) return vec4(0.0);
+  vec2 ct = C - vec2(uCell0);
+  float k = smoothstep(P1, 1.0 - P4, alpha) * smoothstep(0.0, R, min(min(ct.x, ct.y), min(uCellN.x - ct.x, uCellN.y - ct.y)) - 2.618034 * R);
+  if (k <= 0.0) return vec4(0.0);
+  if (u >= P1 * pow(smoothstep(P2, 1.0, vnoise(C, 1597.0, 75025u)), PHI)) return vec4(0.0);
+  float cx = complexityBare(C);
+  Void vd = voidAt(C);
+  if (vd.on) { cx *= smoothstep(vd.R, vd.R + 377.0 * ${FKS}, length(C - vd.C)); k *= smoothstep(vd.R - 21.0, vd.R, voidRim(vd, C)); }
+  k *= (1.0 - smoothstep(RUNG_C[3] - 0.03, RUNG_C[3] + 0.16, cx)) * (1.0 - smoothstep(RUNG_C[3] - 0.16, RUNG_C[3], cx));
+  if (k <= 0.0) return vec4(0.0);
+  uint q = mixh(h + 2u);
+  float n = M == 0 ? 5.0 : M == 1 ? 3.0 : 2.0, dl = 3.14159265 / n * P2;
+  float per = 987.0 * pow(PHI, unit(q) - 0.5), T = uTime + per * unit(mixh(q + 1u));
+  float cyc = uHold > 0.5 ? 0.0 : floor(T / per), e = uHold > 0.5 ? 1.0 : smoothstep(0.0, PHI, T - cyc * per);
+  float th = 6.2831853 * unit(mixh(q + 2u)), psi = 6.2831853 * unit(mixh(q + 3u)) + cyc * dl;
+  vec3 s = sLook(C, d, n, th, psi, tsz);
+  if (e < 1.0) s = mix(sLook(C, d, n, th, psi - dl, tsz), s, e);    // a dissolve, never a sweep
+  float l = dot(s, vec3(0.3, 0.59, 0.11));
+  s = clamp(l + (s - l) * 1.272020, 0.0, 1.0);
+  s = mix(s, S_WHITE, P1 * (1.0 - l) * (1.0 + P1 * max(sin(3.14159265 * e), 0.0)));   // its light: most on dark ground
+  return vec4(s, pow(P1, float(M + 2)) * pow(1.0 - x2, 2.618034) * k);
+}
+`;
+const GROUND_PX_STARS = (() => {
+  const part = fsPart;
+  const helpers = (WORDS ? "" : part("const float PHI", "const float GA") + part("uint mixh(uint h)", "float chroma(") + part("float vnoise(", "vec3 artPaper("))
+    + part("const float RUNG_C", "\n#if WORDS") + part("struct Void {", "float segD(");
+  if (!GROUND_PX.includes("/*STARS_DECL*/")) throw new Error("DIRT ground shader: no place for the stars");
+  return GROUND_PX.replace("/*STARS_DECL*/", helpers + STARS_GLSL);
+})();
+const GROUND_PX_USED = !WORDS ? GROUND_PX_STARS : (() => {
   const part = fsPart;
   const decl = `
 precision highp usampler2D;
@@ -2888,8 +2965,8 @@ vec4 wGesture(uvec4 m, vec2 p) {
         c = mix(c, wi.rgb / 255.0, clamp(wi.a * wv * (0.86 + 0.14 * grain), 0.0, 1.0));
       }
     }`;
-  if (!GROUND_PX.includes("/*WORDS_DECL*/") || !GROUND_PX.includes("/*WORDS_PRINT*/")) throw new Error("DIRT ground shader: no place for the letters");
-  return GROUND_PX.replace("/*WORDS_DECL*/", decl).replace("/*WORDS_PRINT*/", print);
+  if (!GROUND_PX_STARS.includes("/*WORDS_DECL*/") || !GROUND_PX_STARS.includes("/*WORDS_PRINT*/")) throw new Error("DIRT ground shader: no place for the letters");
+  return GROUND_PX_STARS.replace("/*WORDS_DECL*/", decl).replace("/*WORDS_PRINT*/", print);
 })();
 /** A pass drawn over the cells after the first, in DRIFT Poetry: where it covers a cell it fades the letters there too
  *  (their outL, blended as its colours are), so no letter shows over a window, a light or a piece of the collage. */
@@ -2994,12 +3071,6 @@ layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${part("const float PHI", "const float GA")}${part("uint mixh(uint h)", "int fdiv(")}${part("float vnoise(", "vec3 artPaper(")}${part("const vec3 MINI[88]", "\n// ---- the one pixel")}
 const float GA = 2.399963229728653;                                  // the golden angle
-/** A reflection seen deep in the glass: each ring further in has come through one more mirror, so it is a little
- *  dimmer and greener (silvered glass leans green) and a little nearer its region's wash. */
-vec3 deeper(vec3 c, vec3 wash, float n) {
-  c *= pow(vec3(0.93, 0.965, 0.955), vec3(n));
-  return mix(c, wash, 1.0 - pow(1.0 - P3, n));
-}
 void main() {
 #if WORDS
   gWD0 = mix(1.0, P3, uWordsOn); gWD1 = mix(1.0, P2, uWordsOn); gWD2 = mix(1.0, P1, uWordsOn);
@@ -3016,40 +3087,17 @@ void main() {
   int a2 = minimalOf(min(complexityBare(rg.C2), RUNG_C[3] - 0.001), rg.h2);
   vec3 w1 = washOf(a1), w2 = washOf(a2);
   vec2 q = (p - rg.C1) * 0.55;
-  // A golden kaleidoscope (v80: "don't forget the relationship between the golden ratio and kaleidoscopes"). In
-  // phi^-4 of the regions the painting is also seen in five mirrors standing at 36 degrees round its middle: their
-  // ten images make the pentagon's symmetry, whose every proportion is phi (cos 36 degrees is phi / 2). Toward the
-  // middle the mirrors face one another, so each ring phi times nearer holds the ring outside it again, deeper and
-  // dimmer, and the painting goes down and down; where one ring gives way to the next the two cross-fade, so no ring
-  // has an edge. It is laid over the painting as a glaze, phi^-1 at the most, in the middle, and gone by the edge:
-  // a small presence of glass and mirrors, the painting and its reflection both there.
-  float kal = 0.0, lev = 0.0, up = 0.0;
-  vec2 qk = q;
-  if (unit(mixh(rg.h1 + 99u)) < P4) {
-    float r = length(q), w = 3.14159265 / 5.0, a = atan(q.y, q.x) + 6.2832 * unit(mixh(rg.h1 + 98u));
-    float i = floor(a / w), f = a - i * w;
-    if (mod(i, 2.0) > 0.5) f = w - f;                                 // every other image the mirror image
-    const float R0 = 89.0;                                            // where the mirrors begin to face each other
-    float sd = max(log(R0 / max(r, 0.01)) / log(PHI), 0.0);          // how many rings in
-    lev = min(floor(sd), 13.0);
-    qk = r * pow(PHI, lev) * vec2(cos(f), sin(f));                    // the ring outside it, held again
-    up = smoothstep(1.0 - P2, 1.0, fract(sd)) * step(lev, 12.0);      // near the next ring in, that one coming
-    kal = P1 * (1.0 - smoothstep(R0 * P1, R0 * PHI, r));
-  }
-  // The looks, all at one place in the code: the painting itself and, through the glass, one ring of its reflection
-  // or two where they cross-fade; each softened by looking uTaps times on a sunflower, a golden angle round from the
-  // last look and farther out by the square root, as seeds are set, 2.9 units out at most (1.8 until v80), and
-  // averaged, so no edge is sharp and no line hard.
-  int scales = kal <= 0.0 ? 1 : up > 0.0 ? 3 : 2, nt = max(uTaps, 1);
-  vec3 acc0 = vec3(0.0), acc1 = vec3(0.0), acc2 = vec3(0.0);
-  for (int j = 0; j < scales * nt; j++) {
-    int sc = j / nt, k = j - sc * nt;
+  // (the golden kaleidoscope of v80 was here; since 23 Oct 2026 the kaleidoscopes are stars, in the pixel pass:
+  // STARS_GLSL.) The painting, softened by looking uTaps times on a sunflower, a golden angle round from the last look
+  // and farther out by the square root, as seeds are set, 2.9 units out at most (1.8 until v80), and averaged, so no
+  // edge is sharp and no line hard.
+  int nt = max(uTaps, 1);
+  vec3 comp = vec3(0.0);
+  for (int k = 0; k < nt; k++) {
     float rk = nt == 1 ? 0.0 : 2.9 * sqrt((float(k) + 0.5) / float(nt)), ak = float(k) * GA;
-    vec3 v = minimal(a1, (sc == 0 ? q : sc == 1 ? qk : qk * PHI) + rk * vec2(cos(ak), sin(ak)), rg.h1, uTime);
-    if (sc == 0) acc0 += v; else if (sc == 1) acc1 += v; else acc2 += v;
+    comp += minimal(a1, q + rk * vec2(cos(ak), sin(ak)), rg.h1, uTime);
   }
-  vec3 comp = acc0 / float(nt);
-  if (kal > 0.0) comp = mix(comp, mix(deeper(acc1 / float(nt), w1, lev), deeper(acc2 / float(nt), w1, lev + 1.0), up), kal);
+  comp /= float(nt);
   // toward the busy country round it, its wash alone (from phi^-4 of the ladder below the rung; a tenth until v80)
   float zone = 1.0 - smoothstep(RUNG_C[3] - 0.16, RUNG_C[3], cx);
   vec3 col = mix(w1, comp, smoothstep(0.0, 144.0, rg.d) * zone);    // the painting, thinning to its wash at the edge
@@ -4541,6 +4589,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   const noLight = /(?:^|&)nolight(?:&|$)/.test(location.hash.slice(1));   // #nolight: the plane without the light, for looking
   const noCollage = /(?:^|&)nocollage(?:&|$)/.test(location.hash.slice(1));   // #nocollage: without the collage
   const noWater = /(?:^|&)nowater(?:&|$)/.test(location.hash.slice(1));   // #nowater: without the watercolour
+  const noStars = /(?:^|&)nostars(?:&|$)/.test(location.hash.slice(1));   // #nostars: without the stars, for comparing
   let tQuilt = null, qn = 0, qs = 1, quiltImgs = null, tP = null, fboP = null, prevN = [0, 0], prev0 = [0, 0];
   /** The quilts into their texture array, mipmapped, so a quilt hung small is still the paintings, not their noise. */
   function fillQuilts(imgs) {
@@ -4934,7 +4983,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   function link() {
     if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i, pending.j].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uTier", "uWordsOn"]);
-    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster", "uWTime", "uWSpread", "uWG"]);
+    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster", "uWTime", "uWSpread", "uWG", "uTime", "uHold", "uStars", "uStarK", "uCellN"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     // the formal pass is an addition: without it, the plane is as it was
@@ -4979,6 +5028,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     if (jj) { [minimalProg, Mi] = jj; gl.useProgram(minimalProg); gl.uniform1i(Mi.uRoster, 8); gl.uniform1iv(Mi.uRAt, pending.rAt); }
     gl.useProgram(pxProg);
     gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
+    gl.uniform1f(V.uHold, hold || reduced ? 1 : 0);                  // the stars hold still with reduced motion
     if (WORDS) { gl.uniform1i(V.uWAtlas, 15); gl.uniform1i(V.uWL, 16); gl.uniform1i(V.uWText, 17); gl.uniform1i(V.uWM, 18); gl.uniform1i(V.uRoster, 8); }
     pending = null;
     return true;
@@ -5273,6 +5323,11 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const swim = !earth && !noWater ? SWIM.step(cx0 + cw / 2, cy0 + ch / 2, t, cw / 2, ch / 2) : SWIM.none;   // the swimmers
     gl.uniform4fv(V.uSwim, swim[0]);
     gl.uniform4fv(V.uWake, swim[1]);
+    // the stars: in the calm country the minimal pass paints, at the CSS size a retina screen gives them
+    gl.uniform1f(V.uTime, t);
+    gl.uniform2f(V.uCellN, cw, ch);
+    gl.uniform1f(V.uStarK, Math.min(1, cv.width / Math.max(1, cv.clientWidth) / 2));
+    gl.uniform1i(V.uStars, minimalProg && edgeOn && !earth && !(anom[2] > 0) && !noStars ? (tier >= 2 ? 3 : 1) : 0);
     if (WORDS) {
       gl.uniform1f(V.uWOn, wk);
       gl.uniform1f(V.uWTime, t);
