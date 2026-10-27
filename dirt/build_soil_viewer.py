@@ -69,6 +69,7 @@ HERE = Path(__file__).resolve().parent
 PAGE = r"""<meta charset="utf-8">
 <title>DRIFT</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
 <style>
   :root {
     color-scheme: dark;
@@ -117,6 +118,7 @@ PAGE = r"""<meta charset="utf-8">
   <canvas id="field" aria-label="An endless plane of soil made from saved paintings: swipe, scroll or use the arrow keys to move through it; point at it to name the painting underneath, and click or tap a painting to pick it out"></canvas>
 </div>
 
+<script id="glyphlight">__GLYPHLIGHT__</script>
 <script id="common">
 // ---- shared by the page and the worker that grows the ground -----------------------------------
 
@@ -2535,6 +2537,26 @@ showAll.addEventListener("click", letGo);
 <script id="drift">__DRIFT__</script>
 <script id="earth-city">__EARTH_CITY__</script>
 <script id="earth-main">__EARTH_MAIN__</script>
+<script id="glyphs">
+// The texture: Glyph Light (artist, 27 Oct 2026, sending the Glyph Light artifact: "Implement this as the aesthetic for
+// the artist website, DRIFT, DRIFT Poetry, Holographic Mr Pearl and morphology. The content should remain the same for
+// each, what changes is how the aesthetic texture of what is being displayed is achieved"). The plane is drawn as it
+// always was, and read a cell at a time as glowing glyphs (glyphlight.js), laid over it, every press still reaching it.
+// DRIFT's glyphs are Glyph Light's finest set, so its textures keep as many steps of light as glyphs can give; DRIFT
+// Poetry's are the poems themselves, running through the cells in reading order, each letter in the colour of the
+// ground under it and gone where the ground is dark.
+addEventListener("load", () => {
+  const stage = document.getElementById("stage");
+  if (!window.GlyphLight || !stage) return;
+  const canvases = () => [...stage.querySelectorAll("canvas")].filter((c) => !c.__glyphs);
+  const poems = document.querySelector('section[aria-label^="The poems of Picture Poetry"]');
+  const text = poems ? [...poems.querySelectorAll("p")].map((p) => [...p.childNodes].map((n) => n.textContent).join(" ")).join(" ") : "";
+  const all = canvases();
+  window.GLYPHS = GlyphLight.create(Object.assign({ host: stage, after: all[all.length - 1], sources: canvases,
+    cell: (w) => (w < 600 ? 5 : 6) * (text ? 1.4 : 1) },
+    text ? { style: "text", text } : { style: "ascii", set: GlyphLight.SETS.fine }));
+});
+</script>
 """
 
 
@@ -2625,7 +2647,8 @@ def main():
                 .replace("__EARTH_COMMON__", src.get("earth-common", ""))
                 .replace("__EARTH_WORKER__", src.get("earth-worker", ""))
                 .replace("__EARTH_CITY__", src.get("earth-city", ""))
-                .replace("__EARTH_MAIN__", src.get("earth-main", "")))
+                .replace("__EARTH_MAIN__", src.get("earth-main", ""))
+                .replace("__GLYPHLIGHT__", "" if site else (HERE / "engine" / "glyphlight.js").read_text().replace("</script", "<\\/script")))
     target = site / "index.html" if site else priv / "collection-soil.html"
     target.write_text(page)
     print(target, f"{len(page) / 1e6:.1f} MB", f"and {len(files)} Earth files in {(site or priv) / 'earth'}" if files else "")
