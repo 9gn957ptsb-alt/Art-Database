@@ -328,6 +328,30 @@ from a session once a Cloudflare API token is stored as an environment credentia
 token was); then **Add custom connector** in Claude with the Worker's `/mcp` URL. People using 5s never
 see any of it.
 
+### Let's play fives, through the connector (`play_fives`)
+
+The connector's own game, beside Sort (CONCEPT.md, "Let's play fives, through the connector: five kinds
+of thing"). The app is not changed by it and works without it; its `STATE_MAX` stays at 195 KiB.
+
+- `play_fives` → the round on show: five things together, in the artist's order (a picture, a line of
+  code, a space, a Picture Poetry page, a word), no names. Keep or Pass on each, in any order: in the
+  round card under the call, or with `judge` and each thing's id. Once all five are answered, the next
+  `play_fives` deals the next round from what was kept and passed before it. Five rounds make a game;
+  an unfinished game waits.
+- Ids: a picture or a space is a deck card, judged into `j` as Sort judges it. The game's own things:
+  `l` a line of code (`l` and three digits, curated; a made line's id says how to make it again), `p` a
+  page, `w` a word (`w` and the word).
+- State, written only by the connector (the app keeps both as they are):
+
+```jsonc
+"game": {"day": "2026-10-24", "at": 1761300000,           // the day it started; at: the round's seq
+         "ids": ["i020", "l003", "s004", "p2", "wcanopy"],  // dealt a round at a time, at most 25
+         "k": "10-1-",                                      // 1 kept, 0 passed, - not yet: one per id
+         "from": ["", "", "", "", "i020"]},                 // the id each thing came from, or ""
+"things": {"l003": 1, "wcanopy": 0}                         // the latest answer on each line, page and word:
+                                                            // at most 1,000, oldest dropped
+```
+
 ### Connect your apps (the taste people already have, brought into 5s)
 
 People's aesthetic preferences already live in other apps: pins, saves, likes, favourites, album
