@@ -146,7 +146,10 @@ down: cells of φ⁻⁷ m (3.4 cm), the level whose unit is his narrowest part, 
 six bars a tenth of it thick, 3,595 of them, 49 cells from his shoes to the top of his hat. A cell is his where its
 centre lies inside the form (`pearl-body.json`, the primitives of the form fitted to the album covers), coloured by
 the part it lies deepest in: the suit, the hat and the shoes in eight tints of the pearl's own film, the guitar
-with its gold edge. The cells are split into ten small grids, one to each part that moves (the pelvis, the torso,
+with its gold edge. **The guitar is his bass, a Taylor GS Mini-e Koa Bass** (the artist, 26 Oct 2026, with its picture:
+"Make sure this is the bass Mr Pearl is holding"): its top, back and sides koa, striped along its grain in koa's own
+tones, the rosette round the round sound hole, a dark bridge with its pins, the four strings, two tuners a side and the
+preamp's panel on the upper bout, each painted into the cells it lies over. The cells are split into ten small grids, one to each part that moves (the pelvis, the torso,
 each arm, the guitar and its strap, the hat, each thigh, each shin with its trouser and shoe), and each is walked
 by the blocks' own shader, exactly as the place's grid is, under a model transform that turns it and scales it to
 his unit, the pixel's width measured in his unit; so near to he is open bars, as a wall is, and further off he
@@ -214,7 +217,8 @@ reflex sight that I can control with my right finger while my left finger allows
 "And when I click with the reflex sight up, I am able to throw something"). A reflex sight is a window of partly
 reflecting curved glass with a lit mark at its focus, seen at infinity, so the mark lies on the target wherever the
 eye is behind the window. His head is the one thing in the game that can be that glass, the only perfect sphere, its
-film partly reflecting: so the head is the glass, and the figure is the mark. Sight (over Holo; `R`; the right mouse
+film partly reflecting: so the head is the glass, and the figure is the mark. **Scope** (the button was Sight until
+the artist, 26 Oct 2026: "Instead of the button being called site, it ought to be called scope"; over Holo; `R`; the right mouse
 button, held, or clicked to leave it up) raises it in the time a switch of view takes: the camera comes down from
 over his hat to φ behind his head's centre on the line of the look (the hologram's own distance, the height of the
 head's top), so his head is the middle of the view and its outline the window, 8.7° across its half (93 px on a
@@ -241,19 +245,33 @@ the far world (a reflex sight magnifies nothing); a point held still for a beat 
 not drag); the arrow keys turn it its window's breadth a beat. A tap or a click anywhere, `T` or `Enter`, throws.
 
 **What he throws** is a pearl built of the unit, three of his cells round (136 of them, in six bands of his
-jacket's tints), never the perfect sphere; he carries five, one for each finger of his throwing glove ("Pearls 4 of
-5" under the alarms). It leaves the glove at 29.2 m/s, the speed whose farthest throw on level ground is F(9) = 34 m
+jacket's tints), never the perfect sphere; **there is no end of them** (the artist, 26 Oct 2026: "I want infinite pearls
+to throw"; until then five, one for each finger of his throwing glove), and at most thirteen, F(7), lie about, the oldest
+giving way. It leaves the glove at 29.2 m/s, the speed whose farthest throw on level ground is F(9) = 34 m
 (35 m from his hand's height, aimed 39.5° up), on the arc that comes level with the sight's line at his reach, six
 metres out, heading for what the mark is on, so that it comes down on the mark's upright (his glove is 0.39 m right of
 the line); it takes his walk with it, spins backward a turn a beat and trails the last beat of its path. One a beat:
 his arm flings forward and comes back up, the next pearl in the fingers from the half beat, and a tap before the arm
-is up is kept, the latest. It bounces with half its speed, comes to rest, sinks in water as he does, and where it
-first touches says what it struck: a work's title and who made it (never a look behind it, never a wrong look), a
-piece of the rocket (it rings: among the pieces still lying, the arrow points to that one first), a block's section
-and project, the water. It takes, breaks and looks behind nothing. It comes back when he walks into it, or when it
-is tapped with the sight lowered within his reach; he comes to again with all five. The tap with the sight down
-smashes, as before; with it up, it throws; raising it lets a swing go. As the hologram there is no sight and no
-throw. Under reduced motion the sight comes up at once, the figure stays closed and the ring is always shown, and the
+is up is kept, the latest. **It breaks what it strikes** (the artist, 26 Oct 2026: "When I throw a pearl at a surface,
+it should break that surface. Although there should be special surfaces in which the pearl bounces back"): any block,
+its six bars flying out as the smash's do at half the pearl's speed, a piece of the rocket in it found, and the pearl
+spent in it; **metal and limestone** (the homage's strip and plinths, the studies'), the bedrock, the place's edges and a
+wall a work hangs on send it back with half its speed, and there it comes to rest, or sinks in water as he does. What it
+strikes is no longer said; the words under the glass come up **only on a character**, a guard (the artist, 26 Oct 2026:
+"Something like this should only pop up when the aim is on another characters or player"), and what else the nose is on
+is said to a screen reader only. The tap with the scope down
+smashes, as before; with it up, it throws; raising it lets a swing go. As the hologram there is no scope and no
+throw; a tap on a block does nothing, and **a double tap takes the head where it points** (the artist, 26 Oct 2026: "When
+in holographic mode I want to be able to double tap with my right finger and teleport to wherever I am clicking while my
+left finger controls the joystick of my movements"; a computer's double click, where the crosshair is): to the first
+thing the ray meets, its radius short of it, or 60 m into the sky, taking no coin it jumps past. On a guard it **rides
+it** (the artist: "I want to be able to ride the giant who walks around": next to the hologram, which is his head, a
+guard is a giant): on its hat as it walks its round, the head coming down onto one doing the same; the stick held a
+moment after takes it off. A work's label, where it named the room, now gives **a riddle** (the artist, 26 Oct 2026:
+"give some sort of riddle that is easy to solve that ties into the narrative of where the pieces for the rocket are.
+Overall, keep things very easy"): the work's own if a piece is behind it, else the next piece not found, told by the
+work it is behind (its room and artist: "Who am I?") or the place it lies (the roof, the pool, the garden: "What am
+I?"). The studies' stones say nothing now (the artist: "Get rid of this"); the homage's still say which figure. Under reduced motion the sight comes up at once, the figure stays closed and the ring is always shown, and the
 arm does not fling.
 
 **One button**, Holo (or `H`), between the two: it sends the head out as the hologram, and pressed again the body
@@ -552,14 +570,17 @@ then to the wreck once all four are found; from outside, to the way in. Break a 
 it; switch to Place, or pick a block from the bar, to set one (a wall a work hangs on stays).
 
 On a phone: the stick on the left, drag to look, tap, the jump button (single steps are climbed by themselves), over
-it the Holo button, and over that Sight. The stick is a touch on water, not a tool (artist, 21 Oct 2026:
+it the Holo button, and over that Scope. **Walking, a double tap with the right hand dashes him ten feet on** (the
+artist, 27 Oct 2026: "When I am walking with Mr. Pearl, I want to be able to double tap with my right hand and he
+quickly dashes forward 10 feet"; a computer's double click): 3.048 m along the way he walks, in half a beat, stopped
+by what it meets as his walk is; standing, taps are taps. The stick is a touch on water, not a tool (artist, 21 Oct 2026:
 "Revolutionize the way the joist stick shows up on the screen when using it, it's too distracting, have it be a lot
 more subtle and feel like a natural force of nature rather than an analog tool"): where the left thumb lands the
 surface answers once with a ring never quite round (the head is the one perfect sphere), the push draws it out the
 way he goes, its front running ahead of the thumb as far as the push is strong, and let go it smooths over in two
 beats of the theme song. It is a hairline of warm light with a blue-violet shade beside it, no disc and no knob,
 drawn into the canvas the game redraws each frame anyway; under reduced motion it stands at one size and only fades.
-The buttons of play (Sight, Holo, Break or Place, the blocks, Notes, Build, Launch) take a touch as it lands, as the
+The buttons of play (Scope, Holo, Break or Place, the blocks, Notes, Build, Launch) take a touch as it lands, as the
 jump button does, so one thumb can press them while the other is on the stick (artist, 21 Oct 2026: "I want to be
 able to switch between holographic view and third person view while I'm moving Mr Pearl"): a phone makes no click of
 a tap while another finger is down. On a computer: W A S D, drag to look, click; space jumps, 1–5 picks a block, E
