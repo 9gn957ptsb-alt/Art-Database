@@ -140,8 +140,24 @@
     wall: as && ['paint', 'light', 'own'].indexOf(as.wall) >= 0 ? as.wall : R.paint ? 'paint' : 'light',
     floor: as && ['own', 'laid', 'wall'].indexOf(as.floor) >= 0 ? as.floor : 'own',
   });
-  // How the walls show: painted only where plaster is marked and no surface is laid on it; else the colour is its light.
-  const wallMode = (R, a) => (a.wall === 'own' ? 'own' : a.wall === 'paint' && R.paint && a.floor !== 'wall' ? 'paint' : 'light');
+  // A Surface On a wall goes on the painted plaster of one wall, the picture's (or the first wall with paint on it); a wall
+  // carries one finish, so the paint stays on the other painted walls, or becomes the light when there are none (photo.md §4).
+  function wallSplit(R) {
+    const polys = R.paint ? R.paint.polys : [], first = R.spots && R.spots.hang ? R.spots.hang.plane : 'w1';
+    const ids = [first].concat(Object.keys(R.planes || {}).filter((k) => k !== 'f' && k !== first));
+    for (const id of ids) {
+      const P = planeOf(R, id, 100, 100);
+      if (!P) continue;
+      const on = polys.filter((p) => {
+        const [u, v] = P.toCm(p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length);
+        return u >= -0.05 * P.W && u <= 1.05 * P.W && v >= -0.05 * P.Hh && v <= 1.05 * P.Hh;
+      });
+      if (on.length) return { plane: id, on, rest: polys.filter((p) => on.indexOf(p) < 0) };
+    }
+    return { plane: first, on: polys, rest: [] };
+  }
+  // How the walls show: painted where plaster is marked (on the other walls when a surface is laid on one); else the colour is its light.
+  const wallMode = (R, a) => (a.wall === 'own' ? 'own' : a.wall === 'paint' && R.paint && (a.floor !== 'wall' || wallSplit(R).rest.length) ? 'paint' : 'light');
   const floorMode = (R, a) => (a.floor === 'laid' ? 'laid' : a.floor === 'wall' && R.paint ? 'wall' : 'own');
 
   /** words(marks, key, thing, as) -> {rel, line}: the relation in plain words, from the room's own names ("hung over
@@ -159,15 +175,16 @@
       return line(how === 'lay' ? 'laid ' + sp.name : how === 'light' ? 'lighting the room, ' + sp.name
         : how === 'set' && sp === S.set ? 'set ' + sp.name : 'standing ' + sp.name);
     }
+    const split = R.paint && a.floor === 'wall' && wallSplit(R).rest.length > 0;   // a surface on the picture's wall, the paint on the others
     if (key === 'wall') {
       const walls = own(R.walls, 'walls'), m = t ? wallMode(R, a) : 'own';
-      const first = what.split(/,\s*|\s+and\s+/)[0] || 'colour';
-      return m === 'paint' ? { rel: 'painted on ' + R.paint.name, line: cap(first) + ', painted on ' + R.paint.name }
+      const first = what.split(/,\s*|\s+and\s+/)[0] || 'colour', on = split ? 'the other walls' : m === 'paint' ? R.paint.name : '';
+      return m === 'paint' ? { rel: 'painted on ' + on, line: cap(first) + ', painted on ' + on }
         : m === 'light' ? { rel: 'its light', line: walls + '. Your ' + first + ' is its light' } : { rel: 'its own', line: walls };
     }
     if (key === 'floor') {
       const m = t ? floorMode(R, a) : 'own';
-      return m === 'laid' ? line('laid as its floor') : m === 'wall' ? line('laid on ' + R.paint.name)
+      return m === 'laid' ? line('laid as its floor') : m === 'wall' ? line('laid on ' + (split ? 'the picture’s wall' : R.paint.name))
         : { rel: 'its own', line: own(R.floor && R.floor.what, 'floor') };
     }
     return { rel: '', line: null };
@@ -224,7 +241,9 @@
     return o;
   }
   /** cutOut(img) -> a canvas of the thing cut from its studio ground (a flood from the border while neighbours stay
-   *  alike, on at most 420 px), or null when under 8 % or over 96 % of the picture remains: then it stands whole. */
+   *  alike, on at most 420 px), or null when under 8 % or over 96 % of the picture remains: then it stands whole. Its
+   *  fill is the share of its own box the thing fills (near 1 for a rug shot from above, about 0.5 for one shot at an
+   *  angle); whole is true when that box spans the picture, as when a rug fills its photo and only its pattern was cut. */
   function cutOut(img) {
     const k = Math.min(1, 420 / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k));
     const c = cnv(w, h), x = c.getContext('2d', { willReadFrequently: true });
@@ -254,6 +273,8 @@
     x.putImageData(d, 0, 0);
     const o = cnv(x1 - x0 + 1, y1 - y0 + 1);
     o.getContext('2d').drawImage(c, -x0, -y0);
+    o.fill = kept / (o.width * o.height);
+    o.whole = o.width >= 0.95 * w && o.height >= 0.95 * h;
     return o;
   }
 
@@ -350,13 +371,25 @@
   }
   function cutFor(src, img) {
     const key = keyOf(src);
-    if (!cuts.has(key)) cuts.set(key, (async () => { try { const c = cutOut(img); return c ? { url: await toUrl(c), ar: c.width / c.height } : null; } catch (e) { return null; } })());
+    if (!cuts.has(key)) cuts.set(key, (async () => { try { const c = cutOut(img); return c ? { url: await toUrl(c), ar: c.width / c.height, fill: c.fill, whole: c.whole } : null; } catch (e) { return null; } })());
     return cuts.get(key);
   }
   // An unmarked room's guess, once a visit (release keeps it).
   function guessFor(id, img) {
     if (!guesses.has(id)) { let g; try { g = guessFloor(img); } catch (e) { g = { vp: [50, 45], floor: 63 }; } guesses.set(id, g); }
     return guesses.get(id);
+  }
+  /** brightest(img) -> [x, y]: the brightest blurred region of the photo (percent), where a guessed room's daylight
+   *  comes from (photo.md §4). Blurred by drawing it small twice. Throws when the image cannot be read. */
+  function brightest(img) {
+    const a = cnv(48, Math.max(1, Math.round(48 * img.naturalHeight / img.naturalWidth)));
+    a.getContext('2d').drawImage(img, 0, 0, a.width, a.height);
+    const b = cnv(12, Math.max(1, Math.round(a.height / 4))), x = b.getContext('2d', { willReadFrequently: true });
+    x.drawImage(a, 0, 0, b.width, b.height);
+    const d = x.getImageData(0, 0, b.width, b.height).data;
+    let best = -1, at = 0;
+    for (let i = 0; i < b.width * b.height; i++) { const l = lum(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]); if (l > best) { best = l; at = i; } }
+    return [((at % b.width) + 0.5) / b.width * 100, (((at / b.width) | 0) + 0.5) / b.height * 100].map((v) => Math.round(v * 10) / 10);
   }
   /** release(): revoke every mask and cut-out URL and drop the images, when Set closes. Guesses stay for the visit. */
   function release() {
@@ -469,13 +502,13 @@
       const img = t && t.src ? await load(t.src).catch(() => null) : null;
       const a = asOf(R, as), S = R.spots;
       if (key === 'wall') {
-        const m = wallMode(R, a);
-        return { t, m, mask: m === 'paint' && t ? await maskFor(o.src, photo, R.paint.polys) : null };
+        const m = wallMode(R, a), polys = m !== 'paint' ? null : a.floor === 'wall' ? wallSplit(R).rest : R.paint.polys;
+        return { t, m, polys, mask: polys && t ? await maskFor(o.src, photo, polys) : null };
       }
       if (key === 'floor') {
-        const m = t && img ? floorMode(R, a) : 'own';
-        const polys = m === 'laid' ? (R.floor && R.floor.outline ? [R.floor.outline] : null) : m === 'wall' ? R.paint.polys : null;
-        return { t, img, m: polys ? m : 'own', polys, mask: polys ? await maskFor(o.src, photo, polys, m === 'laid' ? R.floor.band : 0) : null };
+        const m = t && img ? floorMode(R, a) : 'own', split = m === 'wall' ? wallSplit(R) : null;
+        const polys = m === 'laid' ? (R.floor && R.floor.outline ? [R.floor.outline] : null) : split ? split.on : null;
+        return { t, img, m: polys ? m : 'own', polys, on: split ? split.plane : 'f', mask: polys ? await maskFor(o.src, photo, polys, m === 'laid' ? R.floor.band : 0) : null };
       }
       if (key === 'object') {
         const how = howIn(key, t);
@@ -492,7 +525,7 @@
         const c = (t && t.colours ? t.colours : []).filter((x) => HEX.test(x));
         if (c.length && p.m === 'paint') {
           if (p.mask) maskTo(add(wrap, 'div', 'paint', { background: c[0] }), p.mask.mask);
-          else for (const poly of R.paint.polys) add(wrap, 'div', 'paint', { background: c[0], clipPath: polyCss(poly), webkitClipPath: polyCss(poly) });
+          else for (const poly of p.polys) add(wrap, 'div', 'paint', { background: c[0], clipPath: polyCss(poly), webkitClipPath: polyCss(poly) });
         } else if (c.length && p.m === 'light') {
           const s = R.sun || [50, 10];
           add(wrap, 'div', 'lightwash').style.background = 'radial-gradient(120% 110% at ' + s[0] + '% ' + s[1] + '%, ' +
@@ -501,13 +534,14 @@
         box = S.paint ? around(S.paint.at) : null;
       } else if (key === 'floor') {
         if (p.m !== 'own') {
-          const P = plane(p.m === 'laid' ? 'f' : S.hang.plane);
-          const laid = add(wrap, 'div', 'laid');
-          if (p.mask) maskTo(laid, p.mask.mask);
-          else { laid.style.clipPath = polyCss(p.polys[0]); laid.style.webkitClipPath = polyCss(p.polys[0]); }   // shortcut: the first polygon only, when the photo cannot be read
-          const { d, k } = planeDiv(P, laid, 'tiles');
-          d.style.backgroundImage = 'url("' + t.src + '")';
-          d.style.backgroundSize = 75 / k + 'px ' + 75 / k + 'px';   // tiled at 75 cm
+          const P = plane(p.on);
+          for (const poly of p.mask ? [null] : p.polys) {   // the mask covers every polygon; when the photo cannot be read, one clip each
+            const laid = add(wrap, 'div', 'laid');
+            if (poly) { laid.style.clipPath = polyCss(poly); laid.style.webkitClipPath = polyCss(poly); } else maskTo(laid, p.mask.mask);
+            const { d, k } = planeDiv(P, laid, 'tiles');
+            d.style.backgroundImage = 'url("' + t.src + '")';
+            d.style.backgroundSize = 75 / k + 'px ' + 75 / k + 'px';   // tiled at 75 cm
+          }
           if (p.mask) { const sh = add(wrap, 'img', 'shade'); sh.src = p.mask.shade; sh.alt = ''; }
         }
         box = S.floor ? around(S.floor.at) : null;
@@ -542,9 +576,16 @@
 
     // The thing in it, by what it is: laid flat, lighting it from above, set on a top, or standing on the floor.
     function placeObject(wrap, p, F) {
-      const { t, img, how, sp, cut } = p, S = R.spots;
+      const { t, img, how, sp } = p, S = R.spots;
+      const cut = how === 'lay' && p.cut && p.cut.whole ? null : p.cut;   // a rug that fills its photo is all rug: the whole photo lies
       const [fx, fy] = F.toCm(...pt(sp.at)), ar = cut ? cut.ar : (img.naturalWidth || 1) / (img.naturalHeight || 1);
       const cm = sizeOf(how, t, ar);
+      if (how === 'lay' && cut && cut.fill < 0.7) {   // a rug shot at an angle is already in perspective: its cut-out lies centred on the spot
+        const s = F.scale(fx, fy), wpx = cm * s, hpx = wpx / ar, c = F.toPx(fx, fy);
+        const up = add(wrap, 'img', 'upright', { left: c[0] - wpx / 2 + 'px', top: c[1] - hpx / 2 + 'px', width: wpx + 'px', height: hpx + 'px' });
+        up.src = cut.url; up.alt = '';
+        return [c[0] - wpx / 2, c[1] - hpx / 2, c[0] + wpx / 2, c[1] + hpx / 2];
+      }
       if (how === 'lay') {   // a rug: flat, a child of the floor's plane
         const rw = cm, rh = cm / ar, { d, k } = planeDiv(F, wrap);
         const rug = add(d, 'div', 'rug', { left: (fx - rw / 2) / k + 'px', top: (fy - rh / 2) / k + 'px', width: rw / k + 'px', height: rh / k + 'px' });
@@ -604,6 +645,7 @@
       if (!photo) { el.dataset.ready = 'fail'; if (o.onFail) o.onFail(); return false; }
       w = photo.naturalWidth; h = photo.naturalHeight;
       R = roomOf(o.marks, w, h) || boxFromGuess(guessFor(o.id, photo), w, h);
+      if (R.guess) try { R.sun = brightest(photo); } catch (e) { /* another origin: the far wall's top */ }
       handle.room = R;
       const parts = await Promise.all(KEYS.map(prep));   // everything measured first, then drawn at once
       if (gone) return false;

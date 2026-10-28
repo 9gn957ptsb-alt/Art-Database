@@ -100,7 +100,7 @@
     first: null, firstWait: false,   // Set's first board (under six kept pictures), and a brought picture it waits on
     // See it as a room in a room you kept: the room shown and its things, the drawn room chosen instead, the page of
     // Rooms you kept, the mounted photo room and pinned minis, rooms whose photo failed, the floor check of a brought room
-    proom: null, proomKey: null, proomOn: false, proomWait: false, roomDrawn: false, roomPage: 0, pm: null, minis: [], roomBad: new Set(), check: null,
+    proom: null, proomKey: null, proomOn: false, proomWait: false, roomDrawn: false, roomPage: 0, pm: null, minis: [], roomBad: new Set(), check: null, checkAsked: new Set(),
     reveal: null,   // the kingdom's area just found: its island grows once, the next time the kingdom opens (this visit only)
   };
 
@@ -1343,6 +1343,7 @@
   const roomSrc = (c) => (c.own ? ownSrc(c, 'img') : c.img || null);
   const byLine = (c) => (c.own ? shortTitle(c.title || 'Untitled', 60) + ' · Yours' : [shortTitle(c.title || 'Untitled', 60), c.artist].filter(Boolean).join(' · '));
   const canPaint = (c) => !!(c && !c.own && c.room && c.room.paint);
+  const ownPhoto = (c) => !!(c && c.own && c.source === 'Your photos');   // a photo of their own room; a brought Pinterest room is not
   let deckRooms = null;
   const deckHasRooms = () => { if (deckRooms === null) deckRooms = !!RM && deck.cards.some((c) => (F.whatIs(c) || {}).key === 'room'); return deckRooms; };
 
@@ -1367,9 +1368,10 @@
     if (!rooms.length) return null;
     const key = example ? 'ex' : 'me';
     let p = ui.proom && ui.proomKey === key ? ui.proom : {};
-    if (rooms.indexOf(p.room) < 0) p = Object.assign({}, p, { room: rooms[0], as: null });
+    const room = p.chosen && rooms.indexOf(p.room) >= 0 ? p.room : rooms[0];   // the room they chose this visit, else the first they kept
+    if (room !== p.room) p = Object.assign({}, p, { room, as: null, chosen: false });
     ui.proomKey = key;
-    const next = { room: p.room }, used = new Set(), pools = {};
+    const next = { room: p.room, chosen: !!p.chosen }, used = new Set(), pools = {};
     for (const s of PKEY) {
       pools[s] = F.setPool(st, deck, s, p.room);
       next[s] = p[s] && pools[s].indexOf(p[s]) >= 0 && !used.has(p[s]) ? p[s] : null;
@@ -1399,10 +1401,13 @@
   const thingsOf = (set, st) => { const o = {}; for (const s of SLOTS) o[s] = roomThing(set[s], st); return o; };
   // The room's words for a place (FiveSRoom.words: "hung over the fireplace", "Its own: oak boards").
   function placeWords(R, s, thing, as) {
-    try { return RM.words(R.room || null, s, thing, as) || {}; } catch (e) { return {}; }
+    // the walls take only a thing's colours: anything but a Colour is said by them ("black, painted on…"), not by what it is
+    const c = s === 'wall' && thing ? cardOf(thing.id) : null;
+    const t = c && c.kind !== 'colour' ? Object.assign({}, thing, { what: listWords(colourWords(thing)) }) : thing;
+    try { return RM.words(R.room || null, s, t, as) || {}; } catch (e) { return {}; }
   }
   function roomLabel(R) {
-    if (R.own) return 'Your photo, ' + (R.title || 'Untitled') + ': your room.';
+    if (R.own) return (ownPhoto(R) ? 'Your photo, ' : 'A room you brought in, ') + (R.title || 'Untitled') + ': your room.';
     const say = (R.room && R.room.say) || (F.whatIs(R) || {}).what;
     return (R.title || 'Untitled') + (R.artist ? ', by ' + R.artist : '') + ': your room' + (say ? ', ' + say : '') + '.';
   }
@@ -1455,7 +1460,7 @@
       '<div class="actions"><button type="button" class="btn btn-quiet" data-act="set-board">See it as a board</button>' + exampleButton(st) + '</div></div>';
     html += '<section class="sec" aria-labelledby="room-h"><h2 class="visually-hidden" id="room-h">The room</h2>' +
       '<div class="proom" data-room="' + esc(R.id) + '" style="aspect-ratio:' + (R.w || 4) + ' / ' + (R.h || 3) + '"></div>' +
-      '<p class="rcap"><b>' + esc(roomName(R)) + '</b> · ' + (R.own ? 'Yours. Your own room.' : esc(R.artist ? R.artist + '. ' : '') + esc('A room you stand in' + (say ? ': ' + say : '') + '.')) + '</p>' +
+      '<p class="rcap"><b>' + esc(roomName(R)) + '</b> · ' + (R.own ? (ownPhoto(R) ? 'Yours. Your own room.' : 'A room you brought in.') : esc(R.artist ? R.artist + '. ' : '') + esc('A room you stand in' + (say ? ': ' + say : '') + '.')) + '</p>' +
       (R.own && !ro ? '<div class="actions"><button type="button" class="btn" data-act="room-check" data-id="' + esc(R.id) + '" aria-haspopup="dialog">Move the floor lines</button></div>' : '') +
       '<ul class="pkey">' + PKEY.map((s) => keyRowHTML(s, p, st, R)).join('') + '</ul></section>';
     html += roomsHTML(st, roomList(st), p.room);
@@ -1540,13 +1545,14 @@
   // Rooms you kept: three at a time, Three more, and always The drawn room last. cur: the room shown (null: the drawn room).
   function roomsHTML(st, rooms, cur) {
     const pages = Math.ceil(rooms.length / 3), pg = ((ui.roomPage % pages) + pages) % pages;
-    const wc = ((ui.proom && cardOf(ui.proom.wall, st)) || {}).colours || [];
+    const shown = cur ? ui.proom : ui.room;   // the drawn room's tile in the walls of the things shown
+    const wc = ((shown && shown.wall && cardOf(shown.wall, st)) || {}).colours || [];
     return '<div class="rooms" role="group" aria-labelledby="rooms-h"><div class="rooms-head"><h2 class="sec-title" id="rooms-h">Rooms you kept</h2>' +
       (pages > 1 ? '<button type="button" class="linkbtn" data-act="rooms-more">Three more</button>' : '') + '</div><ul>' +
       rooms.slice(pg * 3, pg * 3 + 3).map((id) => {
         const c = cardOf(id, st);
         const what = (F.whatIs(c) || {}).what;
-        const label = c.own ? 'Your photo, ' + (c.title || 'Untitled') + '. Your own room.' : (c.title || 'Untitled') + (c.artist ? ', by ' + c.artist : '') + '. A room you stand in' + (what ? ': ' + what : '') + '.';
+        const label = c.own ? (ownPhoto(c) ? 'Your photo, ' + (c.title || 'Untitled') + '. Your own room.' : (c.title || 'Untitled') + '. A room you brought in.') : (c.title || 'Untitled') + (c.artist ? ', by ' + c.artist : '') + '. A room you stand in' + (what ? ': ' + what : '') + '.';
         return '<li><button type="button" class="rbtn" data-act="room-pick" data-id="' + esc(id) + '" aria-pressed="' + (id === cur) + '" aria-label="' + esc(label) + '">' +
           thumbHTML(c, 'work') + '<span class="t">' + esc(roomName(c)) + '</span></button></li>';
       }).join('') +
@@ -1606,7 +1612,8 @@
     return asSwitchHTML(slot, p, R) + '<p class="lede">Choose one of three' + (pages > 1 ? ' (' + (pg + 1) + ' of ' + pages + ')' : '') + '. ' + esc(lead) + '</p>' +
       '<ul class="choices">' + F.setCandidates(st, deck, slot, page, p.room).map((id) => {
         const c = cardOf(id, st), thing = roomThing(id, st);
-        const how = slot === 'picture' ? 'hang' : slot === 'object' ? (RM.howIn ? RM.howIn(slot, thing) : thing.how) : '';
+        let how = slot === 'picture' ? 'hang' : slot === 'object' ? (RM.howIn ? RM.howIn(slot, thing) : thing.how) : '';
+        if (how === 'set' && !(R.room && R.room.spots && R.room.spots.set)) how = 'stand';   // no top marked in this room: it stands
         const rod = thing.roles.indexOf('textile') >= 0 && thing.roles.indexOf('floor') < 0;
         const th = slot === 'wall' ? '<span class="th">' + bandsHTML(c.colours) + '</span>' : slot === 'floor' ? thumbHTML(c, 'crop') : sitHTML(c, how, rod);
         const tag = slot === 'wall' ? '' : cap(thing.what) + (slot === 'object' ? ', ' + (placeWords(R, slot, thing, p.as).rel || '') : rod && slot === 'picture' ? ', on a rod' : '');
@@ -1703,7 +1710,13 @@
     }
   }
 
-  // -- A photo of their own room as The room: is that the floor? (asked once, when it is chosen; Move the floor lines again)
+  // -- A photo of their own room as The room: is that the floor? (asked once a visit, when it is first the room; Move the floor lines again)
+  function askCheck(id, opener) {
+    const c = id && cardOf(id, S);
+    if (!ownPhoto(c) || c.room || readOnly() || ui.checkAsked.has(id)) return;   // another brought room's check waits to be pressed
+    ui.checkAsked.add(id);
+    openRoomCheck(id, opener);
+  }
   function openRoomCheck(id, opener) {
     const c = id && cardOf(id, S);
     const src = c && c.own ? ownSrc(c, 'img') : null;
@@ -4749,18 +4762,19 @@
         const b = $('#view-set [data-act="' + (act === 'set-room' ? 'set-board' : 'set-room') + '"]');
         if (b) b.focus({ preventScroll: true });
         say(act === 'set-board' ? 'Your board.' : ui.proomOn ? 'Your room: ' + roomName(cardOf(ui.proom.room)) + '.' : 'Your room.');
+        if (act === 'set-room' && ui.proomOn) askCheck(ui.proom.room, b);   // their own room shown first: is that the floor?
         break;
       }
       case 'room-pick': case 'room-drawn': {
         const was = ui.proom ? ui.proom.room : null;
         ui.roomDrawn = act === 'room-drawn';
-        if (id) ui.proom = Object.assign({}, ui.proom, { room: id, as: id === was ? ui.proom.as : null });
+        if (id) ui.proom = Object.assign({}, ui.proom, { room: id, as: id === was ? ui.proom.as : null, chosen: true });
         renderView();
         const b = $('#view-set .rbtn[aria-pressed="true"]');
         if (b) b.focus({ preventScroll: true });
         const c = id && cardOf(id);
         say(!c ? 'The drawn room.' : id === was ? 'Your room: ' + roomName(c) + '.' : 'Your things are in ' + roomName(c) + ' now.');
-        if (c && c.own && !c.room && !readOnly()) openRoomCheck(id, b);   // a photo of their own room: is that the floor? (asked once)
+        askCheck(id, b);   // a photo of their own room: is that the floor?
         break;
       }
       case 'rooms-more': ui.roomPage++; renderView(); { const b = $('#view-set [data-act="rooms-more"]'); if (b) b.focus({ preventScroll: true }); } say('Three more rooms.'); break;
@@ -4794,7 +4808,7 @@
           const things = { wall: s.wall, window: s.window, picture: s.picture, floor: s.floor, object: s.object };
           // a set pinned in a room you still have opens in it; the others open in the drawn room, as always
           const inRoom = !!s.room && roomList(active()).indexOf(s.room) >= 0;
-          if (inRoom) ui.proom = Object.assign({ room: s.room, as: s.as || null }, things); else ui.room = things;
+          if (inRoom) ui.proom = Object.assign({ room: s.room, as: s.as || null, chosen: true }, things); else ui.room = things;
           ui.roomDrawn = !inRoom;
           renderView(); $('#main').scrollTop = 0; say('Opened ' + (s.name || 'the set') + ' in the room.');
           const b = $(inRoom ? '#view-set .krow' : '.slot-wall'); if (b) b.focus({ preventScroll: true });

@@ -42,9 +42,11 @@
  * plaster may be, its own floor first), the chooser drawing each choice as it would sit with the one paired with the
  * room first, a pick that changes its row and comes back to it, the wall's switch, Rooms you kept with The drawn room
  * and back, a pin that keeps its room (shown small) beside a set pinned before rooms (the drawn room), and Open for
- * both. With no interior kept the drawn room is as before (a building stays the view) with one hint; a keep in Sort
+ * both; Rooms you kept holds only interiors, three at a time with Three more, and another room keeps the five things.
+ * With no interior kept the drawn room is as before (a building stays the view) with one hint; a keep in Sort
  * says what it is in a room, as its detail does; brought things' six chips follow Kind, What is it?, Ask Claude (the
- * name and the note only), their own room first in Rooms you kept and its floor check; Reduce Motion moves nothing.
+ * name and the note only), their own room first in Rooms you kept and its floor check, asked by itself the first time
+ * it is the room; Reduce Motion moves nothing.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -187,8 +189,10 @@ async function dragTop(page, frac) {
 }
 
 // See it as a room opens on a room you kept when there is one; the drawn room is then one tap away (The drawn room).
+// A Space brought in is The room: the first time it is the room its floor check asks, and is put off here.
 async function drawnRoom(page) {
   await page.waitForSelector('#view-set .proom:not(.mini), #view-set .room:not(.mini)');
+  if (await page.locator('#sheet[open] #fc-floor').count()) { await page.keyboard.press('Escape'); await sheetGone(page); }
   if (await page.locator('#view-set .proom:not(.mini)').count()) await page.click('#view-set [data-act="room-drawn"]');
   await page.waitForSelector('#view-set .room:not(.mini)');
 }
@@ -221,6 +225,8 @@ test('the built page keeps the Artifact page contract', async () => {
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
   assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js, Set\'s game, relate.js and kingdom, and the photo room\'s room.js) load before app.js');
+  const publish = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').split('## Publish')[1];
+  for (const s of scripts) assert.ok(publish.indexOf('`' + s + '`') > 0, 'the README\'s Publish section ships ' + s + ', or the page loads a missing script');
   assert.equal((html.match(/<style data-fives="play">/g) || []).length, 1, 'play.css is inlined where the game and the board look for it');
   const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
@@ -3290,6 +3296,39 @@ test('See it as a room with no interior kept: the drawn room exactly as before, 
   } finally { await ctx.close(); }
 });
 
+test('See it as a room with no Colour kept: its walls take a kept thing\'s colour, said as that colour, not as the thing', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light' });
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const { st: withColour } = roomState(deck);
+    const colour = deck.cards.find((c) => c.kind === 'colour' && withColour.j.some((j) => j[0] === c.id)).id;
+    const st = Object.assign({}, withColour, { j: withColour.j.filter((j) => j[0] !== colour), sets: [] });
+    const kept = deck.cards.filter((c) => st.j.some((j) => j[0] === c.id));
+    const names = new Set(kept.flatMap((c) => (c.colours || []).map((h) => FiveS.colourName(h))));
+    const whats = kept.map((c) => FiveS.whatIs(c).what.toLowerCase());
+    await seedState(page, st);
+    await page.goto(BASE + '#set');
+    await page.click('#view-set [data-act="set-room"]');
+    await roomShown(page);
+    const walls = async () => {
+      const line = await page.textContent('#view-set .krow[data-slot="wall"] .ki');
+      const m = /^(?:Its own[^.]*\. Your (.+) is its light|(.+), painted on .+)$/.exec(line);
+      assert.ok(m, 'the walls take its colour: ' + line);
+      const named = (m[1] || m[2]).toLowerCase();
+      assert.ok(names.has(named) && !whats.includes(named), 'a colour of a kept thing, never the thing: ' + line);
+      assert.ok((await page.getAttribute('#view-set .krow[data-slot="wall"]', 'aria-label')).indexOf((line.charAt(0).toLowerCase() + line.slice(1)).replace(/^its own: /, 'its own, ')) > 0, 'VoiceOver hears the same');
+    };
+    await walls();
+    await page.click('#view-set .krow[data-slot="wall"]');
+    await page.waitForSelector('#sheet[open] .room-as');
+    await page.click('#sheet .room-as button:text-is("As light")');
+    await page.keyboard.press('Escape');
+    await sheetGone(page);
+    await walls();
+    assert.deepEqual(page.errors(), []);
+  } finally { await ctx.close(); }
+});
+
 test('Sort and Set as one process: a keep says what it is in a room, after the judgment; the detail has its row', { timeout: 60000 }, async () => {
   const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'dark' });
   try {
@@ -3386,8 +3425,8 @@ for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') ||
       await page.click('#view-set [data-act="set-room"]');
       await roomShown(page);
       assert.match(await page.getAttribute('#view-set .rooms .rbtn >> nth=0', 'aria-label'), /^Your photo, My kitchen\. Your own room\.$/);
-      // chosen, the first time: its floor check asks once, two sliders said in words; Looks right keeps the lines
-      await page.click('#view-set .rooms .rbtn >> nth=0');
+      assert.equal(await page.getAttribute('#view-set .rooms .rbtn >> nth=0', 'aria-pressed'), 'true', 'their own room is the room shown');
+      // the first time it is the room, its floor check asks by itself: two sliders said in words; Looks right keeps the lines
       await page.waitForSelector('#sheet[open] #fc-floor');
       assert.equal(await page.textContent('#sheet-title'), 'Your photo as a room');
       assert.match(await page.getAttribute('#fc-floor', 'aria-valuetext'), /^\d+ percent down the photo$/);
@@ -3428,6 +3467,28 @@ for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') ||
       await roomShown(page);
       assert.equal(await page.locator('#view-set .rooms .rbtn[aria-label^="Your photo"]').count(), 0);
       assert.equal((await savedState(page)).own.find((o) => o.name === 'My kitchen').notRoom, true);
+      // a Space from Pinterest is a room they brought in, not their own room; its floor check waits to be pressed
+      await tab(page, 'split');
+      await page.click('#view-split [data-act="bring"]');
+      await page.waitForSelector('#sheet[open] #bring-file');
+      await page.setInputFiles('#bring-file', (await makeImages(page)).slice(0, 1));
+      await page.waitForFunction(() => document.querySelectorAll('#bring-items select').length === 1, null, { timeout: 20000 });
+      const k2 = await page.$eval('#bring-items li.item', (l) => l.id.slice(5));
+      await page.check('input[name="kind-' + k2 + '"][value="space"]', { force: true });
+      await page.selectOption('#from-' + k2, 'Pinterest');
+      await page.fill('#name-' + k2, 'A loft');
+      assert.equal(await chip(k2), 'room');
+      await page.click('#bring-add');
+      await sheetGone(page);
+      await tab(page, 'set');
+      await page.click('#view-set [data-act="set-room"]');
+      await roomShown(page);
+      assert.equal(await page.getAttribute('#view-set .rooms .rbtn >> nth=0', 'aria-label'), 'A loft. A room you brought in.');
+      assert.equal(await page.textContent('#view-set .rcap'), 'A loft · A room you brought in.');
+      assert.equal(await page.$eval('#view-set .proom:not(.mini) [role="img"]', (n) => n.getAttribute('alt')), 'A room you brought in, A loft: your room.');
+      assert.equal(await page.locator('#sheet[open]').count(), 0, 'no floor check by itself');
+      assert.equal(await page.locator('#view-set [data-act="room-check"]').count(), 1, 'Move the floor lines, when they want it');
+      assert.ok(!/your own room|your photo/i.test(await page.textContent('#view-set')), 'never their own');
       assert.deepEqual(page.errors(), []);
     } finally { await ctx.close(); }
   });
@@ -3454,3 +3515,81 @@ test('See it as a room under Reduce Motion: nothing moves when a place changes',
     assert.deepEqual(moving, []);
   } finally { await ctx.close(); }
 });
+
+for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') || (c.w === 1280 && c.scheme === 'dark'))) {
+  test('Rooms you kept at ' + cfg.w + ' ' + cfg.scheme + ': only interiors, three at a time, Three more, The drawn room last; another room keeps the five things; In it\'s choices drawn as they would sit', { timeout: 90000 }, async () => {
+    const { ctx, page } = await newPage(cfg);
+    const shot = shooter(page, cfg);
+    try {
+      const deck = await (await fetch(new URL('deck.json', BASE))).json();
+      const w = (c) => FiveS.whatIs(c);
+      const ids = (f, n) => deck.cards.filter(f).slice(0, n).map((c) => c.id);
+      const rooms = ids((c) => w(c).key === 'room', 4), buildings = ids((c) => c.kind === 'space' && w(c).key === 'window', 2);
+      const setThing = ids((c) => c.kind === 'object' && w(c).how === 'set', 1)[0], standing = ids((c) => c.kind === 'object' && w(c).how === 'stand', 1)[0];
+      assert.equal(rooms.length, 4);
+      assert.ok(setThing && standing && buildings.length === 2);
+      let st = FiveS.newState(), t = Date.now() - 600000;
+      const kept = [...rooms, ...buildings, setThing, standing, ...ids((c) => c.kind === 'image', 2), ids((c) => c.kind === 'colour', 1)[0], ids((c) => c.kind === 'surface', 1)[0]];
+      for (const id of kept) st = FiveS.judge(st, deck, id, true, 1500, (t += 2000)).state;
+      await seedState(page, Object.assign({}, st, { seen: Object.assign({}, st.seen, { intro: 1 }) }));
+      await page.goto(BASE + '#set');
+      await page.click('#view-set [data-act="set-room"]');
+      await roomShown(page);
+      const strip = () => page.$$eval('#view-set .rooms .rbtn', (b) => b.map((x) => [x.dataset.act, x.dataset.id || '', x.getAttribute('aria-pressed'), x.getAttribute('aria-label') || x.textContent]));
+      // three rooms, then The drawn room; never a building seen from outside, which stays the view
+      let tiles = await strip();
+      assert.deepEqual(tiles.map((x) => x[0]), ['room-pick', 'room-pick', 'room-pick', 'room-drawn']);
+      const page1 = tiles.slice(0, 3).map((x) => x[1]);
+      assert.ok(page1.every((id) => rooms.includes(id)), 'only interiors: ' + page1);
+      assert.equal(tiles[0][2], 'true');
+      assert.equal(await page.getAttribute('#view-set .proom:not(.mini)', 'data-room'), page1[0]);
+      for (const x of tiles.slice(0, 3)) assert.match(x[3], /\. A room you stand in(: .+)?\.$/);
+      const winLabel = await page.getAttribute('#view-set .krow[data-slot="window"]', 'aria-label');
+      assert.ok(buildings.some((b) => winLabel.indexOf('Its view: ' + deck.cards.find((c) => c.id === b).title + ', ') === 0), 'a kept building is its view: ' + winLabel);
+      const names = await page.$$eval('#view-set .krow .kn', (ns) => ns.map((n) => n.textContent));
+      // Three more pages in place
+      await page.click('#view-set [data-act="rooms-more"]');
+      await page.waitForFunction(() => /(^|\. )Three more rooms\.$/.test(document.getElementById('live').textContent));
+      assert.equal(await page.evaluate(() => document.activeElement.dataset.act), 'rooms-more');
+      tiles = await strip();
+      const page2 = tiles.filter((x) => x[0] === 'room-pick').map((x) => x[1]);
+      assert.deepEqual([...page1, ...page2].sort(), rooms.slice().sort(), 'every kept interior, once');
+      assert.equal(tiles[tiles.length - 1][0], 'room-drawn', 'The drawn room is always last');
+      // another room: the same five things move into it, and it says so
+      const other = page2[0], O = deck.cards.find((c) => c.id === other);
+      await page.click('#view-set .rbtn[data-id="' + other + '"]');
+      await page.waitForSelector('#view-set .proom:not(.mini)[data-room="' + other + '"][data-ready="1"]', { timeout: 20000 });
+      await page.waitForFunction((n) => document.getElementById('live').textContent.endsWith('Your things are in ' + n + ' now.'), shortName(O.title));
+      assert.equal(await page.evaluate(() => document.activeElement.dataset.id), other, 'focus stays on the room chosen');
+      assert.equal(await page.getAttribute('#view-set .rbtn[data-id="' + other + '"]', 'aria-pressed'), 'true');
+      assert.equal((await page.textContent('#view-set .rcap b')), shortName(O.title));
+      assert.deepEqual(await page.$$eval('#view-set .krow .kn', (ns) => ns.map((n) => n.textContent)), names, 'the same five things');
+      await noHScroll(page, 'another room');
+      await shot('r6-another-room');
+      // In it: each choice says what it is and how it goes here; a thing set on a top stands on a plinth
+      await page.click('#view-set .krow[data-slot="object"]');
+      await page.waitForSelector('#sheet[open] .choice');
+      assert.equal(await page.textContent('#sheet-title'), 'In it');
+      assert.match(await page.textContent('#sheet .lede'), /^Choose one of three( \(1 of \d+\))?\. Each goes where what it is belongs\.$/);
+      const ch = await page.$$eval('#sheet .choice', (b) => b.map((x) => [x.dataset.id, (x.querySelector('.r') || {}).textContent || '', !!x.querySelector('.sit .plinth')]));
+      assert.deepEqual(ch.map((x) => x[0]).sort(), [setThing, standing].sort());
+      const top = !!(O.room && O.room.spots && O.room.spots.set);   // a table top marked in this room
+      for (const [id, tag, plinth] of ch) {
+        const wi = w(deck.cards.find((c) => c.id === id));
+        assert.ok(tag.indexOf(wi.what.charAt(0).toUpperCase() + wi.what.slice(1) + ', ') === 0, id + ': ' + tag);
+        assert.equal(plinth, wi.how === 'set' && top, id + ' on a plinth only when it is set on a top this room has');
+        if (wi.how === 'set') assert.match(tag, top ? /, set / : /, standing /);
+      }
+      await shot('r7-in-it');
+      await page.keyboard.press('Escape');
+      await sheetGone(page);
+      assert.equal(await page.evaluate(() => document.activeElement.dataset.slot), 'object', 'focus back on its row');
+      // at 320 px the tiles' names still read whole: The drawn room is never cut short
+      await page.setViewportSize({ width: 320, height: 640 });
+      const cut = await page.$eval('#view-set [data-act="room-drawn"] .t', (n) => n.scrollHeight - n.clientHeight);
+      assert.ok(cut <= 1, 'The drawn room whole at 320 px: ' + cut);
+      await noHScroll(page, 'rooms at 320');
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
+  });
+}

@@ -6,7 +6,8 @@
 // the guessed box (inside the photo, every corner in front of the camera), how a thing goes by the place it is in,
 // and the words, on the synthetic fixture's cards through the engine's own whatIs.
 // Then mount in Chromium (Playwright), on the fixture's rooms with app.css: the layers each place draws, the
-// pointer buttons (aria-hidden, at least 44 px, onPick), update, the guess for an unmarked or brought room, a
+// pointer buttons (aria-hidden, at least 44 px, onPick), update, rugs shot from above, at an angle and filling their
+// photo, a Surface On a wall with the other walls painted, the guess for an unmarked or brought room and its light, a
 // pinned mini, a photo that fails, a photo the canvas cannot read (another origin), resizing, Reduce Motion,
 // Step in's gate, light and dark at 390 and 1280. No server: the page's files are answered from 5s/ by
 // Playwright's routes. Saves screenshots for a person to look at.
@@ -153,6 +154,28 @@ test('words: the room\'s own names, said by the place', () => {
   assert.ok(!/5s|\b(he|she|his|her|him)\b/i.test(all), all);
 });
 
+// s001's photo marked with a second wall (the left one), painted too: a Surface On a wall goes on the picture's wall
+// and the paint stays on the other.
+const TWO = (() => {
+  const m = JSON.parse(JSON.stringify(card('s001').room));
+  m.planes.w2 = { q: [[0, 0], [25, 15], [25, 60], [0, 100]], size: [250, 300] };
+  m.paint = { polys: [m.paint.polys[0], [[2, 3], [23, 16], [23, 58], [2, 95]]], name: 'the white walls' };
+  return m;
+})();
+
+test('a Surface on a wall: on the picture\'s wall, the paint moves to the other walls, or becomes the light', () => {
+  assert.ok(cornersW(TWO.planes.w2.q).every((x) => x > 0), 'the made-up wall is in front of the camera');
+  const tan = Object.assign(thing('c001'), { what: 'tan, olive and off-white' }), stone = thing('u003');
+  assert.deepEqual(R.words(TWO, 'floor', stone, { floor: 'wall' }), { rel: 'laid on the picture’s wall', line: 'Grey stone, laid on the picture’s wall' });
+  assert.deepEqual(R.words(TWO, 'wall', tan, { floor: 'wall' }), { rel: 'painted on the other walls', line: 'Tan, painted on the other walls' });
+  assert.deepEqual(R.words(TWO, 'wall', tan, {}), { rel: 'painted on the white walls', line: 'Tan, painted on the white walls' }, 'both walls painted otherwise');
+  assert.equal(R.words(TWO, 'wall', tan, { wall: 'light', floor: 'wall' }).rel, 'its light', 'as light stays its light');
+  // paint marked only on a wall the picture is not on: the surface goes there, and the colour is its light
+  const left = Object.assign({}, TWO, { paint: { polys: [TWO.paint.polys[1]], name: 'the left wall' } });
+  assert.deepEqual(R.words(left, 'floor', stone, { floor: 'wall' }), { rel: 'laid on the left wall', line: 'Grey stone, laid on the left wall' });
+  assert.equal(R.words(left, 'wall', tan, { floor: 'wall' }).rel, 'its light');
+});
+
 // ---------------------------------------------------------------- mount, in a browser
 
 let playwright = null;
@@ -175,6 +198,9 @@ window.T = {
   async init() { this.deck = await (await fetch('/test/fixture/deck.json')).json(); },
   card(id) { return this.deck.cards.find((c) => c.id === id); },
   thing(id, origin) { const c = this.card(id); return Object.assign({ id, src: c.img ? (origin || '') + '/test/fixture/' + c.img : null, w: c.w, h: c.h, colours: c.colours }, FiveS.whatIs(c)); },
+  // a picture drawn here, as a data URL (same origin, so the canvas can read it)
+  draw(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d')); return c.toDataURL('image/png'); },
+  rug(src) { return { id: 'rug-' + src.length, src, w: 400, h: 400, colours: ['#aa3322'], what: 'a rug', roles: ['textile', 'floor'], key: 'object', how: 'lay', cm: 200 }; },
   opts(room, set, o) {
     const c = this.card(room), x = o || {};
     const things = {};
@@ -318,6 +344,52 @@ browserTest('update redraws one place, fading in; the walls and the floor follow
   await page.evaluate(() => T.h.update('window', null));
   r = await look(); assert.equal(r.n.view, 0);
   assert.deepEqual(r.hits.map((h) => h.key), ['wall', 'floor', 'window', 'picture', 'object'], 'the buttons keep their order');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+browserTest('a rug shot at an angle lies as its cut-out, one that fills its photo lies whole; On a wall keeps the other walls painted; a guessed room\'s light', async () => {
+  const { ctx, page, errors } = await newPage();
+  await page.evaluate((s) => T.mount('s001', s), SET1);
+  const look = () => page.evaluate(() => T.look(document.getElementById('r')));
+  // a rhombus on white: a rug shot at an angle, already in perspective
+  await page.evaluate(() => T.h.update('object', T.rug(T.draw(400, 400, (x) => {
+    x.fillStyle = '#fff'; x.fillRect(0, 0, 400, 400); x.fillStyle = '#a33';
+    x.beginPath(); x.moveTo(40, 200); x.lineTo(200, 120); x.lineTo(360, 200); x.lineTo(200, 280); x.fill();
+  }))));
+  let r = await look();
+  assert.equal(r.n.rug, 0); assert.equal(r.n.upright, 1, 'it lies as its cut-out'); assert.equal(r.n.foot + r.n.base + r.n.glow, 0, 'no shadow, base or glow');
+  const lay = await page.evaluate(() => T.card('s001').room.spots.lay.at);
+  near(r.upright.x + r.upright.w / 2, lay[0], 0.5, 'centred on its spot: x'); near(r.upright.y + r.upright.h / 2, lay[1], 0.5, 'y');
+  // a pattern on a dark field that fills its photo: the whole photo lies flat, not the pattern cut from it
+  await page.evaluate(() => T.h.update('object', T.rug(T.draw(300, 400, (x) => {
+    x.fillStyle = '#111'; x.fillRect(0, 0, 300, 400); x.fillStyle = '#c22';
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 7; j++) { x.beginPath(); x.arc(30 + 60 * i, 25 + 58 * j, 24, 0, 7); x.fill(); }
+  }))));
+  r = await look();
+  assert.equal(r.n.rug, 1); assert.equal(r.n.upright, 0);
+  assert.match(await page.$eval('.rug', (d) => d.style.backgroundImage), /^url\("data:image\/png/, 'its own photo');
+  // On a wall in a room painted on two walls: the surface on the picture's wall, the paint stays on the other
+  r = await page.evaluate(([s, m]) => T.mount('s001', s, { marks: m, more: { as: { floor: 'wall' } } }), [Object.assign({}, SET1, { floor: 'u003' }), TWO]);
+  assert.equal(r.n.laid, 1); assert.equal(r.n.paint, 1, 'the other wall stays painted'); assert.equal(r.n.light, 0);
+  assert.match(r.paintMask, /^url\("blob:/);
+  const tiles = await page.evaluate(() => {
+    const el = document.getElementById('r'), b = el.getBoundingClientRect(), t = el.querySelector('.laid .tiles').getBoundingClientRect();
+    return [(t.left - b.left) / b.width * 100, (t.top - b.top) / b.height * 100, t.width / b.width * 100, t.height / b.height * 100];
+  });
+  [25, 15, 50, 45].forEach((v, i) => near(tiles[i], v, 0.5, 'tiled in the picture\'s wall\'s perspective ' + i));
+  await page.locator('#wrap').screenshot({ path: path.join(SHOTS, 'room-s001-on-a-wall.png') });
+  // the photo unreadable, two painted stretches on the one wall: one clip each, and the colour is its light
+  const halves = Object.assign({}, await page.evaluate(() => T.card('s001').room), { paint: { polys: [[[25, 15], [50, 15], [50, 60], [25, 60]], [[50, 15], [75, 15], [75, 60], [50, 60]]], name: 'the back wall' } });
+  r = await page.evaluate(([s, m]) => T.mount('s001', s, { marks: m, origin: 'http://other.test', thingOrigin: 'http://other.test', more: { as: { floor: 'wall' } } }), [Object.assign({}, SET1, { floor: 'u003' }), halves]);
+  assert.equal(r.n.laid, 2); assert.equal(r.n.paint, 0); assert.equal(r.n.light, 1);
+  assert.deepEqual(await page.$$eval('.laid', (ds) => ds.map((d) => /^polygon\(/.test(d.style.clipPath))), [true, true]);
+  // a guessed room's daylight comes from the photo's brightest part
+  const sunny = await page.evaluate(() => T.draw(400, 300, (x) => { x.fillStyle = '#222'; x.fillRect(0, 0, 400, 300); x.fillStyle = '#fff'; x.beginPath(); x.arc(320, 60, 40, 0, 7); x.fill(); }));
+  r = await page.evaluate(([s, src]) => T.mount('s005', s, { marks: null, more: { id: 'sunny', src, w: 400, h: 300 } }), [SET1, sunny]);
+  assert.equal(r.ok, true); assert.equal(r.n.light, 1);
+  const sun = await page.evaluate(() => T.h.room.sun);
+  near(sun[0], 80, 5, 'its light, x'); near(sun[1], 20, 7, 'its light, y');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
