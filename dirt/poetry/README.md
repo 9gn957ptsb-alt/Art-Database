@@ -38,7 +38,7 @@ So the plane is a strip of frames, each 610 CSS pixels wide, in the book's readi
 storyboard"): each page's plot (a frame to each of its buildings: page 3 has two), then a frame to each line of its
 poem; between one poem and the next a **kin frame**, holding the line of the next poem whose words share roots with the
 last, the rarer the root the better (Morphology Web's link, the root two words share, standing in the gutter between
-them: *drift* from page 3's "drifting trees" to page 4's "drifting web", *belief* from page 5's "disbelief" to page 6);
+them: *drift* from page 3 to page 4, *belief* from page 5 to page 6; the poems' own words stay in the artifact);
 after page 8 the walled garden, the loop's hinge (*pairi-daēza*, a wall around the story); and round again. With the
 eight pages that is 10 plot frames, 150 line frames and 7 kin frames: 167 frames, about 102,000 pixels a loop. Forward
 is the view moving right, the thumb dragging right to left as a leaf turns, so a swipe plays the frames as a thumb
@@ -185,8 +185,8 @@ they share. Its tastes of that order, in `layer.js` ("Morphology's order"), now 
   root the better (the storyboard, above).
 - **In the walled garden, which has no poem, DRIFT's paintings and the poems are linked by their roots.** A swimmer
   writes a line whose words share a root with the title of the painting it swims over: *Phenomena Rain Palace* (Paul
-  Jenkins) opens to "Though having just rained", *Composition for two Sunflowers* to "Opposing nature as the
-  impossible" (the root MorphoLex gives both, *pose*). `build_poetry.py --morpholex` roots DRIFT's 2,226 titles as it
+  Jenkins) opens to a line of page 1's on *rain*, *Composition for two Sunflowers* to one of page 3's on *pose* (the
+  root MorphoLex gives both). `build_poetry.py --morpholex` roots DRIFT's 2,226 titles as it
   roots the poems (`kin`: 577 share a root). Elsewhere in the garden a swimmer writes as DRIFT has it, and the label
   under the view says which order chose a line (the line's place in its poem, its plot, its kin root or its painting).
 - **The link is named.** When DRIFT names a painting, the root its title shares with the poems is written beside its

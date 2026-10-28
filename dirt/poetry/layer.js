@@ -431,7 +431,7 @@
   function photos(now) {
     // (once DRIFT's ground is being painted: it has read back a frame of its own)
     if (groundAt < 0) { if (GLG.reflection && GLG.reflection()) groundAt = now; return; }
-    if (!photoOf.size || !lastV || !anchored || now - groundAt < 1618 || now - viewerAt < 377000 || now - photoAt < 13000) return;
+    if (bk || !photoOf.size || !lastV || !anchored || now - groundAt < 1618 || now - viewerAt < 377000 || now - photoAt < 13000) return;   // (not under an open book)
     const v = lastV, w = v.W / v.dpr, mid = frameAt(v.x + w / 2, v.y + (v.H / v.dpr) * 0.6), o = rowOff(mid.cy);
     let best = null;                                                  // the plot in view nearest the middle, with a photograph
     for (let i = Math.floor((v.x - shift[0]) / FRAME); i <= Math.floor((v.x + w - shift[0]) / FRAME); i++) {
