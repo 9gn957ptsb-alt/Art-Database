@@ -2,7 +2,7 @@
 // YouTube's frame): first frame then ready, each once; the language asked of the SDK; a pause halts the loop and the
 // game's clock and saves, a resume goes on; the save comes back on the next load; the score an integer; nothing in
 // localStorage; the loading words up at the first frame and gone at ready; no input while paused; old or broken saves
-// read without error; the end of the game told; a 3x screen drawn at 3x; the mouse moves him. Then the built bundle (scripts/build_pickleball.js --playable) top-level with the real SDK: the SDK
+// read without error (the first version's ten courts as the run won); a court won opens the next, without end; a 3x screen drawn at 3x; the mouse moves him. Then the built bundle (scripts/build_pickleball.js --playable) top-level with the real SDK: the SDK
 // the first script, no errors, no request to any host but this one and www.youtube.com, nothing against YouTube's
 // Content Security Policy (served with the header the Test Suite guide gives); and a frame with no size.
 // node pb_playables.js [port]
@@ -42,8 +42,10 @@ const MOCK = (saved, o) => `window.ytgame = (function () {
   check(seen.first === true && seen.ready === false, "the loading words show at firstFrameReady and are gone by gameReady: " + JSON.stringify({ first: seen.first, ready: seen.ready }));
   check(seen.readyAt < 5000, "playable in under 5 s (the rule's SHOULD; software GL here, slower than a phone's): " + Math.round(seen.readyAt) + " ms");
   check(calls.indexOf("isAudioEnabled") >= 0 && calls.indexOf("onAudioEnabledChange") >= 0, "YouTube's mute read and listened to (isAudioEnabled, onAudioEnabledChange)");
-  // a level won, then the pause: the loop stops, the clock stands, the save goes to the SDK
-  await p.evaluate(() => { const d = window.Pickleball.debug(); d.courts[0].won = true; d.courts[0].up = true; d.courts.best = 9; });
+  // a court won (the next appears, the score is the courts won), then the pause: the loop stops, the clock stands, the
+  // save goes to the SDK
+  const won1 = await p.evaluate(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(0.5); d.winCourt(); d.courts.best = 9; return { courts: d.courts.length, won: d.won() }; });
+  check(won1.courts === 2 && won1.won === 1, "a court won opens the next beside it: " + JSON.stringify(won1));
   const t0 = await p.evaluate(() => { window.__yt.pause(); return window.Pickleball.debug().gt(); });
   await p.waitForTimeout(1500);
   // paused, the game takes no input: a key, a tap on Serve
@@ -51,13 +53,15 @@ const MOCK = (saved, o) => `window.ytgame = (function () {
   check(await p.evaluate(() => window.Pickleball.debug().input.fire === false), "no input while paused");
   const held = await p.evaluate(() => ({ gt: window.Pickleball.debug().gt(), running: window.Pickleball.debug().running(), store: window.__yt.store() }));
   check(!held.running && held.gt === t0, "the pause halts the loop and the game's clock (" + t0.toFixed(3) + " → " + held.gt.toFixed(3) + ")");
-  check(/"won":true/.test(held.store) && /"best":9/.test(held.store), "the pause saves through the SDK: " + held.store.slice(0, 90));
+  check(/"won":1\b/.test(held.store) && /"rally":9\b/.test(held.store), "the pause saves through the SDK: " + held.store.slice(0, 90));
   await p.evaluate(() => window.__yt.resume()); await p.waitForTimeout(800);
   const went = await p.evaluate(() => ({ gt: window.Pickleball.debug().gt(), running: window.Pickleball.debug().running() }));
   check(went.running && went.gt > t0 && went.gt - t0 < 1.0, "the resume goes on, without catching up (" + (went.gt - t0).toFixed(3) + " s on)");
+  calls = await p.evaluate(() => window.__yt.calls.slice());
+  check(calls.indexOf("sendScore:1:true") >= 0, "the score sent is the courts won, an integer: " + calls.filter((c) => /sendScore/.test(c)).join(" "));
   await p.evaluate(() => window.Pickleball.debug().YT.score(12.7));
   calls = await p.evaluate(() => window.__yt.calls.slice());
-  check(calls.indexOf("sendScore:12:true") >= 0, "the score sent as an integer: " + calls.filter((c) => /sendScore/.test(c)).join(" "));
+  check(calls.indexOf("sendScore:12:true") >= 0, "a score sent as an integer: " + calls.filter((c) => /sendScore/.test(c)).join(" "));
   check(await p.evaluate(() => localStorage.length === 0), "nothing in localStorage inside YouTube");
   // the next load gets the save back
   const store = held.store;
@@ -65,16 +69,16 @@ const MOCK = (saved, o) => `window.ytgame = (function () {
   await p.addInitScript(MOCK(store));
   await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 });
-  const back = await p.evaluate(() => { const d = window.Pickleball.debug(); return { won: d.courts[0].won, up: d.courts[0].up, best: d.courts.best }; });
-  check(back.won && back.up && back.best === 9, "the save comes back: " + JSON.stringify(back));
+  const back = await p.evaluate(() => { const d = window.Pickleball.debug(); return { courts: d.courts.length, won: d.courts[0].won, up: d.courts[0].up, best: d.courts.best }; });
+  check(back.courts === 2 && back.won && back.up && back.best === 9, "the save comes back: " + JSON.stringify(back));
   // a frame with no size (the Android app's hidden first view), then its size again
   await p.evaluate(() => { document.getElementById("view").style.width = "0px"; document.getElementById("view").style.height = "0px"; });
   await p.waitForTimeout(600);
   await p.evaluate(() => { document.getElementById("view").style.width = ""; document.getElementById("view").style.height = ""; });
   await p.waitForTimeout(600);
-  // the end of the game: every court won, and the horse finished
-  const end = await p.evaluate(() => { const d = window.Pickleball.debug(); d.courts.forEach((c) => { c.won = true; c.up = true; }); d.horse.work = d.COURT.WORK - 0.001; d.run(0.2); return { say: document.getElementById("say").textContent, where: document.getElementById("where").textContent }; });
-  check(/complete/.test(end.say) && /complete/.test(end.where), "the end of the game is told: " + end.where + " | " + end.say.slice(0, 60));
+  // no end: ten courts won, the eleventh is open, and no word says it is over
+  const far = await p.evaluate(() => { const d = window.Pickleball.debug(); for (let k = 0; k < 9; k++) { d.enter(d.courts.length - 1); d.run(0.5); d.winCourt(); } d.run(1.2); return { courts: d.courts.length, won: d.won(), level: d.courts[d.courts.length - 1].level, where: document.getElementById("where").textContent }; });
+  check(far.courts === 11 && far.won === 10 && far.level === 11 && /10 courts won/.test(far.where) && !/complete/i.test(far.where), "endless: ten courts won, the eleventh open: " + far.where);
   check(errors.length === 0, "no errors with the mock, nor at no size: " + errors.slice(0, 2).join(" | "));
   await p.close();
   // paused and resumed while it is still loading: it waits for the courts, then plays, with no error
@@ -90,7 +94,7 @@ const MOCK = (saved, o) => `window.ytgame = (function () {
   // the cloud load fails once (asked again, loaded), or for good (never saved over)
   for (const fails of [1, 2]) {
     p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
-    await p.addInitScript(MOCK('{"v":1,"best":7,"horse":0,"courts":[{"level":1,"won":true,"up":true}]}', { loadFail: fails }));
+    await p.addInitScript(MOCK('{"v":2,"won":1,"rally":7}', { loadFail: fails }));
     await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
     await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 });
     const st = await p.evaluate(() => { window.__yt.pause(); window.__yt.resume(); const d = window.Pickleball.debug(); return { best: d.courts.best, loads: window.__yt.calls.filter((c) => c === "loadData").length, saves: window.__yt.calls.filter((c) => c === "saveData").length }; });
@@ -99,13 +103,14 @@ const MOCK = (saved, o) => `window.ytgame = (function () {
     await p.close();
   }
   // saves from another version, or broken: read without error
-  for (const old of ['{"v":0,"courts":[null,{"level":"3","won":1,"matches":"x"}],"best":"x","horse":-5}', "not json", "[1,2]"]) {
+  for (const [old, want] of [['{"v":0,"courts":[null,{"level":"3","won":1,"matches":"x"}],"best":"x","horse":-5}', [1, 0]], ["not json", [1, 0]], ["[1,2]", [1, 0]],
+                             ['{"v":1,"best":7,"horse":900,"courts":[{"won":true,"up":true},{"won":true},{"won":true,"up":true},{"won":false},{"won":true}]}', [4, 7]], ['{"v":2,"won":"1e12","rally":-3}', [1000, 0]]]) {
     p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
     await p.addInitScript(MOCK(old));
     await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
     await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 });
-    const got = await p.evaluate(() => { const d = window.Pickleball.debug(); return { l1: d.courts[1].level, w0: d.courts[0].won, best: d.courts.best, horse: d.horse.work }; });
-    check(errs.length === 0 && got.l1 >= 1 && got.best === 0 && got.horse === 0, "an old or broken save is read without error (" + old.slice(0, 24) + "): " + JSON.stringify(got));
+    const got = await p.evaluate(() => { const d = window.Pickleball.debug(); return { courts: d.courts.length, best: d.courts.best }; });
+    check(errs.length === 0 && got.courts === want[0] && got.best === want[1], "an old or broken save is read without error (" + old.slice(0, 24) + "): " + JSON.stringify(got));
     await p.close();
   }
   // a 3x screen drawn at 3x (not upscaled, so not soft), and a mouse's drag on the left half moves him

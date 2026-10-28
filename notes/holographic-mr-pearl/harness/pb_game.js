@@ -77,8 +77,8 @@ const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (
   check(res.maxServed >= 3 && res.maxBalls >= 2, "a serve of three pearls (" + res.maxServed + "), more than one in play at once (" + res.maxBalls + ")");
   check(res.scoped, "the Scope is up while the serve's bar runs");
   check(res.aces >= 1, "the ace zone gave a chance at an ace: " + res.aces);
-  const sv = await D(() => { const s = JSON.parse(localStorage.getItem("pickleball-save-v1") || "{}"); return { saved: s.best, best: window.Pickleball.debug().courts.best }; });
-  check(sv.best > 0 && sv.saved === sv.best, "the longest rally is saved the moment it grows (the score sent must be the save's): saved " + sv.saved + ", best " + sv.best);
+  const sv = await D(() => { const s = JSON.parse(localStorage.getItem("pickleball-save-v1") || "{}"), d = window.Pickleball.debug(); return { saved: s.won, won: d.won(), courts: d.courts.length }; });
+  check(sv.won >= 1 && sv.saved === sv.won && sv.courts === sv.won + 1, "each court won is saved, and the next appears beside it (the score sent must be the save's): saved " + sv.saved + ", won " + sv.won + ", courts " + sv.courts);
   // pictures: a rally, the athletes close, the Scope
   const shot = async (name, setup) => { await D(setup); await D(() => window.Pickleball.debug().draw()); await page.screenshot({ path: `${out}/${name}.png` }); };
   await shot("02_now", () => {});
