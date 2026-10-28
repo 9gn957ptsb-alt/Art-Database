@@ -128,6 +128,12 @@ On Set's See it as a room, 27 Oct 2026:
   That is one of the objects as the room. This goes for other objects, being proposed and chosen,
   identify what the object is in, see its relation to setting up a space in seeing things as rooms."
 
+On the rooms review sheet, 28 Oct 2026 (asked to check the 19 marked rooms, the judgement calls among
+them; as typed):
+
+- "It doesnt matter if the room review sheet is exactly right, as long as it looks like a room tbag
+  could be in the building"
+
 ## Let's play fives, through the connector: five kinds of thing (23 Oct 2026)
 
 Spoken, as received (the transcription's spellings kept):
