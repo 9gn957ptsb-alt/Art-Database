@@ -26,9 +26,13 @@ import { ROUND_URI, ROUND_MIME, cardMeta, cardUrls, servePage } from "./card.js"
 import ROUND_HTML from "../web/round.html";
 // The artist's deck, trimmed for the connector by `npm run deck` (gitignored: data derived from Artsy and The Architectural Authority).
 import deck from "./deck.generated.json";
+// The space viewer, the spaces' models and the pages, packed into the Worker by `npm run deck` (files.js says why).
+import files from "./files.generated.json";
+import { bundledFiles } from "./files.js";
 
 // The pages' folder in public/pp/, made by npm run things: only the Worker knows it. Never in a result, link or log.
 const PAGE_DIR = (deck as { things?: { pageDir?: string } }).things?.pageDir || "";
+const FILES = bundledFiles(files);
 
 const VERSION = "0.1.0";
 const DEV_TOKEN = "dev-fake-token";
@@ -258,8 +262,13 @@ export default {
 				return Response.json((await env.OAUTH_KV.get(DEV_FAKE_KEY, "json")) || {});
 			}
 		}
-		// Picture Poetry pages and their buildings: only through a signed link (card.js); run_worker_first sends all of /pp/ here.
-		if (url.pathname === "/pp" || url.pathname.startsWith("/pp/")) return servePage(request, env, PAGE_DIR, env.COOKIE_ENCRYPTION_KEY);
+		// Picture Poetry pages and their buildings: only through a signed link (card.js), answered from the Worker's own files.
+		if (url.pathname === "/pp" || url.pathname.startsWith("/pp/")) return servePage(request, { ASSETS: FILES }, PAGE_DIR, env.COOKIE_ENCRYPTION_KEY);
+		// The space viewer and the spaces' models, open to anyone with CORS; anything else under /s/ goes on as before.
+		if (url.pathname.startsWith("/s/") && (request.method === "GET" || request.method === "HEAD")) {
+			const res = await FILES.fetch(request);
+			if (res.status !== 404) return res;
+		}
 		if (env.RATE_LIMIT_SIGNIN && SIGNIN_PATHS.has(url.pathname)) {
 			const from = request.headers.get("cf-connecting-ip") || "unknown";
 			if (!(await env.RATE_LIMIT_SIGNIN.limit({ key: "signin:" + from })).success) {

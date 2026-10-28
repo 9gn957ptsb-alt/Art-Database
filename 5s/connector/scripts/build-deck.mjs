@@ -12,8 +12,8 @@
  * --out      default src/deck.generated.json
  * --fixture  use 5s/test/fixture/deck.json (synthetic; for local runs without the real deck)
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { dirname, join, resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { trimDeck } from '../src/deck.js';
@@ -88,3 +88,22 @@ console.log(`deck: ${out.cards.length} cards from ${deckPath}`);
 console.log(`image addresses (Artsy's CDN, the buildings' photos): ${im.from_deck} from the deck, ${im.from_db} from ${dbPath}, ${im.none} without`);
 console.log(things ? `the game's things: ${things.lines.length} lines, ${things.words.length} words, ${things.pages.length} pages, ${things.spaces.length} spaces` : `no game things (${thingsPath || 'none with --fixture'}): play_fives will say the game isn't set up`);
 console.log(`wrote ${outPath} (${Math.round(JSON.stringify(out).length / 1024)} KB)`);
+
+// The Worker's own files, from public/s and public/pp (npm run things), packed into it (src/files.js says why).
+// Gitignored like the deck; only the count is printed, never a path (the pages' folder is in them).
+const PUB = join(CONNECTOR, 'public');
+const TYPES = { '.json': 'application/json', '.js': 'text/javascript; charset=utf-8', '.html': 'text/html; charset=utf-8', '.jpg': 'image/jpeg' };
+const files = {};
+for (const top of ['s', 'pp']) {
+  if (!existsSync(join(PUB, top))) continue;
+  for (const rel of readdirSync(join(PUB, top), { recursive: true })) {
+    const p = join(PUB, top, rel);
+    if (!statSync(p).isFile()) continue;
+    const type = TYPES[extname(p)];
+    if (!type) throw new Error('public/' + top + ' holds a kind of file the Worker has no type for: ' + extname(p));
+    files['/' + top + '/' + rel.split(sep).join('/')] = type === 'image/jpeg' ? { type, base64: readFileSync(p).toString('base64') } : { type, text: readFileSync(p, 'utf8') };
+  }
+}
+const filesPath = join(dirname(outPath), 'files.generated.json');
+writeFileSync(filesPath, JSON.stringify(files));
+console.log(`wrote ${filesPath}: ${Object.keys(files).length} of the Worker's own files (${Math.round(JSON.stringify(files).length / 1024)} KB)`);

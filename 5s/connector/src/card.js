@@ -2,9 +2,9 @@
  * out, and the Worker's signed /pp/ answer for the Picture Poetry pages and their buildings.
  *
  * The pages sit in public/pp/<pageDir>/, a folder name only the Worker knows (deck.things.pageDir, made by
- * npm run things). run_worker_first sends every /pp/ request here. A person only ever sees
+ * npm run things). index.ts sends every /pp/ request here. A person only ever sees
  * /pp/p3.jpg?e=<expiry>&s=<signature>; the Worker checks it and answers from the folder with
- * env.ASSETS.fetch, adding CORS itself (_headers never reaches a Worker's answer). Anything else under
+ * env.ASSETS.fetch (the Worker's own files, src/files.js), adding CORS itself. Anything else under
  * /pp/, the folder's own path included, is refused.
  *
  * Plain JS with WebCrypto, so `node --test` runs it as the Worker does.
@@ -96,7 +96,7 @@ export function cardUrls(origin, secret) {
 const CORS = { 'Access-Control-Allow-Origin': '*', 'X-Content-Type-Options': 'nosniff' };
 const say = (status, text) => new Response(text, { status, headers: Object.assign({ 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }, CORS) });
 
-/** The Worker's answer to anything under /pp/. env.ASSETS is the static files; pageDir is deck.things.pageDir. */
+/** The Worker's answer to anything under /pp/. env.ASSETS is the Worker's own files (files.js); pageDir is deck.things.pageDir. */
 export async function servePage(request, env, pageDir, secret, now = Date.now()) {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: Object.assign({ 'Access-Control-Allow-Methods': 'GET, HEAD', 'Access-Control-Max-Age': '86400' }, CORS) });
