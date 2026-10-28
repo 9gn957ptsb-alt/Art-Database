@@ -27,7 +27,15 @@ each time you win a court. Previous courts still automatically play and you win 
 to see how many courts you can win. each court gets progressively harder. By the time you get to court 10, the game
 should be very hard"). The game starts in front of one court, under its floodlights, and nothing else stands there.
 A match lost starts again from love on the same court; a court won plays on by itself (his stand-in against that
-court's Mr Plan, never losing a match) and the next court appears beside it, harder. There is no last court. The
+court's Mr Plan, never losing a match) and the next court appears beside it, harder. There is no last court. **A court
+won plays again the match he won on it** (the artist, 28 Oct 2026: "Make sure that the games that are repeating are
+repeating the actual motions of the game in which you won"): while he plays, twenty times a second, all his pose and
+Mr Plan's are made of (place, turn, lean, crouch, stride, speed, and the stroke, dive or leap each is in, on its own
+clock), the pearls in play, the score and the bursts are kept, the last 90 seconds; the court won loops that, a
+breath between, his stand-in in his steps, its Mr Plan in his. `pb_replay.js` plays court one to a win and checks the
+loop: the two within 1.2 cm of where they were, in the same strokes, the pearls and the score as they went. The
+twelve courts won last keep theirs (some 400 KB each); an older one, or one won before this version (a save keeps no
+recording), rallies as before. The
 score is the number of courts won; the HUD keeps the last ten as squares (filled while they play on by themselves,
 gold while he plays one).
 
@@ -76,14 +84,24 @@ pearls play on. `pb_super.js` tests it and takes its pictures.
 
 **Hands.** Touch and mouse alike (YouTube asks both for everything): the left half is a stick (where the finger or the
 press lands is its middle), the right half a drag that turns the view (the way his return goes), a tap or a click
-anywhere stops the serve's bar; Super is the one button, top right. On a desk the keys too: WASD or the arrows (Shift
+anywhere stops the serve's bar; Super is the one button, top right. From the moment the game opens until the first
+serve a card says so in four lines (the artist, 28 Oct 2026: "Include a brief set of instructions on how to move around
+and how to serve when beginning court one as soon as you open up the game"): move, aim, serve, super, a finger's words
+on a touch screen and a desk's keys where there is a mouse; it steps aside while the serve's bar runs. On a desk the keys too: WASD or the arrows (Shift
 for full speed), Space, T or Enter to stop the bar, E or Q for the super return. His strokes are his own: when Mr Plan's shot comes, the game finds where his paddle can meet it and the stroke
 goes then; the player's part is to be near, to aim and to serve.
 
 **Views.** His own (the artist: "maintain the perspectives of Mr Pearl to play"): the third person behind his head,
 his whole figure a quarter of the screen's height at rest (the rocket world has a third; the artist, 28 Oct 2026: "The
 third person view should be a little farther out for Pickleball given the speed in which Mr. Pearl can now move"), on a
-critically damped spring so that his bursts read. The lens is about 46 degrees top to bottom (it was 70, then 58), the
+steadied (the artist, 28 Oct 2026: "The camera can get a bit jittery when you're moving so quickly back-and-forth, can
+you stabilize the perspective 50% more when moving?"): a window, as side-scrolling games keep one, the view standing
+on a place of its own that does not move while he is in the middle of the picture and, toward the window's edge,
+moves with him at a share of his speed growing to the whole of it, so he never passes the edge, it never runs on past
+him (the spring it had swung past him at every turn) and it has no jerk of its own; when he slows it drifts home.
+`pb_measure.js`, his eye through quick steps back and forth (0.25 s each way), a shuffle (0.4 s) and a sprint: the
+view's own back and forth 60% and 52% less, its acceleration 10 to 16% less, and in a sprint he stays nearer the middle
+(0.59 of the half width from it, against 0.77). The lens is about 46 degrees top to bottom (it was 70, then 58), the
 camera a third further back each time (the artist, 28 Oct 2026: "keep the athletes the same size, I want to be a bit
 further behind him"): a dolly zoom, his figure held to the same footprint on the screen (pb_define measures it: 147,800
 device px at a phone's rally, 147,600 before), the far court and Mr Plan larger with each step. The Scope, his head the glass, went (the artist, 28 Oct 2026: "Get rid of the scope view").
@@ -197,6 +215,27 @@ characters and marks in ASCII"). Three prototypes (form, light, type) were made 
   blue in the seams. The ground's characters glow in their colour, so colour, not black, fills the dark between them
   (glow, never a flat fill). Mr Pearl is champagne with a gold outline, Mr Plan ice with a cyan one: they still stand
   out (D 2.7 to 5.0), by hue as well as light. The cell of night round them is a dim indigo, not a hole.
+- **Paint** (the artist, 28 Oct 2026: "There's still a bit too much black, I want 33% more color so it looks a bit more
+  like a Pickleball court"). Under the courts' characters, as ANSI art sets a cell's background, the picture itself:
+  each court cell (surface or line) over its own average colour, dimmed (ASC.bg), its hue drawn up; nothing under a
+  figure, a thing or the sky; the cell of night round each athlete kept bare and the next a shadow. So the court reads
+  as painted, ultramarine in its emerald run-off. Measured by `pb_measure.js` as colourfulness the way Hasler and
+  Süsstrunk measure it ("Measuring colourfulness in natural images", 2003): +29%, +32%, +38% in its three views, 33%
+  on the mean; the black share of the frame 92% to 66%. (The frame's plain average colour would move 33% with a
+  paint of one level in 255, which no one sees; so the perceptual measure.) The cost: the athletes' D (light only, at
+  a glance) falls by about half (Mr Pearl's 3.1 to 1.8 at a phone's rally), as a white figure on a painted court has
+  less light round it to stand out by; they stand out by colour as much now.
+- **Steadiness.** Every choice is a threshold, and twelve samples of a moving picture sat on one now this side, now
+  that, so an edge or a line flickered. Each cell's choice is held by last frame's (the cells kept twice, in turn): a
+  Schmitt trigger's band at each threshold, an outline's stroke kept while it still parts the figure's samples as well,
+  and a change within one thing shown when it is asked for two frames running, a moving cell then following every
+  frame; a frame after a pause, a cut or a jump of the camera holds nothing. `pb_flicker.js` reads back the glyphs
+  frame by frame: the cells that flip back (A, B, A within six frames) fell by 58 to 81% in a rally, a walk and at the
+  serve (by less in a sprint, a dive or a pan: 22 to 63%), a still view unchanged.
+- **The pearl** (the artist, 28 Oct 2026: "I need to be able to see the ball 33% better than I do now"): a warm glow
+  round each pearl in play, as large as a ball of 0.3 m at its distance, and the way it came, a few fading points.
+  `pb_measure.js` sums its light against the frame without it: on a phone 463 against 345 before (+34%; the paint
+  alone had brought it to 188), on a desk 52 against 24.
 
 Mr Pearl's head is the one thing seen as it is, the perfect sphere (his rule 5); every word and control is a page
 element over the characters.
@@ -262,7 +301,9 @@ artist's own or cleared.
 it; the checks are a mock of the SDK and the real SDK outside YouTube. The Super button sits in the top right corner,
 where an app's own controls can lie over a full-screen game: on YouTube's apps it is unchecked. With two or three
 pearls in play the game moves him, so the player's legs matter less then (the stretch keeps the points as hard). The
-effects (bursts, glints, the super return's gold) are drawn over everything, a figure in front of them included, and
+the replays and the paint are measured in software GL only; a real phone's GPU must write the kinds of choice in the
+colours' low bits exactly (the steadiness and the paint ride on them). The effects (bursts, glints, the super return's
+gold, the pearl's glow) are drawn over everything, a figure in front of them included, and
 their cost on a phone (up to 320 characters a frame) is unmeasured; every measurement here is software GL. On a
 portrait phone the narrower lens leaves Mr Plan out of the picture a little more often in a rally (2.3% of the frames
 against 1.4%). The grid of characters is fixed to the screen,

@@ -34,7 +34,7 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
           const whereT = document.getElementById("where"), range = document.createRange(); range.selectNodeContents(whereT); const wr = range.getBoundingClientRect();
           const sz = Math.min(22, (innerWidth - 24 - 45) / 10), y0 = top.getBoundingClientRect().bottom + 8;
           const strip = { x: 12, y: y0, w: Math.min(10, d.courts.length) * (sz + 5), h: sz, n: "strip" }, words = { x: wr.left, y: wr.top, w: wr.width, h: wr.height, n: "where" };
-          const boxes = [words, strip, box(document.getElementById("say")), box(document.getElementById("super")), d.hud().meter && Object.assign({ n: "the serve's bar" }, d.hud().meter), d.hud().reticle && Object.assign({ n: "the Scope's mark" }, d.hud().reticle)].filter(Boolean);
+          const boxes = [words, strip, box(document.getElementById("say")), box(document.getElementById("help")), box(document.getElementById("super")), d.hud().meter && Object.assign({ n: "the serve's bar" }, d.hud().meter), d.hud().reticle && Object.assign({ n: "the Scope's mark" }, d.hud().reticle)].filter(Boolean);
           return { cw: v.width, ch: v.height, ew: Math.round(v.clientWidth * Math.min(3, devicePixelRatio)), eh: Math.round(v.clientHeight * Math.min(3, devicePixelRatio)), W: innerWidth, H: innerHeight, boxes,
                    st: JSON.stringify([d.me.x, d.me.z, d.court.m && d.court.m.k, d.courts.map((c) => c.level)]) };
         });

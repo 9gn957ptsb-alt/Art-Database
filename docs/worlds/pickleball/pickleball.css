@@ -17,6 +17,15 @@ body { color: var(--fg); font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo,
 #say { position: fixed; left: calc(12px + env(safe-area-inset-left)); top: calc(118px + env(safe-area-inset-top));
        width: min(520px, calc(100% - 24px)); pointer-events: none;
        text-shadow: 0 0 3px var(--shade), 0 0 8px var(--shade), 0 0 16px var(--shade), 0 0 16px var(--shade); transition: opacity 0.4s; }
+/* how to play, from the moment the game opens until the first serve: a few lines in a dark pane under the words */
+#help { position: fixed; left: calc(12px + env(safe-area-inset-left)); top: calc(190px + env(safe-area-inset-top));
+        width: min(460px, calc(100% - 24px)); box-sizing: border-box; pointer-events: none; padding: 9px 12px;
+        font-size: 11.5px; line-height: 1.5; border: 1px solid rgba(243, 201, 139, 0.55); border-radius: 10px;
+        background: rgba(6, 8, 14, 0.78); transition: opacity 0.4s; }
+#help b { color: var(--gold); font-weight: 700; letter-spacing: 0.06em; }
+#help .h { color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
+#help[hidden] { display: none; }
+@media (max-height: 460px) { #help { font-size: 10px; line-height: 1.35; padding: 6px 10px; } }
 button { position: fixed; border: 1px solid var(--edge); background: var(--pane); color: var(--fg);
          font: inherit; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 999px; touch-action: manipulation; }
 button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
