@@ -17,14 +17,14 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
   await P.waitForFunction(() => !window.Rocket.debug().intro(), null, { timeout: 600000 });
   await D(() => { document.getElementById("notes").hidden = true; const d = window.Rocket.debug(), b = d.cam().blend; if (b) { b.t0 = -1e9; } d.guards().forEach((g) => Object.assign(g, { mode: "hold", holdT: 1e9 })); });
   await frames(P, 4);
-  const C = await D(() => { const d = window.Rocket.debug(), c = d.coins(); return { n: c.list.length, got: c.got.length, list: c.list.map((q) => ({ id: q.id, kind: q.kind, x: q.x, y: q.y, z: q.z })) }; });
+  const C = await D(() => { const d = window.Rocket.debug(), c = d.coins(); return { n: c.list.length, got: c.got.length, list: c.list.map((q) => ({ id: q.id, kind: q.kind, text: q.text, x: q.x, y: q.y, z: q.z })) }; });
   check(C.n === 10 && C.got === 0, "ten coins laid, none taken (" + C.n + ", " + C.got + ")");
   // Holo, as a player raises it
   if (view === "phone") { await P.tap("#v-holo"); } else { await P.keyboard.press("h"); }
   await P.waitForFunction(() => { const h = window.Rocket.debug().head(); return h && h.phase === "free"; }, null, { timeout: 600000 });
   check(true, "the head is out, by " + (view === "phone" ? "the Holo button" : "H"));
   // the two nearest the head that are not on the tree's crown (the tree's is a step from where he wakes)
-  const order = await D((list) => { const h = window.Rocket.debug().head(); return list.filter((q) => q.kind !== "tree").map((q) => ({ id: q.id, kind: q.kind, d: Math.hypot(q.x - h.x, q.y - h.y, q.z - h.z) })).sort((a, b) => a.d - b.d).slice(0, 2); }, C.list);
+  const order = await D((list) => { const h = window.Rocket.debug().head(); return list.filter((q) => !/crown/.test(q.text)).map((q) => ({ id: q.id, kind: q.kind, d: Math.hypot(q.x - h.x, q.y - h.y, q.z - h.z) })).sort((a, b) => a.d - b.d).slice(0, 2); }, C.list);
   say("flying to " + JSON.stringify(order));
   // the stick held forward (phone: a thumb on the lower left pushed up), or W held (computer)
   const W = await D(() => ({ w: innerWidth, h: innerHeight }));
