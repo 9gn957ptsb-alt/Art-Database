@@ -423,7 +423,7 @@
   // the courts' own surfaces quieter (surfV), and a cell of night kept clear round every figure (the moat), as type is
   // knocked out of a busy picture. The athletes are set in a heavy cut of the same characters (heavy: the stroke added
   // round each glyph, as a share of the cell's width; the atlas's third channel), the courts in the regular.
-  var DEF = { fill: 0.7, fillPlan: 0.75, fillV: [1.0, 1.0], edgeV: 1.0, near: 0.0, surfV: 0.3, lum: 0.72, moat: true, moat2: 0.25, heavy: 0.14 };
+  var DEF = { fill: 0.7, fillPlan: 0.75, fillV: [1.0, 1.0], edgeV: 1.0, near: 0.0, surfV: 0.68, lum: 0.72, moat: true, moat2: 0.25, heavy: 0.14 };
   var asc = null;
   function ascFont(px) { return "700 " + px + "px " + ASC.FONT; }
   function ascInit() {
@@ -517,7 +517,7 @@
     var EK = ramp(ASC.EDGES), EP = ramp(ASC.EDGES);
     var arr = function (n, a) { return "const int " + n + "[" + a.length + "] = int[" + a.length + "](" + a.join(", ") + ");"; };
     // a material's own glyph where it is one quiet texture (-1: the keyboard's ramp, -2: the marks')
-    var fix = [-3, ix("."), ix("."), ix("."), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2];
+    var fix = [-3, ix("."), ix("."), ix(":"), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2];
     var head = [
       "#version 300 es", "precision highp float; precision highp int;",
       arr("RK", RK), arr("RP", RP), arr("EK", EK), arr("EP", EP), arr("FIX", fix),
@@ -639,8 +639,14 @@
       "      float fz = dot(st, uF);",
       "      vec2 sp = vec2((dot(st, uR) / fz / uK.x * 0.5 + 0.5) * uRes.x, (0.5 - dot(st, uU) / fz / uK.y * 0.5) * uRes.y);",
       "      if (st.y > 0.03 && fz > 0.0 && sp.x >= org.x && sp.y >= org.y && sp.x < org.x + cs.x && sp.y < org.y + cs.y) {",
-      "        g = STAR_G[h < 0.0015 ? 2 : h < 0.005 ? 1 : 0]; V = 0.3 + 14.0 * (0.025 - h); c = vec3(0.72, 0.8, 1.0);",
+      "        g = STAR_G[h < 0.0015 ? 2 : h < 0.005 ? 1 : 0]; V = 0.3 + 14.0 * (0.025 - h); c = h < 0.008 ? vec3(1.0, 0.85, 0.7) : vec3(0.72, 0.85, 1.0);",
       "      }",
+      "    }",
+      // (the night itself, never black: a faint field of dots in its own colour, indigo overhead turning violet and rose
+      // toward the horizon, thicker there where the floodlights' haze is)
+      "    if (g == 0) {",
+      "      float hz = 1.0 - smoothstep(0.0, 0.45, dir.y);",
+      "      if (dz < 0.08 + 0.3 * hz) { g = STAR_G[0]; V = 0.22 + 0.3 * hz; c = mix(vec3(0.42, 0.3, 1.0), vec3(1.0, 0.42, 0.82), hz * hz); }",
       "    }",
       "  } else if (f >= 0 && !surf) {",
       // a thing of one glyph (the net #, a pole |, a lamp *, dust '), where it is
@@ -707,12 +713,12 @@
       "      float s = (dot(n0, g0) + dot(n1, g1) + dot(n2, g2)) * inversesqrt(max(gg, 1e-4));",
       "      if (s > best) { best = s; g = e; }",
       "    }",
-      "    c = hue(col[hiR]); V = mix(fig ? " + DEF.edgeV.toFixed(3) + " : 0.6, 1.0, smoothstep(0.0, 0.6, mx));",
+      "    c = fig ? mix(hue(col[hiR]), who == 13 ? vec3(0.3, 0.95, 1.0) : vec3(1.0, 0.72, 0.28), 0.8) : hue(col[hiR]); V = mix(fig ? " + DEF.edgeV.toFixed(3) + " : 0.6, 1.0, smoothstep(0.0, 0.6, mx));",   // (an athlete's outline in his accent: Mr Pearl's gold, Mr Plan's cyan)
       "  } else if (f >= 0) {",
       // a surface: its own glyph, its spacing its light (in Bayer order)
       "    float lo = mat == 1 ? 0.1 : mat == 2 ? 0.12 : 0.05, hi = mat == 1 ? 0.3 : mat == 2 ? 0.4 : 0.2;",
-      "    if (smoothstep(lo, hi, m) > dz) { g = f; }",
-      "    V = mix(0.32, 1.0, smoothstep(0.05, 0.8, m)) * " + DEF.surfV.toFixed(3) + ";",
+      "    if (max(smoothstep(lo, hi, m), mat == 1 ? 0.14 : 0.0) > dz) { g = f; }",   // (the ground off the courts: a faint teal field, never black)
+      "    V = max(mix(0.32, 1.0, smoothstep(0.05, 0.8, m)) * " + DEF.surfV.toFixed(3) + ", mat == 1 ? 0.12 : 0.0);",
       "  } else {",
       // a body: its alphabet by its own light, one tone to a band (dithered, a figure was a checkerboard), the light
       // taken half from round the cell (so a tone holds over a part, not flickering cell to cell with the voxels'
@@ -725,9 +731,11 @@
       "    g = ramp(who, mix(who == 13 ? " + DEF.fillPlan.toFixed(3) + " : " + DEF.fill.toFixed(3) + ", 1.0, smoothstep(win.x, win.y, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big), 1);",
       "    V = mix(" + DEF.fillV[0].toFixed(3) + ", " + DEF.fillV[1].toFixed(3) + ", smoothstep(0.0, 0.8, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big);",
       "  }",
-      "  if (fig) { float lc = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(c, vec3(1.0), max(0.0, (" + DEF.lum.toFixed(3) + " - lc) / max(1.0 - lc, 1e-3))); }",
-      "  if (moat) { g = 0; V = 0.0; } else if (moat2) { V *= " + DEF.moat2.toFixed(3) + "; }",
-      "  int bloom = (mat == 8 || V > 0.93 || (fig && g > 0)) ? 64 : 0, heavy = fig && g > 0 ? 32 : 0;",
+      "  if (fig) { vec3 tn = who == 13 ? vec3(0.66, 0.92, 1.0) : vec3(1.0, 0.86, 0.62); c = mix(c, tn, 0.5); float lc = dot(c, vec3(0.299, 0.587, 0.114)), lt = dot(tn, vec3(0.299, 0.587, 0.114)); c = mix(c, tn, clamp((" + DEF.lum.toFixed(3) + " - lc) / max(lt - lc, 1e-3), 0.0, 1.0)); }",   // (never bare white: his champagne, Mr Plan's ice)
+      "  if (moat) { g = STAR_G[0]; V = 0.09; c = vec3(0.42, 0.34, 1.0); } else if (moat2) { V *= " + DEF.moat2.toFixed(3) + "; }",   // (the moat a dim indigo, night rather than a hole)
+      // (the ground's own characters glow too, in their colour: the court's ultramarine, the kitchen's turquoise, the
+      // run-off's emerald, the night's violet fill the dark between them, colour in place of black, and no flat fill)
+      "  int bloom = (mat == 8 || V > 0.93 || (fig && g > 0) || (g > 0 && (surf || mat <= 1))) ? 64 : 0, heavy = fig && g > 0 ? 32 : 0;",
       "  o = vec4(c * V, float(g + heavy + bloom + act) / 255.0);",
       "}"].join("\n"));
     A.setP = compile(A.vs, [head,
@@ -842,7 +850,7 @@
   // (the lens: 58 degrees top to bottom, narrower than the 70 it was, so the far court and Mr Plan are a quarter larger on
   // the screen while his own figure keeps its quarter of it, the camera standing further back: definition by size)
   var FOV = 58, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
-  var SKY = { zen: [0.004, 0.006, 0.02], hor: [0.02, 0.026, 0.06], gnd: [0.006, 0.008, 0.012] };
+  var SKY = { zen: [0.012, 0.006, 0.04], hor: [0.05, 0.018, 0.07], gnd: [0.006, 0.01, 0.014] };   // (indigo above, violet at the horizon)
   var RIM = { me: [0.42, 0.38, 0.34], plan: [0.45, 0.95, 1.05], none: [0.08, 0.08, 0.1] }, pixA = 0.001;
   // The floodlights' pools, the one light on the ground: each court in its own light, the night between them.
   function poolGLSL() {
@@ -907,7 +915,7 @@
       "  float E = pool(vW.xz);",
       "  if (uGround > 0.5) {",
       // the ground: lit by its court's pool alone (no rim: a grazing surface would light into false edges)
-      "    c = base * (0.035 + 1.1 * E) + base * uEmit;",
+      "    c = base * (0.035 + 1.1 * E) * mix(vec3(0.55, 0.68, 1.15), vec3(1.12, 0.92, 0.66), E) + base * uEmit;",   // (the floodlights' amber in their pools, the night's blue in the seams)
       "  } else {",
       // a body or a thing: its court's four lamps (each falling off), a key held to the view from over the viewer's left
       // shoulder (as his head's rig is, pearl.js uRig: so a back is modelled as well as a front), a rim where the lamps
@@ -1159,7 +1167,7 @@
   function matchOn(k) {
     var c = courts[k];
     court.m = { k: k, level: c.level, sk: nemSkill(c.level), you: 0, them: 0, n: 0, phase: "serve", t: gt, pc: null, nc: null, replan: 0,
-                balls: [], tosses: [], served: 0, pts: 0, stops: [], meterOn: false, meterT0: 0, serveOpen: 0, nextId: 1, scoped: false, lastTc: -9,
+                balls: [], tosses: [], served: 0, pts: 0, stops: [], meterOn: false, meterT0: 0, serveOpen: 0, nextId: 1, lastTc: -9,
                 sup: { avail: true, armed: false } };
     superButton();
     var pl = plans[k]; pl.want = null;
@@ -1228,8 +1236,9 @@
   /* -- the serve (the artist, 28 Oct 2026: "I want you to be able to serve up [to] 3 balls in one serve so you can
      play multiple balls/points at once. Use the scope view for the every serve and add an animation that you have to
      land a bar within a certain zone to have the opportunity to ace your opponent. Depending on where you click to stop
-     the bar depends on how hard you serve"). At his serve the view is the Scope's (his head the glass, his nose the
-     aim: where it looks, inside the diagonal service court, the serve goes), and a bar runs under it, a mark sweeping
+     the bar depends on how hard you serve"; then "Get rid of the scope view in the Pickleball game"). At his serve
+     the third person's view turns to face across the net (where it looks, inside the diagonal service court, the serve
+     goes: a drag aims it), and a bar runs, a mark sweeping
      it back and forth; a tap stops it, and where it stops is how hard he serves: too soft and the pearl falls in the
      kitchen (a fault); then softer to harder, the harder the deeper and quicker; a narrow gold zone, the ace zone, sends
      it hard into the deep corner, where Mr Plan may not get it at all; past the end it goes long. After each pearl the
@@ -1259,17 +1268,12 @@
     var lz = b.z - cc[2], lx = b.x - cc[0], tz = -depth, tx = lx + Math.tan(view.yaw) * (lz - tz);
     tx = ace ? side * (COURT.HW - 0.35) : side * clampV(side * tx, 0.3, COURT.HW - 0.3);
     shoot(b, m.k, tx, tz, Tf);
+    fxBurst([b.x, b.y, b.z], "me", ace);
     b.ace = ace && rng() < aceChance(m);
     m.balls.push(b); m.served += 1; m.lastTc = toss.tc;
     m.serveOpen = gt + SERVE.OPEN;
     if (ace) { say(STR.aceZone); }
     athSplit(plans[m.k], gt);
-  }
-  // (the serve's Scope looks level across the net, at the far service court, so his own body is under the view; back
-  // in the third person the look comes to rest again)
-  function scopeAuto(on) {
-    if (on && !view.scope) { scopeSet(true); court.m.scoped = true; view.pitch = -0.06; view.yaw = 0; }
-    else if (!on && court.m.scoped) { court.m.scoped = false; if (view.scope) { scopeSet(false); view.pitch = REST; } }
   }
   // A point, on one pearl: it is dead; the other pearls play on. The match ends the moment it is won or lost.
   function pointBall(m, b, toYou, why) {
@@ -1290,10 +1294,10 @@
     var m = court.m, cc = courtAt(m.k), pl = plans[m.k], fire = c.fire;
     if (m.phase === "super") { superStep(m, dt); return; }
     if (m.phase === "serve") {
-      // (he is taken to his serve at his own pace; there, the Scope comes up and the bar runs)
+      // (he is taken to his serve at his own pace; there, the view faces across the net and the bar runs)
       var sp = serveSpot(); me.want = { to: sp }; me.faceTo = m.n % 2 ? 0.12 : -0.12;
       pl.want = { to: [cc[0], cc[2] - COURT.L - 0.6] }; pl.faceTo = PI;
-      if (!m.meterOn && hypot(me.x - sp[0], me.z - sp[1]) < 0.35 && me.speed < 1.5) { m.meterOn = true; m.meterT0 = gt; scopeAuto(true); }
+      if (!m.meterOn && hypot(me.x - sp[0], me.z - sp[1]) < 0.35 && me.speed < 1.5) { m.meterOn = true; m.meterT0 = gt; view.yaw = 0; }   // (the view turns to face across the net, on its spring)
       if (m.meterOn) { me.want = { vel: [0, 0] }; if (fire) { serveTap(m); } }
     } else if (m.phase === "toss" || m.phase === "rally") {
       if (m.meterOn && fire && gt < m.serveOpen) { serveTap(m); }
@@ -1301,7 +1305,7 @@
     }
     // the pearls tossed and struck, each at its stroke's contact
     while (m.tosses.length && gt >= m.tosses[0].tc) { serveBall(m, m.tosses.shift()); if (m.phase === "toss") { m.phase = "rally"; } }
-    if (m.meterOn && m.phase === "rally" && !m.tosses.length && (gt >= m.serveOpen || m.served >= SERVE.MAX)) { m.meterOn = false; scopeAuto(false); }
+    if (m.meterOn && m.phase === "rally" && !m.tosses.length && (gt >= m.serveOpen || m.served >= SERVE.MAX)) { m.meterOn = false; }
     // every pearl: its flight, its bounces, its points (rolling on a while when dead)
     m.balls.forEach(function (b) {
       var at = ballStep(b, m.k, dt);
@@ -1317,7 +1321,7 @@
     if (m.phase === "rally") {
       if (m.sup.armed && superStart(m)) { return; }
       mine(m); plans_(m, pl);
-      if (!live(m).length && !m.tosses.length) { m.phase = "point"; m.t = gt; if (m.meterOn) { m.meterOn = false; scopeAuto(false); } }
+      if (!live(m).length && !m.tosses.length) { m.phase = "point"; m.t = gt; m.meterOn = false; }
     } else if (m.phase === "point" && gt - m.t >= 1.4) {
       m.balls = [];
       if (m.you >= COURT.WIN) { levelWon(); return; }
@@ -1352,6 +1356,7 @@
       if (b.dead || b.last !== "them") { return; }
       if (b.bounces === 0 && abs(me.z - cc[2]) < COURT.K) { pointBall(m, b, false, STR.kitchenVolley); return; }   // (the rule: no volley from the kitchen)
       shoot(b, m.k, pc.aimAt[0] - cc[0], pc.aimAt[1] - cc[2], pc.kind === "overhead" ? 0.75 : pc.kind === "dig" ? 1.3 : 1.05);
+      fxBurst([b.x, b.y, b.z], "me", pc.kind === "overhead");
       b.last = "you"; b.bounces = 0; b.serve = false; b.rally += 1; b.nemAt = gt + m.sk.wait; b.mark = null;
       var fl = rng(); b.flair = fl < m.sk.flair ? "dive" : fl < 2 * m.sk.flair ? "lunge" : null;
       athSplit(plans[m.k], gt);
@@ -1400,6 +1405,7 @@
       if (nc.miss || nb.dead || nb.last !== "you") { return; }   // (the dive or the lunge did not get there: the pearl goes on)
       if (nb.bounces === 0 && abs(pl.z - cc[2]) < COURT.K) { pointBall(m, nb, true, STR.kitchenVolleyPlan); return; }
       shoot(nb, m.k, nc.shot[0], nc.shot[1], nc.shot[2]);
+      fxBurst([nb.x, nb.y, nb.z], "plan", false);
       nb.last = "them"; nb.bounces = 0; nb.serve = false; nb.rally += 1;
       var L0 = ballLands(nb, m.k); nb.mark = L0 && { x: L0.x, z: L0.z };
       athSplit(me, gt);
@@ -1447,6 +1453,7 @@
       var u = (gt - cv.t0) / 1.3, i = floor(u), ax = function (j) { return cc[0] + Math.sin(j * 1.7 + k) * 1.6; };
       if (i !== cv.i && i >= 0) {
         cv.i = i;
+        if (abs(cc[0] - cur.eye[0]) < 60) { fxBurst([ax(i), 0.8, i % 2 ? cc[2] - COURT.L + 0.5 : cc[2] + COURT.L - 0.5], i % 2 ? "plan" : "me", false); }   // (a stand-in's stroke, or that court's Mr Plan's)
         var to = i % 2 ? st : pl, zt = i % 2 ? cc[2] + COURT.L - 0.5 : cc[2] - COURT.L + 0.5, xt = ax(i + 1);
         athSplit(to, gt);
         to.want = { to: [xt + (to === st ? -0.5 : 0.5), zt + (to === st ? 0.3 : -0.3)] };
@@ -1464,6 +1471,7 @@
       if (a.skid > 0.5 && dust.length < 60 && rng() < 0.7) { dust.push({ x: a.x + (rng() - 0.5) * 0.3, y: 0.05, z: a.z + (rng() - 0.5) * 0.3, vx: -a.vx * 0.15 + (rng() - 0.5), vy: 0.6 + rng(), vz: -a.vz * 0.15 + (rng() - 0.5), t: gt }); }
     });
     dust = dust.filter(function (d) { d.vy -= 3 * dt; d.x += d.vx * dt; d.y = max(0.02, d.y + d.vy * dt); d.z += d.vz * dt; return gt - d.t < 0.7; });
+    fxStep(dt);
     input.fire = false;   // (a tap is spent on the frame that reads it)
     // (the words step aside while the serve's bar runs: the bar carries its own, and they would cover it on a short screen)
     var sayOn = gt <= sayT && !(court.m && court.m.meterOn) ? "1" : "0"; if ($("say").style.opacity !== sayOn) { $("say").style.opacity = sayOn; }
@@ -1472,10 +1480,10 @@
   /* ---- the views and the hands ----------------------------------------------------------------------------------
      His own views (the artist, 28 Oct 2026: "maintain the perspectives of Mr Pearl to play"): the third person behind
      his head, as far as the rocket world stands it (his whole figure a third of the screen's height at rest), now on a
-     spring so that his bursts read (it lags a little, never jerks), and the Scope, his head the glass and his nose the
-     aim, its mark written in characters (the tribar that marked it is gone with the unit). */
-  var PHI = (1 + Math.sqrt(5)) / 2, AIM = Math.atan(T35 / 2), REST = -Math.atan(T35 / 3), TP = {};
-  var view = { yaw: 0, pitch: REST, scope: false, camT: -9, from: null, e: null, ev: [0, 0, 0] };
+     spring so that his bursts read (it lags a little, never jerks). The Scope went (the artist, 28 Oct 2026: "Get rid
+     of the scope view in the Pickleball game"). */
+  var AIM = Math.atan(T35 / 2), REST = -Math.atan(T35 / 3), TP = {};
+  var view = { yaw: 0, pitch: REST, e: null, ev: [0, 0, 0] };
   // His figure a quarter of the screen's height at rest, where the rocket world has a third (the artist, 28 Oct 2026:
   // "The third person view should be a little farther out for Pickleball given the speed in which Mr. Pearl can now
   // move"): the camera a third again as far, so a sprint stays in the picture.
@@ -1491,7 +1499,6 @@
     TP.D = (lo + hi) / 2;
     TP.UP = AIM - Math.asin(top / 2 / TP.D); TP.DOWN = AIM - PI / 2 + 0.01;
     TP.HEAD = hypot(TP.D * Math.cos(REST - AIM), top / 2 - TP.D * Math.sin(REST - AIM) - body.head.centre[1]);
-    TP.VIEW = top / 4.3;   // a switch of view: the time he walks his own height
   }
   function lookDir(yaw, pitch) { return [Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)]; }
   function viewM(e, yaw, pitch) {
@@ -1502,33 +1509,19 @@
     var f = 1 / Math.tan(fovy / 2), nf = 1 / (near - far);
     return [f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0];
   }
-  function clampPitch(p) { return view.scope ? clampV(p, -1.2, 1.2) : clampV(p, TP.DOWN, TP.UP); }
+  function clampPitch(p) { return clampV(p, TP.DOWN, TP.UP); }
   function camera(dt) {
     var hd = [me.x, body.head.centre[1] + min(me.y, 0.6) * 0.5, me.z], f = lookDir(view.yaw, view.pitch - AIM);
     var tp = [hd[0] - f[0] * TP.HEAD, hd[1] - f[1] * TP.HEAD, hd[2] - f[2] * TP.HEAD];
     if (!view.e) { view.e = tp.slice(); }
     for (var i = 0; i < 3; i += 1) { var o = { x: view.e[i], xv: view.ev[i] }; spring(o, "x", tp[i], dt, 11); view.e[i] = o.x; view.ev[i] = o.xv; }
-    var e = view.e;
-    if (view.scope) { var d = lookDir(view.yaw, view.pitch), h = me.pose ? me.pose.headC : hd; e = [h[0] - d[0] * PHI, max(0.15, h[1] - d[1] * PHI), h[2] - d[2] * PHI]; }
-    var s = smooth((gt - view.camT) / TP.VIEW);
-    if (view.from && s < 1) { e = lerp3(view.from, e, s); }
-    return e;
+    return view.e;
   }
-  function scopeSet(on) {
-    if (on == null) { on = !view.scope; }
-    if (on === view.scope) { return; }
-    view.from = cur.eye.slice(); view.camT = gt; view.scope = on;
-    $("scope").setAttribute("aria-pressed", on ? "true" : "false");
-    view.pitch = clampPitch(view.pitch);
-  }
-  // (the player's own Scope press: the serve no longer puts it down for him)
-  function scopeMine() { if (court.m) { court.m.scoped = false; } }
-  // The serve's bar, in characters under the Scope: soft (a fault in the kitchen), softer to harder, the gold ace zone,
+  // The serve's bar, in characters: soft (a fault in the kitchen), softer to harder, the gold ace zone,
   // hard, long; the mark (◎) sweeping it; the pearls of this serve, served (◎) and still to serve (○).
   function meterDraw(c, m, W, H, glyph) {
-    // (in the dark over the net, clear of his body under the Scope, and below the HUD's lines however they wrap)
+    // (in the dark over the net, below the HUD's lines however they wrap)
     var N = 25, cw = min(13, (W - 48) / N), x0 = W / 2 - N * cw / 2, y0 = max(H * 0.37, hudLow + 56), u = meterAt(m), ramp = "-=+*", i;
-    if (y0 + 56 > H / 2 - 26 && y0 - 50 < H / 2 + 26) { y0 = H / 2 + 26 + 50; }   // (never across the Scope's mark: under it, on a short screen)
     for (i = 0; i < N; i += 1) {
       var v = (i + 0.5) / N, ch, col = "#f2efe8";
       if (v < SERVE.SOFT) { ch = "."; col = "#8a8f9a"; }
@@ -1563,8 +1556,8 @@
   function superStart(m) { void m; return false; }
   function superStep(m, dt) { void dt; m.phase = "rally"; }
   // The hands: touch and mouse alike, the left half a stick (where the finger or the press lands is its middle), the
-  // right half a drag that turns the view (the way his return goes), a tap or a click anywhere a serve; Serve, Scope and
-  // Super; on a desk the keys too, and the right button the Scope.
+  // right half a drag that turns the view (the way his return goes), a tap or a click anywhere a serve; Serve and
+  // Super; on a desk the keys too.
   var input = { keys: {}, stick: null, look: null, fire: false, taps: 0, down: {} };
   function inputClear() { input.keys = {}; input.stick = null; input.fire = false; input.down = {}; }
   function awake(f) { return function (e) { if (!YT.paused) { f(e); } }; }   // (paused, the game takes no input)
@@ -1584,7 +1577,6 @@
     var half = function (x) { return x < canvas.clientWidth / 2; };
     canvas.addEventListener("pointerdown", awake(function (e) {
       e.preventDefault();
-      if (e.pointerType === "mouse" && e.button === 2) { scopeSet(); scopeMine(); return; }
       try { canvas.setPointerCapture(e.pointerId); } catch (x) { /* fine */ }
       var down = input.down;   // (a mouse's drag on the left half is the stick too: the requirements ask the mouse for everything)
       down[e.pointerId] = { x: e.clientX, y: e.clientY, t: performance.now(), moved: 0, stick: half(e.clientX) && !input.stick };
@@ -1609,7 +1601,6 @@
     window.addEventListener("keydown", awake(function (e) {
       var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       if (k === " " || k === "t" || k === "Enter") { input.fire = true; e.preventDefault(); }
-      else if (k === "r") { scopeSet(); scopeMine(); }
       else if (k === "e" || k === "q") { superPress(); }
       input.keys[k] = true; if (e.shiftKey) { input.keys.Shift = true; }
       if (k.indexOf("Arrow") === 0) { e.preventDefault(); }
@@ -1617,7 +1608,6 @@
     window.addEventListener("keyup", function (e) { var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; input.keys[k] = false; if (!e.shiftKey) { input.keys.Shift = false; } });
     window.addEventListener("blur", function () { input.keys = {}; input.stick = null; });
     $("serve").addEventListener("click", awake(function () { input.fire = true; }));
-    $("scope").addEventListener("click", awake(function () { scopeSet(); scopeMine(); }));
     $("super").addEventListener("click", awake(function () { superPress(); }));
   }
 
@@ -1625,8 +1615,12 @@
   // The courts' colours set for the night's values (the pass reads them as lightness): the grounds and the seams between
   // the courts nearly black, the run-off a dark green, the court a deep blue, the kitchen a lighter teal (so it reads
   // apart from the court), the lines a warm white; the lamps lit, the pearl lit from within.
-  var CT = { ground: [0.03, 0.045, 0.04], out: [0.1, 0.24, 0.15], inn: [0.14, 0.24, 0.56], kitchen: [0.14, 0.42, 0.44], line: [1, 0.97, 0.9],
-             net: [0.34, 0.36, 0.42], post: [0.62, 0.62, 0.66], lamp: [1, 0.95, 0.8], pole: [0.3, 0.3, 0.33], dust: [0.75, 0.66, 0.5], pearl: [1, 0.97, 0.92] };
+  // (and then, the artist, 28 Oct 2026: "Use color to find middle grounds between high contrast points or things being too
+  // black or too white. It needs a lot more interesting colors": the court ultramarine, the kitchen turquoise in an
+  // emerald run-off, the lines ivory, the net plum, the posts and poles lilac steel, the lamps amber, the ground a deep
+  // teal; each about as light as it was, so the characters' spacing keeps its meaning, the hue new)
+  var CT = { ground: [0.02, 0.07, 0.06], out: [0.06, 0.3, 0.18], inn: [0.14, 0.17, 0.62], kitchen: [0.06, 0.42, 0.4], line: [1, 0.92, 0.76],
+             net: [0.42, 0.22, 0.46], post: [0.6, 0.58, 0.8], lamp: [1, 0.76, 0.4], pole: [0.34, 0.32, 0.46], dust: [0.75, 0.66, 0.5], pearl: [1, 0.97, 0.92] };
   // The courts and their floodlights, and nothing else (the artist: "get rid of the Trojan horse being built [and] any
   // architecture that is outside of the [plain] courts"); those more than SEEN off are past seeing and not drawn.
   var SEEN = 160;
@@ -1665,7 +1659,7 @@
     var dpr = min(3, window.devicePixelRatio || 1), cw = round(canvas.clientWidth * dpr), chh = round(canvas.clientHeight * dpr);
     if (cw < 2 || chh < 2) { return; }   // (a frame with no size, as the Android app first shows it: nothing to draw)
     if (canvas.width !== cw || canvas.height !== chh) { canvas.width = cw; canvas.height = chh; }
-    me.pose = athPose(me, gt);   // (first: the Scope's camera stands behind his head as it is this frame)
+    me.pose = athPose(me, gt);
     var e = camera(frameDt), yaw = view.yaw, pitch = view.pitch;
     if (cine) { e = cine.e; yaw = cine.yaw; pitch = cine.pitch; }
     if (camOver) { e = camOver.e; yaw = camOver.yaw; pitch = camOver.pitch; }
@@ -1708,8 +1702,7 @@
     gl.uniform3fv(SU.uKeyV, norm(add(add(sc(r, -0.5), sc(u, 0.72)), sc(f, -0.5)))); gl.uniform1f(SU.uKMax, courts.length - 1);
     drawCourts(); drawShadows(shadows);
     // the athletes
-    var headShown = !(view.scope && gt - view.camT >= TP.VIEW / 2);
-    drawAthlete(me, me.pose, true, !headShown);   // (with the Scope up his head is the glass, and his hat off it, as the rocket world doffs it)
+    drawAthlete(me, me.pose, true, false);
     courts.forEach(function (cv, k) {
       if (!near(courtAt(k)[0])) { return; }
       drawAthlete(plans[k], plans[k].pose = athPose(plans[k], gt), false);
@@ -1718,7 +1711,7 @@
     pearls.forEach(function (q) { drawBall(q[0], q[1]); });
     paint(MAT.DUST);
     dust.forEach(function (d) { var s = 0.07 * (1 - (gt - d.t) / 0.7); cbox([d.x, d.y, d.z], [s, s, s], CT.dust, 0.4); });
-    if (headShown) { drawHead(me.pose, vm); }
+    drawHead(me.pose, vm);
     gl.bindVertexArray(null);
     if (into) { ascEnd(cw, chh, dpr, yaw, pitch); }
     overlay(dpr);
@@ -1729,7 +1722,87 @@
     paint(MAT.PEARL); drawSolid(ballMesh, mul(T(p[0], p[1], p[2]), mul(RX(spin || 0), mul(S(h), T(-3, -3, -3)))), CT.pearl, null, 2.2);
     if (asc && asc.balls) { ascBall(p, canvas.width, canvas.height); }
   }
-  // Over the view, page-drawn: the ring where Mr Plan's shot comes down, the Scope's mark, the stick, and the last ten
+  /* ---- the effects --------------------------------------------------------------------------------------------------
+     The artist, 28 Oct 2026: "There should be small explosions every single time you hit the ball and there should be
+     air animations or court animations about how Mr. Pearl moves around in interacts with the surface of the court and
+     the air". In characters, over the view, each from where it is in the courts and as large as its distance makes it:
+     a burst at every stroke (the serve, his returns, Mr Plan's, the stand-ins' within sight; his warm, Mr Plan's cool);
+     under the feet a puff at each footfall and a scuff left on the court; behind a sprint the air it leaves; round a
+     leap the air turning; at a hard landing a ring rushing out along the court; at a skid or a dive's slide, streaks.
+     Their chance is their own (fxR), so the game's own (rng) plays the same with or without them. */
+  var fx = [], fxS = 20261028;
+  function fxR() { fxS = (fxS * 1103515245 + 12345) >>> 0; return fxS / 4294967296; }
+  var FXC = {   // the colours: the burst's heat, the air's trail, the air turning, the court's dust and its scuff
+    me: { hot: ["#fff4d6", "#ffd166", "#ff9f43", "#ff5e7e"], trail: ["#ffe6a8", "#ffb86b", "#ff8fa3"], swirl: ["#bdf7ff", "#e6c6ff", "#fff1c1"] },
+    plan: { hot: ["#e8fdff", "#5ce1e6", "#7aa2ff", "#c77dff"], trail: ["#7ef0ff", "#b39cff", "#8ad1ff"], swirl: ["#c9fff4", "#d7c4ff", "#a8e8ff"] },
+    dust: ["#f1d7a8", "#c9b6ff", "#9fe3d6"], scuff: ["#a9c8ff", "#c2f0e6"] };
+  function pick(a) { return a[floor(fxR() * a.length) % a.length]; }
+  function fxAdd(p, v, life, ch, col, size, g, flat) { if (fx.length < 320) { fx.push({ p: p, v: v, t0: gt, life: life, ch: ch, col: col, size: size, g: g, flat: flat }); } }
+  // a burst where the pearl is struck: a white-hot core, sparks out on every side (falling a little), a ring
+  function fxBurst(p, who, big) {
+    var C = FXC[who], n = big ? 22 : 14, sp = big ? 5.5 : 4;
+    fxAdd(p.slice(), [0, 0, 0], 0.14, "*", C.hot[0], big ? 0.5 : 0.36, 0, false);
+    for (var i = 0; i < n; i += 1) {
+      var u = fxR() * 2 - 1, a = fxR() * 2 * PI, r = Math.sqrt(1 - u * u), s = sp * (0.55 + 0.45 * fxR());
+      fxAdd(p.slice(), [r * Math.cos(a) * s, u * s * 0.8 + 1, r * Math.sin(a) * s], 0.3 + 0.25 * fxR(), pick(["*", "+", "◆", "◇", "∴", "%"]), pick(C.hot), 0.16 + 0.08 * fxR(), 6, false);
+    }
+    for (var j = 0; j < 10; j += 1) { var b = j / 10 * 2 * PI; fxAdd(p.slice(), [Math.cos(b) * 3, Math.sin(b) * 3, 0], 0.22, "·", C.hot[1], 0.12, 0, false); }
+  }
+  // how a body meets the court and the air, each frame: footfalls, sprint, leap, landing, skid
+  function fxMove(a, who, dt) {
+    var C = FXC[who], k = floor(a.phase / PI), fwd = [Math.sin(a.yaw), -Math.cos(a.yaw)], lat = [Math.cos(a.yaw), Math.sin(a.yaw)];
+    if (a.fxK != null && k !== a.fxK && !a.air && a.speed > 1.2) {
+      var sd = k % 2 ? 0.13 : -0.13, fp = [a.x + lat[0] * sd, 0.02, a.z + lat[1] * sd];
+      for (var i = 0; i < 3 + floor(a.speed / 4); i += 1) { fxAdd(fp.slice(), [(fxR() - 0.5) * 0.8 - a.vx * 0.08, 0.4 + 0.6 * fxR(), (fxR() - 0.5) * 0.8 - a.vz * 0.08], 0.32 + 0.2 * fxR(), pick([".", ":", "∴"]), pick(FXC.dust), 0.1, 1.5, false); }
+      fxAdd(fp.slice(), [0, 0, 0], 1.3, a.speed > 6 ? "=" : "_", pick(FXC.scuff), 0.16, 0, true);
+    }
+    a.fxK = k;
+    a.fxT = (a.fxT || 0) + dt;
+    if (a.speed > 6.5 && a.fxT > 0.035) {   // the air he leaves: a wake of strokes at his chest and hips
+      a.fxT = 0;
+      for (var h = 0; h < 2; h += 1) { fxAdd([a.x - fwd[0] * 0.35 + lat[0] * (fxR() - 0.5) * 0.4, 0.75 + 0.55 * h + a.y, a.z - fwd[1] * 0.35 + lat[1] * (fxR() - 0.5) * 0.4], [-a.vx * 0.06, 0.15, -a.vz * 0.06], 0.3, pick(["~", "-", "="]), pick(C.trail), 0.15, 0, false); }
+    }
+    if (a.air && a.y > 0.15 && a.fxT > 0.04) {   // the air turning round him in a leap or a dive
+      a.fxT = 0;
+      for (var j = 0; j < 2; j += 1) { var th = gt * 9 + j * PI, r = 0.6; fxAdd([a.x + Math.cos(th) * r, a.y + 0.5 + 0.6 * fxR(), a.z + Math.sin(th) * r], [-Math.sin(th) * 2.4, 0.5, Math.cos(th) * 2.4], 0.42, pick(["∴", "∵", "~"]), pick(C.swirl), 0.14, 0, false); }
+    }
+    if (a.fxAir && !a.air && a.fxVy < -2.5) {   // a hard landing: a ring along the court, and its dust
+      for (var q = 0; q < 18; q += 1) { var b = q / 18 * 2 * PI, v = 3 + 0.6 * fxR(); fxAdd([a.x, 0.02, a.z], [Math.cos(b) * v, 0, Math.sin(b) * v], 0.5, pick([".", ":", "*"]), pick(FXC.dust), 0.13, 0, true); }
+    }
+    if (a.skid > 0.5 && a.fxT > 0.03) { a.fxT = 0; fxAdd([a.x, 0.02, a.z], [0, 0, 0], 1.1, "=", pick(FXC.scuff), 0.18, 0, true); }
+    a.fxAir = a.air; a.fxVy = a.vy;
+  }
+  function fxStep(dt) {
+    var e = cur.eye;
+    [[me, "me"]].concat(plans.map(function (p) { return [p, "plan"]; }), stands.map(function (p) { return [p, "me"]; })).forEach(function (w) {
+      var a = w[0]; if (a && hypot(a.x - e[0], a.z - e[2]) < 45) { fxMove(a, w[1], dt); }
+    });
+    fx = fx.filter(function (f) {
+      f.p[0] += f.v[0] * dt; f.p[1] += f.v[1] * dt; f.p[2] += f.v[2] * dt;
+      if (f.g) { f.v[1] -= f.g * dt; if (f.p[1] < 0.02) { f.p[1] = 0.02; f.v[1] = 0; } }
+      if (f.flat) { var k = max(0, 1 - 5 * dt); f.v[0] *= k; f.v[2] *= k; }
+      return gt - f.t0 < f.life;
+    });
+  }
+  // drawn over the view, each its size by its distance, lit additively (so they glow, and a spark over a spark is brighter)
+  function fxDraw(c, W, H, vp) {
+    if (!fx.length) { return; }
+    c.save(); c.globalCompositeOperation = "lighter"; c.textAlign = "center"; c.textBaseline = "middle";
+    var lastPx = -1;
+    fx.forEach(function (f) {
+      var p = f.p, w = vp[3] * p[0] + vp[7] * p[1] + vp[11] * p[2] + vp[15];
+      if (w < 0.15) { return; }
+      var x = (vp[0] * p[0] + vp[4] * p[1] + vp[8] * p[2] + vp[12]) / w, y = (vp[1] * p[0] + vp[5] * p[1] + vp[9] * p[2] + vp[13]) / w;
+      if (x < -1.1 || x > 1.1 || y < -1.1 || y > 1.1) { return; }
+      var px = round(clampV(f.size * H / (2 * w * T35), 7, 64)), age = (gt - f.t0) / f.life;
+      if (px !== lastPx) { c.font = "700 " + px + "px ui-monospace, SFMono-Regular, Menlo, 'DejaVu Sans Mono', monospace"; lastPx = px; }
+      c.globalAlpha = clampV(1 - Math.pow(age, 1.6), 0, 1); c.fillStyle = f.col;
+      c.fillText(f.ch, (x * 0.5 + 0.5) * W, (1 - (y * 0.5 + 0.5)) * H);
+    });
+    c.restore();
+  }
+
+  // Over the view, page-drawn: the ring where Mr Plan's shot comes down, the stick, and the last ten
   // courts' squares; all of it in characters where it marks a place.
   var sayEl = null, hudLow = 0, hudBox = {};   // (hudBox: where the bar was drawn, for the tests)
   function overlay(dpr) {
@@ -1738,6 +1811,7 @@
     if (hud.width !== round(W * dpr) || hud.height !== round(H * dpr)) { hud.width = round(W * dpr); hud.height = round(H * dpr); }
     c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
     var m = court.m, vp = cur.vp;
+    fxDraw(c, W, H, vp);
     hudBox.meter = null;
     var toS = function (p) { var q = [0, 0, 0, 0]; for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0.05 ? [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H] : null; };
     var glyph = function (ch, x, y, size, col) { c.font = "700 " + size + "px ui-monospace, SFMono-Regular, Menlo, 'DejaVu Sans Mono', monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.7)"; c.strokeText(ch, x, y); c.fillStyle = col || "#f2efe8"; c.fillText(ch, x, y); };
@@ -1748,8 +1822,6 @@
       });
       if (m.meterOn && m.phase !== "super") { meterDraw(c, m, W, H, glyph); }
     }
-    hudBox.reticle = null;
-    if (view.scope && gt - view.camT >= TP.VIEW / 2) { glyph("◎", W / 2, H / 2, 34, "#f3c98b"); glyph("+", W / 2, H / 2, 14, "#f3c98b"); hudBox.reticle = { x: W / 2 - 20, y: H / 2 - 20, w: 40, h: 40 }; }
     if (input.stick) { var st = input.stick, L = min(60, hypot(st.dx, st.dy)), an = Math.atan2(st.dy, st.dx); glyph("○", st.x, st.y, 46); glyph("◆", st.x + Math.cos(an) * L, st.y + Math.sin(an) * L, 22, "#f3c98b"); }
     // the last ten courts: a square each, its number in it; filled while it plays on by itself, gold while he plays it,
     // outlined while it waits (the open one, the newest)
@@ -1821,7 +1893,7 @@
              swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w) { athCelebrate(a, w, gt); },
              step: function (a, sec) { for (var i = 0; i < round(sec * 60); i += 1) { gt += 1 / 60; athStep(a, 1 / 60, gt); } },
              meter: function () { var m = court.m; return m && m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
-             hide: function (on) { hideAth = on; }, camNow: function () { return { e: cur.eye.slice(), yaw: cur.yaw, pitch: cur.pitch }; },
+             hide: function (on) { hideAth = on; }, fx: function () { return fx; }, camNow: function () { return { e: cur.eye.slice(), yaw: cur.yaw, pitch: cur.pitch }; },
              camAt: function (e, yaw, pitch, plain) { camOver = e && { e: e, yaw: yaw, pitch: pitch }; camPlain = !!plain; } };
   } };
 })();

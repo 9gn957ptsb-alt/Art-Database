@@ -34,10 +34,10 @@ gold while he plays one).
 **The serve** (the artist, 28 Oct 2026: "I want you to be able to serve up [to] 3 balls in one serve so you can play
 multiple balls/points at once. Use the scope view for the every serve and add an animation that you have to land a bar
 within a certain zone to have the opportunity to ace your opponent. Depending on where you click to stop the bar
-depends on how hard you serve"). At his serve the Scope comes up by itself, level across the net (his head the glass,
-his hat off, his nose the aim: where it looks, inside the diagonal service court, the serve goes), and a bar of
-characters runs in the dark above the net, a `◎` sweeping it there and back (1.15 s each way at level one, quicker each
-level). A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
+depends on how hard you serve"; later, "Get rid of the scope view in the Pickleball game"). At his serve the third
+person's view turns to face across the net (where it looks, inside the diagonal service court, the serve goes; a drag
+aims it), and a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.15 s each way on
+court one, quicker each court), its instruction written under it. A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
 fault), then `- = + *` softer to harder (deeper and quicker), `◆` the gold ace zone (hard into the deep corner: a
 chance at an ace, four in five at level one and a twentieth less each level, Mr Plan going for it at full stretch and
 not getting there), `#` hard, `△` long (a fault). After each pearl the mark sweeps again: up to three pearls a serve
@@ -47,16 +47,15 @@ together, and one may get by him; Mr Pearl, the same.
 
 **Hands.** Touch and mouse alike (YouTube asks both for everything): the left half is a stick (where the finger or the
 press lands is its middle), the right half a drag that turns the view (the way his return goes), a tap or a click
-anywhere stops the serve's bar; Serve, Scope and Super are buttons. On a desk the keys too: WASD or the arrows (Shift
-for full speed), Space, T or Enter to stop the bar, R or the right button for the Scope, E or Q for the super return. His strokes are his own: when Mr Plan's shot comes, the game finds where his paddle can meet it and the stroke
+anywhere stops the serve's bar; Serve and Super are buttons. On a desk the keys too: WASD or the arrows (Shift
+for full speed), Space, T or Enter to stop the bar, E or Q for the super return. His strokes are his own: when Mr Plan's shot comes, the game finds where his paddle can meet it and the stroke
 goes then; the player's part is to be near, to aim and to serve.
 
 **Views.** His own (the artist: "maintain the perspectives of Mr Pearl to play"): the third person behind his head,
 his whole figure a quarter of the screen's height at rest (the rocket world has a third; the artist, 28 Oct 2026: "The
 third person view should be a little farther out for Pickleball given the speed in which Mr. Pearl can now move"), on a
-critically damped spring so that his bursts read; and the
-Scope, his head the glass and his nose the aim, its mark written `◎` and `+` (the tribar that marked it went with the
-unit).
+critically damped spring so that his bursts read. The lens is 58 degrees top to bottom (it was 70: the far court and Mr
+Plan a quarter larger). The Scope, his head the glass, went (the artist, 28 Oct 2026: "Get rid of the scope view").
 
 ## The athletes
 
@@ -153,8 +152,29 @@ characters and marks in ASCII"). Three prototypes (form, light, type) were made 
   glow (with the courts' surfaces switched off the ring hardly darkens), so past the third round the gain is in size
   (Mr Plan's figure 37% more of the screen) and in the heavy type, not only in D.
 
+- **Colour** (the artist, 28 Oct 2026: "Use color to find middle grounds between high contrast points or things being
+  too black or too white. It needs a lot more interesting colors"). Nothing is bare black or bare white. The night is a
+  faint field of dots, indigo overhead turning violet and rose toward the horizon, with peach and ice stars; the ground
+  off the courts a deep teal; the court ultramarine (`:`), the kitchen turquoise (`∴`), the run-off emerald, the lines
+  ivory, the net plum, the posts lilac steel, the lamps amber; the floodlights cast amber in their pools and the night's
+  blue in the seams. The ground's characters glow in their colour, so colour, not black, fills the dark between them
+  (glow, never a flat fill). Mr Pearl is champagne with a gold outline, Mr Plan ice with a cyan one: they still stand
+  out (D 2.7 to 5.0), by hue as well as light. The cell of night round them is a dim indigo, not a hole.
+
 Mr Pearl's head is the one thing seen as it is, the perfect sphere (his rule 5); every word and control is a page
 element over the characters.
+
+## Effects
+
+The artist, 28 Oct 2026: "There should be small explosions every single time you hit the ball and there should be air
+animations or court animations about how Mr. Pearl moves around in interacts with the surface of the court and the
+air". In characters over the view, each from where it is on the court and as large as its distance makes it, lit
+additively (a spark over a spark is brighter): a burst at every stroke (a white-hot `*`, sparks of `* + ◆ ◇ ∴ %`
+falling a little, a ring of `·`; the serve, his returns and the stand-ins' warm, gold to rose, Mr Plan's cool, cyan to
+violet; bigger for an overhead or an ace); at each footfall a puff of `. : ∴` and a scuff (`_`, `=` at a sprint) that
+fades from the court; behind a sprint a wake of `~ - =` at his chest and hips; round a leap or a dive the air turning
+(`∴ ∵ ~`); at a hard landing a ring rushing out along the court; at a skid, streaks. Their chance is their own, so the
+game plays the same with or without them. `pb_game.js` checks a burst at every stroke and the footfalls' marks.
 
 ## YouTube Playables
 
@@ -185,7 +205,7 @@ integration, stability, design, privacy, language, money, accessibility and trus
   inline script, no `eval`, no workers; any aspect ratio, touch, mouse and keys; Esc left alone; a frame with no size
   (the Android app's first, hidden one) draws nothing and breaks nothing.
 - **Any shape.** Every ratio YouTube names, 9:32 to 32:9, at its long side 1280 and at its smallest real screen: the
-  view fills it, the state is kept through a resize, and no word, button, the serve's bar or the Scope's mark covers
+  view fills it, the state is kept through a resize, and no word, button or the serve's bar covers
   another (the words step aside while the bar runs; its instruction is written under it). The faint words and squares
   of the HUD keep 4.5 to 1 against black (WCAG AA).
 - **Size.** The zip is about 63 KB (five files, none over 110 KB). His body's notes (the form study's "note" and

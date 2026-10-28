@@ -30,7 +30,7 @@ const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5
   await p.close();
   ({ p, errs } = await page(b, phone)); all.push(errs);
   await p.evaluate(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5); for (let i = 0; i < 400 && !(d.court.m && d.court.m.meterOn); i++) { d.run(1 / 60); } d.run(0.4); });
-  await shot(p, "3_phone_serve_scope");                             // the serve: the Scope and the bar
+  await shot(p, "3_phone_serve");                                   // the serve: the bar
   await p.close();
   ({ p, errs } = await page(b, desk)); all.push(errs);
   await p.evaluate(rally); await shot(p, "4_desk_rally");

@@ -3,16 +3,16 @@
 // a frame at a time (debug().run(1/60), debug().draw()); after each frame every cell's character is read back from the
 // pass's own cells texture (found by watching the WebGL calls, so the game needs no hook of its own), at the octave the
 // setting pass actually shows there, on the finest grid (a cell an octave up counts as the four, or sixteen, it covers).
-// Per scene: the share of cells whose character (or its octave) changed from the frame before, and the flip-backs, a
-// cell going A -> B -> A within 6 frames (the oscillation that reads as flicker; a thing passing over a cell makes one
-// too, so the cells that flipped back three times or more are counted apart: those are the flicker). Four scenes, 120 frames each, on a
-// phone (390x844 @3) and a desk (1440x900 @1):
+// A blank is the same at any octave (black). Per scene: the share of cells whose character (or its octave) changed
+// from the frame before, and the flip-backs, a cell going A -> B -> A within 6 frames (the oscillation that reads as
+// flicker; a thing passing over a cell makes one too, so the cells that flipped back three times or more are counted
+// apart: those are the flicker). Four scenes, 120 frames each, on a phone (390x844 @3) and a desk (1440x900 @1):
 //   a_rally_still  the camera held still behind court one during a rally (things move; the courts do not)
 //   b_empty_still  the camera held still on an empty part of court one (nothing moves: both numbers must be 0)
 //   c_walk_side    his own third-person camera while he walks slowly sideways (the stick held)
 //   d_scope_serve  the Scope at the serve while the bar runs
 // node pb_flicker.js port [outfile]   (outfile: the numbers as JSON; beside it, <outfile>_<view>_<scene>.png, the last
-// frame with every cell that flipped back marked in red, brighter the more often)
+// frame with every cell that flipped back marked in red, brighter the more often; PB_VIEWS=phone or desk: one view)
 const { chromium } = require("playwright");
 const fs = require("fs");
 const [port, outfile] = process.argv.slice(2);
@@ -45,7 +45,7 @@ const readFrame = (BACK) => {
       // the setting pass's rule: the largest octave whose cell is one (alpha's top bit), else the finest
       let k = I.levels - 1, a = 0;
       for (; k >= 0; k--) { const L = lv[k]; a = L.px[(((j >> k) * L.w) + (i >> k)) * 4 + 3]; if (a >= 128 || k === 0) { break; } }
-      s[j * W + i] = k * 64 + (a & 63);
+      s[j * W + i] = (a & 63) ? k * 64 + (a & 63) : 0;   // (a blank is black at any octave)
     }
   }
   const S = window.__st || (window.__st = { W, H, N, hist: [], frames: 0, changed: 0, flips: 0, heat: new Uint16Array(N), pairs: {} });
@@ -92,7 +92,7 @@ const scenes = {
   const views = { phone: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
                   desk: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 } };
   const res = {}, errs = [];
-  for (const [vn, view] of Object.entries(views)) {
+  for (const [vn, view] of Object.entries(views).filter(([n]) => !process.env.PB_VIEWS || process.env.PB_VIEWS.split(",").includes(n))) {
     for (const [sn, sc] of Object.entries(scenes)) {
       const p = await b.newPage(view);
       p.on("pageerror", (e) => errs.push(String(e)));
@@ -132,7 +132,7 @@ const scenes = {
   await b.close();
   if (outfile) { fs.writeFileSync(outfile, JSON.stringify(res, null, 1)); }
   const still = res["phone b_empty_still"], still2 = res["desk b_empty_still"];
-  const ok = still && still2 && !still.flipBacks && !still2.flipBacks && !still.changedShare && !still2.changedShare;
+  const ok = [still, still2].filter(Boolean).every((q) => !q.flipBacks && !q.changedShare) && (still || still2);
   console.log(errs.length ? "ERRORS " + errs.slice(0, 3).join(" | ") : "no errors");
   console.log(ok ? "the still scene is still (b: 0 changed, 0 flip-backs on both)" : "FAIL: the still scene changed");
   process.exit(ok && !errs.length ? 0 : 1);
