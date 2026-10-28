@@ -47,7 +47,9 @@ const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (
       log.maxBalls = Math.max(log.maxBalls || 0, d.court.m ? d.court.m.balls.filter((b) => !b.dead).length : 0);
       log.maxServed = Math.max(log.maxServed || 0, d.court.m ? d.court.m.served : 0);
       log.aces = (log.aces || 0) + (d.court.m ? d.court.m.balls.filter((b) => b.ace && !b.counted && (b.counted = 1)).length : 0);
-      log.scoped = log.scoped || (d.court.m && d.court.m.meterOn && d.view.scope);
+      // (the effects: a burst at each stroke, a scuff at the footfalls)
+      const nfx = d.fx().length; if (nfx >= (log.fxN || 0) + 10) { log.bursts = (log.bursts || 0) + 1; } log.fxN = nfx;
+      log.scuffs = Math.max(log.scuffs || 0, d.fx().filter((f) => f.flat).length);
       const m2 = d.court.m;
       if (!m2) { log.points.push("level won"); continue; }
       if (m2.you + m2.them !== total) { if (m2.you + m2.them > total) { log.points.push(m2.you + ":" + m2.them); } total = m2.you + m2.them; }
@@ -75,11 +77,12 @@ const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (
   check(res.splits >= 2, "Mr Plan split-steps at Mr Pearl's strokes: " + res.splits);
   check(res.kitchenVolleys === 0, "his strokes are never planned into a volley from the kitchen (no fault for it): " + res.kitchenVolleys);
   check(res.maxServed >= 3 && res.maxBalls >= 2, "a serve of three pearls (" + res.maxServed + "), more than one in play at once (" + res.maxBalls + ")");
-  check(res.scoped, "the Scope is up while the serve's bar runs");
+  check(res.bursts >= 0.9 * res.hits.length, "a burst at every stroke: " + res.bursts + " bursts for " + res.hits.length + " strokes");
+  check(res.scuffs > 0, "his footfalls leave their marks on the court: up to " + res.scuffs + " at once");
   check(res.aces >= 1, "the ace zone gave a chance at an ace: " + res.aces);
   const sv = await D(() => { const s = JSON.parse(localStorage.getItem("pickleball-save-v1") || "{}"), d = window.Pickleball.debug(); return { saved: s.won, won: d.won(), courts: d.courts.length }; });
   check(sv.won >= 1 && sv.saved === sv.won && sv.courts === sv.won + 1, "each court won is saved, and the next appears beside it (the score sent must be the save's): saved " + sv.saved + ", won " + sv.won + ", courts " + sv.courts);
-  // pictures: a rally, the athletes close, the Scope
+  // pictures: a rally, the athletes close
   const shot = async (name, setup) => { await D(setup); await D(() => window.Pickleball.debug().draw()); await page.screenshot({ path: `${out}/${name}.png` }); };
   await shot("02_now", () => {});
   await D(() => { const d = window.Pickleball.debug(); if (!d.court.m) { d.enter(1); d.run(0.3); } d.run(1.5, true); });
@@ -93,9 +96,6 @@ const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (
     return black / (w * h);
   });
   check(hasGlyphs > 0.25, "the frame is characters on black (black share " + hasGlyphs.toFixed(2) + ")");
-  await D(() => { const d = window.Pickleball.debug(); d.view.scope = false; });
-  await page.keyboard.press("r"); await D(() => window.Pickleball.debug().run(0.5));
-  await shot("05_scope", () => {});
   check(errors.length === 0, "no errors: " + errors.slice(0, 3).join(" | "));
   check([...hosts].every((h) => h.startsWith("127.0.0.1")), "no request leaves the page's host: " + [...hosts].join(" "));
   await browser.close();

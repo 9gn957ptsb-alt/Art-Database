@@ -22,9 +22,7 @@ button { position: fixed; border: 1px solid var(--edge); background: var(--pane)
 button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 #serve { right: calc(16px + env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom));
          width: 76px; height: 76px; border-radius: 50%; }
-#scope { right: calc(16px + env(safe-area-inset-right)); bottom: calc(106px + env(safe-area-inset-bottom)); padding: 10px 16px; }
-#scope[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
-#super { right: calc(16px + env(safe-area-inset-right)); bottom: calc(160px + env(safe-area-inset-bottom)); padding: 10px 16px; border-color: var(--gold); color: var(--gold); }
+#super { right: calc(16px + env(safe-area-inset-right)); bottom: calc(106px + env(safe-area-inset-bottom)); padding: 10px 16px; border-color: var(--gold); color: var(--gold); }
 #super[aria-pressed="true"] { background: var(--gold); color: var(--bg); }
 #super:disabled { border-color: var(--edge); color: var(--fg); opacity: 0.35; }
 body:not([data-phase]) #super, body[data-phase="walk"] #super { display: none; }
