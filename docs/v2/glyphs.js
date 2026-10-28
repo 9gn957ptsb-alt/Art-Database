@@ -11,9 +11,11 @@
  * its own drawing: every word, the names and the dial, the animals and figures, the works' photographs (the walk's
  * pictures too), the flat map, the theatre.
  *
- * The glyphs are the site's own categories' marks (KINDS.md), sorted by the ink they leave as Glyph Light sorts any
- * set: so the faintest light of the world is written ∴ and ∵ and the brightest ▢ and ◆, the world drawn in what it is
- * sorted into. GLYPHS = false brings the world back as it was.
+ * The glyphs are the keyboard's (Glyph Light's own first set, .:-=+*#%@) and the site's categories' marks (KINDS.md)
+ * together (artist, 28 Oct 2026: "Do marks and keyboard characters"), one set sorted by the ink each leaves, as Glyph
+ * Light sorts a custom set: so the marks fall between the characters by their weight (. - : ∵ ∴ → = + △ ◇ * ○ ▢ ◎ # % ◆
+ * @ ¶ in Chromium's fonts), the world written in plain type and in what it is sorted into at once. GLYPHS = false brings
+ * the world back as it was.
  *
  * Only Glyph Light's ASCII style (artist, 28 Oct 2026, with its "A# ASCII" button: "Make sure you are just using the
  * ASCII style from GLYPH Light and none of the other styles"): glyphs chosen by their light from a set, as its Glyphs
@@ -24,7 +26,8 @@
   "use strict";
   const GLYPHS = true;
   if (!GLYPHS || !window.GlyphLight) return;
-  const SET = " ∴∵→○◇△◎¶▢◆";                         // ■ fills its whole cell: a bright city became solid bars
+  const KEYS = " .:-=+*#%@", MARKS = "∴∵→○◇△◎¶▢◆";    // ■ fills its whole cell: a bright city became solid bars
+  const SET = KEYS + MARKS;
   const BG = [15 / 255, 10 / 255, 7 / 255];          // the stage's own dark (land.css, .dirt-look .stage)
   const html = document.documentElement;
   const cell = () => (innerWidth < 700 ? 5 : 6);
