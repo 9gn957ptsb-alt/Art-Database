@@ -103,6 +103,26 @@ def roof(name, cx, cy, rx, ry, z, h, m, n=20):
     return tri_group(name, verts, tris, m)
 
 
+def loft(name, rings, m):
+    """A closed solid from stacked convex rings (lists of (x, y, z), one vertex count), capped top and bottom."""
+    verts = []; idx = []
+    for r in rings:
+        idx.append(list(range(len(verts), len(verts) + len(r)))); verts += r
+    n = len(rings[0]); tris = []
+    for q in range(len(rings) - 1):
+        for i in range(n):
+            i2 = (i + 1) % n
+            a, b, c, d = idx[q][i], idx[q][i2], idx[q + 1][i2], idx[q + 1][i]
+            tris += [(a, b, c), (a, c, d)]
+    for ring, rev in ((idx[0], True), (idx[-1], False)):
+        cx = sum(verts[i][0] for i in ring) / n; cy = sum(verts[i][1] for i in ring) / n; cz = verts[ring[0]][2]
+        cb = len(verts); verts.append((cx, cy, cz))
+        for i in range(n):
+            a, b = ring[i], ring[(i + 1) % n]
+            tris.append((cb, b, a) if rev else (cb, a, b))
+    return tri_group(name, verts, tris, m)
+
+
 steel = mat("Stainless", 176, 180, 186)
 shade = mat("Steel_shade", 150, 154, 162)
 glass = mat("Glass", 110, 140, 160, 140)
@@ -113,27 +133,54 @@ box("Podium", -50, -40, 0, 50, 40, P, lime)
 box("Lobby_glass", -24, -24, P, 20, -8, P + 7, glass)
 for k in range(4):   # the broad stair down the podium's east side
     box("Stair_%d" % k, 50, -34, 0, 50 + (4 - k) * 1.5, -8, P * (4 - k) / 5, lime)
-roof("Hall_roof", 0, 10, 20, 17, P, 26, shade)
+# The hall itself is a steel-clad block behind the sails (photo 01: the tall left sail is its rear face), not a dome:
+# a rotated rectangle, 22 m high, its top drawn in a little. (s, t) run along and across the view from the entrance corner.
+def st(s_, t_):
+    return (0.7071 * (s_ + t_), 10 + 0.7071 * (s_ - t_))
+core = []
+for (z, k) in ((P, 1.0), (P + 22, 0.82)):
+    core.append([st(sc, tc) + (z,) for (sc, tc) in ((-20 * k, -16 * k), (22 * k, -16 * k), (22 * k, 0), (-20 * k, 0))])
+loft("Hall_core", core, shade)
+
+# The two tall rear sails (photo 01): near-flat sheets facing the entrance corner, a glass slot between them.
+# arc of radius 70 m about a point behind the sheet; (a0, a1) 45 deg either way of the corner's heading, -45.
+def sheet(nm, s_, t_, width, z0, h, lean, twist, bow):
+    qx, qy = st(s_, t_)
+    R = 70.0
+    cx, cy = qx - R * 0.7071, qy + R * 0.7071
+    half = math.degrees(width / R) / 2
+    sail(nm, cx, cy, R, -45 - half, -45 + half, z0, h, lean, 1.2, steel, nu=10, nv=8, twist=twist, bow=bow)
+sheet("Sail_tall_L", -10, 1, 28, P, 34, 1.5, 0.0, 0.03)
+sheet("Sail_tall_R", 16, 3, 20, P, 36, -6.0, -0.22, 0.02)
+qx, qy = st(4.8, 2)
+box("Slot_glass", qx - 1.5, qy - 1.5, P, qx + 1.5, qy + 1.5, P + 30, glass)
 
 # The petals round the hall, from the back clockwise:
 # (name, centre x, centre y, radius, from, to angle, base, height, flare, twist, bow)
 for (nm, cx, cy, r, a0, a1, z0, h, fl, tw, bw) in [
-    ("Sail_back_W",   -4, 12, 21,  95, 150, P, 40,  5,  0.20, 0.10),
-    ("Sail_back_E",    5, 13, 20,  45, 100, P, 36,  6, -0.25, 0.10),
-    ("Sail_back_mid",  0, 10, 23,  70, 115, P, 30,  8,  0.10, 0.15),
-    ("Sail_W_hi",     -8,  8, 19, 140, 195, P, 30,  7,  0.30, 0.05),
-    ("Sail_W_lo",    -10,  4, 22, 165, 225, P, 20, 10,  0.40, 0.00),
-    ("Sail_E_hi",      8, 10, 18,   0,  55, P, 28,  8, -0.30, 0.05),
-    ("Sail_E_lo",     10,  6, 21, -35,  15, P, 20,  9,  0.35, 0.00),
-    ("Sail_front_W",  -6,  2, 24, 205, 250, P + 3, 17, 11,  0.45, 0.10),
-    ("Sail_front_mid", 2,  2, 25, 240, 285, P + 2, 22, 10, -0.30, 0.10),
-    ("Sail_front_E",   8,  4, 22, 275, 325, P + 2, 18, 11,  0.40, 0.05),
+    ("Sail_back_W",   -4, 12, 21,  95, 150, P, 26,  5,  0.20, 0.10),
+    ("Sail_back_E",    5, 13, 20,  45, 100, P, 24,  6, -0.25, 0.10),
+    ("Sail_back_mid",  0, 10, 23,  70, 115, P, 20,  8,  0.10, 0.15),
+    ("Sail_W_hi",     -8,  8, 19, 140, 195, P, 24,  7,  0.30, 0.05),
+    ("Sail_W_lo",    -10,  4, 22, 165, 225, P, 14, 10,  0.40, 0.00),
+    ("Sail_E_hi",      8, 10, 18,   0,  55, P, 22,  8, -0.30, 0.05),
+    ("Sail_E_lo",     10,  6, 21, -35,  15, P, 14,  9,  0.35, 0.00),
+    ("Sail_front_W",  -6,  2, 24, 205, 250, P + 3, 22, 11,  0.45, 0.10),
+    ("Sail_front_mid", 2,  2, 25, 240, 285, P + 2, 30, 10, -0.30, 0.10),
+    ("Sail_front_E",   8,  4, 22, 275, 325, P + 2, 22, 11,  0.40, 0.05),
 ]:
-    sail(nm, cx, cy, r, a0, a1, z0, h, fl, 0.9, steel, twist=tw, bow=bw)
+    sail(nm, cx, cy, r, a0, a1, z0, h, fl, 1.2, steel, twist=tw, bow=bw)
 
-# The drum at the entrance corner: a petal curled into a ring, and its cap.
-sail("Drum_shell", 30, -15, 9, -170, 150, P, 17, 3, 0.9, steel, nu=20, twist=0.25, bow=0.1)
-roof("Drum_cap", 30, -15, 9, 9, P + 15, 3, shade, n=16)
+# The drum east of the entrance (photo 01, right): a smooth oval barrel, ~22 m across and 28 m high, its top drawn
+# back and in, leaning away from the street; before it a long low curved wall (the building's name is on it).
+def barrel(name, cx, cy, rx, ry, z0, h, lean_x, lean_y, shrink, m, n=24):
+    rings = []
+    for (t, k) in ((0.0, 1.0), (0.45, 1.0), (0.8, 1.0 - shrink * 0.5), (1.0, 1.0 - shrink)):
+        rings.append([(cx + lean_x * t ** 2 + rx * k * math.cos(2 * math.pi * i / n),
+                       cy + lean_y * t ** 2 + ry * k * math.sin(2 * math.pi * i / n), z0 + h * t) for i in range(n)])
+    return loft(name, rings, m)
+barrel("Drum_barrel", 30, -15, 11, 9.5, P, 28, 2.5, 3.0, 0.3, steel)
+sail("Drum_wall", 30, -15, 17, -120, -35, P, 4.5, 0, 1.2, steel, nu=12, nv=3)
 
 # True isometric: parallel projection down the (1, -1, -1) diagonal.
 d = 250 * M

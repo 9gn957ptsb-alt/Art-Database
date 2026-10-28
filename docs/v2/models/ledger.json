@@ -150,46 +150,50 @@
   },
   "the-da-vinci-of-architecture-frank-gehry-19292025": {
     "name": "Frank Gehry 1929–2025",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-28",
+    "passes": 4,
     "sketchup": true,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 built in SketchUp: steel petals as curved sheets",
-      "2026-09-24 refined: garden trees lifted onto a planted podium garden with the Rose for Lilly fountain, streets round the podium, street trees clear of the entrance corner (meshes untouched)"
+      "2026-09-24 refined: garden trees lifted onto a planted podium garden with the Rose for Lilly fountain, streets round the podium, street trees clear of the entrance corner (meshes untouched)",
+      "2026-10-28 refined in SketchUp (3 rounds, photo 01 only): the bare dome replaced by a steel-clad block; the two tall rear sails and the glass slot added; the side petals brought down; the drum rebuilt as an oval barrel with its low curved wall; voxel 0.9 to 1.1 m, 33,000 to 23,000 dots; .skp rebuilt"
     ]
   },
   "music-room-casa-la-flecha-by-gonzalez-olsina-vega-arquitectos-and-eduardo-vera": {
     "name": "Casa La Flecha",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-28",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: lavender and sage drifts round the forecourt, bright shrubs by the entrance, black glazing frames"
+      "2026-09-24 refined: lavender and sage drifts round the forecourt, bright shrubs by the entrance, black glazing frames",
+      "2026-10-28 refined (3 rounds, photos 00, 03, 05, 06, 07, 12, 13): the glazing ~12 m wide on the north and south (it was 6.6 and 9.2) and moved west; the west block ~9 m wide standing past the roof; grey-brown board-formed wall ends; the carved screen to the west of the glass; low trees; broad steps and boulders placed as photographed"
     ]
   },
   "between-edges-casa-en-el-dragon-by-cristian-nanzer": {
     "name": "Casa en el Dragon",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-28",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: taller chimney and west blade clear of the roof, roof edge pulled back so the upper glazing reads, red succulents on the bank"
+      "2026-09-24 refined: taller chimney and west blade clear of the roof, roof edge pulled back so the upper glazing reads, red succulents on the bank",
+      "2026-10-28 refined (3 rounds, photos 03, 04, 11, 12, 13): the flagstone walk, gravel and kerb moved from the north to the balcony side; the chimney 4.4 to 3.3 m; the north windows as photo 13 draws them (7, 7 and 3.2 m groups); dry scrub on the north ridge in place of bare soil; the cactus garden at the west end"
     ]
   },
   "a-territorial-presence-casa-bp-by-santiago-bertotti": {
     "name": "Casa BP",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-28",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: flat grey-topped gallery roof, pool deck and loungers, bench, street-wall lamp boxes, bigger west tree, soil bed"
+      "2026-09-24 refined: flat grey-topped gallery roof, pool deck and loungers, bench, street-wall lamp boxes, bigger west tree, soil bed",
+      "2026-10-28 refined (3 rounds, photos 00-17): the render is the new 'madder' (deep dusty red) in place of pink 'rose' (also added to models.js and MODELS.md); dark pool water; tan drive gravel and grey street pavers; black louvres on the glass pavilion; spreading street trees, a grey-green olive, two columnar plants at the gate"
     ]
   },
   "a-pause-in-the-scenery-strazik-house-by-gonzalez-olsina-vega-arquitectos": {
@@ -206,13 +210,14 @@
   },
   "gravity-held-in-stone-suspended-stone-houses-by-paul-dragicevic": {
     "name": "Suspended Stone Houses",
-    "refined": "2026-09-24",
-    "passes": 3,
+    "refined": "2026-10-28",
+    "passes": 4,
     "sketchup": false,
     "log": [
       "2026-09-24 first model from the article's photographs",
       "2026-09-24 second pass: the five biggest mismatches with the photographs",
-      "2026-09-24 refined: pirca as pale rounded stones, gravel bedroom patios with planted strips under the beams, living-room steps"
+      "2026-09-24 refined: pirca as pale rounded stones, gravel bedroom patios with planted strips under the beams, living-room steps",
+      "2026-10-28 refined (3 rounds, photos 00, 01, 02, 04, 05, 06): warm 'stone' for the concrete slabs and beams, not near-white; the east frontage sandy with patchy tufts, not a lawn; a dark pool; rust-brown stones mottling the west walls; green climbers on the planter beams over the patios"
     ]
   },
   "the-precision-of-the-subtle-clinica-dental-apolonia-by-jga-arquitectura": {

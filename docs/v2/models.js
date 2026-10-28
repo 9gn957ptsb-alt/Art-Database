@@ -36,6 +36,7 @@
     ochre:    { c: [208, 172, 130], soil: 0.24 },     // concrete or plaster tinted to the ground
     yellow:   { c: [226, 178, 64], soil: 0.12 },      // Izamal's yellow lime paint
     rose:     { c: [196, 132, 120], soil: 0.16 },     // dusty-rose pigmented render
+    madder:   { c: [182, 104, 94], soil: 0.14 },      // deep dusty-red pigmented render, Casa BP's: darker and redder than rose
     palebrick:{ c: [196, 180, 156], soil: 0.16 },     // grey-beige brick
     paintbrick:{ c: [206, 209, 197], soil: 0.08 },    // brick painted a cool pale grey-green
     sandstone:{ c: [158, 88, 70], soil: 0.18 },       // red sandstone, rusticated

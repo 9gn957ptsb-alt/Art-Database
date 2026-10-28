@@ -76,7 +76,7 @@ the model stands on the plot's building cells.
 | `mesh` | `{"v": [x, y, z, …], "f": [a, b, c, …]}` | a closed triangle mesh in the same metres and axes — built in SketchUp (see below) for curves the other parts can't shape |
 
 Materials: `concrete`, `render` (painted plaster), `white`, `stone`, `limestone` (pale dressed ashlar), `marble`,
-`rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `paintbrick` (painted a cool pale grey-green), `sandstone` (red, rusticated), `tile` (terracotta roof), `bluetile` (glazed cobalt roof tile), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `earth` (rammed earth, adobe), `ochre`
+`rubble` (grey-brown field stone), `brick`, `palebrick` (grey-beige), `paintbrick` (painted a cool pale grey-green), `sandstone` (red, rusticated), `tile` (terracotta roof), `bluetile` (glazed cobalt roof tile), `yellow` (Izamal lime paint), `rose` (dusty-rose render), `madder` (deep dusty-red render, darker and redder than `rose`), `earth` (rammed earth, adobe), `ochre`
 (concrete or plaster tinted to the ground), `wood`
 (light), `timber` (dark), `ebony` (dark-stained or charred cladding, near black), `thatch`, `glass` (dark interior and pale sky, dot by dot — reads as glass on its own),
 `mesh` (expanded metal, perforated screen — drawn open), `metal`, `steel`, `dark`, `slate` (slate or zinc roof, blue-grey), `copper` (copper gone green, or pre-patinated: roofs and cladding), `corten`, `water`, `plant`, `grass`, `drygrass`, `lavender`, `sage` (grey-green shrubs), `sand`,
