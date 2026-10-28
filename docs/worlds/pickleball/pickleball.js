@@ -67,8 +67,13 @@
     }
     me.warn = warn;
     me.error = function (e) { try { console.error(e); if (inYT) { y.health.logError(); } } catch (x) { /* nothing more */ } };
+    me.audioOn = true;
     me.init = function () {
       if (!inYT) { return Promise.resolve(); }
+      // (no sound yet; YouTube's mute is read and followed all the same, through the two calls the rules name, so a
+      // sound added later starts from it)
+      me.audioOn = me.audio();
+      call("onAudioEnabledChange", function () { return y.system.onAudioEnabledChange(function (on) { me.audioOn = !!on; }); });
       return Promise.resolve(call("getLanguage", function () { return y.system.getLanguage(); })).then(function (l) { me.lang = l || "en"; }, function () { /* English */ });
     };
     me.firstFrame = function () { if (first) { return; } first = true; if (inYT) { call("firstFrameReady", function () { return y.game.firstFrameReady(); }); } };
@@ -77,13 +82,18 @@
     me.onResume = function (fn) { if (inYT) { call("onResume", function () { return y.system.onResume(function () { me.paused = false; fn(); }); }); } };
     me.audio = function () { return inYT ? call("isAudioEnabled", function () { return y.system.isAudioEnabled(); }) !== false : true; };
     me.load = function () {
-      if (inYT) { return Promise.resolve(call("loadData", function () { return y.game.loadData(); })).then(function (s) { return s ? JSON.parse(s) : null; }).then(null, function () { return null; }); }
+      if (inYT) {
+        var get = function () { return Promise.resolve(call("loadData", function () { return y.game.loadData(); })); };
+        return get().then(null, function () { return get(); })   // (once more: the SDK may be briefly unavailable)
+          .then(function (s) { try { return s ? JSON.parse(s) : null; } catch (e) { warn(e); return null; } },
+                function (e) { warn(e); me.noSave = true; return null; });   // (not loaded: the player's cloud save is never written over)
+      }
       try { var s = window.localStorage.getItem(KEY); return Promise.resolve(s ? JSON.parse(s) : null); } catch (e) { return Promise.resolve(null); }
     };
     me.save = function (o) {
       var s = JSON.stringify(o);
       if (s.length > 3e6) { warn("pickleball: the save is over 3 MiB; not saved"); return Promise.resolve(); }
-      if (inYT) { return Promise.resolve(call("saveData", function () { return y.game.saveData(s); })); }
+      if (inYT) { return me.noSave ? Promise.resolve() : Promise.resolve(call("saveData", function () { return y.game.saveData(s); })); }
       try { window.localStorage.setItem(KEY, s); } catch (e) { /* a private window: unsaved */ }
       return Promise.resolve();
     };
@@ -629,7 +639,8 @@
   var STR = {
     courts: "The courts", playing: " of 10 playing", horseW: "the horse",
     welcome: "Holographic Mr Pearl: Pickleball. The courts at night. Walk onto court one to play level one against Mr Plan: first to three.",
-    match: function (k, l) { return "Court " + k + ", level " + l + ": first to three. At your serve the Scope comes up and a bar runs: tap to stop it (the harder, the further along; the gold zone, a chance at an ace), up to three pearls a serve. One super return a game: Super."; },
+    match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Your serve."; },
+    meterHint: "tap to stop it · further is harder · ◆ a chance at an ace",
     head: function (m) {
       var lv = m.balls.filter(function (q) { return !q.dead; }), r = lv.reduce(function (a, q) { return max(a, q.rally); }, 0);
       return "Court " + (m.k + 1) + " · level " + m.level + " · you " + m.you + " – " + m.them + " Mr Plan" + (lv.length > 1 ? " · " + lv.length + " pearls" : "") + " · rally " + r + " · longest " + courts.best;
@@ -1017,7 +1028,8 @@
     });
     dust = dust.filter(function (d) { d.vy -= 3 * dt; d.x += d.vx * dt; d.y = max(0.02, d.y + d.vy * dt); d.z += d.vz * dt; return gt - d.t < 0.7; });
     input.fire = false;   // (a tap is spent on the frame that reads it)
-    if (gt > sayT) { $("say").style.opacity = "0"; }
+    // (the words step aside while the serve's bar runs: the bar carries its own, and they would cover it on a short screen)
+    var sayOn = gt <= sayT && !(court.m && court.m.meterOn) ? "1" : "0"; if ($("say").style.opacity !== sayOn) { $("say").style.opacity = sayOn; }
   }
 
   /* ---- the views and the hands ----------------------------------------------------------------------------------
@@ -1077,7 +1089,9 @@
   // The serve's bar, in characters under the Scope: soft (a fault in the kitchen), softer to harder, the gold ace zone,
   // hard, long; the mark (◎) sweeping it; the pearls of this serve, served (◎) and still to serve (○).
   function meterDraw(c, m, W, H, glyph) {
-    var N = 25, cw = min(13, (W - 48) / N), x0 = W / 2 - N * cw / 2, y0 = H * 0.37,   /* (in the dark over the net, clear of his body under the Scope) */ u = meterAt(m), ramp = "-=+*", i;
+    // (in the dark over the net, clear of his body under the Scope, and below the HUD's lines however they wrap)
+    var N = 25, cw = min(13, (W - 48) / N), x0 = W / 2 - N * cw / 2, y0 = max(H * 0.37, hudLow + 56), u = meterAt(m), ramp = "-=+*", i;
+    if (y0 + 56 > H / 2 - 26 && y0 - 50 < H / 2 + 26) { y0 = H / 2 + 26 + 50; }   // (never across the Scope's mark: under it, on a short screen)
     for (i = 0; i < N; i += 1) {
       var v = (i + 0.5) / N, ch, col = "#f2efe8";
       if (v < SERVE.SOFT) { ch = "."; col = "#8a8f9a"; }
@@ -1092,6 +1106,8 @@
     c.font = "500 10px ui-monospace, SFMono-Regular, Menlo, monospace";
     glyph("soft", x0 + 2 * cw, y0 + 30, 10); glyph("ace", x0 + (SERVE.ACE[0] + SERVE.ACE[1]) / 2 * N * cw, y0 + 30, 10, "#f3c98b"); glyph("long", x0 + (N - 1.5) * cw, y0 + 30, 10, "#e07a5f");
     for (i = 0; i < SERVE.MAX; i += 1) { glyph(i < m.served + m.tosses.length ? "◎" : "○", W / 2 + (i - 1) * 22, y0 - 40, 16, i < m.served + m.tosses.length ? "#f3c98b" : "#f2efe8"); }
+    var hs = min(10, (W - 24) / STR.meterHint.length / 0.6); glyph(STR.meterHint, W / 2, y0 + 48, hs);
+    hudBox.meter = { x: min(x0, W / 2 - STR.meterHint.length * hs * 0.31), y: y0 - 50, w: max(N * cw, STR.meterHint.length * hs * 0.62), h: 106 };
   }
   /* -- the super return: once a game (see below, "the super return") -- */
   function superButton() {
@@ -1285,11 +1301,14 @@
   }
   // Over the view, page-drawn: the ring where Mr Plan's shot comes down, the Scope's mark, the stick, the ten courts'
   // squares and the horse's tools; all of it in characters where it marks a place.
+  var sayEl = null, hudLow = 0, hudBox = {};   // (hudBox: where the bar was drawn, for the tests)
   function overlay(dpr) {
+    sayEl = sayEl || $("say");
     var c = hud.getContext("2d"), W = hud.clientWidth, H = hud.clientHeight;
     if (hud.width !== round(W * dpr) || hud.height !== round(H * dpr)) { hud.width = round(W * dpr); hud.height = round(H * dpr); }
     c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
     var m = court.m, vp = cur.vp;
+    hudBox.meter = null;
     var toS = function (p) { var q = [0, 0, 0, 0]; for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0.05 ? [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H] : null; };
     var glyph = function (ch, x, y, size, col) { c.font = "700 " + size + "px ui-monospace, SFMono-Regular, Menlo, 'DejaVu Sans Mono', monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.7)"; c.strokeText(ch, x, y); c.fillStyle = col || "#f2efe8"; c.fillText(ch, x, y); };
     if (m) {
@@ -1299,14 +1318,15 @@
       });
       if (m.meterOn && m.phase !== "super") { meterDraw(c, m, W, H, glyph); }
     }
-    if (view.scope && gt - view.camT >= TP.VIEW / 2) { glyph("◎", W / 2, H / 2, 34, "#f3c98b"); glyph("+", W / 2, H / 2, 14, "#f3c98b"); }
+    hudBox.reticle = null;
+    if (view.scope && gt - view.camT >= TP.VIEW / 2) { glyph("◎", W / 2, H / 2, 34, "#f3c98b"); glyph("+", W / 2, H / 2, 14, "#f3c98b"); hudBox.reticle = { x: W / 2 - 20, y: H / 2 - 20, w: 40, h: 40 }; }
     if (input.stick) { var st = input.stick, L = min(60, hypot(st.dx, st.dy)), an = Math.atan2(st.dy, st.dx); glyph("○", st.x, st.y, 46); glyph("◆", st.x + Math.cos(an) * L, st.y + Math.sin(an) * L, 22, "#f3c98b"); }
     // the ten: a square each, its level in it; filled while it plays on, crossed while it is down, faint until it opens
     var top = document.querySelector(".top"), y0 = (top ? top.getBoundingClientRect().bottom : 30) + 8, sz = min(22, (W - 24 - 9 * 5) / 10), gap = 5, x0 = 12;
     c.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
     courts.forEach(function (q, k) {
       var x = x0 + k * (sz + gap), open = k === 0 || courts[k - 1].won, on = m && m.k === k;
-      c.globalAlpha = open ? 1 : 0.4;
+      c.globalAlpha = open ? 1 : 0.62;   // (faint, and still 4.5:1 or more on black: WCAG AA)
       if (q.up) { c.fillStyle = "rgba(236,236,228,0.92)"; c.fillRect(x, y0, sz, sz); }
       c.strokeStyle = on ? "#f3c98b" : q.won && !q.up ? "#e07a5f" : "rgba(236,236,228,0.9)"; c.lineWidth = on ? 2 : 1; c.strokeRect(x + 0.5, y0 + 0.5, sz - 1, sz - 1);
       if (q.won && !q.up) { c.beginPath(); c.moveTo(x + 3, y0 + 3); c.lineTo(x + sz - 3, y0 + sz - 3); c.stroke(); }
@@ -1320,12 +1340,14 @@
     COURT.TOOLS.forEach(function (t, k) {
       var q = courts[k], wd = c.measureText(t).width;
       if (x + wd > W - 12) { return; }
-      c.globalAlpha = q.up ? 1 : 0.45;
+      c.globalAlpha = q.up ? 1 : 0.62;
       c.strokeText(t, x, ly); c.fillText(t, x, ly);
       if (q.won && !q.up) { c.strokeStyle = "#e07a5f"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, ly); c.lineTo(x + wd, ly); c.stroke(); c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.65)"; }
       x += wd + 8;
     });
     c.globalAlpha = 1;
+    hudLow = ly + 8;
+    var sy = round(ly + 16) + "px"; if (sayEl.style.top !== sy) { sayEl.style.top = sy; }
     var o = 1 - gt / 0.6;
     if (o > 0) { c.fillStyle = "rgba(0,0,0," + o.toFixed(3) + ")"; c.fillRect(0, 0, W, H); }
   }
@@ -1344,7 +1366,7 @@
     if (!readyTold) { readyTold = true; $("loading").hidden = true; YT.ready(); }   // (the loading words gone first: nothing left that cannot be played)
     raf = requestAnimationFrame(frame);
   }
-  function start() { if (!raf && !YT.paused) { last = 0; raf = requestAnimationFrame(frame); } }
+  function start() { if (!raf && !YT.paused && me) { last = 0; raf = requestAnimationFrame(frame); } }   // (me: a resume while it loads waits for the courts)
   function stop() { if (raf) { cancelAnimationFrame(raf); } raf = 0; }
   function boot() {
     canvas = $("view"); hud = $("hud");
@@ -1381,7 +1403,7 @@
              running: function () { return !!raf; }, pose: athPose, planContact: planContact, ascOk: function () { return !!(asc && asc.ok); },
              swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w) { athCelebrate(a, w, gt); },
              step: function (a, sec) { for (var i = 0; i < round(sec * 60); i += 1) { gt += 1 / 60; athStep(a, 1 / 60, gt); } },
-             meter: function () { var m = court.m; return m && m.meterOn ? meterAt(m) : null; }, SERVE: SERVE,
+             meter: function () { var m = court.m; return m && m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
              camAt: function (e, yaw, pitch, plain) { camOver = e && { e: e, yaw: yaw, pitch: pitch }; camPlain = !!plain; } };
   } };
 })();

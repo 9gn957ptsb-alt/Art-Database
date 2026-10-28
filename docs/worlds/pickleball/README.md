@@ -111,11 +111,14 @@ integration, stability, design, privacy, language, money, accessibility and trus
   under them (the rule: only while a screen says it is loading). They go the frame the courts are first drawn, and
   `gameReady()` follows, so nothing is shown that cannot be played.
 - **Pause.** `onPause` cancels the frame, stops the game's own clock (nothing catches up at `onResume`), drops what
-  the hands were holding and saves; while paused no touch, click or key does anything. The Page Visibility API is
-  never used.
+  the hands were holding and saves; while paused no touch, click or key does anything; a resume that comes while it
+  is still loading waits for the courts. The Page Visibility API is never used.
+- **Mute.** No sound yet; YouTube's mute is read (`isAudioEnabled`) and followed (`onAudioEnabledChange`) all the
+  same, so a sound added later starts from it.
 - **Save.** Through `saveData`/`loadData` inside YouTube (well under 3 MiB: the courts, the horse and the longest
   rally), only after the load, `localStorage` only outside. A save from any version, or a broken one, is read field
-  by field as counts, or as a fresh start.
+  by field as counts, or as a fresh start. A load that fails is asked again once; if it fails again the game plays
+  and never saves, so the player's cloud save is never written over.
 - **Score.** `sendScore` with the longest rally, an integer, when it grows, saved first: the best sent is always the
   save's, as the rule asks.
 - **The end.** When all ten courts are won and the Trojan horse stands, the game says it is complete, and the head
@@ -125,12 +128,17 @@ integration, stability, design, privacy, language, money, accessibility and trus
 - **No sound** (so nothing to mute), no links, no sharing, no requests but the SDK, every script a static tag, no
   inline script, no `eval`, no workers; any aspect ratio, touch, mouse and keys; Esc left alone; a frame with no size
   (the Android app's first, hidden one) draws nothing and breaks nothing.
-- **Size.** The zip is about 65 KB (five files).
+- **Any shape.** Every ratio YouTube names, 9:32 to 32:9, at its long side 1280 and at its smallest real screen: the
+  view fills it, the state is kept through a resize, and no word, button, the serve's bar or the Scope's mark covers
+  another (the words step aside while the bar runs; its instruction is written under it). The faint words and squares
+  of the HUD keep 4.5 to 1 against black (WCAG AA).
+- **Size.** The zip is about 63 KB (five files, none over 110 KB). His body's notes (the form study's "note" and
+  "relation" lines, with the makers and models they name) are left out of the bundle.
 
 `node scripts/build_pickleball.js --playable <dir>` writes the folder and `<dir>.zip`; `--artifact <file.html>` one
 self-contained page (no SDK). `notes/holographic-mr-pearl/harness/pb_playables.js` checks all of the above with a
 mock of the SDK, then the built bundle with the real SDK, served with YouTube's Content Security Policy header (the
-string the Test Suite guide gives) and nothing refused. Getting it onto YouTube is the artist's part: Playables is
+string the Test Suite guide gives) and nothing refused; `pb_aspect.js` the ratios. Getting it onto YouTube is the artist's part: Playables is
 invitation-only (the interest form, the Playables Developer Portal, a release tested with the hosted SDK Test Suite
 on desktop, mobile web, Android and iOS, then certification). At the portal the artist picks the accessibility tags
 (the Entertainment Software Association's Accessible Games Initiative; a wrong tag breaks the rules) and confirms the

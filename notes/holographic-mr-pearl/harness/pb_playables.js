@@ -13,16 +13,17 @@ const port = +(process.argv[2] || 8817), bad = [];
 // YouTube's Content Security Policy, as the SDK Test Suite guide gives it (developers.google.com, read 28 Oct 2026)
 const CSP = "default-src 'none'; script-src 'report-sample' 'self' 'unsafe-eval' 'unsafe-inline' blob: https://www.youtube.com/game_api/v0 https://www.youtube.com/game_api/v0/ https://www.youtube.com/game_api/v1 https://www.youtube.com/game_api/v1/; object-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com; connect-src 'self' blob: data:; sandbox allow-pointer-lock allow-same-origin allow-scripts; base-uri 'self'; manifest-src 'self'; worker-src 'self' blob:";
 const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (!ok) { bad.push(what); } };
-const MOCK = (saved) => `window.ytgame = (function () {
-  var calls = [], pause = [], resume = [], seen = {}, store = ${JSON.stringify(saved || "")};
+const MOCK = (saved, o) => `window.ytgame = (function () {
+  var calls = [], pause = [], resume = [], seen = {}, store = ${JSON.stringify(saved || "")}, fails = ${(o && o.loadFail) || 0}, delay = ${(o && o.loadDelay) || 0};
   var loading = function () { var e = document.getElementById("loading"); return !!e && !e.hidden && getComputedStyle(e).display !== "none" && /loading/i.test(e.textContent); };
   window.__yt = { calls: calls, seen: seen, pause: function () { pause.forEach(function (f) { f(); }); }, resume: function () { resume.forEach(function (f) { f(); }); }, store: function () { return store; } };
   var rec = function (n, v) { calls.push(n); return v; };
   return { IN_PLAYABLES_ENV: true, SDK_VERSION: "mock",
-    game: { firstFrameReady: function () { seen.first = loading(); rec("firstFrameReady"); }, gameReady: function () { seen.ready = loading(); rec("gameReady"); },
-            saveData: function (s) { rec("saveData"); store = s; return Promise.resolve(); }, loadData: function () { rec("loadData"); return Promise.resolve(store); } },
+    game: { firstFrameReady: function () { seen.first = loading(); rec("firstFrameReady"); }, gameReady: function () { seen.ready = loading(); seen.readyAt = performance.now(); rec("gameReady"); },
+            saveData: function (s) { rec("saveData"); store = s; return Promise.resolve(); },
+            loadData: function () { rec("loadData"); if (fails > 0) { fails -= 1; return Promise.reject(new Error("API_UNAVAILABLE")); } return new Promise(function (r) { setTimeout(function () { r(store); }, delay); }); } },
     system: { onPause: function (f) { rec("onPause"); pause.push(f); return function () {}; }, onResume: function (f) { rec("onResume"); resume.push(f); return function () {}; },
-              isAudioEnabled: function () { return rec("isAudioEnabled", true); }, onAudioEnabledChange: function () { return function () {}; }, getLanguage: function () { rec("getLanguage"); return Promise.resolve("en"); } },
+              isAudioEnabled: function () { return rec("isAudioEnabled", true); }, onAudioEnabledChange: function () { rec("onAudioEnabledChange"); return function () {}; }, getLanguage: function () { rec("getLanguage"); return Promise.resolve("en"); } },
     engagement: { sendScore: function (o) { rec("sendScore:" + JSON.stringify(o.value) + ":" + Number.isInteger(o.value)); return Promise.resolve(); } },
     health: { logError: function () { rec("logError"); }, logWarning: function () { rec("logWarning"); } } };
 })();`;
@@ -38,7 +39,9 @@ const MOCK = (saved) => `window.ytgame = (function () {
   check(fi >= 0 && gi > fi && calls.filter((c) => c === "firstFrameReady").length === 1 && calls.filter((c) => c === "gameReady").length === 1, "firstFrameReady, then gameReady, each once: " + calls.join(" "));
   check(calls.indexOf("getLanguage") >= 0 && calls.indexOf("loadData") >= 0, "the language and the save asked of the SDK");
   const seen = await p.evaluate(() => window.__yt.seen);
-  check(seen.first === true && seen.ready === false, "the loading words show at firstFrameReady and are gone by gameReady: " + JSON.stringify(seen));
+  check(seen.first === true && seen.ready === false, "the loading words show at firstFrameReady and are gone by gameReady: " + JSON.stringify({ first: seen.first, ready: seen.ready }));
+  check(seen.readyAt < 5000, "playable in under 5 s (the rule's SHOULD; software GL here, slower than a phone's): " + Math.round(seen.readyAt) + " ms");
+  check(calls.indexOf("isAudioEnabled") >= 0 && calls.indexOf("onAudioEnabledChange") >= 0, "YouTube's mute read and listened to (isAudioEnabled, onAudioEnabledChange)");
   // a level won, then the pause: the loop stops, the clock stands, the save goes to the SDK
   await p.evaluate(() => { const d = window.Pickleball.debug(); d.courts[0].won = true; d.courts[0].up = true; d.courts.best = 9; });
   const t0 = await p.evaluate(() => { window.__yt.pause(); return window.Pickleball.debug().gt(); });
@@ -74,6 +77,27 @@ const MOCK = (saved) => `window.ytgame = (function () {
   check(/complete/.test(end.say) && /complete/.test(end.where), "the end of the game is told: " + end.where + " | " + end.say.slice(0, 60));
   check(errors.length === 0, "no errors with the mock, nor at no size: " + errors.slice(0, 2).join(" | "));
   await p.close();
+  // paused and resumed while it is still loading: it waits for the courts, then plays, with no error
+  p = await ctx.newPage(); { const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
+    await p.addInitScript(MOCK("", { loadDelay: 1500 }));
+    await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
+    await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("loadData") >= 0, null, { timeout: 120000 });
+    await p.evaluate(() => { window.__yt.pause(); window.__yt.resume(); });
+    await p.waitForFunction(() => window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 }); await p.waitForTimeout(500);
+    const st = await p.evaluate(() => ({ running: window.Pickleball.debug().running(), err: window.__yt.calls.filter((c) => /logError/.test(c)).length }));
+    check(errs.length === 0 && st.err === 0 && st.running, "paused and resumed while loading: no error, and it plays once loaded " + JSON.stringify(st) + errs.slice(0, 1).join(""));
+    await p.close(); }
+  // the cloud load fails once (asked again, loaded), or for good (never saved over)
+  for (const fails of [1, 2]) {
+    p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
+    await p.addInitScript(MOCK('{"v":1,"best":7,"horse":0,"courts":[{"level":1,"won":true,"up":true}]}', { loadFail: fails }));
+    await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
+    await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 });
+    const st = await p.evaluate(() => { window.__yt.pause(); window.__yt.resume(); const d = window.Pickleball.debug(); return { best: d.courts.best, loads: window.__yt.calls.filter((c) => c === "loadData").length, saves: window.__yt.calls.filter((c) => c === "saveData").length }; });
+    if (fails === 1) { check(errs.length === 0 && st.loads === 2 && st.best === 7 && st.saves >= 1, "a failed cloud load is asked again, and then loads: " + JSON.stringify(st)); }
+    else { check(errs.length === 0 && st.loads === 2 && st.saves === 0, "a cloud load that fails twice: the game plays, and never saves over the player's save: " + JSON.stringify(st)); }
+    await p.close();
+  }
   // saves from another version, or broken: read without error
   for (const old of ['{"v":0,"courts":[null,{"level":"3","won":1,"matches":"x"}],"best":"x","horse":-5}', "not json", "[1,2]"]) {
     p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
