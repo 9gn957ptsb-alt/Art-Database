@@ -9,7 +9,7 @@ const { chromium } = require("playwright");
 const [port, label] = process.argv.slice(2);
 const url = `http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`;
 const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5);
-  for (let i = 0; i < 400 && !(d.court.m && d.court.m.meterOn); i++) { d.run(1 / 60); }
+  d.toServe();
   for (let i = 0; i < 200; i++) { const u = d.meter(); if (u != null && u >= 0.5 && u <= 0.7) { d.run(1 / 60, true); break; } d.run(1 / 60); }
   for (let i = 0; i < 400; i++) { d.run(1 / 60); const m = d.court.m; if (m && m.balls.some((b) => !b.dead && b.last === "them" && b.y > 1)) { break; } } };
 const VIEWS = [

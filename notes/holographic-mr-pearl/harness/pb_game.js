@@ -33,6 +33,7 @@ const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (
       const m = d.court.m;
       if (!m) { const k = d.courts.findIndex((c) => !c.won); if (k < 0) { break; } d.enter(k); d.run(0.3); log.courts = (log.courts || 0) + 1; continue; }
       let tx = 0.6, tz = C.L - 1.2;
+      if (m.phase === "serve" && !m.meterOn) { const sv = d.serveSpot(); tx = sv[0]; tz = sv[1]; }   // (to the serve's mark)
       const inc = m.balls.filter((b) => !b.dead && b.last === "them" && b.mark)[0];
       if (inc) { tx = inc.mark.x - 0.5; tz = inc.mark.z + 1.2; }
       const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz);

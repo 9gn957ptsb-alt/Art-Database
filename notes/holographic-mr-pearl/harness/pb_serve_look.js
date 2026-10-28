@@ -13,7 +13,7 @@ require("fs").mkdirSync(out, { recursive: true });
   const D = (f, a) => p.evaluate(f, a), shot = async (n) => { await D(() => window.Pickleball.debug().draw()); await p.screenshot({ path: `${out}/${n}.png` }); };
   await D(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5); });
   await shot("01_third_person");
-  await D(() => { const d = window.Pickleball.debug(); for (let i = 0; i < 400 && !d.court.m.meterOn; i++) { d.run(1 / 60); } d.run(0.35); });
+  await D(() => { const d = window.Pickleball.debug(); d.toServe(); d.run(0.35); });
   await shot("02_serve_scope_bar");
   const info = await D(() => { const d = window.Pickleball.debug(), m = d.court.m;
     const fireAt = (lo, hi) => { for (let i = 0; i < 200; i++) { const u = d.meter(); if (u != null && u >= lo && u <= hi) { d.run(1 / 60, true); return u; } d.run(1 / 60); } return null; };
