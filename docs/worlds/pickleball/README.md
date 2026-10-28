@@ -133,17 +133,25 @@ characters and marks in ASCII"). Three prototypes (form, light, type) were made 
   defined as they are now"). `pb_define.js` measures it: each athlete's exact footprint (the frame drawn plainly with
   and without him), the frame he is seen in blurred by a cell (a glance), and D, his light against a ring of ground
   two cells round him, (inside − ring) / (ring + 0.05); and S, how closely that light keeps his silhouette. The
-  athletes' fill is dense and bright, never faint; their outline brighter still; their colour lifted toward white; Mr
-  Plan's fill his ◇ ◆ with the keyboard's densest `# % @` (his thin marks left most of each cell dark); the courts'
-  surfaces quieter; and a cell of night is kept clear round every figure, as type is knocked out of a busy picture.
+  athletes are set in a heavy cut of the same characters (each glyph stroked round, in the atlas's third channel), at
+  full brightness, glowing, their colour lifted toward white only as far as it must be to be bright (the guitar keeps
+  its orange); Mr Plan's fill his ◇ ◆ with the keyboard's densest `# % @` (his thin marks left most of each cell
+  dark); the courts' surfaces quieter; two cells of night round every figure (the first dark, the second dimmed), as
+  type is knocked out of a busy picture; and the lens narrowed from 70 to 58 degrees, so the far court and Mr Plan are a
+  quarter larger while Mr Pearl keeps his quarter of the screen (the camera further back). The artist after the first
+  round: "Define it five times as much, it's still a bit too hard to see. I like the direction".
 
-  | D (S) | the look before | the first polished look | now |
-  |---|---|---|---|
-  | Mr Pearl, phone rally | 1.37 (0.81) | 0.75 (0.65) | 1.96 (0.88) |
-  | Mr Pearl, phone walk | 2.05 (0.86) | 0.76 (0.64) | 2.30 (0.89) |
-  | Mr Plan, phone rally | −0.01 (0.12) | 0.74 (0.45) | 2.37 (0.65) |
-  | Mr Plan, phone walk | −0.02 (0.10) | 0.75 (0.54) | 1.92 (0.59) |
-  | Mr Plan, desk, close | 0.17 (0.39) | 0.77 (0.69) | 3.70 (0.85) |
+  | D (S) | the look before | the first polished look | three times | now |
+  |---|---|---|---|---|
+  | Mr Pearl, phone rally | 1.37 (0.81) | 0.75 (0.65) | 1.96 (0.88) | 3.33 (0.89) |
+  | Mr Pearl, phone walk | 2.05 (0.86) | 0.76 (0.64) | 2.30 (0.89) | 3.83 (0.89) |
+  | Mr Plan, phone rally | −0.01 (0.12) | 0.74 (0.45) | 2.37 (0.65) | 3.92 (0.72) |
+  | Mr Plan, phone walk | −0.02 (0.10) | 0.75 (0.54) | 1.92 (0.59) | 3.23 (0.67) |
+  | Mr Plan, desk, close | 0.17 (0.39) | 0.77 (0.69) | 3.70 (0.85) | 4.97 (0.91) |
+
+  D has a ceiling near 5: a figure at full white on black still lights the ground round it at a glance with its own
+  glow (with the courts' surfaces switched off the ring hardly darkens), so past the third round the gain is in size
+  (Mr Plan's figure 37% more of the screen) and in the heavy type, not only in D.
 
 Mr Pearl's head is the one thing seen as it is, the perfect sphere (his rule 5); every word and control is a page
 element over the characters.
