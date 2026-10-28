@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Mr Pearl's Pickleball</title>
+<title>Holographic Mr Pearl: Pickleball</title>
+<meta name="description" content="Holographic Mr Pearl: Pickleball. A pickleball game drawn entirely in characters: Mr Pearl, his guitar for a racket, against his nemesis Mr Plan across ten floodlit courts.">
 <link rel="stylesheet" href="pickleball.css">
 <script src="../rocket/pearl.js"></script>
 <script src="pickleball.js"></script>
@@ -12,7 +13,9 @@
 <canvas id="view" aria-label="The courts: ten pickleball courts side by side at night, Mr Pearl in front of court one. Walk onto a court to play its level against Mr Plan."></canvas>
 <canvas id="hud" aria-hidden="true"></canvas>
 <div class="top"><div id="where" role="status">The courts</div></div>
+<div id="loading" role="status">Loading the courts…</div>
 <div id="say" role="log" aria-live="polite"></div>
+<button id="super" type="button" aria-pressed="false" aria-label="Super return: once a game, wins the point">Super</button>
 <button id="scope" type="button" aria-pressed="false">Scope</button>
 <button id="serve" type="button">Serve</button>
 </body>

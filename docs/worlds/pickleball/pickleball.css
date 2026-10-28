@@ -11,6 +11,8 @@ body { color: var(--fg); font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo,
 .top { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left));
        right: calc(12px + env(safe-area-inset-right)); pointer-events: none; }
 #where { letter-spacing: 0.12em; text-transform: uppercase; text-shadow: 0 0 3px var(--shade), 0 0 6px var(--shade); }
+#loading { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); letter-spacing: 0.12em; text-transform: uppercase; }
+#loading[hidden] { display: none; }
 #say { position: fixed; left: calc(12px + env(safe-area-inset-left)); top: calc(118px + env(safe-area-inset-top));
        width: min(520px, calc(100% - 24px)); pointer-events: none;
        text-shadow: 0 0 3px var(--shade), 0 0 8px var(--shade); transition: opacity 0.4s; }
@@ -21,4 +23,9 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
          width: 76px; height: 76px; border-radius: 50%; }
 #scope { right: calc(16px + env(safe-area-inset-right)); bottom: calc(106px + env(safe-area-inset-bottom)); padding: 10px 16px; }
 #scope[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+#super { right: calc(16px + env(safe-area-inset-right)); bottom: calc(160px + env(safe-area-inset-bottom)); padding: 10px 16px; border-color: var(--gold); color: var(--gold); }
+#super[aria-pressed="true"] { background: var(--gold); color: var(--bg); }
+#super:disabled { border-color: var(--edge); color: var(--fg); opacity: 0.35; }
+body:not([data-phase]) #super, body[data-phase="walk"] #super { display: none; }
+#super { display: none; }   /* (until the super return's animation is in: the button arms nothing yet) */
 body[data-phase="serve"] #serve { border-color: var(--gold); color: var(--gold); }

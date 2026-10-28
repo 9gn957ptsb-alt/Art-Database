@@ -19,7 +19,9 @@ if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)) { fail("an inline <script> in in
 if (/<[^>]+\son[a-z]+\s*=/i.test(html)) { fail("an inline event handler in index.html"); }
 const files = {
   "pearl.js": fs.readFileSync(path.join(ROCKET, "pearl.js"), "utf8"),
-  "pearl-body.js": "window.PEARL_BODY = " + JSON.stringify(JSON.parse(fs.readFileSync(path.join(ROCKET, "pearl-body.json"), "utf8"))) + ";\n",
+  // (his body's notes, "note" and "relation", are for the people who read the form study, not for the game: left out of
+  // the bundle, with the makers and models they name)
+  "pearl-body.js": "window.PEARL_BODY = " + JSON.stringify(JSON.parse(fs.readFileSync(path.join(ROCKET, "pearl-body.json"), "utf8")), (k, v) => (k === "note" || k === "relation" ? undefined : v)) + ";\n",
   "pickleball.js": fs.readFileSync(path.join(SRC, "pickleball.js"), "utf8"),
   "pickleball.css": fs.readFileSync(path.join(SRC, "pickleball.css"), "utf8"),
 };
