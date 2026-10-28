@@ -847,9 +847,11 @@
      glow best on dark), his body's cells (no bars: the unit is the character now), the pearl. */
   var gl = null, canvas = null, hud = null, solid = null, SU = {}, skyP = null, KU = {}, headP = null, HU = {};
   var cube = null, parts = {}, partsFar = {}, ballMesh = null, headBall = null, palMe = null, palPlan = null;
-  // (the lens: 58 degrees top to bottom, narrower than the 70 it was, so the far court and Mr Plan are a quarter larger on
-  // the screen while his own figure keeps its quarter of it, the camera standing further back: definition by size)
-  var FOV = 58, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
+  // (the lens: 58 degrees top to bottom, narrower than the 70 it was, so the far court and Mr Plan were a quarter larger
+  // on the screen while his own figure kept its quarter of it, the camera standing further back: definition by size;
+  // then the artist, 28 Oct 2026: "keep the athletes the same size, I want to be a bit further behind him": the camera a
+  // quarter further back again and the lens narrowed to match (BACK), so his figure keeps its size on the screen)
+  var BACK = 1.3, FOV = 2 * Math.atan(Math.tan(29 * Math.PI / 180) / BACK) * 180 / Math.PI, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
   var SKY = { zen: [0.012, 0.006, 0.04], hor: [0.05, 0.018, 0.07], gnd: [0.006, 0.01, 0.014] };   // (indigo above, violet at the horizon)
   var RIM = { me: [0.42, 0.38, 0.34], plan: [0.45, 0.95, 1.05], none: [0.08, 0.08, 0.1] }, pixA = 0.001;
   // The floodlights' pools, the one light on the ground: each court in its own light, the night between them.
@@ -1486,8 +1488,9 @@
   var view = { yaw: 0, pitch: REST, e: null, ev: [0, 0, 0] };
   // His figure a quarter of the screen's height at rest, where the rocket world has a third (the artist, 28 Oct 2026:
   // "The third person view should be a little farther out for Pickleball given the speed in which Mr. Pearl can now
-  // move"): the camera a third again as far, so a sprint stays in the picture.
-  TP.FRAC = 1 / 4;
+  // move"): the camera a third again as far, so a sprint stays in the picture. (Further back again with BACK, his
+  // height held, he read a tenth smaller, the near of him less near: so a little more height, his footprint kept.)
+  TP.FRAC = 0.265;
   function measure() {
     var top = body.top, M = top / 2, span = function (D) {
       var a = REST - AIM, cx = -D * Math.cos(a), cy = M - D * Math.sin(a);
