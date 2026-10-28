@@ -411,17 +411,19 @@
      its pixels (alpha 0.5) and passes through as it is. */
   var ASC = { FLOOR: [8, 12], CEIL: [16, 24], S0: 6, D0: 3.2, expo: 1.15, gam: 0.85, lit: 1.25, glow: 0.55, edge: 0.42, edgeMin: 0.07,
               FONT: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Roboto Mono', 'Noto Sans Symbols 2', monospace",
-              KEYS: " .:-=+*#%@", BODY: " .:+*#%", PLAN: " ◇◆#%@", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
+              KEYS: " .:-=+*#%@", BODY: " .:+*#%@", PLAN: " ◇◆#%@", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
   // the materials, written into the picture's alpha as 1 - id / 255 (his head's 0.5 stays apart from them)
   var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16 };   // (a hat its own: from behind, hat and back are two shapes)
   // Definition (the artist, 28 Oct 2026: "It's still really hard to see anything, objects need to be three times as
   // defined as they are now"; notes/holographic-mr-pearl/harness/pb_define.js measures it, an athlete's light against
   // the ground round him at a glance): the athletes' fill dense and bright, never faint (fill: the least of its
   // alphabet; fillV: its value, dim to bright), their outline brighter still (edgeV), quieter a little when near
-  // (near: their texture was a wall), their colour lifted toward white (white: Mr Plan's deep blues carried no light),
+  // (near: their texture was a wall), their colour lifted toward white only as far as it must be to be bright (lum:
+  // Mr Plan's deep blues carried no light; the guitar's orange keeps its hue, so his parts read apart),
   // the courts' own surfaces quieter (surfV), and a cell of night kept clear round every figure (the moat), as type is
-  // knocked out of a busy picture.
-  var DEF = { fill: 0.5, fillPlan: 0.6, fillV: [0.85, 1.0], edgeV: 0.95, near: 0.1, surfV: 0.4, white: 0.5, moat: true };
+  // knocked out of a busy picture. The athletes are set in a heavy cut of the same characters (heavy: the stroke added
+  // round each glyph, as a share of the cell's width; the atlas's third channel), the courts in the regular.
+  var DEF = { fill: 0.7, fillPlan: 0.75, fillV: [1.0, 1.0], edgeV: 1.0, near: 0.0, surfV: 0.3, lum: 0.72, moat: true, moat2: 0.25, heavy: 0.14 };
   var asc = null;
   function ascFont(px) { return "700 " + px + "px " + ASC.FONT; }
   function ascInit() {
@@ -430,7 +432,7 @@
     var bar = p.measureText("|"), adv = p.measureText("M").width / 100;
     var up = (bar.actualBoundingBoxAscent || 76) / 100, dn = (bar.actualBoundingBoxDescent || 24) / 100;
     var chars = (ASC.KEYS + ASC.EDGES + ASC.MARKS).split("").filter(function (c, i, a) { return a.indexOf(c) === i; });
-    if (chars.length > 63) { throw new Error("pickleball: a cell holds its glyph in six bits"); }
+    if (chars.length > 31) { throw new Error("pickleball: a cell holds its glyph in five bits (the sixth: heavy)"); }
     var vs = "#version 300 es\nvoid main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }";
     asc = { adv: adv, up: up, dn: dn, chars: chars, N: chars.length, glyphs: chars.join(""), vs: vs, ok: true, w: 0, h: 0, grid: "", fb: null, cfb: null };
   }
@@ -469,6 +471,8 @@
         c.globalCompositeOperation = "lighter";
         c.fillStyle = "#f00"; c.fillText(ch, x0 + r.W / 2, by);
         c.shadowColor = "#0f0"; c.shadowBlur = max(1.5, r.W * 0.22); c.fillStyle = "#0b0"; c.fillText(ch, x0 + r.W / 2, by);
+        c.shadowBlur = 0; c.shadowColor = "rgba(0,0,0,0)"; c.fillStyle = "#00f"; c.strokeStyle = "#00f"; c.lineJoin = "round";
+        c.lineWidth = max(1, r.W * DEF.heavy); c.fillText(ch, x0 + r.W / 2, by); c.strokeText(ch, x0 + r.W / 2, by);   // (the heavy cut)
         c.restore();
       });
     });
@@ -602,13 +606,14 @@
       "  int g = 0, f = FIX[min(mat, 16)]; float V = 0.0; vec3 c = hue(col[hiO]);",
       // the moat: a cell that is not a figure, beside one standing in front of it (its four neighbours' middles), is
       // left dark, so every athlete stands in a cell of night
-      "  bool moat = false;",
+      "  bool moat = false, moat2 = false;",
       "  if (" + (DEF.moat ? "true" : "false") + " && !fig && mat != 9 && uLev >= uFloor) {",
-      "    for (int q = 0; q < 4; q++) {",
-      "      vec2 pd = org + 0.5 * cs + vec2(q == 0 ? -1.0 : q == 1 ? 1.0 : 0.0, q == 2 ? -1.0 : q == 3 ? 1.0 : 0.0) * cs;",
+      "    for (int q = 0; q < 8; q++) {",
+      "      int qd = q & 3; float qr = q < 4 ? 1.0 : 2.0;",
+      "      vec2 pd = org + 0.5 * cs + vec2(qd == 0 ? -1.0 : qd == 1 ? 1.0 : 0.0, qd == 2 ? -1.0 : qd == 3 ? 1.0 : 0.0) * cs * qr;",
       "      if (pd.x < 0.0 || pd.y < 0.0 || pd.x >= uRes.x || pd.y >= uRes.y) { continue; }",
       "      ivec2 pu = ivec2(int(pd.x), int(uRes.y - pd.y)); int k = int(floor((1.0 - texelFetch(uScene, pu, 0).a) * 255.0 + 0.5));",
-      "      if (k >= 12 && k <= 16 && k != 14 && lin(texelFetch(uDepth, pu, 0).r) < dn - 0.2) { moat = true; }",
+      "      if (k >= 12 && k <= 16 && k != 14 && lin(texelFetch(uDepth, pu, 0).r) < dn - 0.2) { if (q < 4) { moat = true; } else { moat2 = true; } }",
       "    }",
       "  }",
       "  bool surf = mat <= 5 || mat == 14;",
@@ -720,10 +725,10 @@
       "    g = ramp(who, mix(who == 13 ? " + DEF.fillPlan.toFixed(3) + " : " + DEF.fill.toFixed(3) + ", 1.0, smoothstep(win.x, win.y, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big), 1);",
       "    V = mix(" + DEF.fillV[0].toFixed(3) + ", " + DEF.fillV[1].toFixed(3) + ", smoothstep(0.0, 0.8, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big);",
       "  }",
-      "  if (fig) { c = mix(c, vec3(1.0), " + DEF.white.toFixed(3) + "); }",
-      "  if (moat) { g = 0; V = 0.0; }",
-      "  int bloom = (mat == 8 || V > 0.93) ? 64 : 0;",
-      "  o = vec4(c * V, float(g + bloom + act) / 255.0);",
+      "  if (fig) { float lc = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(c, vec3(1.0), max(0.0, (" + DEF.lum.toFixed(3) + " - lc) / max(1.0 - lc, 1e-3))); }",
+      "  if (moat) { g = 0; V = 0.0; } else if (moat2) { V *= " + DEF.moat2.toFixed(3) + "; }",
+      "  int bloom = (mat == 8 || V > 0.93 || (fig && g > 0)) ? 64 : 0, heavy = fig && g > 0 ? 32 : 0;",
+      "  o = vec4(c * V, float(g + heavy + bloom + act) / 255.0);",
       "}"].join("\n"));
     A.setP = compile(A.vs, [head,
       "uniform sampler2D uScene; uniform sampler2D uCells; uniform sampler2D uAtlas;",
@@ -735,11 +740,11 @@
       "  ivec2 pd = ivec2(int(gl_FragCoord.x), int(uRes.y - gl_FragCoord.y));",
       "  int k = uTop; ivec2 cs = uCell << k, ci = pd / cs; vec4 t = texelFetch(uCells, ci, k);",
       "  while (k > 0 && t.a < 0.5) { k--; cs = uCell << k; ci = pd / cs; t = texelFetch(uCells, ci, k); }",   // the largest cell that is one
-      "  int a = int(t.a * 255.0 + 0.5), g = a & 63;",
+      "  int a = int(t.a * 255.0 + 0.5), g = a & 31;",
       "  if (g == 0) { o = vec4(0.0, 0.0, 0.0, 1.0); return; }",
       "  ivec2 at = ivec2((g % uAtl[k].y) * cs.x, uAtl[k].x + (g / uAtl[k].y) * cs.y) + pd - ci * cs;",
-      "  vec2 ink = texelFetch(uAtlas, at, 0).rg;",
-      "  o = vec4(t.rgb * (ink.r * uLit + ((a & 64) != 0 ? ink.g * uGlow : 0.0)), 1.0);",
+      "  vec3 ink = texelFetch(uAtlas, at, 0).rgb;",
+      "  o = vec4(t.rgb * (((a & 32) != 0 ? ink.b : ink.r) * uLit + ((a & 64) != 0 ? ink.g * uGlow : 0.0)), 1.0);",
       "}"].join("\n"));
     A.CU = {}; A.SU = {};
     ["uScene", "uDepth", "uGV", "uRes", "uCell", "uLev", "uTop", "uFloor", "uBalls", "uBall", "uNear", "uFar", "uRule", "uExpo", "uGam", "uEdge", "uEdgeMin", "uFocal", "uAsp", "uEye", "uF", "uR", "uU", "uK"].forEach(function (k) { A.CU[k] = gl.getUniformLocation(A.cellP, k); });
@@ -834,7 +839,9 @@
      glow best on dark), his body's cells (no bars: the unit is the character now), the pearl. */
   var gl = null, canvas = null, hud = null, solid = null, SU = {}, skyP = null, KU = {}, headP = null, HU = {};
   var cube = null, parts = {}, partsFar = {}, ballMesh = null, headBall = null, palMe = null, palPlan = null;
-  var FOV = 70, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
+  // (the lens: 58 degrees top to bottom, narrower than the 70 it was, so the far court and Mr Plan are a quarter larger on
+  // the screen while his own figure keeps its quarter of it, the camera standing further back: definition by size)
+  var FOV = 58, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
   var SKY = { zen: [0.004, 0.006, 0.02], hor: [0.02, 0.026, 0.06], gnd: [0.006, 0.008, 0.012] };
   var RIM = { me: [0.42, 0.38, 0.34], plan: [0.45, 0.95, 1.05], none: [0.08, 0.08, 0.1] }, pixA = 0.001;
   // The floodlights' pools, the one light on the ground: each court in its own light, the night between them.
