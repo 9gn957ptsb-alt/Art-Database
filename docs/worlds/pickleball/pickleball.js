@@ -7,11 +7,14 @@
    in. The impossible triangle should not be the base unit for Holographic Mr Pearl anymore, it should be what I have
    prescribed for the ASCII aesthetic".
 
-   The courts are the rocket world's (docs/worlds/rocket/rocket.js, "the courts", and its README): ten pickleball
-   courts side by side, a level each, first to three; he serves every point, underhand and across, past the kitchen,
-   the pearl his ball and his guitar the racket; the two-bounce rule; no volley from the kitchen; a level won plays on by
-   itself and gives its tool to the Trojan horse; a match lost there stops it until it is played again, a level up.
-   What is new: the courts stand alone (a Playable is one bundle; nothing of the rocket world comes in but his body,
+   The courts are the rocket world's (docs/worlds/rocket/rocket.js, "the courts", and its README), first to three; he
+   serves every point, underhand and across, past the kitchen, the pearl his ball and his guitar the racket; the
+   two-bounce rule; no volley from the kitchen. They are endless now (the artist, 28 Oct 2026: "get rid of the Trojan
+   horse ... Instead, we are simply going to have an ad infinitum pickleball game. Initially the game starts with just
+   1 court. Once you beat that first court, the second court adjacent to it then appears ... Previous courts still
+   automatically play and you win each game as you advance. The goal is to see how many courts you can win. each court
+   gets progressively harder. By the time you get to court 10, the game should be very hard"). What is new: the courts
+   stand alone (a Playable is one bundle; nothing of the rocket world comes in but his body,
    pearl.js); his nemesis is Mr Plan; the two are athletes (below, "the athletes"); and everything reaches the screen
    as characters (below, "the ASCII pass"), the unit the artist prescribed for the ASCII aesthetic in place of the
    impossible triangle: the keyboard's characters and the site's marks, one set sorted by ink. His head alone stays
@@ -55,7 +58,7 @@
      the site's own page never loads it. Inside YouTube (ytgame.IN_PLAYABLES_ENV, the page in a frame): the first frame
      (under the loading words) and the moment it can be played (the words gone) are told; the game halts all it does,
      the hands' input too, at onPause and goes on at onResume (never the Page Visibility API: the requirements forbid it); it saves through the SDK (under 3 MiB; never localStorage
-     there); the longest rally is the score, an integer; the language is the SDK's (never the browser's). Outside, each
+     there); the number of courts won is the score, an integer; the language is the SDK's (never the browser's). Outside, each
      call is nothing and the save is the browser's. */
   var YT = (function () {
     var y = window.ytgame, inYT = !!(y && y.IN_PLAYABLES_ENV), first = false, ready = false, sent = -1, KEY = "pickleball-save-v1";
@@ -489,7 +492,7 @@
 
   /* ---- the scene ---------------------------------------------------------------------------------------------------
      Plain solids, plainly lit, for the pass to write as characters: the courts at night under their floodlights (glyphs
-     glow best on dark), his body's cells (no bars: the unit is the character now), the pearl, the horse. */
+     glow best on dark), his body's cells (no bars: the unit is the character now), the pearl. */
   var gl = null, canvas = null, hud = null, solid = null, SU = {}, skyP = null, KU = {}, headP = null, HU = {};
   var cube = null, parts = {}, partsFar = {}, ballMesh = null, headBall = null, palMe = null, palPlan = null;
   var FOV = 70, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
@@ -625,25 +628,23 @@
      pickleball's court, 20 by 44 feet, the kitchen 7 feet either side of the net, the net 34 inches at its middle and
      36 at the posts; a ball's fall, its bounce and the court's grip; first to three. */
   var COURT = {
-    N: 10, GAP: 12,                        // ten side by side, 12 m apart: a pickleball court (6.10 m) and its run-off
+    GAP: 12,                               // side by side, 12 m apart: a pickleball court (6.10 m) and its run-off
     L: 6.705, HW: 3.05, K: 2.134,          // the half length (44 ft), the half width (20 ft), the kitchen from the net (7 ft)
     NET: 0.864, POST: 0.914, PO: 0.305,    // the net at its middle (34 in) and at the posts (36 in), the posts 12 in out
-    G: 9.81, E: 0.64, ROLL: 0.8, WIN: 3,   // a ball's own fall, its bounce (78 in dropped to 30-34 in), the court's grip; points to a level
-    TOOLS: ["hammers", "horses", "ropes", "pulleys", "chisels", "saws", "ladders", "pegs", "carts", "adzes"],
-    WORK: 4800                             // the horse, in court-seconds: all ten playing, eight minutes
+    G: 9.81, E: 0.64, ROLL: 0.8, WIN: 3    // a ball's own fall, its bounce (78 in dropped to 30-34 in), the court's grip; points to a court
   };
-  var body = null, me = null, plans = [], stands = [], courts = null, horse = { work: 0, done: false }, court = { m: null, on: -1, told: {} };
+  var body = null, me = null, plans = [], stands = [], courts = null, court = { m: null, on: -1, told: {} };
   var gt = 0, rngS = 7, dust = [];
   function rng() { rngS = (rngS * 1664525 + 1013904223) >>> 0; return rngS / 4294967296; }
   function courtAt(k) { return [k * COURT.GAP, 0, 0]; }
   var STR = {
-    courts: "The courts", playing: " of 10 playing", horseW: "the horse",
-    welcome: "Holographic Mr Pearl: Pickleball. The courts at night. Walk onto court one to play level one against Mr Plan: first to three.",
+    courts: "The courts", wonN: function (n) { return n + (n === 1 ? " court won" : " courts won"); }, open: function (k) { return "court " + (k + 1) + " open"; },
+    welcome: "Holographic Mr Pearl: Pickleball. One court at night, Mr Plan on it. Win it and the next appears beside it, harder: how many courts can you win? Walk onto court one.",
     match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Your serve."; },
     meterHint: "tap to stop it · further is harder · ◆ a chance at an ace",
     head: function (m) {
       var lv = m.balls.filter(function (q) { return !q.dead; }), r = lv.reduce(function (a, q) { return max(a, q.rally); }, 0);
-      return "Court " + (m.k + 1) + " · level " + m.level + " · you " + m.you + " – " + m.them + " Mr Plan" + (lv.length > 1 ? " · " + lv.length + " pearls" : "") + " · rally " + r + " · longest " + courts.best;
+      return "Court " + (m.k + 1) + " · level " + m.level + " · you " + m.you + " – " + m.them + " Mr Plan" + (lv.length > 1 ? " · " + lv.length + " pearls" : "") + " · rally " + r + " · " + STR.wonN(wonCount());
     },
     long: "The serve went long.", kitchenVolley: "A volley from the kitchen: a fault.", kitchenVolleyPlan: "Mr Plan volleys from the kitchen: a fault.", ace: "An ace: Mr Plan never got to it.", aceZone: "The ace zone: hard into the deep corner.",
     superArmed: "Super return ready: the next pearl Mr Plan sends you is yours. Super again keeps it for later.", superKept: "Super return kept for later.",
@@ -652,71 +653,68 @@
     twice: "It bounced twice: you did not reach it.", twicePlan: "Twice on its side: Mr Plan did not reach it.",
     rally: function (y, t, r) { return y + " – " + t + ", a rally of " + r + "."; },
     planTakes: function (t, y) { return "Mr Plan takes it, " + t + " – " + y + ". Again from love: serve."; },
-    won: function (l, y, t, k) { return "Level " + l + " won, " + y + " – " + t + ". Court " + (k + 1) + " plays on by itself: its " + COURT.TOOLS[k] + " go to the Trojan horse." + (k + 1 < COURT.N ? " Court " + (k + 2) + " is open." : ""); },
-    lost: function (k, l) { return "Court " + (k + 1) + " lost a match: no more " + COURT.TOOLS[k] + " for the horse. Play it again, at level " + l + "."; },
-    opens: function (k) { return "Court " + (k + 1) + " opens when court " + k + " is won."; },
-    standin: function (k, l, y, t) { return "Your stand-in is playing court " + (k + 1) + " at level " + l + ": " + y + " – " + t + "."; },
-    horseDone: "The Trojan horse stands, every part of it in place.",
-    allWon: "All ten courts won. They finish the Trojan horse by themselves: when it stands, the game is complete.",
-    complete: "The game is complete: all ten courts won and the Trojan horse stands. There are no more levels; the courts play on, and a court that loses a match can be won again.",
-    completeHead: "all ten won · the horse stands · complete"
+    won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder."; },
+    standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; }
   };
   var sayT = 0;
   function say(t, keep) { var e = $("say"); if (e.textContent !== t) { e.textContent = t; } e.style.opacity = "1"; sayT = gt + (keep ? 6 : 3.5); }
-  // (a save from any version, or none: each field read as a count, or its start)
+  // The courts: every one won and the one open, the newest, beside the last won; court k is level k + 1. A save from any
+  // version, or none, is read field by field as counts, or as a fresh start: the first version's ten courts as the run
+  // of them won from the first (its horse and its levels go: the courts are endless now, and each is its own level).
   function count(x, d) { x = +x; return isFinite(x) && x >= 0 ? floor(x) : d; }
   function courtsInit(saved) {
-    courts = [];
     if (!saved || typeof saved !== "object") { saved = {}; }
-    for (var k = 0; k < COURT.N; k += 1) {
-      var s = Array.isArray(saved.courts) && saved.courts[k] || {};
-      courts.push({ k: k, level: max(1, count(s.level, k + 1)), won: s.won === true, up: s.up === true, you: 0, them: 0, next: 4 + k, t0: 0, matches: count(s.matches, 0), lost: count(s.lost, 0), i: -1 });
-      var cc = courtAt(k);
-      plans.push(athlete(palPlan, cc[0], cc[2] - COURT.L - 0.6, PI, false));
-      stands.push(athlete(palMe, cc[0], cc[2] + COURT.L - 0.5, 0, true));
-    }
-    courts.best = count(saved.best, 0);
-    horse.work = min(COURT.WORK, count(saved.horse, 0)); horse.done = horse.work >= COURT.WORK;
+    var won = count(saved.won, -1);
+    if (won < 0) { won = 0; if (Array.isArray(saved.courts)) { while (saved.courts[won] && saved.courts[won].won === true) { won += 1; } } }
+    courts = [];
+    for (var k = 0; k <= min(won, 999); k += 1) { courtAdd(); courts[k].won = courts[k].up = k < won; }
+    courts.best = count(saved.rally != null ? saved.rally : saved.best, 0);   // (the longest rally: the first version kept it as "best")
   }
-  function stateOf() { return { v: 1, best: courts.best, horse: horse.work, courts: courts.map(function (c) { return { level: c.level, won: c.won, up: c.up, matches: c.matches, lost: c.lost }; }) }; }
+  function courtAdd() {
+    var k = courts.length, cc = courtAt(k);
+    courts.push({ k: k, level: k + 1, won: false, up: false, you: 0, them: 0, next: gt + 4 + k % 4, t0: gt, i: -1 });
+    plans.push(athlete(palPlan, cc[0], cc[2] - COURT.L - 0.6, PI, false));
+    stands.push(athlete(palMe, cc[0], cc[2] + COURT.L - 0.5, 0, true));
+  }
+  function wonCount() { return courts.length - 1; }   // (every court but the open one; the score)
+  function stateOf() { return { v: 2, won: wonCount(), rally: courts.best }; }
   function save() { if (courts) { YT.save(stateOf()); } }
-  // The courts play on wherever he is: a point every four to eight seconds on each court that is up, the stand-in
-  // taking it at 0.93 less a twentieth a level; the horse built by the courts up.
+  // The courts won play on wherever he is, and keep winning (the artist: "Previous courts still automatically play and
+  // you win each game as you advance"): a point every four to eight seconds, Mr Plan taking some, never the third.
   function courtsSim(dt) {
-    var up = 0;
     courts.forEach(function (c) {
-      if (!c.up) { return; }
-      up += 1;
-      if (gt < c.next) { return; }
+      if (!c.up || gt < c.next) { return; }
       c.next = gt + 4 + 4 * rng();
-      if (rng() < clampV(0.93 - 0.05 * c.level, 0.3, 0.95)) { c.you += 1; } else { c.them += 1; }
-      if (c.you >= COURT.WIN) { c.matches += 1; c.you = c.them = 0; }
-      else if (c.them >= COURT.WIN) { c.up = false; c.level += 1; c.lost += 1; c.you = c.them = 0; say(STR.lost(c.k, c.level)); save(); }
+      if (c.them < COURT.WIN - 1 && rng() < 0.3) { c.them += 1; } else { c.you += 1; }
+      if (c.you >= COURT.WIN) { c.you = c.them = 0; }
     });
-    if (!horse.done) {
-      horse.work = min(COURT.WORK, horse.work + up * dt);
-      if (horse.work >= COURT.WORK) { horse.done = true; say(complete() ? STR.complete : STR.horseDone, true); save(); courtWhere(); }
-    }
-    if (up && floor(gt / 15) !== floor((gt - dt) / 15)) { save(); }
-    if (floor(gt) !== floor(gt - dt)) { courtWhere(); }   // (the head's counts, the horse's share and the rally, once a second)
+    if (floor(gt) !== floor(gt - dt)) { courtWhere(); }   // (the head's counts and the rally, once a second)
   }
-  // The end of the game (the requirements: "communicate that there is no more content"): every court won and the horse up.
-  function complete() { return horse.done && courts.every(function (c) { return c.won; }); }
+  // (no end to tell: the courts go on, each harder; the requirement to say "there is no more" has nothing to say)
   function courtWhere() {
     var m = court.m, t = STR.courts;
     if (m) { t = STR.head(m); }
-    else if (complete()) { t += " · " + STR.completeHead; }
-    else { t += " · " + courts.filter(function (c) { return c.up; }).length + STR.playing + " · " + STR.horseW + " " + round(100 * horse.work / COURT.WORK) + "%"; }
+    else { t += " · " + STR.wonN(wonCount()) + " · " + STR.open(courts.length - 1); }
     if ($("where").textContent !== t) { $("where").textContent = t; }
     var ph = m ? m.phase : "walk"; if (document.body.dataset.phase !== ph) { document.body.dataset.phase = ph; }
   }
-  /* -- a match: Mr Plan's skill by level. His body is superhuman at every level ("more athletically than any athlete
+  /* -- a match: Mr Plan's skill by court. His body is superhuman on every court ("more athletically than any athlete
      ever"); what grows is how soon he reads the pearl, how rarely he misses or fails a dive, and how cruelly he places
-     it: deeper, wider, faster, and from level three dinks into the kitchen. */
+     it: deeper, wider, faster, dinks into the kitchen, lobs; and the serve's bar quickens and its ace pays less often.
+     One curve carries all of it (the artist: "each court gets progressively harder. By the time you get to court 10,
+     the game should be very hard"): the share of the hardest, 1 - e^(-(court - 1) / HARD.K), is 0.28 at court two,
+     three quarters at five, 0.95 at ten, and nears the whole without reaching it, so every court is harder than the
+     last and none is beyond winning. Each number goes from court one's to the hardest's along it; pb_curve.js plays
+     the courts to measure what that makes of them. */
+  var HARD = { K: 3,
+    one:  { wait: 0.42, err: 0.26, T: 1.25, dive: 0.5, lunge: 0.82, flair: 0.14, lob: 0.1, wide: 0.4, deep: 3.6, dink: 0, ace: 0.8, sweep: 1.15 },
+    most: { wait: 0.125, err: 0.066, T: 0.845, dive: 0.89, lunge: 0.96, flair: 0.24, lob: 0.21, wide: 2.13, deep: 6.15, dink: 0.29, ace: 0.31, sweep: 0.71 } };
+  function hardness(level) { return 1 - Math.exp(-(max(1, level) - 1) / HARD.K); }
   function nemSkill(level) {
-    var L = min(level, 14) - 1;
-    return { wait: max(0.08, 0.42 - 0.03 * L), err: max(0.03, 0.26 - 0.022 * L), T: max(0.72, 1.25 - 0.05 * L), dive: min(0.95, 0.5 + 0.045 * L), flair: min(0.25, 0.14 + 0.012 * L), lob: min(0.22, 0.1 + 0.015 * L),
-             wide: min(2.7, 0.4 + 0.25 * L), deep: min(COURT.L - 0.35, 3.6 + 0.3 * L), dink: L >= 2 ? min(0.35, 0.05 * (L - 1)) : 0 };
+    var h = hardness(level), o = {};
+    Object.keys(HARD.one).forEach(function (k) { o[k] = HARD.one[k] + (HARD.most[k] - HARD.one[k]) * h; });
+    o.dink = HARD.most.dink * max(0, (h - 0.2) / 0.8);   // (none on court one, the first on court three)
+    return o;
   }
   function matchOn(k) {
     var c = courts[k];
@@ -798,9 +796,9 @@
      mark sweeps again: up to three pearls in a serve, each a point of its own, played at once, while the serve is open
      (until 1.3 s after the last); then the view is the third person's again. */
   var SERVE = { SOFT: 0.12, ACE: [0.72, 0.84], LONG: 0.94, MAX: 3, OPEN: 1.3, GAP: 0.34 };
-  function servePeriod(m) { return max(0.75, 1.15 - 0.04 * (m.level - 1)); }   // the sweep, there and back half of it: quicker each level
+  function servePeriod(m) { return m.sk.sweep; }   // the sweep, there and back half of it: quicker each court
   function meterAt(m) { var u = ((gt - m.meterT0) / servePeriod(m)) % 2; return u < 1 ? u : 2 - u; }
-  function aceChance(m) { return clampV(0.8 - 0.05 * (m.level - 1), 0.35, 0.8); }   // (an opportunity, not a gift: four in five at level one, less each level)
+  function aceChance(m) { return m.sk.ace; }   // (an opportunity, not a gift: four in five on court one, less each court)
   function serveTap(m) {
     if (m.served + m.tosses.length >= SERVE.MAX || (m.pc && m.phase === "rally")) { return; }
     var u = meterAt(m), last = m.tosses.length ? m.tosses[m.tosses.length - 1].tc : m.lastTc || -9, tc = max(gt + 0.3, last + SERVE.GAP);
@@ -841,7 +839,7 @@
     if (m.nc && m.nc.ball === b) { m.nc = null; }
     if (toYou) { m.you += 1; } else { m.them += 1; }
     m.pts += 1;
-    if (b.rally > courts.best) { courts.best = b.rally; save(); YT.score(courts.best); }   // (the best sent must be the save's)
+    if (b.rally > courts.best) { courts.best = b.rally; }   // (the longest rally, kept with the next save; the score is the courts)
     say(why + " " + STR.rally(m.you, m.them, b.rally));
     var over = m.you >= COURT.WIN || m.them >= COURT.WIN;
     if (over) { m.balls.forEach(function (q) { if (!q.dead) { q.dead = true; q.deadT = gt; q.mark = null; } }); m.tosses = []; m.pc = m.nc = null; }
@@ -944,7 +942,7 @@
         pl.want = { to: [c.p[0] + 0.55, c.p[2] - 0.35] };
         if (c.t <= leadOf(c, 0.28) + 0.02) {
           c.kind = strokeKind(c); c.tc = gt + c.t;
-          c.miss = b.ace || (c.reach === "dive" && rng() > sk.dive) || (c.reach === "lunge" && rng() > 0.8 + 0.02 * m.level);
+          c.miss = b.ace || (c.reach === "dive" && rng() > sk.dive) || (c.reach === "lunge" && rng() > sk.lunge);
           var plx = me.x - cc[0], wx = clampV(-Math.sign(plx || 1) * sk.wide + (rng() - 0.5) * 0.8, -COURT.HW + 0.25, COURT.HW - 0.25), wz = min(COURT.L - 0.3, sk.deep + (rng() - 0.5)), Tf = sk.T;
           var pick = rng();
           if (pick < sk.dink) { wz = COURT.K * (0.35 + 0.5 * rng()); Tf = sk.T + 0.25; c.kind = c.kind === "drive" ? "dink" : c.kind; }
@@ -972,9 +970,9 @@
     c.won = true; c.up = true; c.you = c.them = 0; c.t0 = gt; c.next = gt + 4; c.i = -1;
     court.m = null; court.told[m.k + "u"] = 1;
     stands[m.k].x = courtAt(m.k)[0] + 1.5; stands[m.k].z = COURT.L + 0.5;   // (his stand-in comes on behind him)
-    var all = courts.every(function (q) { return q.won; });
-    say(STR.won(m.level, m.you, m.them, m.k) + (all ? " " + (horse.done ? STR.complete : STR.allWon) : ""), true);
-    save(); courtWhere();
+    if (m.k === courts.length - 1) { courtAdd(); }   // (the next court appears beside it)
+    say(STR.won(m.k, m.you, m.them), true);
+    save(); YT.score(wonCount()); courtWhere();   // (saved first: the best sent must be the save's)
   }
   // Between matches: walking, and onto a court its match (if it is open and not playing by itself).
   function courtStep(dt, c) {
@@ -985,20 +983,19 @@
     if (!m) { me.faceTo = c.vel[0] || c.vel[1] ? Math.atan2(c.vel[0], -c.vel[1]) : null; }
     if (m) { matchStep(dt, c); }
     else {
-      var k = round(me.x / COURT.GAP), cc0 = courtAt(clampV(k, 0, COURT.N - 1)), lx = me.x - cc0[0], lz = me.z - cc0[2];
-      var on = k >= 0 && k < COURT.N && abs(lx) < COURT.HW && lz > 0.5 && lz < COURT.L, was = court.on;
+      var k = round(me.x / COURT.GAP), cc0 = courtAt(clampV(k, 0, courts.length - 1)), lx = me.x - cc0[0], lz = me.z - cc0[2];
+      var on = k >= 0 && k < courts.length && abs(lx) < COURT.HW && lz > 0.5 && lz < COURT.L, was = court.on;
       court.on = on ? k : -1;
       if (on) {
-        var cv = courts[k], key = k + (cv.up ? "u" : cv.won ? "d" : "o");
-        if (k > 0 && !courts[k - 1].won) { if (court.told[key] !== 1) { court.told[key] = 1; say(STR.opens(k)); } }
-        else if (cv.up) { if (court.told[key] !== 1) { court.told[key] = 1; say(STR.standin(k, cv.level, cv.you, cv.them)); } }
+        var cv = courts[k], key = k + (cv.up ? "u" : "o");
+        if (cv.up) { if (court.told[key] !== 1) { court.told[key] = 1; say(STR.standin(k, cv.you, cv.them)); } }
         else if (was !== k) { court.told = {}; matchOn(k); }
       }
     }
     // his bounds: his court while he plays it, else the row of them
     m = court.m;
     if (m) { var cm = courtAt(m.k); me.x = clampV(me.x, cm[0] - COURT.HW - 2.5, cm[0] + COURT.HW + 2.5); me.z = clampV(me.z, cm[2] + 0.25, cm[2] + COURT.L + 3.5); }
-    else { me.x = clampV(me.x, -8, (COURT.N - 1) * COURT.GAP + 8); me.z = clampV(me.z, -COURT.L - 6, COURT.L + 9); }
+    else { me.x = clampV(me.x, -8, (courts.length - 1) * COURT.GAP + 8); me.z = clampV(me.z, -COURT.L - 6, COURT.L + 9); }
     // every athlete: the courts that play on (their stand-in and Mr Plan rallying, as the rocket world drew them, each
     // shot now a stroke), the idle Mr Plans at their baselines, and the two in the match
     courts.forEach(function (cv, k) {
@@ -1021,7 +1018,7 @@
     var c = controls(dt);
     courtStep(dt, c);
     athStep(me, dt, gt);
-    for (var k = 0; k < COURT.N; k += 1) { athStep(plans[k], dt, gt); if (courts[k].up) { athStep(stands[k], dt, gt); } }
+    for (var k = 0; k < courts.length; k += 1) { athStep(plans[k], dt, gt); if (courts[k].up) { athStep(stands[k], dt, gt); } }
     // dust where a skid plants its foot, and where a dive lands
     [me].concat(plans).forEach(function (a) {
       if (a.skid > 0.5 && dust.length < 60 && rng() < 0.7) { dust.push({ x: a.x + (rng() - 0.5) * 0.3, y: 0.05, z: a.z + (rng() - 0.5) * 0.3, vx: -a.vx * 0.15 + (rng() - 0.5), vy: 0.6 + rng(), vz: -a.vz * 0.15 + (rng() - 0.5), t: gt }); }
@@ -1187,42 +1184,15 @@
   /* ---- drawing a frame ---------------------------------------------------------------------------------------------- */
   var CT = { ground: [0.1, 0.17, 0.12], out: [0.13, 0.36, 0.22], inn: [0.16, 0.3, 0.62], kitchen: [0.16, 0.46, 0.48], line: [0.96, 0.96, 0.9],
              net: [0.42, 0.44, 0.5], post: [0.62, 0.62, 0.66], lamp: [1, 0.96, 0.82], pole: [0.3, 0.3, 0.33], dust: [0.75, 0.66, 0.5], pearl: [1, 0.97, 0.92] };
-  var HORSE = null;
-  function horseParts() {
-    if (HORSE) { return HORSE; }
-    var W = [0.59, 0.41, 0.24], D = [0.41, 0.27, 0.16], K = [0.2, 0.14, 0.09];
-    HORSE = [
-      [[0, 0.6, 0], [16, 0.6, 6], D, 0],                                                                   // the platform
-      [[-6, 1, 3.3], [2, 2, 0.4], K, 0], [[6, 1, 3.3], [2, 2, 0.4], K, 0], [[-6, 1, -3.3], [2, 2, 0.4], K, 0], [[6, 1, -3.3], [2, 2, 0.4], K, 0],   // its wheels
-      [[-4.5, 1.15, 1.6], [1.3, 0.5, 1.3], K, 0], [[4.5, 1.15, 1.6], [1.3, 0.5, 1.3], K, 0], [[-4.5, 1.15, -1.6], [1.3, 0.5, 1.3], K, 0], [[4.5, 1.15, -1.6], [1.3, 0.5, 1.3], K, 0],   // hooves
-      [[-4.5, 4, 1.6], [1.1, 5.6, 1.1], W, 0], [[4.5, 4, 1.6], [1.1, 5.6, 1.1], W, 0], [[-4.5, 4, -1.6], [1.1, 5.6, 1.1], W, 0], [[4.5, 4, -1.6], [1.1, 5.6, 1.1], W, 0],   // legs
-      [[0, 8.8, 0], [12, 4.2, 4.2], W, 0],                                                                // the belly
-      [[0, 6.75, 2.12], [3, 1.6, 0.06], K, 0],                                                            // the hatch, for the men inside
-      [[5.2, 9.2, 0], [3.2, 4.6, 4], W, 0], [[-5.4, 8.9, 0], [2.8, 4.2, 4], W, 0],                       // the chest, the rump
-      [[6.7, 12.4, 0], [2.4, 5.4, 2.4], W, -0.45], [[6.1, 13.4, 0], [1, 5, 0.8], D, -0.45],              // the neck, the mane
-      [[8.6, 15, 0], [4.2, 1.9, 1.9], W, -0.3], [[10.3, 14.3, 0], [1.4, 1.5, 1.6], D, -0.3],             // the head, the muzzle
-      [[7.6, 16.4, 0.6], [0.4, 1.1, 0.4], D, 0], [[7.6, 16.4, -0.6], [0.4, 1.1, 0.4], D, 0],             // the ears
-      [[9, 15.4, 0.97], [0.5, 0.5, 0.06], K, 0], [[9, 15.4, -0.97], [0.5, 0.5, 0.06], K, 0],             // the eyes
-      [[-7.2, 8.4, 0], [0.8, 4.2, 0.8], D, 0.35]                                                          // the tail
-    ].map(function (p) { return { c: p[0], s: p[1], t: p[2], a: p[3] }; });
-    return HORSE;
-  }
-  // beyond the courts' far ends, behind their middle, two and a half times the parts' metres (42 m to its ears)
-  function drawHorse() {
-    var H0 = [4.5 * COURT.GAP, 0, -COURT.L - 70], ps = horseParts(), per = COURT.WORK / ps.length, Z = [0, 0, 1], k = 2.5;
-    ps.forEach(function (p, i) {
-      var f = clampV(horse.work / per - i, 0, 1), e = smooth(f);
-      var lie = p.s[1] > p.s[0] ? PI / 2 : 0, g = [(i % 9 - 4) * 3.4, (lie ? p.s[0] : p.s[1]) / 2 + 0.01, 10 + floor(i / 9) * 4];
-      var c = [0, 1, 2].map(function (j) { return g[j] + (p.c[j] - g[j]) * e; });
-      if (f > 0 && f < 1) { c[1] += Math.sin(PI * e) * 3; }
-      cbox([H0[0] + c[0] * k, H0[1] + c[1] * k, H0[2] + c[2] * k], [p.s[0] * k, p.s[1] * k, p.s[2] * k], p.t, 0, Z, lie * (1 - e) + p.a * e);
-    });
-  }
+  // The courts and their floodlights, and nothing else (the artist: "get rid of the Trojan horse being built [and] any
+  // architecture that is outside of the [plain] courts"); those more than 160 m off are past seeing and not drawn.
+  var SEEN = 160;
   function drawCourts() {
-    var L = COURT.L, HW = COURT.HW, K = COURT.K, lw = 0.06, y = 0.011, nw = 2 * (HW + COURT.PO);
-    cbox([4.5 * COURT.GAP, -0.05, -60], [COURT.N * COURT.GAP + 300, 0.1, 400], CT.ground);
-    for (var k = 0; k < COURT.N; k += 1) {
+    var L = COURT.L, HW = COURT.HW, K = COURT.K, lw = 0.06, y = 0.011, nw = 2 * (HW + COURT.PO), ex = cur.eye[0];
+    cbox([ex, -0.05, 0], [2 * SEEN + 60, 0.1, 2 * SEEN], CT.ground);
+    for (var k = 0; k < courts.length; k += 1) {
       var x = courtAt(k)[0], z = 0;
+      if (abs(x - ex) > SEEN) { continue; }
       cbox([x, 0.001, z], [COURT.GAP - 1, 0.01, 2 * L + 7], CT.out);
       cbox([x, 0.006, z], [2 * HW, 0.01, 2 * L], CT.inn);
       cbox([x, 0.008, z], [2 * HW, 0.01, 2 * K], CT.kitchen);
@@ -1237,7 +1207,8 @@
       cbox([x, COURT.NET, z], [nw, 0.07, 0.05], CT.line);
     }
     // the floodlights: a pole at each court's corners, its lamp lit
-    for (var j = 0; j <= COURT.N; j += 1) {
+    for (var j = 0; j <= courts.length; j += 1) {
+      if (abs((j - 0.5) * COURT.GAP - ex) > SEEN) { continue; }
       [-1, 1].forEach(function (s) {
         var px = (j - 0.5) * COURT.GAP, pz = s * (L + 4);
         cbox([px, 4.5, pz], [0.18, 9, 0.18], CT.pole);
@@ -1268,13 +1239,13 @@
     gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.CULL_FACE);
     gl.useProgram(solid);
     gl.uniformMatrix4fv(SU.uVP, false, cur.vp); gl.uniform3fv(SU.uEye, e); gl.uniform3fv(SU.uKey, KEY); gl.uniform3fv(SU.uFog, SKY.hor);
-    drawCourts(); drawHorse();
+    drawCourts();
     var m = court.m;
     // the athletes
     var headShown = !(view.scope && gt - view.camT >= TP.VIEW / 2);
     drawAthlete(me, me.pose, true, !headShown);   // (with the Scope up his head is the glass, and his hat off it, as the rocket world doffs it)
     courts.forEach(function (cv, k) {
-      if (abs(courtAt(k)[0] - e[0]) > 150) { return; }
+      if (abs(courtAt(k)[0] - e[0]) > SEEN) { return; }
       drawAthlete(plans[k], plans[k].pose = athPose(plans[k], gt), false);
       if (cv.up && !(m && m.k === k)) { drawAthlete(stands[k], athPose(stands[k], gt), false); }
       if (cv.up && !(m && m.k === k)) {
@@ -1299,8 +1270,8 @@
     var h = body.cell, M = mul(T(p[0], p[1], p[2]), mul(RX(spin || 0), mul(S(h), T(-3, -3, -3))));
     drawSolid(ballMesh, M, CT.pearl, null, 0.55);
   }
-  // Over the view, page-drawn: the ring where Mr Plan's shot comes down, the Scope's mark, the stick, the ten courts'
-  // squares and the horse's tools; all of it in characters where it marks a place.
+  // Over the view, page-drawn: the ring where Mr Plan's shot comes down, the Scope's mark, the stick, and the last ten
+  // courts' squares; all of it in characters where it marks a place.
   var sayEl = null, hudLow = 0, hudBox = {};   // (hudBox: where the bar was drawn, for the tests)
   function overlay(dpr) {
     sayEl = sayEl || $("say");
@@ -1321,31 +1292,17 @@
     hudBox.reticle = null;
     if (view.scope && gt - view.camT >= TP.VIEW / 2) { glyph("◎", W / 2, H / 2, 34, "#f3c98b"); glyph("+", W / 2, H / 2, 14, "#f3c98b"); hudBox.reticle = { x: W / 2 - 20, y: H / 2 - 20, w: 40, h: 40 }; }
     if (input.stick) { var st = input.stick, L = min(60, hypot(st.dx, st.dy)), an = Math.atan2(st.dy, st.dx); glyph("○", st.x, st.y, 46); glyph("◆", st.x + Math.cos(an) * L, st.y + Math.sin(an) * L, 22, "#f3c98b"); }
-    // the ten: a square each, its level in it; filled while it plays on, crossed while it is down, faint until it opens
-    var top = document.querySelector(".top"), y0 = (top ? top.getBoundingClientRect().bottom : 30) + 8, sz = min(22, (W - 24 - 9 * 5) / 10), gap = 5, x0 = 12;
-    c.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
-    courts.forEach(function (q, k) {
-      var x = x0 + k * (sz + gap), open = k === 0 || courts[k - 1].won, on = m && m.k === k;
-      c.globalAlpha = open ? 1 : 0.62;   // (faint, and still 4.5:1 or more on black: WCAG AA)
+    // the last ten courts: a square each, its number in it; filled while it plays on by itself, gold while he plays it,
+    // outlined while it waits (the open one, the newest)
+    var top = document.querySelector(".top"), y0 = (top ? top.getBoundingClientRect().bottom : 30) + 8, sz = min(22, (W - 24 - 9 * 5) / 10), gap = 5, x0 = 12, n0 = max(0, courts.length - 10);
+    c.font = (courts.length > 99 ? "600 9px" : "600 11px") + " ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
+    courts.slice(n0).forEach(function (q, j) {
+      var x = x0 + j * (sz + gap), on = m && m.k === q.k;
       if (q.up) { c.fillStyle = "rgba(236,236,228,0.92)"; c.fillRect(x, y0, sz, sz); }
-      c.strokeStyle = on ? "#f3c98b" : q.won && !q.up ? "#e07a5f" : "rgba(236,236,228,0.9)"; c.lineWidth = on ? 2 : 1; c.strokeRect(x + 0.5, y0 + 0.5, sz - 1, sz - 1);
-      if (q.won && !q.up) { c.beginPath(); c.moveTo(x + 3, y0 + 3); c.lineTo(x + sz - 3, y0 + sz - 3); c.stroke(); }
-      c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.level), x + sz / 2, y0 + sz / 2 + 0.5);
+      c.strokeStyle = on ? "#f3c98b" : "rgba(236,236,228,0.9)"; c.lineWidth = on ? 2 : 1; c.strokeRect(x + 0.5, y0 + 0.5, sz - 1, sz - 1);
+      c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.k + 1), x + sz / 2, y0 + sz / 2 + 0.5);
     });
-    c.globalAlpha = 1; c.textAlign = "left"; c.font = "500 11px ui-monospace, SFMono-Regular, Menlo, monospace";
-    var line = "The horse " + round(100 * horse.work / COURT.WORK) + "% · ", ly = y0 + sz + 14;
-    c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.65)"; c.fillStyle = "#f2efe8";
-    c.strokeText(line, x0, ly); c.fillText(line, x0, ly);
-    var x = x0 + c.measureText(line).width;
-    COURT.TOOLS.forEach(function (t, k) {
-      var q = courts[k], wd = c.measureText(t).width;
-      if (x + wd > W - 12) { return; }
-      c.globalAlpha = q.up ? 1 : 0.62;
-      c.strokeText(t, x, ly); c.fillText(t, x, ly);
-      if (q.won && !q.up) { c.strokeStyle = "#e07a5f"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, ly); c.lineTo(x + wd, ly); c.stroke(); c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.65)"; }
-      x += wd + 8;
-    });
-    c.globalAlpha = 1;
+    var ly = y0 + sz;
     hudLow = ly + 8;
     var sy = round(ly + 16) + "px"; if (sayEl.style.top !== sy) { sayEl.style.top = sy; }
     var o = 1 - gt / 0.6;
@@ -1396,7 +1353,8 @@
 
   // For the tests: the state, and a way to step the game without the frames' clock.
   window.Pickleball = { debug: function () {
-    return { me: me, plans: plans, stands: stands, court: court, courts: courts, horse: horse, view: view, CAPS: CAPS, COURT: COURT, YT: YT, STR: STR,
+    return { me: me, plans: plans, stands: stands, court: court, courts: courts, view: view, skill: nemSkill, won: wonCount,
+             winCourt: function () { if (court.m) { court.m.you = COURT.WIN; levelWon(); } }, CAPS: CAPS, COURT: COURT, YT: YT, STR: STR,
              glyphs: asc && asc.glyphs, gt: function () { return gt; }, input: input, enter: function (k) { me.x = courtAt(k)[0] + 0.5; me.z = COURT.L - 1; },
              run: function (sec, fire) { var n = round(sec * 60); for (var i = 0; i < n; i += 1) { gt += 1 / 60; if (fire && i === 0) { input.fire = true; } stepAll(1 / 60); camera(1 / 60); } },
              draw: function () { frameDt = 1 / 60; draw(); }, pause: function (on) { if (on) { YT.paused = true; stop(); } else { YT.paused = false; start(); } },

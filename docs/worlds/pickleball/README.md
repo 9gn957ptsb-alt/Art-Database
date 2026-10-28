@@ -14,14 +14,22 @@ for the ASCII aesthetic".
 
 ## The game
 
-The rocket world's courts (`../rocket/README.md`, "The courts"), their numbers and their rules: ten pickleball courts
-side by side, 20 by 44 feet, the kitchen 7 feet from the net; level one on court one, first to three; Mr Pearl serves
-every point, underhand and across, past the kitchen, the pearl his ball and his guitar the racket (below); the two-bounce rule; no
-volley from the kitchen; the ring of `○` where Mr Plan's shot will come down; the rally counted and the longest kept. A
-level won plays on by itself (his stand-in against that court's Mr Plan) and gives its tool to the Trojan horse, which
-rises a part at a time beyond the courts; a match lost there stops the court and its tool until it is played again, a
-level up. His nemesis is now **Mr Plan**, his negative (every colour turned over, lifted to show at night). The game
-starts in front of court one: there is no place to go back to.
+The rocket world's courts (`../rocket/README.md`, "The courts"), their numbers and their rules: a pickleball court,
+20 by 44 feet, the kitchen 7 feet from the net; first to three; Mr Pearl serves every point, underhand and across, past
+the kitchen, the pearl his ball and his guitar the racket (below); the two-bounce rule; no volley from the kitchen; the
+ring of `○` where Mr Plan's shot will come down; the rally counted and the longest kept. His nemesis is now **Mr Plan**,
+his negative (every colour turned over, lifted to show at night).
+
+**Endless courts** (the artist, 28 Oct 2026: "get rid of the Trojan horse being built [and] any architecture that is
+outside of the [plain] courts. Instead, we are simply going to have an ad infinitum pickleball game. Initially the game
+starts with just 1 court. Once you beat that first court, the second court adjacent to it then appears. This applies
+each time you win a court. Previous courts still automatically play and you win each game as you advance. The goal is
+to see how many courts you can win. each court gets progressively harder. By the time you get to court 10, the game
+should be very hard"). The game starts in front of one court, under its floodlights, and nothing else stands there.
+A match lost starts again from love on the same court; a court won plays on by itself (his stand-in against that
+court's Mr Plan, never losing a match) and the next court appears beside it, harder. There is no last court. The
+score is the number of courts won; the HUD keeps the last ten as squares (filled while they play on by themselves,
+gold while he plays one).
 
 **The serve** (the artist, 28 Oct 2026: "I want you to be able to serve up [to] 3 balls in one serve so you can play
 multiple balls/points at once. Use the scope view for the every serve and add an animation that you have to land a bar
@@ -80,15 +88,25 @@ his right glove a hand's width below the nut, along the line of his arm, its low
 shot goes; its strap left off (swung, it would loop out); his hat back on his head. Mr Plan and the stand-ins play
 with theirs the same way.
 
-Level shows in how soon Mr Plan reads the pearl (0.42 s at level one, 0.03 less a level), how rarely he misses (26%
-of his shots out or in the net at level one, down to 3%), how often his dives get there (half at level one), and how
-he places it: deeper, wider, faster (1.25 s across at level one, down to 0.72), dinks into the kitchen from level
-three, lobs to be leapt for.
+Each court is harder than the last, along one curve: its share of the hardest is 1 - e^(-(court - 1) / 3), so 0.28
+at court two, three quarters at five, 0.95 at ten, and nearer the whole each court after without reaching it. Along it
+go how soon Mr Plan reads the pearl (0.42 s on court one, 0.125 at the hardest), how rarely he misses (26% of his shots
+out or in the net, down to 6.6%), how often his dives and lunges get there, how he places it (deeper, wider, faster:
+1.25 s across, down to 0.845), dinks into the kitchen from court three, lobs to be leapt for, and the serve: its bar
+quickens (1.15 s a sweep, down to 0.71) and the ace zone pays less often (four in five, down to three in ten).
+Measured by `notes/holographic-mr-pearl/harness/pb_curve.js` (12 matches a court; the ideal player always on the ring,
+the human one a fifth of a second late and up to 0.9 m off it):
+
+| court | 1 | 2 | 4 | 7 | 10 | 15 | 30 |
+|---|---|---|---|---|---|---|---|
+| points won, human | 97% | 100% | 80% | 53% | 39% | 33% | 18% |
+| matches won, human | 12 | 12 | 12 | 7 | 3 | 2 | 0 |
+| points won, ideal | 97% | 97% | 95% | 81% | 55% | 47% | 31% |
 
 ## ASCII, built in
 
 The only way a frame reaches the screen. The scene (plain solids, plainly lit: the courts at night under their
-floodlights, the athletes' cells, the pearl, the horse) is drawn into a picture of its own, and the picture is written
+floodlights, the athletes' cells, the pearl) is drawn into a picture of its own, and the picture is written
 again as characters, each a cell whose side goes as the square of nearness (6 CSS px at 3.2 m, the artist's rule from
 the rocket world), never under 5 CSS px on a phone or 6 on a desk, and never the picture itself: far off a thing is
 small characters, and the sky is characters too. A cell's colour is the picture's mean over it, its character chosen by
@@ -115,14 +133,13 @@ integration, stability, design, privacy, language, money, accessibility and trus
   is still loading waits for the courts. The Page Visibility API is never used.
 - **Mute.** No sound yet; YouTube's mute is read (`isAudioEnabled`) and followed (`onAudioEnabledChange`) all the
   same, so a sound added later starts from it.
-- **Save.** Through `saveData`/`loadData` inside YouTube (well under 3 MiB: the courts, the horse and the longest
-  rally), only after the load, `localStorage` only outside. A save from any version, or a broken one, is read field
-  by field as counts, or as a fresh start. A load that fails is asked again once; if it fails again the game plays
+- **Save.** Through `saveData`/`loadData` inside YouTube (a few bytes: the courts won and the longest rally), only
+  after the load, `localStorage` only outside. A save from any version, or a broken one, is read field by field as
+  counts, or as a fresh start (the first version's ten courts as the run of them won from the first; its horse goes). A load that fails is asked again once; if it fails again the game plays
   and never saves, so the player's cloud save is never written over.
-- **Score.** `sendScore` with the longest rally, an integer, when it grows, saved first: the best sent is always the
-  save's, as the rule asks.
-- **The end.** When all ten courts are won and the Trojan horse stands, the game says it is complete, and the head
-  says so from then on (the rule: tell the player there is no more).
+- **Score.** `sendScore` with the number of courts won, an integer, each time a court is won, saved first: the best
+  sent is always the save's, as the rule asks.
+- **No end.** The courts go on without a last one, so the rule to tell the player there is no more has nothing to tell.
 - **Sharp.** Drawn at the screen's own pixels up to 3 to 1 (a phone's), so the characters are not upscaled soft.
 - **Language.** From `getLanguage()`, never the browser's; English only for now (every word is in one table, `STR`).
 - **No sound** (so nothing to mute), no links, no sharing, no requests but the SDK, every script a static tag, no
