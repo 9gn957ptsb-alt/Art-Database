@@ -29,7 +29,8 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
     const r = await D(() => { const d = window.Rocket.debug(), b = d.cam().blend; if (b) { b.t0 = -1e9; } return { stone: d.stone(), toasts: window.__toasts.slice(), pov: d.pov ? d.pov() : "" }; });
     await frames(P, 4);
     await P.screenshot({ path: `${out}/stone_${i}.png` });
-    check(r.toasts.some((t) => t.indexOf(st.name) === 0 && t.indexOf(st.said.slice(0, 30)) > 0), st.name + ": its stone says what it is (" + JSON.stringify(r.toasts) + ")");
+    // (the studies' stones say nothing since 26 Oct 2026, the artist: "Get rid of this"; the homage's still speak)
+    check(!r.toasts.some((t) => t.indexOf(st.name) === 0 || (st.said && t.indexOf(st.said.slice(0, 30)) >= 0)), st.name + ": its stone says nothing (" + JSON.stringify(r.toasts) + ")");
     if (f) { check(r.stone === true, st.name + ": from its stone the view is his eyes (" + r.stone + ")"); }
   }
   // the crosshair's (or the sight's) words on a block of the row

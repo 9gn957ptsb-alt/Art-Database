@@ -499,7 +499,7 @@
     "out vec4 o;",
     "uniform mat4 uVP;",
     "uniform vec3 uEye, uC, uSun, uHaze;",
-    "uniform float uR, uExpo, uHolo, uRig;",
+    "uniform float uR, uExpo, uHolo, uRig, uMark;",
     "uniform mat3 uHead, uV;",
     "",
     "const float PEARL_PI = 3.14159265359;",
@@ -654,7 +654,7 @@
     "    outc = mix(outc, uHaze, clamp(1.0 - exp(-dist * 0.006), 0.0, 1.0));   // the world's haze",
     "    vec4 clip = uVP * vec4(p, 1.0);",
     "    gl_FragDepth = clamp(0.5 * clip.z / clip.w + 0.5, 0.0, 1.0);",
-    "    o = vec4(outc, 1.0);",
+    "    o = vec4(outc, 1.0 - 0.5 * uMark);",          // (uMark: its pixels marked in the alpha, for Glyph Light to leave as they are)
     "}"
   ].join("\n");
 

@@ -746,6 +746,7 @@
       gl.bindVertexArray(null);
       f.vao = vao; f.count = f.mesh.idx.length;
     });
+    charsUpload();
   }
   // On a stone of the homage, once each: which figure it is, and how it closes from there.
   function homageCheck() {
@@ -945,11 +946,13 @@
   }
   // Where he reaches from: his eye, or the head while it is out.
   function reachFrom() { return Hd ? [Hd.x, Hd.y, Hd.z] : [P.x, P.y + EYE, P.z]; }
+  // How far along a ray from the camera it passes him (or the head): what is nearer the camera is not tapped.
+  function passT(dir) { var at = reachFrom(); return max(0, (at[0] - eye[0]) * dir[0] + (at[1] - eye[1]) * dir[1] + (at[2] - eye[2]) * dir[2]); }
   // What the crosshair (or a tap) is on: the ray from the camera, begun where it passes him (nothing between the
   // camera and him counts), and what it meets measured from where he reaches from (r). From his own eyes (a stone,
   // where you woke) the ray begins at them, as before.
   function pick(dir) {
-    var at = reachFrom(), t0 = max(0, (at[0] - eye[0]) * dir[0] + (at[1] - eye[1]) * dir[1] + (at[2] - eye[2]) * dir[2]);
+    var at = reachFrom(), t0 = passT(dir);
     var hit = cast(dir, t0 + LOOK, eye, t0);
     if (!hit) { return null; }
     hit.r = hypot(eye[0] + dir[0] * hit.t - at[0], eye[1] + dir[1] * hit.t - at[1], eye[2] + dir[2] * hit.t - at[2]);
@@ -962,11 +965,16 @@
     var d = [q[0] / q[3] - eye[0], q[1] / q[3] - eye[1], q[2] / q[3] - eye[2]], L = hypot(d[0], d[1], d[2]);
     return [d[0] / L, d[1] / L, d[2] / L];
   }
-  function act(px, py, forcePlace) {
-    if (space) { input.fire = true; return; }
+  // A tap's act; quick, a tap within a beat of the last (a run of them: twice the work, below). True when it breaks or
+  // places (so a double tap in the run is that work, not the dash).
+  function act(px, py, forcePlace, quick) {
+    if (space || court) { input.fire = true; return; }
     if (ignite) { igniteTap(); return; }
     if (intro || launched || !vp) { return; }
     var dir = dirAt(px, py), hit = pick(dir);
+    if (gateTap(dir, hit)) { enterCourts(); return; }   // (the pickleball net: to the courts)
+    var qc = qcubeTap(dir, hit);
+    if (qc) { (CUBE_ACTS[qc.ch] || function () {})(qc); return; }   // (a character cube: what its character stands for)
     // a coin: what it is and where (it is taken by passing through it, not by a tap)
     var cq = coinAt(dir, hit);
     if (cq) { say(coinWords(cq)); return; }
@@ -984,14 +992,28 @@
       if (hit.b === B.BEDROCK) { return; }
       if (hangsOn(hit.x, hit.y, hit.z)) { say("A work hangs on this wall."); return; }
       // He smashes it with his guitar: it breaks at the strike, half a beat from now (SWING; the smash, above).
-      smash(hit, dir);
-    } else if (hit.prev) {
-      var p = hit.prev;
-      w.set(p[0], p[1], p[2], HOTBAR[slot]);
-      // (nor where a pearl lies: it would be buried, out of reach)
-      if (boxHits(P.x, P.y, P.z) || pearls.some(function (q) { return sphereHit(q.x, q.y, q.z, pearlR()); })) { w.set(p[0], p[1], p[2], B.AIR); return; }
-      remeshAt(p[0], p[2]);
+      smash(hit, dir, quick);
+      return true;
     }
+    if (!hit.prev) { return; }
+    // In a run of taps a second is laid on it, the way it was laid: two a tap (the artist, 28 Oct 2026, of the dash
+    // that took him away from what he spammed: "when I spam place or break Mr Pearl can now those tasks twice as fast").
+    var p = hit.prev;
+    if (!lay(p)) { return; }
+    if (quick) { var q2 = [2 * p[0] - hit.x, 2 * p[1] - hit.y, 2 * p[2] - hit.z]; if (isOpen(w.get(q2[0], q2[1], q2[2]))) { lay(q2); } }
+    return true;
+  }
+  // A block of the bar's laid at c, in the world, unless it would close on him or a pearl (it would be buried, out of
+  // reach), or where a Q cube stands or a coin not yet taken floats (neither is a block: a run's second could take its
+  // cell); whether it was.
+  function lay(c) {
+    var at = function (q) { return floor(q.x) === c[0] && floor(q.y) === c[1] && floor(q.z) === c[2]; };
+    if (c[0] < 0 || c[2] < 0 || c[0] >= w.SX || c[2] >= w.SZ || c[1] < 0 || c[1] >= w.SY || qcubes.some(at) || left().some(at)) { return false; }
+    var was = w.get(c[0], c[1], c[2]);
+    w.set(c[0], c[1], c[2], HOTBAR[slot]);
+    if (boxHits(P.x, P.y, P.z) || pearls.some(function (q) { return sphereHit(q.x, q.y, q.z, pearlR()); })) { w.set(c[0], c[1], c[2], was); return false; }
+    remeshAt(c[0], c[2]);
+    return true;
   }
 
   /* ---- the two views: third person over his head, the hologram ----------------------------------------- */
@@ -1030,7 +1052,7 @@
   // head) and comes at most straight over him; from his own eyes (a stone, where you woke: the third figure is looked
   // up at), as the hologram, and with the sight up (as from his eyes: a lob is aimed high; the farthest throw is aimed
   // 39.5 deg up), to nearly straight up and down.
-  function clampPitch(p) { return space ? clampV(p, -1.2, 1.2) : !Hd && !onStone && !sight.up ? clampV(p, TP_DOWN, TP_UP) : clampV(p, -1.5, 1.5); }
+  function clampPitch(p) { return space ? clampV(p, -1.2, 1.2) : court ? (court.scope ? clampV(p, -1.2, 1.2) : clampV(p, TP_DOWN, TP_UP)) : !Hd && !onStone && !sight.up ? clampV(p, TP_DOWN, TP_UP) : clampV(p, -1.5, 1.5); }
   // Where his head sits on the body (the hologram's seat).
   function seat() { return [P.x, P.y + PEARL.headY, P.z]; }
   function isOpen(b) { return b === B.AIR || b === B.WATER; }
@@ -1114,7 +1136,7 @@
   // an option, just have one button that toggles between holographic view and third person view"): the head goes
   // out; out, the body follows it, and the view is third person again.
   function toggleHolo() {
-    if (intro || launched || ignite || !place) { return; }
+    if (intro || launched || ignite || !place || court) { return; }
     if (Hd) { bringBody(); } else { enterHolo(); }
   }
   function enterHolo() {
@@ -1300,8 +1322,9 @@
          block, at the block's height seen from his shoulders, as near as his arms go; the block breaks, its six bars
          fly; then the follow-through, half a SWING, and back to rest, half a SWING.
      A tap during a swing is kept (the latest only) and struck half a beat after this one's strike, swung back from
-     where this one's follow-through ends: two blocks a beat. In water the swing goes at his speed there over his
-     walk. Within REACH the blow breaks the block wherever it stands; a block a step ahead at his waist or his head
+     where this one's follow-through ends: two blocks a beat. In a run of taps (each within a beat of the last) the
+     blow goes on into the block behind the one struck: two a strike (strike). In water the swing goes at his speed
+     there over his walk. Within REACH the blow breaks the block wherever it stands; a block a step ahead at his waist or his head
      the guitar meets. The guitar's path leaves a swoosh while it goes faster than he walks. */
   var BEAT = BAR / 4;            // a beat of the theme song
   var COIL = Math.PI / 2;        // the coil: a quarter turn of the upper body (see above: two turns a beat at the strike)
@@ -1389,15 +1412,20 @@
   }
   // A tap to break: a swing whose strike is half a beat away (SWING); during a swing (before its follow-through ends)
   // it is kept, the latest only, for half a beat after this one's strike; a second tap on what is already to be struck
-  // does nothing.
-  function smash(hit, dir) {
+  // does nothing. A quick tap (in a run) makes the strike of the swing on, and of the one it keeps or begins, break
+  // two.
+  function smash(hit, dir, quick) {
     var n = hit.prev ? [hit.prev[0] - hit.x, hit.prev[1] - hit.y, hit.prev[2] - hit.z] : [0, 0, 0];
     if (!hit.prev) { var k = abs(dir[0]) > abs(dir[1]) ? (abs(dir[0]) > abs(dir[2]) ? 0 : 2) : (abs(dir[1]) > abs(dir[2]) ? 1 : 2); n[k] = dir[k] > 0 ? -1 : 1; }
     var t = { x: hit.x, y: hit.y, z: hit.z, b: hit.b, n: n, hp: [eye[0] + dir[0] * hit.t, eye[1] + dir[1] * hit.t, eye[2] + dir[2] * hit.t],
-              yaw: Math.atan2(hit.x + 0.5 - P.x, -(hit.z + 0.5 - P.z)) };
+              yaw: Math.atan2(hit.x + 0.5 - P.x, -(hit.z + 0.5 - P.z)), quick: !!quick };
     if (!me3 || !FAR_END) { strike(t, true); return; }   // his body has not come: nothing to swing; it breaks at once, as before
     var same = function (a) { return !!a && a.x === t.x && a.y === t.y && a.z === t.z; };
-    if (swing && !swing.ret && swing.u < 1.5) { if (!(same(swing) && !swing.struck) && !same(swingNext)) { swingNext = t; } return; }
+    if (swing && !swing.ret && swing.u < 1.5) {
+      if (quick) { swing.quick = true; }
+      if (same(swingNext)) { swingNext.quick = swingNext.quick || t.quick; } else if (!(same(swing) && !swing.struck)) { swingNext = t; }
+      return;
+    }
     var now = swingPose() || { arms: 0, twist: 0 };
     t.u = 0; t.from = [now.arms, now.twist]; t.side = now.twist < -1e-3 ? -1 : 1;
     begin(t);
@@ -1455,7 +1483,8 @@
     return apply(PB.place(M.guitar, P.x, P.y, P.z, P.face), FAR_END);
   }
   // The strike: what was tapped, if it is still there and still within his reach, breaks (a piece is found, not
-  // smashed); else the swing was only a swing.
+  // smashed); else the swing was only a swing. In a run of taps (quick) the blow goes on into the block behind it,
+  // through the face he struck, as the tap would (not bedrock, nor a wall a work hangs on), if it too is in reach.
   function strike(s, plain) {
     s.struck = true;
     var b = w.get(s.x, s.y, s.z), at = reachFrom();
@@ -1465,6 +1494,12 @@
     if (k >= 0) { collect(k); } else if (!plain) { burst(s, b); }
     remeshAt(s.x, s.z);
     s.broke = true;
+    var c = [s.x - s.n[0], s.y - s.n[1], s.z - s.n[2]], b2 = w.get(c[0], c[1], c[2]);
+    if (!s.quick || !w.SOLID[b2] || b2 === B.BEDROCK || hangsOn(c[0], c[1], c[2]) || hypot(c[0] + 0.5 - at[0], c[1] + 0.5 - at[1], c[2] + 0.5 - at[2]) > REACH) { return; }
+    var k2 = PIECE_IDS.indexOf(b2);
+    w.set(c[0], c[1], c[2], B.AIR);
+    if (k2 >= 0) { collect(k2); } else if (!plain) { burst(Object.assign(Object.create(s), { x: c[0], y: c[1], z: c[2] }), b2, s.speed); }
+    remeshAt(c[0], c[2]);
   }
   /* The block's six bars, as the figure has them, fly out of the face he struck, each the way it lies from the block's
      middle, at half the guitar's speed at the strike (the throw's bounce, e = 1/2: the mean of a perfect bounce and a
@@ -1649,8 +1684,9 @@
   // reduced motion). The hologram has no sight (barred, as breaking is). Raised, a swing is let go: his hands leave the
   // guitar's swing to raise a pearl.
   function raiseSight(on) {
+    if (court) { courtScope(on); return; }   // (on the courts the Scope is theirs: courtScope)
     if (on == null) { on = !sight.up; }
-    if (on === sight.up || intro || launched || ignite || !place) { return; }
+    if (on === sight.up || intro || launched || ignite || !place || (on && court)) { return; }
     if (on && Hd) { barred(); return; }
     var now = performance.now(), still = stillMotion.matches;
     if (on) { letGo(); P.want = null; sight.at = now; closeLabel(); }
@@ -1682,7 +1718,7 @@
   }
   // The right mouse button: pressed, the sight comes up; let go after a beat or more it goes down (held, it is up
   // while held); let go within a beat it stays up (a click), and the next click lowers it.
-  function sightPress() { if (ignite) { return; } if (Hd) { barred(); return; } sight.rmb = { t: performance.now(), was: sight.up }; if (!sight.up) { raiseSight(true); } }
+  function sightPress() { if (ignite) { return; } if (Hd) { barred(); return; } var up = court ? !!court.scope : sight.up; sight.rmb = { t: performance.now(), was: up }; if (!up) { raiseSight(true); } }
   function sightRelease() { var r = sight.rmb; sight.rmb = null; if (r && (r.was || performance.now() - r.t >= BEAT * 1000)) { raiseSight(false); } }
   // The sight's camera: on the line through the head's seat along the look, SIGHT_D behind it, kept out of blocks
   // and let out no faster than he walks, as third person's is.
@@ -1855,7 +1891,7 @@
                rel: sizeSaid(p) + (looked[f.id] ? "; you have looked behind it" : "") };
     }
     var k = PIECE_IDS.indexOf(hit.b);
-    if (k >= 0) { var pc = adv.pieces[k]; return { kind: "piece", name: pc.name, sub: m + (hit.r <= REACH ? " · within reach" : ""), from: "A piece of your rocket", rel: "put " + ({ roof: "on a roof", park: "in the ground of a park", water: "under the water", tree: "in a tree's top", work: "behind a work" }[pc.hide.type] || "here") + " by the adventure's rule" }; }
+    if (k >= 0) { var pc = adv.pieces[k]; return { kind: "piece", name: pc.name, sub: m + (hit.r <= REACH ? " · within reach" : ""), from: "A piece of your rocket", rel: "put " + ({ roof: "on a roof", park: "in the ground of a park", water: "under the water", tree: "in a tree's top", work: "behind a work", pool: "in the pool", garden: "in the ground of the garden", paving: "under the paving of a square" }[pc.how || pc.hide.type] || "here") + " by the adventure's rule" }; }
     if (hit.b === B.NOTE) { return { kind: "note", name: "A note", sub: m + (hit.r <= REACH ? " · within reach" : ""), from: "A clue made from what the works really are", rel: "the fewest facts that leave only one work" }; }
     var hl = window.Homage && homage ? Homage.label(homage, hit.x, hit.y, hit.z) : "";
     if (hl) { return { kind: "block", name: hl, sub: m, from: "The homage where you woke", rel: "three figures set across the turn you make on waking" }; }
@@ -2981,6 +3017,7 @@
     var cw = canvas.width, chh = canvas.height, cam = spaceCam();
     eye = cam.e; camLast = { e: cam.e, yaw: cam.yaw, pitch: cam.pitch };
     vp = mul(perspective(FOV * Math.PI / 180, cw / chh, NEAR, FAR), view(eye, cam.yaw, cam.pitch));
+    glyphBegin(cw, chh);
     gl.viewport(0, 0, cw, chh);
     gl.clearColor(0.004, 0.004, 0.012, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.clearColor(0, 0, 0, 0);
     var tanH = 2 * Math.tan(FOV * Math.PI / 360), BLACK = [0, 0, 0], PB = window.PearlBody;
@@ -3069,6 +3106,7 @@
       gl.disable(gl.BLEND); gl.depthMask(true);
     }
     gl.bindVertexArray(null);
+    glyphEnd(cw, chh);
     spaceOverlay(now);
     return true;
   }
@@ -3107,6 +3145,1195 @@
     }
   }
 
+  /* ---- Glyph Light, and the monarch ----------------------------------------------------------------------------------
+     The artist, 26 Oct 2026, with "Glyph Light", a page that turns a picture into glowing glyphs: "by implementing this
+     aesthetic into holographic Mr. Pearl, instead of the current pixelated aesthetic, we can now play with what a thing
+     looks like relative to your distance from it ... take that to the next level and use the way that the size of the
+     character relative to the displayed fineness of an image changes as you approach the object".
+     The world is drawn into a picture of its own (glyphFb: colour, and depth), and the picture drawn again as glyphs:
+     each a cell of the screen whose side goes as the square of nearness (GLYPH.S0 px at GLYPH.D0 m, so a thing twice
+     as near is drawn in glyphs four times as large: a couple of characters close by, many far off), its glyph from the
+     ramp by the cell's brightness (the page's is " .:-=+*#%@"; here the figure's, below), lit in the cell's colour and added as light, as the page
+     adds its glow; the picture shows faintly under the glyphs, as the page's "image under glyphs" does. Where the cells
+     would be smaller than GLYPH.MIN px the picture shows as it is, eased in over the octave above: far off, a thing is
+     itself, refined. The sky is the picture. */
+  var GLYPH = { ON: 1, S0: 6, D0: 3.2, MIN: 2, RAMP: " .:-=+*#%@", UNDER: 0.3, LIT: 1.4, PANEL: 12, GRID: 8, STORY: 1 };   // S0, MIN in CSS px; PANEL in m
+  var glyphFb = null, glyphProg = null, GLU = {}, glyphAtlas = null, glyphLive = false, glyphTable = null, glyphFrames = null, glyphOrigin = [0, 0];
+  /* Glyph Light's whole space (the artist, 27 Oct 2026, by way of the DRIFT session: "Make sure you are using the full
+     dimensionality of the Glygh Light artifact. Make sure all of the changes available through the provided slide bars
+     are being implemented in all of the artifacts ... Keep in mind that the infinite texture that you are displaying is
+     a storyboard and someone's thumb is the direction of how the story plays out ... almost like a flip book but
+     instead of each sticky note being behind the other, they are placed side-by-side"). Every control the page has is
+     here: its styles (ASCII, dots, grain, scan), its glyph sets (fine, blocks, binary, kana, kanji, and a custom set,
+     here the figure's own, the first), its colour modes (full, mono, gold, blue), auto levels, exposure, contrast,
+     midtones, detail, invert, glow and where the glow starts, the image under the glyphs, the density, and its motions
+     (pulse, shimmer, reveal, push in). The place is laid out in panels GLYPH.PANEL metres square, the frames of a
+     storyboard side by side: the first where he wakes, as Glyph Light first came in (the figure's set, ASCII's way,
+     full colour), each next a step from the one before (one slider moved, or a style, a set, a mode or a motion
+     changed), running in a serpentine so that a frame's neighbours are the frames before and after it, GLYPH.GRID by
+     GLYPH.GRID of them and again past the last. Walking plays them: the thumb on the stick turns the pages, and each
+     page is seen beside the next. The size of a glyph by distance stays the artist's own (S0 at D0, as the square of
+     nearness), each frame's density a factor on it. */
+  var GSETS = [null, " .:-=+*#%@", " .·:;irsXA253hMHGS#9B&@", " ░▒▓█", " 01",
+               " ･ｰｨｼﾉﾍﾄｦｺﾆﾐﾘﾈﾎﾑﾒﾜﾓﾗﾊﾏﾝｱｶｻﾀﾅ",
+               " 一二人口山日目田白百自血鬼龍"];
+  var GROW = 32;   // the most glyphs a set carries: a row of the atlas each, 64 px a glyph
+  function glyphInit() {
+    // The figure's set (the artist, 27 Oct 2026, asked which, "Both"): blank, the tribar at five sizes, the artist's
+    // figure of three at three, and the tribar with all its faces lit, each with the page's glow (a blur of its own
+    // light); the page's sets each glyph in the type. Every set sorted by the ink it leaves, as the page sorts any set.
+    var T = [[255, 255, 255], [150, 150, 150], [70, 70, 70]], rows = [];
+    var fig = [null];
+    [0.3, 0.42, 0.56, 0.72, 0.88].forEach(function (s) { fig.push({ lv: 1, s: s, t: T }); });
+    [0.72, 0.88, 1].forEach(function (s) { fig.push({ lv: 2, s: s, t: T }); });
+    fig.push({ lv: 1, s: 1, t: [[255, 255, 255], [235, 235, 235], [205, 205, 205]] });
+    var draw = function (q, c2, x0, y0) {
+      if (!q) { return; }
+      if (q.ch) { c2.font = "700 52px ui-monospace, SFMono-Regular, Menlo, 'Noto Sans JP', monospace"; c2.textAlign = "center"; c2.textBaseline = "middle"; c2.fillStyle = "#fff"; c2.fillText(q.ch, x0 + 32, y0 + 35); return; }
+      var f = figure(round(60 * q.s), q.lv, q.t);
+      c2.shadowColor = "#fff"; c2.shadowBlur = 8;
+      c2.drawImage(f, x0 + (64 - f.width) / 2, y0 + (64 - f.height) / 2 + 2);
+      c2.shadowBlur = 0;
+    };
+    var ink = function (q) {
+      var t = document.createElement("canvas"); t.width = t.height = 64; var tc = t.getContext("2d");
+      tc.fillStyle = "#000"; tc.fillRect(0, 0, 64, 64); draw(q, tc, 0, 0);
+      var d = tc.getImageData(0, 0, 64, 64).data, sum = 0; for (var k = 0; k < d.length; k += 4) { sum += d[k]; }
+      return sum;
+    };
+    GSETS.forEach(function (set, i) {
+      var list = i === 0 ? fig : set.split("").map(function (ch) { return ch === " " ? null : { ch: ch }; });
+      list = list.slice(0, GROW).map(function (q) { return { q: q, light: q ? ink(q) : 0 }; });
+      list.sort(function (a, b) { return a.light - b.light; });
+      rows.push(list.map(function (e) { return e.q; }));
+    });
+    GLYPH.NS = rows.map(function (r) { return r.length; });
+    GLYPH.N = GLYPH.NS[0];
+    var cv = document.createElement("canvas"); cv.width = 64 * GROW; cv.height = 64 * rows.length;
+    var c = cv.getContext("2d");
+    c.fillStyle = "#000"; c.fillRect(0, 0, cv.width, cv.height);
+    rows.forEach(function (r, j) { r.forEach(function (q, i) { draw(q, c, i * 64, j * 64); }); });
+    glyphAtlas = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, glyphAtlas);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    glyphProg = compile("#version 300 es\nvoid main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }", [
+      "#version 300 es",
+      "precision highp float; precision highp int;",
+      "uniform sampler2D uScene; uniform sampler2D uDepth; uniform sampler2D uAtlas; uniform sampler2D uTable;",
+      "uniform vec2 uRes; uniform float uNear; uniform float uFar; uniform float uS0; uniform float uD0; uniform float uMin; uniform float uLit; uniform float uT; uniform float uPanel;",
+      "uniform int uGrid; uniform int uStory; uniform float uNs[7]; uniform mat4 uInvVP; uniform vec2 uOrigin;",
+      "out vec4 o;",
+      "const float BAY[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);",
+      "float bayer(ivec2 c) { return (BAY[(c.y & 3) * 4 + (c.x & 3)] + 0.5) / 16.0; }",
+      "float hash(ivec2 c) { uint h = uint(c.x) * 0x27d4eb2du ^ (uint(c.y) * 0x165667b1u + 1337u); h ^= h >> 15; h *= 0x2c1b3c6du; h ^= h >> 12; h *= 0x297a2d39u; h ^= h >> 15; return float(h) / 4294967296.0; }",
+      "float lumOf(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }",
+      "vec3 tint(vec3 c, float l, int m) { if (m == 0) { return c; } if (m == 1) { return vec3(l); } if (m == 2) { return vec3(min(1.0, l * 1.1 + 0.078), l * 0.82, l * 0.35); } return vec3(l * 0.35, l * 0.75, min(1.0, l * 1.1 + 0.078)); }",
+      "void main() {",
+      "  ivec2 ip = ivec2(gl_FragCoord.xy);",
+      "  vec4 pic = texelFetch(uScene, ip, 0);",
+      "  if (pic.a > 0.25 && pic.a < 0.75) { o = vec4(pic.rgb, 1.0); return; }",   // his head: the one thing seen as it is
+      "  float z = texelFetch(uDepth, ip, 0).r;",
+      "  if (z >= 1.0) { o = vec4(pic.rgb, 1.0); return; }",
+      "  float d = 2.0 * uNear * uFar / (uFar + uNear - (z * 2.0 - 1.0) * (uFar - uNear));",
+      // the frame of the storyboard the place under this pixel lies in (serpentine: neighbours are the next and the last)
+      "  int fr = 0;",
+      "  if (uStory > 0) {",
+      "    vec4 W = uInvVP * vec4(gl_FragCoord.xy / uRes * 2.0 - 1.0, z * 2.0 - 1.0, 1.0); W /= W.w;",
+      "    ivec2 pn = ivec2(floor((W.xz - uOrigin) / uPanel));",
+      "    int i = pn.x - uGrid * int(floor(float(pn.x) / float(uGrid))), j = pn.y - uGrid * int(floor(float(pn.y) / float(uGrid)));",   // (a wrap that holds below nought, where % does not)
+      "    fr = j * uGrid + ((j & 1) == 0 ? i : uGrid - 1 - i);",
+      "  }",
+      "  vec4 t0 = texelFetch(uTable, ivec2(0, fr), 0), t1 = texelFetch(uTable, ivec2(1, fr), 0), t2 = texelFetch(uTable, ivec2(2, fr), 0), t3 = texelFetch(uTable, ivec2(3, fr), 0);",
+      "  int style = int(t0.r * 3.0 + 0.5), set = int(t0.g * 6.0 + 0.5), mode = int(t0.b * 3.0 + 0.5), motion = int(t0.a * 4.0 + 0.5);",
+      "  float dens = 0.5 + t1.r * 1.5, expo = exp2(t1.g * 2.0 - 1.0), contr = 0.5 + t1.b * 1.5, gam = 0.5 + t1.a * 1.5;",
+      "  float detail = t2.r * 2.0, inv = t2.g, glow = t2.b * 1.5, thresh = t2.a, under = t3.r, autoL = t3.g;",
+      "  float s = uS0 * dens * (uD0 / d) * (uD0 / d);",
+      "  if (motion == 1) { s *= 1.0 + 0.25 * sin(uT * 2.4); }",                  // pulse
+      "  if (motion == 4) { s *= exp2(-fract(uT * 0.12) * 1.2); }",              // push in
+      "  if (s < uMin) { o = vec4(pic.rgb, 1.0); return; }",
+      "  float L = min(floor(log2(s) + 0.5), 8.0), cs = exp2(L);",
+      "  vec2 cell = floor(gl_FragCoord.xy / cs), uv = (gl_FragCoord.xy - cell * cs) / cs;",
+      "  ivec2 ci = ivec2(cell);",
+      "  vec2 at = (cell + 0.5) * cs / uRes;",
+      // the tone: auto levels, exposure, contrast, midtones
+      "  vec2 lohi = autoL > 0.5 ? vec2(0.04, 0.85) : vec2(0.0, 1.0);",
+      "  vec3 c = (textureLod(uScene, at, L).rgb - lohi.x) / (lohi.y - lohi.x);",
+      "  c = pow(clamp((c * expo - 0.5) * contr + 0.5, 0.0, 1.0), vec3(1.0 / gam));",
+      "  float l = lumOf(c);",
+      "  if (detail > 0.0) { float ln = lumOf(textureLod(uScene, at, L + 1.5).rgb); float l2 = clamp(l + detail * (l - ln), 0.0, 1.0); c = l > 0.002 ? min(vec3(1.0), c * (l2 / l)) : vec3(0.0); l = l2; }",
+      "  if (inv > 0.5) { c = 1.0 - c; l = 1.0 - l; }",
+      "  vec3 col = tint(c, l, mode);",
+      "  if (motion == 3 && hash(ci) > fract(uT * 0.2) * 1.25) { o = vec4(pic.rgb, 1.0); return; }",   // reveal: the sweep not yet past the cell
+      "  float N = uNs[set], cov = 0.0; vec3 lit = vec3(0.0);",
+      "  ivec2 sh = motion == 2 ? ivec2(int(uT * 6.0), 0) : ivec2(0);",            // shimmer: the glyphs step with the time
+      "  if (style == 0) {",
+      "    float gi = min(floor(l * N), N - 1.0);",
+      "    if (motion == 2) { gi = clamp(gi + floor(hash(ci + sh) * 3.0) - 1.0, 0.0, N - 1.0); }",
+      "    if (gi > 0.0) { cov = textureLod(uAtlas, vec2((gi + uv.x) / 32.0, (float(set) + 1.0 - uv.y) / 7.0), max(0.0, 6.0 - L)).r; lit = min(vec3(1.0), col / (0.55 + 0.45 * l)); }",
+      "  } else if (style == 1) {",
+      "    if (all(greaterThanEqual(uv, vec2(0.14))) && all(lessThan(uv, vec2(0.86)))) {",
+      "      if (l > bayer(ci + sh)) { lit = min(vec3(1.0), col * (1.25 / max(0.35, max(col.r, max(col.g, col.b))))); cov = 1.0; } else if (l > 0.03) { lit = col * 0.35; cov = 1.0; }",
+      "    }",
+      "  } else if (style == 2) {",
+      "    if (l > hash(ci + sh)) { lit = min(vec3(1.0), col * (0.45 + 0.75 * l) + 0.078 * l); cov = 1.0; } else if (l > 0.04) { lit = col * 0.22; cov = 1.0; }",
+      "  } else {",
+      "    if (l >= 0.04 && uv.x < 0.82 && abs(uv.y - 0.5) < (0.12 + 0.6 * l) * 0.5) { lit = min(vec3(1.0), col * (0.6 + 0.6 * l) + 0.157 * l * l); cov = 1.0; }",
+      "  }",
+      "  vec3 g = lit * cov * (set == 0 && style == 0 ? uLit : 1.0) + col * under;",
+      "  if (glow > 0.0 && l >= thresh) { g += lit * cov * glow * 0.6; }",
+      // the glow's halo: the picture a few octaves softer, where it is over the threshold
+      "  if (glow > 0.0) { vec3 hal = textureLod(uScene, gl_FragCoord.xy / uRes, L + 2.5).rgb; g += hal * glow * 0.5 * smoothstep(thresh, min(1.0, thresh + 0.2), lumOf(hal)); }",
+      "  o = vec4(mix(pic.rgb, g, smoothstep(uMin, 2.0 * uMin, s)), 1.0);",
+      "}"].join("\n"));
+    ["uScene", "uDepth", "uAtlas", "uTable", "uRes", "uNear", "uFar", "uS0", "uD0", "uMin", "uLit", "uT", "uPanel", "uGrid", "uStory", "uNs", "uInvVP", "uOrigin"].forEach(function (k) { GLU[k] = gl.getUniformLocation(glyphProg, k); });
+  }
+  // The storyboard: GRID x GRID frames, the first as Glyph Light came in, each next one step from the last, every
+  // style, set, mode and motion somewhere in it (those the walk of steps missed set into its later frames).
+  function glyphStory() {
+    var n = GLYPH.GRID * GLYPH.GRID, r = Pl.rng(seed * 23 + 11), out = [];
+    var f = { style: 0, set: 0, mode: 0, motion: 0, dens: 1, expo: 0, contr: 1, gam: 1, detail: 0, inv: 0, glow: 0.35, thresh: 0.7, under: GLYPH.UNDER, auto: 0 };
+    var steps = [
+      function () { f.style = (f.style + 1 + floor(r() * 3)) % 4; }, function () { f.set = (f.set + 1 + floor(r() * 6)) % 7; },
+      function () { f.mode = (f.mode + 1 + floor(r() * 3)) % 4; }, function () { f.motion = (f.motion + 1 + floor(r() * 4)) % 5; },
+      function () { f.dens = clampV(f.dens * (r() < 0.5 ? 0.75 : 1.33), 0.5, 2); }, function () { f.expo = clampV(f.expo + (r() - 0.5) * 0.8, -1, 1); },
+      function () { f.contr = clampV(f.contr + (r() - 0.5) * 0.6, 0.6, 1.8); }, function () { f.gam = clampV(f.gam + (r() - 0.5) * 0.5, 0.6, 1.6); },
+      function () { f.detail = clampV(f.detail + (r() < 0.5 ? -0.5 : 0.5), 0, 2); }, function () { f.inv = f.inv ? 0 : (r() < 0.3 ? 1 : 0); },
+      function () { f.glow = clampV(f.glow + (r() - 0.5) * 0.6, 0, 1.5); }, function () { f.thresh = clampV(f.thresh + (r() - 0.5) * 0.3, 0.4, 0.95); },
+      function () { f.under = clampV(f.under + (r() - 0.5) * 0.3, 0.05, 0.7); }, function () { f.auto = f.auto ? 0 : 1; }
+    ];
+    for (var i = 0; i < n; i += 1) { if (i) { steps[floor(r() * steps.length)](); } out.push(Object.assign({}, f)); }
+    var at = 8;
+    [["style", 4], ["set", 7], ["mode", 4], ["motion", 5]].forEach(function (dv) {
+      for (var v = 0; v < dv[1]; v += 1) {
+        if (!out.some(function (q) { return q[dv[0]] === v; })) { out[at % n][dv[0]] = v; at += 5; }
+      }
+    });
+    if (!out.some(function (q) { return q.inv; })) { out[(at += 5) % n].inv = 1; }
+    if (!out.some(function (q) { return q.auto; })) { out[(at += 5) % n].auto = 1; }
+    return out;
+  }
+  // The table the pass reads: four texels a frame (its choices; density, exposure, contrast, midtones; detail, invert,
+  // glow, where the glow starts; the image under), a row each; the frames' first where he wakes.
+  function glyphStoryPlace() {
+    glyphFrames = glyphStory();
+    var t = underTree(), P0 = GLYPH.PANEL;
+    glyphOrigin = [t.x - P0 / 2, t.z - P0 / 2];
+    var b = function (v) { return round(clampV(v, 0, 1) * 255); }, d = new Uint8Array(4 * 4 * glyphFrames.length);
+    glyphFrames.forEach(function (q, i) {
+      var o = i * 16;
+      [q.style / 3, q.set / 6, q.mode / 3, q.motion / 4, (q.dens - 0.5) / 1.5, (q.expo + 1) / 2, (q.contr - 0.5) / 1.5, (q.gam - 0.5) / 1.5,
+       q.detail / 2, q.inv, q.glow / 1.5, q.thresh, q.under, q.auto, 0, 0].forEach(function (v, k) { d[o + k] = b(v); });
+    });
+    if (!glyphTable) { glyphTable = gl.createTexture(); }
+    gl.bindTexture(gl.TEXTURE_2D, glyphTable);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 4, glyphFrames.length, 0, gl.RGBA, gl.UNSIGNED_BYTE, d);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  }
+  // The picture the world is drawn into, as large as the canvas: colour with its octaves (read a cell's mean from the
+  // one its size names), and depth; drawn first into a multisampled copy and resolved into it, so that what shows as
+  // the picture far off keeps the canvas's antialiasing.
+  function glyphBegin(cw, chh) {
+    if (!GLYPH.ON) { return; }
+    if (!glyphProg) { try { glyphInit(); } catch (e) { GLYPH.ON = 0; return; } }
+    if (!glyphFb || glyphFb.w !== cw || glyphFb.h !== chh) {
+      if (glyphFb) { gl.deleteFramebuffer(glyphFb.fb); gl.deleteTexture(glyphFb.col); gl.deleteTexture(glyphFb.dep); if (glyphFb.ms) { gl.deleteFramebuffer(glyphFb.ms); gl.deleteRenderbuffer(glyphFb.msC); gl.deleteRenderbuffer(glyphFb.msD); } }
+      var col = gl.createTexture(), dep = gl.createTexture(), fb = gl.createFramebuffer();
+      gl.bindTexture(gl.TEXTURE_2D, col);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, cw, chh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.bindTexture(gl.TEXTURE_2D, dep);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, cw, chh, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, col, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, dep, 0);
+      glyphFb = { fb: fb, col: col, dep: dep, w: cw, h: chh, ok: gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE };
+      if (!glyphFb.ok) { GLYPH.ON = 0; gl.bindFramebuffer(gl.FRAMEBUFFER, null); return; }   // (a device without it keeps the picture)
+      // (four samples, two on a canvas over a million and a half pixels: the copy costs memory the canvas's own does)
+      var ns = min(cw * chh > 1.5e6 ? 2 : 4, gl.getParameter(gl.MAX_SAMPLES) || 0);
+      if (ns > 1) {
+        var ms = gl.createFramebuffer(), msC = gl.createRenderbuffer(), msD = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, msC); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, ns, gl.RGBA8, cw, chh);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, msD); gl.renderbufferStorageMultisample(gl.RENDERBUFFER, ns, gl.DEPTH_COMPONENT24, cw, chh);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, ms);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, msC);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, msD);
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) { glyphFb.ms = ms; glyphFb.msC = msC; glyphFb.msD = msD; }
+        else { gl.deleteFramebuffer(ms); gl.deleteRenderbuffer(msC); gl.deleteRenderbuffer(msD); }
+      }
+    }
+    if (glyphFb.ok) { gl.bindFramebuffer(gl.FRAMEBUFFER, glyphFb.ms || glyphFb.fb); glyphLive = true; }
+  }
+  // The picture drawn again on the canvas, as glyphs.
+  function glyphEnd(cw, chh) {
+    glyphLive = false;
+    if (!GLYPH.ON || !glyphFb || !glyphFb.ok) { return; }
+    if (glyphFb.ms) {
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, glyphFb.ms); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glyphFb.fb);
+      gl.blitFramebuffer(0, 0, cw, chh, 0, 0, cw, chh, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+      gl.blitFramebuffer(0, 0, cw, chh, 0, 0, cw, chh, gl.DEPTH_BUFFER_BIT, gl.NEAREST);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, glyphFb.col); gl.generateMipmap(gl.TEXTURE_2D);
+    gl.viewport(0, 0, cw, chh);
+    gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
+    gl.useProgram(glyphProg);
+    gl.bindVertexArray(null);
+    if (!glyphTable) { glyphStoryPlace(); }
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, glyphFb.col);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, glyphFb.dep);
+    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, glyphAtlas);
+    gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, glyphTable);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1i(GLU.uScene, 2); gl.uniform1i(GLU.uDepth, 3); gl.uniform1i(GLU.uAtlas, 4); gl.uniform1i(GLU.uTable, 5);
+    gl.uniform2f(GLU.uRes, cw, chh); gl.uniform1f(GLU.uNear, NEAR); gl.uniform1f(GLU.uFar, FAR);
+    // (sizes in CSS px, made the canvas's: as large on the screen on any device, or on a coarser canvas)
+    var k = cw / max(1, window.innerWidth);
+    gl.uniform1f(GLU.uS0, GLYPH.S0 * k); gl.uniform1f(GLU.uD0, GLYPH.D0); gl.uniform1f(GLU.uMin, GLYPH.MIN * k); gl.uniform1f(GLU.uLit, GLYPH.LIT);
+    gl.uniform1f(GLU.uT, stillMotion.matches ? 0 : performance.now() / 1000); gl.uniform1f(GLU.uPanel, GLYPH.PANEL);
+    gl.uniform1i(GLU.uGrid, GLYPH.GRID); gl.uniform1i(GLU.uStory, GLYPH.STORY ? 1 : 0); gl.uniform1fv(GLU.uNs, GLYPH.NS);
+    gl.uniformMatrix4fv(GLU.uInvVP, false, invert(vp)); gl.uniform2f(GLU.uOrigin, glyphOrigin[0], glyphOrigin[1]);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.enable(gl.DEPTH_TEST);
+  }
+
+  /* The monarch (the artist, 26 Oct 2026: "I want you to implement a butterfly flying in a loop that runs: flying in
+     circle and then a straight line. and as you approach the butterfly the way that it looks will become more like a
+     couple of characters whereas the further you are from the butterfly, the more refined it looks like a butterfly.
+     Make it a monarch"). Danaus plexippus, ten centimetres across: orange wings veined in black, a black border with
+     two rows of white spots. It flies a loop over the lawn where you wake, between two points nine metres apart: a
+     whole turn and a half about the first, the straight line to the second along one side, a turn and a half there, and
+     the straight line back along the other, at 2.2 m/s, a metre and a half up, its wings beating six times a second.
+     It is drawn into the world, so Glyph Light draws it too: near, a couple of characters; far, the monarch. */
+  var MONARCH = { R: 1.4, D: 9, V: 2.2, UP: 1.5, SPAN: 0.1, HZ: 6 }, monarch = null, monProg = null, MU = {}, monTex = null, monVao = null;
+  function monarchInit() {
+    // its wing, the right one (the left is it mirrored): fore and hind wing drawn on a canvas, the body at the left edge
+    var cv = document.createElement("canvas"); cv.width = 128; cv.height = 128;
+    var c = cv.getContext("2d"), o = "#e8771d", k = "#140c08";
+    c.clearRect(0, 0, 128, 128);
+    var fore = function () { c.beginPath(); c.moveTo(4, 66); c.bezierCurveTo(20, 30, 70, 6, 122, 10); c.bezierCurveTo(118, 34, 104, 54, 78, 66); c.closePath(); };
+    var hind = function () { c.beginPath(); c.moveTo(4, 66); c.bezierCurveTo(40, 62, 92, 72, 96, 98); c.bezierCurveTo(90, 122, 46, 126, 14, 104); c.closePath(); };
+    [fore, hind].forEach(function (w) {
+      c.fillStyle = k; w(); c.fill();
+      c.save(); w(); c.clip(); c.fillStyle = o;
+      c.beginPath(); c.moveTo(10, 66); c.lineTo(110, 18); c.lineTo(98, 40); c.lineTo(74, 60); c.lineTo(84, 96); c.lineTo(48, 112); c.lineTo(16, 96); c.closePath(); c.fill();
+      // the veins, black
+      c.strokeStyle = k; c.lineWidth = 2.2;
+      [[8, 66, 112, 16], [8, 66, 100, 38], [8, 66, 78, 60], [8, 66, 88, 92], [8, 66, 60, 112], [8, 66, 30, 106], [40, 48, 70, 30], [40, 80, 70, 90]].forEach(function (v) { c.beginPath(); c.moveTo(v[0], v[1]); c.lineTo(v[2], v[3]); c.stroke(); });
+      c.restore();
+    });
+    // the border's white spots
+    c.fillStyle = "#f4efe6";
+    [[118, 14], [112, 22], [116, 30], [106, 40], [98, 50], [88, 60], [92, 100], [80, 112], [64, 118], [44, 118], [28, 110], [104, 12], [94, 10]].forEach(function (p) { c.beginPath(); c.arc(p[0], p[1], 1.8, 0, Math.PI * 2); c.fill(); });
+    // the body
+    c.fillStyle = k; c.fillRect(0, 50, 6, 40);
+    monTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, monTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    monProg = compile("#version 300 es\nlayout(location=0) in vec4 a; uniform mat4 uVP; uniform mat4 uM; uniform float uFlap; out vec2 vT;\n" +
+      "void main() { float sd = a.x < 0.0 ? -1.0 : 1.0; float x = abs(a.x); vec3 p = vec3(sd * x * cos(uFlap), x * sin(uFlap), a.y); vT = vec2(a.z, a.w); gl_Position = uVP * uM * vec4(p, 1.0); }",
+      "#version 300 es\nprecision mediump float; uniform sampler2D uTex; in vec2 vT; out vec4 o;\nvoid main() { vec4 c = texture(uTex, vT); if (c.a < 0.5) { discard; } o = vec4(c.rgb, 1.0); }");
+    ["uVP", "uM", "uFlap", "uTex"].forEach(function (k2) { MU[k2] = gl.getUniformLocation(monProg, k2); });
+    // two quads, x out from the body (right +, left -), y along it (head +), (u, v) on the wing's canvas
+    var h = MONARCH.SPAN / 2, q = [];
+    [1, -1].forEach(function (sd) {
+      var P0 = [0, h * 0.62, 0, 0], P1 = [sd * h, h * 0.62, 1, 0], P2 = [sd * h, -h * 0.62, 1, 1], P3 = [0, -h * 0.62, 0, 1];
+      q.push(P0, P1, P2, P0, P2, P3);
+    });
+    var buf = gl.createBuffer(); monVao = gl.createVertexArray();
+    gl.bindVertexArray(monVao); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([].concat.apply([], q)), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+  }
+  // Its loop over the lawn where you wake: A a few steps from the tree toward the wreck, B nine metres on, across.
+  function monarchPlace() {
+    var t = place.tree, wr = place.wreck, s = underTree();
+    if (!t || !wr) { monarch = null; return; }
+    var ax = wr.x + 0.5 - (t.x + 0.5), az = wr.z + 0.5 - (t.z + 0.5), L = hypot(ax, az) || 1; ax /= L; az /= L;
+    var A = [s.x + ax * 3, s.z + az * 3], dir = [-az, ax];
+    if (A[0] + dir[0] * MONARCH.D < 4 || A[0] + dir[0] * MONARCH.D > w.SX - 4 || A[1] + dir[1] * MONARCH.D < 4 || A[1] + dir[1] * MONARCH.D > w.SZ - 4) { dir = [az, -ax]; }
+    var gy = function (x, z) { var X = clampV(floor(x), 0, w.SX - 1), Z = clampV(floor(z), 0, w.SZ - 1); return w.top[Z * w.SX + X] + 1; };
+    monarch = { A: A, dir: dir, y: max(gy(A[0], A[1]), gy(A[0] + dir[0] * MONARCH.D, A[1] + dir[1] * MONARCH.D)) + MONARCH.UP, t0: performance.now() };
+  }
+  // Where it is at time t (s) along its loop: [x, y, z, yaw].
+  function monarchAt(t) {
+    var M = MONARCH, r = M.R, turn = 3 * Math.PI * r, len = 2 * turn + 2 * M.D, s = ((t * M.V) % len + len) % len, d = monarch.dir, n = [d[1], -d[0]];
+    // (in the loop's own frame: x along A to B, y to its left; A at 0, B at D; turns counterclockwise)
+    var lx, ly, hx, hy;
+    if (s < turn) { var a = -Math.PI / 2 + s / r; lx = r * Math.cos(a); ly = r * Math.sin(a); hx = -Math.sin(a); hy = Math.cos(a); }
+    else if (s < turn + M.D) { lx = s - turn; ly = -r; hx = 1; hy = 0; }
+    else if (s < 2 * turn + M.D) { var b = -Math.PI / 2 + (s - turn - M.D) / r; lx = M.D + r * Math.cos(b); ly = r * Math.sin(b); hx = -Math.sin(b); hy = Math.cos(b); }
+    else { lx = M.D - (s - 2 * turn - M.D); ly = r; hx = -1; hy = 0; }
+    var x = monarch.A[0] + d[0] * lx - n[0] * ly, z = monarch.A[1] + d[1] * lx - n[1] * ly, vx = d[0] * hx - n[0] * hy, vz = d[1] * hx - n[1] * hy;
+    return [x, monarch.y + 0.25 * Math.sin(t * 1.3), z, Math.atan2(vx, -vz)];
+  }
+  function drawMonarch(now) {
+    if (!monarch || intro && (now - intro.t0) < 4000) { return; }
+    if (!monProg) { monarchInit(); }
+    var t = (now - monarch.t0) / 1000, p = monarchAt(t), cy = Math.cos(p[3]), sy = Math.sin(p[3]);
+    // its frame (columns): its right, the world's up, its way forward (the quads' body), where it is
+    var M = [cy, 0, sy, 0, 0, 1, 0, 0, sy, 0, -cy, 0, p[0], p[1], p[2], 1];
+    gl.useProgram(monProg);
+    gl.uniformMatrix4fv(MU.uVP, false, vp); gl.uniformMatrix4fv(MU.uM, false, M);
+    gl.uniform1f(MU.uFlap, 0.15 + 1.0 * (0.5 + 0.5 * Math.sin(t * MONARCH.HZ * 2 * Math.PI)));
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, monTex); gl.uniform1i(MU.uTex, 0);
+    gl.disable(gl.CULL_FACE);
+    gl.bindVertexArray(monVao); gl.drawArrays(gl.TRIANGLES, 0, 12); gl.bindVertexArray(null);
+  }
+
+  /* ---- the unit's studies, in characters ------------------------------------------------------------------------------
+     The artist, 27 Oct 2026: "Characters are the answer to the basic unit study, still conduct those studies on that
+     shape"; and, asked which, both: Glyph Light's glyphs are made of the figure (glyphRamp), and the four studies beside
+     the tree are made again with a character as the unit, each where its figure stood, as large, on its mount:
+     - the ladder of levels: a character made of characters, an @ drawn in #s, each # itself a glyph;
+     - the crux: three As, 8, 13 and 21 thirds of a block tall (the figure's levels 2, 3 and 4), their apexes, the one
+       point a letter A shares with the drawing, at one point, with their holding circles, rings of full stops, all
+       touching there;
+     - the closed curve: the page's ramp, " .:-=+*#%@" and back, round a circle, so that it closes on itself;
+     - the sphere of the unit: a character at each of its 136 cells, chosen by the light it takes from the sun, as
+       a sphere is drawn in characters (its blocks taken out of the place for them).
+     Each character faces the camera, white as the figures were, and is drawn into the world, so Glyph Light draws it
+     again in figures where you stand near. */
+  var CHARS = " .:-=+*#%@AQ", APEX = 0.23, charProg = null, CU = {}, charAtlas = null, charVao = null, charBuf = null, charCount = 0;
+  // A character's cells, rasterised on a grid cols x rows (the ladder's one character in others).
+  function charCells(ch, cols, rows) {
+    var cv = document.createElement("canvas"); cv.width = cols * 8; cv.height = rows * 8;
+    var c = cv.getContext("2d"); c.fillStyle = "#000"; c.fillRect(0, 0, cv.width, cv.height);
+    c.fillStyle = "#fff"; c.font = "700 " + round(rows * 8 * 0.95) + "px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
+    c.fillText(ch, cv.width / 2, cv.height / 2 + rows * 0.4);
+    var d = c.getImageData(0, 0, cv.width, cv.height).data, out = [];
+    for (var j = 0; j < rows; j += 1) {
+      for (var i = 0; i < cols; i += 1) {
+        var s = 0;
+        for (var y = 0; y < 8; y += 1) { for (var x = 0; x < 8; x += 1) { s += d[((j * 8 + y) * cv.width + i * 8 + x) * 4]; } }
+        if (s / 64 > 90) { out.push([i, rows - 1 - j]); }
+      }
+    }
+    return out;
+  }
+  // The four, as instances [x, y, z, size, glyph, r, g, b], each in its figure's box (the mesh's bounds); the three
+  // drawn as figures known by their names, the sphere (built of the place's blocks) by its cells.
+  function charStudies() {
+    if (!studies || !studies.figures) { return []; }
+    var out = [], G = function (ch) { return CHARS.indexOf(ch); }, W = [0.95, 0.93, 0.9];
+    var put = function (p, size, ch, col) { out.push(p[0], p[1], p[2], size, G(ch), (col || W)[0], (col || W)[1], (col || W)[2]); };
+    var kind = function (name) { return /ladder/i.test(name) ? 0 : /crux/i.test(name) ? 1 : /curve/i.test(name) ? 2 : 3; };
+    studies.figures.forEach(function (f) {
+      var n = kind(f.name);
+      var P0 = f.mesh.pos, lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+      for (var i = 0; i < P0.length; i += 3) { for (var k = 0; k < 3; k += 1) { lo[k] = min(lo[k], P0[i + k]); hi[k] = max(hi[k], P0[i + k]); } }
+      var c = [(lo[0] + hi[0]) / 2, lo[1], (lo[2] + hi[2]) / 2], H = max(1.2, hi[1] - lo[1]), across = [1, 0, 0];
+      // (the row runs across the view from where you wake: the characters stand in the plane square to the stone's eye)
+      var st = (studies.stands || []).filter(function (q) { return q.i === f.i; })[0];
+      if (st) { var ex = c[0] - st.eye[0], ez = c[2] - st.eye[2], L = hypot(ex, ez) || 1; across = [-ez / L, 0, ex / L]; }
+      var at = function (u, v, wd) { return [c[0] + across[0] * u - (wd || 0) * across[2], c[1] + v, c[2] + across[2] * u + (wd || 0) * across[0]]; };
+      if (n === 0) {
+        // the ladder: an @ of 9 x 11 cells, each inked one a # glyph a cell tall
+        var cs = H / 11;
+        charCells("@", 9, 11).forEach(function (q) { put(at((q[0] - 4) * cs, (q[1] + 0.5) * cs), cs, "#"); });
+      } else if (n === 1) {
+        // the crux: three As whose apexes meet at one point, and three rings of full stops touching there
+        var top = H * 0.98, u = H / 21;
+        [8, 13, 21].forEach(function (F) {
+          var h = F * u;
+          put(at(0, top + APEX * h - h / 2), h, "A");   // (its apex, APEX of its height down, at the top)
+          var r = F * u / Math.sqrt(3), m = max(10, round(2 * Math.PI * r / (u * 1.2)));
+          for (var k = 0; k < m; k += 1) { var a = k / m * 2 * Math.PI; put(at(Math.sin(a) * r, top - r + Math.cos(a) * r), u * 0.9, "."); }
+        });
+      } else if (n === 2) {
+        // the closed curve: the ramp up and back round a circle, closing on itself
+        var R = H * 0.42, ramp = CHARS.slice(1, 10), seq = ramp + ramp.split("").reverse().join(""), m2 = seq.length * 2;
+        for (var k2 = 0; k2 < m2; k2 += 1) { var b = k2 / m2 * 2 * Math.PI; put(at(Math.sin(b) * R, H / 2 + Math.cos(b) * R), H * 0.11, seq[k2 % seq.length]); }
+      }
+    });
+    // the sphere of the unit: its cells, each a character by the sun's light on it there, a block's size
+    var cells = sphereCells();
+    if (cells.length) {
+      var mid = [0, 0, 0];
+      cells.forEach(function (q) { mid[0] += q[0] / cells.length; mid[1] += q[1] / cells.length; mid[2] += q[2] / cells.length; });
+      cells.forEach(function (q) {
+        var d = [q[0] - mid[0], q[1] - mid[1], q[2] - mid[2]], r2 = hypot(d[0], d[1], d[2]) || 1;
+        var lit = 0.12 + 0.88 * max(0, (d[0] * sunDir[0] + d[1] * sunDir[1] + d[2] * sunDir[2]) / r2);
+        put(q, 0.95, CHARS[1 + min(8, floor(lit * 9))]);
+      });
+    }
+    return out;
+  }
+  // The sphere's cells (the block study: its columns are named with its name in the row's at), taken out of the place once.
+  function sphereCells() {
+    if (studies.sphere) { return studies.sphere; }
+    var cells = [], cols = {};
+    (studies.stands || []).forEach(function (st) {
+      if (studies.figures.some(function (f) { return f.i === st.i; })) { return; }
+      Object.keys(studies.at || {}).forEach(function (key) {
+        if (studies.at[key] !== st.name || cols[key]) { return; }
+        cols[key] = 1;
+        var x = +key.split(",")[0], z = +key.split(",")[1];
+        for (var y = floor(st.at[1]); y < floor(st.at[1]) + 12; y += 1) {
+          if (w.get(x, y, z) === B.WHITE) { cells.push([x + 0.5, y + 0.5, z + 0.5]); w.set(x, y, z, B.AIR); }
+        }
+      });
+    });
+    Object.keys(cols).forEach(function (k) { var q = k.split(","); remeshAt(+q[0], +q[1]); });
+    studies.sphere = cells;
+    return cells;
+  }
+  function charsInit() {
+    var n = CHARS.length, cv = document.createElement("canvas"); cv.width = 64 * n; cv.height = 64;
+    var c = cv.getContext("2d");
+    c.fillStyle = "#000"; c.fillRect(0, 0, cv.width, cv.height);
+    c.font = "700 56px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#fff";
+    for (var i = 0; i < n; i += 1) { c.fillText(CHARS[i], i * 64 + 32, 34); }
+    // where the A's apex is in its cell: its top inked row
+    var ai = CHARS.indexOf("A"), dd = c.getImageData(ai * 64, 0, 64, 64).data;
+    for (var y = 0; y < 64; y += 1) { var ink = false; for (var x = 0; x < 64; x += 1) { if (dd[(y * 64 + x) * 4] > 128) { ink = true; break; } } if (ink) { APEX = y / 64; break; } }
+    charAtlas = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, charAtlas);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    charProg = compile("#version 300 es\nlayout(location=0) in vec4 aP; layout(location=1) in vec4 aC; uniform mat4 uVP; uniform vec3 uR; uniform vec3 uU; uniform float uN; out vec2 vT; out vec3 vC;\n" +
+      "const vec2 Q[6] = vec2[6](vec2(0.0, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.0, 0.0), vec2(1.0, 1.0), vec2(0.0, 1.0));\n" +
+      "void main() { vec2 q = Q[gl_VertexID];\n" +
+      "  vec3 p = aP.xyz + (uR * (q.x - 0.5) + uU * (q.y - 0.5)) * aP.w; vT = vec2((aC.x + q.x) / uN, 1.0 - q.y); vC = aC.yzw; gl_Position = uVP * vec4(p, 1.0); }",
+      "#version 300 es\nprecision mediump float; uniform sampler2D uTex; uniform vec3 uEye; in vec2 vT; in vec3 vC; out vec4 o;\nvoid main() { float m = texture(uTex, vT).r; if (m < 0.35) { discard; } o = vec4(vC * m, 1.0); }");
+    ["uVP", "uR", "uU", "uN", "uTex"].forEach(function (k) { CU[k] = gl.getUniformLocation(charProg, k); });
+  }
+  function charsUpload() {
+    if (!studies && !qcubes.length) { charCount = 0; return; }
+    if (!charProg) { charsInit(); }
+    var data = charStudies().concat(charCubes());
+    charCount = data.length / 8;
+    if (!charCount) { return; }
+    if (!charVao) { charVao = gl.createVertexArray(); charBuf = gl.createBuffer(); }
+    gl.bindVertexArray(charVao); gl.bindBuffer(gl.ARRAY_BUFFER, charBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 32, 0); gl.vertexAttribDivisor(0, 1);
+    gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 32, 16); gl.vertexAttribDivisor(1, 1);
+    gl.bindVertexArray(null);
+  }
+  function drawChars() {
+    if (!charCount) { return; }
+    var r = [Math.cos(camLast.yaw), 0, Math.sin(camLast.yaw)], f = lookDir(camLast.yaw, camLast.pitch);
+    var u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+    if (u[1] < 0) { u = [-u[0], -u[1], -u[2]]; }
+    gl.useProgram(charProg);
+    gl.uniformMatrix4fv(CU.uVP, false, vp); gl.uniform3fv(CU.uR, r); gl.uniform3fv(CU.uU, u); gl.uniform1f(CU.uN, CHARS.length);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, charAtlas); gl.uniform1i(CU.uTex, 0);
+    gl.disable(gl.CULL_FACE);
+    gl.bindVertexArray(charVao); gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, charCount); gl.bindVertexArray(null);
+  }
+
+  /* ---- the courts: pickleball with his hat, and the ten courts that build the Trojan horse ----------------------------
+     The artist, 28 Oct 2026: "Make it games of Pickleball instead of tennis so the court is smaller and you can maintain
+     the perspectives of Mr Pearl to play". Before that, 27 Oct 2026: "Put a tennis court in the game in which I can
+     play tennis using Mr Pearl's hat as his racket. You use a pearl for the ball whenever you serve and you serve every time. The game is to see how long you
+     can keep a pearl one point at a time. Your opponent progressively gets better and better after each level. The
+     opponent is Mr Pearl's nemesis." And, the player made a manager: after three points won the court plays on as its
+     own series; level two is the next court, a stronger nemesis; each court still playing is a part of an engine
+     building a statue, the Trojan horse; a court that loses a match must be played again, a level up, and while it is
+     down the building goes slower, a tool taken from it ("no more hammers or no more horses"): "you have to sacrifice".
+     A pickleball net stands near where he wakes; a tap on it takes him to the courts, ten side by side, far from the
+     place's grid (as space is). The courts are pickleball's, 20 by 44 feet, small enough that his own views play them:
+     the third person at rest behind his head, and the Scope, his head the glass and his nose the aim. Court one is level
+     one. He serves every point (a tap, a click, the jump, Space, T or Enter), underhand and across, past the kitchen,
+     the pearl his ball and his hat the paddle; he swings by himself when the pearl comes within the hat's reach, and his
+     return goes where the view looks (turn it, or raise the Scope, to aim). The serve and its return must bounce before
+     they are hit (the two-bounce rule), and no one volleys standing in the kitchen. The ring on the court is where the
+     nemesis's pearl first comes down. First to three points takes the level; until then he cannot leave the court ("you can't get out of the game that you haven't
+     won yet"). The rally, the hits the pearl is kept in play for, is counted and the longest kept. The nemesis is his
+     negative: his figure, every colour turned over. Each level it runs faster, reaches further, misses less, hits harder,
+     deeper and wider, and from level three drops more and more of its shots short, into his kitchen (dinks).
+     A level won, its court plays on by itself: his stand-in against that court's nemesis, a point every few seconds, a
+     match after a match, and the higher the level the likelier the nemesis takes a point. Each court playing gives its
+     tool to the horse (hammers on court one, horses on two, ...), which rises a part at a time beyond the courts, each
+     hoisted from where it lay. A match lost there stops the court: its tool leaves the building, and it waits to be
+     played again, a level up. */
+  var COURT = {
+    O: [-4000, 0, -4000],                  // far from the place's grid (x below nought is air there), as space is
+    N: 10, GAP: 12,                        // ten side by side, 12 m apart: a pickleball court (6.10 m) and its run-off
+    L: 6.705, HW: 3.05, K: 2.134,          // the half length (44 ft), the half width (20 ft), the kitchen from the net (7 ft)
+    NET: 0.864, POST: 0.914, PO: 0.305,    // the net at its middle (34 in) and at the posts (36 in), the posts 12 in out
+    G: 9.81, E: 0.64, ROLL: 0.8,           // a ball's own fall, its bounce (78 in dropped to 30-34 in), the court's grip
+    REACH: 1.1, HAT: 0.55, WIN: 3,         // the hat's reach round its middle, its middle from his; points to a level
+    SKY: [0.72, 0.8, 0.88],
+    TOOLS: ["hammers", "horses", "ropes", "pulleys", "chisels", "saws", "ladders", "pegs", "carts", "adzes"],
+    WORK: 4800                             // the horse, in court-seconds: all ten playing, eight minutes
+  };
+  var court = null, courts = null, horse = { work: 0, done: false }, gate = null, courtRng = null, courtHead = null, nemPal = null;
+  function courtAt(k) { return [COURT.O[0] + k * COURT.GAP, 0, COURT.O[2]]; }
+  function courtsInit() {
+    if (courts) { return; }
+    courtRng = Pl.rng(seed * 13 + 5);
+    courts = [];
+    for (var k = 0; k < COURT.N; k += 1) { courts.push({ k: k, level: k + 1, won: false, up: false, you: 0, them: 0, next: 0, t0: 0, matches: 0, lost: 0 }); }
+    courts.best = 0;
+  }
+  // The courts play on wherever he is (from the place's frame too): a point every four to eight seconds on each court
+  // that is up, the stand-in taking it at 0.93 less a twentieth a level; the horse built by the courts up.
+  function courtsSim(dt, now) {
+    if (!courts) { return; }
+    var up = 0;
+    courts.forEach(function (c) {
+      if (!c.up) { return; }
+      up += 1;
+      if (now < c.next) { return; }
+      c.next = now + (4 + 4 * courtRng()) * 1000;
+      if (courtRng() < clampV(0.93 - 0.05 * c.level, 0.3, 0.95)) { c.you += 1; } else { c.them += 1; }
+      if (c.you >= COURT.WIN) { c.matches += 1; c.you = c.them = 0; }
+      else if (c.them >= COURT.WIN) {
+        c.up = false; c.level += 1; c.lost += 1; c.you = c.them = 0;
+        say("Court " + (c.k + 1) + " lost a match: no more " + COURT.TOOLS[c.k] + " for the horse. Play it again, at level " + c.level + ".");
+      }
+    });
+    if (!horse.done) {
+      horse.work = min(COURT.WORK, horse.work + up * dt);
+      if (horse.work >= COURT.WORK) { horse.done = true; say("The Trojan horse stands, every part of it in place.", true); }
+    }
+  }
+  // The net near where he wakes: a level patch of ground, five cells square, 7 to 22 m from the tree, clear of the
+  // homage, the studies and the wreck; the net runs along the ring round the tree.
+  function gatePlace() {
+    gate = null;
+    var at = underTree(), S = w.SOLID, hb = homage && homage.box, y0 = floor(at.y + 0.01), wr = place.wreck;
+    var clear = function (x, z) {
+      if (hb && x >= hb[0] - 3 && x <= hb[2] + 3 && z >= hb[1] - 3 && z <= hb[3] + 3) { return false; }
+      if (wr && hypot(x - wr.x, z - wr.z) < 9) { return false; }
+      return !(studies && studies.stands && studies.stands.some(function (st) { return hypot(x - st.at[0], z - st.at[2]) < 7 || hypot(x - st.eye[0], z - st.eye[2]) < 3; }));
+    };
+    for (var r = 7; r <= 22 && !gate; r += 1) {
+      for (var a = 0; a < 24 && !gate; a += 1) {
+        var th = a / 24 * 2 * Math.PI + 0.4, x = floor(at.x + Math.cos(th) * r), z = floor(at.z + Math.sin(th) * r), ok = clear(x + 0.5, z + 0.5);
+        for (var dx = -2; dx <= 2 && ok; dx += 1) {
+          for (var dz = -2; dz <= 2 && ok; dz += 1) {
+            var cx = x + dx, cz = z + dz;
+            if (cx < 2 || cz < 2 || cx >= w.SX - 2 || cz >= w.SZ - 2 || !S[w.get(cx, y0 - 1, cz)]) { ok = false; break; }
+            for (var k = 0; k < 3; k += 1) { if (w.get(cx, y0 + k, cz) !== B.AIR) { ok = false; break; } }
+          }
+        }
+        // (the net along the ring: its normal, the way through it, points at the tree)
+        if (ok) { gate = { x: x + 0.5, y: y0, z: z + 0.5, n: [-Math.cos(th), -Math.sin(th)], said: false }; }
+      }
+    }
+  }
+  // Near the net: what it is, once. (Walking through it took him to the courts until 28 Oct 2026, and took him there
+  // while he chased a coin past it; now a tap on it does: gateTap.)
+  function gateCheck() {
+    if (!gate || !me3 || Hd || sight.up || ride || ignite || launched || intro || space) { return false; }
+    if (!gate.said && hypot(P.x - gate.x, P.z - gate.z) < 6) { gate.said = true; say("A pickleball net: tap it to go to the courts, where his nemesis waits."); }
+    return false;
+  }
+  // A tap's ray on the net (its posts' width, the ground to the top of the posts), nearer than what else it meets and
+  // within the reach a label is read at: to the courts.
+  function gateTap(dir, hit) {
+    if (!gate || !me3 || Hd || ride || ignite || launched || intro || space) { return false; }
+    var n = gate.n, dn = dir[0] * n[0] + dir[2] * n[1];
+    if (abs(dn) < 1e-4) { return false; }
+    var t = ((gate.x - eye[0]) * n[0] + (gate.z - eye[2]) * n[1]) / dn;
+    if (t < passT(dir) || t > LOOK || (hit && hit.t < t)) { return false; }
+    var px = eye[0] + dir[0] * t, py = eye[1] + dir[1] * t, pz = eye[2] + dir[2] * t, u = -(px - gate.x) * n[1] + (pz - gate.z) * n[0];
+    return abs(u) <= 1.45 && py >= gate.y - 0.05 && py <= gate.y + COURT.POST + 0.1;
+  }
+  function enterCourts() {
+    courtsInit();
+    letGo(); dash = null; P.want = null; closeLabel(); closeAsk();
+    court = { m: null, t0: performance.now(), told: {}, scope: false, camT: -1e9, camFrom: null };
+    var c0 = courtAt(0);
+    P.x = c0[0] + 2.2; P.y = 0; P.z = c0[2] + COURT.L + 5; P.vx = P.vy = P.vz = 0; P.yaw = P.face = 0; P.pitch = -0.229; blend = null;
+    document.body.dataset.court = "true";
+    $("jump").setAttribute("aria-label", "Serve");
+    canvas.setAttribute("aria-label", "The courts: ten pickleball courts side by side and the Trojan horse beyond them. Walk onto a court to play its level; a tap, Serve, Space, T or Enter serves; turn the view, or raise the Scope, to aim your return.");
+    say("The pickleball courts. Walk onto court one to play level one: first to three points. Behind you, the net takes you back.", true);
+    courtWhere();
+  }
+  // Back through the net behind court one: in the place, on the tree's side of its net, facing the tree.
+  function leaveCourts() {
+    court = null; onStone = false;
+    $("v-sight").setAttribute("aria-pressed", "false");
+    delete document.body.dataset.court;
+    $("jump").setAttribute("aria-label", "Jump");
+    canvas.setAttribute("aria-label", VIEW_LABEL);
+    if (gate) {
+      P.x = gate.x + gate.n[0] * 1.4; P.z = gate.z + gate.n[1] * 1.4; P.y = gate.y; P.vx = P.vy = P.vz = 0;
+      P.yaw = P.face = Math.atan2(gate.n[0], -gate.n[1]); P.pitch = -0.229;
+    }
+    blend = null; last = 0;
+    where();
+  }
+  // The header's line: the court, its level, the score, the rally and the longest kept.
+  function courtWhere() {
+    var m = court && court.m, t = "The courts";
+    if (m) { t = "Court " + (m.k + 1) + " · level " + m.level + " · you " + m.you + " – " + m.them + " nemesis · rally " + m.rally + " · longest " + courts.best; }
+    else { var up = courts.filter(function (c) { return c.up; }).length; t += " · " + up + " of 10 playing · the horse " + round(100 * horse.work / COURT.WORK) + "%"; }
+    if ($("where").textContent !== t) { $("where").textContent = t; }
+  }
+  /* -- a match -- */
+  function nemSkill(level) {
+    var L = min(level, 14) - 1;
+    return { v: 2.2 + 0.25 * L, reach: COURT.REACH * (0.8 + 0.035 * L), wait: 0.5 - 0.025 * L, err: max(0.03, 0.28 - 0.025 * L), T: max(0.85, 1.55 - 0.055 * L),
+             wide: min(2.6, 0.3 + 0.25 * L), deep: min(COURT.L - 0.4, 3.4 + 0.3 * L), dink: L >= 2 ? min(0.35, 0.05 * (L - 1)) : 0 };
+  }
+  function matchOn(k) {
+    var c = courts[k], cc = courtAt(k);
+    court.m = { k: k, level: c.level, sk: nemSkill(c.level), you: 0, them: 0, n: 0, phase: "serve", t: performance.now(), ball: null, rally: 0, mark: null,
+                nem: { x: cc[0], z: cc[2] - COURT.L - 1, goal: null, at: 0, walked: 0, amount: 0, hit: -1e9 }, hit: -1e9, fire: false };
+    serveSpot();
+    say("Court " + (k + 1) + ", level " + c.level + ": first to three. Serve underhand: a tap, a click, Serve, Space, T or Enter.", true);
+  }
+  // Behind the baseline, the right of the centre mark on even points and the left on odd, as a server stands.
+  function serveSpot() {
+    var m = court.m, cc = courtAt(m.k);
+    P.x = cc[0] + (m.n % 2 ? -0.9 : 0.9); P.z = cc[2] + COURT.L + 0.4; P.yaw = P.face = (m.n % 2 ? 0.12 : -0.12);
+  }
+  function netH(lx) { return COURT.NET + (COURT.POST - COURT.NET) * min(1, abs(lx) / (COURT.HW + COURT.PO)); }
+  // A shot from b's place to the point (tx, tz, court-local) in T seconds; slower (higher) until it clears the net.
+  function shoot(b, k, tx, tz, T) {
+    var cc = courtAt(k), lx = b.x - cc[0], lz = b.z - cc[2], r = pearlR(), g = COURT.G;
+    for (var i = 0; i < 12; i += 1) {
+      var vx = (tx - lx) / T, vz = (tz - lz) / T, vy = (r - b.y + 0.5 * g * T * T) / T, tn = -lz / vz;
+      var yn = b.y + vy * tn - 0.5 * g * tn * tn;
+      if (tn <= 0 || yn - r > netH(lx + vx * tn) + 0.08) { b.vx = vx; b.vy = vy; b.vz = vz; return; }
+      T += 0.1;
+    }
+    b.vx = (tx - lx) / T; b.vz = (tz - lz) / T; b.vy = (r - b.y + 0.5 * g * T * T) / T;
+  }
+  // One step of a ball: its fall, the net, the court (returns where it bounced, if it did).
+  function ballStep(b, k, dt) {
+    var cc = courtAt(k), r = pearlR(), n = 4, h = dt / n, out = null;
+    for (var i = 0; i < n; i += 1) {
+      b.vy -= COURT.G * h;
+      var nx = b.x + b.vx * h, ny = b.y + b.vy * h, nz = b.z + b.vz * h;
+      if (!b.net && (b.z - cc[2]) * (nz - cc[2]) <= 0 && abs(nx - cc[0]) < COURT.HW + COURT.PO && ny - r < netH(nx - cc[0])) {
+        b.net = true; b.vz *= -0.15; b.vx *= 0.3; nz = cc[2] + (b.z > cc[2] ? r : -r);
+      }
+      if (ny < r) { ny = r; if (b.vy < 0) { b.vy = -b.vy * COURT.E; b.vx *= COURT.ROLL; b.vz *= COURT.ROLL; out = out || [nx, nz]; if (b.vy < 0.4) { b.vy = 0; } } }
+      b.x = nx; b.y = ny; b.z = nz; b.spin += hypot(b.vx, b.vz) * h / r;
+    }
+    return out;
+  }
+  // Where a ball now in the air first comes down (court-world x, z), stepping a copy on.
+  function ballLands(b, k) {
+    var q = { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, net: b.net, spin: 0 };
+    for (var i = 0; i < 300; i += 1) { var at = ballStep(q, k, 1 / 60); if (at) { return { x: at[0], z: at[1], after: q }; } }
+    return null;
+  }
+  // Where the nemesis meets it: after its bounce, at a hittable height going down, else where it would bounce again.
+  function nemMeets(b, k) {
+    var q = { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, net: b.net, spin: 0 }, bounced = false, t = 0;
+    for (var i = 0; i < 360; i += 1) {
+      var at = ballStep(q, k, 1 / 60); t += 1 / 60;
+      if (at) { if (bounced) { return { x: at[0], z: at[1], t: t }; } bounced = true; }
+      if (bounced && q.vy < 0 && q.y < 1.3) { return { x: q.x, z: q.z, t: t }; }
+    }
+    return { x: q.x, z: q.z, t: t };
+  }
+  function racketAt(x, z, face) { return [x + Math.cos(face) * COURT.HAT, z + Math.sin(face) * COURT.HAT]; }
+  function inReach(b, x, z, face, R) { var q = racketAt(x, z, face); return hypot(b.x - q[0], b.z - q[1]) < R && b.y > 0.1 && b.y < 2.2; }
+  // A volley (the pearl taken before it bounces) only from the fourth shot on (the serve and its return bounce first)
+  // and only standing outside the kitchen.
+  function mayVolley(m, z) { return m.rally >= 3 && abs(z - courtAt(m.k)[2]) > COURT.K; }
+  function point(toYou, why) {
+    var m = court.m;
+    if (m.phase !== "rally") { return; }
+    if (toYou) { m.you += 1; } else { m.them += 1; }
+    courts.best = max(courts.best, m.rally);
+    m.phase = "point"; m.t = performance.now(); m.mark = null;
+    say(why + " " + m.you + " – " + m.them + ", a rally of " + m.rally + ".");
+    courtWhere();
+  }
+  function matchStep(dt, now, c) {
+    var m = court.m, cc = courtAt(m.k), b = m.ball, sk = m.sk, nm = m.nem;
+    var press = c.up > 0 || input.fire, fire = press && !m.fire; m.fire = press;
+    if (m.phase === "serve") {
+      if (fire) { m.phase = "toss"; m.t = now; m.rally = 0; m.ball = null; }
+    } else if (m.phase === "toss") {
+      // the pearl dropped from his hand and struck underhand below his waist, across into the far service court, past
+      // the kitchen
+      if (now - m.t >= 300) {
+        var s0 = serveFrom();
+        b = m.ball = { x: s0[0], y: s0[1], z: s0[2], vx: 0, vy: 0, vz: 0, net: false, spin: 0, last: "you", bounces: 0, serve: true };
+        var sx = (m.n % 2 ? 1 : -1) * (0.5 + 2.0 * courtRng());
+        shoot(b, m.k, sx, -(COURT.K + 0.6 + courtRng() * (COURT.L - COURT.K - 1.2)), 1.2);
+        m.phase = "rally"; m.rally = 1; m.hit = now; nm.goal = null; nm.at = now + sk.wait * 1000;
+        courtWhere();
+      }
+    } else if (m.phase === "rally" && b) {
+      var at = ballStep(b, m.k, dt), lz = b.z - cc[2], lx = b.x - cc[0];
+      if (at && m.phase === "rally") {
+        var side = at[1] - cc[2] > 0 ? "you" : "them", alx = at[0] - cc[0], alz = at[1] - cc[2];
+        if (b.bounces === 0) {
+          var inn = abs(alx) <= COURT.HW + 0.03 && abs(alz) <= COURT.L + 0.03 && (!b.serve || abs(alz) >= COURT.K - 0.03);
+          if (side === b.last) { point(side !== "you", side === "you" ? "Into the net." : "The nemesis puts it into the net."); }
+          else if (!inn) { point(b.last !== "you", b.serve ? "The serve fell in the kitchen." : b.last === "you" ? "Out." : "The nemesis hits it out."); }
+          else { b.bounces = 1; }
+        } else { point(side !== "you", side === "you" ? "It bounced twice: you did not reach it." : "Twice on its side: the nemesis did not reach it."); }
+      }
+      if (m.phase === "rally") {
+        // his swing: when it comes within the hat's reach on his side, gone over the net (after its bounce, or on the
+        // volley where a volley may be)
+        if (b.last === "them" && !b.net && lz > 0 && b.vz > 0 && (b.bounces === 1 || mayVolley(m, P.z)) && inReach(b, P.x, P.z, P.face, COURT.REACH)) {
+          var dz = -(COURT.L - 0.6 - 1.6 * courtRng()), tx = clampV(lx + Math.tan(P.yaw) * (lz - dz), -COURT.HW + 0.3, COURT.HW - 0.3);
+          shoot(b, m.k, tx, dz, 1.25);
+          b.last = "you"; b.bounces = 0; b.serve = false; m.rally += 1; m.hit = now; nm.goal = null; nm.at = now + sk.wait * 1000;
+          courtWhere();
+        } else if (b.last === "you" && !b.net && lz < 0 && b.vz < 0 && (b.bounces === 1 || mayVolley(m, nm.z)) && inReach(b, nm.x, nm.z, Math.PI, sk.reach)) {
+          // the nemesis's: away from him, deeper and wider as its level is, or a dink into his kitchen; now and then out
+          var plx = P.x - cc[0], wx = clampV(-Math.sign(plx || 1) * sk.wide + (courtRng() - 0.5) * 0.8, -COURT.HW + 0.25, COURT.HW - 0.25), wz = min(COURT.L - 0.3, sk.deep + (courtRng() - 0.5)), T = sk.T;
+          if (courtRng() < sk.dink) { wz = COURT.K * (0.35 + 0.5 * courtRng()); T = sk.T + 0.25; }
+          var e = courtRng();
+          if (e < sk.err) { if (e < sk.err / 2) { wz = COURT.L + 0.5 + 0.8 * courtRng(); } else { wx = Math.sign(wx || 1) * (COURT.HW + 0.4 + 0.6 * courtRng()); } }
+          shoot(b, m.k, wx, wz, T);
+          b.last = "them"; b.bounces = 0; b.serve = false; m.rally += 1; nm.hit = now; nm.goal = null;
+          var L0 = ballLands(b, m.k); m.mark = L0 && { x: L0.x, z: L0.z };
+          courtWhere();
+        }
+      }
+    } else if (m.phase === "point" && b && now - m.t < 1400) { ballStep(b, m.k, dt);   // (it rolls on while the point is told)
+    } else if (m.phase === "point" && now - m.t >= 1400) {
+      if (m.you >= COURT.WIN) { levelWon(); return; }
+      if (m.them >= COURT.WIN) { say("The nemesis takes it, " + m.them + " – " + m.you + ". Again from love: serve.", true); m.you = m.them = 0; }
+      m.n += 1; m.phase = "serve"; m.ball = null; serveSpot(); courtWhere();
+    }
+    // the nemesis: after its wait, to where it meets the pearl coming; else back to the middle of its baseline
+    if (b && m.phase === "rally" && b.last === "you" && !nm.goal && now >= nm.at) { var q = nemMeets(b, m.k); nm.goal = [q.x + COURT.HAT, q.z]; }   // (its right is to the -x: it faces +z)
+    var gx = nm.goal ? nm.goal[0] : cc[0], gz = nm.goal ? clampV(nm.goal[1], cc[2] - COURT.L - 3, cc[2] - 0.4) : cc[2] - COURT.L - 0.6;
+    var ddx = gx - nm.x, ddz = gz - nm.z, dd = hypot(ddx, ddz), st = min(dd, sk.v * dt);
+    if (dd > 1e-3) { nm.x += ddx / dd * st; nm.z += ddz / dd * st; }
+    nm.walked += st; nm.amount += ((st > 1e-4 ? 1 : 0) - nm.amount) * (1 - Math.exp(-dt / STEP_T));
+  }
+  // Where his serve is struck: underhand, at his right and a little ahead, below his waist.
+  function serveFrom() { var f = P.face; return [P.x + Math.cos(f) * 0.45 + Math.sin(f) * 0.35, 0.7, P.z + Math.sin(f) * 0.45 - Math.cos(f) * 0.35]; }
+  function levelWon() {
+    var m = court.m, c = courts[m.k];
+    c.won = true; c.up = true; c.you = c.them = 0; c.t0 = performance.now(); c.next = c.t0 + 4000;
+    court.m = null; court.told[m.k + "u"] = 1;   // (he stands on it still: not told at once that it plays on)
+    say("Level " + m.level + " won, " + m.you + " – " + m.them + ". Court " + (m.k + 1) + " plays on by itself: its " + COURT.TOOLS[m.k] + " go to the Trojan horse." + (m.k + 1 < COURT.N ? " Court " + (m.k + 2) + " is open." : ""), true);
+    courtWhere();
+  }
+  function courtStep(dt, now) {
+    var c = controls(dt), m = court.m;
+    courtsSim(dt, now);
+    var lock = m && (m.phase === "serve" || m.phase === "toss"), f = lock ? 0 : c.fwd, s = lock ? 0 : c.side;
+    var ox = P.x, oz = P.z;
+    P.vx = (Math.sin(P.yaw) * f + Math.cos(P.yaw) * s) * WALK; P.vz = (-Math.cos(P.yaw) * f + Math.sin(P.yaw) * s) * WALK;
+    P.x += P.vx * dt; P.z += P.vz * dt; P.y = 0; P.face = P.yaw;
+    var O = COURT.O;
+    if (m) { var cc = courtAt(m.k); P.x = clampV(P.x, cc[0] - COURT.HW - 2.5, cc[0] + COURT.HW + 2.5); P.z = clampV(P.z, cc[2] + 0.3, cc[2] + COURT.L + 3.5); }
+    else { P.x = clampV(P.x, O[0] - 8, O[0] + (COURT.N - 1) * COURT.GAP + 8); P.z = clampV(P.z, O[2] - COURT.L - 6, O[2] + COURT.L + 8.2); }
+    var step = hypot(P.x - ox, P.z - oz);
+    P.walked += step; P.amount += ((step > 1e-4 ? 1 : 0) - P.amount) * (1 - Math.exp(-dt / STEP_T));
+    if (m) { matchStep(dt, now, c); }
+    else {
+      // onto a court: its match, if it is open and not playing by itself; off the back past the net: home
+      var k = round((P.x - O[0]) / COURT.GAP), cc0 = courtAt(clampV(k, 0, COURT.N - 1)), lx = P.x - cc0[0], lz = P.z - cc0[2];
+      var on = k >= 0 && k < COURT.N && abs(lx) < COURT.HW && lz > 0.5 && lz < COURT.L, was = court.on;
+      court.on = on ? k : -1;
+      if (on) {
+        var cv = courts[k], key = k + (cv.up ? "u" : cv.won ? "d" : "o");
+        if (k > 0 && !courts[k - 1].won) { if (court.told[key] !== 1) { court.told[key] = 1; say("Court " + (k + 1) + " opens when court " + k + " is won."); } }
+        else if (cv.up) { if (court.told[key] !== 1) { court.told[key] = 1; say("Your stand-in is playing court " + (k + 1) + " at level " + cv.level + ": " + cv.you + " – " + cv.them + "."); } }
+        else if (was !== k) { court.told = {}; matchOn(k); }
+      }
+      if (P.z >= O[2] + COURT.L + 7.7 && abs(P.x - (O[0] + 2.2)) < 1.4) { leaveCourts(); return; }
+    }
+    input.fire = false;
+    if (court && !court.m) { courtWhere(); }
+  }
+  // His own views (the artist, 28 Oct 2026: "maintain the perspectives of Mr Pearl to play"): the third person at
+  // rest, as far from his head as it is in the place (TP_HEAD, his head AIM below the middle, as space has it), or the
+  // Scope's, behind his head's centre on the look (SIGHT_D), the head the glass; from one to the other in a switch of
+  // view's time (none under reduced motion).
+  function courtCam() {
+    var h = [P.x, P.y + PEARL.headY, P.z], c;
+    if (court.scope) { var d = lookDir(P.yaw, P.pitch); c = { e: [h[0] - d[0] * SIGHT_D, max(0.15, h[1] - d[1] * SIGHT_D), h[2] - d[2] * SIGHT_D], yaw: P.yaw, pitch: P.pitch }; }
+    else { var f = lookDir(P.yaw, P.pitch - AIM); c = { e: [h[0] - f[0] * TP_HEAD, h[1] - f[1] * TP_HEAD, h[2] - f[2] * TP_HEAD], yaw: P.yaw, pitch: P.pitch }; }
+    var s = stillMotion.matches ? 1 : smooth((performance.now() - court.camT) / 1000 / T_VIEW), a = court.camFrom;
+    if (a && s < 1) { c = { e: [0, 1, 2].map(function (k) { return a.e[k] + (c.e[k] - a.e[k]) * s; }), yaw: a.yaw + angle(c.yaw - a.yaw) * s, pitch: a.pitch + (c.pitch - a.pitch) * s }; }
+    return c;
+  }
+  // The Scope on the court (the button, R, the right mouse button): his head the glass and the crux the aim.
+  function courtScope(on) {
+    if (on == null) { on = !court.scope; }
+    if (on === !!court.scope) { return; }
+    court.camFrom = camLast; court.camT = performance.now(); court.scope = on;
+    $("v-sight").setAttribute("aria-pressed", on ? "true" : "false");
+    P.pitch = clampPitch(P.pitch);
+  }
+  /* -- drawn -- */
+  function courtTones(rgb) { var tn = tonesOf(rgb), t = new Float32Array(9); for (var i = 0; i < 3; i += 1) { for (var j = 0; j < 3; j += 1) { t[i * 3 + j] = tn[i][j] / 255; } } return t; }
+  var CT = null;
+  // A box (its middle, its size, its tones; turned by a about axis ax through its middle), with the shards' program.
+  function cbox(c, sz, t, ax, a) {
+    var PB = window.PearlBody, S = [sz[0], 0, 0, 0, 0, sz[1], 0, 0, 0, 0, sz[2], 0, 0, 0, 0, 1];
+    gl.uniformMatrix4fv(SHU.uM, false, PB.mul(PB.T(c[0], c[1], c[2]), a ? PB.mul(PB.RA(ax, a), S) : S));
+    gl.uniform3fv(SHU.uT, t);
+    gl.drawArrays(gl.TRIANGLES, 0, 36);
+  }
+  // The horse: its parts in its own frame (x along it, its head to +x; y up), each [middle, size, tones, turn about z].
+  var HORSE = null;
+  function horseParts() {
+    if (HORSE) { return HORSE; }
+    var W = [150, 105, 62], D = [104, 70, 40], K = [52, 36, 22];
+    HORSE = [
+      [[0, 0.6, 0], [16, 0.6, 6], D, 0],                                                                   // the platform
+      [[-6, 1, 3.3], [2, 2, 0.4], K, 0], [[6, 1, 3.3], [2, 2, 0.4], K, 0], [[-6, 1, -3.3], [2, 2, 0.4], K, 0], [[6, 1, -3.3], [2, 2, 0.4], K, 0],   // its wheels
+      [[-4.5, 1.15, 1.6], [1.3, 0.5, 1.3], K, 0], [[4.5, 1.15, 1.6], [1.3, 0.5, 1.3], K, 0], [[-4.5, 1.15, -1.6], [1.3, 0.5, 1.3], K, 0], [[4.5, 1.15, -1.6], [1.3, 0.5, 1.3], K, 0],   // hooves
+      [[-4.5, 4, 1.6], [1.1, 5.6, 1.1], W, 0], [[4.5, 4, 1.6], [1.1, 5.6, 1.1], W, 0], [[-4.5, 4, -1.6], [1.1, 5.6, 1.1], W, 0], [[4.5, 4, -1.6], [1.1, 5.6, 1.1], W, 0],   // legs
+      [[0, 8.8, 0], [12, 4.2, 4.2], W, 0],                                                                // the belly
+      [[0, 6.75, 2.12], [3, 1.6, 0.06], K, 0],                                                            // the hatch, for the men inside
+      [[5.2, 9.2, 0], [3.2, 4.6, 4], W, 0], [[-5.4, 8.9, 0], [2.8, 4.2, 4], W, 0],                       // the chest, the rump
+      [[6.7, 12.4, 0], [2.4, 5.4, 2.4], W, -0.45], [[6.1, 13.4, 0], [1, 5, 0.8], D, -0.45],              // the neck, the mane
+      [[8.6, 15, 0], [4.2, 1.9, 1.9], W, -0.3], [[10.3, 14.3, 0], [1.4, 1.5, 1.6], D, -0.3],             // the head, the muzzle
+      [[7.6, 16.4, 0.6], [0.4, 1.1, 0.4], D, 0], [[7.6, 16.4, -0.6], [0.4, 1.1, 0.4], D, 0],             // the ears
+      [[9, 15.4, 0.97], [0.5, 0.5, 0.06], K, 0], [[9, 15.4, -0.97], [0.5, 0.5, 0.06], K, 0],             // the eyes
+      [[-7.2, 8.4, 0], [0.8, 4.2, 0.8], D, 0.35]                                                          // the tail
+    ].map(function (p) { return { c: p[0], s: p[1], t: courtTones(p[2]), a: p[3] }; });
+    return HORSE;
+  }
+  // (beyond the courts' far ends, behind their middle, two and a half times the parts' metres: 42 m to its ears, so
+  // that it stands over the nets from every court)
+  function horseAt() { return [COURT.O[0] + 4.5 * COURT.GAP, 0, COURT.O[2] - COURT.L - 70]; }
+  var HORSE_K = 2.5;
+  function drawHorse() {
+    var H0 = horseAt(), parts = horseParts(), per = COURT.WORK / parts.length, Z = [0, 0, 1], k = HORSE_K;
+    parts.forEach(function (p, i) {
+      var f = clampV(horse.work / per - i, 0, 1), e = smooth(f);
+      // (each lies on the ground before the platform, in a row, until its turn: then it is hoisted to its place; a part
+      // taller than it is long lies on its side)
+      var lie = p.s[1] > p.s[0] ? Math.PI / 2 : 0, g = [(i % 9 - 4) * 3.4, (lie ? p.s[0] : p.s[1]) / 2 + 0.01, 10 + floor(i / 9) * 4];
+      var c = [0, 1, 2].map(function (j) { return g[j] + (p.c[j] - g[j]) * e; });
+      if (f > 0 && f < 1) { c[1] += Math.sin(Math.PI * e) * 3; }
+      cbox([H0[0] + c[0] * k, H0[1] + c[1] * k, H0[2] + c[2] * k], [p.s[0] * k, p.s[1] * k, p.s[2] * k], p.t, Z, lie * (1 - e) + p.a * e);
+    });
+  }
+  function courtCT() {
+    CT = CT || { ground: courtTones([112, 132, 92]), out: courtTones([76, 118, 86]), inn: courtTones([60, 92, 136]), kitchen: courtTones([70, 128, 104]), line: courtTones([236, 236, 228]), net: courtTones([34, 34, 38]), post: courtTones([70, 70, 74]) };
+    return CT;
+  }
+  function drawCourtsGround() {
+    var CT = courtCT();
+    var O = COURT.O, L = COURT.L, HW = COURT.HW, K = COURT.K, lw = 0.05, y = 0.011, nw = 2 * (HW + COURT.PO);
+    cbox([O[0] + 4.5 * COURT.GAP, -0.05, O[2] - 60], [COURT.N * COURT.GAP + 300, 0.1, 400], CT.ground);
+    for (var k = 0; k < COURT.N; k += 1) {
+      var c = courtAt(k), x = c[0], z = c[2];
+      cbox([x, 0.001, z], [COURT.GAP - 1, 0.01, 2 * L + 7], CT.out);
+      cbox([x, 0.006, z], [2 * HW, 0.01, 2 * L], CT.inn);
+      cbox([x, 0.008, z], [2 * HW, 0.01, 2 * K], CT.kitchen);                                // the kitchens, either side of the net
+      [-1, 1].forEach(function (s) {
+        cbox([x, y, z + s * (L - lw / 2)], [2 * HW, 0.012, lw * 2], CT.line);                // the baselines
+        cbox([x + s * (HW - lw / 2), y, z], [lw, 0.012, 2 * L], CT.line);                     // the sidelines
+        cbox([x, y, z + s * K], [2 * HW, 0.012, lw], CT.line);                                 // the kitchen (non-volley) lines
+        cbox([x, y, z + s * (K + L) / 2], [lw, 0.012, L - K], CT.line);                        // the centrelines
+        cbox([x + s * (HW + COURT.PO), COURT.POST / 2, z], [0.08, COURT.POST, 0.08], CT.post);  // the posts
+      });
+      cbox([x, COURT.NET / 2 + 0.03, z], [nw, COURT.NET - 0.06, 0.03], CT.net);              // the net
+      cbox([x, COURT.NET, z], [nw, 0.07, 0.05], CT.line);                                      // its tape
+    }
+    // the net back, behind court one
+    var gx = O[0] + 2.2, gz = O[2] + L + 8;
+    cbox([gx, COURT.NET / 2, gz], [2.7, COURT.NET, 0.03], CT.net); cbox([gx, COURT.NET, gz], [2.7, 0.07, 0.05], CT.line);
+    [-1, 1].forEach(function (s) { cbox([gx + s * 1.4, COURT.POST / 2, gz], [0.1, COURT.POST, 0.1], CT.post); });
+  }
+  // The net near where he wakes, in the place (with the place's own frame: frame() draws it with the opaque things).
+  function drawGate() {
+    if (!gate || !shardProg) { return; }
+    var CT = courtCT();
+    gl.useProgram(shardProg);
+    gl.uniformMatrix4fv(SHU.uVP, false, vp); gl.uniform3fv(SHU.uEye, eye); gl.uniform3fv(SHU.uHaze, HAZE);
+    gl.bindVertexArray(null);
+    var a = Math.atan2(gate.n[1], gate.n[0]), Y = [0, 1, 0], u = [-gate.n[1], gate.n[0]];
+    cbox([gate.x, gate.y + COURT.NET / 2, gate.z], [0.03, COURT.NET, 2.7], CT.net, Y, -a);
+    cbox([gate.x, gate.y + COURT.NET, gate.z], [0.05, 0.07, 2.7], CT.line, Y, -a);
+    [-1, 1].forEach(function (s) { cbox([gate.x + u[0] * s * 1.4, gate.y + COURT.POST / 2, gate.z + u[1] * s * 1.4], [0.1, COURT.POST, 0.1], CT.post); });
+    gl.useProgram(prog);
+  }
+  // A figure of his on the courts (the nemesis, his stand-ins): his parts with the palette given, the hat the racket,
+  // and a sphere of the unit for the head (a voxel ball, as the guards have).
+  function racketM(M, x, y, z, face, s, lift) {
+    var PB = window.PearlBody, hat = me3.parts.filter(function (ch) { return ch.p.name === "hat"; })[0];
+    if (!hat) { return PB.place(M.hat, x, y, z, face); }
+    var d = hat.p.dim, hc = apply(M.hat, [d[0] / 2, d[1] / 2, d[2] / 2]);
+    // (in his frame: its middle COURT.HAT out from his upright at the swing's angle s, from his right (0) round to his
+    // front (pi / 2); its crown pointing out along that, so its brim's round is the racket's face)
+    var r = [Math.cos(s), 0, -Math.sin(s)], at = [r[0] * COURT.HAT, 1.0 + (lift || 0), r[2] * COURT.HAT];
+    var m = PB.mul(PB.T(at[0], at[1], at[2]), PB.mul(PB.RA([r[2], 0, -r[0]], -Math.PI / 2), PB.mul(PB.T(-hc[0], -hc[1], -hc[2]), M.hat)));
+    return PB.place(m, x, y, z, face);
+  }
+  // The swing's angle: a quarter turn past his front and back over a third of a second after a hit; at rest a little
+  // to his right of his front.
+  function swingS(t, now) {
+    var u = (now - t) / 1000;
+    if (u < 0 || u > 0.7) { return 0.7; }
+    return u < 0.3 ? -0.5 + 2.9 * smooth(u / 0.3) : 2.4 - 1.7 * smooth((u - 0.3) / 0.4);
+  }
+  function drawFig(x, z, face, walked, amount, pal, s, lift, act) {
+    var PB = window.PearlBody, body = me3.body, M = PB.pose(body, PB.phaseStep(body, 0, walked), amount, act || null), h = unitH();
+    if (!courtHead) {
+      var RO = coinRO(), n = 2 * RO, ids = new Uint8Array(n * n * n), blocks = [], id = (body.paletteIds.jacket || [1])[0];
+      for (var yy = 0; yy < n; yy += 1) { for (var zz = 0; zz < n; zz += 1) { for (var xx = 0; xx < n; xx += 1) {
+        if (hypot(xx + 0.5 - RO, yy + 0.5 - RO, zz + 0.5 - RO) > RO) { continue; }
+        ids[(yy * n + zz) * n + xx] = id; blocks.push([xx, yy, zz, id]);
+      } } }
+      courtHead = meshBlocks(blocks); courtHead.tex = voxTexture(ids, n, n, n); courtHead.n = n; courtHead.RO = RO;
+    }
+    gl.uniform4fv(U.uPal, pal);
+    var draw = function (ch, m, dim) {
+      gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, ch.tex); gl.activeTexture(gl.TEXTURE0);
+      gl.uniform3i(U.uDim, dim[0], dim[1], dim[2]); gl.bindVertexArray(ch.vao);
+      gl.drawElements(gl.TRIANGLES, ch.count, gl.UNSIGNED_INT, 0);
+    };
+    me3.parts.forEach(function (ch) { draw(ch, ch.p.name === "hat" ? racketM(M, x, 0, z, face, s, lift) : PB.place(M[ch.p.name], x, 0, z, face), ch.p.dim); });
+    var c = apply(PB.place(M.head, x, 0, z, face), body.head.centre), RO = courtHead.RO;
+    draw(courtHead, PB.mul(PB.T(c[0], c[1], c[2]), PB.mul(PB.RY(-face), PB.mul(PB.S(h), PB.T(-RO, -RO, -RO)))), [courtHead.n, courtHead.n, courtHead.n]);
+  }
+  function drawBall(x, y, z, spin) {
+    if (!pearlCh) { return; }
+    var PB = window.PearlBody, h = unitH(), n = pearlCh.n / 2;
+    gl.uniform4fv(U.uPal, me3.pal);
+    gl.uniform3i(U.uDim, pearlCh.n, pearlCh.n, pearlCh.n);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, pearlCh.tex); gl.activeTexture(gl.TEXTURE0);
+    gl.bindVertexArray(pearlCh.vao);
+    var m = PB.mul(PB.T(x, y, z), PB.mul(PB.RX(spin || 0), PB.mul(PB.S(h), PB.T(-n, -n, -n))));
+    gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
+    gl.drawElements(gl.TRIANGLES, pearlCh.count, gl.UNSIGNED_INT, 0);
+  }
+  // His pose on the court: his own (the serve is underhand: no arm raised).
+  function courtPose(now) { return null; }
+  // His own hat on the court: the paddle (drawPearl asks), low at his right for the underhand serve.
+  function courtRacket(M, now) {
+    var m = court.m, toss = m && m.phase === "toss";
+    return racketM(M, P.x, P.y, P.z, P.face, toss ? 0.9 : swingS(m ? m.hit : -1e9, now), toss ? -0.35 : 0);
+  }
+  function courtFrame(now, dt) {
+    courtStep(dt, now);
+    if (!court) { return false; }
+    var cw = canvas.width, chh = canvas.height, cam = courtCam(), SKY = COURT.SKY;
+    eye = cam.e; camLast = { e: cam.e, yaw: cam.yaw, pitch: cam.pitch };
+    vp = mul(perspective(FOV * Math.PI / 180, cw / chh, NEAR, FAR), view(eye, cam.yaw, cam.pitch));
+    glyphBegin(cw, chh);
+    gl.viewport(0, 0, cw, chh);
+    gl.clearColor(SKY[0], SKY[1], SKY[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.clearColor(0, 0, 0, 0);
+    var tanH = 2 * Math.tan(FOV * Math.PI / 360);
+    pxW = tanH / rows0;
+    if (shardProg) {
+      gl.useProgram(shardProg);
+      gl.uniformMatrix4fv(SHU.uVP, false, vp); gl.uniform3fv(SHU.uEye, eye); gl.uniform3fv(SHU.uHaze, SKY);
+      gl.bindVertexArray(null);
+      drawCourtsGround(); drawHorse();
+    }
+    gl.useProgram(prog);
+    gl.uniformMatrix4fv(U.uVP, false, vp); gl.uniform3fv(U.uEye, eye); gl.uniform3fv(U.uSun, sunDir); gl.uniform1f(U.uT, now / 1000);
+    gl.uniform3fv(U.uSky, SKY); gl.uniform3fv(U.uHaze, SKY); gl.uniform1i(U.uSteps, walk); gl.uniform1i(U.uVeil, 0); gl.uniform1i(U.uVox, 1); gl.uniform1f(U.uPaint, PAINT);
+    gl.uniform3f(U.uOff, 0, 0, 0); gl.uniform3f(U.uOrg, 0, 0, 0); gl.uniform1i(U.uFloor, 0); gl.uniform2f(U.uNear, 0, 0);
+    gl.uniform3f(U.uAxA, 1e9, 1e9, 1e9); gl.uniform3f(U.uAxB, 1e9, 1e9, 1e9); gl.uniform3f(U.uHeadC, 1e9, 1e9, 1e9); gl.uniform3f(U.uHeadE, 1e9, 1e9, 1e9);
+    gl.uniform1f(U.uPx, pxW / unitH());
+    if (!nemPal) { nemPal = new Float32Array(me3.pal); for (var i = 4; i < nemPal.length; i += 4) { nemPal[i] = 255 - nemPal[i]; nemPal[i + 1] = 255 - nemPal[i + 1]; nemPal[i + 2] = 255 - nemPal[i + 2]; } }
+    // the courts' figures: a nemesis on each, waiting at its baseline or playing; a stand-in of his on each court up
+    var m = court.m;
+    courts.forEach(function (c) {
+      var cc = courtAt(c.k);
+      if (Math.abs(cc[0] - eye[0]) > 140) { return; }
+      if (m && m.k === c.k) {
+        var nm = m.nem;
+        drawFig(nm.x, nm.z, Math.PI, nm.walked, nm.amount, nemPal, swingS(nm.hit, now), 0, null);
+        if (m.ball) { drawBall(m.ball.x, m.ball.y, m.ball.z, m.ball.spin); }
+        else if (m.phase === "toss") { var u = (now - m.t) / 300, s0 = serveFrom(); drawBall(s0[0], 1.0 - (1.0 - s0[1]) * u * u, s0[2], 0); }
+        return;
+      }
+      if (!c.up) { drawFig(cc[0], cc[2] - COURT.L - 0.6, Math.PI, 0, 0, nemPal, 0.7, 0, null); return; }
+      // (playing on: the pearl back and forth over the net, a shot each 1.3 s, the stand-in hitting the even shots and
+      // the nemesis the odd, each stepping from where it hit to where it hits next, its racket meeting the pearl there)
+      var u2 = (now - c.t0) / 1300, i2 = floor(u2), f2 = u2 - i2, ax = function (j) { return cc[0] + Math.sin(j * 1.7 + c.k) * 1.6; };
+      var e2 = i2 - (i2 % 2), o2 = i2 % 2 ? i2 : i2 - 1, zs = cc[2] + COURT.L - 0.5, zn = cc[2] - COURT.L + 0.5;
+      var xs = ax(e2) + (ax(e2 + 2) - ax(e2)) * smooth((u2 - e2) / 2), xn = ax(o2) + (ax(o2 + 2) - ax(o2)) * smooth((u2 - o2) / 2);
+      drawFig(xs - COURT.HAT, zs, 0, u2 * 2, 0.6, me3.pal, swingS(c.t0 + e2 * 1300, now), 0, null);
+      drawFig(xn + COURT.HAT, zn, Math.PI, u2 * 2, 0.6, nemPal, swingS(c.t0 + o2 * 1300, now), 0, null);
+      var za = i2 % 2 ? zn : zs, zb = i2 % 2 ? zs : zn;
+      drawBall(ax(i2) + (ax(i2 + 1) - ax(i2)) * f2, 0.8 + 1.4 * Math.sin(Math.PI * f2), za + (zb - za) * f2, u2 * 9);
+    });
+    gl.uniformMatrix4fv(U.uM, false, ID4); gl.uniformMatrix4fv(U.uInvM, false, ID4);
+    // (with the Scope up his head is the glass from the switch's half: not drawn, the crux drawn in its place)
+    drawMe = { body: true, head: !(court.scope && (stillMotion.matches || now - court.camT >= T_VIEW * 500)) };
+    var HZ = HAZE; HAZE = SKY; drawPearl(now); HAZE = HZ;
+    gl.bindVertexArray(null);
+    glyphEnd(cw, chh);
+    courtOverlay(now);
+    return true;
+  }
+  // Over the courts: the stick's water, the ring where the nemesis's pearl comes down, the ten courts and the horse.
+  function courtOverlay(now) {
+    var c = hud.getContext("2d"), dpr = min(2, window.devicePixelRatio || 1), W = hud.width / dpr, H = hud.height / dpr, m = court.m;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+    water.step(min(0.05, (now - (water.last || now)) / 1000), stillMotion.matches); water.last = now; water.draw(c, now / 1000, stillMotion.matches);
+    var toS = function (p) { var q = [0, 0, 0, 0]; for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0.05 ? [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H] : null; };
+    if (m && m.mark && m.ball && m.ball.last === "them" && m.ball.bounces === 0) {
+      var ring = [];
+      for (var s = 0; s <= 32; s += 1) { var a = s / 32 * 2 * Math.PI; ring.push(toS([m.mark.x + Math.cos(a) * 0.4, 0.02, m.mark.z + Math.sin(a) * 0.4])); }
+      if (ring.every(Boolean)) { twoTone(c, function () { c.beginPath(); ring.forEach(function (q, i) { if (i) { c.lineTo(q[0], q[1]); } else { c.moveTo(q[0], q[1]); } }); }, 1.5); }
+    }
+    // the Scope's mark: the sight's figure and its holding circles where his nose is, the middle of the view
+    if (court.scope && drawMe && !drawMe.head) {
+      var fz = H / 2 / T35, uu = sightU() * fz, cx0 = W / 2, cy0 = H / 2;
+      SIGHT_F.forEach(function (F) { var r0 = F * uu / Math.sqrt(3); twoTone(c, function () { c.beginPath(); c.arc(cx0, cy0 + r0, r0, 0, Math.PI * 2); }, 1); });
+      var fm = figureMark(round(uu * dpr), 0, 0, 0);
+      c.drawImage(fm.cv, cx0 - fm.ox / dpr, cy0 - fm.oy / dpr, fm.cv.width / dpr, fm.cv.height / dpr);
+      noseMark(c, cx0, cy0, uu, 1);
+    }
+    // the ten: a square each, its level in it; filled while it plays on, crossed while it is down, faint until it opens
+    var top = document.querySelector(".top"), y0 = (top ? top.getBoundingClientRect().bottom : 48) + 10, sz = 22, gap = 5, x0 = 12;
+    c.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
+    courts.forEach(function (q, k) {
+      var x = x0 + k * (sz + gap), open = k === 0 || courts[k - 1].won, on = m && m.k === k;
+      c.globalAlpha = open ? 1 : 0.4;
+      if (q.up) { c.fillStyle = "rgba(236,236,228,0.92)"; c.fillRect(x, y0, sz, sz); }
+      c.strokeStyle = on ? "#f3c98b" : q.won && !q.up ? "#e07a5f" : "rgba(236,236,228,0.9)"; c.lineWidth = on ? 2 : 1; c.strokeRect(x + 0.5, y0 + 0.5, sz - 1, sz - 1);
+      if (q.won && !q.up) { c.beginPath(); c.moveTo(x + 3, y0 + 3); c.lineTo(x + sz - 3, y0 + sz - 3); c.stroke(); }
+      c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.level), x + sz / 2, y0 + sz / 2 + 0.5);
+    });
+    c.globalAlpha = 1; c.textAlign = "left"; c.font = "500 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+    var line = "The horse " + round(100 * horse.work / COURT.WORK) + "% · ";
+    c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.65)"; c.fillStyle = "#f2efe8";
+    c.strokeText(line, x0, y0 + sz + 14); c.fillText(line, x0, y0 + sz + 14);
+    var x = x0 + c.measureText(line).width;
+    // its tools: each court's, struck through while that court is down (never yet won: not yet the horse's)
+    COURT.TOOLS.forEach(function (t, k) {
+      var q = courts[k], wd = c.measureText(t).width;
+      if (x + wd > W - 12) { return; }
+      c.globalAlpha = q.up ? 1 : 0.45;
+      c.strokeText(t, x, y0 + sz + 14); c.fillText(t, x, y0 + sz + 14);
+      if (q.won && !q.up) { c.strokeStyle = "#e07a5f"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, y0 + sz + 14); c.lineTo(x + wd, y0 + sz + 14); c.stroke(); c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.65)"; }
+      x += wd + 8;
+    });
+    c.globalAlpha = 1;
+    // coming in: the view opens from black over half a second
+    var o = 1 - (now - court.t0) / 500;
+    if (o > 0) { c.fillStyle = "rgba(5,3,2," + o.toFixed(3) + ")"; c.fillRect(0, 0, W, H); }
+  }
+
+  /* ---- the character cubes: a cube that holds a character, which does what it stands for ------------------------------
+     The artist, 28 Oct 2026, of a block seen close, the unit's bars in its glass: "instead of that shape being in the
+     middle of that cube in the image that you provided, it is a character, for example, a giant Q in which stands for
+     question and so when you click on it, it asks you a question this is just an example" (after "Characters are the
+     answer to the basic unit study"). A cube of glass a block across stands on the lawn a few steps ahead of where he
+     wakes, a giant Q in it where a block has its figure; a tap on it (a click, at the crosshair) and it asks a question,
+     easy, as the works' riddles are: where a piece of the rocket still lies, three answers to tap, the right one turning
+     the arrow to that piece (as a pearl ringing on it does). With every piece found it asks who made a work hung in the
+     place. The letters and what each does are a table (CUBE_ACTS): Q is the first. */
+  var CUBE_ACTS = { Q: function (qc) { askQuestion(qc); } };
+  var qcubes = [], qAsked = 0, asking = null;
+  var HIDES = { work: "behind a work on a wall", pool: "on the floor of the pool", garden: "buried in the garden", roof: "up on a roof",
+                park: "dug into a park", water: "at the bottom of the water", paving: "under the paving of a square", tree: "up in a tree" };
+  // On open ground five to ten metres out along the way he faces on waking, a little to one side of it (in the third
+  // person his own head stands on that line), clear of the homage, the net and the studies.
+  function qcubePlace() {
+    qcubes = [];
+    var at = underTree(), y0 = floor(at.y + 0.01), S = w.SOLID, yaw = wakeYaw(), hb = homage && homage.box;
+    for (var r = 5; r <= 10 && !qcubes.length; r += 1) {
+      for (var a = 0; a < 16 && !qcubes.length; a += 1) {
+        var th = yaw + (a % 2 ? 1 : -1) * (0.25 + floor(a / 2) * 0.15), x = floor(at.x + Math.sin(th) * r), z = floor(at.z - Math.cos(th) * r);
+        if (x < 2 || z < 2 || x >= w.SX - 2 || z >= w.SZ - 2 || !S[w.get(x, y0 - 1, z)]) { continue; }
+        if (w.get(x, y0, z) !== B.AIR || w.get(x, y0 + 1, z) !== B.AIR || w.get(x, y0 + 2, z) !== B.AIR) { continue; }
+        if (hb && x >= hb[0] - 1 && x <= hb[2] + 1 && z >= hb[1] - 1 && z <= hb[3] + 1) { continue; }
+        if (gate && hypot(x + 0.5 - gate.x, z + 0.5 - gate.z) < 3) { continue; }
+        if (studies && studies.stands && studies.stands.some(function (st) { return hypot(x + 0.5 - st.at[0], z + 0.5 - st.at[2]) < 3; })) { continue; }
+        qcubes.push({ x: x + 0.5, y: y0 + 0.5, z: z + 0.5, ch: "Q" });
+      }
+    }
+  }
+  // Its character, as the studies' are drawn (drawChars): gold, its letter as tall as the cube (the atlas's letter
+  // fills about four fifths of its square).
+  function charCubes() {
+    var out = [];
+    qcubes.forEach(function (q) { out.push(q.x, q.y, q.z, 1.2, CHARS.indexOf(q.ch), 0.98, 0.86, 0.52); });
+    return out;
+  }
+  // Its glass: the cube's twelve edges, a hair of white each.
+  function drawQcubes() {
+    if (!qcubes.length || !shardProg) { return; }
+    var CT = courtCT(), e = 0.025;
+    gl.useProgram(shardProg);
+    gl.uniformMatrix4fv(SHU.uVP, false, vp); gl.uniform3fv(SHU.uEye, eye); gl.uniform3fv(SHU.uHaze, HAZE);
+    gl.bindVertexArray(null);
+    qcubes.forEach(function (q) {
+      [-0.5, 0.5].forEach(function (a) { [-0.5, 0.5].forEach(function (b) {
+        cbox([q.x, q.y + a, q.z + b], [1 + e, e, e], CT.line);
+        cbox([q.x + a, q.y, q.z + b], [e, 1 + e, e], CT.line);
+        cbox([q.x + a, q.y + b, q.z], [e, e, 1 + e], CT.line);
+      }); });
+    });
+    gl.useProgram(prog);
+  }
+  // A tap's ray on a cube (nearer than what else it meets, within the reach a label is read at).
+  function qcubeTap(dir, hit) {
+    if (Hd || ride || ignite || launched || intro || space || court) { return null; }
+    var best = null, near = passT(dir);
+    qcubes.forEach(function (q) {
+      var t0 = -1e9, t1 = 1e9, c = [q.x, q.y, q.z];
+      for (var k = 0; k < 3; k += 1) {
+        if (abs(dir[k]) < 1e-9) { if (abs(eye[k] - c[k]) > 0.5) { return; } continue; }
+        var a = (c[k] - 0.5 - eye[k]) / dir[k], b = (c[k] + 0.5 - eye[k]) / dir[k];
+        t0 = max(t0, min(a, b)); t1 = min(t1, max(a, b));
+      }
+      if (t1 < max(t0, near) || t0 > LOOK || (hit && hit.t < t0)) { return; }
+      if (!best || t0 < best.t) { best = { q: q, t: t0 }; }
+    });
+    return best && best.q;
+  }
+  // The Q's question: where a piece still lies, else who made a work here, else how many coins build the rocket; its
+  // three answers in an order of the place's own.
+  function askQuestion(qc) {
+    var r = Pl.rng(seed * 17 + qAsked * 31 + 3), mix = function (list) { return list.map(function (v) { return [r(), v]; }).sort(function (a, b) { return a[0] - b[0]; }).map(function (p) { return p[1]; }); };
+    // (the pieces it has not yet been answered about first)
+    var left = adv.pieces.filter(function (p) { return found.indexOf(p.k) < 0; }), fresh = left.filter(function (p) { return !marked[p.k]; }), q;
+    if (fresh.length) { left = fresh; }
+    qAsked += 1;
+    if (left.length) {
+      var pc = left[floor(r() * left.length)], name = lower(pc.name), right = HIDES[pc.how || pc.hide.type] || HIDES.roof;   // (how: where it came to lie)
+      var kinds = setting.kind === "city" ? ["roof", "park", "water", "paving", "tree"] : ["work", "roof", "pool", "garden"];
+      var others = mix(kinds.map(function (k) { return HIDES[k]; }).filter(function (v) { return v !== right; })).slice(0, 2);
+      q = { text: "Where does " + name + " lie?", answers: mix([right].concat(others)), right: right,
+            then: function (ok) { if (ok) { marked[pc.k] = true; say("Yes: " + name + " lies " + right + ". Of the pieces, the arrow leads to it first.", true); } else { say("No: " + name + " lies " + right + ". The Q has more to ask.", false); } } };
+    } else {
+      var hung = paintings.filter(function (p) { return p.f && p.f.artist && p.f.title; }), names = [];
+      hung.forEach(function (p) { if (names.indexOf(p.f.artist) < 0) { names.push(p.f.artist); } });
+      if (names.length >= 3) {
+        var wk = hung[floor(r() * hung.length)], by = wk.f.artist;
+        q = { text: "Who made " + wk.f.title + "?", answers: mix([by].concat(mix(names.filter(function (n) { return n !== by; })).slice(0, 2))), right: by,
+              then: function (ok) { say((ok ? "Yes: " : "No: ") + by + " made " + wk.f.title + ".", ok); } };
+      } else {
+        q = { text: "How many coins build the rocket?", answers: mix(["ten", "four", "three"]), right: "ten", then: function (ok) { say(ok ? "Yes: ten, as the four pieces do." : "No: ten, as the four pieces do.", ok); } };
+      }
+    }
+    showAsk(qc.ch, q);
+  }
+  // The question over the view, its answers as buttons (a page element: above the glyphs; Escape or Leave it closes).
+  function showAsk(ch, q) {
+    var el = $("ask"), box = $("ask-a");
+    $("ask-leave").onclick = closeAsk;
+    asking = q;
+    $("ask-ch").textContent = ch; $("ask-q").textContent = q.text;
+    box.innerHTML = "";
+    q.answers.forEach(function (a) {
+      var b = document.createElement("button"); b.className = "pill"; b.type = "button"; b.textContent = a;
+      b.onclick = function () { var ok = a === q.right; closeAsk(); q.then(ok); };
+      box.appendChild(b);
+    });
+    el.hidden = false;
+    var first = box.querySelector("button"); if (first) { try { first.focus({ preventScroll: true }); } catch (e) { first.focus(); } }
+  }
+  function closeAsk() { asking = null; $("ask").hidden = true; }
+
   /* ---- Mr Pearl drawn: his body of the unit through the blocks' own shader, his head the true sphere ------ */
 
   /* His body is the game's own figure seven golden steps down (pearl.js, from pearl-body.json): ten small grids,
@@ -3122,7 +4349,7 @@
     var PB = window.PearlBody;
     if (!PB) { return; }
     headProg = compile(PB.HEAD_VS, PB.HEAD_FS);
-    ["uVP", "uEye", "uC", "uSun", "uHaze", "uR", "uExpo", "uHolo", "uHead", "uV", "uRig"].forEach(function (n) { HU[n] = gl.getUniformLocation(headProg, n); });
+    ["uVP", "uEye", "uC", "uSun", "uHaze", "uR", "uExpo", "uHolo", "uHead", "uV", "uRig", "uMark"].forEach(function (n) { HU[n] = gl.getUniformLocation(headProg, n); });
   }
   // His body from its file: the parts' grids to the card, his palette, and his measures into every distance.
   function pearlFrom(spec) {
@@ -3178,7 +4405,7 @@
      what is behind show, it is veiled with the face's mean at lod, as the place's holes are. The head has no holes. */
   function drawPearl(now, veil) {
     if (!me3 || (!drawMe.body && !drawMe.head)) { sight.inHand = null; return; }
-    var PB = window.PearlBody, body = me3.body, phase = PB.phaseStep(body, 0, P.walked), M = PB.pose(body, phase, P.amount, actNow(now));
+    var PB = window.PearlBody, body = me3.body, phase = PB.phaseStep(body, 0, P.walked), M = PB.pose(body, phase, P.amount, court ? courtPose(now) : actNow(now));
     // where the head is now, on the walk's bob (the sight's window is drawn round it), and the pearl in his raised glove
     sight.head = apply(PB.place(M.head, P.x, P.y, P.z, P.face), body.head.centre);
     sight.inHand = HOLD && drawMe.body ? apply(PB.place(M.arm_right, P.x, P.y, P.z, P.face), HOLD) : null;
@@ -3194,6 +4421,7 @@
         // the hat doffed into his left glove while the head is the glass (the sight; its brim would hood the window)
         var m = PB.place(ch.p.name === "hat" && off ? mul(PB.T(off[0], off[1], off[2]), M.hat) : M[ch.p.name], P.x, P.y, P.z, P.face);
         if (ch.p.name === "hat" && drop) { m = mul(PB.T(0, -drop, 0), m); }
+        if (ch.p.name === "hat" && court) { m = courtRacket(M, now); }   // (on the court the hat is his racket)
         gl.uniformMatrix4fv(U.uM, false, m); gl.uniformMatrix4fv(U.uInvM, false, PB.inverse(m));
         gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D_ARRAY, ch.tex); gl.activeTexture(gl.TEXTURE0);
         gl.uniform3i(U.uDim, ch.p.dim[0], ch.p.dim[1], ch.p.dim[2]);
@@ -3213,7 +4441,7 @@
       var cy = Math.cos(yaw), sy = Math.sin(yaw), vm = view(eye, camLast.yaw, camLast.pitch);
       gl.useProgram(headProg);
       gl.uniformMatrix4fv(HU.uVP, false, vp); gl.uniform3fv(HU.uEye, eye); gl.uniform3fv(HU.uC, c); gl.uniform1f(HU.uR, PEARL.headR);
-      gl.uniform3fv(HU.uSun, sunDir); gl.uniform3fv(HU.uHaze, HAZE); gl.uniform1f(HU.uExpo, HEAD_EXPO); gl.uniform1f(HU.uHolo, Hd ? 1 : 0);
+      gl.uniform3fv(HU.uSun, sunDir); gl.uniform3fv(HU.uHaze, HAZE); gl.uniform1f(HU.uExpo, HEAD_EXPO); gl.uniform1f(HU.uHolo, Hd ? 1 : 0); gl.uniform1f(HU.uMark, glyphLive ? 1 : 0);
       gl.uniformMatrix3fv(HU.uHead, false, [cy, 0, sy, 0, 1, 0, -sy, 0, cy]);
       gl.uniformMatrix3fv(HU.uV, false, [vm[0], vm[1], vm[2], vm[4], vm[5], vm[6], vm[8], vm[9], vm[10]]); gl.uniform1f(HU.uRig, 1);
       gl.bindVertexArray(null);
@@ -3292,6 +4520,7 @@
   }
   function lookBehind() {
     var p = current;
+    if (court) { return; }
     if (Hd) { barred(); return; }
     if (!p || looked[p.f.id]) { return; }
     if (p.k >= 0 && found.indexOf(p.k) < 0) {
@@ -3310,7 +4539,7 @@
   }
   // The guards put you out: you come to under your tree again, and the alarms are quiet.
   function putOut() {
-    if (launched || ignite || space) { return; }   // (leaving in the rocket beats the guards)
+    if (launched || ignite || space || court) { return; }   // (leaving in the rocket beats the guards; on the courts they cannot reach him)
     alarms = 0;
     store();
     drawPieces();
@@ -3342,6 +4571,9 @@
     tick += 1;
     // In space the frame is space's own; down again, the place is built anew and starts its own frames.
     if (space) { if (spaceFrame(now, dt)) { requestAnimationFrame(frame); } return; }
+    // On the courts the frame is the courts' own; back through their net, the place's again (the place kept as it was).
+    if (court) { courtFrame(now, dt); requestAnimationFrame(frame); return; }
+    if (gateCheck()) { requestAnimationFrame(frame); return; }
     // Frames coming slowly: the view a little coarser, then the walk among the bars shorter (walk, in
     // blocks); never the distance at which the faces close, which is set by the screen (rows0).
     if (!intro && !held && dt > 0.03) {
@@ -3371,12 +4603,13 @@
       else { physics(dt, hand); holoLeft = min(HOLO_T, holoLeft + HOLO_REFILL * dt); }
       swingStep(dt); sightStep(dt, now);
     }
-    shardsStep(dt); if (!intro && (!launched || ride)) { stepPearls(dt); } if (!intro && !launched) { coinsStep(); guardsStep(dt, now); if (Hd && Hd.on) { seatOnGuard(); } }
+    shardsStep(dt); if (!intro && (!launched || ride)) { stepPearls(dt); } if (!intro && !launched) { coinsStep(); guardsStep(dt, now); if (Hd && Hd.on) { seatOnGuard(); } courtsSim(dt, now); }
     pump(intro ? 14 : 6);
     var cw = canvas.width, chh = canvas.height, cam = camera(now, dt, eyeH, cw / chh);
     eye = cam.e;
     var proj = perspective(FOV * Math.PI / 180, cw / chh, NEAR, FAR);
     vp = mul(proj, view(eye, cam.yaw, cam.pitch));
+    glyphBegin(cw, chh);
     gl.viewport(0, 0, cw, chh);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(skyProg);
@@ -3431,7 +4664,7 @@
       if (launched && ride) { rideCheck(lift); }
       rocketLift = lift;
     }
-    drawPearl(now); drawPearls(now); drawCoins3(now); drawGuards(now);
+    drawPearl(now); drawPearls(now); drawCoins3(now); drawGuards(now); drawGate(); drawQcubes();
     drawShards();
     if (skyFig) {
       gl.useProgram(figProg);
@@ -3444,8 +4677,9 @@
       gl.useProgram(homProg);
       gl.uniformMatrix4fv(OU.uVP, false, vp);
       gl.uniform3fv(OU.uEye, eye); gl.uniform3fv(OU.uHaze, HAZE);
-      (homage ? homage.figures : []).concat(studies ? studies.figures : []).forEach(function (f) { gl.bindVertexArray(f.vao); gl.drawElements(gl.TRIANGLES, f.count, gl.UNSIGNED_INT, 0); });
+      (homage ? homage.figures : []).forEach(function (f) { gl.bindVertexArray(f.vao); gl.drawElements(gl.TRIANGLES, f.count, gl.UNSIGNED_INT, 0); });
     }
+    drawChars();   // (the studies, in characters, and the cubes' characters)
     if (paintings.length) {
       gl.useProgram(artProg);
       gl.uniformMatrix4fv(AU.uVP, false, vp);
@@ -3497,8 +4731,10 @@
       });
       gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.depthMask(true);
     }
+    drawMonarch(now);
     drawTrails(); drawSwoosh(now);
     gl.bindVertexArray(null);
+    glyphEnd(cw, chh);
     if (now - slowAt > 250) { slowAt = now; fetchNear(); where(); skyCheck(); homageCheck(); guardsLook(now); }
     overlay(now, open);
     requestAnimationFrame(frame);
@@ -3716,7 +4952,7 @@
     return ch;
   }
   function buildRocket(quiet) {
-    if ((built && !quiet) || !ready() || (Hd && !quiet)) { return; }
+    if ((built && !quiet) || !ready() || (Hd && !quiet) || (court && !quiet)) { return; }
     built = true;
     store();
     // The wreck's blocks cleared away, and the rocket stood there in a mesh of its own, so it can rise:
@@ -3739,7 +4975,7 @@
     if (!quiet) { say("The rocket stands on the wreck's ground. Launch when you are clear.", true); }
   }
   function launch() {
-    if (!built || launched || Hd || ignite) { return; }
+    if (!built || launched || Hd || ignite || court) { return; }
     dropSight();
     closeLabel();
     $("notes").hidden = true;
@@ -3997,7 +5233,7 @@
     });
   }
   function wire() {
-    var stick = null, look = {}, lastTap = null;
+    var stick = null, look = {}, lastTap = null, run = null;
     canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
     canvas.addEventListener("pointerdown", function (e) {
       if (intro) { if (performance.now() - intro.t0 > 600) { intro.t0 -= 9600; } return; }
@@ -4072,15 +5308,20 @@
       // artist, 26 Oct 2026: "When in holographic mode I want to be able to double tap with my right finger and teleport
       // to wherever I am clicking while my left finger controls the joystick of my movements"); a computer's double
       // click takes it where the crosshair is.
-      // Walking (his body moving), a double tap is the dash (dashOn); standing, taps are taps, as before.
+      // Walking (his body moving), a double tap is the dash (dashOn); standing, taps are taps, as before. Taps each within
+      // a beat of the last are a run: one in it is quick (act), and once one has broken or placed, a double tap in the
+      // run is more of that work, twice as fast, not the dash (the artist, 28 Oct 2026: "because of the double tap dash
+      // now, I end up dashing away when breaking things. I want you to incorporate the dash when tapping to breaking
+      // and placing").
       var cr = canvas.getBoundingClientRect(), tx = touchy ? e.clientX : cr.left + cr.width / 2, ty = touchy ? e.clientY : cr.top + cr.height / 2, lt = lastTap, tn = performance.now();
       var dbl = !!lt && tn - lt.t < BEAT * 1000 && hypot(e.clientX - lt.x, e.clientY - lt.y) < 40;
+      var quick = !!run && tn - run.t < BEAT * 1000;
       lastTap = dbl ? null : { t: tn, x: e.clientX, y: e.clientY };
+      run = { t: tn, work: quick && run.work };
       if (dbl && Hd && Hd.phase === "free") { teleportHead(tx, ty); return; }
-      if (dbl && !Hd && !sightOn() && !intro && !launched && !ignite && hypot(P.vx, P.vz) > 0.5) { dashOn(); return; }
+      if (dbl && !run.work && !Hd && !sightOn() && !intro && !launched && !ignite && !court && hypot(P.vx, P.vz) > 0.5) { dashOn(); return; }
       if (sightOn()) { if (e.type === "pointerup") { throwAt(); } }
-      else if (touchy) { act(e.clientX, e.clientY, false); }
-      else { var r = canvas.getBoundingClientRect(); act(r.left + r.width / 2, r.top + r.height / 2, false); }
+      else if (act(tx, ty, false, quick)) { run.work = true; }
     };
     // A look held still for a beat, with the sight up, brings the point under it to the mark (sightAimAt).
     holdTick = function (now) {
@@ -4119,16 +5360,17 @@
       if (k === "r" && !e.repeat) { if (Hd) { barred(); } else { raiseSight(); } }   // the sight (R), as its button
       // with the sight up, T or Enter throws (Enter only while nothing else has the focus: a focused button takes it)
       var free = document.activeElement === document.body || document.activeElement === canvas || document.activeElement === $("v-sight");
-      if ((k === "t" || (k === "Enter" && free)) && !e.repeat) { if (Hd) { if (k === "t") { barred(); } } else if (sight.up) { throwAt(); e.preventDefault(); } }
+      if (court && (k === "t" || (k === "Enter" && free)) && !e.repeat) { input.fire = true; e.preventDefault(); }
+      if (!court && (k === "t" || (k === "Enter" && free)) && !e.repeat) { if (Hd) { if (k === "t") { barred(); } } else if (sight.up) { throwAt(); e.preventDefault(); } }
       if (Hd && ((k >= "1" && k <= "5") || k === "e" || k === "q" || k === "b")) { barred(); }
-      else {
+      else if (!court) {
         if (k >= "1" && k <= "5") { slot = +k - 1; setMode("place"); }
         if (k === "e" || k === "q") { setMode(mode === "break" ? "place" : "break"); }
         if (k === "b") { buildRocket(false); }
       }
       if (k === "n") { $("notes").hidden = !$("notes").hidden; }
-      if (k === "f" && current) { if (Hd) { barred(); } else { lookBehind(); } }
-      if (k === "Escape") { closeLabel(); $("notes").hidden = true; raiseSight(false); }
+      if (k === "f" && current && !court) { if (Hd) { barred(); } else { lookBehind(); } }
+      if (k === "Escape") { closeLabel(); closeAsk(); $("notes").hidden = true; raiseSight(false); }
     });
     document.addEventListener("keyup", function (e) { input.keys[keyOf(e)] = false; });
     window.addEventListener("resize", resize);
@@ -4259,6 +5501,7 @@
       if (was && was.key === advKey() && was.escaped) { escaped = true; }
       homage = homageData && window.Homage && !escaped ? Homage.plan(place, homageData, { wake: underTree(), yaw: wakeYaw(), eye: EYE, B: B }) : null;
       studies = studiesData && window.Homage && Homage.row ? Homage.row(place, studiesData, { wake: underTree(), eye: EYE, B: B, avoid: homage && homage.box }) : null;
+      monarchPlace(); gatePlace(); qcubePlace(); if (glyphProg) { glyphStoryPlace(); } else { glyphTable = null; }
       seatCoins(); initGuards();
       voxTex = voxTexture(w.data, w.SX, w.SY, w.SZ, voxTex);
       byPlane = {};
@@ -4321,7 +5564,8 @@
     hud = $("hud");
     // Straight in: nothing over the view until you have come to.
     if (CFG.play) { document.body.dataset.film = "true"; }
-    gl = canvas.getContext("webgl2", { antialias: true });
+    // (under Glyph Light the canvas takes one triangle: its picture is multisampled already, glyphBegin)
+    gl = canvas.getContext("webgl2", { antialias: !GLYPH.ON });
     quality = quality0 = window.matchMedia && window.matchMedia("(pointer: coarse)").matches ? 0.75 : 1;
     if (!gl) { $("status").textContent = $("veil").textContent = "This game needs WebGL 2, which this browser does not offer."; return; }
     prog = compile(VS, FS); skyProg = compile(SKY_VS, SKY_FS); artProg = compile(ART_VS, ART_FS); figProg = compile(FIG_VS, FIG_FS); homProg = compile(HOM_VS, HOM_FS);
@@ -4406,7 +5650,7 @@
              homage: function () { return homage; }, studies: function () { return studies; }, wakeYaw: wakeYaw,
              aim: function () { var h = eye && camLast ? pick(lookDir(camLast.yaw, camLast.pitch)) : null; return h ? (h.painting ? "work: " + h.painting.f.title : "block " + h.b + " at " + h.r.toFixed(2)) : "nothing"; },
              pov: function () { return pov; }, toggle: toggleHolo, head: function () { return Hd; }, cam: function () { return { eye: eye, last: camLast, camD: camD, blend: blend, drawMe: drawMe }; },
-             swing: function () { return swing && { u: swing.u, side: swing.side, hit: swing.hit, struck: !!swing.struck, broke: !!swing.broke, ret: !!swing.ret, speed: swing.speed, style: swing.style, at: [swing.x, swing.y, swing.z], next: swingNext && [swingNext.x, swingNext.y, swingNext.z], pose: swingPose() }; },
+             swing: function () { return swing && { u: swing.u, side: swing.side, hit: swing.hit, struck: !!swing.struck, broke: !!swing.broke, ret: !!swing.ret, speed: swing.speed, style: swing.style, quick: !!swing.quick, at: [swing.x, swing.y, swing.z], next: swingNext && [swingNext.x, swingNext.y, swingNext.z], pose: swingPose() }; },
              holdSwing: function (u) { if (swing) { swing.hold = u; } }, shards: function () { return shards.map(function (q) { return { c: q.c, v: q.v, t: q.t, lies: !!q.lies }; }); },
              screenOf: function (p) { var r = canvas.getBoundingClientRect(), q = [0, 0, 0, 0]; for (var i = 0; i < 4; i++) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0 ? [r.left + (q[0] / q[3] * 0.5 + 0.5) * r.width, r.top + (0.5 - q[1] / q[3] * 0.5) * r.height] : null; },
              farEnd: function () { return swing && !swing.ret && FAR_END ? farEndAt(swing, swing.u) : null; }, smashConsts: function () { return { BEAT: BEAT, SWING: SWING, LEAP: LEAP, COIL: COIL, ARMS_UP: ARMS_UP, E0: E0, Y_SH: Y_SH, FAR_END: FAR_END }; },
@@ -4415,6 +5659,14 @@
              guards: function () { return guards; }, guardConsts: function () { return { GUARD: GUARD, reach: guardReach() }; }, sees: sees, stands: function () { return gStand; },
              paint: function (v) { if (v != null) { PAINT = v; } return PAINT; },
              dash: function () { return dash; }, dashConsts: DASH,
+             glyph: function (v) { if (v != null) { if (typeof v === "object") { Object.assign(GLYPH, v); } else { GLYPH.ON = v; } } return Object.assign({ fb: !!(glyphFb && glyphFb.ok) }, GLYPH); },
+             glyphStory: function () { return { frames: glyphFrames, origin: glyphOrigin, panel: GLYPH.PANEL, grid: GLYPH.GRID }; },
+             monarch: function () { return monarch && { A: monarch.A, dir: monarch.dir, y: monarch.y, at: monarchAt((performance.now() - monarch.t0) / 1000), C: MONARCH }; },
+             monarchShift: function (v) { if (monarch) { monarch.A[0] += v[0]; monarch.y += v[1]; monarch.A[1] += v[2]; } },
+             chars: function () { return { count: charCount, apex: APEX }; },
+             qcubes: function () { return qcubes; }, asking: function () { return asking; }, cubeAct: function (i) { var q = qcubes[i || 0]; if (q) { CUBE_ACTS[q.ch](q); } },
+             court: function () { return court; }, courts: function () { return courts; }, horse: function () { return horse; }, gate: function () { return gate; },
+             enterCourts: enterCourts, leaveCourts: leaveCourts, courtConsts: COURT, courtAt: courtAt, nemSkill: nemSkill, ballLands: ballLands, courtsSim: courtsSim,
              firsts: function () { return firsts.slice(); }, thrownN: function () { return thrownN; },
              stone: function () { return onStone; }, px: function () { return pxW; }, putOut: putOut,
              bring: bringBody, home: goHome, harm: harmBody, consts: { AIM: AIM, REST: REST, TP_D: TP_D, TP_UP: TP_UP, TP_DOWN: TP_DOWN, TP_HEAD: TP_HEAD, TURN: TURN, T_VIEW: T_VIEW, T_LIFT: T_LIFT, LIFT: LIFT, HAT_REACH: HAT_REACH, HOLO_V: HOLO_V, HOLO_V_IN: HOLO_V_IN, HOLO_T: HOLO_T, BAR: BAR, NEAR_F: NEAR_F, holoTop: holoTop }, holoLeft: function (v) { if (v != null) { holoLeft = v; } return holoLeft; },
