@@ -368,77 +368,368 @@
   }
 
   /* ---- the ASCII pass ----------------------------------------------------------------------------------------------
-     The only way a frame reaches the screen. The scene is drawn into a picture of its own (colour with its octaves,
-     and depth), and the picture is written again as characters: each a cell of the screen whose side goes as the
-     square of nearness (the artist's own rule from the rocket world: 6 CSS px at 3.2 m, so a thing twice as near is
-     written in characters four times as large), never under ASC.MIN CSS px (5 on a phone, 6 on a desk) and never
-     the picture itself ("I also am over the pixel aesthetic"): far off, a thing is small characters, and the sky is
-     characters too. A cell's colour is the picture's mean over it, its character chosen by its lightness from the set,
-     lit in its colour and lifted (0.55 + 0.45 l, as Glyph Light lifts it), the light ones glowing, black between.
-     The set is the prescription (the repo's notes, "Glyph Light, the texture"): Glyph Light's ASCII style with the
-     keyboard's characters and the site's category marks together (the artist, 28 Oct 2026: "Do marks and keyboard
-     characters"), one set sorted by the ink each leaves, measured here on the device, since fonts differ. Mr Pearl's
-     head marks its pixels (alpha 0.5) and passes through as it is. */
-  var ASC = { SET: " .:-=+*#%@∴∵→○◇△◎¶▢◆", S0: 6, D0: 3.2, MAXPX: 32, expo: 1.45, contr: 1.1, gam: 0.8, lit: 1.4, glow: 0.5, thresh: 0.72 };
+     The only way a frame reaches the screen. The artist, 28 Oct 2026: "just because we are using the ASCII aesthetic,
+     doesn't mean we can't achieve any other aesthetic. We are just achieving the aesthetic using the characters and
+     marks in ASCII". The scene is drawn into a picture of its own (colour with its octaves, each pixel's material in
+     its alpha, and depth), and the picture is set again in type, as a terminal sets it: a grid of character cells, each
+     as wide as the font's own advance and as tall as its '|' (so a column of bars joins into one line, a row of '_'
+     into one rule), the glyphs the browser's own system monospace, drawn crisp at every size the grid uses (one big
+     glyph shrunk through blurred octaves smeared the small ones to dots).
+     The size: a cell's side across the line goes as the square of nearness (the artist's rule from the rocket world:
+     6 CSS px at 3.2 m), in octaves, nested so a character is never cut by a smaller one; never under a type size of
+     ASC.FLOOR (8 CSS px on a phone, 12 on a desk: about one angle at the eye at 30 cm and at 60 cm; at 1x about the
+     smallest a character stays itself, X11's 'fixed' 6x13) nor over ASC.CEIL (one octave up: two were twenty letters
+     across a phone, a wall). Square cells of 5 CSS px wrote glyphs four pixels high, which no one could read. Two
+     things go past the floor, each for the game: a far athlete (under sixteen lines tall) is set an octave under it
+     where a character still has twelve device pixels (a phone, not a desk at 1x), so far off Mr Plan still has a hat,
+     a body and legs; and the pearl is set an octave over its distance's, the one character the game hangs on.
+     The choice, once per cell (a small pass, a texel a cell): the cell looks at its picture in twelve parts (three
+     across, four down), the parts well behind its nearest thing let go dark, so a figure's edge is drawn by the figure.
+     An athlete's edge (its silhouette, or a part in front of another) takes the character whose own ink, measured in
+     the same twelve parts, is shaped most like the cell (Alex Harri's 'shape vectors', in his essay "ASCII characters
+     are not pixels"): / \ | _ ( ) [ ] where it runs. A court line takes one stroke the way the line itself runs on the
+     screen there (its axis, carried by the material, seen from the camera): - _ / \ |, + where two cross, in the one
+     cell it runs nearest the middle of. Elsewhere a cell is a tone of its own material's alphabet, one tone to a band
+     (dithered, a figure was a checkerboard): Mr Pearl the keyboard's (Glyph Light's ASCII style), Mr Plan, his
+     negative, the site's marks (the artist: "Do marks and keyboard characters"), the horse planks; a court surface one
+     quiet glyph whose spacing is its light (in a 4x4 Bayer order), the net #, a pole |, a lamp *, the night sky a few
+     stars fixed to the sky. Each character is lit in the colour under it at full saturation, its value the cell's
+     light, the brightest blooming (a halo drawn with the glyph, inside its cell); black between. Mr Pearl's head marks
+     its pixels (alpha 0.5) and passes through as it is. */
+  var ASC = { FLOOR: [8, 12], CEIL: [16, 24], S0: 6, D0: 3.2, expo: 1.15, gam: 0.85, lit: 1.25, glow: 0.55, edge: 0.42, edgeMin: 0.07,
+              FONT: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Roboto Mono', 'Noto Sans Symbols 2', monospace",
+              KEYS: " .:-=+*#%@", BODY: " .:+*#%", PLAN: " ∴○◇◆", HORSE: " .-=", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
+  // the materials, written into the picture's alpha as 1 - id / 255 (his head's 0.5 stays apart from them)
+  var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, HORSE: 11, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16 };   // (a hat its own: from behind, hat and back are two shapes)
   var asc = null;
+  function ascFont(px) { return "700 " + px + "px " + ASC.FONT; }
   function ascInit() {
-    var chars = ASC.SET.split(""), font = "700 52px ui-monospace, SFMono-Regular, Menlo, 'DejaVu Sans Mono', 'Noto Sans Symbols 2', monospace";
-    var ink = function (ch) {
-      if (ch === " ") { return 0; }
-      var t = document.createElement("canvas"); t.width = t.height = 64; var tc = t.getContext("2d");
-      tc.fillStyle = "#000"; tc.fillRect(0, 0, 64, 64); tc.font = font; tc.textAlign = "center"; tc.textBaseline = "middle"; tc.fillStyle = "#fff"; tc.fillText(ch, 32, 35);
-      var d = tc.getImageData(0, 0, 64, 64).data, s = 0; for (var k = 0; k < d.length; k += 4) { s += d[k]; }
-      return s;
-    };
-    var list = chars.map(function (ch) { return { ch: ch, ink: ink(ch) }; }).sort(function (a, b) { return a.ink - b.ink; });
-    var cv = document.createElement("canvas"); cv.width = 64 * list.length; cv.height = 64;
-    var c = cv.getContext("2d"); c.fillStyle = "#000"; c.fillRect(0, 0, cv.width, 64);
-    c.font = font; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#fff";
-    list.forEach(function (q, i) { if (q.ch !== " ") { c.fillText(q.ch, i * 64 + 32, 35); } });
-    var atlas = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, atlas);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    var prog = compile("#version 300 es\nvoid main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }", [
-      "#version 300 es",
-      "precision highp float;",
-      "uniform sampler2D uScene; uniform sampler2D uDepth; uniform sampler2D uAtlas;",
-      "uniform vec2 uRes; uniform float uNear, uFar, uS0, uD0, uMinL, uMaxL, uN, uExpo, uContr, uGam, uLit, uGlow, uThresh;",
-      "out vec4 o;",
-      "float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }",
-      "void main() {",
-      "  ivec2 ip = ivec2(gl_FragCoord.xy);",
-      "  vec4 pic = texelFetch(uScene, ip, 0);",
-      "  if (pic.a > 0.25 && pic.a < 0.75) { o = vec4(pic.rgb, 1.0); return; }",       // his head, the one thing as it is
-      "  float z = texelFetch(uDepth, ip, 0).r;",
-      "  float d = z >= 1.0 ? 1e4 : 2.0 * uNear * uFar / (uFar + uNear - (z * 2.0 - 1.0) * (uFar - uNear));",
-      "  float s = uS0 * (uD0 / d) * (uD0 / d);",
-      "  float L = clamp(floor(log2(max(s, 1.0)) + 0.5), uMinL, uMaxL), cs = exp2(L);",
-      "  vec2 cell = floor(gl_FragCoord.xy / cs), uv = (gl_FragCoord.xy - cell * cs) / cs;",
-      "  vec2 at = (cell + 0.5) * cs / uRes;",
-      "  vec3 c = textureLod(uScene, at, L).rgb;",
-      "  c = pow(clamp((c * uExpo - 0.5) * uContr + 0.5, 0.0, 1.0), vec3(1.0 / uGam));",
-      "  float l = lum(c);",
-      "  float gi = min(floor(l * uN), uN - 1.0), cov = 0.0;",
-      "  if (gi > 0.0) { cov = textureLod(uAtlas, vec2((gi + uv.x) / uN, 1.0 - uv.y), max(0.0, 6.0 - L)).r; }",
-      "  vec3 lit = min(vec3(1.0), c / (0.55 + 0.45 * l));",
-      "  vec3 g = lit * cov * uLit;",
-      "  if (l >= uThresh) { g += lit * cov * uGlow * 0.6; }",
-      "  vec3 hal = textureLod(uScene, gl_FragCoord.xy / uRes, L + 2.5).rgb;",
-      "  g += hal * uGlow * 0.45 * smoothstep(uThresh, min(1.0, uThresh + 0.2), lum(hal));",
-      "  o = vec4(g, 1.0);",
-      "}"].join("\n"));
-    var U = {};
-    ["uScene", "uDepth", "uAtlas", "uRes", "uNear", "uFar", "uS0", "uD0", "uMinL", "uMaxL", "uN", "uExpo", "uContr", "uGam", "uLit", "uGlow", "uThresh"].forEach(function (k) { U[k] = gl.getUniformLocation(prog, k); });
-    asc = { prog: prog, U: U, atlas: atlas, N: list.length, glyphs: list.map(function (q) { return q.ch; }).join(""), fb: null, ok: true, w: 0, h: 0 };
+    // the font's own proportions: the advance, and the bar's reach above and below the baseline
+    var p = document.createElement("canvas").getContext("2d"); p.font = ascFont(100);
+    var bar = p.measureText("|"), adv = p.measureText("M").width / 100;
+    var up = (bar.actualBoundingBoxAscent || 76) / 100, dn = (bar.actualBoundingBoxDescent || 24) / 100;
+    var chars = (ASC.KEYS + ASC.EDGES + ASC.MARKS).split("").filter(function (c, i, a) { return a.indexOf(c) === i; });
+    if (chars.length > 63) { throw new Error("pickleball: a cell holds its glyph in six bits"); }
+    var vs = "#version 300 es\nvoid main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }";
+    asc = { adv: adv, up: up, dn: dn, chars: chars, N: chars.length, glyphs: chars.join(""), vs: vs, ok: true, w: 0, h: 0, grid: "", fb: null, cfb: null };
   }
-  function ascBegin(w, h) {
+  // The atlas for a grid: every glyph at every octave the grid uses, drawn by the browser at that size (red: the glyph;
+  // green: the glyph and its bloom), and each glyph's ink in the twelve parts of its cell, for the choice.
+  function ascAtlas(cw, ch, top) {
+    var A = asc, N = A.N, rows = [], y = 0, k, i;
+    for (k = 0; k <= top; k += 1) {
+      var W = cw << k, H = ch << k, cols = max(1, min(N, floor(4096 / W)));
+      rows.push({ y: y, cols: cols, W: W, H: H }); y += H * Math.ceil(N / cols);
+    }
+    var cv = document.createElement("canvas"); cv.width = rows.reduce(function (s, r) { return max(s, r.W * r.cols); }, 1); cv.height = y;
+    var c = cv.getContext("2d"); c.fillStyle = "#000"; c.fillRect(0, 0, cv.width, cv.height); c.textAlign = "center"; c.textBaseline = "alphabetic";
+    var fit = function (ch, f, r) {
+      c.font = ascFont(f); var m = c.measureText(ch);
+      var bw = (m.actualBoundingBoxLeft || 0) + (m.actualBoundingBoxRight || m.width), bh = (m.actualBoundingBoxAscent || f * 0.7) + (m.actualBoundingBoxDescent || 0);
+      return f * min(0.86 * r.W / max(bw, 1), 0.6 * r.H / max(bh, 1));
+    };
+    rows.forEach(function (r) {
+      var f = r.H / (A.up + A.dn);
+      // the marks (often from a fallback font, drawn at its own size) at one size together, as a font's are, the
+      // largest of them (but the arrow, which the scene never writes) fitted to a capital's box
+      var ms = ASC.MARKS.split("").filter(function (q) { return q !== "→"; }).reduce(function (a, q) { return min(a, fit(q, f, r)); }, 1e9);
+      A.chars.forEach(function (ch, i) {
+        if (ch === " ") { return; }
+        var x0 = (i % r.cols) * r.W, y0 = r.y + floor(i / r.cols) * r.H, s = f, by = y0 + A.up * f;
+        c.font = ascFont(f);
+        var m = c.measureText(ch), bw = (m.actualBoundingBoxLeft || 0) + (m.actualBoundingBoxRight || m.width);
+        if (ASC.MARKS.indexOf(ch) >= 0) {
+          // a mark: at the marks' size, on the cell's middle
+          s = min(ms, fit(ch, f, r));
+          c.font = ascFont(s); m = c.measureText(ch);
+          by = y0 + r.H * 0.5 + ((m.actualBoundingBoxAscent || 0) - (m.actualBoundingBoxDescent || 0)) / 2;
+        } else if (bw > r.W * 0.98) { s = f * r.W * 0.98 / bw; c.font = ascFont(s); }
+        c.save(); c.beginPath(); c.rect(x0, y0, r.W, r.H); c.clip();
+        c.globalCompositeOperation = "lighter";
+        c.fillStyle = "#f00"; c.fillText(ch, x0 + r.W / 2, by);
+        c.shadowColor = "#0f0"; c.shadowBlur = max(1.5, r.W * 0.22); c.fillStyle = "#0b0"; c.fillText(ch, x0 + r.W / 2, by);
+        c.restore();
+      });
+    });
+    // each glyph's ink in the twelve parts of its cell (from the largest octave), and its whole ink
+    var R = rows[top], d = c.getImageData(0, R.y, R.W * R.cols, R.H * Math.ceil(N / R.cols)).data, rw = R.W * R.cols;
+    var vec = new Float32Array(N * 12), ink = new Float32Array(N), hi = 0;
+    for (i = 0; i < N; i += 1) {
+      var gx = (i % R.cols) * R.W, gy = floor(i / R.cols) * R.H;
+      for (var yy = 0; yy < R.H; yy += 1) {
+        for (var xx = 0; xx < R.W; xx += 1) {
+          var v = d[((gy + yy) * rw + gx + xx) * 4] / 255, part = min(3, floor(yy * 4 / R.H)) * 3 + min(2, floor(xx * 3 / R.W));
+          vec[i * 12 + part] += v; ink[i] += v;
+        }
+      }
+      for (k = 0; k < 12; k += 1) { vec[i * 12 + k] /= R.W * R.H / 12; hi = max(hi, vec[i * 12 + k]); }
+    }
+    var px = new Uint8Array(N * 12);
+    for (i = 0; i < N * 12; i += 1) { px[i] = round(255 * vec[i] / hi); }
+    if (A.atlas) { gl.deleteTexture(A.atlas); gl.deleteTexture(A.gv); }
+    A.atlas = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, A.atlas);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
+    texNearest();
+    A.gv = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, A.gv);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 3, N, 0, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+    texNearest();
+    A.rows = rows; A.ink = ink;
+    if (!A.cellP) { ascPrograms(); }
+  }
+  function texNearest() {
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  }
+  // The two programs: the choice (a texel a cell, at each octave) and the setting (a pixel: its cell, its glyph's ink).
+  function ascPrograms() {
+    var A = asc, ix = function (ch) { return A.chars.indexOf(ch); };
+    // an alphabet sorted by the ink each glyph leaves (measured above, in this font): space first
+    var ramp = function (s) { return s.split("").map(ix).sort(function (a, b) { return A.ink[a] - A.ink[b]; }); };
+    var RK = ramp(ASC.BODY), RP = ramp(ASC.PLAN), RH = ramp(ASC.HORSE);
+    var uniq = function (a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); };
+    var EK = ramp(ASC.EDGES), EP = ramp(ASC.EDGES), EH = uniq(ramp(ASC.EDGES).concat(RH.slice(1)));
+    var arr = function (n, a) { return "const int " + n + "[" + a.length + "] = int[" + a.length + "](" + a.join(", ") + ");"; };
+    // a material's own glyph where it is one quiet texture (-1: the keyboard's ramp, -2: the marks')
+    var fix = [-3, ix("."), ix("."), ix("."), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2];
+    var head = [
+      "#version 300 es", "precision highp float; precision highp int;",
+      arr("RK", RK), arr("RP", RP), arr("RH", RH), arr("EK", EK), arr("EP", EP), arr("EH", EH), arr("FIX", fix),
+      "const int PEARL_G = " + ix("◎") + ", PLUS_G = " + ix("+") + ", UNDER_G = " + ix("_") + ", DASH_G = " + ix("-") + ", BAR_G = " + ix("|") + ", SLASH_G = " + ix("/") + ", BACK_G = " + ix("\\") + ", STAR_G[3] = int[3](" + [ix("."), ix("+"), ix("*")].join(", ") + ");",
+      "float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }"].join("\n");
+    A.cellP = compile(A.vs, [head,
+      "uniform sampler2D uScene; uniform highp sampler2D uDepth; uniform sampler2D uGV;",
+      "uniform vec2 uRes, uCell; uniform int uLev, uTop, uFloor, uBalls; uniform vec4 uBall[8];",
+      "uniform float uNear, uFar, uRule, uExpo, uGam, uEdge, uEdgeMin, uFocal, uAsp;",
+      "uniform vec3 uF, uR, uU, uEye; uniform vec2 uK;",
+      "out vec4 o;",
+      "float lin(float z) { return z >= 1.0 ? 1e4 : 2.0 * uNear * uFar / (uFar + uNear - (z * 2.0 - 1.0) * (uFar - uNear)); }",
+      "float tone(vec3 c) { return pow(clamp(lum(c) * uExpo, 0.0, 1.0), uGam); }",
+      // the 4x4 Bayer order, in (0, 1)
+      "float bayer(ivec2 p) { int x = p.x & 3, y = p.y & 3; int b = ((x ^ y) & 1) * 8 + (y & 1) * 4 + (((x ^ y) >> 1) & 1) * 2 + ((y >> 1) & 1); return (float(b) + 0.5) / 16.0; }",
+      "float hash(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }",
+      "vec3 hue(vec3 c) { return c / max(max(c.r, c.g), max(c.b, 1e-3)); }",
+      // a body's alphabet (Mr Plan's marks, the horse's planks, else the keyboard's), at t in it, never under 'least'
+      "int ramp(int mat, float t, int least) {",
+      "  int n = mat == 13 ? RP.length() : mat == 11 ? RH.length() : RK.length();",
+      "  int i = int(clamp(floor(t * float(n - 1) + 0.5), float(least), float(n - 1)));",
+      "  return mat == 13 ? RP[i] : mat == 11 ? RH[i] : RK[i];",
+      "}",
+      "void main() {",
+      "  ivec2 ci = ivec2(gl_FragCoord.xy);",
+      "  vec2 cs = uCell * exp2(float(uLev)), org = vec2(ci) * cs;",
+      "  float lod = max(0.0, log2(min(cs.x / 3.0, cs.y / 4.0)) - 0.5);",
+      // (under the floor only an athlete is ever written: the parts' materials first, the rest only if one is there)
+      "  if (uLev < uFloor) {",
+      "    bool any = false;",
+      "    for (int r = 0; r < 12; r++) { vec2 pd = org + (vec2(float(r % 3), float(r / 3)) + 0.5) * cs / vec2(3.0, 4.0); int k = int(floor((1.0 - texelFetch(uScene, ivec2(int(pd.x), int(uRes.y - pd.y)), 0).a) * 255.0 + 0.5)); any = any || (k >= 12 && k <= 16 && k != 14) || k == 9; }",
+      "    if (!any) { o = vec4(0.0, 0.0, 0.0, 128.0 / 255.0); return; }",
+      "  }",
+      "  float v[12], d[12]; int id[12]; vec3 col[12];",
+      "  float dn = 1e4; int near = -1, heads = 0;",
+      "  for (int r = 0; r < 12; r++) {",
+      "    vec2 pd = org + (vec2(float(r % 3), float(r / 3)) + 0.5) * cs / vec2(3.0, 4.0);",
+      "    v[r] = 0.0; d[r] = 1e4; id[r] = 0; col[r] = vec3(0.0);",
+      "    if (pd.x >= uRes.x || pd.y >= uRes.y) { id[r] = -2; continue; }",   // (off the screen: not the cell's to judge)
+      "    ivec2 pu = ivec2(int(pd.x), int(uRes.y - pd.y));",
+      "    float a = texelFetch(uScene, pu, 0).a;",
+      "    col[r] = textureLod(uScene, (vec2(pu) + 0.5) / uRes, lod).rgb;",
+      "    d[r] = lin(texelFetch(uDepth, pu, 0).r);",
+      "    if (a > 0.25 && a < 0.75) { id[r] = -1; heads++; continue; }",   // his head: not this cell's to write
+      "    id[r] = int(floor((1.0 - a) * 255.0 + 0.5));",
+      "    if (id[r] != 0 && d[r] < dn) { dn = d[r]; near = r; }",
+      "  }",
+      // the octave this cell's nearest thing asks for (the rule, from the floor up), and whether this cell is one at
+      // this octave. A far athlete (under sixteen lines tall at the floor) is set an octave under the floor, where
+      // there is one (a character still twelve device pixels high): the rule's own 'far off, smaller characters', for
+      // the one far thing that needs the lines to have a hat, a body and legs (at the floor Mr Plan was a blob)
+      "  int mat = near >= 0 ? id[near] : 0;",
+      "  int who = mat == 15 ? 12 : mat == 16 ? 13 : mat;",   // (whose: a hat is written in its wearer's alphabet)
+      "  bool fig = who == 12 || who == 13;",
+      "  float want = uRule * (" + ASC.D0.toFixed(3) + " / dn) * (" + ASC.D0.toFixed(3) + " / dn);",
+      "  int lv = uFloor + int(clamp(floor(log2(max(want, 1e-3)) + 0.5), 0.0, float(uTop - uFloor)));",
+      "  bool farFig = fig && 1.8 * uFocal / dn < 16.0 * uCell.y * exp2(float(uFloor));",
+      "  int act = (uLev == 0 || (uLev <= lv && !(uLev == uFloor && farFig))) ? 128 : 0;",
+      // the pearl: in the one cell that holds its middle, unless something stands in front of it, and an octave larger
+      // than its distance asks (the one character the game hangs on: at the floor it was lost in Mr Plan's marks)
+      "  for (int i = 0; i < 8; i++) {",
+      "    if (i >= uBalls) { break; }",
+      "    vec4 b = uBall[i];",
+      "    float wb = uRule * (" + ASC.D0.toFixed(3) + " / b.z) * (" + ASC.D0.toFixed(3) + " / b.z);",
+      "    int tg = min(uTop, uFloor + 1 + int(clamp(floor(log2(max(wb, 1e-3)) + 0.5), 0.0, float(uTop - uFloor))));",
+      "    if (uLev >= tg && (uLev == tg || act > 0) && b.x >= org.x && b.x < org.x + cs.x && b.y >= org.y && b.y < org.y + cs.y) {",
+      "      float zb = lin(texelFetch(uDepth, ivec2(int(b.x), int(uRes.y - b.y)), 0).r);",
+      "      if (zb > b.z - 0.25) { o = vec4(1.0, 0.97, 0.9, float(PEARL_G + 64 + 128) / 255.0); return; }",
+      "    }",
+      "  }",
+      "  if (heads >= 9) { o = vec4(0.0, 0.0, 0.0, float(act) / 255.0); return; }",
+      // the parts: each its light, those well behind the cell's nearest thing let go dark (the pearl's light too: it
+      // is written in its own cell); and how much of the cell is its nearest thing's own
+      "  float tol = 0.12 * dn + 0.25, tolF = 0.04 * dn + 0.06, mx = 0.0, mn = 1e4, sum = 0.0, cnt = 0.0, own = 0.0, ownV = 0.0, ownM = -1.0, back = 0.0; int hiR = 0, hiO = 0;",
+      "  for (int r = 0; r < 12; r++) {",
+      "    if (id[r] < 0) { continue; }",
+      "    float st = d[r] - dn;",
+      // (within an athlete, a part a little behind another (the body behind an arm) is half let go: its contour)
+      "    v[r] = id[r] == 9 ? 0.0 : tone(col[r]) * (id[r] == mat && fig ? 1.0 - 0.6 * smoothstep(0.3 * tolF, tolF, st) : 1.0 - smoothstep(0.0, tol, st));",
+      "    if (v[r] > mx) { mx = v[r]; hiR = r; }",
+      "    if (id[r] == mat) { own += 1.0; ownV += v[r]; if (v[r] > ownM) { ownM = v[r]; hiO = r; } }",
+      "    if (id[r] != mat || st > (fig ? tolF : 0.5 * tol)) { back += 1.0; }",
+      "    mn = min(mn, v[r]); sum += v[r]; cnt += 1.0;",
+      "  }",
+      "  float m = sum / max(cnt, 1.0), dz = bayer(ci), mo = ownV / max(own, 1.0);",
+      "  int g = 0, f = FIX[min(mat, 16)]; float V = 0.0; vec3 c = hue(col[hiO]);",
+      "  bool surf = mat <= 5 || mat == 14;",
+      // (the parts on a court's line or within a few pixels of one, and which way it runs: a surface is stroked only
+      // there; its boundary with the next zone, or with the net's foot, is a change of texture, never a stroke)
+      "  int nx = 0, nz = 0, ra = near;",
+      "  for (int r = 0; r < 12; r++) { if (id[r] == 5) { nx++; ra = r; } else if (id[r] == 14) { nz++; ra = r; } }",
+      // a body's tones: the window its light falls in, spread over its whole alphabet (Mr Plan, the lifted negative,
+      // sits lower than Mr Pearl's pearl white)
+      "  vec2 win = who == 13 ? vec2(0.1, 0.62) : who == 12 ? vec2(0.4, 1.25) : vec2(0.06, 0.75);",
+      // a figure under some twenty lines tall is written whole, every cell it touches in its own alphabet and light
+      // (a small clear shape; drawn by its edges it was a scatter of strokes)
+      "  bool small = fig && 1.8 * uFocal / dn < 10.0 * cs.y;",
+      // (under the floor only the figure is written: a far athlete stands in a small clearing of the ground's type)
+      "  if (uLev < uFloor && !fig) { o = vec4(0.0, 0.0, 0.0, float(act) / 255.0); return; }",
+      "  if (mat == 0) {",
+      // the sky: dark, a few stars, fixed to the sky (a star in the one cell its direction falls in)
+      "    vec2 nd = vec2((org.x + 0.5 * cs.x) / uRes.x * 2.0 - 1.0, 1.0 - (org.y + 0.5 * cs.y) / uRes.y * 2.0);",
+      "    vec3 dir = normalize(uF + nd.x * uK.x * uR + nd.y * uK.y * uU), q = floor(dir * 70.0);",
+      "    float h = hash(q);",
+      "    if (uLev == 0 && h < 0.025) {",
+      "      vec3 st = normalize((q + 0.5 + 0.6 * (vec3(hash(q + 1.7), hash(q + 3.1), hash(q + 5.3)) - 0.5)) / 70.0);",
+      "      float fz = dot(st, uF);",
+      "      vec2 sp = vec2((dot(st, uR) / fz / uK.x * 0.5 + 0.5) * uRes.x, (0.5 - dot(st, uU) / fz / uK.y * 0.5) * uRes.y);",
+      "      if (st.y > 0.03 && fz > 0.0 && sp.x >= org.x && sp.y >= org.y && sp.x < org.x + cs.x && sp.y < org.y + cs.y) {",
+      "        g = STAR_G[h < 0.0015 ? 2 : h < 0.005 ? 1 : 0]; V = 0.3 + 14.0 * (0.025 - h); c = vec3(0.72, 0.8, 1.0);",
+      "      }",
+      "    }",
+      "  } else if (f >= 0 && !surf) {",
+      // a thing of one glyph (the net #, a pole |, a lamp *, dust '), where it is
+      "    if (own >= (mat == 6 ? 2.0 : 1.0) && (mat != 6 || dz < 0.55)) { g = f; V = mix(0.45, 1.0, smoothstep(0.05, 0.7, ownM)) * (mat == 6 ? 0.5 : 1.0); }",
+      "  } else if (small) {",
+      "    if (own >= 1.0) {",
+      "      g = ramp(who, mix(0.7, 1.0, smoothstep(win.x, win.y, mo)), 1); V = mix(0.55, 1.0, smoothstep(0.1, 0.8, mo));",
+      "    }",
+      "  } else if (surf && nx + nz > 0 && mx >= 0.3) {",
+      // a court's line: one stroke the way its light lies in the cell (the light's second moments, in the cell's own
+      // proportions; better, where a part of it is on the line, the line's own axis seen from here); a line along a
+      // cell's top or left edge is the neighbour's
+      "    float W = 0.0; vec2 mu = vec2(0.0); vec3 M2 = vec3(0.0);",
+      "    for (int r = 0; r < 12; r++) { float wr = pow(max(v[r] - mn, 0.0), 2.0); W += wr; mu += wr * (vec2(float(r % 3), float(r / 3)) + 0.5) / vec2(3.0, 4.0); }",
+      "    mu /= max(W, 1e-4);",
+      "    for (int r = 0; r < 12; r++) { float wr = pow(max(v[r] - mn, 0.0), 2.0); vec2 e = ((vec2(float(r % 3), float(r / 3)) + 0.5) / vec2(3.0, 4.0) - mu) * vec2(uAsp, 1.0); M2 += wr * vec3(e.x * e.x, e.y * e.y, e.x * e.y); }",
+      "    M2 /= max(W, 1e-4);",
+      "    float th = degrees(0.5 * atan(2.0 * M2.z, M2.x - M2.y)), el = sqrt((M2.x - M2.y) * (M2.x - M2.y) + 4.0 * M2.z * M2.z) / max(M2.x + M2.y, 1e-6);",
+      "    {",
+      // the line's own direction on the screen, where it is: its point (from the depth), and a step along its axis
+      "      vec2 pd = org + (vec2(float(ra % 3), float(ra / 3)) + 0.5) * cs / vec2(3.0, 4.0);",
+      "      vec3 P = uEye + (uF + (pd.x / uRes.x * 2.0 - 1.0) * uK.x * uR + (1.0 - pd.y / uRes.y * 2.0) * uK.y * uU) * d[ra];",
+      "      vec3 Q = P + (nx >= nz ? vec3(0.05, 0.0, 0.0) : vec3(0.0, 0.0, 0.05)) - uEye, R0 = P - uEye;",
+      "      vec2 a0 = vec2(dot(R0, uR) / uK.x, -dot(R0, uU) / uK.y) / dot(R0, uF), a1 = vec2(dot(Q, uR) / uK.x, -dot(Q, uU) / uK.y) / dot(Q, uF);",
+      "      vec2 sd = (a1 - a0) * uRes; if (sd.x < 0.0) { sd = -sd; }",
+      "      th = degrees(atan(sd.y, max(sd.x, 1e-6))); el = 1.0;",
+      "      if (nx >= 2 && nz >= 2) { el = 0.0; }",
+      "    }",
+      // its stroke: - (or _ along the cell's foot), / and \ about a cell's own diagonal, | upright, + where two cross
+      "    float dg = degrees(atan(cs.y, cs.x));",
+      "    if (el < 0.2) { g = PLUS_G; }",
+      "    else if (abs(th) < 0.5 * dg) { g = mu.y > 0.68 ? UNDER_G : mu.y < 0.3 ? 0 : DASH_G; }",
+      "    else if (abs(th) > 0.5 * (dg + 90.0)) { g = mu.x < 0.22 ? 0 : BAR_G; }",
+      "    else { vec2 dv = vec2(cos(radians(th)), sin(radians(th))), off = (mu - 0.5) * cs; g = abs(off.x * dv.y - off.y * dv.x) > 0.38 * cs.x ? 0 : th < 0.0 ? SLASH_G : BACK_G; }",
+      "    c = hue(col[hiR]); V = mix(0.5, 1.0, smoothstep(0.3, 0.7, mx));",
+      "  } else if (!surf && back > 0.0 && mx >= uEdgeMin && (mx - mn) / mx > uEdge) {",
+      // an edge: the character shaped most like the cell (the parts' light, its contrast drawn up, against each
+      // candidate's ink, as the cosine of the two); a court's only from the strokes
+      "    vec4 n0 = vec4(0.0), n1 = vec4(0.0), n2 = vec4(0.0), k0 = vec4(1.0), k1 = vec4(1.0), k2 = vec4(1.0);",
+      "    for (int r = 0; r < 12; r++) {",
+      "      float q = id[r] < 0 ? 0.0 : pow(v[r] / mx, 2.2), kq = id[r] < 0 ? 0.0 : 1.0;",
+      "      if (r < 4) { n0[r] = q; k0[r] = kq; } else if (r < 8) { n1[r - 4] = q; k1[r - 4] = kq; } else { n2[r - 8] = q; k2[r - 8] = kq; }",
+      "    }",
+      "    float best = -1.0;",
+      // an athlete's silhouette: the stroke along it, by where his own front parts lie in the cell (their middle, from
+      // the cell's: the inward normal, in the cell's own proportions), as a draughtsman's line; only where that is
+      // ambiguous (a contour inside him, a speck) the glyph shaped most like the cell
+      "    vec2 cen = vec2(0.0); float fr = 0.0;",
+      "    for (int r = 0; r < 12; r++) { if (id[r] == mat && d[r] - dn <= tolF) { cen += (vec2(float(r % 3), float(r / 3)) + 0.5) / vec2(3.0, 4.0); fr += 1.0; } }",
+      "    vec2 nI = (cen / max(fr, 1.0) - 0.5) * vec2(uAsp, 1.0); float cov = fr / max(cnt, 1.0);",
+      "    if (fig && fr > 0.0 && length(nI) > 0.09) {",
+      "      float dg = degrees(atan(cs.y, cs.x)), th = degrees(atan(abs(nI.y), abs(nI.x)));",
+      "      if (th < 45.0 - 0.5 * dg) { g = BAR_G; }",
+      "      else if (th > 90.0 - 0.5 * dg) { g = (nI.y < 0.0 ? cov > 0.55 : cov < 0.45) ? UNDER_G : DASH_G; }",
+      "      else { g = nI.x * nI.y < 0.0 ? BACK_G : SLASH_G; }",
+      "      best = 2.0;",
+      "    }",
+      "    int ne = who == 13 ? EP.length() : who == 11 ? EH.length() : EK.length();",
+      "    for (int j = 0; j < 48; j++) {",
+      "      if (j >= ne || best > 1.5) { break; }",
+      "      int e = who == 13 ? EP[j] : who == 11 ? EH[j] : EK[j];",
+      "      vec4 g0 = texelFetch(uGV, ivec2(0, e), 0) * k0, g1 = texelFetch(uGV, ivec2(1, e), 0) * k1, g2 = texelFetch(uGV, ivec2(2, e), 0) * k2;",
+      "      float gg = dot(g0, g0) + dot(g1, g1) + dot(g2, g2);",
+      "      float s = (dot(n0, g0) + dot(n1, g1) + dot(n2, g2)) * inversesqrt(max(gg, 1e-4));",
+      "      if (s > best) { best = s; g = e; }",
+      "    }",
+      "    c = hue(col[hiR]); V = mix(0.6, 1.0, smoothstep(0.0, 0.6, mx));",
+      "  } else if (f >= 0) {",
+      // a surface: its own glyph, its spacing its light (in Bayer order)
+      "    float lo = mat == 1 ? 0.1 : mat == 2 ? 0.12 : 0.05, hi = mat == 1 ? 0.3 : mat == 2 ? 0.4 : 0.2;",
+      "    if (smoothstep(lo, hi, m) > dz) { g = f; }",
+      "    V = mix(0.32, 1.0, smoothstep(0.05, 0.8, m));",
+      "  } else {",
+      // a body: its alphabet by its own light, one tone to a band (dithered, a figure was a checkerboard), the light
+      // taken half from round the cell (so a tone holds over a part, not flickering cell to cell with the voxels'
+      // faces), never a hole inside it
+      "    vec2 cc = org + 0.5 * cs;",
+      "    float bt = 0.5 * mo + 0.5 * tone(textureLod(uScene, vec2(cc.x, uRes.y - cc.y) / uRes, log2(max(cs.x, cs.y)) + 1.0).rgb);",
+      // (a body near enough for the larger type is a quieter texture under its outline: the outline carries the form,
+      // and the near glyphs, four times the floor's area, do not wall the view)
+      "    float big = uLev > uFloor ? 1.0 : 0.0;",
+      "    g = ramp(who, smoothstep(win.x, win.y, bt) * (1.0 - 0.35 * big), own >= 3.0 ? 1 : 0);",
+      "    V = mix(0.35, 0.8, smoothstep(0.0, 0.8, bt)) * (mat == 11 ? 0.7 : 1.0) * (1.0 - 0.3 * big);",
+      "  }",
+      "  int bloom = (mat == 8 || V > 0.93) ? 64 : 0;",
+      "  o = vec4(c * V, float(g + bloom + act) / 255.0);",
+      "}"].join("\n"));
+    A.setP = compile(A.vs, [head,
+      "uniform sampler2D uScene; uniform sampler2D uCells; uniform sampler2D uAtlas;",
+      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow;",
+      "out vec4 o;",
+      "void main() {",
+      "  vec4 pic = texelFetch(uScene, ivec2(gl_FragCoord.xy), 0);",
+      "  if (pic.a > 0.25 && pic.a < 0.75) { o = vec4(pic.rgb, 1.0); return; }",       // his head, the one thing as it is
+      "  ivec2 pd = ivec2(int(gl_FragCoord.x), int(uRes.y - gl_FragCoord.y));",
+      "  int k = uTop; ivec2 cs = uCell << k, ci = pd / cs; vec4 t = texelFetch(uCells, ci, k);",
+      "  while (k > 0 && t.a < 0.5) { k--; cs = uCell << k; ci = pd / cs; t = texelFetch(uCells, ci, k); }",   // the largest cell that is one
+      "  int a = int(t.a * 255.0 + 0.5), g = a & 63;",
+      "  if (g == 0) { o = vec4(0.0, 0.0, 0.0, 1.0); return; }",
+      "  ivec2 at = ivec2((g % uAtl[k].y) * cs.x, uAtl[k].x + (g / uAtl[k].y) * cs.y) + pd - ci * cs;",
+      "  vec2 ink = texelFetch(uAtlas, at, 0).rg;",
+      "  o = vec4(t.rgb * (ink.r * uLit + ((a & 64) != 0 ? ink.g * uGlow : 0.0)), 1.0);",
+      "}"].join("\n"));
+    A.CU = {}; A.SU = {};
+    ["uScene", "uDepth", "uGV", "uRes", "uCell", "uLev", "uTop", "uFloor", "uBalls", "uBall", "uNear", "uFar", "uRule", "uExpo", "uGam", "uEdge", "uEdgeMin", "uFocal", "uAsp", "uEye", "uF", "uR", "uU", "uK"].forEach(function (k) { A.CU[k] = gl.getUniformLocation(A.cellP, k); });
+    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
+  }
+  // the grid for this screen: the type's floor and ceiling (CSS px, a phone's and a desk's), the cell its advance by
+  // its bar, in device pixels; an octave under the floor for far athletes where that is still 12 device pixels
+  function ascGrid(w, h, dpr) {
+    var ph = min(window.innerWidth, window.innerHeight) < 600 ? 0 : 1, fl = max(8, round(ASC.FLOOR[ph] * dpr)), F = fl >= 24 ? 1 : 0;
+    var ch = F ? round(fl / 2) : fl, cw = max(3, round(ch * asc.adv / (asc.up + asc.dn)));
+    var top = F + max(0, min(2, round(Math.log2(ASC.CEIL[ph] / ASC.FLOOR[ph]))));
+    return { cw: cw, ch: ch, top: top, F: F, key: cw + "x" + ch + "x" + top };
+  }
+  function ascBegin(w, h, dpr) {
     if (!asc || !asc.ok) { return false; }
+    var G = ascGrid(w, h, dpr);
+    if (G.key !== asc.grid) {
+      try { ascAtlas(G.cw, G.ch, G.top); } catch (e) { YT.warn(e); asc.ok = false; return false; }   // (the characters cannot be built here: the scene as it is)
+      asc.grid = G.key; asc.w = 0;
+    }
+    asc.G = G;
     if (!asc.fb || asc.w !== w || asc.h !== h) {
-      if (asc.fb) { gl.deleteFramebuffer(asc.fb); gl.deleteTexture(asc.col); gl.deleteTexture(asc.dep); }
+      if (asc.fb) { gl.deleteFramebuffer(asc.fb); gl.deleteTexture(asc.col); gl.deleteTexture(asc.dep); gl.deleteFramebuffer(asc.cfb); gl.deleteTexture(asc.cells); }
       var col = gl.createTexture(), dep = gl.createTexture(), fb = gl.createFramebuffer();
       gl.bindTexture(gl.TEXTURE_2D, col);
       gl.texStorage2D(gl.TEXTURE_2D, floor(Math.log2(max(w, h))) + 1, gl.RGBA8, w, h);
@@ -446,34 +737,62 @@
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.bindTexture(gl.TEXTURE_2D, dep);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, w, h, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      texNearest();
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, col, 0);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, dep, 0);
       asc.ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
-      asc.fb = fb; asc.col = col; asc.dep = dep; asc.w = w; asc.h = h;
+      // the cells: a texel each, an octave a level (the grid's size rounded up so every octave halves it exactly)
+      var u = 1 << G.top, gw = Math.ceil(Math.ceil(w / G.cw) / u) * u, gh = Math.ceil(Math.ceil(h / G.ch) / u) * u, cells = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, cells); gl.texStorage2D(gl.TEXTURE_2D, G.top + 1, gl.RGBA8, gw, gh); texNearest();
+      asc.fb = fb; asc.col = col; asc.dep = dep; asc.w = w; asc.h = h; asc.cells = cells; asc.gw = gw; asc.gh = gh; asc.cfb = gl.createFramebuffer();
       if (!asc.ok) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); return false; }   // (a device without it: the scene straight to the screen)
     }
+    asc.balls = [];
     gl.bindFramebuffer(gl.FRAMEBUFFER, asc.fb);
     return true;
   }
-  function ascEnd(w, h, dpr) {
-    var U = asc.U, minPx = min(window.innerWidth, window.innerHeight) < 600 ? 5 : 6;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.bindTexture(gl.TEXTURE_2D, asc.col); gl.generateMipmap(gl.TEXTURE_2D);
-    gl.viewport(0, 0, w, h);
-    gl.disable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND);
-    gl.useProgram(asc.prog); gl.bindVertexArray(null);
-    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, asc.col); gl.uniform1i(U.uScene, 2);
-    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, asc.dep); gl.uniform1i(U.uDepth, 3);
-    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, asc.atlas); gl.uniform1i(U.uAtlas, 4);
+  // a pearl drawn this frame: where its middle falls on the screen (device px from the top left) and how far it is
+  function ascBall(p, w, h) {
+    var vp = cur.vp, q = [0, 0, 0, 0];
+    for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; }
+    if (!asc || !asc.balls || q[3] < 0.05 || asc.balls.length >= 8) { return; }
+    var x = (q[0] / q[3] * 0.5 + 0.5) * w, y = (0.5 - q[1] / q[3] * 0.5) * h;
+    if (x >= 0 && x < w && y >= 0 && y < h) { asc.balls.push(x, y, q[3], 0); }
+  }
+  function ascEnd(w, h, dpr, yaw, pitch) {
+    var A = asc, G = A.G, CU = A.CU, SU = A.SU, md = ascMod || {};   // (the super return plays with the pass: its density, exposure and glow, for a moment)
+    gl.bindTexture(gl.TEXTURE_2D, A.col); gl.generateMipmap(gl.TEXTURE_2D);
+    gl.disable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE); gl.disable(gl.BLEND); gl.bindVertexArray(null);
+    // the choice: a texel a cell, each octave into its level
+    gl.useProgram(A.cellP);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, A.col); gl.uniform1i(CU.uScene, 2);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, A.dep); gl.uniform1i(CU.uDepth, 3);
+    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, A.gv); gl.uniform1i(CU.uGV, 4);
     gl.activeTexture(gl.TEXTURE0);
-    gl.uniform2f(U.uRes, w, h); gl.uniform1f(U.uNear, NEAR); gl.uniform1f(U.uFar, FAR);
-    var md = ascMod || {};   // (the super return plays with the pass: its density, exposure and glow, for a moment)
-    gl.uniform1f(U.uS0, ASC.S0 * dpr * (md.s0 || 1)); gl.uniform1f(U.uD0, ASC.D0);
-    gl.uniform1f(U.uMinL, round(Math.log2(minPx * dpr))); gl.uniform1f(U.uMaxL, round(Math.log2(ASC.MAXPX * dpr)));
-    gl.uniform1f(U.uN, asc.N); gl.uniform1f(U.uExpo, ASC.expo * (md.expo || 1)); gl.uniform1f(U.uContr, ASC.contr); gl.uniform1f(U.uGam, ASC.gam);
-    gl.uniform1f(U.uLit, ASC.lit); gl.uniform1f(U.uGlow, md.glow != null ? md.glow : ASC.glow); gl.uniform1f(U.uThresh, md.thresh != null ? md.thresh : ASC.thresh);
+    var f = lookDir(yaw, pitch), r = [Math.cos(yaw), 0, Math.sin(yaw)], u = cross(r, f);
+    gl.uniform3fv(CU.uF, f); gl.uniform3fv(CU.uR, r); gl.uniform3fv(CU.uEye, cur.eye); gl.uniform3fv(CU.uU, u); gl.uniform2f(CU.uK, T35 * w / h, T35);
+    gl.uniform2f(CU.uRes, w, h); gl.uniform2f(CU.uCell, G.cw, G.ch); gl.uniform1i(CU.uTop, G.top); gl.uniform1f(CU.uFocal, h / (2 * T35)); gl.uniform1f(CU.uAsp, G.cw / G.ch);
+    gl.uniform1f(CU.uNear, NEAR); gl.uniform1f(CU.uFar, FAR);
+    gl.uniform1f(CU.uRule, ASC.S0 * dpr * (md.s0 || 1) / (G.cw << G.F)); gl.uniform1i(CU.uFloor, G.F);
+    gl.uniform1f(CU.uExpo, ASC.expo * (md.expo || 1)); gl.uniform1f(CU.uGam, ASC.gam); gl.uniform1f(CU.uEdge, ASC.edge); gl.uniform1f(CU.uEdgeMin, ASC.edgeMin);
+    var bl = new Float32Array(32); bl.set(A.balls.slice(0, 32)); gl.uniform4fv(CU.uBall, bl); gl.uniform1i(CU.uBalls, A.balls.length / 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, A.cfb);
+    for (var k = 0; k <= G.top; k += 1) {
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, A.cells, k);
+      gl.viewport(0, 0, A.gw >> k, A.gh >> k); gl.uniform1i(CU.uLev, k);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    // the setting: each pixel its cell's glyph
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
+    gl.useProgram(A.setP);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, A.col); gl.uniform1i(SU.uScene, 2);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, A.cells); gl.uniform1i(SU.uCells, 3);
+    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, A.atlas); gl.uniform1i(SU.uAtlas, 4);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform2f(SU.uRes, w, h); gl.uniform2i(SU.uCell, G.cw, G.ch); gl.uniform1i(SU.uTop, G.top);
+    var at = new Int32Array(8); A.rows.forEach(function (q, i) { at[i * 2] = q.y; at[i * 2 + 1] = q.cols; }); gl.uniform2iv(SU.uAtl, at);
+    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
@@ -483,7 +802,18 @@
   var gl = null, canvas = null, hud = null, solid = null, SU = {}, skyP = null, KU = {}, headP = null, HU = {};
   var cube = null, parts = {}, partsFar = {}, ballMesh = null, headBall = null, palMe = null, palPlan = null;
   var FOV = 70, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
-  var SKY = { zen: [0.012, 0.016, 0.05], hor: [0.07, 0.085, 0.17], gnd: [0.05, 0.07, 0.06] };
+  var SKY = { zen: [0.004, 0.006, 0.02], hor: [0.02, 0.026, 0.06], gnd: [0.006, 0.008, 0.012] };
+  var RIM = { me: [0.42, 0.38, 0.34], plan: [0.45, 0.95, 1.05], none: [0.08, 0.08, 0.1] }, pixA = 0.001;
+  // The floodlights' pools, the one light on the ground: each court in its own light, the night between them.
+  function poolGLSL() {
+    var f = function (x) { return x.toFixed(3); };
+    return ["float pool(vec2 q) {",
+      "  float k = clamp(floor(q.x / " + f(COURT.GAP) + " + 0.5), 0.0, " + f(COURT.N - 1) + ");",
+      "  vec2 e = abs(vec2(q.x - k * " + f(COURT.GAP) + ", q.y)) - vec2(" + f(COURT.HW + 2.0) + ", " + f(COURT.L + 3.6) + ");",
+      "  float sd = length(max(e, 0.0)) + min(max(e.x, e.y), 0.0);",
+      "  return (1.0 - smoothstep(-1.5, 2.6, sd)) * (0.86 + 0.14 * smoothstep(0.0, 6.0, -sd));",
+      "}"].join("\n");
+  }
   function compile(vs, fs) {
     var mk = function (type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { throw new Error(gl.getShaderInfoLog(s)); } return s; };
     var p = gl.createProgram(); gl.attachShader(p, mk(gl.VERTEX_SHADER, vs)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
@@ -491,25 +821,71 @@
     return p;
   }
   function sceneInit() {
+    var f = function (x) { return x.toFixed(3); };
     solid = compile([
       "#version 300 es",
       "layout(location = 0) in vec3 aP; layout(location = 1) in vec3 aN; layout(location = 2) in float aI;",
-      "uniform mat4 uVP; uniform mat4 uM;",
+      "uniform mat4 uVP; uniform mat4 uM; uniform vec3 uEye; uniform vec4 uWide;",
       "out vec3 vN; out vec3 vW; flat out int vI;",
-      "void main() { vec4 w = uM * vec4(aP, 1.0); vW = w.xyz; vN = mat3(uM) * aN; vI = int(aI + 0.5); gl_Position = uVP * w; }"].join("\n"), [
+      "void main() {",
+      "  vec3 p = aP;",
+      // a post or a pole held at least uWide.w (radians at its distance, over its slant) across, so the cells never lose it
+      "  if (uWide.w > 0.0) {",
+      "    vec3 c = (uM * vec4(aP, 1.0)).xyz, v = normalize(c - uEye);",
+      "    for (int i = 0; i < 3; i++) {",
+      "      if (uWide[i] > 0.5) { vec3 a = uM[i].xyz; float s = length(a), t = dot(a / s, v); p[i] *= clamp(length(c - uEye) * uWide.w / max(0.1, sqrt(1.0 - t * t)) / s, 1.0, 12.0); }",
+      "    }",
+      "  }",
+      "  vec4 w = uM * vec4(p, 1.0); vW = w.xyz; vN = mat3(uM) * aN; vI = int(aI + 0.5); gl_Position = uVP * w;",
+      "}"].join("\n"), [
       "#version 300 es",
       "precision highp float;",
-      "uniform vec4 uPal[64]; uniform vec3 uCol; uniform int uUse; uniform vec3 uKey; uniform vec3 uEye; uniform float uEmit; uniform vec3 uFog;",
+      "uniform vec4 uPal[64]; uniform vec3 uCol; uniform int uUse; uniform vec3 uEye; uniform float uEmit; uniform vec3 uFog;",
+      "uniform float uMat, uGround, uAO; uniform vec4 uCrt; uniform vec3 uLnC, uRim, uKeyV;",
       "in vec3 vN; in vec3 vW; flat in int vI; out vec4 o;",
+      poolGLSL(),
+      // a court's line: never under a pixel and a half across, however far (a 6 cm line at 20 m is a third of one, and
+      // was lost between the cells)
+      "float lp(float d, float hw, float g) { return abs(d) / g - max(hw / g, 0.75); }",
       "void main() {",
       "  vec3 base = uUse == 1 ? uPal[vI].rgb / 255.0 : uCol;",
-      "  vec3 n = normalize(vN), v = normalize(uEye - vW);",
-      "  float k = max(dot(n, uKey), 0.0), rim = pow(1.0 - abs(dot(n, v)), 3.0);",
-      "  vec3 c = base * (0.5 + 0.95 * k + uEmit) + (base * 0.5 + 0.12) * rim * (1.0 - uEmit);",
-      "  c = mix(c, uFog, clamp((length(vW - uEye) - 70.0) / 320.0, 0.0, 0.8));",
-      "  o = vec4(c, 1.0);",
+      "  float mat = uMat;",
+      "  if (uCrt.y > 0.0) {",   // its lines, drawn on its surfaces: x its middle, y its half width, z its half length, w the kitchen
+      "    vec2 q = abs(vec2(vW.x - uCrt.x, vW.z));",
+      "    vec2 g = max(vec2(length(vec2(dFdx(vW.x), dFdy(vW.x))), length(vec2(dFdx(vW.z), dFdy(vW.z)))), vec2(1e-5));",
+      // the pixels from the nearest line along z (the sidelines, the centre line) and along x (the baselines, the kitchen's)
+      "    float az = 1e4, ax = 1e4;",
+      "    if (q.y <= uCrt.z + 0.03) { az = lp(q.x - uCrt.y + 0.03, 0.03, g.x); }",
+      "    if (q.y >= uCrt.w && q.y <= uCrt.z) { az = min(az, lp(q.x, 0.03, g.x)); }",
+      "    if (q.x <= uCrt.y) { ax = min(lp(q.y - uCrt.z + 0.03, 0.06, g.y), lp(q.y - uCrt.w, 0.03, g.y)); }",
+      "    base = mix(base, uLnC, clamp(0.5 - min(az, ax), 0.0, 1.0));",
+      // on a line or within a few pixels of one, the material says which way it runs, for its stroke
+      "    if (min(az, ax) < 2.5) { mat = ax < az ? 5.0 : 14.0; }",
+      "  }",
+      "  vec3 n = normalize(vN), v = normalize(uEye - vW), c;",
+      "  float E = pool(vW.xz);",
+      "  if (uGround > 0.5) {",
+      // the ground: lit by its court's pool alone (no rim: a grazing surface would light into false edges)
+      "    c = base * (0.035 + 1.1 * E) + base * uEmit;",
+      "  } else {",
+      // a body or a thing: its court's four lamps (each falling off), a key held to the view from over the viewer's left
+      // shoulder (as his head's rig is, pearl.js uRig: so a back is modelled as well as a front), a rim where the lamps
+      // behind catch its edge, darker toward the ground (uAO)
+      "    float k = clamp(floor(vW.x / " + f(COURT.GAP) + " + 0.5), 0.0, " + f(COURT.N - 1) + "), dif = 0.0, rim = 0.0, fr = pow(1.0 - abs(dot(n, v)), 2.0);",
+      "    for (int i = 0; i < 4; i++) {",
+      "      vec3 Lv = vec3(k * " + f(COURT.GAP) + " + (i == 0 || i == 2 ? -" + f(COURT.GAP / 2) + " : " + f(COURT.GAP / 2) + "), 9.1, i < 2 ? -" + f(COURT.L + 4) + " : " + f(COURT.L + 4) + ") - vW;",
+      "      float d2 = dot(Lv, Lv), wt = 170.0 / (70.0 + d2); vec3 l = Lv * inversesqrt(d2);",
+      "      dif += 0.45 * wt * max(dot(n, l), 0.0);",
+      "      rim += wt * fr * smoothstep(-0.1, 0.5, -dot(l, v));",
+      "    }",
+      "    float ao = mix(1.0, 0.5 + 0.5 * smoothstep(0.0, 1.5, vW.y), uAO), key = uAO * 1.05 * max(dot(n, uKeyV), 0.0);",
+      "    c = base * ((dif + key + 0.06 + 0.3 * E * max(-n.y, 0.0)) * ao + uEmit) + uRim * rim * (0.5 + 0.5 * E);",
+      "  }",
+      "  c = 1.0 - exp(-1.3 * c);",
+      "  c = mix(c, uFog, clamp(1.0 - exp(-max(length(vW - uEye) - 50.0, 0.0) * 0.008), 0.0, 0.8));",
+      "  o = vec4(c, 1.0 - mat / 255.0);",   // (its material, for the characters)
       "}"].join("\n"));
-    ["uVP", "uM", "uPal", "uCol", "uUse", "uKey", "uEye", "uEmit", "uFog"].forEach(function (k) { SU[k] = gl.getUniformLocation(solid, k); });
+    ["uVP", "uM", "uWide", "uPal", "uCol", "uUse", "uEye", "uEmit", "uFog", "uMat", "uGround", "uAO", "uCrt", "uLnC", "uRim", "uKeyV"].forEach(function (k) { SU[k] = gl.getUniformLocation(solid, k); });
     skyP = compile([
       "#version 300 es",
       "uniform vec3 uF; uniform vec3 uR; uniform vec3 uU; uniform vec2 uK;",
@@ -526,6 +902,28 @@
     var cv = [], F = [[0, 1, 0], [0, -1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1]];
     F.forEach(function (n) { quad(cv, n, [0.5 * n[0], 0.5 * n[1], 0.5 * n[2]], 0.5, 0); });
     cube = upload(cv);
+    // a contact shadow: a disc on the ground (a square, faded round), multiplying the colour under it (the material
+    // in the alpha kept)
+    shadeP = compile([
+      "#version 300 es",
+      "uniform mat4 uVP; uniform vec4 uS; out vec2 vQ;",
+      "const vec2 Q[6] = vec2[6](vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(1.0, 1.0), vec2(-1.0, -1.0), vec2(1.0, 1.0), vec2(-1.0, 1.0));",
+      "void main() { vQ = Q[gl_VertexID]; gl_Position = uVP * vec4(uS.x + vQ.x * uS.z, 0.034, uS.y + vQ.y * uS.z, 1.0); }"].join("\n"), [
+      "#version 300 es",
+      "precision highp float;",
+      "uniform vec4 uS; in vec2 vQ; out vec4 o;",
+      "void main() { o = vec4(vec3(1.0 - uS.w * (1.0 - smoothstep(0.1, 1.0, dot(vQ, vQ)))), 1.0); }"].join("\n"));
+    ["uVP", "uS"].forEach(function (n) { SHU[n] = gl.getUniformLocation(shadeP, n); });
+  }
+  var shadeP = null, SHU = {};
+  // the contact shadows (x, z, radius, strength), each a decal: only where a shadow is is any work done for it
+  function drawShadows(list) {
+    if (!list.length) { return; }
+    gl.useProgram(shadeP); gl.uniformMatrix4fv(SHU.uVP, false, cur.vp);
+    gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.ZERO, gl.SRC_COLOR, gl.ZERO, gl.ONE); gl.depthMask(false); gl.bindVertexArray(null);
+    list.forEach(function (q) { gl.uniform4fv(SHU.uS, q); gl.drawArrays(gl.TRIANGLES, 0, 6); });
+    gl.disable(gl.BLEND); gl.depthMask(true);
+    gl.useProgram(solid);
   }
   // a face of a cell (or of the cube): its middle c, half side r, normal n, palette id
   function quad(out, n, c, r, id) {
@@ -576,6 +974,13 @@
     });
   }
   var cur = { vp: null, eye: [0, 0, 0] }, cine = null, ascMod = null, slow = 1;   // (cine, ascMod, slow: the super return's camera, pass and time)
+  // what the next solids are: their material (MAT, for the pass), the axes held a pixel and a half wide (wide), lit as
+  // the ground or as a body, their rim and occlusion
+  function paint(mat, wide, ground, rim, ao) {
+    gl.uniform1f(SU.uMat, mat);
+    gl.uniform4f(SU.uWide, wide ? wide[0] : 0, wide ? wide[1] : 0, wide ? wide[2] : 0, wide ? 1.5 * pixA : 0);
+    gl.uniform1f(SU.uGround, ground ? 1 : 0); gl.uniform3fv(SU.uRim, rim || RIM.none); gl.uniform1f(SU.uAO, ao || 0);
+  }
   function drawSolid(mesh, M, col, pal, emit) {
     gl.uniformMatrix4fv(SU.uM, false, M);
     if (pal) { gl.uniform1i(SU.uUse, 1); gl.uniform4fv(SU.uPal, pal); } else { gl.uniform1i(SU.uUse, 0); gl.uniform3fv(SU.uCol, col); }
@@ -587,9 +992,15 @@
     drawSolid(cube, mul(T(c[0], c[1], c[2]), a ? mul(RA(ax, a), Sm) : Sm), col, null, emit);
   }
   function drawAthlete(a, pose, me, bare) {
-    var far = hypot(a.x - cur.eye[0], a.z - cur.eye[2]) > 26, P = far ? partsFar : parts, pal = a.pal;
+    var far = hypot(a.x - cur.eye[0], a.z - cur.eye[2]) > 26, P = far ? partsFar : parts, pal = a.pal, plan = pal === palPlan;
+    paint(plan ? MAT.PLAN : MAT.ME, null, false, plan ? RIM.plan : RIM.me, 1);
     gl.uniform4fv(SU.uPal, pal); gl.uniform1i(SU.uUse, 1); gl.uniform1f(SU.uEmit, 0);
-    Object.keys(pose.parts).forEach(function (n) { if (P[n] && !(bare && n === "hat")) { gl.uniformMatrix4fv(SU.uM, false, pose.parts[n]); gl.bindVertexArray(P[n].vao); gl.drawArrays(gl.TRIANGLES, 0, P[n].n); } });
+    Object.keys(pose.parts).forEach(function (n) {
+      if (!P[n] || (bare && n === "hat")) { return; }
+      gl.uniform1f(SU.uMat, n === "hat" ? (plan ? MAT.HATPLAN : MAT.HATME) : plan ? MAT.PLAN : MAT.ME);
+      gl.uniformMatrix4fv(SU.uM, false, pose.parts[n]); gl.bindVertexArray(P[n].vao); gl.drawArrays(gl.TRIANGLES, 0, P[n].n);
+    });
+    gl.uniform1f(SU.uMat, plan ? MAT.PLAN : MAT.ME);
     gl.uniformMatrix4fv(SU.uM, false, pose.guitar); gl.bindVertexArray(P.guitar.vao); gl.drawArrays(gl.TRIANGLES, 0, P.guitar.n);
     if (!me) {
       var c = pose.headC, Rr = headBall.R, h = body.cell, hm = pose.headM;
@@ -1169,8 +1580,11 @@
   }
 
   /* ---- drawing a frame ---------------------------------------------------------------------------------------------- */
-  var CT = { ground: [0.1, 0.17, 0.12], out: [0.13, 0.36, 0.22], inn: [0.16, 0.3, 0.62], kitchen: [0.16, 0.46, 0.48], line: [0.96, 0.96, 0.9],
-             net: [0.42, 0.44, 0.5], post: [0.62, 0.62, 0.66], lamp: [1, 0.96, 0.82], pole: [0.3, 0.3, 0.33], dust: [0.75, 0.66, 0.5], pearl: [1, 0.97, 0.92] };
+  // The courts' colours set for the night's values (the pass reads them as lightness): the grounds and the seams between
+  // the courts nearly black, the run-off a dark green, the court a deep blue, the kitchen a lighter teal (so it reads
+  // apart from the court), the lines a warm white; the lamps lit, the pearl lit from within.
+  var CT = { ground: [0.03, 0.045, 0.04], out: [0.1, 0.24, 0.15], inn: [0.14, 0.24, 0.56], kitchen: [0.14, 0.42, 0.44], line: [1, 0.97, 0.9],
+             net: [0.34, 0.36, 0.42], post: [0.62, 0.62, 0.66], lamp: [1, 0.95, 0.8], pole: [0.3, 0.3, 0.33], dust: [0.75, 0.66, 0.5], pearl: [1, 0.97, 0.92] };
   var HORSE = null;
   function horseParts() {
     if (HORSE) { return HORSE; }
@@ -1194,38 +1608,41 @@
   // beyond the courts' far ends, behind their middle, two and a half times the parts' metres (42 m to its ears)
   function drawHorse() {
     var H0 = [4.5 * COURT.GAP, 0, -COURT.L - 70], ps = horseParts(), per = COURT.WORK / ps.length, Z = [0, 0, 1], k = 2.5;
+    paint(MAT.HORSE);
     ps.forEach(function (p, i) {
       var f = clampV(horse.work / per - i, 0, 1), e = smooth(f);
       var lie = p.s[1] > p.s[0] ? PI / 2 : 0, g = [(i % 9 - 4) * 3.4, (lie ? p.s[0] : p.s[1]) / 2 + 0.01, 10 + floor(i / 9) * 4];
       var c = [0, 1, 2].map(function (j) { return g[j] + (p.c[j] - g[j]) * e; });
       if (f > 0 && f < 1) { c[1] += Math.sin(PI * e) * 3; }
-      cbox([H0[0] + c[0] * k, H0[1] + c[1] * k, H0[2] + c[2] * k], [p.s[0] * k, p.s[1] * k, p.s[2] * k], p.t, 0, Z, lie * (1 - e) + p.a * e);
+      cbox([H0[0] + c[0] * k, H0[1] + c[1] * k, H0[2] + c[2] * k], [p.s[0] * k, p.s[1] * k, p.s[2] * k], p.t, 0.35, Z, lie * (1 - e) + p.a * e);   // (its own work lights: it is far from the floodlights)
     });
   }
+  // The courts, the uppermost first (so the layers under them are hidden before they are lit), each layer 8 mm over the
+  // one below it (apart in the depth even far off); the lines drawn on the surfaces by the solid shader (uCrt), a pixel
+  // and a half at least, and the posts, the poles and the net's tape held a pixel and a half wide (uWide).
   function drawCourts() {
-    var L = COURT.L, HW = COURT.HW, K = COURT.K, lw = 0.06, y = 0.011, nw = 2 * (HW + COURT.PO);
-    cbox([4.5 * COURT.GAP, -0.05, -60], [COURT.N * COURT.GAP + 300, 0.1, 400], CT.ground);
+    var L = COURT.L, HW = COURT.HW, K = COURT.K, nw = 2 * (HW + COURT.PO), th = 0.008, x;
+    gl.uniform3fv(SU.uLnC, CT.line);
     for (var k = 0; k < COURT.N; k += 1) {
-      var x = courtAt(k)[0], z = 0;
-      cbox([x, 0.001, z], [COURT.GAP - 1, 0.01, 2 * L + 7], CT.out);
-      cbox([x, 0.006, z], [2 * HW, 0.01, 2 * L], CT.inn);
-      cbox([x, 0.008, z], [2 * HW, 0.01, 2 * K], CT.kitchen);
-      [-1, 1].forEach(function (s) {
-        cbox([x, y, z + s * (L - lw / 2)], [2 * HW, 0.012, lw * 2], CT.line);
-        cbox([x + s * (HW - lw / 2), y, z], [lw, 0.012, 2 * L], CT.line);
-        cbox([x, y, z + s * K], [2 * HW, 0.012, lw], CT.line);
-        cbox([x, y, z + s * (K + L) / 2], [lw, 0.012, L - K], CT.line);
-        cbox([x + s * (HW + COURT.PO), COURT.POST / 2, z], [0.08, COURT.POST, 0.08], CT.post);
-      });
-      cbox([x, COURT.NET / 2 + 0.03, z], [nw, COURT.NET - 0.06, 0.03], CT.net);
-      cbox([x, COURT.NET, z], [nw, 0.07, 0.05], CT.line);
+      x = courtAt(k)[0];
+      gl.uniform4f(SU.uCrt, x, HW, L, K);
+      paint(MAT.KITCHEN, null, true); cbox([x, 0.018, 0], [2 * HW, th, 2 * K], CT.kitchen);
+      paint(MAT.COURT, null, true); cbox([x, 0.01, 0], [2 * HW, th, 2 * L], CT.inn);
+      paint(MAT.RUNOFF, null, true); cbox([x, 0.002, 0], [COURT.GAP - 1, th, 2 * L + 7], CT.out);
+      gl.uniform4f(SU.uCrt, 0, 0, 0, 0);
+      paint(MAT.POLE, [1, 0, 1]);
+      [-1, 1].forEach(function (s) { cbox([x + s * (HW + COURT.PO), COURT.POST / 2, 0], [0.08, COURT.POST, 0.08], CT.post); });
+      paint(MAT.NET); cbox([x, COURT.NET / 2 + 0.03, 0], [nw, COURT.NET - 0.06, 0.03], CT.net);
+      paint(MAT.LINE, [0, 1, 0]); cbox([x, COURT.NET, 0], [nw, 0.07, 0.05], CT.line);   // (its tape)
     }
+    paint(MAT.GROUND, null, true);
+    cbox([4.5 * COURT.GAP, -0.05, -60], [COURT.N * COURT.GAP + 300, 0.1, 400], CT.ground);
     // the floodlights: a pole at each court's corners, its lamp lit
     for (var j = 0; j <= COURT.N; j += 1) {
       [-1, 1].forEach(function (s) {
         var px = (j - 0.5) * COURT.GAP, pz = s * (L + 4);
-        cbox([px, 4.5, pz], [0.18, 9, 0.18], CT.pole);
-        cbox([px, 9.1, pz - s * 0.2], [1.2, 0.35, 0.5], CT.lamp, 1.6);
+        paint(MAT.POLE, [1, 0, 1]); cbox([px, 4.5, pz], [0.18, 9, 0.18], CT.pole);
+        paint(MAT.LAMP); cbox([px, 9.1, pz - s * 0.2], [1.2, 0.35, 0.5], CT.lamp, 2.4);
       });
     }
   }
@@ -1238,9 +1655,9 @@
     if (cine) { e = cine.e; yaw = cine.yaw; pitch = cine.pitch; }
     if (camOver) { e = camOver.e; yaw = camOver.yaw; pitch = camOver.pitch; }
     var vm = viewM(e, yaw, pitch);
-    cur.eye = e; cur.vp = mul(perspective(FOV * PI / 180, cw / chh, NEAR, FAR), vm);
-    var into = !camPlain && ascBegin(cw, chh);
-    if (!into) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+    cur.eye = e; cur.vp = mul(perspective(FOV * PI / 180, cw / chh, NEAR, FAR), vm); pixA = 2 * T35 / chh;
+    var into = !camPlain && ascBegin(cw, chh, dpr);
+    if (!into) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); if (asc) { asc.balls = null; } }
     gl.viewport(0, 0, cw, chh);
     gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // the sky, behind everything
@@ -1250,38 +1667,52 @@
     gl.uniform3fv(KU.uZen, SKY.zen); gl.uniform3fv(KU.uHor, SKY.hor); gl.uniform3fv(KU.uGnd, SKY.gnd);
     gl.bindVertexArray(null); gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.CULL_FACE);
+    var m = court.m, near = function (x) { return abs(x - e[0]) <= 150; };
+    // the pearls in the air, first, for the shadows they cast: the courts that play on (the pearl back and forth
+    // between them, a shot each 1.3 s), and the match's
+    var pearls = [];
+    courts.forEach(function (cv, k) {
+      if (!cv.up || (m && m.k === k) || !near(courtAt(k)[0])) { return; }
+      var cc = courtAt(k), uu = (gt - cv.t0) / 1.3, ii = floor(uu), ff = uu - ii, ax = function (j) { return cc[0] + Math.sin(j * 1.7 + k) * 1.6; };
+      var zs = cc[2] + COURT.L - 0.5, zn = cc[2] - COURT.L + 0.5, za = ii % 2 ? zn : zs, zb = ii % 2 ? zs : zn;
+      pearls.push([[ax(ii) + (ax(ii + 1) - ax(ii)) * ff, 0.8 + 1.4 * Math.sin(PI * ff), za + (zb - za) * ff], uu * 9]);
+    });
+    if (m) {
+      m.balls.forEach(function (b) { if (!b.dead || gt - b.deadT < 1.4) { pearls.push([[b.x, b.y, b.z], b.spin]); } });
+      // (a pearl tossed: dropped from his hand to below his waist, where the racket meets it)
+      m.tosses.forEach(function (q) { if (gt >= q.t0) { var tu = clampV((gt - q.t0) / 0.3, 0, 1), s0 = serveFrom(); pearls.push([[s0[0], 1.0 - (1.0 - s0[1]) * tu * tu, s0[2]], 0]); } });
+    }
+    // the contact shadows: each athlete's (wider and fainter off the ground) and each pearl's (its height, told)
+    var shadows = [], cast = function (x, z, y, rr, st) { if (hypot(x - e[0], z - e[2]) < 60) { shadows.push([x, z, rr, st]); } };
+    var who = [me].concat(plans.filter(function (p) { return near(p.x); }), stands.filter(function (st, k) { return courts[k].up && !(m && m.k === k) && near(st.x); }));
+    who.forEach(function (a) { cast(a.x, a.z, a.y, 0.6 + 0.4 * a.y, 0.75 / (1 + 1.5 * a.y)); });
+    pearls.forEach(function (q) { var p = q[0]; cast(p[0], p[2], p[1], 0.1 + 0.07 * p[1], min(0.95, 1.1 / (1 + 0.3 * p[1]))); });
     gl.useProgram(solid);
-    gl.uniformMatrix4fv(SU.uVP, false, cur.vp); gl.uniform3fv(SU.uEye, e); gl.uniform3fv(SU.uKey, KEY); gl.uniform3fv(SU.uFog, SKY.hor);
-    drawCourts(); drawHorse();
-    var m = court.m;
+    gl.uniformMatrix4fv(SU.uVP, false, cur.vp); gl.uniform3fv(SU.uEye, e); gl.uniform3fv(SU.uFog, SKY.gnd);
+    // the athletes' key held to the view, from over the viewer's left shoulder, as his head's rig is (pearl.js, uRig)
+    gl.uniform3fv(SU.uKeyV, norm(add(add(sc(r, -0.5), sc(u, 0.72)), sc(f, -0.5))));
+    drawCourts(); drawShadows(shadows); drawHorse();
     // the athletes
     var headShown = !(view.scope && gt - view.camT >= TP.VIEW / 2);
     drawAthlete(me, me.pose, true, !headShown);   // (with the Scope up his head is the glass, and his hat off it, as the rocket world doffs it)
     courts.forEach(function (cv, k) {
-      if (abs(courtAt(k)[0] - e[0]) > 150) { return; }
+      if (!near(courtAt(k)[0])) { return; }
       drawAthlete(plans[k], plans[k].pose = athPose(plans[k], gt), false);
       if (cv.up && !(m && m.k === k)) { drawAthlete(stands[k], athPose(stands[k], gt), false); }
-      if (cv.up && !(m && m.k === k)) {
-        // the courts that play on: the pearl back and forth between them, a shot each 1.3 s
-        var cc = courtAt(k), uu = (gt - cv.t0) / 1.3, ii = floor(uu), ff = uu - ii, ax = function (j) { return cc[0] + Math.sin(j * 1.7 + k) * 1.6; };
-        var zs = cc[2] + COURT.L - 0.5, zn = cc[2] - COURT.L + 0.5, za = ii % 2 ? zn : zs, zb = ii % 2 ? zs : zn;
-        drawBall([ax(ii) + (ax(ii + 1) - ax(ii)) * ff, 0.8 + 1.4 * Math.sin(PI * ff), za + (zb - za) * ff], uu * 9);
-      }
     });
-    if (m) {
-      m.balls.forEach(function (b) { if (!b.dead || gt - b.deadT < 1.4) { drawBall([b.x, b.y, b.z], b.spin); } });
-      // (a pearl tossed: dropped from his hand to below his waist, where the racket meets it)
-      m.tosses.forEach(function (q) { if (gt >= q.t0) { var tu = clampV((gt - q.t0) / 0.3, 0, 1), s0 = serveFrom(); drawBall([s0[0], 1.0 - (1.0 - s0[1]) * tu * tu, s0[2]], 0); } });
-    }
+    pearls.forEach(function (q) { drawBall(q[0], q[1]); });
+    paint(MAT.DUST);
     dust.forEach(function (d) { var s = 0.07 * (1 - (gt - d.t) / 0.7); cbox([d.x, d.y, d.z], [s, s, s], CT.dust, 0.4); });
     if (headShown) { drawHead(me.pose, vm); }
     gl.bindVertexArray(null);
-    if (into) { ascEnd(cw, chh, dpr); }
+    if (into) { ascEnd(cw, chh, dpr, yaw, pitch); }
     overlay(dpr);
   }
   function drawBall(p, spin) {
-    var h = body.cell, M = mul(T(p[0], p[1], p[2]), mul(RX(spin || 0), mul(S(h), T(-3, -3, -3))));
-    drawSolid(ballMesh, M, CT.pearl, null, 0.55);
+    // (lit from within; never under three pixels across, so far off it still shows in its cell)
+    var h = body.cell * max(1, 1.5 * pixA * hypot(p[0] - cur.eye[0], p[1] - cur.eye[1], p[2] - cur.eye[2]) / (3 * body.cell));
+    paint(MAT.PEARL); drawSolid(ballMesh, mul(T(p[0], p[1], p[2]), mul(RX(spin || 0), mul(S(h), T(-3, -3, -3)))), CT.pearl, null, 2.2);
+    if (asc && asc.balls) { ascBall(p, canvas.width, canvas.height); }
   }
   // Over the view, page-drawn: the ring where Mr Plan's shot comes down, the Scope's mark, the stick, the ten courts'
   // squares and the horse's tools; all of it in characters where it marks a place.

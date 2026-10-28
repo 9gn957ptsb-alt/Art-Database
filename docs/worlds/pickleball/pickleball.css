@@ -10,12 +10,13 @@ body { color: var(--fg); font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo,
 #hud { pointer-events: none; }
 .top { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left));
        right: calc(12px + env(safe-area-inset-right)); pointer-events: none; }
-#where { letter-spacing: 0.12em; text-transform: uppercase; text-shadow: 0 0 3px var(--shade), 0 0 6px var(--shade); }
+/* (the words over the characters: a wide dark halo, so a pole or a lamp behind a line of words gives way to it) */
+#where { letter-spacing: 0.12em; text-transform: uppercase; text-shadow: 0 0 3px var(--shade), 0 0 6px var(--shade), 0 0 14px var(--shade), 0 0 14px var(--shade); }
 #loading { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); letter-spacing: 0.12em; text-transform: uppercase; }
 #loading[hidden] { display: none; }
 #say { position: fixed; left: calc(12px + env(safe-area-inset-left)); top: calc(118px + env(safe-area-inset-top));
        width: min(520px, calc(100% - 24px)); pointer-events: none;
-       text-shadow: 0 0 3px var(--shade), 0 0 8px var(--shade); transition: opacity 0.4s; }
+       text-shadow: 0 0 3px var(--shade), 0 0 8px var(--shade), 0 0 16px var(--shade), 0 0 16px var(--shade); transition: opacity 0.4s; }
 button { position: fixed; border: 1px solid var(--edge); background: var(--pane); color: var(--fg);
          font: inherit; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 999px; touch-action: manipulation; }
 button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
