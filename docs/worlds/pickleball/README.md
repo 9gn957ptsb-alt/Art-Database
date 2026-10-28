@@ -54,8 +54,10 @@ goes then; the player's part is to be near, to aim and to serve.
 **Views.** His own (the artist: "maintain the perspectives of Mr Pearl to play"): the third person behind his head,
 his whole figure a quarter of the screen's height at rest (the rocket world has a third; the artist, 28 Oct 2026: "The
 third person view should be a little farther out for Pickleball given the speed in which Mr. Pearl can now move"), on a
-critically damped spring so that his bursts read. The lens is 58 degrees top to bottom (it was 70: the far court and Mr
-Plan a quarter larger). The Scope, his head the glass, went (the artist, 28 Oct 2026: "Get rid of the scope view").
+critically damped spring so that his bursts read. The lens is about 46 degrees top to bottom (it was 70, then 58), the
+camera a third further back each time (the artist, 28 Oct 2026: "keep the athletes the same size, I want to be a bit
+further behind him"): a dolly zoom, his figure held to the same footprint on the screen (pb_define measures it: 147,800
+device px at a phone's rally, 147,600 before), the far court and Mr Plan larger with each step. The Scope, his head the glass, went (the artist, 28 Oct 2026: "Get rid of the scope view").
 
 ## The athletes
 
