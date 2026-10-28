@@ -2543,8 +2543,10 @@ showAll.addEventListener("click", letGo);
 // each, what changes is how the aesthetic texture of what is being displayed is achieved"). The plane is drawn as it
 // always was, and read a cell at a time as glowing glyphs (glyphlight.js), laid over it, every press still reaching it.
 // DRIFT's glyphs are Glyph Light's finest set, so its textures keep as many steps of light as glyphs can give; DRIFT
-// Poetry's are the poems themselves, running through the cells in reading order, each letter in the colour of the
-// ground under it and gone where the ground is dark.
+// Poetry's are the poems' own letters, sorted by ink, each in the colour of the ground under it and gone where the
+// ground is dark. Only Glyph Light's ASCII style, never its dots, grain, scan or text (Aries, 28 Oct 2026: "Make sure
+// you are just using the ASCII style from GLYPH Light and none of the other styles for the aesthetics of the artifacts
+// I specified you to implement into"); all its other controls stay, the glyph sets among them.
 // Since 27 Oct 2026 the plane is a storyboard, and Glyph Light is walked through all its sliders along the story (Aries:
 // "Make sure you are using the full dimensionality of the Glygh Light artifact. Make sure all of the changes available
 // through the provided slide bars are being implemented in all of the artifacts ... Keep in mind that the infinite
@@ -2560,19 +2562,20 @@ addEventListener("load", () => {
   const canvases = () => [...stage.querySelectorAll("canvas")].filter((c) => !c.__glyphs);
   const poems = document.querySelector('section[aria-label^="The poems of Picture Poetry"]');
   const text = poems ? [...poems.querySelectorAll("p")].map((p) => [...p.childNodes].map((n) => n.textContent).join(" ")).join(" ") : "";
+  const own = text ? { style: "ascii", set: [...new Set(text.replace(/\s+/g, ""))].join("") } : { style: "ascii", set: GlyphLight.SETS.fine };
   const all = canvases(), M = GlyphLight.motions;
   const was = { host: stage, after: all[all.length - 1], sources: canvases, cell: (w) => (w < 600 ? 5 : 6) * (text ? 1.4 : 1) };
   if (!M) {
-    window.GLYPHS = GlyphLight.create(Object.assign(was, text ? { style: "text", text } : { style: "ascii", set: GlyphLight.SETS.fine }));
+    window.GLYPHS = GlyphLight.create(Object.assign(was, own));
     return;
   }
   // DRIFT's story in Glyph Light's sliders. The continuous ones are slow waves, each round in a Fibonacci number of
   // frames of its own (and its own phase, a golden angle on from the last), so every combination comes round: exposure
   // ±0.5 EV in 13, contrast 1 to 1.6 in 21, midtones 0.75 to 1.35 in 34, detail 0 to 1.2 in 55, the glow 0.35 to 0.85
   // by the pulse in 8, the glow starting at 0.6 to 0.85 in 89, the picture under the glyphs 0 to 0.38 in 144. The
-  // discrete ones come in runs of Fibonacci lengths, the first the longest: styles (ascii 34, dots 13, grain 5, scan 3
-  // frames), glyph sets (fine 21, the default 13, blocks 8, binary 5, kana 3, kanji 2), colours (full 21, gold 8, blue
-  // 5, mono 3), and inverted three frames in 89. Glyph Light's video motions are laid out in place of time: push in as
+  // discrete ones come in runs of Fibonacci lengths, the first the longest: glyph sets (fine 21, the default 13, blocks
+  // 8, binary 5, kana 3, kanji 2), colours (full 21, gold 8, blue 5, mono 3), and inverted three frames in 89. The
+  // style is ASCII throughout (above). Glyph Light's video motions are laid out in place of time: push in as
   // density, its glyphs a level larger at each of a run's three frames (blocks of 1, 2 then 4 cells a side), as the
   // ground's painting is pushed in by phi at each; shimmer seeded by the frame; reveal opening each chapter of 34 frames, and closing towards its end, so
   // no frame jumps from light to dark; pulse as the glow. And no frame is unreadably dark or blown out: its exposure is
@@ -2587,7 +2590,6 @@ addEventListener("load", () => {
     let c = mod(k, list.reduce((s, r) => s + r[1], 0));
     for (const [v, n] of list) { if (c < n) return v; c -= n; }
   };
-  const STYLES = [["ascii", 34], ["dots", 13], ["grain", 5], ["scan", 3]];
   const GLYPH_SETS = [["fine", 21], ["ascii", 13], ["blocks", 8], ["binary", 5], ["kana", 3], ["kanji", 2]];
   const COLOURS = [["full", 21], ["gold", 8], ["blue", 5], ["mono", 3]];
   function story(k) {
@@ -2595,7 +2597,7 @@ addEventListener("load", () => {
     const reveal = M.reveal(Math.min(0.75, edge / 3));
     const pulse = Math.min(1, Math.max(0, (M.pulse((mod(k, 8) + 0.5) / 16).gain - 0.35) / 1.1));   // its swing, 0 to 1
     const s = Object.assign({
-      style: run(k, STYLES), set: SETS[run(k, GLYPH_SETS)], mode: run(k, COLOURS), invert: mod(k, 89) >= 55 && mod(k, 89) < 58,
+      style: "ascii", set: SETS[run(k, GLYPH_SETS)], mode: run(k, COLOURS), invert: mod(k, 89) >= 55 && mod(k, 89) < 58,
       contrast: wave(k, 21, 1, 1.6, 1), gamma: wave(k, 34, 0.75, 1.35, 2), detail: wave(k, 55, 0, 1.2, 3),
       glow: 0.35 + 0.5 * pulse, thresh: wave(k, 89, 0.6, 0.85, 4), under: wave(k, 144, 0, 0.38, 5),
       level: j,                                                  // the push in: a level of the overlay's
@@ -2610,8 +2612,7 @@ addEventListener("load", () => {
   const origin = () => { const s = cellsPerCss(); return { x: vx / s, y: vy / s }; };
   const region = { get w() { return 377 / cellsPerCss(); }, get h() { return 377 / cellsPerCss(); } };
   window.GLYPHS = GlyphLight.create(Object.assign(was, { origin },
-    text ? { style: "text", text }
-      : { style: "ascii", set: SETS.fine, region, levels: "frozen", field: (i, j) => story(i + 13 * j) },
+    text ? own : { style: "ascii", set: SETS.fine, region, levels: "frozen", field: (i, j) => story(i + 13 * j) },
     window.DRIFT_GLYPHS_OPTIONS || {}));
 });
 </script>

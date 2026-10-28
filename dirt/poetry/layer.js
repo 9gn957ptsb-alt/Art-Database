@@ -110,13 +110,16 @@
   // Aries, 27 Oct 2026: "Make sure you are using the full dimensionality of the Glygh Light artifact. Make sure all of
   // the changes available through the provided slide bars are being implemented in all of the artifacts." DRIFT's page
   // lays Glyph Light over everything (its glyphs loader, build_soil_viewer.py), its glyphs here the poems' letters.
-  // This hands the loader the storyboard (window.DRIFT_GLYPHS_OPTIONS, merged into its own at the page's load): the
-  // glyphs pinned to the plane (origin), cut into the story's frames (region), each frame made of its own line's
-  // letters (text) and each a point in the artifact's slider space (field), the gutter between two a blend or a
-  // dissolve (glyphlight.js), phi^-4 of a frame each side of it (seam), so a frame's own line holds most of it. The
-  // point, frame by frame:
-  // - style: text, the poems' own, every frame; its glyphs the frame's line's letters (a plot's, its page's title, or
-  //   its poem's first line; the garden's, its name);
+  // Aries, 28 Oct 2026: "Make sure you are just using the ASCII style from GLYPH Light and none of the other styles for
+  // the aesthetics of the artifacts I specified you to implement into": so the ASCII style, every frame, its glyph
+  // sets the poems' own letters (one set a poem, which Glyph Light sorts by ink, as it does a custom set), never the
+  // text style that wrote them in reading order. This hands the loader the storyboard (window.DRIFT_GLYPHS_OPTIONS,
+  // merged into its own at the page's load): the glyphs pinned to the plane (origin), cut into the story's frames
+  // (region), each frame drawn in its poem's letters and each a point in the artifact's slider space (field), the
+  // gutter between two a blend or a dissolve (glyphlight.js), phi^-4 of a frame each side of it (seam), so a frame's
+  // own setting holds most of it. The point, frame by frame:
+  // - style: ascii, every frame; its glyph set its poem's letters (a kin frame's, the next poem's; the garden's, the
+  //   last poem's, the loop's hinge);
   // - colour by page, from its paper: a dark page mono (page 6's black), a warm one gold, a cool one blue, else full;
   // - density (glyphlight.js's level: cells x1, x2, x4): a line's letters at the poems' size; a plot's twice it; and
   //   each poem pushed in over its last three lines (the artifact's push in, laid out as density: GlyphLight.motions.push
@@ -149,14 +152,15 @@
     const hue = mod(mx === r ? 60 * ((g - b) / (mx - mn)) : mx === g ? 60 * ((b - r) / (mx - mn)) + 120 : 60 * ((r - g) / (mx - mn)) + 240, 360);
     return hue >= 15 && hue < 70 ? "gold" : hue >= 170 && hue < 260 ? "blue" : "full";
   }
-  const glyphText = story.map((s) => {
-    const P = SPEC.pages[s.pi], k = lineOfFrame(s);
-    return ((s.kind === "plot" && (P.title || (k < 0 && P.name))) || (k >= 0 ? LINES[k] : P.name)).replace(/\s+/g, " ").trim() + " ";
-  });
+  // each poem's glyph set: the letters of its lines (a frame's poem: its own, a kin frame's the next, the garden's the last)
+  const poemText = [];
+  story.forEach((s) => { if (s.kind === "line") poemText[s.qi] = (poemText[s.qi] || "") + LINES[s.line]; });
+  const SETS_Q = [...poemText].map((t) => [...new Set((t || "").replace(/\s+/g, ""))].join("")).slice(0, 8);   // (8 at most: glyphlight.js)
+  const setFor = (s) => SETS_Q[s.qi >= 0 && s.qi < SETS_Q.length ? s.qi : SETS_Q.length - 1] || "";
   /** Frame f's point in Glyph Light's slider space (glyphlight.js's field: a frame's settings, and the motions' terms). */
   function pointOf(f) {
     const s = story[f], C = 2 * Math.PI;
-    const o = { style: "text", mode: modeOf(s.kind === "kin" ? s.next : s.pi), level: 0, exposure: 0, contrast: 1.2, gamma: 1, detail: 0,
+    const o = { style: "ascii", set: setFor(s), mode: modeOf(s.kind === "kin" ? s.next : s.pi), level: 0, exposure: 0, contrast: 1.2, gamma: 1, detail: 0,
                 invert: false, glow: 0.6, thresh: 0.7, under: 0, gain: 1, ev: 0 };
     const add = (m) => { if (m.gain != null) o.gain *= m.gain; if (m.ev != null) o.ev += m.ev; if (m.jitter != null) o.jitter = m.jitter; if (m.seed != null) o.seed = m.seed; };
     add(motion("shimmer", f));
@@ -177,7 +181,7 @@
     return o;
   }
   const regionFrame = (i, j) => mod(i + rowOff(j), FN);               // (a region of glyphlight.js is a frame of the story)
-  const glField = (i, j) => pointOf(regionFrame(i, j)), glText = (i, j) => ({ text: glyphText[regionFrame(i, j)], at: 0 });
+  const glField = (i, j) => pointOf(regionFrame(i, j));
   /** The overlay's top left on the story's plane (CSS pixels): DRIFT's view, less where the ground lies in the stage
    *  (the loader passes DRIFT's own origin; this, merged over it, counts from where the story is laid, so glyphlight.js's
    *  regions are the story's frames and their gutters fall where the story's do). */
@@ -185,17 +189,13 @@
     const v = view(), r = field.getBoundingClientRect(), h = stage.getBoundingClientRect();
     return { x: v.x - (r.left - h.left) - shift[0], y: v.y - (r.top - h.top) - shift[1] };
   }
-  // (a text that is a function is the new Glyph Light's: one before it, given one, would break, so it is given only
-  // where the motions say the new one is here)
-  // (and every frame's letters given at once, so its atlas is made once, not grown as frames come into view)
-  const glNew = !!(window.GlyphLight && GlyphLight.motions);
-  const glLetters = " " + [...new Set(glyphText.join("").replace(/\s+/g, ""))].join("");
-  if (FN) window.DRIFT_GLYPHS_OPTIONS = Object.assign(window.DRIFT_GLYPHS_OPTIONS || {}, { origin: glOrigin, region: { w: FRAME, h: ROW },
-    seam: 0.146, levels: "frozen", field: glField }, glNew ? { text: glText, letters: glLetters } : {});
+  // (every poem's set given at once, so the atlas is made once, not grown as frames come into view)
+  if (FN && SETS_Q.length) window.DRIFT_GLYPHS_OPTIONS = Object.assign(window.DRIFT_GLYPHS_OPTIONS || {}, { origin: glOrigin,
+    region: { w: FRAME, h: ROW }, seam: 0.146, levels: "frozen", field: glField, style: "ascii", set: SETS_Q[0], sets: SETS_Q.slice(1) });
   /** Once the story is laid where the visit begins, Glyph Light's frames are found again (its cache cleared). */
   function glLaid() {
     const g = window.GLYPHS;
-    if (g && g.set && g.options && g.options.field === glField) g.set(Object.assign({ field: glField }, glNew ? { text: glText } : {}));
+    if (g && g.set && g.options && g.options.field === glField) g.set({ field: glField });
   }
 
   // ---- the buildings, on the ground and turned by a swipe as in Picture Poetry -----------------------------------
@@ -1157,10 +1157,10 @@
     frame() {
       if (!anchored || !FN) return null;
       const v = lastV || view(), fr = frameAt(v.x + v.W / v.dpr / 2, v.y + v.H / v.dpr / 2), s = story[fr.f], P = SPEC.pages[s.pi];
-      return { f: fr.f, q: +fr.q.toFixed(4), page: P.n != null ? P.n : P.name, line: s.line != null ? s.line : -1, kind: s.kind, row: fr.cy, glyphs: glyphText[fr.f] };
+      return { f: fr.f, q: +fr.q.toFixed(4), page: P.n != null ? P.n : P.name, line: s.line != null ? s.line : -1, kind: s.kind, row: fr.cy, glyphs: setFor(s) };
     },
     story: () => story.map((s, f) => ({ f, kind: s.kind, page: SPEC.pages[s.pi].n != null ? SPEC.pages[s.pi].n : SPEC.pages[s.pi].name, line: s.line != null ? s.line : -1,
-                                         writes: lineOfFrame(s), glyphs: glyphText[f], turn: !!s.turn, root: s.root || null, building: s.bi != null ? BLD[s.bi].name : null })),
+                                         writes: lineOfFrame(s), glyphs: setFor(s), turn: !!s.turn, root: s.root || null, building: s.bi != null ? BLD[s.bi].name : null })),
     glyphs: (f) => pointOf(f),
   });
 

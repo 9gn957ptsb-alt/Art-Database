@@ -112,7 +112,7 @@ repository.
    look at the cover, the first leaf, the poem (its indents as on its page, nothing cut off) and the last leaf, turn
    every leaf, and close it (Escape): it must lie down where it was, and `open` be false. A photograph of Picture
    Poetry must arrive torn out at the plot where the visit begins, a few seconds after the ground is painted. DRIFT's
-   page lays Glyph Light over all of it (`window.GLYPHS`, its text the poems): `GLYPHS.set({ active: () => false })`
+   page lays Glyph Light over all of it (`window.GLYPHS`, ASCII style, its glyph sets the poems' letters): `GLYPHS.set({ active: () => false })`
    shows the plane under the glyphs, and `GLYPHS.options.field` is the storyboard's where the loader took it. The
    storyboard: `DRIFT_POETRY.frame()` must give page N's plot frame at the start with `#pageN` (`kind: "plot"`, `q`
    0.5 on a phone), and a line's frame two frames right (move the view: `vx += 2 * 610 * field.width / field.clientWidth

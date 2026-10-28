@@ -797,9 +797,11 @@ the same artist one time in 43), so a swipe plays them as a thumb plays a flip b
   Light's sliders, so the whole range is walked frame by frame and every combination comes round: exposure (±0.5 EV,
   13 frames round), contrast (1 to 1.6, 21), midtones (0.75 to 1.35, 34), detail (0 to 1.2, 55), the glow (0.35 to
   0.85, pulsing every 8), where it starts (0.6 to 0.85, 89) and the picture under the glyphs (0 to 0.38, 144), each a
-  slow wave; and in runs of Fibonacci lengths, the style (ascii 34 frames, dots 13, grain 5, scan 3), the glyph set
-  (fine 21, the default 13, blocks 8, binary 5, kana 3, kanji 2), the colour (full 21, gold 8, blue 5, mono 3), and
-  inverted three frames in 89. Its video motions are laid out in place of time: push in as density (the glyphs a step
+  slow wave; and in runs of Fibonacci lengths, the glyph set (fine 21 frames, the default 13, blocks 8, binary 5,
+  kana 3, kanji 2), the colour (full 21, gold 8, blue 5, mono 3), and inverted three frames in 89. The style is
+  Glyph Light's ASCII alone, here and in DRIFT Poetry (Aries, 28 Oct 2026: "Make sure you are just using the ASCII
+  style from GLYPH Light and none of the other styles for the aesthetics of the artifacts I specified you to implement
+  into"), so no dots, grain, scan or text; its glyph sets are the ASCII style's own. Its video motions are laid out in place of time: push in as density (the glyphs a step
   larger at each frame of a run, as its painting grows), shimmer seeded by the frame, reveal opening each chapter of 34
   frames and closing at its end (so no frame jumps from light to dark), the pulse as the glow. Every frame's exposure
   is held so that no frame goes unreadably dark or blown out (the ground's lights stay at φ⁻² or above, its middles at

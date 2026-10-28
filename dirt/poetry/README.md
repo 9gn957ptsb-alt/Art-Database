@@ -56,9 +56,12 @@ line begun is finished), the gesture holds still, and the photographs come in by
 **Glyph Light, frame by frame.** DRIFT's page lays Glyph Light over everything (its glyphs loader, in
 `build_soil_viewer.py`), its glyphs here the poems' letters. `layer.js` hands the loader the storyboard
 (`window.DRIFT_GLYPHS_OPTIONS`, merged into its own options at the page's load): the glyphs pinned to the plane, cut
-into the story's frames, each frame made of its own line's letters (a plot's, its page's title, or its poem's first
-line; the garden's, its name), and each frame a point in the artifact's slider space, the gutter between two a blend or
-a dissolve φ⁻⁴ of a frame each side of their boundary (`dirt/engine/glyphlight.js`). Style stays text, the poems' own;
+into the story's frames, each frame drawn in its poem's own letters (a kin frame in the next poem's, the garden in the
+last poem's), and each frame a point in the artifact's slider space, the gutter between two a blend or a dissolve φ⁻⁴
+of a frame each side of their boundary (`dirt/engine/glyphlight.js`). The style is ASCII alone (Aries, 28 Oct 2026:
+"Make sure you are just using the ASCII style from GLYPH Light and none of the other styles"), its glyph sets the
+poems' letters, one set a poem, sorted by ink as Glyph Light sorts a custom set: no longer the text style, which wrote
+them in reading order (the poems are still written in reading order by the swimmers, marks and gesture);
 colour is by page, from its paper (page 6's black page mono, the warm pages gold, the cool ones blue, the rest full);
 density (`glyphlight.js`'s levels, its cells once, twice and four times as large) is the poems' size on a line and
 twice it on a plot, and each poem is pushed in over its last three lines (the artifact's push in, laid out as density),
@@ -66,7 +69,7 @@ so its last line is written four times as large; tone and glow step along each p
 of its own, every poem setting out from the artifact's own settings at its first line (exposure 0 ± 0.236 EV over 13
 lines, contrast 1.2 ± 0.236 over 8, midtones φ^±0.382 over 21, detail 0 to 0.618 and back over 34, glow 0.6 ± 0.236
 over 5, glow-starts-at 0.7 ± 0.146 over 21); the image under the glyphs is half there at a plot (its building seen
-through its title), φ⁻³ at a kin frame and none on a line; levels are frozen, so only the frames change the light. The
+through its letters), φ⁻³ at a kin frame and none on a line; levels are frozen, so only the frames change the light. The
 artifact's video motions are laid out as places, not times: pulse along each stanza (its glow swelling twice in it),
 reveal over each poem's plot (half lit) to its first line (whole), shimmer seeded by the frame, and invert at each
 poem's turn (the stanza begun nearest the golden section of its lines, or the line there). `DRIFT_POETRY.frame()` gives
