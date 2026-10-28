@@ -145,6 +145,8 @@ Park among them), may be shown to anyone who plays through the connector: "That�
 
 On the words that start it, 28 Oct 2026: "“Let’s play 5s” or “let’s play fives” should both activate the connector"
 
+Playing it, 28 Oct 2026: "I want the actual room for A Space to show up directly in this chat, and I want to be able to rotate it in this chat too. The same thing goes for A Page"
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
