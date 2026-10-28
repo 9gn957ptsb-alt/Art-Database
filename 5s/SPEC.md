@@ -331,7 +331,8 @@ see any of it.
 ### Let's play fives, through the connector (`play_fives`)
 
 The connector's own game, beside Sort (CONCEPT.md, "Let's play fives, through the connector: five kinds
-of thing"). The app is not changed by it and works without it; its `STATE_MAX` stays at 195 KiB.
+of thing"). `let's play fives` and `let's play 5s` both start it (the artist, 28 Oct 2026). The app is
+not changed by it and works without it; its `STATE_MAX` stays at 195 KiB.
 
 - `play_fives` → the round on show: five things together, in the artist's order (a picture, a line of
   code, a space, a Picture Poetry page, a word), no names. Keep or Pass on each, in any order: in the

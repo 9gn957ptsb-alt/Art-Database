@@ -60,7 +60,8 @@ philosophy line leaves out "you usually decide in … seconds" until timed judgm
 
 ### Let's play fives (`play_fives`)
 
-A game is five rounds. A round is five things on one card, in the artist's order: a picture (Sort's
+"Let's play fives" and "let's play 5s" both start it (the artist, 28 Oct 2026); sorting five
+pictures is `next_five`. A game is five rounds. A round is five things on one card, in the artist's order: a picture (Sort's
 kind for the round, dealt by the engine's own five), a line of code, a space (one of the bookmark
 buildings, as a model to turn and go into), a Picture Poetry page and a word from Morphology. The
 person answers Keep or Pass on each, in any order: in the round card where Claude shows it, or in

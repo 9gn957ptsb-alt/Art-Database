@@ -22,17 +22,20 @@ async function playRound(ctx, rule = () => true, order = (xs) => xs) {
   return { p, out };
 }
 
-test('only play_fives answers to "let\'s play fives"; next_five sorts five pictures', () => {
+test('only play_fives answers to "let\'s play fives" and "let\'s play 5s"; next_five sorts five pictures', () => {
+  // The artist, 28 Oct 2026: either phrase activates the connector's game.
   for (const t of TOOLS) assert.equal(/let'?s play fives/i.test(t.description), t.name === 'play_fives', t.name);
+  for (const t of TOOLS) assert.equal(/let'?s play 5s/i.test(t.description), t.name === 'play_fives', t.name);
   assert.match(descOf('next_five'), /sort five pictures/);
   assert.doesNotMatch(descOf('next_five'), /play 5s/);
   assert.match(SERVER_INSTRUCTIONS, /To sort five pictures, call next_five/);
-  assert.match(SERVER_INSTRUCTIONS, /When the person says let's play fives, call play_fives/);
+  assert.match(SERVER_INSTRUCTIONS, /When the person says let's play fives or let's play 5s, call play_fives/);
   assert.match(descOf('play_fives'), /six Picture Poetry pages, so from the second game they repeat/);
   assert.match(descOf('play_fives'), /Go in stands you under cover beside them; four are rooms/);
   const added = SERVER_INSTRUCTIONS.split(/(?<=\.) /).filter((x) => /play_fives|sort five pictures|round card/.test(x));
   assert.equal(added.length, 4);
-  for (const text of [descOf('play_fives'), ...added]) assert.doesNotMatch(text, /5s/, 'no new text writes the app\'s name');
+  // "let's play 5s" is the phrase a person types (an agreed exception, like the connector's name); nothing else writes it
+  for (const text of [descOf('play_fives'), ...added]) assert.doesNotMatch(text.replace(/(let'?s )?play 5s/gi, ''), /5s/, 'no new text writes the app\'s name');
 });
 
 test('play_fives without the catalogue or the Worker\'s links: plain words, and next_five still plays', async () => {

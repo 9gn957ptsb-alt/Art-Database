@@ -143,6 +143,8 @@ Spoken, as received (the transcription's spellings kept):
 Asked whether the Picture Poetry pages, which hold the artist's own photographs and places (Cherry Hill
 Park among them), may be shown to anyone who plays through the connector: "That’s fine" / "If they see them"
 
+On the words that start it, 28 Oct 2026: "“Let’s play 5s” or “let’s play fives” should both activate the connector"
+
 ## What it is
 
 - "It's developing a digital habit. Right now people, when they organize space, they organize
