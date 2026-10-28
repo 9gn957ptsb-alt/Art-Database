@@ -129,6 +129,22 @@ characters and marks in ASCII"). Three prototypes (form, light, type) were made 
   ground and the sky dark. Each character is lit in the colour under it, its value the cell's light, the brightest
   blooming inside its cell; black between.
 
+- **Definition** (the artist, 28 Oct 2026: "It's still really hard to see anything, objects need to be three times as
+  defined as they are now"). `pb_define.js` measures it: each athlete's exact footprint (the frame drawn plainly with
+  and without him), the frame he is seen in blurred by a cell (a glance), and D, his light against a ring of ground
+  two cells round him, (inside − ring) / (ring + 0.05); and S, how closely that light keeps his silhouette. The
+  athletes' fill is dense and bright, never faint; their outline brighter still; their colour lifted toward white; Mr
+  Plan's fill his ◇ ◆ with the keyboard's densest `# % @` (his thin marks left most of each cell dark); the courts'
+  surfaces quieter; and a cell of night is kept clear round every figure, as type is knocked out of a busy picture.
+
+  | D (S) | the look before | the first polished look | now |
+  |---|---|---|---|
+  | Mr Pearl, phone rally | 1.37 (0.81) | 0.75 (0.65) | 1.96 (0.88) |
+  | Mr Pearl, phone walk | 2.05 (0.86) | 0.76 (0.64) | 2.30 (0.89) |
+  | Mr Plan, phone rally | −0.01 (0.12) | 0.74 (0.45) | 2.37 (0.65) |
+  | Mr Plan, phone walk | −0.02 (0.10) | 0.75 (0.54) | 1.92 (0.59) |
+  | Mr Plan, desk, close | 0.17 (0.39) | 0.77 (0.69) | 3.70 (0.85) |
+
 Mr Pearl's head is the one thing seen as it is, the perfect sphere (his rule 5); every word and control is a page
 element over the characters.
 
