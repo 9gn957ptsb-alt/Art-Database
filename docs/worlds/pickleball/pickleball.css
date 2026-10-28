@@ -34,7 +34,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 /* the super return, in the top right corner while he plays a match (the artist, 28 Oct 2026: "I want a button in the
    top right corner that allows you to use your superpower and automatically win the point"); the words at the top
    stop short of it */
-#super { top: calc(8px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); min-width: 96px; min-height: 44px;
+#super { top: calc(8px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); min-width: 96px; min-height: 48px;
          padding: 0 14px; border-color: var(--gold); color: var(--gold); font-weight: 700; }
 #super[aria-pressed="true"] { background: var(--gold); color: var(--bg); }
 #super:disabled:not([aria-pressed="true"]) { border-color: var(--edge); color: var(--fg); opacity: 0.35; }

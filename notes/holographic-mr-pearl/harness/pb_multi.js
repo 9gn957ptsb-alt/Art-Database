@@ -21,22 +21,24 @@ const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10];
       const d = window.Pickleball.debug(), C = d.COURT, me = d.me, out = { level, balls: 0, unplayedByPlan: 0, unplayedByMe: 0, planStrokes: 0, myStrokes: 0, pointsYou: 0, pointsThem: 0, miscounts: 0, ends: {}, notes: [] };
       const begin = () => { d.enter(d.courts.length - 1); d.run(0.4); const m = d.court.m; m.level = level; m.sk = d.skill(level); return m; };
       const spot = () => (d.serveSpot ? d.serveSpot() : null);
-      let m = begin(), seen = new Map(), lastFire = -99, last = [0, 0], said = "", lastM = m;
+      let m = begin(), seen = new Map(), lastFire = -99, last = [m.you, m.them], said = "", lastM = m;   // (a match the last court left on goes on: its score so far)
       for (let i = 0; i < 60 * 300; i++) {
-        if (!d.court.m) { m = begin(); last = [0, 0]; lastM = m; }
+        if (!d.court.m) { m = begin(); last = [m.you, m.them]; lastM = m; }
         m = d.court.m;
         // where to stand: the serve mark at the serve (when the game has one to run to), else the ring of the pearl that comes soonest
         let tx = 0.6, tz = C.L - 1.2;
         if (((m.phase === "serve" && !m.meterOn) || (m.meterOn && m.served + m.tosses.length < NB)) && spot()) { const s = spot(); tx = s[0]; tz = s[1]; }   // (and on it while there are pearls to serve)
-        const inc = m.balls.filter((q) => !q.dead && q.last === "them" && q.mark).sort((a, c) => (a.landT || 0) - (c.landT || 0))[0];
+        const inc = m.balls.filter((q) => !q.dead && q.last === "them" && q.mark).sort((a, c) => (a.mark.t || 0) - (c.mark.t || 0))[0];
         if (inc) { tx = inc.mark.x - 0.5; tz = inc.mark.z + 1.2; }
         const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz);
         d.input.stick = L > 0.08 ? { id: -1, x: 0, y: 0, dx: dx / L * 60 * Math.min(1, L / 1.5), dy: dz / L * 60 * Math.min(1, L / 1.5) } : null;
         const u = d.meter();
-        const fire = u != null && u >= 0.4 && u <= 0.66 && (m.served + m.tosses.length) < NB && i - lastFire > 12;
+        let fire = u != null && u >= 0.4 && u <= 0.66 && (m.served + m.tosses.length) < NB && i - lastFire > 12;
+        if (m.phase === "plansuper") { fire = u != null && Math.abs(u - (d.SERVE.ACE[0] + d.SERVE.ACE[1]) / 2) < 0.02; }   // (Mr Plan's super: the counter, in the ace zone)
         if (fire) { lastFire = i; }
         // what each pearl has seen: strokes planned on it, strokes made
-        m.balls.forEach((q) => { if (!seen.has(q)) { seen.set(q, { planTried: false, meTried: false, planHits: 0, myHits: 0, last: q.last, dead: false, multi: null }); out.balls++; } });
+        // (a pearl already ended when first seen was counted then)
+        m.balls.forEach((q) => { if (!seen.has(q)) { seen.set(q, { planTried: false, meTried: false, planHits: 0, myHits: 0, last: q.last, dead: q.dead, counted: q.dead, multi: null }); out.balls++; } });
         d.run(1 / 60, fire);
         const m2 = d.court.m || m;
         if (m2.nc && seen.has(m2.nc.ball)) { seen.get(m2.nc.ball).planTried = true; }

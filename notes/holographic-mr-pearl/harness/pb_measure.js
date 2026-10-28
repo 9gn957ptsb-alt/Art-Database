@@ -14,8 +14,8 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isM
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const out = { label: label || "", colour: {}, pearl: {}, camera: {} };
-  // (PB_ONLY: one of colour, pearl, camera; PB_SET: a JSON of ASC values to try, for tuning)
-  const ONLY = process.env.PB_ONLY || "", SET = process.env.PB_SET ? JSON.parse(process.env.PB_SET) : null;
+  // (PB_ONLY: one of colour, pearl, camera; PB_SET: a JSON of ASC values to try, PB_CAM of CAM values, for tuning)
+  const ONLY = process.env.PB_ONLY || "", SET = process.env.PB_SET ? JSON.parse(process.env.PB_SET) : null, CAMSET = process.env.PB_CAM ? JSON.parse(process.env.PB_CAM) : null;
   const open = async (view) => { const p = await b.newPage(view); await p.goto(url); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 }); await p.evaluate((set) => { const d = window.Pickleball.debug(); d.pause(true); if (set && d.ASC) { Object.assign(d.ASC, set); } if (set && set.cam && d.CAM) { Object.assign(d.CAM, set.cam); } }, SET); return p; };
   const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5); d.toServe();
     for (let i = 0; i < 200; i++) { const u = d.meter(); if (u != null && u >= 0.5 && u <= 0.7) { d.run(1 / 60, true); break; } d.run(1 / 60); }
@@ -62,6 +62,7 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isM
   }
   // camera: the shuffle and the sprint, his eye each frame
   if (!ONLY || ONLY === "camera") { const p = await open(PHONE);
+    if (CAMSET) { await p.evaluate((c) => Object.assign(window.Pickleball.debug().CAM, c), CAMSET); }
   out.camera = await p.evaluate(() => {
     const d = window.Pickleball.debug(), me = d.me; d.run(1.0);
     const eyes = [], offs = [], stick = (dx) => { d.input.stick = dx ? { id: -1, x: 0, y: 0, dx: dx * 60, dy: 0 } : null; };

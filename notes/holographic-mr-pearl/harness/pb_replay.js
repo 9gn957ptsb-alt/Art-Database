@@ -37,11 +37,12 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     const at = (t, j) => { let lo = 0, hi = log.length - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (log[mid][0] <= t) { lo = mid; } else { hi = mid; } } const a = log[lo], c = log[hi], u = c[0] > a[0] ? Math.max(0, Math.min(1, (t - a[0]) / (c[0] - a[0]))) : 0; return [a[j] + (c[j] - a[j]) * u, a[j + 1] + (c[j + 1] - a[j + 1]) * u, a[j >= 3 ? 6 : 5]]; };
     const near = (t) => { let lo = 0, hi = log.length - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (log[mid][0] <= t) { lo = mid; } else { hi = mid; } } return log[lo]; };
     let maxE = 0, sumE = 0, n = 0, sameMove = 0, moves = 0, pearlsSeen = 0, scores = new Set(), maxEp = 0;
+    const fx0 = d.fx().length; let fxMore = 0, fxPrev = fx0;
     let strideSum = 0, strideN = 0, fast = 0, fastLong = 0, pearlN = 0, pearlSum = 0, pearlFar = 0, scoreOff = 0;
     const st = d.stands[0];
     for (let i = 0; i < 60 * 20; i++) {
       d.run(1 / 60);
-      const T = st.replayT; if (T == null) { continue; }
+      const T = st.replayT; const nf = d.fx().length; if (nf > fxPrev) { fxMore++; } fxPrev = nf; if (T == null) { continue; }
       const e = at(T, 1), ep = at(T, 3), err = Math.hypot(st.x - e[0], st.z - e[1]), errp = Math.hypot(pl.x - ep[0], pl.z - ep[1]);
       maxE = Math.max(maxE, err); maxEp = Math.max(maxEp, errp); sumE += err; n++;
       if (e[2]) { moves++; if (st.move === e[2]) { sameMove++; } }
@@ -54,7 +55,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
       const sc = cv.you + "-" + cv.them; if (sc !== L0[10] && sc !== near(T - 0.06)[10] && sc !== near(T + 0.06)[10]) { scoreOff++; }
     }
     return { won: true, rec: true, frames: R.count, dur: +R.dur.toFixed(1), bursts: R.fx.length, n, maxE: +maxE.toFixed(3), meanE: +(sumE / Math.max(1, n)).toFixed(4), maxEplan: +maxEp.toFixed(3), sameMove, moves, pearlsSeen, scores: [...scores].slice(0, 8),
-             strideMean: +(strideSum / Math.max(1, strideN)).toFixed(3), fast, fastLong, pearlN, pearlMean: +(pearlSum / Math.max(1, pearlN)).toFixed(3), pearlFar, scoreOff };
+             strideMean: +(strideSum / Math.max(1, strideN)).toFixed(3), fast, fastLong, pearlN, pearlMean: +(pearlSum / Math.max(1, pearlN)).toFixed(3), pearlFar, scoreOff, fxMore };
   });
   console.log(JSON.stringify(r));
   check(r.won && r.rec, "court one won, and its match kept");
@@ -64,6 +65,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     check(r.moves === 0 || r.sameMove >= 0.9 * r.moves, `in the same strokes (${r.sameMove} of ${r.moves} frames in a stroke)`);
     check(r.strideMean < 0.05 && r.fastLong >= 0.95 * r.fast, `at the same stride (mean gap ${r.strideMean} m; at a run, ${r.fastLong} of ${r.fast} frames in long strides)`);
     check(r.pearlsSeen > 0 && r.pearlMean < 0.1 && r.pearlFar <= 0.02 * r.pearlN, `its pearls where they were (${r.pearlN} shown, mean gap ${r.pearlMean} m, ${r.pearlFar} over 0.75 m)`);
+    check(r.bursts > 0 && r.fxMore > 0, `its bursts kept (${r.bursts}) and bursting again in the loop (${r.fxMore} frames with new sparks)`);
     check(r.scores.length > 1 && r.scoreOff === 0, `its score as it went (${r.scoreOff} frames off): ` + r.scores.join(" "));
   }
   check(!errs.length, "no errors: " + errs.slice(0, 2).join(" | "));
