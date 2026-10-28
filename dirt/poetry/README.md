@@ -63,13 +63,17 @@ of a frame each side of their boundary (`dirt/engine/glyphlight.js`). The style 
 poems' letters, one set a poem, sorted by ink as Glyph Light sorts a custom set: no longer the text style, which wrote
 them in reading order (the poems are still written in reading order by the swimmers, marks and gesture);
 colour is by page, from its paper (page 6's black page mono, the warm pages gold, the cool ones blue, the rest full);
-density (`glyphlight.js`'s levels, its cells once, twice and four times as large) is the poems' size on a line and
-twice it on a plot, and each poem is pushed in over its last three lines (the artifact's push in, laid out as density),
-so its last line is written four times as large; tone and glow step along each poem's lines, each on a Fibonacci period
-of its own, every poem setting out from the artifact's own settings at its first line (exposure 0 ± 0.236 EV over 13
-lines, contrast 1.2 ± 0.236 over 8, midtones φ^±0.382 over 21, detail 0 to 0.618 and back over 34, glow 0.6 ± 0.236
-over 5, glow-starts-at 0.7 ± 0.146 over 21); the image under the glyphs is half there at a plot (its building seen
-through its letters), φ⁻³ at a kin frame and none on a line; levels are frozen, so only the frames change the light. The
+density (`glyphlight.js`'s levels, its cells once and twice as large) is the poems' size on a line and twice it on a
+plot, and each poem is pushed in over its last three lines (the artifact's push in, laid out as density), so its last
+two lines are written twice as large; tone and glow step along each poem's lines, each on a Fibonacci period of its own,
+every poem setting out from the artifact's own settings at its first line (exposure 0 ± 0.236 EV over 13 lines,
+contrast 1.2 ± 0.146 over 8, midtones φ^±0.236 over 21, detail 0 to 0.618 and back over 34, the glow between φ⁻² and
+φ⁻¹ with the pulse along each stanza, glow-starts-at 0.72 to 0.85 over 21 and never below 0.45 + 0.6 × the glow); the
+image under the glyphs is half there at a plot (its building seen through its letters), φ⁻³ at a kin frame and none on
+a line; levels are Glyph Light's auto levels, held once the thumb has rested φ³ seconds (frozen, they left the pale paper a
+wall of the heaviest letters). After a headless review on 28 October the reveal stops at −φ⁻² EV, the glow keeps between
+φ⁻² and φ⁻¹ with its threshold rising with it, the push in goes only to cells twice the size, and an inverted turn
+holds its exposure down, so no frame goes black or blown out. The
 artifact's video motions are laid out as places, not times: pulse along each stanza (its glow swelling twice in it),
 reveal over each poem's plot (half lit) to its first line (whole), shimmer seeded by the frame, and invert at each
 poem's turn (the stanza begun nearest the golden section of its lines, or the line there). `DRIFT_POETRY.frame()` gives

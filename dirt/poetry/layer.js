@@ -123,16 +123,19 @@
   // - colour by page, from its paper: a dark page mono (page 6's black), a warm one gold, a cool one blue, else full;
   // - density (glyphlight.js's level: cells x1, x2, x4): a line's letters at the poems' size; a plot's twice it; and
   //   each poem pushed in over its last three lines (the artifact's push in, laid out as density: GlyphLight.motions.push
-  //   at the middle of each third of the run, levels 0, 1, 2), so its last line is written four times as large;
+  //   at the middle of each third of the run, levels 0, 1, 1), so its last two lines are written twice as large;
   // - tone and glow stepped along each poem's lines, each on a Fibonacci period of its own (in lines), every poem
   //   setting out from the artifact's own settings at its first line: exposure 0 +- 0.236 EV (13 lines), contrast
-  //   1.2 +- 0.236 (8), midtones phi^+-0.382 (21), detail 0 to 0.618 and back (34), glow 0.6 +- 0.236 (5), glow starts
-  //   at 0.7 +- 0.146 (21); the image under the glyphs half there at a plot (its building seen through its title),
-  //   phi^-3 at a kin frame, none on a line; levels frozen, so only the frames change the light;
+  //   1.2 +- 0.146 (8), midtones phi^+-0.236 (21), detail 0 to 0.618 and back (34), the glow phi^-2 to phi^-1 with
+  //   the pulse (below), glow starts at 0.72 to 0.85 (21) and never below 0.45 + 0.6 glow; the image under the glyphs
+  //   half there at a plot (its building seen through its letters),
+  //   phi^-3 at a kin frame, none on a line; Glyph Light's auto levels, held once the thumb rests (frozen levels left
+  //   the pale paper a wall of the heaviest letters);
   // - the artifact's video motions laid out as places, not times (GlyphLight.motions, where glyphlight.js has them; else
   //   as its page codes them): pulse along each stanza (its glow swelling twice in it), reveal over each poem's plot
-  //   (half lit, at 0.5 of the motion) to its first line (whole, at 0.75), shimmer seeded by the frame, and invert at
-  //   each poem's turn (the stanza begun nearest its golden section, else the line there).
+  //   (half lit, at 0.5 of the motion, no darker than -phi^-2 EV) to its first line (whole, at 0.75), shimmer seeded
+  //   by the frame, and invert at each poem's turn (the stanza begun nearest its golden section, else the line there;
+  //   its exposure held at -phi^-1 EV, so the pale paper turns grey, not black).
   const easeQ = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
   const MOTIONS = {                                                   // (as the artifact's page codes them, t a place)
     pulse: (s) => ({ gain: 0.35 + 1.1 * (0.5 - 0.5 * Math.cos(4 * Math.PI * s)) }),
@@ -163,19 +166,25 @@
     const o = { style: "ascii", set: setFor(s), mode: modeOf(s.kind === "kin" ? s.next : s.pi), level: 0, exposure: 0, contrast: 1.2, gamma: 1, detail: 0,
                 invert: false, glow: 0.6, thresh: 0.7, under: 0, gain: 1, ev: 0 };
     const add = (m) => { if (m.gain != null) o.gain *= m.gain; if (m.ev != null) o.ev += m.ev; if (m.jitter != null) o.jitter = m.jitter; if (m.seed != null) o.seed = m.seed; };
+    // (the reveal only to -phi^-2 EV and the glow at phi^-1 of itself: deeper, a frame on the pale paper was black)
+    const reveal = (t) => { const m = motion("reveal", t); return { ev: Math.max(-0.382, m.ev || 0), gain: Math.max(0.618, m.gain == null ? 1 : m.gain) }; };
     add(motion("shimmer", f));
     if (s.kind === "plot") {
       Object.assign(o, { level: 1, under: 0.5 });
-      if (s.qi >= 0) add(motion("reveal", 0.5 + (0.25 * s.m) / s.of));
+      if (s.qi >= 0) add(reveal(0.5 + (0.25 * s.m) / s.of));
     } else if (s.kind === "kin") o.under = 0.236;
     else {
       const t = s.j, w = (p) => Math.sin((C * t) / p);
-      Object.assign(o, { exposure: 0.236 * w(13), contrast: 1.2 + 0.236 * w(8), gamma: 1.618033988749895 ** (0.382 * w(21)),
-                         detail: 0.618 * (0.5 - 0.5 * Math.cos((C * t) / 34)), glow: 0.6 + 0.236 * w(5), thresh: 0.7 + 0.146 * Math.cos((C * t) / 21),
-                         invert: s.turn });
-      add(motion("pulse", s.sj / s.sn));
-      if (t >= s.n - 3) { const m = motion("push", (t - (s.n - 3) + 0.5) / 3); if (m.level != null) o.level = m.level; }   // (each line the middle of its third)
-      if (t === 0) add(motion("reveal", 0.75));
+      // the pulse along the stanza is the glow (its swing between phi^-2 and phi^-1), and the glow's threshold rises with
+      // it, so a strong glow is a few lights; at the turn the frame is inverted, its exposure held down so the pale
+      // paper turns grey, not black; the push in over the last three lines only to level 1 (cells twice the size:
+      // four times lost the picture)
+      const swing = Math.min(1, Math.max(0, ((motion("pulse", s.sj / s.sn).gain || 0.35) - 0.35) / 1.1)), glow = 0.382 + 0.236 * swing;
+      Object.assign(o, { exposure: s.turn ? -0.618 : 0.236 * w(13), contrast: 1.2 + 0.146 * w(8), gamma: 1.618033988749895 ** (0.236 * w(21)),
+                         detail: 0.618 * (0.5 - 0.5 * Math.cos((C * t) / 34)), glow,
+                         thresh: Math.max(0.45 + 0.6 * glow, 0.785 + 0.065 * Math.cos((C * t) / 21)), invert: s.turn });
+      if (t >= s.n - 3) { const m = motion("push", (t - (s.n - 3) + 0.5) / 3); if (m.level != null) o.level = Math.min(1, m.level); }   // (each line the middle of its third)
+      if (t === 0) add(reveal(0.75));
     }
     for (const k in o) if (typeof o[k] === "number") o[k] = +o[k].toFixed(4);
     return o;
@@ -191,7 +200,8 @@
   }
   // (every poem's set given at once, so the atlas is made once, not grown as frames come into view)
   if (FN && SETS_Q.length) window.DRIFT_GLYPHS_OPTIONS = Object.assign(window.DRIFT_GLYPHS_OPTIONS || {}, { origin: glOrigin,
-    region: { w: FRAME, h: ROW }, seam: 0.146, levels: "frozen", field: glField, style: "ascii", set: SETS_Q[0], sets: SETS_Q.slice(1) });
+    region: { w: FRAME, h: ROW }, seam: 0.146, field: glField, style: "ascii", set: SETS_Q[0], sets: SETS_Q.slice(1),
+    levels: "screen", still: () => performance.now() - movedAt > STILL });   // (auto levels, held once the thumb rests)
   /** Once the story is laid where the visit begins, Glyph Light's frames are found again (its cache cleared). */
   function glLaid() {
     const g = window.GLYPHS;

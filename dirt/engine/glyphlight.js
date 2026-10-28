@@ -972,7 +972,10 @@ void main(){
       if (o.still && o.still()) return;
       if (now - lastProbe < 500) return;
       lastProbe = now;
-      px.drawImage(sample, 0, 0, 48, 48);
+      // (pinned to a plane, the first and last rows and columns of cells are partly the background, past the picture:
+      // left out, or they hold the levels down)
+      const m = offX > 0 || offY > 0 ? 1 : 0;
+      px.drawImage(sample, m, m, Math.max(1, cols - 2 * m), Math.max(1, rows - 2 * m), 0, 0, 48, 48);
       const d = px.getImageData(0, 0, 48, 48).data, h = new Uint32Array(256), n = 48 * 48;
       for (let i = 0; i < d.length; i += 4) h[Math.min(255, (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0)]++;
       let a = 0, k = 0;
