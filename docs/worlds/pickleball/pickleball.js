@@ -411,9 +411,17 @@
      its pixels (alpha 0.5) and passes through as it is. */
   var ASC = { FLOOR: [8, 12], CEIL: [16, 24], S0: 6, D0: 3.2, expo: 1.15, gam: 0.85, lit: 1.25, glow: 0.55, edge: 0.42, edgeMin: 0.07,
               FONT: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Roboto Mono', 'Noto Sans Symbols 2', monospace",
-              KEYS: " .:-=+*#%@", BODY: " .:+*#%", PLAN: " ∴○◇◆", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
+              KEYS: " .:-=+*#%@", BODY: " .:+*#%", PLAN: " ◇◆#%@", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
   // the materials, written into the picture's alpha as 1 - id / 255 (his head's 0.5 stays apart from them)
   var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16 };   // (a hat its own: from behind, hat and back are two shapes)
+  // Definition (the artist, 28 Oct 2026: "It's still really hard to see anything, objects need to be three times as
+  // defined as they are now"; notes/holographic-mr-pearl/harness/pb_define.js measures it, an athlete's light against
+  // the ground round him at a glance): the athletes' fill dense and bright, never faint (fill: the least of its
+  // alphabet; fillV: its value, dim to bright), their outline brighter still (edgeV), quieter a little when near
+  // (near: their texture was a wall), their colour lifted toward white (white: Mr Plan's deep blues carried no light),
+  // the courts' own surfaces quieter (surfV), and a cell of night kept clear round every figure (the moat), as type is
+  // knocked out of a busy picture.
+  var DEF = { fill: 0.5, fillPlan: 0.6, fillV: [0.85, 1.0], edgeV: 0.95, near: 0.1, surfV: 0.4, white: 0.5, moat: true };
   var asc = null;
   function ascFont(px) { return "700 " + px + "px " + ASC.FONT; }
   function ascInit() {
@@ -592,6 +600,17 @@
       "  }",
       "  float m = sum / max(cnt, 1.0), dz = bayer(ci), mo = ownV / max(own, 1.0);",
       "  int g = 0, f = FIX[min(mat, 16)]; float V = 0.0; vec3 c = hue(col[hiO]);",
+      // the moat: a cell that is not a figure, beside one standing in front of it (its four neighbours' middles), is
+      // left dark, so every athlete stands in a cell of night
+      "  bool moat = false;",
+      "  if (" + (DEF.moat ? "true" : "false") + " && !fig && mat != 9 && uLev >= uFloor) {",
+      "    for (int q = 0; q < 4; q++) {",
+      "      vec2 pd = org + 0.5 * cs + vec2(q == 0 ? -1.0 : q == 1 ? 1.0 : 0.0, q == 2 ? -1.0 : q == 3 ? 1.0 : 0.0) * cs;",
+      "      if (pd.x < 0.0 || pd.y < 0.0 || pd.x >= uRes.x || pd.y >= uRes.y) { continue; }",
+      "      ivec2 pu = ivec2(int(pd.x), int(uRes.y - pd.y)); int k = int(floor((1.0 - texelFetch(uScene, pu, 0).a) * 255.0 + 0.5));",
+      "      if (k >= 12 && k <= 16 && k != 14 && lin(texelFetch(uDepth, pu, 0).r) < dn - 0.2) { moat = true; }",
+      "    }",
+      "  }",
       "  bool surf = mat <= 5 || mat == 14;",
       // (the parts on a court's line or within a few pixels of one, and which way it runs: a surface is stroked only
       // there; its boundary with the next zone, or with the net's foot, is a change of texture, never a stroke)
@@ -623,7 +642,7 @@
       "    if (own >= (mat == 6 ? 2.0 : 1.0) && (mat != 6 || dz < 0.55)) { g = f; V = mix(0.45, 1.0, smoothstep(0.05, 0.7, ownM)) * (mat == 6 ? 0.5 : 1.0); }",
       "  } else if (small) {",
       "    if (own >= 1.0) {",
-      "      g = ramp(who, mix(0.7, 1.0, smoothstep(win.x, win.y, mo)), 1); V = mix(0.55, 1.0, smoothstep(0.1, 0.8, mo));",
+      "      g = ramp(who, mix(0.7, 1.0, smoothstep(win.x, win.y, mo)), 1); V = mix(" + DEF.fillV[0].toFixed(3) + ", 1.0, smoothstep(0.1, 0.8, mo));",
       "    }",
       "  } else if (surf && nx + nz > 0 && mx >= 0.3) {",
       // a court's line: one stroke the way its light lies in the cell (the light's second moments, in the cell's own
@@ -683,12 +702,12 @@
       "      float s = (dot(n0, g0) + dot(n1, g1) + dot(n2, g2)) * inversesqrt(max(gg, 1e-4));",
       "      if (s > best) { best = s; g = e; }",
       "    }",
-      "    c = hue(col[hiR]); V = mix(0.6, 1.0, smoothstep(0.0, 0.6, mx));",
+      "    c = hue(col[hiR]); V = mix(fig ? " + DEF.edgeV.toFixed(3) + " : 0.6, 1.0, smoothstep(0.0, 0.6, mx));",
       "  } else if (f >= 0) {",
       // a surface: its own glyph, its spacing its light (in Bayer order)
       "    float lo = mat == 1 ? 0.1 : mat == 2 ? 0.12 : 0.05, hi = mat == 1 ? 0.3 : mat == 2 ? 0.4 : 0.2;",
       "    if (smoothstep(lo, hi, m) > dz) { g = f; }",
-      "    V = mix(0.32, 1.0, smoothstep(0.05, 0.8, m));",
+      "    V = mix(0.32, 1.0, smoothstep(0.05, 0.8, m)) * " + DEF.surfV.toFixed(3) + ";",
       "  } else {",
       // a body: its alphabet by its own light, one tone to a band (dithered, a figure was a checkerboard), the light
       // taken half from round the cell (so a tone holds over a part, not flickering cell to cell with the voxels'
@@ -698,9 +717,11 @@
       // (a body near enough for the larger type is a quieter texture under its outline: the outline carries the form,
       // and the near glyphs, four times the floor's area, do not wall the view)
       "    float big = uLev > uFloor ? 1.0 : 0.0;",
-      "    g = ramp(who, smoothstep(win.x, win.y, bt) * (1.0 - 0.35 * big), own >= 3.0 ? 1 : 0);",
-      "    V = mix(0.35, 0.8, smoothstep(0.0, 0.8, bt)) * (1.0 - 0.3 * big);",
+      "    g = ramp(who, mix(who == 13 ? " + DEF.fillPlan.toFixed(3) + " : " + DEF.fill.toFixed(3) + ", 1.0, smoothstep(win.x, win.y, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big), 1);",
+      "    V = mix(" + DEF.fillV[0].toFixed(3) + ", " + DEF.fillV[1].toFixed(3) + ", smoothstep(0.0, 0.8, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big);",
       "  }",
+      "  if (fig) { c = mix(c, vec3(1.0), " + DEF.white.toFixed(3) + "); }",
+      "  if (moat) { g = 0; V = 0.0; }",
       "  int bloom = (mat == 8 || V > 0.93) ? 64 : 0;",
       "  o = vec4(c * V, float(g + bloom + act) / 255.0);",
       "}"].join("\n"));
@@ -986,7 +1007,7 @@
       for (var j = 0; j < 3; j += 1) { palMe[i * 4 + j] = c[j]; palPlan[i * 4 + j] = 105 + 0.6 * (255 - c[j]); }
     });
   }
-  var cur = { vp: null, eye: [0, 0, 0] }, cine = null, ascMod = null, slow = 1;   // (cine, ascMod, slow: the super return's camera, pass and time)
+  var hideAth = false, cur = { vp: null, eye: [0, 0, 0] }, cine = null, ascMod = null, slow = 1;   // (cine, ascMod, slow: the super return's camera, pass and time)
   // what the next solids are: their material (MAT, for the pass), the axes held a pixel and a half wide (wide), lit as
   // the ground or as a body, their rim and occlusion
   function paint(mat, wide, ground, rim, ao) {
@@ -1005,6 +1026,7 @@
     drawSolid(cube, mul(T(c[0], c[1], c[2]), a ? mul(RA(ax, a), Sm) : Sm), col, null, emit);
   }
   function drawAthlete(a, pose, me, bare) {
+    if (hideAth === true || hideAth === (me ? "me" : "plan")) { return; }   // (the tests only: the frame without its athletes, to find where they are)
     var far = hypot(a.x - cur.eye[0], a.z - cur.eye[2]) > 26, P = far ? partsFar : parts, pal = a.pal, plan = pal === palPlan;
     paint(plan ? MAT.PLAN : MAT.ME, null, false, plan ? RIM.plan : RIM.me, 1);
     gl.uniform4fv(SU.uPal, pal); gl.uniform1i(SU.uUse, 1); gl.uniform1f(SU.uEmit, 0);
@@ -1641,7 +1663,7 @@
     if (cine) { e = cine.e; yaw = cine.yaw; pitch = cine.pitch; }
     if (camOver) { e = camOver.e; yaw = camOver.yaw; pitch = camOver.pitch; }
     var vm = viewM(e, yaw, pitch);
-    cur.eye = e; cur.vp = mul(perspective(FOV * PI / 180, cw / chh, NEAR, FAR), vm); pixA = 2 * T35 / chh;
+    cur.eye = e; cur.yaw = yaw; cur.pitch = pitch; cur.vp = mul(perspective(FOV * PI / 180, cw / chh, NEAR, FAR), vm); pixA = 2 * T35 / chh;
     var into = !camPlain && ascBegin(cw, chh, dpr);
     if (!into) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); if (asc) { asc.balls = null; } }
     gl.viewport(0, 0, cw, chh);
@@ -1792,6 +1814,7 @@
              swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w) { athCelebrate(a, w, gt); },
              step: function (a, sec) { for (var i = 0; i < round(sec * 60); i += 1) { gt += 1 / 60; athStep(a, 1 / 60, gt); } },
              meter: function () { var m = court.m; return m && m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
+             hide: function (on) { hideAth = on; }, camNow: function () { return { e: cur.eye.slice(), yaw: cur.yaw, pitch: cur.pitch }; },
              camAt: function (e, yaw, pitch, plain) { camOver = e && { e: e, yaw: yaw, pitch: pitch }; camPlain = !!plain; } };
   } };
 })();
