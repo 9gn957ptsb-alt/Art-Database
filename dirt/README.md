@@ -774,8 +774,11 @@ Each session's screenshots are quilted together as an artist's works are (`quilt
 body of work, at most 13 to a quilt, and the sessions with fewer than three are pooled. The quilts join the artists'
 with no artist of their own, so DRIFT lends them as it lends any quilt: hung on a gallery wall, a painting in the
 light it replaces, a piece torn into the collage. The first, on 27 October, quilted 49 screenshots from seven bodies
-of work into six quilts, so about one hang, light or torn piece in seven is a screenshot. More are still being read
-back from the older transcripts, and each week the coworker brings in the week's (`artists/COWORKER.md`, 4b).
+of work into six quilts, so about one hang, light or torn piece in seven was a screenshot. On 28 October the fourteen
+sessions' transcripts were read back to their first events: of 192 images sent, 152 were found (40 were sent without a
+look, and are lost), and with the 25 from commits and artifacts that made 177 screenshots from eleven bodies of work,
+quilted into 17 of DRIFT's 54 quilts, so about one hang, light or torn piece in three is now a screenshot. Each week
+the coworker brings in the week's (`artists/COWORKER.md`, 4b).
 
 **A storyboard** (27 October 2026: "Keep in mind that the infinite texture that you are displaying is a storyboard and
 someone's thumb is the direction of how the story plays out. Have this inform the juxtapositions that you generate to
