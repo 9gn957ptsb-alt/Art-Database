@@ -1890,29 +1890,39 @@ int minimalOf(float cx, int k) {
 // 13 frames (a Fibonacci step) further on. Its seed keeps to the middle 0.38 of its square across (0.8 until then, as it
 // still is down), so the columns read as frames while the joins between them stay washes. A frame's choices (h1, h2)
 // are its run's, so the three frames of a run show one painting, pushed in by phi at each (z = phi^-j at the run's j-th
-// frame: Glyph Light's "push in", laid out in the ground). (In DRIFT Poetry not yet: its letters are written along the
+// frame: Glyph Light's "push in", laid out in the ground). Its rung (which chain its artist comes from) is the run's
+// too, from the seed of the run's first frame (A1, A2), so the run keeps one artist (28 Oct 2026; by each frame's own
+// seed, neighbouring frames fell in different rungs, and only one run in eight kept its painting). (In DRIFT Poetry
+// the run keeps its artist but each frame has a composition of its own, unpushed: its letters are written along the
 // paintings' lines at their scale of 0.55 by its own code, which can take up z.)
-struct Region { vec2 C1, C2; uint h1, h2; float d; int k1, k2; float z; };
+struct Region { vec2 C1, C2; uint h1, h2; float d; int k1, k2; float z; vec2 A1, A2; };
+/** The seed of the 377-cell square c. */
+vec2 regionSeed(ivec2 c) {
+  uint h = h3(c.x, c.y, 5203u);
+  return (vec2(c) + 0.5 + vec2(0.38, 0.8) * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * 377.0;
+}
 Region regionAt(vec2 p) {
   const float RG = 377.0;
   vec2 pw = p + 34.0 * (vec2(vnoise(p, 144.0, 5201u), vnoise(p, 144.0, 5202u)) - 0.5);
-  ivec2 g0 = ivec2(floor(pw / RG));
-  Region r = Region(vec2(0.0), vec2(1e6), 0u, 0u, 0.0, 0, 0, 1.0);
+  ivec2 g0 = ivec2(floor(pw / RG)), c1 = g0, c2 = g0;
+  Region r = Region(vec2(0.0), vec2(1e6), 0u, 0u, 0.0, 0, 0, 1.0, vec2(0.0), vec2(1e6));
   float d1 = 1e18, d2 = 1e18;
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     ivec2 c = g0 + ivec2(i, j);
-    uint h = h3(c.x, c.y, 5203u);
-    vec2 C = (vec2(c) + 0.5 + vec2(0.38, 0.8) * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * RG;
+    vec2 C = regionSeed(c);
     int k = c.x + 13 * c.y;
     float dd = dot(pw - C, pw - C);
-    if (dd < d1) { d2 = d1; r.C2 = r.C1; r.k2 = r.k1; d1 = dd; r.C1 = C; r.k1 = k; }
-    else if (dd < d2) { d2 = dd; r.C2 = C; r.k2 = k; }
+    if (dd < d1) { d2 = d1; r.C2 = r.C1; r.k2 = r.k1; c2 = c1; d1 = dd; r.C1 = C; r.k1 = k; c1 = c; }
+    else if (dd < d2) { d2 = dd; r.C2 = C; r.k2 = k; c2 = c; }
   }
   r.d = (d2 - d1) / (2.0 * max(length(r.C1 - r.C2), 1.0));
+  int j1 = r.k1 - 3 * storyRun(r.k1), j2 = r.k2 - 3 * storyRun(r.k2);
+  r.A1 = regionSeed(c1 - ivec2(j1, 0)); r.A2 = regionSeed(c2 - ivec2(j2, 0));   // (a run is three squares along a row)
+#if WORDS
+  r.h1 = h3(r.k1, 0, 5204u); r.h2 = h3(r.k2, 0, 5204u);
+#else
   r.h1 = h3(storyRun(r.k1), 0, 5204u); r.h2 = h3(storyRun(r.k2), 0, 5204u);
-#if !WORDS
-  int j = r.k1 - 3 * storyRun(r.k1);
-  r.z = j == 0 ? 1.0 : j == 1 ? P1 : P2;
+  r.z = j1 == 0 ? 1.0 : j1 == 1 ? P1 : P2;
 #endif
   return r;
 }
@@ -2005,7 +2015,7 @@ void passageAt(int layer, Cell c, ivec2 cell, out vec3 A, out vec3 B, out int ki
       // (painted by the minimal pass, GROUND_MINIMAL, glazed over this pass: here only its artist's wash, for the seams
       // and for when that pass is not there)
       Region rg = regionAt(gTrue);
-      int am = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.k1);
+      int am = minimalOf(min(complexityBare(rg.A1), RUNG_C[3] - 0.001), rg.k1);
       A = B = washOf(am);
       gGram = 40 + am;
 #if WORDS
@@ -3167,8 +3177,8 @@ void main() {
   if (vd.on) cover *= smoothstep(vd.R - 21.0, vd.R, voidRim(vd, p));
   if (cover <= 0.0) discard;
   Region rg = regionAt(p);
-  int a1 = minimalOf(min(complexityBare(rg.C1), RUNG_C[3] - 0.001), rg.k1);
-  int a2 = minimalOf(min(complexityBare(rg.C2), RUNG_C[3] - 0.001), rg.k2);
+  int a1 = minimalOf(min(complexityBare(rg.A1), RUNG_C[3] - 0.001), rg.k1);   // (the rung by the run's first seed)
+  int a2 = minimalOf(min(complexityBare(rg.A2), RUNG_C[3] - 0.001), rg.k2);
   vec3 w1 = washOf(a1), w2 = washOf(a2);
   vec2 q = (p - rg.C1) * 0.55 * rg.z;                                // (pushed in along its run: regionAt)
   // (the golden kaleidoscope of v80 was here; since 23 Oct 2026 the kaleidoscopes are stars, in the pixel pass:

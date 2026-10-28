@@ -57,6 +57,8 @@
  *                                // own reading order (a string, as before: one text, read across the plane).
  *     sets: [ ... ],             // more glyph sets (glyphs or names in SETS), up to 8 with `set` (index 0); one atlas,
  *                                // each its own ink; the cells take the widest set's aspect
+ *     ahead: [ ... ],            // sets a field will use, put in the atlas at the start (no rebuild when a frame using
+ *                                // one first comes into view), without changing the cells' aspect as `sets` does
  *     letters: " abc…",          // the letters of a page-made letters map (below), in the page's order
  *     maps: { tone, light, more, marks, letters, space: "plane" | "screen", rect: { x, y, w, h } },
  *                                // page-made canvases of settings, read nearest at each cell's middle, uploaded when
@@ -558,7 +560,10 @@ void main(){
   let jpLink = null;
   function fontsFor(chars, then) {
     if (typeof document === "undefined" || !document.fonts || !chars) return;
-    const go = () => document.fonts.load(`40px ${FONT}`, chars).catch(() => {}).then(then);
+    const go = () => {                               // (then only if the faces were not already in: else nothing changed)
+      let had = false; try { had = document.fonts.check(`40px ${FONT}`, chars); } catch (e) {}
+      document.fonts.load(`40px ${FONT}`, chars).catch(() => {}).then(() => { if (!had) then(); });
+    };
     if (!JP.test(chars)) return void go();
     if (!jpLink) {
       jpLink = document.querySelector('link[href*="family=Noto+Sans+JP"]');
@@ -647,10 +652,10 @@ void main(){
     }
     function askFonts(chars) { if (chars && !fontsAsked.has(chars)) { fontsAsked.add(chars); fontsFor(chars, invalidate); } }
     function setsOf() {
-      const src = [o.set, o.sets];
-      if (setSrc && setSrc[0] === src[0] && setSrc[1] === src[1]) return;
+      const src = [o.set, o.sets, o.ahead];
+      if (setSrc && setSrc[0] === src[0] && setSrc[1] === src[1] && setSrc[2] === src[2]) return;
       setSrc = src; setList = [o.set];
-      for (const s of o.sets || []) { const c = setChars(s); if (setList.length < MAXSETS && !setList.includes(c)) { setList.push(c); askFonts(c); } }
+      for (const s of [...(o.sets || []), ...(o.ahead || [])]) { const c = setChars(s); if (setList.length < MAXSETS && !setList.includes(c)) { setList.push(c); askFonts(c); } }
       ver++;
     }
     function setIndex(v) {
@@ -1311,7 +1316,7 @@ void main(){
       return s;
     }
 
-    return {
+    const api = {
       canvas: cv,
       set(p) {
         Object.assign(o, p);
@@ -1323,7 +1328,7 @@ void main(){
       },
       get options() { return Object.assign({}, o); },
       frame() { if (raf) cancelAnimationFrame(raf); raf = 0; frame(performance.now()); },
-      destroy() { dead = true; if (raf) cancelAnimationFrame(raf); cv.remove(); },
+      destroy() { dead = true; if (raf) cancelAnimationFrame(raf); cv.remove(); const x = gl.isContextLost() ? null : gl.getExtension("WEBGL_lose_context"); if (x) x.loseContext(); },
       touch() { mapsDirty = true; mapsRead = null; schedule(); },
       at(x, y) {
         if (!W) return null;
@@ -1341,6 +1346,15 @@ void main(){
           slots: slotCount, guard: guardOn, guarded: heldNow, guardEvents };
       },
     };
+    // a lost context (a GPU reset, a phone's tab put away) kept restorable, and the overlay made again once it is back
+    cv.addEventListener("webglcontextlost", (e) => e.preventDefault());
+    cv.addEventListener("webglcontextrestored", () => {
+      if (dead) return;
+      api.destroy();
+      const g = create(Object.assign({}, o, { __sorted: null, __text: null, __widest: null }));
+      if (g) Object.defineProperties(api, Object.getOwnPropertyDescriptors(g));
+    });
+    return api;
   }
 
   window.GlyphLight = { create, preserve, SETS, motions, ease, encode };
