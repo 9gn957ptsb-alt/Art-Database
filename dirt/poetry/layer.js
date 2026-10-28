@@ -125,7 +125,7 @@
   //   each poem pushed in over its last three lines (the artifact's push in, laid out as density: GlyphLight.motions.push
   //   at the middle of each third of the run, levels 0, 1, 1), so its last two lines are written twice as large;
   // - tone and glow stepped along each poem's lines, each on a Fibonacci period of its own (in lines), every poem
-  //   setting out from the artifact's own settings at its first line: exposure 0 +- 0.236 EV (13 lines), contrast
+  //   setting out from the artifact's own settings at its first line: exposure -phi^-2 +- phi^-4 EV (13 lines), contrast
   //   1.2 +- 0.146 (8), midtones phi^+-0.236 (21), detail 0 to 0.618 and back (34), the glow phi^-2 to phi^-1 with
   //   the pulse (below), glow starts at 0.72 to 0.85 (21) and never below 0.45 + 0.6 glow; the image under the glyphs
   //   half there at a plot (its building seen through its letters),
@@ -180,7 +180,7 @@
       // paper turns grey, not black; the push in over the last three lines only to level 1 (cells twice the size:
       // four times lost the picture)
       const swing = Math.min(1, Math.max(0, ((motion("pulse", s.sj / s.sn).gain || 0.35) - 0.35) / 1.1)), glow = 0.382 + 0.236 * swing;
-      Object.assign(o, { exposure: s.turn ? -0.618 : 0.236 * w(13), contrast: 1.2 + 0.146 * w(8), gamma: 1.618033988749895 ** (0.236 * w(21)),
+      Object.assign(o, { exposure: s.turn ? -0.618 : -0.382 + 0.146 * w(13),             // (the paper below white: at white it is a wall of the heaviest letters) contrast: 1.2 + 0.146 * w(8), gamma: 1.618033988749895 ** (0.236 * w(21)),
                          detail: 0.618 * (0.5 - 0.5 * Math.cos((C * t) / 34)), glow,
                          thresh: Math.max(0.45 + 0.6 * glow, 0.785 + 0.065 * Math.cos((C * t) / 21)), invert: s.turn });
       if (t >= s.n - 3) { const m = motion("push", (t - (s.n - 3) + 0.5) / 3); if (m.level != null) o.level = Math.min(1, m.level); }   // (each line the middle of its third)

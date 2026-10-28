@@ -66,7 +66,8 @@ colour is by page, from its paper (page 6's black page mono, the warm pages gold
 density (`glyphlight.js`'s levels, its cells once and twice as large) is the poems' size on a line and twice it on a
 plot, and each poem is pushed in over its last three lines (the artifact's push in, laid out as density), so its last
 two lines are written twice as large; tone and glow step along each poem's lines, each on a Fibonacci period of its own,
-every poem setting out from the artifact's own settings at its first line (exposure 0 ± 0.236 EV over 13 lines,
+every poem setting out from the artifact's own settings at its first line (exposure −φ⁻² ± φ⁻⁴ EV over 13 lines, so the
+pale paper sits below white rather than as a wall of the heaviest letters,
 contrast 1.2 ± 0.146 over 8, midtones φ^±0.236 over 21, detail 0 to 0.618 and back over 34, the glow between φ⁻² and
 φ⁻¹ with the pulse along each stanza, glow-starts-at 0.72 to 0.85 over 21 and never below 0.45 + 0.6 × the glow); the
 image under the glyphs is half there at a plot (its building seen through its letters), φ⁻³ at a kin frame and none on
