@@ -7,6 +7,9 @@
   "enabledPlugins": {
     "ponytail@ponytail": true
   },
+  "permissions": {
+    "allow": ["Bash(npx wrangler deploy:*)"]
+  },
   "hooks": {
     "UserPromptSubmit": [
       {
