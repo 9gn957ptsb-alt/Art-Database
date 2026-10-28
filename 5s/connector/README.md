@@ -594,9 +594,12 @@ from a session that has it, or build it there first. For a local trial without t
 `npm run things` builds the catalogue for "let's play fives": the curated lines of code, the 80
 Morphology words, the six Picture Poetry pages, the 29 bookmark buildings rated A or B and the
 picture-to-word matches. It reads the artist's material in `data/5s/fives/` and the built deck, and
-writes `data/5s/things.json` and the Worker's static files in `public/`: each building's model by
+writes `data/5s/things.json` and the Worker's own files in `public/`: each building's model by
 deck id, stripped to what `models.js` reads, and the pages under a folder name only the Worker knows.
-All of it is gitignored. Run it before `npm run deck`. It refuses an unsafe line, a served model that
+All of it is gitignored. Run it before `npm run deck`, which packs `public/s` and `public/pp` into the
+Worker as `src/files.generated.json` (also gitignored). They are not uploaded as Workers static assets:
+that upload carries a one-time pass this environment's proxy swaps for the account's token, so
+Cloudflare refuses it (401). The Worker answers them itself (`src/files.js`). It refuses an unsafe line, a served model that
 holds a name or a coordinate, a page that keeps its metadata, and a place finer than a town.
 `npm run deck` then carries the catalogue into the bundle as `deck.things` (each card keeps its
 `comp` and `feel` for the made lines), and refuses a deck id starting with l, p or w (the game's own
@@ -636,10 +639,10 @@ things) or a space the deck doesn't have.
 | `src/card.js` | the round card's side of the Worker: the `ui://fives/round.html` resource's CSP and clipboard permission, the links `play_fives` hands out, and the `/pp/` answer: a Picture Poetry page or its building only through a link signed for a day, from a folder only the Worker knows, with CORS |
 | `web/round.html` | the round card, an MCP App shown under `play_fives`: the five things together, Pass and Keep under each (each a `judge` call the moment it is tapped), the thing itself the other control (tap the line to copy it, the building to go in, the picture or the page to see it whole, two fingers to read it) |
 | `web/space.html`, `web/space.js` | the space viewer page (`/s/space?m=<deck id>`) and the drawing the card shares; `npm run things` copies them into `public/s/` |
-| `public/` | the Worker's static files, built by `npm run things` and gitignored, all but `.assetsignore`, which keeps the folder (wrangler needs it); `/s/` is served as files (free), `/pp/` only through the Worker |
+| `public/` | the Worker's own files, built by `npm run things` and gitignored, all but `.assetsignore`, which keeps the folder; `npm run deck` packs them into the Worker, which serves `/s/` to anyone and `/pp/` only through a signed link |
 | `test/smoke.mjs` | `npm run smoke`: the Worker itself under `wrangler dev` (see below) |
 | `test/card.ui.mjs` | `node --test test/card.ui.mjs`: the round card in a stand-in host that speaks MCP Apps (Playwright), at 390 by touch and 1280 by mouse, with screenshots (`SHOTS`); needs the built catalogue |
-| `wrangler.jsonc` | the Worker: name `fives-connector`, the two Durable Objects (`FiveSMCP`, `FiveSPerson`), the one KV namespace (`OAUTH_KV`), the three rate limits, `COLOUR_BUDGET_PX` `"0"`, and the static files in `public/` (every `/pp/` request goes to the Worker first) |
+| `wrangler.jsonc` | the Worker: name `fives-connector`, the two Durable Objects (`FiveSMCP`, `FiveSPerson`), the one KV namespace (`OAUTH_KV`), the three rate limits, `COLOUR_BUDGET_PX` `"0"`; no static assets (the files ride in the Worker) |
 | `.dev.vars.example` | placeholders for `wrangler dev`; copy to `.dev.vars` (gitignored) |
 
 ## Develop and test
