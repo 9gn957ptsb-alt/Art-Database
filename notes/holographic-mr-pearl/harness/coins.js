@@ -28,7 +28,7 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
   let t = await tally();
   check(!t.hidden && t.text === "Coins 0 of 10", "the tally in the header (" + JSON.stringify(t) + ")");
   // the body walks through one: the first outside one on the ground (the way in)
-  const i0 = C.list.findIndex((q) => q.kind === "way");
+  const i0 = Math.max(0, C.list.findIndex((q) => q.kind === "way"));   // (round the tree since 28 Oct 2026: the first)
   const q0 = C.list[i0];
   await D((q) => { const d = window.Rocket.debug(); window.__toasts.length = 0; Object.assign(d.P, { x: q.x - 1.5, y: q.y - 1.3724, z: q.z, vx: 0, vy: 0, vz: 0, yaw: Math.PI / 2, face: Math.PI / 2, pitch: -0.2, want: null }); }, q0);
   await frames(P, 3);
@@ -45,7 +45,7 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
   const notes = await D(() => document.getElementById("notes-list").textContent);
   check(/Coins: 1 of 10/.test(notes), "Notes count it");
   // the head flown through one, a frame's flight at the hologram's speed (22.5 m/s: 0.56 m a frame of 25 ms) either side
-  const i1 = C.list.findIndex((q) => q.kind === "tree");
+  const i1 = C.list.findIndex((q, i) => i !== i0 && q.kind === "tree");
   const q1 = C.list[i1];
   await D(() => window.Rocket.debug().toggle());
   await frames(P, 20);

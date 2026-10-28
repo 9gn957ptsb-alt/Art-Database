@@ -415,6 +415,19 @@ Notes, the toast says each, the direction line points to a coin nearer than wher
 crosshair says what one is; the save keeps them. The tenth builds the rocket at the wreck, as the four pieces do
 (`ready`), and Launch is offered; the end says your ten coins built it.
 
+**For now the ten lie round his tree** (the artist, 28 Oct 2026: "I can't find all 10 rings, for now place them right
+by the tree that way they are easy to get"), and so in every place, the museums and the cities too, where the rule
+above laid none: a ring 3 m out from the trunk at his head's height, the first toward the wreck, each moved out or in
+(2.5 to 8 m) or a little round where the ground is not within a block of the tree's (else two), a block stands at his
+feet or head, or a stone of the homage or the studies or the Q cube is (`coinsByTree`: ten in each of the 125 places
+the checks build); each says which of sixteen ways from the tree it lies. A save from before keeps its count, carried
+onto the ring, and a rocket its coins built. The rule above waits behind `COIN.TREE`. **The launchpad** (the artist, the same day: "I collected all the coins and went
+to the launchpad and nothing happened ... I want collecting the 10 coins as an alternative way to beating the game"):
+the rocket built, by the coins or the pieces, the direction line leads to it ("The rocket"), before notes, pieces and
+coins, and his body come onto its ground (the crater, 2.5 m from its middle), walked there or following the head out
+of the hologram, begins the launch, as Launch does; the head flown onto it is told the body must come. A rocket built
+where he stands waits for him to step off and on.
+
 **The guards** (the artist, the same day: "Think of Mr Pearl like the golden snitch from harry potter right now, there
 are people trying to grab me"): the guards the alarms bring, now seen, one for each ground-floor room the works hang in,
 three at most (`place.js` `guards`), each walking its round of its room's reading spots, a beat at each, built of his
