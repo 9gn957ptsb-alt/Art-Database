@@ -37,8 +37,10 @@ const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5
   // Mr Plan close, from in front of him (the figure: can he be made out?)
   await p.evaluate(() => { const d = window.Pickleball.debug(), pl = d.plans[0]; d.camAt([pl.x + 1.2, 1.5, pl.z + 3.4], -0.33, -0.12); });
   await shot(p, "5_desk_plan_close");
-  // the courts from above and behind: the ten, the floodlights, the horse
-  await p.evaluate(() => { const d = window.Pickleball.debug(); d.camAt([20, 14, 34], 0.35, -0.42); });
+  await p.close();
+  // the courts from above and behind, five won and the sixth open: the row of them, each under its floodlights
+  ({ p, errs } = await page(b, desk)); all.push(errs);
+  await p.evaluate(() => { const d = window.Pickleball.debug(); for (let k = 0; k < 5; k++) { d.enter(d.courts.length - 1); d.run(0.5); d.winCourt(); } d.run(3); d.camAt([20, 14, 34], 0.35, -0.42); });
   await shot(p, "6_desk_courts_wide");
   await p.close(); await b.close();
   const e = all.flat();
