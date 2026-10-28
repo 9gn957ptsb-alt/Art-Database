@@ -1252,6 +1252,141 @@ def add_others(cards, head, data=DATA):
     log(f"set: {len(rows)} lookers' pairs of {len(P['pairs'])}; words on {sum(1 for c in pics.values() if c['comp'] or c['feel'])} of {len(pics)} pictures")
 
 
+ROOM_TEXT, ROOM_SAY = 40, 120   # a room's names (walls, paint, opening, floor, spots); its one caption line
+
+
+def corners_w(q):
+    """Heckbert's square onto the quad q (the page's sq2quad): the homography's w at the plane's four corners. Every corner
+    is in front of the camera when all four are > 0; a quad with no area gives zeros."""
+    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = q
+    area = (x0 * y1 - x1 * y0) + (x1 * y2 - x2 * y1) + (x2 * y3 - x3 * y2) + (x3 * y0 - x0 * y3)
+    sx, sy = x0 - x1 + x2 - x3, y0 - y1 + y2 - y3
+    dx1, dx2, dy1, dy2 = x1 - x2, x3 - x2, y1 - y2, y3 - y2
+    den = dx1 * dy2 - dx2 * dy1
+    if abs(area) < 1e-6 or abs(den) < 1e-12:
+        return [0, 0, 0, 0]
+    g, h = ((sx * dy2 - dx2 * sy) / den, (dx1 * sy - sx * dy1) / den) if abs(sx) > 1e-9 or abs(sy) > 1e-9 else (0, 0)
+    return [1, 1 + g, 1 + g + h, 1 + h]
+
+
+def clean_room(r, bad):
+    """A marked interior (SPEC-room-from-structure 2.2: points in percent of the photo, sizes in cm) as the page reads it:
+    numbers to 1 decimal; a plane with a corner behind the camera, a spot naming no plane, a polygon of fewer than 3
+    points or with a point outside the photo, and a name longer than ROOM_TEXT are dropped, each told to bad(what)."""
+    num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+    pt = lambda p, lo=0, hi=100: isinstance(p, list) and len(p) == 2 and all(num(v) and lo <= v <= hi for v in p)
+    rd = lambda p: [round(v, 1) for v in p]
+    text = lambda s, n=ROOM_TEXT: isinstance(s, str) and 0 < len(s) <= n and s == " ".join(s.split())
+
+    def polys(ps, what):
+        ps = ps if isinstance(ps, list) else []
+        ok = [[rd(p) for p in poly] for poly in ps if isinstance(poly, list) and len(poly) >= 3 and all(pt(p) for p in poly)]
+        if len(ok) < len(ps):
+            bad(f"{len(ps) - len(ok)} of {what}")
+        return ok
+
+    out = {"inside": True}
+    for k, n in (("say", ROOM_SAY), ("walls", ROOM_TEXT)):
+        if text(r.get(k), n):
+            out[k] = r[k]
+        elif k in r:
+            bad(k)
+    out["planes"] = {}
+    for pid, p in (r.get("planes") or {}).items():
+        q, size = (p or {}).get("q"), (p or {}).get("size")
+        if (isinstance(q, list) and len(q) == 4 and all(pt(c, -1000, 1000) for c in q) and min(corners_w(q)) > 0
+                and isinstance(size, list) and len(size) == 2 and all(num(v) and 0 < v <= 10000 for v in size)):
+            out["planes"][pid] = {"q": [rd(c) for c in q], "size": rd(size)}
+        else:
+            bad(f"plane {pid}")
+    paint = r.get("paint")
+    if isinstance(paint, dict):   # null: never painted (its walls are the work), and the colour is its light
+        ps = polys(paint.get("polys"), "its paint")
+        paint = {"polys": ps, "name": paint["name"]} if ps and text(paint.get("name")) else None
+    out["paint"] = paint if isinstance(paint, dict) else None
+    fl = r.get("floor")
+    if isinstance(fl, dict):
+        out["floor"] = {}
+        if text(fl.get("what")):
+            out["floor"]["what"] = fl["what"]
+        if "outline" in fl and polys([fl["outline"]], "its floor"):
+            out["floor"]["outline"] = [rd(p) for p in fl["outline"]]
+        if num(fl.get("band")) and 0 < fl["band"] <= 1:
+            out["floor"]["band"] = round(fl["band"], 2)
+    op = r.get("opening")
+    if isinstance(op, dict):
+        ps = polys(op.get("polys"), "its opening")
+        if ps and text(op.get("name")):
+            out["opening"] = {"polys": ps, "name": op["name"]}
+    if pt(r.get("sun"), -100, 200):
+        out["sun"] = rd(r["sun"])
+    out["spots"] = {}
+    for k, sp in (r.get("spots") or {}).items():
+        sp = sp if isinstance(sp, dict) else {}
+        placed = k not in ("paint", "floor")   # a thing is placed on a plane; paint and floor only mark where to press
+        ok = (re.fullmatch(r"[a-z][a-z0-9]{0,11}", k) and pt(sp.get("at"))
+              and (sp.get("plane") in out["planes"] if placed or "plane" in sp else True)
+              and (not placed or text(sp.get("name"))) and ("top" not in sp or (num(sp["top"]) and 0 <= sp["top"] <= 100))
+              and ("box" not in sp or (isinstance(sp["box"], list) and len(sp["box"]) == 2 and all(num(v) and 0 < v <= 10000 for v in sp["box"]))))
+        if not ok:
+            bad(f"spot {k}")
+            continue
+        o = {"plane": sp["plane"]} if "plane" in sp else {}
+        o["at"] = rd(sp["at"])
+        if placed:
+            o["name"] = sp["name"]
+        if "top" in sp:
+            o["top"] = round(sp["top"], 1)
+        if "box" in sp:
+            o["box"] = rd(sp["box"])
+        out["spots"][k] = o
+    return out
+
+
+def add_roles(cards, data=DATA):
+    """What each card is and its relation to setting up a room (SPEC-room-from-structure 2.2), only in this git-ignored
+    build: card role (one or two of roles.ROLES, the first is where it goes) and what (a short noun phrase) from
+    roles.json, judged by eye and kept whole by roles.py, and on each interior (first role room) its marked room from
+    planes.json (clean_room). Without roles.json it ships none: the page's word rules and kinds decide, and Set works."""
+    from roles import ROLES, WHAT_MAX   # beside this file
+    path, planes = data / "roles.json", data / "planes.json"
+    if not path.exists():
+        log(f"rooms: no roles.json in {data}: roles come from kinds")
+        return
+    R = json.loads(path.read_text())["cards"]
+    P = json.loads(planes.read_text())["rooms"] if planes.exists() else {}
+    n, marked, used = 0, [], set()
+    for c in cards:
+        e = (R.get(c["work"]) or {}).get(c["kind"])
+        if not isinstance(e, dict):
+            continue
+        n += 1
+        role = []
+        for r in e.get("role") or []:
+            if r in ROLES and r not in role:
+                role.append(r)
+        if role:
+            c["role"] = role[:2]
+        what = e.get("what")
+        if isinstance(what, str) and 0 < len(what) <= WHAT_MAX and what == " ".join(what.split()):
+            c["what"] = what
+        room = P.get(c["work"]) or e.get("room")
+        if c["kind"] != "space" or role[:1] != ["room"] or not isinstance(room, dict):
+            continue
+        used.add(c["work"])
+        bad = []
+        r = clean_room(room, bad.append)
+        if bad:
+            log(f"rooms: {c['id']} {c['work']}: dropped {', '.join(bad)}")
+        if r["planes"]:
+            c["room"] = r
+            marked.append(c["id"])
+    rooms = [c["id"] for c in cards if c.get("role", [""])[0] == "room"]
+    log(f"rooms: roles on {n} of {len(cards)} cards; {len(rooms)} interiors, {len(marked)} marked: {' '.join(marked) or 'none'}")
+    if set(P) - used:
+        log(f"rooms: marked but not an interior in this deck, left out: {', '.join(sorted(set(P) - used))}")
+
+
 def write_deck(pk, families, artists):
     for old in OUT_IMG.glob("*.webp"):
         if re.fullmatch(r"[iosucbm]\d{3}\.webp|atlas\.webp", old.name):
@@ -1320,6 +1455,7 @@ def write_deck(pk, families, artists):
             "source": "The art database: Artsy saves and Architectural Authority bookmarks",
             "atlas": {"src": "img/atlas.webp", "cell": cell, "cols": cols}, "genes": genes}
     add_others(cards, head)
+    add_roles(cards)
     text = json.dumps(head, ensure_ascii=False, separators=(",", ":"))[:-1]
     text += ',"cards":[\n' + ",\n".join(json.dumps(c, ensure_ascii=False, separators=(",", ":"))
                                          for c in cards) + "\n]}\n"

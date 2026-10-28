@@ -1,0 +1,415 @@
+{
+ "version": 1,
+ "cards": {
+  "fixture-i001": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-i002": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-i003": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-i004": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-i005": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-i006": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-i007": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-i008": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-i009": {
+   "image": {
+    "role": [
+     "textile",
+     "art"
+    ],
+    "what": "a tapestry"
+   }
+  },
+  "fixture-i010": {
+   "image": {
+    "role": [
+     "art"
+    ],
+    "what": "a painting"
+   }
+  },
+  "fixture-o001": {
+   "object": {
+    "role": [
+     "textile",
+     "floor"
+    ],
+    "what": "a rug"
+   }
+  },
+  "fixture-o002": {
+   "object": {
+    "role": [
+     "light",
+     "ceiling"
+    ],
+    "what": "a pendant lamp"
+   }
+  },
+  "fixture-o003": {
+   "object": {
+    "role": [
+     "textile"
+    ],
+    "what": "a wall hanging"
+   }
+  },
+  "fixture-o004": {
+   "object": {
+    "role": [
+     "furniture"
+    ],
+    "what": "an armchair"
+   }
+  },
+  "fixture-o005": {
+   "object": {
+    "role": [
+     "thing"
+    ],
+    "what": "a vase"
+   }
+  },
+  "fixture-o006": {
+   "object": {
+    "role": [
+     "light",
+     "furniture"
+    ],
+    "what": "a floor lamp"
+   }
+  },
+  "fixture-o007": {
+   "object": {
+    "role": [
+     "thing",
+     "art"
+    ],
+    "what": "a ceramic dish"
+   }
+  },
+  "fixture-o008": {
+   "object": {
+    "role": [
+     "art",
+     "light"
+    ],
+    "what": "a neon in a box"
+   }
+  },
+  "fixture-o009": {
+   "object": {
+    "role": [
+     "thing"
+    ],
+    "what": "a sculpture"
+   }
+  },
+  "fixture-o010": {
+   "object": {
+    "role": [
+     "furniture"
+    ],
+    "what": "a table"
+   }
+  },
+  "fixture-s001": {
+   "space": {
+    "role": [
+     "room"
+    ],
+    "what": "a white hall"
+   }
+  },
+  "fixture-s002": {
+   "space": {
+    "role": [
+     "building"
+    ],
+    "what": "a concrete house"
+   }
+  },
+  "fixture-s003": {
+   "space": {
+    "role": [
+     "room"
+    ],
+    "what": "a timber living room"
+   }
+  },
+  "fixture-s004": {
+   "space": {
+    "role": [
+     "building"
+    ],
+    "what": "a glass pavilion"
+   }
+  },
+  "fixture-s005": {
+   "space": {
+    "role": [
+     "room"
+    ],
+    "what": "a dining room"
+   }
+  },
+  "fixture-s006": {
+   "space": {
+    "role": [
+     "building"
+    ],
+    "what": "a stone barn"
+   }
+  },
+  "fixture-s007": {
+   "space": {
+    "role": [
+     "room"
+    ],
+    "what": "a stair hall"
+   }
+  },
+  "fixture-s008": {
+   "space": {
+    "role": [
+     "building"
+    ],
+    "what": "a tower"
+   }
+  },
+  "fixture-s009": {
+   "space": {
+    "role": [
+     "room",
+     "art"
+    ],
+    "what": "a painting of a studio"
+   }
+  },
+  "fixture-s010": {
+   "space": {
+    "role": [
+     "view",
+     "art"
+    ],
+    "what": "a bay at low tide"
+   }
+  },
+  "fixture-u001": {
+   "surface": {
+    "role": [
+     "floor"
+    ],
+    "what": "oak boards"
+   }
+  },
+  "fixture-u002": {
+   "surface": {
+    "role": [
+     "walls"
+    ],
+    "what": "a painted surface"
+   }
+  },
+  "fixture-u003": {
+   "surface": {
+    "role": [
+     "floor",
+     "walls"
+    ],
+    "what": "grey stone"
+   }
+  },
+  "fixture-u004": {
+   "surface": {
+    "role": [
+     "walls",
+     "floor"
+    ],
+    "what": "concrete"
+   }
+  },
+  "fixture-u005": {
+   "surface": {
+    "role": [
+     "walls"
+    ],
+    "what": "a painted surface"
+   }
+  },
+  "fixture-u006": {
+   "surface": {
+    "role": [
+     "walls"
+    ],
+    "what": "a painted surface"
+   }
+  },
+  "fixture-u007": {
+   "surface": {
+    "role": [
+     "walls"
+    ],
+    "what": "a painted surface"
+   }
+  },
+  "fixture-u008": {
+   "surface": {
+    "role": [
+     "walls"
+    ],
+    "what": "a painted surface"
+   }
+  },
+  "fixture-u009": {
+   "surface": {
+    "role": [
+     "walls"
+    ],
+    "what": "a painted surface"
+   }
+  },
+  "fixture-u010": {
+   "surface": {
+    "role": [
+     "walls"
+    ],
+    "what": "a painted surface"
+   }
+  },
+  "fixture-c001": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c002": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c003": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c004": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c005": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c006": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c007": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c008": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c009": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  },
+  "fixture-c010": {
+   "colour": {
+    "role": [
+     "walls",
+     "light"
+    ]
+   }
+  }
+ }
+}

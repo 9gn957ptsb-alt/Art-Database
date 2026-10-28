@@ -539,6 +539,45 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .room-key li { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px; }
 .room-key b { font-weight: 600; }
 .room-key span { color: var(--ink-2); overflow-wrap: anywhere; }
+/* ------------------------------------------------------------------ See it as a room: the photo room (room.js)
+   A kept interior's own photograph is the room. room.js draws it at the photo's own pixels in .rstage, scaled to
+   the box, with the person's things in it as layers (all aria-hidden); the photo is the one role="img". Pointer
+   buttons (.rhit) are aria-hidden; the key rows are the way for VoiceOver. Labels on the photo use the fixed room
+   tokens, as .slot-empty does, so the photo reads the same in both themes. */
+.proom { position: relative; width: 100%; aspect-ratio: 3 / 2; border-radius: 18px; overflow: hidden; isolation: isolate; background: var(--paper-2); }
+.proom::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--hair); pointer-events: none; z-index: 4; }
+.proom.mini { border-radius: 10px; }
+.proom img { max-width: none; }
+.proom .rstage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.proom .rstage > *, .proom .rlayer > *, .proom .plane, .proom .plane > *, .proom .viewclip > *, .proom .hung img { position: absolute; }
+.proom .rlayer, .proom .paint, .proom .lightwash, .proom .laid, .proom .viewclip, .proom .glass, .proom .glow { inset: 0; }
+.proom .photo, .proom .shade { inset: 0; width: 100%; height: 100%; display: block; }
+.proom .photo { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.proom .paint, .proom .shade { mix-blend-mode: multiply; }
+.proom .lightwash { mix-blend-mode: soft-light; }
+.proom .glow { mix-blend-mode: screen; }
+.proom .laid, .proom .viewclip { overflow: hidden; }
+.proom .plane { left: 0; top: 0; transform-origin: 0 0; }
+.proom .tiles { background-repeat: repeat; }
+.proom .viewclip img { object-fit: cover; }
+.proom .glass { background: linear-gradient(170deg, rgba(255, 255, 255, 0.16), rgba(205, 220, 235, 0.1) 60%, rgba(255, 255, 255, 0.04)); }
+.proom .hung { box-sizing: border-box; background: var(--frame-mat); border: 3px solid var(--frame-edge); box-shadow: 4px 6px 10px -4px rgba(0, 0, 0, 0.45); }
+.proom .hung img { inset: 7%; width: 86%; height: 86%; object-fit: cover; }
+.proom .hung.photo { background: #fff; border: 0; }
+.proom .hung.photo img { inset: 4%; width: 92%; height: 92%; }
+.proom .hung.bare { background: none; border: 0; }
+.proom .hung.bare img { inset: 0; width: 100%; height: 100%; }
+.proom .rug { background-size: 100% 100%; background-repeat: no-repeat; }
+.proom .foot { border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0)); }
+.proom .upright { display: block; object-fit: contain; }
+.proom .upright.whole { box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.5); }
+.proom .base { background: #2b2622; border-radius: 1px; }
+.proom .rfade { animation: proom-in 150ms ease-out; }   /* Reduce Motion: the rule below stops every animation */
+@keyframes proom-in { from { opacity: 0; } }
+.proom .rhit { position: absolute; z-index: 5; transform: translate(-50%, -50%); padding: 0; border: 0; border-radius: 10px; background: transparent; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.proom .rhit:active { background: rgba(255, 255, 255, 0.18); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6); }
+.proom .rname { position: absolute; z-index: 6; left: 10px; top: 10px; display: inline-flex; align-items: center; min-height: 30px; max-width: calc(100% - 20px); padding: 0 10px; border-radius: 999px; background: var(--room-label-bg); color: var(--room-label-ink); font: 600 12px/1.1 var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); pointer-events: none; }
+.proom .stepin { position: absolute; z-index: 6; right: 10px; bottom: 10px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--room-label-bg); color: var(--room-label-ink); font: 600 14px/1 var(--font-body); box-shadow: 0 2px 10px -4px rgba(0, 0, 0, 0.45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .set-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 /* Set's board and game (SPEC "Set: the board and the game"; their own styles are play.css). The game
    takes Set at full height, and the tab bar hides while a level is on. */
@@ -945,3 +984,57 @@ dialog.sheet.fallback {
 .def-cols { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .def-cols .sw { width: 24px; height: 24px; border-radius: 6px; }
 .tag { font: 500 12px/1 var(--font-mono); padding: 4px 8px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--ink-2); }
+
+/* ------------------------------------------------------------------ See it as a room: round the photo (app.js)
+   The caption, the key (one button a row: the place, what the thing is and how it sets up the room, its name),
+   Rooms you kept, the chooser's choices drawn as they would sit, the wall and floor switches, the hint when no
+   interior is kept, the In a room chips of a brought thing, Sort's line after a keep, and the floor check. */
+.rcap { margin: -4px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-2); }
+.rcap b { color: var(--ink); font-weight: 600; }
+.pkey { display: grid; margin: 0; padding: 0; list-style: none; }
+.pkey li + li { border-top: 1px solid var(--line); }
+.krow { width: 100%; min-height: 64px; display: grid; grid-template-columns: 44px minmax(0, 1fr) 14px; gap: 12px; align-items: center; padding: 10px 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.kth { width: 44px; height: 44px; border-radius: 8px; overflow: hidden; display: block; position: relative; background-color: var(--paper-2); box-shadow: inset 0 0 0 1px var(--hair); }
+.kth img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.kth.own { background-size: 900% auto; background-repeat: no-repeat; }
+.ktx { display: grid; gap: 1px; min-width: 0; }
+.kp { font: 500 10.5px/1.3 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+.ki { font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--iris-ink); overflow-wrap: anywhere; }
+.kn { font-size: 13.5px; line-height: 1.3; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chev { font-size: 20px; line-height: 1; color: var(--ink-2); }
+.rooms { display: grid; gap: 8px; }
+.rooms-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rooms-head .linkbtn { min-height: 44px; font-size: 14px; }
+.rooms ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.rbtn { width: 100%; height: 100%; min-height: 44px; display: grid; align-content: start; gap: 4px; padding: 3px; border: 1.5px solid var(--line); border-radius: 12px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rbtn[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.rbtn .th { width: 100%; aspect-ratio: 4 / 3; border-radius: 9px; }
+.rbtn .t { padding: 0 2px 2px; font-size: 11.5px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.drawn { position: absolute; inset: 0; background: var(--wall, #d9d3c7); }
+.drawn::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 31%; background: #8f8a84; }
+.drawn::after { content: ""; position: absolute; left: 10%; top: 20%; width: 26%; height: 38%; background: #c9d2d6; border: 2px solid var(--trim, #ffffff); }
+.choice .r { justify-self: start; padding: 2px 7px; border-radius: 8px; background: var(--iris-tint); color: var(--iris-ink); font-size: 12px; font-weight: 600; line-height: 1.35; }
+.choice .p { padding-left: 6px; border-left: 2px solid var(--iris); font-size: 12px; line-height: 1.3; color: var(--ink-2); }
+.th.sit { display: grid; place-items: center; background-color: #e8e2d6; }   /* a wall behind it, the same in both themes */
+.th.sit > span { position: relative; display: block; }
+.th.sit img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.th.sit .hung2 { padding: 7%; background: var(--frame-mat); border: 3px solid var(--frame-edge); box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.5); }
+.th.sit .rod { padding-top: 6px; }
+.th.sit .rod::before { content: ""; position: absolute; left: -8%; right: -8%; top: 0; height: 5px; border-radius: 3px; background: #5b4636; }
+.th.sit .plinth { padding-bottom: 10px; }
+.th.sit .plinth::after { content: ""; position: absolute; left: -12%; right: -12%; bottom: 0; height: 10px; border-radius: 2px; background: #d2cbbd; box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.5); }
+.room-as { justify-self: start; display: inline-flex; flex-wrap: wrap; gap: 3px; padding: 3px; border: 1.5px solid var(--line-strong); border-radius: 24px; }
+.room-as button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.room-as button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.hint { display: grid; gap: 10px; padding: 14px; border: 2px dashed var(--line-strong); border-radius: 14px; }
+.hint p { margin: 0; font-size: 15px; color: var(--ink); }
+.chips-room .seg { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; border: 0; border-radius: 0; }
+.chips-room .seg label { min-height: 44px; padding: 0 14px; border: 1.5px solid var(--line-strong); }
+.says { color: var(--iris-ink); }
+.detail-room { display: grid; gap: 12px; margin-top: 16px; }
+.strip-room { flex-basis: 100%; color: var(--iris-ink); }
+.fcheck { position: relative; border-radius: 14px; overflow: hidden; }
+.fcheck img { display: block; width: 100%; height: auto; }
+.fcheck svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fcheck polygon { fill: rgba(115, 80, 238, 0.34); stroke: #ffffff; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.field input[type="range"] { width: 100%; min-height: 44px; }

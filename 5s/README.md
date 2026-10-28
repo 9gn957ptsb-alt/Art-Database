@@ -18,8 +18,9 @@ build contract) before changing anything.
 
 | Path | What it is |
 | --- | --- |
-| `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp`; then the bookmarks from `buildings.json` + `data/aa/` |
+| `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp`; then the bookmarks from `buildings.json` + `data/aa/`; then what each card is in a room (`role`, `what`) from git-ignored `data/5s/roles.json`, and each interior's marked `room` from `data/5s/planes.json`, only in the git-ignored deck |
 | `buildings.json` | the artist's Architectural Authority bookmarks as chosen for the deck: each building's hero photo, surface crop, materials and genes (cards b001…, m001…) |
+| `roles.py` | what each deck card is and its relation to setting up a space ("a pendant lamp", lighting the room; an interior is the room): keeps git-ignored `data/5s/roles.json` whole against the built deck, adds what a rule judges (images, colours, Artsy pictures of places, painted surfaces), checks every entry and lists the cards to judge by eye; `build_deck.py` ships it on the cards |
 | `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined, and `play.css` as `<style data-fives="play">`), the thirteen scripts in the order the page loads them (`hub.js`, `hubpage.js`, `connect.js`, `match.js`, `relate.js`, `board.js`, `play.js`, `kingdom.js` and `links.js` before `app.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
 | `src/app.css`, `src/app.js` | styles and UI (including Your hub: Seed's last section and the Hub sheet, through GitHub's own pages) |
@@ -34,9 +35,9 @@ build contract) before changing anything.
 | `src/kingdom.js` | Set's kingdom map (`FiveSKingdom`): an island for every five levels, each level won one of your things built on its plot, the next area under cloud; you pan and zoom it |
 | `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
 | `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
-| `test/` | engine, match, bring, ground, play, kingdom and UI tests; `test/play.html` and `test/kingdom.html` are the game's and the kingdom's harnesses, `test/sim.mjs` its playtest; `test/fixture/` is a synthetic 50-card deck (no real data) |
+| `test/` | engine, match, bring, ground, play, kingdom and UI tests; `test/play.html` and `test/kingdom.html` are the game's and the kingdom's harnesses, `test/sim.mjs` its playtest; `test/fixture/` is a synthetic 50-card deck (no real data), with synthetic `roles.json` and `planes.json` (two marked interiors) that `make_fixture.py` puts on its cards through the deck build's own `add_roles` |
 | `gameplan/reflect.mjs` | the Game Plan as code: reads Claude Code transcripts, places each session on the plan's seven stages, finds the traps it met, and judges its turns against the laws ponytail and caveman share (each only while that skill is on). `node 5s/gameplan/reflect.mjs <transcripts or folders>` prints the reflection; `--hook` runs after each turn (Stop) and when the person next writes (UserPromptSubmit), where it passes Claude one line on the turns since their last message that met a trap or broke a law, for Claude to tell them. `gameplan/REFRESH.md` is how a routine redoes the reflection every other day. Transcripts stay out of the repository |
-| `test/deck.test.py` | checks a built deck: the Artsy cards and the bookmarks' b and m cards (source, url, kinds, images) |
+| `test/deck.test.py` | checks a built deck: the Artsy cards and the bookmarks' b and m cards (source, url, kinds, images), and with roles, every card's roles and the marked rooms (planes in front of the camera, spots on planes, polygons in the photo) |
 | `dist/` | built output; gitignored |
 
 ## Build
@@ -46,6 +47,9 @@ Requires Python 3 with Pillow and numpy.
 ```sh
 python3 5s/build_deck.py      # the deck (slow the first time; cached under data/5s/ after that)
 python3 5s/test/deck.test.py  # the deck's check: builds it again into a temporary folder (about two minutes) and compares
+python3 5s/roles.py           # after a deck gains cards: fills and checks data/5s/roles.json (then build the deck again)
+python3 5s/test/roles.test.py # roles.py's check, on the fixture
+python3 5s/test/deck_roles.test.py # the build's roles and marked rooms (add_roles), on the fixture's roles.json and planes.json
 python3 5s/build_page.py      # the page, into 5s/dist next to the deck
 ```
 

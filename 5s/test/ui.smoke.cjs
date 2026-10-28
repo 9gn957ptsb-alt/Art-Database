@@ -37,6 +37,14 @@
  * nothing judged no home island; a building whose thing names no card, a plain house; Reduce Motion followed live;
  * a level under six kept is the first board; a win of level 1000 claims nothing. A level end's Sort a five leaves the
  * level (Set opens on the board), and its line about Sort's next five holds; the kingdom's mist opens in view.
+ * See it as a room (SPEC-room-from-structure, with the artist's answers), at every size and theme: a kept interior is
+ * the room, its photo labelled and its pointer buttons hidden from VoiceOver, five key rows (its walls painted where the
+ * plaster may be, its own floor first), the chooser drawing each choice as it would sit with the one paired with the
+ * room first, a pick that changes its row and comes back to it, the wall's switch, Rooms you kept with The drawn room
+ * and back, a pin that keeps its room (shown small) beside a set pinned before rooms (the drawn room), and Open for
+ * both. With no interior kept the drawn room is as before (a building stays the view) with one hint; a keep in Sort
+ * says what it is in a room, as its detail does; brought things' six chips follow Kind, What is it?, Ask Claude (the
+ * name and the note only), their own room first in Rooms you kept and its floor check; Reduce Motion moves nothing.
  */
 'use strict';
 const { test, before, after } = require('node:test');
@@ -178,6 +186,13 @@ async function dragTop(page, frac) {
   await page.mouse.up();
 }
 
+// See it as a room opens on a room you kept when there is one; the drawn room is then one tap away (The drawn room).
+async function drawnRoom(page) {
+  await page.waitForSelector('#view-set .proom:not(.mini), #view-set .room:not(.mini)');
+  if (await page.locator('#view-set .proom:not(.mini)').count()) await page.click('#view-set [data-act="room-drawn"]');
+  await page.waitForSelector('#view-set .room:not(.mini)');
+}
+
 async function makeImages(page) {
   const urls = await page.evaluate(() => {
     function img(w, h, paint) { const c = document.createElement('canvas'); c.width = w; c.height = h; paint(c.getContext('2d'), w, h); return c.toDataURL('image/png'); }
@@ -205,7 +220,7 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js and Set\'s game, relate.js and kingdom) load before app.js');
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js, Set\'s game, relate.js and kingdom, and the photo room\'s room.js) load before app.js');
   assert.equal((html.match(/<style data-fives="play">/g) || []).length, 1, 'play.css is inlined where the game and the board look for it');
   const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\)/);
@@ -263,7 +278,7 @@ for (const cfg of CONFIGS) {
         await tab(page, 'set');
         await page.waitForSelector('#exbanner:not([hidden])');
         await page.click('#view-set [data-act="set-room"]');   // Set opens on the board; the room is one tap away
-        await page.waitForSelector('#view-set .room');
+        await drawnRoom(page);
         await shot('03-set-example');
         // the chooser: three, and a pick changes the room
         const before = await page.$eval('.slot-picture img', (i) => i.getAttribute('src'));
@@ -454,7 +469,7 @@ for (const cfg of CONFIGS) {
       await t.test('Set: pin a set with a name', async () => {
         await tab(page, 'set');
         await page.click('#view-set [data-act="set-room"]');
-        await page.waitForSelector('#view-set .room');
+        await drawnRoom(page);
         await noHScroll(page, 'set');
         await shot('13-set-mine');
         await page.click('#view-set [data-act="pin"]');
@@ -1674,7 +1689,7 @@ test('Your data file: JSON, HTML, a spreadsheet and a zip; Sources; Still yours?
     // the Set chooser offers things from files, with the placeholder
     await tab(page, 'set');
     await page.click('#view-set [data-act="set-room"]');
-    await page.waitForSelector('#view-set .slot-picture');
+    await drawnRoom(page);
     await page.click('#view-set .slot-picture');
     await page.waitForSelector('#sheet[open] .choices');
     let found = false;
@@ -2126,6 +2141,7 @@ test('Paste a link without Define: no sample (the address\'s words), a declined 
     // the Set chooser: each choice offers Where it lives, and the detail leads back to the three
     await tab(page, 'set');
     await page.click('#view-set [data-act="set-room"]');
+    await drawnRoom(page);
     await page.click('#view-set .slot-object');
     await page.waitForSelector('#sheet[open] .choices');
     await page.click('#sheet .choices [data-act="where"]');
@@ -2479,7 +2495,7 @@ for (const cfg of CONFIGS) {
 
       // See it as a room, and back; the focus stays where the button was.
       await page.click('#view-set [data-act="set-room"]');
-      await page.waitForSelector('#view-set .room');
+      await page.waitForSelector('#view-set .room:not(.mini), #view-set .proom:not(.mini)');
       assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-act')), 'set-board');
       assert.equal(await page.locator('#view-set [data-act="pin"]').count(), 1, 'the room keeps Pin this set');
       await shot('46-set-room');
@@ -3103,4 +3119,338 @@ test('Set: a level panel that lands out of sight is pinned into view, and a tap 
   } finally {
     await ctx.close();
   }
+});
+
+// ---------------------------------------------------------------- See it as a room, in a room you kept
+// (SPEC-room-from-structure, with the artist's answers of 27 Oct 2026). A kept interior is the room: its photograph
+// with the person's other kept things in it, a key row for each place saying what the thing is and how it sets up the
+// room, Rooms you kept with The drawn room last, a chooser that draws each choice as it would sit, the wall's switch,
+// and a pin that keeps its room. With no interior kept the drawn room is as it always was, with one hint under it.
+
+// A state that kept an interior (a marked one when the deck has one; none with interior false), four images, two
+// objects, a colour, a surface and a Space for the view, paired the room with one image in Set (alike in line),
+// and pinned one set before rooms.
+function roomState(deck, interior) {
+  const pick = (f, n) => deck.cards.filter(f).slice(0, n || 1).map((c) => c.id);
+  const room = interior === false ? null : (pick((c) => (c.role || [])[0] === 'room' && c.room)[0] || pick((c) => FiveS.whatIs(c).key === 'room')[0]);
+  const images = pick((c) => c.kind === 'image', 4), objects = pick((c) => c.kind === 'object' && FiveS.whatIs(c).key === 'object', 2);
+  const colour = pick((c) => c.kind === 'colour')[0], surface = pick((c) => c.kind === 'surface')[0];
+  const view = pick((c) => c.kind === 'space' && FiveS.whatIs(c).key === 'window')[0];
+  let st = FiveS.newState(), t = Date.now() - 600000;
+  for (const id of [room, ...images, ...objects, colour, surface, view].filter(Boolean)) st = FiveS.judge(st, deck, id, true, 1500, (t += 2000)).state;
+  st = FiveS.pinSet(st, { wall: colour, window: view, picture: images[0], floor: surface, object: objects[0], name: 'Before rooms' }, (t += 2000));
+  const paired = images[3];
+  if (room) st = Object.assign({}, st, { assoc: [[room < paired ? room : paired, room < paired ? paired : room, 1, 0, Math.floor(t / 1000), 1, 2]] });
+  return { st: Object.assign({}, st, { seen: Object.assign({}, st.seen, { intro: 1 }) }), room, paired, view };
+}
+const roomShown = (page) => page.waitForSelector('#view-set .proom:not(.mini)[data-ready="1"]', { timeout: 20000 });
+const shortName = (t) => { const x = String(t || '').replace(/\s+/g, ' ').trim(); if (x.length <= 40) return x; const c = x.slice(0, 39), sp = c.lastIndexOf(' '); return (sp > 24 ? c.slice(0, sp) : c).replace(/[\s,.;:\-–—/(]+$/, '') + '…'; };
+
+for (const cfg of CONFIGS) {
+  test('See it as a room at ' + cfg.w + 'x' + cfg.h + ' ' + cfg.scheme + ': a kept interior is the room; its key, a pick, the wall\'s switch, Rooms you kept and the drawn room, a pin keeps its room', { timeout: 120000 }, async () => {
+    const { ctx, page } = await newPage(cfg);
+    const shot = shooter(page, cfg);
+    try {
+      const deck = await (await fetch(new URL('deck.json', BASE))).json();
+      const { st, room, paired } = roomState(deck);
+      const R = deck.cards.find((c) => c.id === room);
+      const paintable = !!(R.room && R.room.paint);
+      await seedState(page, st);
+      await page.goto(BASE + '#set');
+      await page.click('#view-set [data-act="set-room"]');
+      await roomShown(page);
+      assert.equal(await page.textContent('#view-set .lede'), 'Your things, in a room you kept. Press any of them to choose another.');
+      await page.waitForFunction(() => /(^|\. )Your room: .+\.$/.test(document.getElementById('live').textContent));
+      // the photo is the one picture VoiceOver meets, labelled; the pointer buttons on it are hidden from it
+      const label = await page.$eval('#view-set .proom:not(.mini) [role="img"]', (n) => n.getAttribute('alt') || n.getAttribute('aria-label'));
+      assert.ok(label.indexOf(String(R.title).slice(0, 12)) === 0 && /: your room/.test(label), 'the photo says the room: ' + label);
+      const hits = await page.$$eval('#view-set .proom:not(.mini) button', (b) => b.map((x) => [x.getAttribute('aria-hidden'), x.tabIndex]));
+      assert.ok(hits.length >= 1 && hits.every(([a, i]) => a === 'true' && i === -1), 'pointer buttons only: ' + JSON.stringify(hits));
+      assert.match(await page.textContent('#view-set .rcap'), /A room you stand in/);
+      // five key rows: the place, what the thing is and how it sets up this room, its name
+      assert.deepEqual(await page.$$eval('#view-set .krow', (b) => b.map((x) => x.dataset.slot)), ['picture', 'object', 'window', 'wall', 'floor']);
+      const rows = await page.$$eval('#view-set .krow', (b) => b.map((x) => ({ label: x.getAttribute('aria-label'), h: x.getBoundingClientRect().height, popup: x.getAttribute('aria-haspopup'), place: x.querySelector('.kp').textContent })));
+      assert.deepEqual(rows.map((r) => r.place), ['On its wall', 'In it', 'Its view', 'Its walls', 'Its floor']);
+      for (const r of rows) {
+        assert.ok(r.h >= 44, 'a key row is a big target: ' + r.h);
+        assert.equal(r.popup, 'dialog');
+        assert.match(r.label, /^(On its wall|In it|Its view|Its walls|Its floor): .+\.$/);
+        assert.ok(!/5s|seen whole/i.test(r.label), r.label);
+      }
+      assert.match(rows[0].label, /, hung .+\. Choose another\.$/);
+      assert.match(rows[2].label, /, (seen|hung) .+\. Choose another\.$/);
+      assert.match(rows[3].label, paintable ? /^Its walls: .+, painted on / : /is its light/, 'its walls take the colour straight away where the plaster may be painted');
+      assert.match(rows[4].label, /^Its floor: its own/, 'its own floor first');
+      assert.match(await page.textContent('#view-set .krow[data-slot="floor"] .kn'), /^Or lay yours: /, 'a kept Surface is one tap away');
+      await noHScroll(page, 'room');
+      await shot('r1-room');
+
+      // the chooser: each choice as it would sit and what it is; the one paired with this room in Set first, and said
+      await page.click('#view-set .krow[data-slot="picture"]');
+      await page.waitForSelector('#sheet[open] .choice');
+      assert.equal(await page.textContent('#sheet-title'), 'On its wall');
+      assert.match(await page.textContent('#sheet .lede'), /^Choose one of three( \(1 of \d+\))?\. Each is hung .+\.$/);
+      assert.equal(await page.getAttribute('#sheet .choice >> nth=0', 'data-id'), paired, 'paired with the room in Set: first');
+      assert.equal(await page.textContent('#sheet .choice >> nth=0 >> .p'), 'You paired it with ' + shortName(R.title) + ': alike in line.');
+      assert.equal(await page.locator('#sheet .choice .r').count(), await page.locator('#sheet .choice').count(), 'each says what it is');
+      assert.ok(await page.locator('#sheet .choice .sit .hung2, #sheet .choice .sit .rod').count() >= 1, 'drawn as it would hang');
+      await shot('r2-chooser');
+      await page.click('#sheet .choice[aria-pressed="false"] >> nth=0');
+      await sheetGone(page);
+      await page.waitForFunction((b) => document.querySelector('#view-set .krow[data-slot="picture"]').getAttribute('aria-label') !== b, rows[0].label);
+      await page.waitForFunction(() => document.activeElement && document.activeElement.matches('#view-set .krow[data-slot="picture"]'));
+      await page.waitForFunction(() => /(^|\. )On its wall: .+, hung .+\.$/.test(document.getElementById('live').textContent));
+
+      // the wall's switch: As paint (only where the plaster may be painted), As light, Its own
+      await page.click('#view-set .krow[data-slot="wall"]');
+      await page.waitForSelector('#sheet[open] .room-as');
+      assert.equal(await page.getAttribute('#sheet .room-as', 'role'), 'group');
+      const sw = await page.$$eval('#sheet .room-as button', (b) => b.map((x) => [x.textContent, x.getAttribute('aria-pressed'), x.getBoundingClientRect().height]));
+      assert.deepEqual(sw.map((x) => x[0]), paintable ? ['As paint', 'As light', 'Its own'] : ['As light', 'Its own']);
+      assert.equal(sw.find((x) => x[1] === 'true')[0], paintable ? 'As paint' : 'As light');
+      assert.ok(sw.every((x) => x[2] >= 44));
+      await page.click('#sheet .room-as button:text-is("As light")');
+      await page.waitForFunction(() => { const b = document.querySelector('#sheet .room-as [aria-pressed="true"]'); return b && b.textContent === 'As light' && document.activeElement === b; });
+      await shot('r3-wall');
+      await page.keyboard.press('Escape');
+      await sheetGone(page);
+      assert.match(await page.getAttribute('#view-set .krow[data-slot="wall"]', 'aria-label'), /is its light/);
+
+      // Rooms you kept: this room pressed, The drawn room last; the drawn room shows as it always was, and back
+      const tiles = await page.$$eval('#view-set .rooms .rbtn', (b) => b.map((x) => [x.dataset.act, x.getAttribute('aria-pressed'), x.textContent]));
+      assert.deepEqual(tiles[0].slice(0, 2), ['room-pick', 'true']);
+      assert.deepEqual(tiles[tiles.length - 1], ['room-drawn', 'false', 'The drawn room']);
+      assert.equal(await page.getAttribute('#view-set .rooms', 'role'), 'group');
+      await page.click('#view-set [data-act="room-drawn"]');
+      await page.waitForSelector('#view-set .room:not(.mini) .slot-wall');
+      assert.equal(await page.locator('#view-set .proom:not(.mini)').count(), 0);
+      assert.equal(await page.locator('#view-set .room-key li').count(), 5);
+      assert.equal(await page.getAttribute('#view-set [data-act="room-drawn"]', 'aria-pressed'), 'true');
+      assert.equal(await page.evaluate(() => document.activeElement.dataset.act), 'room-drawn');
+      await shot('r4-drawn');
+      await page.click('#view-set [data-act="room-pick"]');
+      await roomShown(page);
+      await page.waitForFunction(() => /(^|\. )Your room: .+\.$/.test(document.getElementById('live').textContent));
+
+      // Pin keeps the room and how its walls and floor show (and all five things); the pin is that room, small;
+      // the set pinned before rooms is the drawn room, as before
+      await page.click('#view-set [data-act="pin"]');
+      await page.waitForSelector('#sheet[open] #pin-name');
+      await page.fill('#pin-name', 'Long lunches');
+      await page.click('#sheet button[type="submit"]');
+      await sheetGone(page);
+      const saved = await savedState(page);
+      const last = saved.sets[saved.sets.length - 1];
+      assert.equal(last.room, room);
+      assert.deepEqual(last.as, { wall: 'light', floor: 'own' });
+      assert.ok(['wall', 'window', 'picture', 'floor', 'object'].every((k) => typeof last[k] === 'string'), 'all five things: ' + JSON.stringify(last));
+      assert.ok(!('room' in saved.sets[0]) && !('as' in saved.sets[0]), 'the set pinned before rooms is as it was');
+      await page.waitForSelector('#view-set .pinned .proom.mini[data-ready="1"]');
+      assert.equal(await page.getAttribute('#view-set .pinned .proom.mini', 'aria-hidden'), 'true');
+      assert.equal(await page.locator('#view-set .pinned .proom.mini :is(button, a, input, [tabindex]:not([tabindex="-1"]))').count(), 0, 'nothing to focus in a small room');
+      assert.equal(await page.locator('#view-set .pinned .room.mini').count(), 1, 'the older set is the drawn room');
+      await page.evaluate(() => document.getElementById('main').scrollTo(0, 99999));
+      await shot('r5-pinned');
+      // Open: the older set in the drawn room, the new one in its room
+      await page.click('#view-set [data-act="open-set"][data-i="0"]');
+      await page.waitForSelector('#view-set .room:not(.mini) .slot-wall');
+      assert.equal(await page.evaluate(() => document.activeElement.classList.contains('slot-wall')), true);
+      await page.click('#view-set [data-act="open-set"][data-i="1"]');
+      await roomShown(page);
+      assert.equal(await page.evaluate(() => document.activeElement.classList.contains('krow')), true);
+      assert.match(await page.getAttribute('#view-set .krow[data-slot="wall"]', 'aria-label'), /is its light/, 'its walls as pinned');
+      await noHScroll(page, 'room pinned');
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
+  });
+}
+
+test('See it as a room with no interior kept: the drawn room exactly as before, a building stays the view, and one hint', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light' });
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    const { st, view } = roomState(deck, false);
+    assert.equal(FiveS.setPool(st, deck, 'room').length, 0);
+    await seedState(page, st);
+    await page.goto(BASE + '#set');
+    await page.click('#view-set [data-act="set-room"]');
+    await page.waitForSelector('#view-set .room:not(.mini)');
+    assert.equal(await page.locator('#view-set .proom').count(), 0);
+    assert.equal(await page.locator('#view-set .rooms').count(), 0, 'no Rooms you kept');
+    assert.equal(await page.textContent('#view-set .lede'), 'Put your parts together. Every place in the room offers three; choose one.');
+    for (const s of ['wall', 'window', 'picture', 'floor', 'object']) assert.equal(await page.locator('#view-set .room:not(.mini) .slot-' + s).count(), 1, s);
+    assert.equal(await page.locator('#view-set .room-key li').count(), 5);
+    const v = deck.cards.find((c) => c.id === view);
+    assert.equal(await page.getAttribute('#view-set .slot-window img', 'src'), v.img, 'a kept Space, even a building, is the view through the window');
+    assert.equal(await page.textContent('#view-set .hint p'), 'Keep an interior, and your things move into it.');
+    assert.equal(await page.locator('#view-set .pinned .room.mini').count(), 1, 'a pinned set as before');
+    await page.click('#view-set .hint [data-act="goto"]');
+    await page.waitForFunction(() => document.title === 'Sort');
+    assert.deepEqual(page.errors(), []);
+  } finally { await ctx.close(); }
+});
+
+test('Sort and Set as one process: a keep says what it is in a room, after the judgment; the detail has its row', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'dark' });
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    await page.goto(BASE + '#sort');
+    await page.click('#btn-start');
+    await page.waitForSelector('#stack .card.is-top');
+    assert.equal(await page.locator('#stack .card.is-top :text("In a room")').count(), 0, 'nothing of it before the judgment');
+    const a = await topId(page);
+    await page.click('#btn-keep');
+    await page.waitForSelector('#strip .strip-room');
+    const w = FiveS.whatIs(deck.cards.find((c) => c.id === a));
+    assert.equal((await page.textContent('#strip .strip-room')).trim(), 'In a room: ' + w.where + '.');
+    await page.click('#strip [data-act="detail"]');
+    await page.waitForSelector('#sheet[open] .facts');
+    const facts = await page.$$eval('#sheet .facts dt', (d) => d.map((x) => [x.textContent, x.nextElementSibling.textContent]));
+    assert.deepEqual(facts.find((f) => f[0] === 'In a room'), ['In a room', w.where.charAt(0).toUpperCase() + w.where.slice(1)]);
+    await page.keyboard.press('Escape');
+    await sheetGone(page);
+    const b = await topId(page);
+    await page.click('#btn-pass');
+    await waitTopChange(page, b);
+    await page.waitForSelector('#strip .strip-in');
+    assert.equal(await page.locator('#strip .strip-room').count(), 0, 'a pass says nothing of it');
+    assert.deepEqual(page.errors(), []);
+  } finally { await ctx.close(); }
+});
+
+// A sample capability that answers Ask Claude what it is, and keeps every prompt it was given.
+const whatSample = `(() => {
+  window.__prompts = [];
+  const sample = async (input) => { window.__prompts.push(String(input)); await new Promise((r) => setTimeout(r, 120)); return { text: '{"what": "a ceramic jug", "role": "thing", "maker": "ignored"}' }; };
+  sample.json = async (input) => JSON.parse((await sample(input)).text);
+  window.claude = { use: async (name) => (name === 'sample' ? sample : null) };
+})();`;
+
+for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') || (c.w === 1280 && c.scheme === 'dark'))) {
+  test('Brought things in a room at ' + cfg.w + ' ' + cfg.scheme + ': In a room, it\'s… (six chips, following Kind), What is it?, Ask Claude (the name and note only), a photo of their room first, its floor check', { timeout: 120000 }, async () => {
+    const { ctx, page } = await newPage(cfg);
+    const shot = shooter(page, cfg);
+    await page.addInitScript(whatSample);
+    try {
+      const deck = await (await fetch(new URL('deck.json', BASE))).json();
+      const { st } = roomState(deck);
+      await seedState(page, st);
+      await page.goto(BASE + '#set');
+      await page.click('#view-set [data-act="set-room"]');
+      await roomShown(page);
+      await tab(page, 'split');
+      await page.click('#view-split [data-act="bring"]');
+      await page.waitForSelector('#sheet[open] #bring-file');
+      await page.setInputFiles('#bring-file', await makeImages(page));
+      await page.waitForFunction(() => document.querySelectorAll('#bring-items select').length === 2, null, { timeout: 20000 });
+      const [k0, k1] = await page.$$eval('#bring-items li.item', (ls) => ls.map((l) => l.id.slice(5)));
+      const chip = (k) => page.$eval('input[name="role-' + k + '"]:checked', (r) => r.value);
+      assert.equal(await page.locator('input[name="role-' + k0 + '"]').count(), 6, 'six chips');
+      assert.match(await page.textContent('#item-' + k0 + ' .chips-room legend'), /^In a room, it’s…$/);
+      // the default follows Kind until one is chosen
+      for (const [kind, want] of [['image', 'wall'], ['object', 'in'], ['space', 'room']]) {
+        await page.check('input[name="kind-' + k0 + '"][value="' + kind + '"]', { force: true });
+        assert.equal(await chip(k0), want, kind);
+      }
+      await page.check('input[name="role-' + k0 + '"][value="light"]', { force: true });
+      await page.check('input[name="kind-' + k0 + '"][value="object"]', { force: true });
+      assert.equal(await chip(k0), 'light', 'a chosen chip stays');
+      const sizes = await page.$$eval('#item-' + k0 + ' .chips-room label', (ls) => ls.map((l) => l.getBoundingClientRect().height));
+      assert.ok(sizes.every((h) => h >= 44), 'chips are 44 px: ' + sizes);
+      assert.equal(await page.getAttribute('#what-' + k0, 'maxlength'), '40');
+      assert.equal(await page.getAttribute('#what-' + k0, 'placeholder'), 'a jug, a lamp, my kitchen');
+      // Ask Claude what it is: the name and the note, fenced as data, never the picture; the matching chip is chosen
+      await page.fill('#name-' + k0, 'Grandmother’s jug');
+      await page.fill('#why-' + k0, 'It sat on her table.');
+      await page.click('#ask-' + k0);
+      await page.waitForFunction((k) => { const p = document.querySelector('#item-' + k + ' .says'); return p && /^Claude says: a ceramic jug\. Change it if it isn’t\.$/.test(p.textContent); }, k0);
+      assert.equal(await chip(k0), 'in');
+      assert.equal(await page.inputValue('#what-' + k0), 'a ceramic jug');
+      const prompts = await page.evaluate(() => window.__prompts);
+      assert.equal(prompts.length, 1);
+      assert.ok(prompts[0].indexOf('Grandmother’s jug') > 0 && prompts[0].indexOf('It sat on her table.') > 0, 'the name and the note');
+      assert.ok(!/data:image|base64|blob:/.test(prompts[0]), 'never the picture');
+      // the other is a photo of their own room: a Space is The room
+      await page.check('input[name="kind-' + k1 + '"][value="space"]', { force: true });
+      await page.fill('#name-' + k1, 'My kitchen');
+      assert.equal(await chip(k1), 'room');
+      await shot('b1-bring-chips');
+      await page.click('#bring-add');
+      await sheetGone(page);
+      const saved = await savedState(page);
+      const jug = saved.own.find((o) => o.name === 'Grandmother’s jug'), mine = saved.own.find((o) => o.name === 'My kitchen');
+      assert.deepEqual([jug.role, jug.what], [['thing'], 'a ceramic jug']);
+      assert.deepEqual(mine.role, ['room']);
+      // Set: their own room comes first in Rooms you kept, and is the room
+      await tab(page, 'set');
+      await page.click('#view-set [data-act="set-room"]');
+      await roomShown(page);
+      assert.match(await page.getAttribute('#view-set .rooms .rbtn >> nth=0', 'aria-label'), /^Your photo, My kitchen\. Your own room\.$/);
+      // chosen, the first time: its floor check asks once, two sliders said in words; Looks right keeps the lines
+      await page.click('#view-set .rooms .rbtn >> nth=0');
+      await page.waitForSelector('#sheet[open] #fc-floor');
+      assert.equal(await page.textContent('#sheet-title'), 'Your photo as a room');
+      assert.match(await page.getAttribute('#fc-floor', 'aria-valuetext'), /^\d+ percent down the photo$/);
+      assert.match(await page.getAttribute('#fc-vp', 'aria-valuetext'), /^\d+ percent across the photo$/);
+      const pts = await page.getAttribute('#fc-shade', 'points');
+      await page.$eval('#fc-floor', (r) => { r.value = '70'; r.dispatchEvent(new Event('input', { bubbles: true })); });
+      assert.equal(await page.getAttribute('#fc-floor', 'aria-valuetext'), '70 percent down the photo');
+      assert.notEqual(await page.getAttribute('#fc-shade', 'points'), pts, 'the shading follows');
+      await shot('b3-floor-check');
+      await page.click('#sheet [data-act="check-yes"]');
+      await sheetGone(page);
+      const kitchen = (await savedState(page)).own.find((o) => o.name === 'My kitchen');
+      assert.equal(kitchen.room.floor, 70);
+      assert.equal(kitchen.room.vp.length, 2);
+      await roomShown(page);
+      assert.equal(await page.getAttribute('#view-set .rooms .rbtn >> nth=0', 'aria-pressed'), 'true');
+      assert.match(await page.textContent('#view-set .rcap'), /^My kitchen · Yours\. Your own room\.$/);
+      assert.match(await page.$eval('#view-set .proom:not(.mini) [role="img"]', (n) => n.getAttribute('alt')), /^Your photo, My kitchen: your room\.$/);
+      assert.equal(await page.locator('#view-set [data-act="room-check"]').count(), 1, 'Move the floor lines');
+      await shot('b2-own-room');
+      // a brought thing's detail: the same chips, saved as changed
+      await tab(page, 'split');
+      await page.click('#view-split [data-act="detail"][data-id="' + jug.id + '"]');
+      await page.waitForSelector('#sheet[open] input[name="role-detail"]');
+      assert.equal(await page.$eval('input[name="role-detail"]:checked', (r) => r.value), 'in');
+      await page.check('input[name="role-detail"][value="light"]', { force: true });
+      await page.waitForFunction((id) => { const s = JSON.parse(localStorage.getItem('5s.state.v1')); const o = s.own.find((x) => x.id === id); return o && o.role && o.role[0] === 'light'; }, jug.id);
+      await page.keyboard.press('Escape');
+      await sheetGone(page);
+      // It isn't a room: the photo stays a picture of a place, and the room moves to the next one kept
+      await tab(page, 'set');
+      await page.click('#view-set [data-act="set-room"]');
+      await roomShown(page);
+      await page.click('#view-set [data-act="room-check"]');
+      await page.waitForSelector('#sheet[open] [data-act="check-no"]');
+      await page.click('#sheet [data-act="check-no"]');
+      await sheetGone(page);
+      await roomShown(page);
+      assert.equal(await page.locator('#view-set .rooms .rbtn[aria-label^="Your photo"]').count(), 0);
+      assert.equal((await savedState(page)).own.find((o) => o.name === 'My kitchen').notRoom, true);
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
+  });
+}
+
+test('See it as a room under Reduce Motion: nothing moves when a place changes', { timeout: 60000 }, async () => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+  try {
+    const deck = await (await fetch(new URL('deck.json', BASE))).json();
+    await seedState(page, roomState(deck).st);
+    await page.goto(BASE + '#set');
+    await page.click('#view-set [data-act="set-room"]');
+    await roomShown(page);
+    await page.click('#view-set .krow[data-slot="object"]');
+    await page.waitForSelector('#sheet[open] .choice');
+    await page.click('#sheet .choice[aria-pressed="false"] >> nth=0');
+    await sheetGone(page);
+    const moving = await page.$$eval('#view-set *', (ns) => ns.filter((n) => {
+      const cs = getComputedStyle(n), d = (v) => Math.max(0, ...String(v).split(',').map((x) => parseFloat(x) * (/ms/.test(x) ? 0.001 : 1)));
+      return d(cs.animationDuration) > 0.01 || d(cs.transitionDuration) > 0.01;
+    }).map((n) => n.className));
+    assert.deepEqual(moving, []);
+  } finally { await ctx.close(); }
 });

@@ -34,6 +34,12 @@
   // 1-5 an aspect, WORD0 + i the person's word saga.words[i] (at most WORDS_MAX, each up to WORD_LEN characters).
   const ASPECTS = Object.freeze(['layout', 'line', 'light', 'mass', 'mood']);
   const WORD0 = 10, WORDS_MAX = 60, WORD_LEN = 24;
+  // See it as a room (SPEC-room-from-structure "Roles"): what each thing is, in internal words the page never shows.
+  // The first role is where it goes; a second is one more place it can go. Only an interior is a room; a building
+  // seen from outside is the view through the window, as a Space is in the drawn room.
+  const ROLES = Object.freeze(['room', 'building', 'walls', 'floor', 'textile', 'art', 'view', 'opening', 'furniture', 'thing', 'plant', 'light', 'ceiling']);
+  // A pinned room's walls and floor: as paint, as its light or its own; its own floor, yours laid, or yours on a wall.
+  const ROOM_AS = Object.freeze({ wall: Object.freeze(['paint', 'light', 'own']), floor: Object.freeze(['own', 'laid', 'wall']) });
   const GROUPS = Object.freeze(['Qualities', 'Movements', 'Subjects', 'Materials', 'Eras', 'Places', 'Kinds', 'Colours', 'Textures']);
   // The twelve hue names used as features (degrees: upper bound of each band).
   const HUE_BANDS = [[12, 'red'], [40, 'orange'], [65, 'yellow'], [90, 'lime'], [150, 'green'], [185, 'teal'],
@@ -73,13 +79,13 @@
   const DEFINED_BY = Object.freeze(['page', 'claude', 'address', 'person']);
   const OWN_LIMITS = Object.freeze({
     url: 2048, maker: 120, date: 40, year: 10, medium: 200, place: 60, about: 200, category: 60,
-    genes: 12, gene: 80, materials: 8, material: 40,
+    genes: 12, gene: 80, materials: 8, material: 40, what: 40,
   });
   const OWN_TEXT = Object.freeze(['maker', 'date', 'medium', 'place', 'about']);
   const OWN_LINKS = Object.freeze(['link', 'image', 'thumb']);
   // The order the definition's fields take in a brought thing, after the fields every thing has.
   const OWN_DEFINED = Object.freeze(['link', 'image', 'thumb', 'maker', 'date', 'year', 'medium', 'place', 'about',
-    'category', 'era', 'genes', 'materials', 'coloursEstimated', 'definedBy']);
+    'category', 'era', 'genes', 'materials', 'coloursEstimated', 'definedBy', 'role', 'what', 'room', 'notRoom']);
   const GENE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
   const YEAR_TEXT = /^(?:c\.\s?)?-?\d{1,4}s?$/i;
 
@@ -491,8 +497,17 @@
       category: str('category'), maker: str('maker'), medium: str('medium'), about: str('about'),
       link: httpsAddr(o.link) || null, image: httpsAddr(o.image) || null, thumb: httpsAddr(o.thumb) || null,
       coloursEstimated: o.coloursEstimated === true, definedBy: DEFINED_BY.indexOf(o.definedBy) >= 0 ? o.definedBy : null,
+      // what it is in a room, as the person (or Claude) said; a photo of their own room: where its floor meets the wall
+      role: rolesOf(o.role), what: str('what'), room: roomGuess(o.room), notRoom: o.notRoom === true,
     };
   }
+
+  // One or two known roles, most important first (a list, or one role as text); unknown ones and repeats are dropped.
+  const rolesOf = (x) => (Array.isArray(x) ? x : typeof x === 'string' ? [x] : []).filter((r, i, a) => ROLES.indexOf(r) >= 0 && a.indexOf(r) === i).slice(0, 2);
+  // A brought photo's room as the person checked it: the point the room points to and the floor line, in percent of the photo.
+  const pct = (x) => round(clamp(x, 0, 100), 1);
+  const roomGuess = (x) => (isObj(x) && Array.isArray(x.vp) && x.vp.length === 2 && x.vp.every(isNum) && isNum(x.floor)
+    ? { vp: x.vp.map(pct), floor: pct(x.floor) } : null);
 
   function ownCard(o) {
     return assign({
@@ -519,6 +534,93 @@
 
   /** card(state, deck, id) -> a deck card, a brought-in thing shaped as a card, or null. */
   function card(state, deck, id) { return cardOf(norm(state), deck, id); }
+
+  // ---------------------------------------------------------------- what a thing is, in a room
+
+  // The word rules over an object's title, medium, materials and what, for a thing with no roles: the first match wins.
+  const WORD_RULES = [
+    [['textile', 'floor'], /\b(rug|carpet|kilim|dhurrie|mat)s?\b/],
+    [['light', 'ceiling'], /\b(chandelier|pendant|suspended)s?\b/],
+    [['light'], /\b(lamp|lantern|neon|fluorescent|led)s?\b/],
+    [['textile'], /\b(wall ?hanging|tapestry|weaving)s?\b/],
+    [['furniture'], /\b(armchair|chair|stool|bench|sofa|table|desk)s?\b/],
+    [['thing'], /\b(vase|vessel|bowl|jar|jug|krater|candle)s?\b/],
+  ];
+  const RULE_NOUN = { pendant: 'pendant lamp', suspended: 'hanging light', led: 'light', neon: 'neon light', fluorescent: 'fluorescent light', wallhanging: 'wall hanging' };
+  const CAT_NOUN = { Painting: 'a painting', Print: 'a print', Photography: 'a photograph', Posters: 'a poster',
+    'Drawing, Collage or other Work on Paper': 'a work on paper', 'Mixed Media': 'a mixed-media work', Sculpture: 'a sculpture',
+    'Design/Decorative Art': 'a piece of design', 'Textile Arts': 'a textile', Installation: 'an installation',
+    'Fashion Design and Wearable Art': 'a piece of fashion', Jewelry: 'a piece of jewellery', Architecture: 'a building' };
+  const SET_ON = /\b(?:vase|vessel|bowl|jar|jug|krater|candle|cup|teapot|bottle|pot|jewellery)s?\b/;   // small enough to set on a table
+  const SMALL_PICTURE = /\b(?:print|drawing|photograph|poster|work on paper)s?\b/;
+  const WHERE = { room: 'it is the room', paint: 'its paint, or its light', see: 'seen through its window', hang: 'hung on its wall',
+    set: 'set on a table in it', stand: 'standing in it' };
+
+  // A card's roles and what by its own words and kind, when its data gives none.
+  function byWords(c) {
+    const k = c.kind, cat = c.category;
+    if (k === 'colour') return [['walls', 'light'], listWords((c.colours || []).map(colourName).filter((n, i, a) => a.indexOf(n) === i))];
+    if (k === 'surface') return [['floor', 'walls'], (c.materials || [])[0] || 'a surface'];
+    if (k === 'object') {
+      const text = [c.title, c.medium, (c.materials || []).join(' '), c.what].filter((x) => typeof x === 'string').join(' ').toLowerCase();
+      if (cat !== 'Jewelry') for (const [roles, re] of WORD_RULES) { const m = re.exec(text); if (m) return [roles, article(RULE_NOUN[m[1].replace(' ', '')] || m[1])]; }
+      return cat === 'Textile Arts' ? [['textile'], 'a textile'] : [['thing'], CAT_NOUN[cat] || 'a thing'];
+    }
+    if (k === 'space') {
+      if ((c.genes || []).indexOf('interiors') >= 0) return [['room'], 'an interior'];   // only an interior is a room
+      if (c.source === 'Architectural Authority' || cat === 'Architecture' || cat === 'Installation') return [['building'], 'a building'];
+      return [['view', 'art'], CAT_NOUN[cat] || 'a view'];
+    }
+    return [['art'], CAT_NOUN[cat] || 'a picture'];
+  }
+
+  /** whatIs(card) -> {what, roles, key, how, where, cm}, or null: what a deck card or brought thing (card()) is, and its
+   *  relation to setting up a room (SPEC-room-from-structure "Roles"). Pure.
+   *  what   a short noun phrase, lower case first ("a pendant lamp", "oak boards", "tan, olive and off-white")
+   *  roles  one or two of ROLES, the first is where it goes
+   *  key    its place: 'room' (it can be the room) or one of SLOT_NAMES
+   *  how    'room' | 'paint' | 'see' | 'hang' | 'lay' | 'stand' | 'set' | 'light'
+   *  where  its relation in plain words, for "In a room: …" ("hung on its wall", "it is the room")
+   *  cm     its size, as the deck has none: a picture's long edge, a rug's width, the height of what stands, is set or hangs
+   *         from the ceiling; null for the room, paint, a view and a surface
+   *  From the card's role and what (the deck's roles.json; a brought thing's own.role and own.what; a brought photo the
+   *  person said isn't a room is not one), then the word rules over an object's words, then its kind: a Space with the
+   *  interiors gene is a room; a bookmarked building, Architecture or Installation is a building, seen through the window. */
+  function whatIs(c) {
+    if (!c || typeof c !== 'object') return null;
+    const k = c.kind;
+    let roles = rolesOf(c.role).filter((r) => !(r === 'room' && c.notRoom === true));
+    let what = typeof c.what === 'string' ? oneLine(c.what).slice(0, OWN_LIMITS.what).trim() : '';
+    if (!roles.length || !what) {
+      const [r, w] = byWords(c);
+      if (!roles.length) roles = r;
+      if (!what) what = w;
+    }
+    const r = roles[0], has = (x) => roles.indexOf(x) >= 0;
+    let key, how;
+    if (k === 'colour') { key = 'wall'; how = 'paint'; }   // a colour is always the walls' paint or light, a surface always laid
+    else if (k === 'surface') { key = 'floor'; how = 'lay'; }
+    else if (r === 'room') { key = 'room'; how = 'room'; }
+    else if (r === 'building' || r === 'view') { key = 'window'; how = 'see'; }
+    else if (r === 'art' || r === 'opening' || (r === 'textile' && !has('floor'))) { key = 'picture'; how = 'hang'; }
+    else if (r === 'walls') { key = 'wall'; how = 'paint'; }
+    else if (r === 'floor' || r === 'textile') { key = 'object'; how = 'lay'; }
+    else if (r === 'light' || r === 'ceiling') { key = 'object'; how = 'light'; }
+    else { key = 'object'; how = SET_ON.test(what) ? 'set' : 'stand'; }
+    const where = how === 'lay' ? (k !== 'surface' ? 'laid on its floor' : r === 'walls' ? 'laid on its walls, or as its floor' : 'laid as its floor, or on its walls')
+      : how === 'light' ? (has('ceiling') ? 'hung from its ceiling, lighting it' : 'lighting it') : WHERE[how];
+    const cm = how === 'hang' ? (SMALL_PICTURE.test(what) ? 60 : 100) : how === 'lay' ? (k === 'surface' ? null : 200) : how === 'light' ? 112
+      : how === 'set' ? 40 : how === 'stand' ? (r === 'furniture' ? 80 : c.w > c.h ? 90 : 120) : null;
+    return { what, roles, key, how, where, cm };
+  }
+
+  /** pairing(state, a, b) -> {n, s, w, at} when the person paired a and b in Set (st.assoc: n times; s 1 alike, -1 unlike,
+   *  0 not said; w 0 not said, 1-5 an aspect of ASPECTS, WORD0 + i their word saga.words[i]; at unix seconds), else null. */
+  function pairing(state, a, b) {
+    const st = norm(state), x = a < b ? a : b, y = a < b ? b : a;
+    const e = st.assoc.find((p) => p[0] === x && p[1] === y);
+    return e ? { n: e[2], s: e.length === 7 ? e[5] : 0, w: e.length === 7 ? e[6] : 0, at: e[4] } : null;
+  }
 
   // ---------------------------------------------------------------- state
 
@@ -581,7 +683,8 @@
       v: 1,
       j: Array.isArray(x.j) ? x.j : [],
       five: normFive(x.five),
-      sets: Array.isArray(x.sets) ? x.sets : [],
+      // a pinned set's room and as, as pinSet keeps them (a set without them is left as it is)
+      sets: !Array.isArray(x.sets) ? [] : x.sets.some((e) => isObj(e) && (e.room !== undefined || e.as !== undefined)) ? x.sets.map(roomOfSet) : x.sets,
       days: Array.isArray(x.days) ? x.days : [],
       own: Array.isArray(x.own) ? x.own : [],
       notes: Array.isArray(x.notes) ? x.notes : [],
@@ -903,14 +1006,31 @@
 
   // ---------------------------------------------------------------- sets
 
-  /** pinSet(state, {wall, window, picture, floor, object, name?}, now) -> State. */
+  /** pinSet(state, {wall, window, picture, floor, object, name?, room?, as?}, now) -> State. room: the id of the kept
+   *  structure (or brought room) the set is in; as: {wall: 'paint' | 'light' | 'own', floor: 'own' | 'laid' | 'wall'}, only
+   *  with a room. A set without a room pins exactly as before. */
   function pinSet(state, set, now) {
     const st = norm(state);
     const s = { at: toSec(now) };
     for (const slot of SLOT_NAMES) s[slot] = set && typeof set[slot] === 'string' ? set[slot] : null;
     const name = set && typeof set.name === 'string' ? set.name.replace(/\s+/g, ' ').trim().slice(0, MAX_SET_NAME) : '';
     if (name) s.name = name;
-    return assign(st, { sets: st.sets.concat([s]) });
+    const withRoom = set && (set.room !== undefined || set.as !== undefined);
+    return assign(st, { sets: st.sets.concat([withRoom ? roomOfSet(assign(s, { room: set.room, as: set.as })) : s]) });
+  }
+
+  // A pinned set's room and how its walls and floor are shown (only known keys and values, only with a room); a set
+  // without either is left exactly as it is.
+  function roomOfSet(s) {
+    if (!isObj(s) || (s.room === undefined && s.as === undefined)) return s;
+    const c = assign(s);
+    delete c.room; delete c.as;
+    if (!isCardId(s.room)) return c;
+    c.room = s.room;
+    const as = {};
+    for (const k of ['wall', 'floor']) if (isObj(s.as) && ROOM_AS[k].indexOf(s.as[k]) >= 0) as[k] = s.as[k];
+    if (Object.keys(as).length) c.as = as;
+    return c;
   }
 
   /** unpinSet(state, index) -> State without that pinned set. */
@@ -941,27 +1061,54 @@
     return out;
   }
 
-  function slotPool(st, deck, slot) {
+  // In a photo room, the places a kept thing can take: each of its roles' (two roles, two places), and every image is hung.
+  // The window takes views, buildings and the other kept structures.
+  function fitsRoom(slot, x, w) {
+    if (x.kind === 'colour' || x.kind === 'surface') return false;
+    const has = (rs) => w.roles.some((r) => rs.indexOf(r) >= 0);
+    if (slot === 'picture') return x.kind === 'image' || has(['art', 'opening']) || (has(['textile']) && !has(['floor']));
+    if (slot === 'object') return has(['furniture', 'thing', 'plant', 'light', 'ceiling', 'floor']);
+    return slot === 'window' && has(['view', 'building', 'room']);
+  }
+
+  function slotPool(st, deck, slot, room) {
+    if (slot === 'room') return roomPool(st, deck);
     const kind = SLOTS[slot];
     if (!kind) return [];
     const kept = keptThings(st, deck);
-    let pool = kept.filter((x) => x.kind === kind ||
+    const inRoom = isCardId(room) && slot !== 'wall' && slot !== 'floor';   // a wall and a floor take what they take in the drawn room
+    const ws = new Map(), w = (x) => { if (!ws.has(x.id)) ws.set(x.id, whatIs(x.card)); return ws.get(x.id); };
+    let pool = kept.filter((x) => x.id !== room && (inRoom ? fitsRoom(slot, x, w(x)) : x.kind === kind ||
       (x.own && slot === 'wall' && x.card.colours.length) ||
-      (x.own && slot === 'floor' && x.card.crop));
-    if (!pool.length && slot === 'wall') pool = kept.filter((x) => (x.card.colours || []).length); // colours of kept works
+      (x.own && slot === 'floor' && x.card.crop)));
+    if (!pool.length && slot === 'wall') pool = kept.filter((x) => x.id !== room && (x.card.colours || []).length); // colours of kept works
+    if (!pool.length && inRoom && slot === 'window') pool = kept.filter((x) => x.id !== room && x.kind === 'space'); // a picture of a place
     const m = buildModel(st, deck, null, null);
-    const scored = pool.map((x) => ({ id: x.id, t: x.t, p: predictRaw(m, x.card).p }));
-    scored.sort((a, b) => b.p - a.p || b.t - a.t || cmpStr(a.id, b.id));
+    // With a room: what the person paired with it in Set first, then what goes there first of all, then the taste model
+    const paired = new Set(isCardId(room) ? st.assoc.filter((e) => e[0] === room || e[1] === room).map((e) => (e[0] === room ? e[1] : e[0])) : []);
+    const scored = pool.map((x) => ({ id: x.id, t: x.t, p: predictRaw(m, x.card).p, paired: paired.has(x.id) ? 1 : 0, fit: isCardId(room) && w(x).key === slot ? 1 : 0 }));
+    scored.sort((a, b) => b.paired - a.paired || b.fit - a.fit || b.p - a.p || b.t - a.t || cmpStr(a.id, b.id));
     return scored.map((x) => x.id);
   }
 
-  /** setPool(state, deck, slot) -> every candidate for a slot, best first (setCandidates pages it). */
-  function setPool(state, deck, slot) { return slotPool(norm(state), deck, slot); }
+  // The rooms you kept: a photo of your own room first, then the interiors kept from the deck; the taste model's order in each.
+  function roomPool(st, deck) {
+    const m = buildModel(st, deck, null, null);
+    return keptThings(st, deck).filter((x) => whatIs(x.card).key === 'room')
+      .map((x) => ({ id: x.id, own: x.own ? 1 : 0, t: x.t, p: predictRaw(m, x.card).p }))
+      .sort((a, b) => b.own - a.own || b.p - a.p || b.t - a.t || cmpStr(a.id, b.id)).map((x) => x.id);
+  }
 
-  /** setCandidates(state, deck, slot, page) -> [cardId × ≤ 3]: three kept things for the slot;
+  /** setPool(state, deck, slot, room?) -> every candidate for a slot, best first (setCandidates pages it). Without room, the
+   *  drawn room's pools by kind, as always. With room (the id of the kept structure the things are in), each place takes
+   *  what whatIs says goes there (see fitsRoom), never the room itself, and what the person paired with the room in Set
+   *  comes first, then what goes there first of all. slot 'room': the rooms you kept (roomPool). */
+  function setPool(state, deck, slot, room) { return slotPool(norm(state), deck, slot, room); }
+
+  /** setCandidates(state, deck, slot, page, room?) -> [cardId × ≤ 3]: three kept things for the slot;
    *  page 1 is the next three ("Three more"), wrapping round to the first page at the end. */
-  function setCandidates(state, deck, slot, page) {
-    const pool = slotPool(norm(state), deck, slot);
+  function setCandidates(state, deck, slot, page, room) {
+    const pool = slotPool(norm(state), deck, slot, room);
     if (!pool.length) return [];
     const pages = Math.ceil(pool.length / 3);
     const p = (((Math.floor(Number(page)) || 0) % pages) + pages) % pages;
@@ -1059,6 +1206,17 @@
     if (hasOwn(item, 'definedBy') && item.definedBy !== undefined) {
       if (cleared(item.definedBy)) set('definedBy', null); else if (DEFINED_BY.indexOf(item.definedBy) >= 0) set('definedBy', item.definedBy);
     }
+    // In a room, it's… (the person's chip, or Claude's word): its role, what it is, and a photo of their room checked
+    if (hasOwn(item, 'role') && item.role !== undefined) {
+      if (cleared(item.role)) set('role', null); else if (rolesOf(item.role).length) set('role', rolesOf(item.role));
+    }
+    if (hasOwn(item, 'what') && item.what !== undefined) {
+      if (cleared(item.what)) set('what', null); else { const t = oneLine(item.what).slice(0, OWN_LIMITS.what).trim(); if (t) set('what', t); }
+    }
+    if (hasOwn(item, 'room') && item.room !== undefined) {
+      if (cleared(item.room)) set('room', null); else if (roomGuess(item.room)) set('room', roomGuess(item.room));
+    }
+    if (hasOwn(item, 'notRoom') && item.notRoom !== undefined) set('notRoom', item.notRoom === true ? true : null);
   }
 
   /** checkOwnFields(o) -> '' when a brought thing's definition fields (all optional) have the right
@@ -1067,7 +1225,8 @@
    *  where bring() tidies. Fields: link, image, thumb (https, ≤2048), maker ≤120, date ≤40, year ≤10,
    *  medium ≤200, place ≤60, about ≤200 (one line each), category (≤60), era (one of ERAS), genes
    *  (≤12 gene slugs), materials (≤8 words, ≤40 each), coloursEstimated (boolean), definedBy
-   *  ('page' | 'claude' | 'address' | 'person'). */
+   *  ('page' | 'claude' | 'address' | 'person'), role (1 or 2 of ROLES), what (one line ≤40), room
+   *  ({vp: [x, y], floor: y}, percent 0..100), notRoom (true). */
   function checkOwnFields(o) {
     if (!o || typeof o !== 'object') return 'is not an object';
     for (const k of OWN_LINKS) if (o[k] != null && !httpsAddr(o[k])) return 'has a ' + k + ' that is not an https address of at most ' + OWN_LIMITS.url + ' characters';
@@ -1081,6 +1240,10 @@
     if (o.materials != null && !(Array.isArray(o.materials) && o.materials.length <= OWN_LIMITS.materials && o.materials.every((m) => typeof m === 'string' && m.length <= OWN_LIMITS.material))) return 'has materials that are not at most ' + OWN_LIMITS.materials + ' short words';
     if (o.coloursEstimated != null && typeof o.coloursEstimated !== 'boolean') return 'has a coloursEstimated that is not true or false';
     if (o.definedBy != null && DEFINED_BY.indexOf(o.definedBy) < 0) return 'has a definedBy that is not page, claude, address or person';
+    if (o.role != null && !(Array.isArray(o.role) && o.role.length >= 1 && rolesOf(o.role).length === o.role.length)) return 'has a role that is not one or two of the roles';
+    if (o.what != null && !(typeof o.what === 'string' && o.what.length <= OWN_LIMITS.what && !/[\r\n]/.test(o.what))) return 'has a what that is not one line of at most ' + OWN_LIMITS.what + ' characters';
+    if (o.room != null && !(roomGuess(o.room) && o.room.vp.every((x) => x >= 0 && x <= 100) && o.room.floor >= 0 && o.room.floor <= 100)) return 'has a room that is not {vp: [x, y], floor: y} in percent';
+    if (o.notRoom != null && o.notRoom !== true) return 'has a notRoom that is not true';
     return '';
   }
 
@@ -1117,9 +1280,10 @@
     const j = st.j.filter((e) => !(Array.isArray(e) && e[0] === id));
     const notes = st.notes.filter((n) => !(n && (n.ref === id || (typeof n.ref === 'string' && n.ref.indexOf('pair:') === 0 && n.ref.slice(5).split('|').indexOf(id) >= 0))));
     const sets = st.sets.map((s) => {
-      if (!SLOT_NAMES.some((k) => s[k] === id)) return s;
+      if (!SLOT_NAMES.some((k) => s[k] === id) && s.room !== id) return s;
       const c = assign(s);
       for (const k of SLOT_NAMES) if (c[k] === id) c[k] = null;
+      if (c.room === id) { delete c.room; delete c.as; }   // its room let go: the set is drawn as before
       return c;
     });
     let five = st.five;
@@ -1487,7 +1651,8 @@
     const parts = [];
     for (const e of st.j) if (Array.isArray(e) && !isOwnId(e[0])) parts.push(e[0] + (e[1] ? '+' : '-'));
     parts.push('|');
-    for (const s of st.sets) parts.push(SLOT_NAMES.map((k) => (isOwnId(s[k]) ? 'own' : s[k] || '')).join(','));
+    // a set's room only when it has one, so every code made before rooms stays the same
+    for (const s of st.sets) parts.push(SLOT_NAMES.map((k) => (isOwnId(s[k]) ? 'own' : s[k] || '')).join(',') + (s.room ? ',' + (isOwnId(s.room) ? 'own' : s.room) : ''));
     parts.push('|');
     for (const o of st.own) if (o) parts.push(o.kind + ':' + (o.colours || []).join(',') + (o.let != null ? 'x' : ''));
     const hex = hash32(parts.join(' ')).toString(16).toUpperCase().padStart(8, '0');
@@ -1576,6 +1741,7 @@
       sets: st.sets.map((s) => {
         const o = { name: s.name || null };
         for (const k of SLOT_NAMES) o[k] = refOf(s[k]);
+        if (refOf(s.room)) { o.room = refOf(s.room); if (s.as) o.as = assign(s.as); }   // the kept structure it is in, and how
         return o;
       }),
       own: st.own.filter(Boolean).map((o) => seedOwn(o, nameOf(o))),
@@ -1771,7 +1937,7 @@
 
   const FiveS = Object.freeze({
     version: 1, ASPECTS, WORD0, WORDS_MAX, WORD_LEN,
-    ERAS, KINDS, SLOTS, SLOT_NAMES, OWN_KINDS, SOURCES, DECK_SOURCE, DECK_SOURCES, deckSource, NOTE_QS, GROUPS, HUES, MILESTONES,
+    ERAS, KINDS, SLOTS, SLOT_NAMES, ROLES, ROOM_AS, whatIs, pairing, OWN_KINDS, SOURCES, DECK_SOURCE, DECK_SOURCES, deckSource, NOTE_QS, GROUPS, HUES, MILESTONES,
     HUB_MILESTONES, HUB_MODES, setHub,
     DEFINED_BY, OWN_LIMITS, checkOwnFields,
     hexToHsl, normHex, colourName, chord, features, featureLabel, featureGroup,

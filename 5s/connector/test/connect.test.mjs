@@ -580,6 +580,23 @@ test('put_state takes back whatever the engine reads Set\'s fields as (norm and 
   assert.deepEqual([FiveS.WORDS_MAX, FiveS.WORD_LEN], [LIMITS.words, LIMITS.word], 'the same caps');
 });
 
+test('put_state: a pinned set may be in a room (and say how its walls and floor show); a brought thing may say what it is in one', () => {
+  const set = { at: 1, wall: 'c001', window: 's002', picture: 'i001', floor: 'u001', object: 'o001' };
+  assert.equal(checkState({ sets: [set, { ...set, room: 's001', as: { wall: 'paint', floor: 'own' } }, { ...set, room: 'yabcde' }] }), '');
+  assert.match(checkState({ sets: [{ ...set, room: 'not an id!' }] }), /sets\[0\] has a room/);
+  assert.match(checkState({ sets: [{ ...set, room: 's001', as: { wall: 'wallpaper' } }] }), /sets\[0\] has an as/);
+  assert.match(checkState({ sets: [{ ...set, room: 's001', as: { toString: 'paint' } }] }), /has an as/);
+  assert.match(checkState({ sets: [{ ...set, room: 's001', as: 'paint' }] }), /has an as/);
+  const own = { id: 'yabcde', kind: 'space', role: ['room'], what: 'my kitchen', room: { vp: [48, 40], floor: 62 }, notRoom: true };
+  assert.equal(checkState({ own: [own] }), '');
+  for (const [k, v] of [['role', ['lamp']], ['role', 'room'], ['what', 'x'.repeat(41)], ['room', { vp: [1, 2] }], ['notRoom', 'yes']]) {
+    assert.match(checkState({ own: [{ ...own, [k]: v }] }), new RegExp('own\\[0\\] has an? ' + k), k);
+  }
+  // put_state takes back whatever the engine keeps
+  const st = FiveS.pinSet(FiveS.bring(FiveS.newState(), own, 1000), { ...set, room: 'yabcde', as: { wall: 'light', floor: 'x' } }, 2000);
+  assert.equal(checkState(FiveS.migrate({ ...st, sets: st.sets.concat([{ ...set, room: 5, as: { wall: 'sky' } }]) })), '');
+});
+
 // ------------------------------------------------------------------ item_image
 
 test('item_image: the picture as a data: URL (as it is when small, made smaller when not), so the app can show and measure it', async () => {

@@ -10,7 +10,8 @@ from pathlib import Path
 
 FIVE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(FIVE))
-from build_deck import KEPT_FAMILIES, era_of  # noqa: E402
+from build_deck import KEPT_FAMILIES, corners_w, era_of  # noqa: E402
+from roles import ROLES  # noqa: E402
 
 old = json.loads((FIVE / "dist" / "deck.json").read_text())
 # dist may already hold the buildings: compare against its Artsy cards only (no source is Artsy)
@@ -63,4 +64,26 @@ with tempfile.TemporaryDirectory() as out:
         assert v in (0, 1) and line and not line.startswith("Both: "), (a, b)
     assert all(w in deck.get("words", {}) for c in pics.values() for w in c.get("comp", []) + c.get("feel", []))
     others = f", {len(deck['rhymes'])} lookers' pairs" if "rhymes" in deck else ", no other eyes (no data/5s pairs)"
-print(f"ok: {len(artsy)} Artsy cards unchanged, {len(bld)} building cards{others}")
+
+    # See it as a room, when data/5s holds roles.json (and planes.json): what each card is, and the interiors' marked rooms
+    inside = lambda p: isinstance(p, list) and len(p) == 2 and all(0 <= v <= 100 for v in p)
+    for c in cards:
+        role, what = c.get("role", []), c.get("what")
+        assert len(role) <= 2 and len(set(role)) == len(role) and all(r in ROLES for r in role), (c["id"], role)
+        assert what is None or (0 < len(what) <= 40 and "\n" not in what), (c["id"], what)
+        assert not ("textile" in role and "floor" not in role and re.search(r"\b(rug|carpet|kilim|mat)s?\b", what or "")), (c["id"], "a rug is laid")
+        if "room" not in c:
+            continue
+        r = c["room"]
+        assert c["kind"] == "space" and role[0] == "room" and r["planes"], c["id"]
+        for pid, pl in r["planes"].items():
+            assert len(pl["q"]) == 4 and min(corners_w(pl["q"])) > 0 and all(v > 0 for v in pl["size"]), (c["id"], pid)
+        for k, sp in r["spots"].items():
+            assert inside(sp["at"]) and (k in ("paint", "floor") or sp["plane"] in r["planes"]), (c["id"], k)
+        polys = (r["paint"] or {}).get("polys", []) + (r.get("opening") or {}).get("polys", []) + [(r.get("floor") or {}).get("outline", [[0, 0]] * 3)]
+        assert all(len(p) >= 3 and all(inside(x) for x in p) for p in polys), c["id"]
+        names = [sp.get("name") for sp in r["spots"].values()] + [(r["paint"] or {}).get("name"), (r.get("opening") or {}).get("name"), r.get("walls"), (r.get("floor") or {}).get("what")]
+        assert all(n is None or len(n) <= 40 for n in names), (c["id"], names)
+    rooms = [c["id"] for c in cards if "room" in c]
+    roles = f", roles on {sum(1 for c in cards if 'role' in c)} cards, {len(rooms)} marked rooms" if any("role" in c for c in cards) else ", no roles (no data/5s roles.json)"
+print(f"ok: {len(artsy)} Artsy cards unchanged, {len(bld)} building cards{others}{roles}")

@@ -6,7 +6,7 @@
 Writes OUT/index.html (src/index.html with app.css inlined in a <style> right after the <title> and
 <meta> at the top, as the Artifact page contract asks, and play.css inlined as <style data-fives="play">),
 copies engine.js, bring.js, ground.js, the hub's hub.js and hubpage.js, connect.js, Set's game (match.js,
-relate.js, board.js, play.js, and its kingdom map, kingdom.js), links.js and app.js into OUT (the page loads them in that order, and the build
+relate.js, board.js, play.js, and its kingdom map, kingdom.js), the photo room (room.js), links.js and app.js into OUT (the page loads them in that order, and the build
 stops if src/index.html loads any other list), copies DECK/deck.json and DECK/img/ (and
 DECK/logo.webp when present) into OUT when DECK is not OUT, and writes OUT/dev.html: the same page
 wrapped in the skeleton the Artifact platform adds at publish, for local testing.
@@ -24,10 +24,11 @@ SRC = os.path.join(HERE, 'src')
 # Links out and in adds links.js (FiveSLinks: where a thing lives, what a pasted link is), also before app.js.
 # Set's game adds match.js (FiveSMatch), board.js (FiveSBoard) and play.js (FiveSPlay), also before app.js.
 # Set's kingdom adds kingdom.js (FiveSKingdom: the kingdom map), after play.js.
+# See it as a room adds room.js (FiveSRoom: a kept interior's photograph as the room, the things placed in it), after kingdom.js.
 # Set, inside out adds relate.js (FiveSRelate: the deal from kept things, relations, Sort's ask), after match.js.
 # Its other eyes (deck.json's rhymes, words and each card's comp and feel) reach the page only in DECK's deck.json,
 # which build_deck.py writes to the git-ignored dist from data/5s.
-SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'links.js', 'app.js']
+SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'app.js']
 SCRIPT_RE = re.compile(r'<script\s+src="([^"]+)"')
 
 SKELETON_HEAD = (

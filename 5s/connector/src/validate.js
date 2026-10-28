@@ -4,6 +4,7 @@
  * longer than any person makes. Limits are generous: the app's own fields are shorter (a note is at
  * most 500 characters, a set's name 80, a brought thing's name 60).
  */
+import FiveS from './engine.js';
 const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x);
 const optNum = (x) => x == null || isNum(x);
@@ -61,7 +62,8 @@ function ownFacts(o, vocab) {
   }
   if (!(o.coloursEstimated == null || typeof o.coloursEstimated === 'boolean')) return 'has a coloursEstimated that is not true or false';
   if (!(o.definedBy == null || DEFINED_BY.includes(o.definedBy))) return 'has a definedBy that is not one of ' + DEFINED_BY.join(', ');
-  return '';
+  // In a room, it's… (See it as a room): its role, what it is, a photo of the person's room checked, as the engine keeps them
+  return FiveS.checkOwnFields({ role: o.role, what: o.what, room: o.room, notRoom: o.notRoom });
 }
 
 function judgment(e) {
@@ -93,6 +95,11 @@ function set(s) {
   if (!isObj(s)) return 'is not an object';
   if (!optNum(s.at) || !optStr(s.name, LIMITS.name)) return 'has a time or name of the wrong kind';
   for (const k of SLOTS) if (!(s[k] == null || (typeof s[k] === 'string' && ID.test(s[k])))) return 'has a ' + k + ' that is not a card id';
+  // See it as a room: the kept structure the set is in, and how its walls and floor show (as the engine's pinSet keeps them)
+  if (!(s.room == null || (typeof s.room === 'string' && ID.test(s.room)))) return 'has a room that is not a card id';
+  if (!(s.as == null || (isObj(s.as) && Object.keys(s.as).every((k) => Object.hasOwn(FiveS.ROOM_AS, k) && FiveS.ROOM_AS[k].includes(s.as[k]))))) {
+    return 'has an as that is not {wall: ' + FiveS.ROOM_AS.wall.join(', ') + '; floor: ' + FiveS.ROOM_AS.floor.join(', ') + '}';
+  }
   return '';
 }
 

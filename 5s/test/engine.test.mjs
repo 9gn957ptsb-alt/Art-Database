@@ -78,7 +78,7 @@ test('API: every function and constant in SPEC.md is there', () => {
   const fns = ['hexToHsl', 'colourName', 'chord', 'features', 'featureLabel', 'featureGroup', 'newState', 'judge', 'undo',
     'model', 'predict', 'nextFive', 'profile', 'philosophy', 'setCandidates', 'seedCode', 'prng', 'exportSeed',
     'exampleState', 'dayOf', 'startFive', 'currentCard', 'fiveDone', 'streak', 'pinSet', 'unpinSet', 'card', 'bring',
-    'removeOwn', 'addNote', 'removeNote', 'markSeen', 'path', 'isRevisit'];
+    'removeOwn', 'addNote', 'removeNote', 'markSeen', 'path', 'isRevisit', 'whatIs', 'pairing', 'setPool'];
   for (const f of fns) assert.equal(typeof F[f], 'function', f);
   assert.deepEqual(F.KINDS, ['image', 'object', 'space', 'surface', 'colour']);
   assert.deepEqual(F.ERAS, ['Before 1800', '1800s', '1900–45', '1945–69', '1970–99', '2000s', '2010s–now']);
@@ -127,6 +127,10 @@ test('no function mutates its inputs (deep-frozen state and deck)', () => {
     () => F.removeNote(ex, 0), () => F.markSeen(ex, 'seed'), () => F.markSeen(ex, 'path:seed'),
     () => F.path(ex, d, NOW), () => F.isRevisit(ex, own.id), () => F.features(d.cards[3]),
     () => F.exampleState(d, NOW),
+    () => F.whatIs(d.cards[12]), () => F.whatIs(F.card(ex, d, own.id)), () => F.setPool(ex, d, 'window', 's001'), () => F.setPool(ex, d, 'room'),
+    () => F.setCandidates(ex, d, 'picture', 1, 's001'), () => F.pairing(ex, 'i001', 's001'),
+    () => F.pinSet(ex, deepFreeze({ wall: 'c001', room: 's001', as: { wall: 'paint', floor: 'own' } }), NOW),
+    () => F.migrate(deepFreeze({ sets: [{ wall: 'c001', room: 's001', as: { wall: 'x' } }] })),
   ];
   for (const c of calls) c(); // strict-mode writes to frozen objects throw
   const r = F.judge(started, d, cur, 1, 1200, NOW + 5000);
@@ -1218,4 +1222,187 @@ test('Set\'s clock and kingdom: norm caps saga.time and saga.built, drops a wron
   s = { ...s, saga: { ...s.saga, stars: [3, 2, 1], built: ['yabc12', 'b001', 'yabc12'] } };
   assert.deepEqual(F.removeOwn(s, 'yabc12').saga.built, [null, 'b001', null], 'a plain house stands where it was');
   assert.deepEqual(F.removeOwn(s, 'yabc12').saga.stars, [3, 2, 1], 'the levels stay won');
+});
+
+// --------------------------------------------------------------- See it as a room (SPEC-room-from-structure)
+
+// A card as the deck has it, with no roles: only its words and kind say what it is.
+const bare = (o) => ({ id: 'x001', title: '', medium: '', materials: [], genes: [], colours: [], w: 600, h: 600, ...o });
+
+test('whatIs: the word rules and kinds name a thing and say where it goes, when it has no roles', () => {
+  const is = (o) => { const w = F.whatIs(bare(o)); return [w.what, w.roles.join(','), w.key, w.how, w.cm]; };
+  assert.deepEqual(is({ kind: 'object', title: 'Wool rug, hand-knotted' }), ['a rug', 'textile,floor', 'object', 'lay', 200], 'a rug is laid');
+  assert.deepEqual(is({ kind: 'object', title: 'Large Artichoke chandelier' }), ['a chandelier', 'light,ceiling', 'object', 'light', 112], 'a chandelier lights it');
+  assert.equal(F.whatIs(bare({ kind: 'object', title: 'Artichoke chandelier' })).where, 'hung from its ceiling, lighting it');
+  assert.deepEqual(is({ kind: 'object', title: 'Table lamp' }), ['a lamp', 'light', 'object', 'light', 112], 'a lamp, not a table');
+  assert.equal(F.whatIs(bare({ kind: 'object', title: 'Table lamp' })).where, 'lighting it');
+  assert.deepEqual(is({ kind: 'object', title: 'Wall hanging', medium: 'wool' }), ['a wall hanging', 'textile', 'picture', 'hang', 100], 'a wall hanging is hung');
+  assert.deepEqual(is({ kind: 'object', title: 'Untitled', category: 'Textile Arts' }), ['a textile', 'textile', 'picture', 'hang', 100]);
+  assert.deepEqual(is({ kind: 'object', title: 'Lounge armchair' }), ['an armchair', 'furniture', 'object', 'stand', 80]);
+  assert.deepEqual(is({ kind: 'object', title: 'Tall vase', medium: 'stoneware' }), ['a vase', 'thing', 'object', 'set', 40], 'a vase is set on a table');
+  assert.deepEqual(is({ kind: 'object', title: 'Silver pendant', category: 'Jewelry' }), ['a piece of jewellery', 'thing', 'object', 'set', 40], 'a jewel is no lamp');
+  assert.deepEqual(is({ kind: 'object', title: 'Form', category: 'Sculpture', w: 720, h: 400 }), ['a sculpture', 'thing', 'object', 'stand', 90], 'wider than tall');
+  assert.deepEqual(is({ kind: 'object', title: 'Form', category: 'Sculpture', w: 400, h: 720 }), ['a sculpture', 'thing', 'object', 'stand', 120]);
+  assert.deepEqual(is({ kind: 'image', category: 'Print' }), ['a print', 'art', 'picture', 'hang', 60]);
+  assert.deepEqual(is({ kind: 'image', category: 'Photography' }), ['a photograph', 'art', 'picture', 'hang', 60]);
+  assert.deepEqual(is({ kind: 'image', category: 'Painting', title: 'Still life with a vase and a chair' }), ['a painting', 'art', 'picture', 'hang', 100], 'a picture of a chair is a picture');
+  assert.deepEqual(is({ kind: 'space', category: 'Architecture', genes: ['interiors'] }), ['an interior', 'room', 'room', 'room', null], 'an interior is the room');
+  assert.equal(F.whatIs(bare({ kind: 'space', category: 'Architecture', genes: ['interiors'] })).where, 'it is the room');
+  assert.deepEqual(is({ kind: 'space', category: 'Architecture' }), ['a building', 'building', 'window', 'see', null], 'a building seen from outside is never the room');
+  assert.deepEqual(is({ kind: 'space', category: 'Installation' }), ['a building', 'building', 'window', 'see', null]);
+  assert.deepEqual(is({ kind: 'space', source: 'Architectural Authority', category: 'Residential' }), ['a building', 'building', 'window', 'see', null]);
+  assert.deepEqual(is({ kind: 'space', category: 'Painting', genes: ['landscapes'] }), ['a painting', 'view,art', 'window', 'see', null], 'a picture of a place is its view');
+  assert.deepEqual(is({ kind: 'surface', materials: ['wood', 'stone'] }), ['wood', 'floor,walls', 'floor', 'lay', null], 'a surface is laid');
+  assert.equal(F.whatIs(bare({ kind: 'surface' })).what, 'a surface');
+  const c = F.whatIs(bare({ kind: 'colour', colours: ['#c3a567', '#626d35', '#c3a567'] }));
+  assert.deepEqual([c.roles, c.key, c.how, c.where], [['walls', 'light'], 'wall', 'paint', 'its paint, or its light'], 'a colour is the walls\' paint or light');
+  assert.equal(c.what, [F.colourName('#c3a567'), F.colourName('#626d35')].join(' and '), 'its colour names');
+  assert.equal(F.whatIs(null), null);
+});
+
+test('whatIs: a card\'s own role and what come first; a brought thing\'s from own.role and own.what', () => {
+  const r = F.whatIs(bare({ kind: 'object', title: 'Wool rug', role: ['art'], what: 'a rug for the wall' }));
+  assert.deepEqual([r.what, r.roles, r.key, r.how], ['a rug for the wall', ['art'], 'picture', 'hang'], 'role beats the word rules');
+  assert.deepEqual(F.whatIs(bare({ kind: 'object', title: 'Lamp', role: ['lamp', 'thing', 'thing', 'art', 'light'] })).roles, ['thing', 'art'], 'known roles only, at most two');
+  assert.equal(F.whatIs(bare({ kind: 'object', title: 'Lamp', role: ['nonsense'] })).how, 'light', 'no known role: the word rules');
+  assert.equal(F.whatIs(bare({ kind: 'object', what: 'a ceramic jug' })).how, 'set', 'the what alone says a jug is set on a table');
+  assert.equal(F.whatIs(bare({ kind: 'colour', role: ['light'], colours: ['#000000'] })).key, 'wall', 'a colour is always the wall');
+  assert.equal(F.whatIs(bare({ kind: 'surface', role: ['walls', 'floor'], what: 'concrete' })).where, 'laid on its walls, or as its floor');
+  // the fixture's synthetic roles (as roles.json gives them, shipped by the deck build)
+  const fx = (id) => F.whatIs(byId.get(id));
+  assert.deepEqual([fx('o001').key, fx('o001').how, fx('o003').key, fx('o008').key, fx('s001').key, fx('s002').key, fx('s010').key, fx('u001').what],
+    ['object', 'lay', 'picture', 'picture', 'room', 'window', 'window', 'oak boards']);
+  assert.ok(byId.get('s001').room.planes.f && byId.get('s003').room.paint === null && !('room' in byId.get('s005')), 'two marked interiors; one never painted');
+  // a brought thing: the person's chip and words
+  let st = F.bring(F.newState(), { id: 'yjug', kind: 'image', name: 'Grandma\'s jug', role: ['thing'], what: 'a ceramic jug' }, NOW);
+  st = F.bring(st, { id: 'ykitchen', kind: 'space', name: 'My kitchen', role: 'room', room: { vp: [48, 40], floor: 62 } }, NOW);
+  const jug = F.whatIs(F.card(st, deck, 'yjug')), kitchen = F.whatIs(F.card(st, deck, 'ykitchen'));
+  assert.deepEqual([jug.what, jug.key, jug.how], ['a ceramic jug', 'object', 'set']);
+  assert.deepEqual([kitchen.key, F.card(st, deck, 'ykitchen').room], ['room', { vp: [48, 40], floor: 62 }]);
+  st = F.bring(st, { id: 'ykitchen', notRoom: true }, NOW);
+  assert.equal(F.whatIs(F.card(st, deck, 'ykitchen')).key, 'window', 'It isn\'t a room: a brought Space is its view, as before');
+  assert.equal(F.whatIs(F.card(F.bring(F.newState(), { id: 'yold', kind: 'space', name: 'A view' }, NOW), deck, 'yold')).key, 'window', 'brought before rooms: as before');
+});
+
+// keep these, a few seconds apart: two interiors, a building, a view, pictures, a rug, a wall hanging, a vase, a neon, a floor, a colour
+const ROOM_KEEPS = ['s001', 's003', 's002', 's010', 'i001', 'i003', 'o001', 'o003', 'o005', 'o008', 'u001', 'c001'].map((x) => [x, 1]);
+
+test('setPool with a room: each place takes what goes there, never the room; paired with it first; without one, as always', () => {
+  let st = judgeAll(F.newState(), ROOM_KEEPS).state;
+  const P = (slot, room) => F.setPool(st, deck, slot, room);
+  assert.ok(!P('window', 's001').includes('s001'), 'the room is never its own view');
+  assert.deepEqual(P('window', 's001').slice(0, 2).sort(), ['s002', 's010'], 'the building and the view first, then the other interior');
+  assert.deepEqual(P('window', 's001')[2], 's003');
+  assert.ok(P('picture', 's001').includes('o003') && !P('object', 's001').includes('o003'), 'a wall hanging is hung, not stood');
+  assert.ok(P('object', 's001').includes('o001') && P('object', 's001').includes('o005'), 'a rug is laid and a vase set, in it');
+  assert.ok(P('picture', 's001').includes('o008') && P('object', 's001').includes('o008'), 'a neon in a box: hung, or lighting it');
+  assert.ok(P('picture', 's001').includes('s010') && P('window', 's001').includes('s010'), 'a picture of a bay: hung, or its view');
+  assert.ok(['i001', 'i003'].every((x) => P('picture', 's001').includes(x)), 'every kept image is hung');
+  assert.deepEqual([P('wall', 's001'), P('floor', 's001')], [P('wall'), P('floor')], 'the walls and the floor take what they take in the drawn room');
+  assert.deepEqual(F.setCandidates(st, deck, 'picture', 0, 's001'), P('picture', 's001').slice(0, 3));
+  // what the person paired with the room in Set comes first
+  const before = P('picture', 's001');
+  st = F.migrate({ ...st, assoc: [[...[before.at(-1), 's001'].sort(), 1, 0, S(NOW), 1, 2]] });
+  assert.equal(P('picture', 's001')[0], before.at(-1), 'paired with the room: first');
+  assert.deepEqual(F.pairing(st, 's001', before.at(-1)), { n: 1, s: 1, w: 2, at: S(NOW) }, 'alike in line');
+  assert.equal(F.pairing(st, 's001', 'i999'), null);
+  // without a room: the pools by kind, exactly as before
+  for (const slot of F.SLOT_NAMES) {
+    assert.deepEqual(P(slot), P(slot, null));
+    assert.deepEqual(P(slot), P(slot, 'not an id!'));
+    for (const x of P(slot)) assert.ok(F.card(st, deck, x).kind === F.SLOTS[slot], slot + ' ' + x);
+  }
+  assert.deepEqual([...P('window')].sort(), ['s001', 's002', 's003', 's010'], 'in the drawn room every kept Space is the view, the interiors too');
+});
+
+test('setPool(\'room\'): the rooms you kept, a photo of your own room first; buildings are never rooms', () => {
+  let st = judgeAll(F.newState(), ROOM_KEEPS).state;
+  assert.deepEqual(F.setPool(st, deck, 'room').sort(), ['s001', 's003']);
+  st = F.bring(st, { id: 'ymyroom', kind: 'space', name: 'My living room', role: ['room'] }, NOW);
+  st = F.bring(st, { id: 'yview', kind: 'space', name: 'A view' }, NOW);
+  assert.equal(F.setPool(st, deck, 'room')[0], 'ymyroom');
+  assert.equal(F.setPool(st, deck, 'room').length, 3);
+  assert.deepEqual(F.setCandidates(st, deck, 'room', 0), F.setPool(st, deck, 'room'));
+  assert.ok(!F.setPool(st, deck, 'window', 'ymyroom').includes('ymyroom') && F.setPool(st, deck, 'window', 'ymyroom').includes('s001'), 'from your room, the kept interiors are views');
+  assert.deepEqual(F.setPool(judgeAll(F.newState(), [['s002', 1], ['s004', 1]]).state, deck, 'room'), [], 'only buildings kept: no room');
+});
+
+test('pinSet keeps its room and how its walls and floor show; an old set pins exactly as before', () => {
+  let st = F.pinSet(F.newState(), { wall: 'c001', window: 's002', picture: 'i001', floor: 'u001', object: 'o001', name: 'Mornings', room: 's001', as: { wall: 'paint', floor: 'carpet', x: 1 } }, NOW);
+  assert.deepEqual(st.sets[0], { at: S(NOW), wall: 'c001', window: 's002', picture: 'i001', floor: 'u001', object: 'o001', name: 'Mornings', room: 's001', as: { wall: 'paint' } });
+  st = F.pinSet(st, { wall: 'c001', room: 's003', as: { wall: 'light', floor: 'laid' } }, NOW + 1000);
+  assert.deepEqual(st.sets[1].as, { wall: 'light', floor: 'laid' });
+  st = F.pinSet(st, { wall: 'c001', as: { wall: 'paint' } }, NOW + 2000);
+  st = F.pinSet(st, { wall: 'c001', room: 'not an id!', as: { wall: 'paint' } }, NOW + 3000);
+  st = F.pinSet(st, { wall: 'c001', room: 's001', as: 'paint' }, NOW + 4000);
+  assert.deepEqual(Object.keys(st.sets[2]), ['at', 'wall', 'window', 'picture', 'floor', 'object'], 'as without a room: an old set');
+  assert.deepEqual(Object.keys(st.sets[3]), ['at', 'wall', 'window', 'picture', 'floor', 'object']);
+  assert.deepEqual(Object.keys(st.sets[4]), ['at', 'wall', 'window', 'picture', 'floor', 'object', 'room']);
+  assert.deepEqual(F.pinSet(F.newState(), { wall: 'c001', name: 'x' }, NOW).sets[0], { at: S(NOW), wall: 'c001', window: null, picture: null, floor: null, object: null, name: 'x' });
+  // norm holds a hand-edited set to pinSet's shapes, and leaves the rest as they are
+  const old = { at: 1, wall: 'c001', window: null, picture: null, floor: null, object: null };
+  const m = F.migrate({ sets: [old, { ...old, room: 's001', as: { wall: 'paint', floor: 7 } }, { ...old, room: 5, as: { wall: 'own' } }, { ...old, as: {} }] });
+  assert.equal(m.sets[0], old, 'an old set is the same object');
+  assert.deepEqual(m.sets.slice(1), [{ ...old, room: 's001', as: { wall: 'paint' } }, old, old]);
+  const plain = [old];
+  assert.equal(F.migrate({ sets: plain }).sets, plain, 'no set with a room: the list itself');
+});
+
+test('seedCode: codes made before rooms stay the same; a room changes the code', () => {
+  const ex = F.exampleState(deck, NOW);
+  let s2 = F.pinSet(ex, { wall: 'c001', window: 's001', picture: 'i001', floor: 'u001', object: 'o001', name: 'A room' }, NOW);
+  s2 = F.bring(s2, { id: 'ymine1', kind: 'object', name: 'Jug', colours: ['#aa3311'] }, NOW);
+  s2 = F.pinSet(s2, { wall: 'ymine1', object: 'ymine1' }, NOW + 1000);
+  // as the engine gave them before rooms
+  assert.deepEqual([F.seedCode(F.newState()), F.seedCode(ex), F.seedCode(s2)], ['5S-CB85-C83B', '5S-9861-EBA8', '5S-9239-BEC6']);
+  const inRoom = F.pinSet(ex, { wall: 'c001', window: 's002', picture: 'i001', floor: 'u001', object: 'o001', room: 's001' }, NOW);
+  assert.notEqual(F.seedCode(inRoom), F.seedCode(F.pinSet(ex, { wall: 'c001', window: 's002', picture: 'i001', floor: 'u001', object: 'o001' }, NOW)));
+  assert.equal(F.seedCode(inRoom), F.seedCode(F.pinSet(ex, { wall: 'c001', window: 's002', picture: 'i001', floor: 'u001', object: 'o001', room: 's001', as: { wall: 'light' } }, NOW)), 'how it shows is not in the code');
+});
+
+test('removeOwn of a brought room: its sets lose their room and as, and are drawn as before', () => {
+  let st = F.bring(F.newState(), { id: 'yroom', kind: 'space', name: 'My room', role: ['room'] }, NOW);
+  st = F.pinSet(st, { wall: 'c001', picture: 'i001', room: 'yroom', as: { wall: 'paint', floor: 'own' }, name: 'Home' }, NOW);
+  st = F.pinSet(st, { wall: 'c001', picture: 'i001', room: 's001', as: { wall: 'light' } }, NOW + 1000);
+  const r = F.removeOwn(st, 'yroom');
+  assert.deepEqual(r.sets[0], { at: S(NOW), wall: 'c001', window: null, picture: 'i001', floor: null, object: null, name: 'Home' });
+  assert.deepEqual(r.sets[1], st.sets[1], 'a set in another room is untouched');
+});
+
+test('bring: In a room, it\'s… (role, what), a photo of your room (room) and It isn\'t a room (notRoom), tidied and checked', () => {
+  let st = F.bring(F.newState(), deepFreeze({ id: 'ya', kind: 'object', name: 'Jug', role: ['thing', 'lamp', 'thing', 'light', 'art'], what: '  a ceramic\njug ' + 'x'.repeat(60),
+    room: { vp: [120, -5], floor: 62.345 }, notRoom: 'yes' }), NOW);
+  const a = st.own[0];
+  assert.deepEqual([a.role, a.what.length, a.what.slice(0, 15), a.room], [['thing', 'light'], 40, 'a ceramic jug x', { vp: [100, 0], floor: 62.3 }]);
+  assert.ok(!('notRoom' in a), 'notRoom only as true');
+  assert.equal(F.checkOwnFields(a), '');
+  st = F.bring(st, { id: 'ya', notRoom: true, role: 'nonsense', what: { a: 1 } }, NOW);
+  assert.deepEqual([st.own[0].notRoom, st.own[0].role, st.own[0].what.length], [true, ['thing', 'light'], 40], 'a wrong value is ignored');
+  st = F.bring(st, { id: 'ya', notRoom: false, role: null, what: '', room: null }, NOW);
+  for (const k of ['notRoom', 'role', 'what', 'room']) assert.ok(!(k in st.own[0]), k + ' cleared');
+  assert.deepEqual(Object.keys(F.bring(F.newState(), { id: 'yb', kind: 'image', name: 'x', definedBy: 'person', role: ['art'], what: 'a photo' }, NOW).own[0]).slice(-3), ['definedBy', 'role', 'what']);
+  for (const [o, re] of [[{ role: ['lamp'] }, /role/], [{ role: [] }, /role/], [{ role: ['art', 'view', 'thing'] }, /role/], [{ role: 'art' }, /role/],
+    [{ what: 'x'.repeat(41) }, /what/], [{ what: 'a\nb' }, /what/], [{ room: { vp: [1, 2] } }, /room/], [{ room: { vp: [1, 200], floor: 3 } }, /room/], [{ notRoom: false }, /notRoom/]]) {
+    assert.match(F.checkOwnFields(o), re, JSON.stringify(o));
+  }
+  assert.equal(F.checkOwnFields({ role: ['textile', 'floor'], what: 'a rug', room: { vp: [50, 40], floor: 60 }, notRoom: true }), '');
+});
+
+test('exportSeed: a set in a room says which (the work, or the brought thing\'s name) and how; others as before', () => {
+  let st = judgeAll(F.newState(), ROOM_KEEPS).state;
+  st = F.bring(st, { id: 'yroom', kind: 'space', name: 'My kitchen', role: ['room'] }, NOW);
+  st = F.pinSet(st, { wall: 'c001', window: 's002', picture: 'i001', floor: 'u001', object: 'o001', room: 's001', as: { wall: 'paint', floor: 'own' } }, NOW);
+  st = F.pinSet(st, { wall: 'c001', picture: 'i001', room: 'yroom' }, NOW + 1000);
+  st = F.pinSet(st, { wall: 'c001', picture: 'i001' }, NOW + 2000);
+  const sets = F.exportSeed(st, deck, NOW).sets;
+  assert.deepEqual([sets[0].room, sets[0].as, sets[1].room, 'as' in sets[1], 'room' in sets[2]], ['fixture-s001', { wall: 'paint', floor: 'own' }, 'My kitchen', false, false]);
+  assert.deepEqual(Object.keys(sets[2]), ['name', 'wall', 'window', 'picture', 'floor', 'object']);
+});
+
+test('ROLES are the thirteen roles.py checks the deck\'s data against', () => {
+  const py = /ROLES = \(([^)]*)\)/.exec(readFileSync(join(here, '..', 'roles.py'), 'utf8'));
+  assert.ok(py, 'roles.py says ROLES');
+  assert.deepEqual(F.ROLES, py[1].match(/'([a-z]+)'/g).map((x) => x.slice(1, -1)));
+  assert.ok(Object.isFrozen(F.ROLES) && Object.isFrozen(F.ROOM_AS.wall));
+  assert.deepEqual(F.ROOM_AS, { wall: ['paint', 'light', 'own'], floor: ['own', 'laid', 'wall'] });
 });
