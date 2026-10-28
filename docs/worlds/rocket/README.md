@@ -208,8 +208,10 @@ where they land, gone a beat after the strike. A tap during a swing is kept, the
 after, swung on from where the last one's follow-through ends (the sweep's other side; under the slam, an uppercut):
 two blocks a beat (a kept one is a sweep or a slam: a whole turn in half a SWING would be faster than the eye
 follows), and while a swing aims he turns to its block at twice his turn, so that he faces it by the strike from any
-bearing. Walking, his legs walk on under the swing; in water it goes at his speed there over his walk. If
-the block is gone or changed by the strike, or he has gone out of reach, nothing breaks; going out as the hologram
+bearing. In a run of taps, each within a beat of the last (a block spammed), the blow goes on into the block behind
+the one struck, through the face he struck, if that too is in reach (not bedrock, nor a wall a work hangs on): two a
+strike, so the run breaks twice as fast at any rate of tapping. Walking, his legs walk on under the swing; in water
+it goes at his speed there over his walk. If the block is gone or changed by the strike, or he has gone out of reach, nothing breaks; going out as the hologram
 lets the swing go.
 
 **The sight, and the pearls he throws** (artist, 20 Oct 2026: "I want you to be able to aim at a target with a
@@ -461,6 +463,136 @@ he comes down hard again: the place built anew, the pieces and the coins where t
 either way; what he read is kept. The stars and three galaxies are drawn as the unit, triangles: the deep-space
 photographs the site shows cannot come into an Artifact.
 
+## Glyph Light, and the monarch
+
+The artist, 26 Oct 2026, with Glyph Light, a page that turns a picture into glowing glyphs: "by implementing this
+aesthetic into holographic Mr. Pearl, instead of the current pixelated aesthetic, we can now play with what a thing
+looks like relative to your distance from it". The world is drawn into a picture of its own (colour and depth), and
+the picture is drawn again as glyphs: each a cell of the screen whose side goes as the square of nearness (6 CSS px at
+3.2 m, so a thing twice as near is drawn in glyphs four times as large: a couple of characters close by, many far
+off), its glyph chosen by the cell's brightness and lit in the cell's own colour, added as light, the picture showing
+faintly under them as the page's "image under glyphs" does. Where the cells would be under two pixels the picture shows
+as it is, eased in over the octave above: far off, a thing is itself, refined. The sky is the picture.
+
+**The glyphs are made of the figure** (the artist, 27 Oct 2026: "Characters are the answer to the basic unit study,
+still conduct those studies on that shape"; asked which, both): where the page's ramp is ` .:-=+*#%@`, this one is the
+tribar at five sizes, the artist's figure of three at three, and the tribar with all its faces lit, ordered by the light
+each gives, as the page's ramp is ordered. A device that cannot draw into a picture keeps the picture. The picture is
+drawn multisampled and resolved, so what shows as itself far off keeps the canvas's antialiasing.
+
+**His head is left as it is**, the one thing in the game seen as it is (the finished unit's first ask of Glyph Light,
+after the artist's rule 5, "His head/Holographic mode will be the only perfect Sphere in the game"): its program marks
+its own pixels, and the glyph pass passes them through unglyphed, his hat, his body and whatever crosses in front of the
+head glyphed as everything is. Every word and control is a page element, over the glyphs, and a work's label shows its
+picture as it is.
+
+**Every control of Glyph Light, as a storyboard** (the artist, 27 Oct 2026, to the DRIFT session, for every artifact:
+"Make sure you are using the full dimensionality of the Glygh Light artifact. Make sure all of the changes available
+through the provided slide bars are being implemented in all of the artifacts ... Keep in mind that the infinite
+texture that you are displaying is a storyboard and someone's thumb is the direction of how the story plays out ...
+almost like a flip book but instead of each sticky note being behind the other, they are placed side-by-side"). All of
+the page's controls are in the pass: its styles (ASCII, dots on a 4 by 4 Bayer order, grain, scan lines), its glyph sets
+(fine, blocks, binary, kana and kanji as the page has them, and the custom set, the figure's, first; each sorted by the
+ink it leaves), its colour modes (full, mono, gold, blue), auto levels, exposure, contrast, midtones, detail (a cell
+sharpened against its neighbourhood), invert, the glow and where it starts (in the glyph, and a halo from the picture
+softened a few octaves), the image under the glyphs, the density, and its motions (pulse, shimmer, reveal, push in). The
+place is laid out in panels 12 m square, the frames of a storyboard side by side: the first where he wakes, as Glyph
+Light first came in (the figure's set, ASCII's way, full colour); each next a step from the one before (one slider
+moved, or a style, a set, a mode or a motion changed); the frames running in a serpentine, so that a frame's neighbours
+are the frame before it and the frame after, 8 by 8 of them and again past the last, every style, set, mode and motion,
+an inverted frame and an auto-levelled one somewhere among the 64. The thumb on the stick turns the pages, and every
+page is seen beside the next; where two frames meet on the ground they meet as two stills of a flip book laid side by
+side. The size of a glyph by distance stays the artist's own (6 px at 3.2 m), each frame's density a factor on it.
+
+**The monarch** (the artist: "implement a butterfly flying in a loop that runs: flying in circle and then a straight
+line ... as you approach the butterfly the way that it looks will become more like a couple of characters whereas the
+further you are from the butterfly, the more refined it looks like a butterfly. Make it a monarch"). Danaus plexippus,
+ten centimetres across: orange wings veined in black, a black border with two rows of white spots. It flies a loop over
+the lawn where you wake, between two points nine metres apart: a turn and a half about the first, the straight line to
+the second along one side, a turn and a half there, the straight line back along the other, at 2.2 m/s, a metre and a
+half up, beating its wings six times a second. Glyph Light does the rest: within a metre it is a couple of glyphs,
+at three a small butterfly, and further off under a pixel.
+
+**The studies, in characters.** The four studies beside the tree are made again with a character as the unit, each
+where its figure stood, as large: the ladder of levels, a character made of characters (an `@` drawn in `#`s, each
+itself a glyph); the crux, three `A`s 8, 13 and 21 thirds of a block tall (the figure's levels 2, 3 and 4) with their
+apexes, the one point a letter A shares with the drawing, at one point, and their holding circles as rings of full
+stops; the closed curve, the page's ramp up and back round a circle, so that it closes on itself; the sphere of the unit,
+a character at each of its 136 cells by the light it takes from the sun (its blocks taken out of the place for them;
+where the row had no room for the sphere its plinth stays empty). Each faces the camera, white as the figures were.
+
+## The character cubes: a Q that asks
+
+The artist, 28 Oct 2026, of a block seen close, the figure's bars inside its glass: "instead of that shape being in the
+middle of that cube in the image that you provided, it is a character, for example, a giant Q in which stands for
+question and so when you click on it, it asks you a question this is just an example". A cube of glass a block across
+stands on open ground five to ten metres out along the way he faces on waking, a little to one side of his line, and a
+giant gold Q stands in it where a block has its figure. A tap on it (a click, at the crosshair) and it asks, easily, as
+the works' riddles do: where a piece of the rocket still lies, three answers to tap (behind a work on a wall, on the
+floor of the pool, buried in the garden, up on a roof; in a town, dug into a park, at the bottom of the water, under
+the paving of a square, up in a tree), the right one where it came to lie. The right one turns the arrow to that piece
+among the pieces, as a pearl ringing on it does; a wrong one says where it lies; it asks next about a piece it has not been answered
+about. With every piece found it asks who made one of the works hung in the place. Escape or Leave it closes the
+question. The letters and what each does are a table (`CUBE_ACTS`), so another letter is a line: Q is the first.
+
+## The courts: pickleball with his hat, and the Trojan horse
+
+The artist, 27 Oct 2026: "Put a tennis court in the game in which I can play tennis using Mr Pearl's hat as his
+racket. You use a pearl for the ball whenever you serve and you serve every time. The game is to see how long you can
+keep a pearl one point at a time. Your opponent progressively gets better and better after each level. The opponent is
+Mr Pearl's nemesis." And then the player made a manager: each level a new court beside the last, every court won
+playing on as its own series, each of them part of an engine building a statue, the Trojan horse; a court that loses a
+match has to be played again, a level up, and while it is down the building slows ("There's no more hammers or no more
+horses"): "you have to sacrifice". On 28 Oct 2026: "Make it games of Pickleball instead of tennis so the court is
+smaller and you can maintain the perspectives of Mr Pearl to play."
+
+**The net.** A pickleball net stands 7 to 22 m from the tree, on level ground clear of the homage, the studies and the
+wreck; a tap on it (a click, at the crosshair) takes you to the courts, ten side by side, far from the place, as space
+is. Walking through it does nothing: it took him there when it was walked through, until a coin past it showed that he
+could be taken while chasing something else. The net behind court one takes you back to the place, beside its net,
+everything as you left it. The place's acts (Build, Launch, a work's label), the hologram and the hotbar wait on the
+courts; the Scope stays.
+
+**The court** is pickleball's, to USA Pickleball's measures: 20 by 44 feet (6.10 by 13.41 m), the net 34 inches at its
+middle and 36 at the posts, which stand 12 inches outside the sidelines, and the non-volley zone, the kitchen, 7 feet
+deep either side of the net, drawn green. It is small enough that **his own views play it**: the third person at rest
+behind his head, at the distance it keeps in the place (3.2 m), from which the nemesis stands in the view across the
+net; and the Scope (its button, `R`, or the right mouse button), the camera behind his head on the look at φ, his head
+the glass and the crux the aim, as in the place.
+
+**A match.** Walk onto court one: level one, first to three points. You serve every point (a tap, a click, the jump
+button, Space, `T` or `Enter`), underhand: the pearl dropped from his hand and struck below his waist, across into the
+far service court, past the kitchen. The pearl is the ball and his hat the paddle, held out at his right, its crown
+turned out so its brim's round is the face; he swings by himself when the pearl comes within the hat's reach on his
+side, and the return goes where the view looks (turn it, or raise the Scope and put the crux wide of the nemesis). The
+serve and its return must bounce before they are hit (the two-bounce rule), so his third shot is always off a bounce;
+after that he volleys, but never standing in the kitchen. A ring on the court marks where the nemesis's pearl will
+first come down; the stick takes him there. Points are lost as in pickleball: two bounces, out, the net, a serve in the
+kitchen. The rally, the hits the pearl is kept in play for, is counted and the longest kept, in the header with the
+score. Until the level is won he cannot leave the court ("you can't get out of the game that you haven't won yet"); a
+match lost starts again from love.
+
+**The nemesis** is his negative: his figure, his hat and his bass, every colour turned over, a dark head. Each level it
+runs faster (2.2 m/s at level one, 4.45 at ten), reaches further, waits less before it moves, misses less (28% of its
+shots out at level one, 5.5% at ten), hits harder (its pearl across in 1.55 s at level one, 1.06 at ten), deeper and
+wider, away from you, and from level three drops more of its shots short into your kitchen, the dink (one in twenty at
+level three, a third from level nine).
+
+**The manager's courts.** A level won, its court plays on by itself: his stand-in against that court's nemesis, a point
+every four to eight seconds, match after match, the stand-in taking a point at 0.93 less a twentieth a level (from 0.88
+at level one to 0.43 at ten). Every court playing gives its tool to the Trojan horse beyond the courts (hammers on court
+one, then horses, ropes, pulleys, chisels, saws, ladders, pegs, carts and adzes): all ten together build it in eight
+minutes, one alone in eighty, its 26 parts hoisted one at a time from where they lie before its platform (the
+platform, wheels, hooves, legs, belly, the hatch for the men inside, chest, rump, neck, mane, head, ears, eyes, tail),
+42 m to its ears when it stands. A match lost on a court stops it: its tool is struck out under the ten squares (one
+for each court, its level in it: filled while it plays, crossed while it is down), the horse goes on slower, and the
+court waits to be played again, a level up, so the courts most often down are the highest, and winning every court
+only raises them: some have to be let go. The courts play on wherever you are, in the place too.
+
+What is weak: the courts are kept for the visit only (a new page starts them again); a level is first to three, where a
+game of pickleball is to eleven, won by two (your three points for a level are kept); the swing is the hat's, not his
+arm's; the stand-ins' rallies are drawn, not played, a point decided by chance at the court's level.
+
 ## Painted as Cézanne paints (a first pass)
 
 CLAUDE.md: "It is rendered as Cézanne paints" (the artist, 15 Oct 2026, sending two Cézanne-like paintings: a
@@ -573,7 +705,15 @@ On a phone: the stick on the left, drag to look, tap, the jump button (single st
 it the Holo button, and over that Scope. **Walking, a double tap with the right hand dashes him ten feet on** (the
 artist, 27 Oct 2026: "When I am walking with Mr. Pearl, I want to be able to double tap with my right hand and he
 quickly dashes forward 10 feet"; a computer's double click): 3.048 m along the way he walks, in half a beat, stopped
-by what it meets as his walk is; standing, taps are taps. The stick is a touch on water, not a tool (artist, 21 Oct 2026:
+by what it meets as his walk is; standing, taps are taps. **In a run of taps, once one has broken or placed a block,
+a double tap is more of that work, twice as fast, not the dash** (the artist, 28 Oct 2026: "When I am breaking
+something with Mr Pearls guitar, I will spam the object to break or place something. However, because of the double
+tap dash now, I end up dashing away when breaking things. I want you to incorporate the dash when tapping to breaking
+and placing now, that way when I spam place or break Mr Pearl can now those tasks twice as fast"): a run is taps each
+within a beat of the last; in it a strike breaks two, the block struck and the one behind it, and a tap in Place lays
+two, the second on the first the way it was laid (no block is laid where a Q cube stands or a coin floats, or outside
+the world). So the dash is a double tap in a run that has broken and placed nothing (a
+first tap at the sky, or beyond his reach). The stick is a touch on water, not a tool (artist, 21 Oct 2026:
 "Revolutionize the way the joist stick shows up on the screen when using it, it's too distracting, have it be a lot
 more subtle and feel like a natural force of nature rather than an analog tool"): where the left thumb lands the
 surface answers once with a ring never quite round (the head is the one perfect sphere), the push draws it out the
