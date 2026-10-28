@@ -437,8 +437,8 @@
     o = o || {};
     const live = o.interactive !== false;
     const things = Object.assign({}, o.things);
-    const wraps = {}, hits = {}, seq = {};
-    let as = o.as || {}, R = null, w = o.w || 0, h = o.h || 0, ro = null, gone = false, stage = null;
+    const wraps = {}, hits = {}, seq = {}, boxes = {};
+    let as = o.as || {}, R = null, w = o.w || 0, h = o.h || 0, ro = null, gone = false, stage = null, nameEl = null;
     const planes = new Map();
     const plane = (id) => { if (!planes.has(id)) planes.set(id, planeOf(R, id, w, h)); return planes.get(id); };
     const pt = (at) => [at[0] / 100 * w, at[1] / 100 * h];
@@ -572,6 +572,21 @@
       }
       if (fade) for (const n of wrap.children) n.classList.add('rfade');
       hit(key, box);
+      boxes[key] = box;
+      placeName();
+    }
+
+    // The room's name sits at the photo's top left, or at its foot while a thing drawn lies under it (a lamp hung from
+    // the top edge), unless one lies there too.
+    function placeName() {
+      if (!nameEl || !w) return;
+      const k = el.clientWidth / w;
+      const under = () => ['picture', 'window', 'object'].some((key) => {
+        const b = boxes[key], x0 = nameEl.offsetLeft, y0 = nameEl.offsetTop;
+        return b && b[0] * k < x0 + nameEl.offsetWidth && b[2] * k > x0 && b[1] * k < y0 + nameEl.offsetHeight && b[3] * k > y0;
+      });
+      nameEl.classList.remove('low');
+      if (under()) { nameEl.classList.add('low'); if (under()) nameEl.classList.remove('low'); }
     }
 
     // The thing in it, by what it is: laid flat, lighting it from above, set on a top, or standing on the floor.
@@ -615,6 +630,7 @@
       stage.style.transform = 'scale(' + bw / w + ')';
       const bh = bw * h / w;
       if (Math.abs(el.clientHeight - bh) > 0.5) el.style.height = bh + 'px';
+      placeName();
     }
 
     let photo = null;
@@ -659,7 +675,7 @@
       } else { ph.alt = ''; ph.setAttribute('aria-hidden', 'true'); }
       for (const k of KEYS) { wraps[k] = add(stage, 'div', 'rlayer'); wraps[k].setAttribute('aria-hidden', 'true'); }
       KEYS.forEach((k, i) => draw(k, parts[i], false));
-      if (live && o.name) { const n = add(el, 'span', 'rname'); n.textContent = o.name; n.setAttribute('aria-hidden', 'true'); }
+      if (live && o.name) { nameEl = add(el, 'span', 'rname'); nameEl.textContent = o.name; nameEl.setAttribute('aria-hidden', 'true'); }
       if (live && typeof o.stepIn === 'function' && webgl()) {   // the second step (spec 7.7): only where the app passes it
         const b = add(el, 'button', 'stepin'); b.type = 'button'; b.textContent = 'Step in';
         b.addEventListener('click', () => o.stepIn());

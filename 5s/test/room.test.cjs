@@ -311,6 +311,25 @@ browserTest('a marked room: each thing where what it is belongs, the photo label
   await ctx.close();
 });
 
+browserTest('the room\'s name goes to the foot of the photo while a lamp hangs under it, and back up when it does not', async () => {
+  const { ctx, page, errors } = await newPage();
+  const marks = await page.evaluate(() => { const m = JSON.parse(JSON.stringify(T.card('s001').room)); m.spots.light = Object.assign({}, m.spots.light, { at: [14, 72], top: 0 }); return m; });
+  const where = () => page.evaluate(() => {
+    const el = document.getElementById('r'), b = el.getBoundingClientRect(), n = el.querySelector('.rname').getBoundingClientRect(), u = el.querySelector('.upright');
+    const r = u && u.getBoundingClientRect();
+    return { low: n.top - b.top > b.height / 2, over: !!r && r.left < n.right && r.right > n.left && r.top < n.bottom && r.bottom > n.top };
+  });
+  await page.evaluate(([s, m]) => T.mount('s001', s, { marks: m }), [SET1, marks]);
+  assert.deepEqual(await where(), { low: true, over: false }, 'a lamp hung from the top edge, under the name: the name moves down');
+  await page.locator('#wrap').screenshot({ path: path.join(SHOTS, 'room-s001-name-low.png') });
+  await page.evaluate(() => T.h.update('object', T.thing('o005')));
+  assert.deepEqual(await where(), { low: false, over: false }, 'a vase standing on the floor: the name is back at the top');
+  await page.evaluate(() => T.mount('s001', { wall: 'c001', window: 's010', picture: 'i001', floor: 'u001', object: 'o002' }));
+  assert.deepEqual(await where(), { low: false, over: false }, 'the lamp clear of the name: it stays at the top');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
 browserTest('update redraws one place, fading in; the walls and the floor follow as', async () => {
   const { ctx, page, errors } = await newPage();
   await page.evaluate((s) => T.mount('s001', s), SET1);
