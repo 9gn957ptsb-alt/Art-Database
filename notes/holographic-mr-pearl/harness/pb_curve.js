@@ -25,6 +25,7 @@ const N = +(nArg || 6), LEVELS = ls.length ? ls.map(Number) : [1, 2, 3, 5, 7, 10
           if (!d.court.m) { m = begin(); last = [0, 0]; }
           m = d.court.m;
           let tx = 0.6, tz = C.L - 1.2;
+          if (m.phase === "serve" && !m.meterOn) { const sv = d.serveSpot(); tx = sv[0]; tz = sv[1]; }   // (to the serve's mark)
           const inc = m.balls.filter((q) => !q.dead && q.last === "them" && q.mark)[0];
           if (inc) {
             if (who === "ideal") { tx = inc.mark.x - 0.5; tz = inc.mark.z + 1.2; }

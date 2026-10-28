@@ -221,6 +221,9 @@
     } else if (m.reach === "dive") {
       if (!m.launched) { m.launched = true; var T0 = max(0.12, m.tc + 0.06 - gt); a.vx = (m.to[0] - a.x) / T0; a.vz = (m.to[1] - a.z) / T0; a.vy = CAPS.g * T0 / 2; a.y = max(a.y, 0.001); }
       else if (!a.air) { var sp = hypot(a.vx, a.vz), dv = 16 * dt; if (sp > dv) { a.vx -= a.vx / sp * dv; a.vz -= a.vz / sp * dv; } else { a.vx = a.vz = 0; } }
+    } else if (m.reach === "super") {
+      if (gt >= m.up && !m.launched) { m.launched = true; a.vy = m.vy; a.y = max(a.y, 0.001); }
+      a.vx = 0; a.vz = 0;   // (straight up, and down where he went up)
     } else if (m.reach === "leap") {
       if (gt >= m.up && !m.launched) { m.launched = true; a.vy = m.vy; a.y = max(a.y, 0.001); }
       var T1 = max(0.05, m.tc - gt); a.vx += ((m.to[0] - a.x) / T1 - a.vx) * min(1, dt * 8); a.vz += ((m.to[1] - a.z) / T1 - a.vz) * min(1, dt * 8);
@@ -311,7 +314,7 @@
       if (m && m.own && gt >= m.own[0] && gt < m.end) {
         var lead = (m.fore ? L.s === "right" : L.s === "left");
         if (m.reach === "lunge" || m.reach === "dig") { f = [L.hip[0] + L.sign * 0.1, 0.07, L.hip[2] + (lead ? -0.75 : 0.42)]; }
-        if (m.reach === "leap" && a.air) { var sw = Math.sin((gt - m.up) * 14) * 0.25; f = [L.hip[0], 0.3, L.hip[2] + (lead ? -sw : sw)]; }   // the scissor kick
+        if ((m.reach === "leap" || m.reach === "super") && a.air) { var sw = Math.sin((gt - m.up) * 14) * 0.25; f = [L.hip[0], 0.3, L.hip[2] + (lead ? -sw : sw)]; }   // the scissor kick
         if (diving) { f = [L.hip[0] + L.sign * 0.12, L.hip[1] - 0.55, L.hip[2] + 0.1]; }
       }
       if (m && m.reach === "dig" && gt >= m.t0 && gt < m.end) { f = [L.hip[0] + L.sign * 0.12, 0.07, L.hip[2] + ((m.fore ? L.s === "right" : L.s === "left") ? -0.5 : 0.38)]; }
@@ -327,9 +330,9 @@
       out.parts["shin_" + L.s] = mul(root, mul(thigh, mul(about(RX((ga - L.g0) - (al - L.a0)), L.knee), R.rest["shin_" + L.s])));
     });
     // the upper body: down with the pelvis, bent forward at the hips, the chest twisted for the stroke
-    var sm = null;
-    if (m && gt >= m.t0 - 0.05 && gt < m.end) {
-      var s1 = (gt - m.t0) / max(0.05, m.tc - m.t0), s2 = (gt - m.tc) / 0.34;
+    var sm = null, st0 = m && (m.reach === "super" ? m.sw : m.t0);
+    if (m && gt >= st0 - 0.05 && gt < m.end) {
+      var s1 = (gt - st0) / max(0.05, m.tc - st0), s2 = (gt - m.tc) / 0.34;
       sm = { pre: gt < m.tc, s: gt < m.tc ? s1 : s2, back: gt >= m.tc + 0.34 ? smooth((gt - m.tc - 0.34) / 0.26) : 0 };
       var tw = m.kind === "serve" ? 0.35 : m.kind === "overhead" ? 0.5 : m.kind === "dink" || m.kind === "volley" ? 0.25 : 0.75;
       twist += (m.fore ? -1 : 1) * tw * (sm.pre ? (1 - 2 * smooth(clampV(s1, 0, 1)) * 0.6) * smooth(clampV(s1 * 3, 0, 1)) : -0.6 * (1 - sm.back));
@@ -346,6 +349,9 @@
     var ready = add(R.sR, [0.3, 0.45, -0.8]), carry = add(R.sR, [0.18, 0.8, 0.5 + 0.12 * Math.sin(a.phase)]);
     tgt = lerp3(ready, carry, smooth((a.speed - 3) / 4));
     if (diving && !sm) { tgt = add(R.sR, [0, -0.15, -1]); }
+    // (the super return's windmill: the guitar over and over in the plane at his right side, forward over the top, a
+    // turn and a half, slow as it is raised and quickening, to the overhead's wind-up as the strike begins)
+    if (m && m.reach === "super" && gt < m.sw) { var wu = clampV((gt - m.own[0]) / (m.sw - m.own[0]), 0, 1), th = -2.3 - 9.61 * Math.pow(wu, 1.7); tgt = add(R.sR, [0.3, Math.cos(th), Math.sin(th)]); }
     if (a.celeb && a.celeb.kind === "flip") { tgt = add(R.sR, [0.25, 0.95, -0.15]); }
     if (sm) {
       var C = local(m.p), rel = sub(C, R.sR), W0, F0, k = m.kind;
@@ -364,6 +370,7 @@
     // the left arm: out for balance at ready, pumping against the legs at speed, reaching with the stroke
     var lt = lerp3([-0.32, -0.45, -0.45], [-0.08, -0.7, -0.38 * Math.sin(a.phase + PI)], smooth((a.speed - 3) / 4));
     if (sm) { lt = sm.pre ? [-0.2, -0.05, -0.65] : [-0.45, -0.5, 0.1]; }
+    if (m && m.reach === "super" && gt < m.end) { lt = [-0.62, 0.35, -0.1]; }   // (out wide, a windmilling guitarist's balance)
     if (a.celeb && a.celeb.kind === "flip") { lt = [-0.5, 0.55, -0.1]; }
     out.parts.arm_left = mul(W, mul(about(rotTo(norm(R.uL0), norm(lt)), R.sL), R.rest.arm_left));
     // the guitar: its neck in the glove, along the arm's line, its top turned towards where the shot goes (or ahead)
@@ -413,7 +420,7 @@
               FONT: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Roboto Mono', 'Noto Sans Symbols 2', monospace",
               KEYS: " .:-=+*#%@", BODY: " .:+*#%@", PLAN: " ◇◆#%@", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
   // the materials, written into the picture's alpha as 1 - id / 255 (his head's 0.5 stays apart from them)
-  var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16 };   // (a hat its own: from behind, hat and back are two shapes)
+  var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16, GOLD: 17 };   // (a hat its own: from behind, hat and back are two shapes)
   // Definition (the artist, 28 Oct 2026: "It's still really hard to see anything, objects need to be three times as
   // defined as they are now"; notes/holographic-mr-pearl/harness/pb_define.js measures it, an athlete's light against
   // the ground round him at a glance): the athletes' fill dense and bright, never faint (fill: the least of its
@@ -517,7 +524,7 @@
     var EK = ramp(ASC.EDGES), EP = ramp(ASC.EDGES);
     var arr = function (n, a) { return "const int " + n + "[" + a.length + "] = int[" + a.length + "](" + a.join(", ") + ");"; };
     // a material's own glyph where it is one quiet texture (-1: the keyboard's ramp, -2: the marks')
-    var fix = [-3, ix("."), ix("."), ix(":"), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2];
+    var fix = [-3, ix("."), ix("."), ix(":"), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2, -1];
     var head = [
       "#version 300 es", "precision highp float; precision highp int;",
       arr("RK", RK), arr("RP", RP), arr("EK", EK), arr("EP", EP), arr("FIX", fix),
@@ -548,7 +555,7 @@
       // (under the floor only an athlete is ever written: the parts' materials first, the rest only if one is there)
       "  if (uLev < uFloor) {",
       "    bool any = false;",
-      "    for (int r = 0; r < 12; r++) { vec2 pd = org + (vec2(float(r % 3), float(r / 3)) + 0.5) * cs / vec2(3.0, 4.0); int k = int(floor((1.0 - texelFetch(uScene, ivec2(int(pd.x), int(uRes.y - pd.y)), 0).a) * 255.0 + 0.5)); any = any || (k >= 12 && k <= 16 && k != 14) || k == 9; }",
+      "    for (int r = 0; r < 12; r++) { vec2 pd = org + (vec2(float(r % 3), float(r / 3)) + 0.5) * cs / vec2(3.0, 4.0); int k = int(floor((1.0 - texelFetch(uScene, ivec2(int(pd.x), int(uRes.y - pd.y)), 0).a) * 255.0 + 0.5)); any = any || (k >= 12 && k <= 17 && k != 14) || k == 9; }",
       "    if (!any) { o = vec4(0.0, 0.0, 0.0, 128.0 / 255.0); return; }",
       "  }",
       "  float v[12], d[12]; int id[12]; vec3 col[12];",
@@ -570,7 +577,8 @@
       // there is one (a character still twelve device pixels high): the rule's own 'far off, smaller characters', for
       // the one far thing that needs the lines to have a hat, a body and legs (at the floor Mr Plan was a blob)
       "  int mat = near >= 0 ? id[near] : 0;",
-      "  int who = mat == 15 ? 12 : mat == 16 ? 13 : mat;",   // (whose: a hat is written in its wearer's alphabet)
+      "  int who = mat == 15 || mat == 17 ? 12 : mat == 16 ? 13 : mat;",   // (whose: a hat, or his gold guitar, is written in its owner's alphabet)
+      "  bool gold = mat == 17;",
       "  bool fig = who == 12 || who == 13;",
       "  float want = uRule * (" + ASC.D0.toFixed(3) + " / dn) * (" + ASC.D0.toFixed(3) + " / dn);",
       "  int lv = uFloor + int(clamp(floor(log2(max(want, 1e-3)) + 0.5), 0.0, float(uTop - uFloor)));",
@@ -603,7 +611,7 @@
       "    mn = min(mn, v[r]); sum += v[r]; cnt += 1.0;",
       "  }",
       "  float m = sum / max(cnt, 1.0), dz = bayer(ci), mo = ownV / max(own, 1.0);",
-      "  int g = 0, f = FIX[min(mat, 16)]; float V = 0.0; vec3 c = hue(col[hiO]);",
+      "  int g = 0, f = FIX[min(mat, 17)]; float V = 0.0; vec3 c = hue(col[hiO]);",
       // the moat: a cell that is not a figure, beside one standing in front of it (its four neighbours' middles), is
       // left dark, so every athlete stands in a cell of night
       "  bool moat = false, moat2 = false;",
@@ -613,7 +621,7 @@
       "      vec2 pd = org + 0.5 * cs + vec2(qd == 0 ? -1.0 : qd == 1 ? 1.0 : 0.0, qd == 2 ? -1.0 : qd == 3 ? 1.0 : 0.0) * cs * qr;",
       "      if (pd.x < 0.0 || pd.y < 0.0 || pd.x >= uRes.x || pd.y >= uRes.y) { continue; }",
       "      ivec2 pu = ivec2(int(pd.x), int(uRes.y - pd.y)); int k = int(floor((1.0 - texelFetch(uScene, pu, 0).a) * 255.0 + 0.5));",
-      "      if (k >= 12 && k <= 16 && k != 14 && lin(texelFetch(uDepth, pu, 0).r) < dn - 0.2) { if (q < 4) { moat = true; } else { moat2 = true; } }",
+      "      if (k >= 12 && k <= 17 && k != 14 && lin(texelFetch(uDepth, pu, 0).r) < dn - 0.2) { if (q < 4) { moat = true; } else { moat2 = true; } }",
       "    }",
       "  }",
       "  bool surf = mat <= 5 || mat == 14;",
@@ -731,7 +739,9 @@
       "    g = ramp(who, mix(who == 13 ? " + DEF.fillPlan.toFixed(3) + " : " + DEF.fill.toFixed(3) + ", 1.0, smoothstep(win.x, win.y, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big), 1);",
       "    V = mix(" + DEF.fillV[0].toFixed(3) + ", " + DEF.fillV[1].toFixed(3) + ", smoothstep(0.0, 0.8, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big);",
       "  }",
-      "  if (fig) { vec3 tn = who == 13 ? vec3(0.66, 0.92, 1.0) : vec3(1.0, 0.86, 0.62); c = mix(c, tn, 0.5); float lc = dot(c, vec3(0.299, 0.587, 0.114)), lt = dot(tn, vec3(0.299, 0.587, 0.114)); c = mix(c, tn, clamp((" + DEF.lum.toFixed(3) + " - lc) / max(lt - lc, 1e-3), 0.0, 1.0)); }",   // (never bare white: his champagne, Mr Plan's ice)
+      "  if (fig && !gold) { vec3 tn = who == 13 ? vec3(0.66, 0.92, 1.0) : vec3(1.0, 0.86, 0.62); c = mix(c, tn, 0.5); float lc = dot(c, vec3(0.299, 0.587, 0.114)), lt = dot(tn, vec3(0.299, 0.587, 0.114)); c = mix(c, tn, clamp((" + DEF.lum.toFixed(3) + " - lc) / max(lt - lc, 1e-3), 0.0, 1.0)); }",   // (never bare white: his champagne, Mr Plan's ice)
+      // (his guitar, gold in the sun: deep amber in its shade, gold in its light, white-gold where the sun glints off it)
+      "  if (gold && g > 0) { float gl = mo; c = mix(vec3(0.72, 0.36, 0.04), vec3(1.0, 0.74, 0.18), smoothstep(0.15, 0.55, gl)); c = mix(c, vec3(1.0, 0.97, 0.86), smoothstep(0.7, 0.95, gl)); V = max(V, mix(0.55, 1.0, smoothstep(0.15, 0.75, gl))); }",
       "  if (moat) { g = STAR_G[0]; V = 0.09; c = vec3(0.42, 0.34, 1.0); } else if (moat2) { V *= " + DEF.moat2.toFixed(3) + "; }",   // (the moat a dim indigo, night rather than a hole)
       // (the ground's own characters glow too, in their colour: the court's ultramarine, the kitchen's turquoise, the
       // run-off's emerald, the night's violet fill the dark between them, colour in place of black, and no flat fill)
@@ -892,7 +902,7 @@
       "#version 300 es",
       "precision highp float;",
       "uniform vec4 uPal[64]; uniform vec3 uCol; uniform int uUse; uniform vec3 uEye; uniform float uEmit; uniform vec3 uFog;",
-      "uniform float uMat, uGround, uAO; uniform vec4 uCrt; uniform vec3 uLnC, uRim, uKeyV;",
+      "uniform float uMat, uGround, uAO, uGold; uniform vec4 uCrt; uniform vec3 uLnC, uRim, uKeyV, uSunG;",
       "in vec3 vN; in vec3 vW; flat in int vI; out vec4 o;",
       poolGLSL(),
       // a court's line: never under a pixel and a half across, however far (a 6 cm line at 20 m is a third of one, and
@@ -931,12 +941,24 @@
       "    }",
       "    float ao = mix(1.0, 0.5 + 0.5 * smoothstep(0.0, 1.5, vW.y), uAO), key = uAO * 1.05 * max(dot(n, uKeyV), 0.0);",
       "    c = base * ((dif + key + 0.06 + 0.3 * E * max(-n.y, 0.0)) * ao + uEmit) + uRim * rim * (0.5 + 0.5 * E);",
+      // his guitar, gold in bright sun (the artist, 28 Oct 2026: "His guitar should be more golden and displayed as if a
+      // bright sunlight was shining on an object made of gold"): a metal, so its colour is in what it reflects (gold's
+      // own reflectance, red full, green three quarters, blue a third, as measured), a sun of its own over the viewer's
+      // shoulder, a hard glint where the sun's mirror angle falls and a broad sheen round it (Blinn's half-angle, 1977),
+      // whiter at a grazing angle (Schlick's Fresnel, 1994), and a sunlit sky above it and warm ground below in its faces
+      "    if (uGold > 0.5) {",
+      "      vec3 F0 = vec3(1.0, 0.766, 0.336), h = normalize(uSunG + v), rf = reflect(-v, n);",
+      "      float nl = max(dot(n, uSunG), 0.0), nh = max(dot(n, h), 0.0), vh = max(dot(v, h), 0.0);",
+      "      vec3 Fr = F0 + (1.0 - F0) * pow(1.0 - vh, 5.0);",
+      "      vec3 env = mix(vec3(0.2, 0.11, 0.03), vec3(1.0, 0.9, 0.68), smoothstep(-0.35, 0.7, rf.y));",
+      "      c = F0 * (0.08 + 0.5 * nl + 0.3 * dif) + Fr * (nl * (6.0 * pow(nh, 90.0) + 0.9 * pow(nh, 10.0)) + 0.55 * env * F0);",
+      "    }",
       "  }",
       "  c = 1.0 - exp(-1.3 * c);",
       "  c = mix(c, uFog, clamp(1.0 - exp(-max(length(vW - uEye) - 50.0, 0.0) * 0.008), 0.0, 0.8));",
       "  o = vec4(c, 1.0 - mat / 255.0);",   // (its material, for the characters)
       "}"].join("\n"));
-    ["uVP", "uM", "uWide", "uPal", "uCol", "uUse", "uEye", "uEmit", "uFog", "uMat", "uGround", "uAO", "uCrt", "uLnC", "uRim", "uKeyV", "uKMax"].forEach(function (k) { SU[k] = gl.getUniformLocation(solid, k); });
+    ["uVP", "uM", "uWide", "uPal", "uCol", "uUse", "uEye", "uEmit", "uFog", "uMat", "uGround", "uAO", "uCrt", "uLnC", "uRim", "uKeyV", "uKMax", "uGold", "uSunG"].forEach(function (k) { SU[k] = gl.getUniformLocation(solid, k); });
     skyP = compile([
       "#version 300 es",
       "uniform vec3 uF; uniform vec3 uR; uniform vec3 uU; uniform vec2 uK;",
@@ -1024,7 +1046,7 @@
       for (var j = 0; j < 3; j += 1) { palMe[i * 4 + j] = c[j]; palPlan[i * 4 + j] = 105 + 0.6 * (255 - c[j]); }
     });
   }
-  var hideAth = false, cur = { vp: null, eye: [0, 0, 0] }, cine = null, ascMod = null, slow = 1;   // (cine, ascMod, slow: the super return's camera, pass and time)
+  var hideAth = false, cur = { vp: null, eye: [0, 0, 0] }, cine = null, ascMod = null;   // (cine, ascMod: the super return's camera and pass)
   // what the next solids are: their material (MAT, for the pass), the axes held a pixel and a half wide (wide), lit as
   // the ground or as a body, their rim and occlusion
   function paint(mat, wide, ground, rim, ao) {
@@ -1052,8 +1074,9 @@
       gl.uniform1f(SU.uMat, n === "hat" ? (plan ? MAT.HATPLAN : MAT.HATME) : plan ? MAT.PLAN : MAT.ME);
       gl.uniformMatrix4fv(SU.uM, false, pose.parts[n]); gl.bindVertexArray(P[n].vao); gl.drawArrays(gl.TRIANGLES, 0, P[n].n);
     });
-    gl.uniform1f(SU.uMat, plan ? MAT.PLAN : MAT.ME);
+    gl.uniform1f(SU.uMat, plan ? MAT.PLAN : MAT.GOLD); gl.uniform1f(SU.uGold, plan ? 0 : 1);   // (his guitar gold; Mr Plan's his negative's)
     gl.uniformMatrix4fv(SU.uM, false, pose.guitar); gl.bindVertexArray(P.guitar.vao); gl.drawArrays(gl.TRIANGLES, 0, P.guitar.n);
+    gl.uniform1f(SU.uGold, 0);
     if (!me) {
       var c = pose.headC, Rr = headBall.R, h = body.cell, hm = pose.headM;
       var M = [hm[0] * h, hm[1] * h, hm[2] * h, 0, hm[3] * h, hm[4] * h, hm[5] * h, 0, hm[6] * h, hm[7] * h, hm[8] * h, 0, c[0], c[1], c[2], 1];
@@ -1090,19 +1113,19 @@
   var STR = {
     courts: "The courts", wonN: function (n) { return n + (n === 1 ? " court won" : " courts won"); }, open: function (k) { return "court " + (k + 1) + " open"; },
     welcome: "Holographic Mr Pearl: Pickleball. One court at night, Mr Plan on it. Win it and the next appears beside it, harder: how many courts can you win? Walk onto court one.",
-    match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Your serve."; },
+    match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Run to the gold ◆ behind the baseline to serve."; },
     meterHint: "tap to stop it · further is harder · ◆ a chance at an ace",
     head: function (m) {
       var lv = m.balls.filter(function (q) { return !q.dead; }), r = lv.reduce(function (a, q) { return max(a, q.rally); }, 0);
       return "Court " + (m.k + 1) + " · level " + m.level + " · you " + m.you + " – " + m.them + " Mr Plan" + (lv.length > 1 ? " · " + lv.length + " pearls" : "") + " · rally " + r + " · " + STR.wonN(wonCount());
     },
     long: "The serve went long.", kitchenVolley: "A volley from the kitchen: a fault.", kitchenVolleyPlan: "Mr Plan volleys from the kitchen: a fault.", ace: "An ace: Mr Plan never got to it.", aceZone: "The ace zone: hard into the deep corner.",
-    superArmed: "Super return ready: the next pearl Mr Plan sends you is yours. Super again keeps it for later.", superKept: "Super return kept for later.",
-    superUsed: "Your super return is spent this game.", superWon: "Super return.",
+    superNext: "Super return: on the next point.", superUsed: "Your super return is spent this game: a new one with the next game.",
+    superWon: "Super return: the point is yours.",
     net: "Into the net.", netPlan: "Mr Plan puts it into the net.", kitchen: "The serve fell in the kitchen.", out: "Out.", outPlan: "Mr Plan hits it out.",
     twice: "It bounced twice: you did not reach it.", twicePlan: "Twice on its side: Mr Plan did not reach it.",
     rally: function (y, t, r) { return y + " – " + t + ", a rally of " + r + "."; },
-    planTakes: function (t, y) { return "Mr Plan takes it, " + t + " – " + y + ". Again from love: serve."; },
+    planTakes: function (t, y) { return "Mr Plan takes it, " + t + " – " + y + ". Again from love: run to the gold ◆ to serve."; },
     won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder."; },
     standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; }
   };
@@ -1155,10 +1178,12 @@
      the game should be very hard"): the share of the hardest, 1 - e^(-(court - 1) / HARD.K), is 0.28 at court two,
      three quarters at five, 0.95 at ten, and nears the whole without reaching it, so every court is harder than the
      last and none is beyond winning. Each number goes from court one's to the hardest's along it; pb_curve.js plays
-     the courts to measure what that makes of them. */
+     the courts to measure what that makes of them. (stretch: with two or three pearls in play the game runs him to each,
+     so none is lost for want of legs; his stroke at full stretch then goes out as often as this, so a pearl of several is
+     about as hard to win as a pearl alone: pb_multi.js measures it.) */
   var HARD = { K: 3,
-    one:  { wait: 0.42, err: 0.26, T: 1.25, dive: 0.5, lunge: 0.82, flair: 0.14, lob: 0.1, wide: 0.4, deep: 3.6, dink: 0, ace: 0.8, sweep: 1.15 },
-    most: { wait: 0.125, err: 0.066, T: 0.845, dive: 0.89, lunge: 0.96, flair: 0.24, lob: 0.21, wide: 2.13, deep: 6.15, dink: 0.29, ace: 0.31, sweep: 0.71 } };
+    one:  { wait: 0.42, err: 0.26, T: 1.25, dive: 0.5, lunge: 0.82, flair: 0.14, lob: 0.1, wide: 0.4, deep: 3.6, dink: 0, ace: 0.8, sweep: 1.15, stretch: 0.01 },
+    most: { wait: 0.125, err: 0.066, T: 0.845, dive: 0.89, lunge: 0.96, flair: 0.24, lob: 0.21, wide: 2.13, deep: 6.15, dink: 0.29, ace: 0.31, sweep: 0.71, stretch: 0.26 } };
   function hardness(level) { return 1 - Math.exp(-(max(1, level) - 1) / HARD.K); }
   function nemSkill(level) {
     var h = hardness(level), o = {};
@@ -1213,14 +1238,15 @@
   // Where an athlete on side (+1 his, -1 Mr Plan's) can meet the pearl b next: the flight stepped ahead on a copy, every
   // 1/90 s for up to 2.4 s; the contacts the rules allow (on his side, coming to him, after its bounce, or on the volley
   // where a volley may be, before a second bounce); the one his body reaches at least cost. run(t): what his legs can
-  // add first (nought for the player, who runs himself).
-  function planContact(a, b, side, run, only) {
+  // add first (nought for the player, who runs himself). after: no sooner than that (a stroke already waiting), and a
+  // may be where that stroke leaves him rather than where he is ({ x, z }).
+  function planContact(a, b, side, run, only, after) {
     var m = court.m, cc = courtAt(m.k), q = copyBall(b), t = 0, bounces = b.bounces, best = null, h = 1 / 90;
     for (var i = 0; i < 216; i += 1) {
       var at = ballStep(q, m.k, h); t += h;
       if (q.net) { break; }
       if (at) { if (side * (at[1] - cc[2]) <= 0) { break; } bounces += 1; if (bounces >= 2) { break; } }
-      if (side * (q.z - cc[2]) < 0.1 || side * q.vz <= 0) { continue; }
+      if (side * (q.z - cc[2]) < 0.1 || side * q.vz <= 0 || (after && t < after)) { continue; }
       // (a volley only where one may be, and from outside the kitchen: his feet, where he stands now, and the pearl
       // far enough out that the stroke's last steps keep them out)
       if (bounces === 0 && !(mayVolley(b, m, q.z) && abs(a.z - cc[2]) > COURT.K && abs(q.z - cc[2]) > COURT.K + 0.4)) { continue; }
@@ -1228,6 +1254,14 @@
       if (r && (!best || r.cost + 0.25 * t < best.cost + 0.25 * best.t)) { best = { t: t, p: p, reach: r.reach, cost: r.cost, volley: bounces === 0, ball: b }; }
     }
     return best;
+  }
+  // The blink (with two or three pearls in play only): a pearl no run can get him to in time, the hologram he is goes to
+  // at once, a trail of characters where he was, and plays it (Mr Plan, his negative, the same).
+  function blinkRun(t) { return t > 0 ? 1e3 : 0; }
+  function blinkTo(a, c, who) {
+    var to = who === "me" ? [c.p[0] - 0.55, c.p[2] + 0.35] : [c.p[0] + 0.55, c.p[2] - 0.35];
+    fxBlink([a.x, 0.9, a.z], [to[0], 0.9, to[1]], who);
+    a.x = to[0]; a.z = to[1]; a.vx = a.vz = 0;
   }
   function runOf(react) {
     return function (t) { t = max(0, t - react - 0.05); var t1 = CAPS.vmax / CAPS.acc; return t < t1 ? 0.5 * CAPS.acc * t * t : 0.5 * CAPS.vmax * t1 + CAPS.vmax * (t - t1); };
@@ -1246,9 +1280,9 @@
      it hard into the deep corner, where Mr Plan may not get it at all; past the end it goes long. After each pearl the
      mark sweeps again: up to three pearls in a serve, each a point of its own, played at once, while the serve is open
      (until 1.3 s after the last); then the view is the third person's again. */
-  var SERVE = { SOFT: 0.12, ACE: [0.72, 0.84], LONG: 0.94, MAX: 3, OPEN: 1.3, GAP: 0.34 };
+  var SERVE = { SOFT: 0.12, ACE: [0.72, 0.84], LONG: 0.94, MAX: 3, OPEN: 1.3, GAP: 0.34, ON: 0.5 };
   function servePeriod(m) { return m.sk.sweep; }   // the sweep, there and back half of it: quicker each court
-  function meterAt(m) { var u = ((gt - m.meterT0) / servePeriod(m)) % 2; return u < 1 ? u : 2 - u; }
+  function meterAt(m) { var u = (max(0, gt - m.meterT0) / servePeriod(m)) % 2; return u < 1 ? u : 2 - u; }
   function aceChance(m) { return m.sk.ace; }   // (an opportunity, not a gift: four in five on court one, less each court)
   function serveTap(m) {
     if (m.served + m.tosses.length >= SERVE.MAX || (m.pc && m.phase === "rally")) { return; }
@@ -1288,19 +1322,25 @@
     if (b.rally > courts.best) { courts.best = b.rally; }   // (the longest rally, kept with the next save; the score is the courts)
     say(why + " " + STR.rally(m.you, m.them, b.rally));
     var over = m.you >= COURT.WIN || m.them >= COURT.WIN;
-    if (over) { m.balls.forEach(function (q) { if (!q.dead) { q.dead = true; q.deadT = gt; q.mark = null; } }); m.tosses = []; m.pc = m.nc = null; }
+    if (over) { m.balls.forEach(function (q) { if (!q.dead) { q.dead = true; q.deadT = gt; q.mark = null; q.cleared = true; } }); m.tosses = []; m.pc = m.nc = null; }
     if (over || !live(m).length) { athCelebrate(toYou ? me : plans[m.k], true, gt); athCelebrate(toYou ? plans[m.k] : me, false, gt); }
     courtWhere();
   }
   function matchStep(dt, c) {
     var m = court.m, cc = courtAt(m.k), pl = plans[m.k], fire = c.fire;
     if (m.phase === "super") { superStep(m, dt); return; }
+    if (m.sup.armed && (m.phase === "serve" || m.phase === "toss" || m.phase === "rally") && superStart(m)) { return; }
     if (m.phase === "serve") {
-      // (he is taken to his serve at his own pace; there, the view faces across the net and the bar runs)
-      var sp = serveSpot(); me.want = { to: sp }; me.faceTo = m.n % 2 ? 0.12 : -0.12;
+      // (he runs to his serve himself, to the gold mark (the artist, 28 Oct 2026: "Get rid of the serve button and just
+      // have the animation start the serve position when you run to the right place"); there he steps onto it, turns
+      // to the net with a bounce, the view swings round behind him on its spring, and the bar runs; a tap stops it)
+      var sp = serveSpot();
       pl.want = { to: [cc[0], cc[2] - COURT.L - 0.6] }; pl.faceTo = PI;
-      if (!m.meterOn && hypot(me.x - sp[0], me.z - sp[1]) < 0.35 && me.speed < 1.5) { m.meterOn = true; m.meterT0 = gt; view.yaw = 0; }   // (the view turns to face across the net, on its spring)
-      if (m.meterOn) { me.want = { vel: [0, 0] }; if (fire) { serveTap(m); } }
+      if (!m.meterOn && hypot(me.x - sp[0], me.z - sp[1]) < SERVE.ON) {
+        m.meterOn = true; m.meterT0 = gt + 0.35; view.yaw = 0; athSplit(me, gt);
+        fxRing([sp[0], 0.03, sp[1]], "me");
+      }
+      if (m.meterOn) { me.want = { to: sp, k: 0.5 }; me.faceTo = m.n % 2 ? 0.12 : -0.12; if (fire && gt >= m.meterT0) { serveTap(m); } }
     } else if (m.phase === "toss" || m.phase === "rally") {
       if (m.meterOn && fire && gt < m.serveOpen) { serveTap(m); }
       if (m.tosses.length) { me.want = { vel: [0, 0] }; }
@@ -1321,7 +1361,6 @@
       } else { pointBall(m, b, side !== "you", side === "you" ? STR.twice : STR.twicePlan); }
     });
     if (m.phase === "rally") {
-      if (m.sup.armed && superStart(m)) { return; }
       mine(m); plans_(m, pl);
       if (!live(m).length && !m.tosses.length) { m.phase = "point"; m.t = gt; m.meterOn = false; }
     } else if (m.phase === "point" && gt - m.t >= 1.4) {
@@ -1341,28 +1380,66 @@
   // His strokes: automatic. While Mr Plan's shots come, where his racket can meet each is found every frame (he runs
   // himself; nothing is added to his legs), the soonest he can make taken, and the stroke goes when its wind-up must
   // begin; then the pearl goes where the view looks, as it did on the rocket world's courts.
+  // Two or three pearls in play (the artist, 28 Oct 2026: "when I serve two or three balls, each ball counts as its own
+  // point and both players must play both balls"): no one runs to three places at once, so then the game runs him, as
+  // it runs Mr Plan, to each pearl that comes to him in turn (where no run gets there in time, the blink); a pearl that
+  // must be met before the stroke that waits is met first (the other found again after it); two that come together
+  // within his reach, one stroke plays both. The stick is his again between pearls.
+  // (each pearl its own way to it, his legs or, with two or more in play, the blink; the soonest of them)
+  function soonest(a, side, lv, run, multi, skip, own) {
+    var best = null;
+    lv.forEach(function (b) {
+      if (b === skip) { return; }
+      var c = (own && own(b)) || planContact(a, b, side, run);
+      if (!c && multi && !(side < 0 && b.ace)) { c = planContact(a, b, side, blinkRun); if (c) { c.blink = true; } }
+      if (c && (!best || c.t < best.t)) { best = c; }
+    });
+    return best;
+  }
   function mine(m) {
-    var cc = courtAt(m.k), lv = live(m).filter(function (q) { return q.last === "them"; });
+    var lv = live(m).filter(function (q) { return q.last === "them"; }), multi = live(m).length > 1, legs = runOf(multi ? 0.12 : 1e9);
     if (lv.length) { var f = lv[0]; me.faceTo = clampV(Math.atan2(f.x - me.x, -(f.z - me.z)), -1.2, 1.2); }
-    if (!m.pc && !m.tosses.length) {
-      var best = null;
-      lv.forEach(function (b) { var c = planContact(me, b, 1, runOf(1e9)); if (c && (!best || c.t < best.t)) { best = c; } });
-      if (best && best.t <= leadOf(best, WIND[strokeKind(best)]) + 0.02) {
-        var c = best; c.kind = strokeKind(c); c.tc = gt + c.t; m.pc = c; c.aimAt = aimPoint(m, c); c.aim = norm([c.aimAt[0] - c.p[0], 0.35, c.aimAt[1] - c.p[2]]); athSwing(me, c, gt);
-      }
+    if (!m.tosses.length) {
+      var best = soonest(me, 1, lv, legs, multi, m.pc && m.pc.ball);
+      if (m.pc && best && best.t + 0.14 > m.pc.tc - gt) { best = null; }   // (only one that must come first)
+      if (best && multi && !m.pc) { me.want = { to: [best.p[0] - 0.55, best.p[2] + 0.35] }; }   // (on his way to it)
+      if (best && best.t <= leadOf(best, WIND[strokeKind(best)]) + 0.02) { myPlan(m, best); }
     }
     // (a stroke standing: the last steps in to it are his own, the pearl on his right, so the stroke meets it)
-    if (m.pc && (m.pc.reach === "stand" || m.pc.reach === "dig")) { me.want = { to: [m.pc.p[0] - 0.55, m.pc.p[2] + 0.35] }; }
-    if (m.pc && gt >= m.pc.tc) {
-      var pc = m.pc, b = pc.ball; m.pc = null;
-      if (b.dead || b.last !== "them") { return; }
-      if (b.bounces === 0 && abs(me.z - cc[2]) < COURT.K) { pointBall(m, b, false, STR.kitchenVolley); return; }   // (the rule: no volley from the kitchen)
-      shoot(b, m.k, pc.aimAt[0] - cc[0], pc.aimAt[1] - cc[2], pc.kind === "overhead" ? 0.75 : pc.kind === "dig" ? 1.3 : 1.05);
-      fxBurst([b.x, b.y, b.z], "me", pc.kind === "overhead");
-      b.last = "you"; b.bounces = 0; b.serve = false; b.rally += 1; b.nemAt = gt + m.sk.wait; b.mark = null;
-      var fl = rng(); b.flair = fl < m.sk.flair ? "dive" : fl < 2 * m.sk.flair ? "lunge" : null;
-      athSplit(plans[m.k], gt);
-    }
+    if (m.pc && (m.pc.reach === "stand" || m.pc.reach === "dig" || multi)) { me.want = { to: [m.pc.p[0] - 0.55, m.pc.p[2] + 0.35] }; }
+    if (m.pc && gt >= m.pc.tc) { var pc = m.pc; m.pc = null; myStroke(m, pc); }
+  }
+  function myPlan(m, c) { if (c.blink) { blinkTo(me, c, "me"); } c.kind = strokeKind(c); c.tc = gt + c.t; m.pc = c; c.aimAt = aimPoint(m, c); c.aim = norm([c.aimAt[0] - c.p[0], 0.35, c.aimAt[1] - c.p[2]]); athSwing(me, c, gt); }
+  function myStroke(m, pc) {
+    var cc = courtAt(m.k), b = pc.ball;
+    if (b.dead || b.last !== "them") { return; }
+    if (b.bounces === 0 && abs(me.z - cc[2]) < COURT.K) { pointBall(m, b, false, STR.kitchenVolley); return; }   // (the rule: no volley from the kitchen)
+    var multi = live(m).length > 1, hit = function (q, at) {
+      // (at full stretch, now and then out: long or wide)
+      if (multi && rng() < m.sk.stretch) { at = rng() < 0.5 ? [at[0], cc[2] - (COURT.L + 0.6 + 0.8 * rng())] : [cc[0] + (rng() < 0.5 ? -1 : 1) * (COURT.HW + 0.5 + 0.6 * rng()), at[1]]; }
+      shoot(q, m.k, at[0] - cc[0], at[1] - cc[2], pc.kind === "overhead" ? 0.75 : pc.kind === "dig" ? 1.3 : 1.05);
+      fxBurst([q.x, q.y, q.z], "me", pc.kind === "overhead");
+      q.last = "you"; q.bounces = 0; q.serve = false; q.rally += 1; q.nemAt = gt + m.sk.wait; q.mark = null;
+      var fl = rng(); q.flair = fl < m.sk.flair ? "dive" : fl < 2 * m.sk.flair ? "lunge" : null;
+    };
+    hit(b, pc.aimAt);
+    doubles(m, b, 1).forEach(function (q) { hit(q, aimPoint(m, { p: [q.x, q.y, q.z] })); });
+    athSplit(plans[m.k], gt);
+  }
+  // the other pearls a stroke meets as it plays one: those that come with it, within the guitar's reach of it, and
+  // those no stroke after this one could still meet (two at once, metres apart): an echo of him, in characters, plays
+  // each of those where it is. Each its own shot; a pearl the rules let him play there (on his side, bounced once, or a
+  // volley where one may be, at a height a guitar meets)
+  function doubles(m, b, side) {
+    var cc = courtAt(m.k), who = side > 0 ? "them" : "you", a = side > 0 ? me : plans[m.k];
+    return live(m).filter(function (q) {
+      if (q === b || q.last !== who || side * (q.z - cc[2]) <= 0.1 || q.y < 0.05 || q.y > CAPS.top + CAPS.leapUp) { return false; }
+      if (!(q.bounces === 1 || (q.bounces === 0 && mayVolley(q, m, q.z) && abs(q.z - cc[2]) > COURT.K + 0.4))) { return false; }
+      if (hypot(q.x - b.x, q.y - b.y, q.z - b.z) < 1.3) { return true; }
+      if (planContact(a, q, side, blinkRun, null, 0.14)) { return false; }   // (still to be met after this stroke)
+      fxEcho([q.x, q.y, q.z], side > 0 ? "me" : "plan");
+      return true;
+    });
   }
   // Where his return goes: the view's way, deep, as the rocket world aimed it (the far baseline less up to 1.6 m).
   function aimPoint(m, c) {
@@ -1373,45 +1450,55 @@
   // added), and strokes: away from Mr Pearl, deeper and wider as his level is, a dink into the kitchen, a lob; now and
   // then out, or into a dive that does not get there. One body: two pearls close together, and one may get by him. An
   // ace (the serve's gold zone, and his luck) he goes for at full stretch and does not reach.
+  // With two or three pearls in play he goes for every one (the artist: "both players must play both balls"), as Mr
+  // Pearl does: each in turn, the blink where no run gets there, one that must come first first, two together in one
+  // stroke.
   function plans_(m, pl) {
-    var cc = courtAt(m.k), sk = m.sk, lv = live(m).filter(function (q) { return q.last === "you" && gt >= q.nemAt; });
-    if (!m.nc && lv.length && gt >= m.replan) {
+    var lv = live(m).filter(function (q) { return q.last === "you" && gt >= q.nemAt; }), multi = live(m).length > 1;
+    var onlyOf = function (b) { return b.ace ? { dive: 1, lunge: 1, leap: 1 } : b.flair === "dive" ? { dive: 1, leap: 1 } : b.flair === "lunge" ? { lunge: 1, leap: 1 } : null; };
+    if (lv.length && gt >= m.replan && (!m.nc || multi)) {
       m.replan = gt + 0.08;
-      var best = null;
-      lv.forEach(function (b) {
-        var only = b.ace ? { dive: 1, lunge: 1, leap: 1 } : b.flair === "dive" ? { dive: 1, leap: 1 } : b.flair === "lunge" ? { lunge: 1, leap: 1 } : null;
-        var c = (only && planContact(pl, b, -1, runOf(0), only)) || planContact(pl, b, -1, runOf(0));
-        if (c && (!best || c.t < best.t)) { best = c; }
-      });
+      var best = soonest(pl, -1, lv, runOf(0), multi, m.nc && m.nc.ball, function (b) { var only = onlyOf(b); return only && planContact(pl, b, -1, runOf(0), only); });
+      if (m.nc && best && best.t + 0.14 > m.nc.tc - gt) { best = null; }   // (only one that must come first)
       if (best) {
-        var c = best, b = c.ball, ux = c.p[0] - pl.x, uz = c.p[2] - pl.z, ul = hypot(ux, uz) || 1;
         // (stand off from the contact by most of his reach, the pearl on his right: his right is -x, facing +z)
-        pl.want = { to: [c.p[0] + 0.55, c.p[2] - 0.35] };
-        if (c.t <= leadOf(c, 0.28) + 0.02) {
-          c.kind = strokeKind(c); c.tc = gt + c.t;
-          c.miss = b.ace || (c.reach === "dive" && rng() > sk.dive) || (c.reach === "lunge" && rng() > sk.lunge);
-          var plx = me.x - cc[0], wx = clampV(-Math.sign(plx || 1) * sk.wide + (rng() - 0.5) * 0.8, -COURT.HW + 0.25, COURT.HW - 0.25), wz = min(COURT.L - 0.3, sk.deep + (rng() - 0.5)), Tf = sk.T;
-          var pick = rng();
-          if (pick < sk.dink) { wz = COURT.K * (0.35 + 0.5 * rng()); Tf = sk.T + 0.25; c.kind = c.kind === "drive" ? "dink" : c.kind; }
-          else if (pick < sk.dink + sk.lob) { wz = COURT.L - 0.6 - 0.8 * rng(); Tf = 1.9 + 0.3 * rng(); }   // a lob: high, deep, to be leapt for
-          var e = rng();
-          if (e < sk.err) { if (e < sk.err / 2) { wz = COURT.L + 0.5 + 0.8 * rng(); } else { wx = Math.sign(wx || 1) * (COURT.HW + 0.4 + 0.6 * rng()); } }
-          c.shot = [wx, wz, Tf]; c.aim = norm([wx + cc[0] - c.p[0], 0.35, wz + cc[2] - c.p[2]]);
-          if (c.miss) { var off = c.reach === "dive" ? 0.9 : 0.5; c.p = [c.p[0] - ux / ul * off, c.p[1], c.p[2] - uz / ul * off]; }
-          m.nc = c; athSwing(pl, c, gt);
-        }
+        if (!m.nc) { pl.want = { to: [best.p[0] + 0.55, best.p[2] - 0.35] }; }
+        if (best.t <= leadOf(best, 0.28) + 0.02) { planPlan(m, pl, best); }
       }
     }
-    if (m.nc && gt >= m.nc.tc) {
-      var nc = m.nc, nb = nc.ball; m.nc = null;
-      if (nc.miss || nb.dead || nb.last !== "you") { return; }   // (the dive or the lunge did not get there: the pearl goes on)
-      if (nb.bounces === 0 && abs(pl.z - cc[2]) < COURT.K) { pointBall(m, nb, true, STR.kitchenVolleyPlan); return; }
-      shoot(nb, m.k, nc.shot[0], nc.shot[1], nc.shot[2]);
-      fxBurst([nb.x, nb.y, nb.z], "plan", false);
-      nb.last = "them"; nb.bounces = 0; nb.serve = false; nb.rally += 1;
-      var L0 = ballLands(nb, m.k); nb.mark = L0 && { x: L0.x, z: L0.z };
-      athSplit(me, gt);
-    }
+    if (m.nc && multi) { pl.want = { to: [m.nc.p[0] + 0.55, m.nc.p[2] - 0.35] }; }
+    if (m.nc && gt >= m.nc.tc) { var nc = m.nc; m.nc = null; planStroke(m, pl, nc); }
+  }
+  // his stroke at c, chosen: where it goes (away from Mr Pearl, deeper and wider as his level is, a dink, a lob, now and
+  // then out) and whether the dive or the lunge gets there
+  function planPlan(m, pl, c) {
+    if (c.blink) { blinkTo(pl, c, "plan"); }
+    var cc = courtAt(m.k), sk = m.sk, b = c.ball, ux = c.p[0] - pl.x, uz = c.p[2] - pl.z, ul = hypot(ux, uz) || 1;
+    c.kind = strokeKind(c); c.tc = gt + c.t;
+    c.miss = b.ace || (!c.blink && ((c.reach === "dive" && rng() > sk.dive) || (c.reach === "lunge" && rng() > sk.lunge)));
+    var plx = me.x - cc[0], wx = clampV(-Math.sign(plx || 1) * sk.wide + (rng() - 0.5) * 0.8, -COURT.HW + 0.25, COURT.HW - 0.25), wz = min(COURT.L - 0.3, sk.deep + (rng() - 0.5)), Tf = sk.T;
+    var pick = rng();
+    if (pick < sk.dink) { wz = COURT.K * (0.35 + 0.5 * rng()); Tf = sk.T + 0.25; c.kind = c.kind === "drive" ? "dink" : c.kind; }
+    else if (pick < sk.dink + sk.lob) { wz = COURT.L - 0.6 - 0.8 * rng(); Tf = 1.9 + 0.3 * rng(); }   // a lob: high, deep, to be leapt for
+    var e = rng();
+    if (e < sk.err) { if (e < sk.err / 2) { wz = COURT.L + 0.5 + 0.8 * rng(); } else { wx = Math.sign(wx || 1) * (COURT.HW + 0.4 + 0.6 * rng()); } }
+    c.shot = [wx, wz, Tf]; c.aim = norm([wx + cc[0] - c.p[0], 0.35, wz + cc[2] - c.p[2]]);
+    if (c.miss) { var off = c.reach === "dive" ? 0.9 : 0.5; c.p = [c.p[0] - ux / ul * off, c.p[1], c.p[2] - uz / ul * off]; }
+    m.nc = c; athSwing(pl, c, gt);
+  }
+  function planStroke(m, pl, nc) {
+    var cc = courtAt(m.k), nb = nc.ball;
+    if (nc.miss || nb.dead || nb.last !== "you") { return; }   // (the dive or the lunge did not get there: the pearl goes on)
+    if (nb.bounces === 0 && abs(pl.z - cc[2]) < COURT.K) { pointBall(m, nb, true, STR.kitchenVolleyPlan); return; }
+    var hit = function (q, sh) {
+      shoot(q, m.k, sh[0], sh[1], sh[2]);
+      fxBurst([q.x, q.y, q.z], "plan", false);
+      q.last = "them"; q.bounces = 0; q.serve = false; q.rally += 1;
+      var L0 = ballLands(q, m.k); q.mark = L0 && { x: L0.x, z: L0.z };
+    };
+    hit(nb, nc.shot);
+    doubles(m, nb, -1).forEach(function (q) { if (!q.ace) { hit(q, [clampV(-nc.shot[0] * 0.6 + (rng() - 0.5), -COURT.HW + 0.3, COURT.HW - 0.3), clampV(nc.shot[1] - 1 + 2 * rng(), COURT.K + 0.5, COURT.L - 0.3), nc.shot[2] + 0.1]); } });
+    athSplit(me, gt);
   }
   function levelWon() {
     var m = court.m, c = courts[m.k];
@@ -1426,7 +1513,7 @@
   function courtStep(dt, c) {
     courtsSim(dt);
     var m = court.m;
-    if (m && (m.phase === "serve" || m.phase === "toss")) { /* (he is taken to his serve) */ }
+    if (m && m.meterOn && (m.phase === "serve" || m.phase === "toss")) { /* (on the mark: he stands to serve) */ }
     else if (!(me.move && me.move.own)) { me.want = { vel: c.vel }; }
     if (!m) { me.faceTo = c.vel[0] || c.vel[1] ? Math.atan2(c.vel[0], -c.vel[1]) : null; }
     if (m) { matchStep(dt, c); }
@@ -1544,22 +1631,118 @@
   }
   /* -- the super return: once a game (see below, "the super return") -- */
   function superButton() {
-    var bt = $("super"), m = court.m, sp = m && m.sup;
+    var bt = $("super"), m = court.m, sp = m && m.sup, on = !!(m && m.phase === "super");
     if (!bt) { return; }
-    bt.disabled = !sp || !sp.avail; bt.setAttribute("aria-pressed", sp && sp.armed ? "true" : "false");
+    bt.disabled = !on && (!sp || !sp.avail || sp.armed); bt.setAttribute("aria-pressed", on || (sp && sp.armed) ? "true" : "false");
   }
+  // A press uses it at once (between points, on the next one); once a game: a new one when a game begins.
   function superPress() {
     var m = court.m;
-    if (!m || m.phase === "super") { return; }
+    if (!m || m.phase === "super" || m.sup.armed) { return; }
     if (!m.sup.avail) { say(STR.superUsed); return; }
-    m.sup.armed = !m.sup.armed;   // (a second press keeps it for later)
-    superButton(); say(m.sup.armed ? STR.superArmed : STR.superKept);
+    m.sup.armed = true;
+    if (m.phase === "point") { say(STR.superNext); }
+    superButton();
   }
-  // (the super return's choreography: below, once its design is settled; until then it waits armed)
-  function superStart(m) { void m; return false; }
-  function superStep(m, dt) { void dt; m.phase = "rally"; }
+  /* -- the super return (the artist, 28 Oct 2026: "Mr Pearl also gets one super return each game that is a spectacular
+     and impressive animation that automatically wins Mr Pearl one point"; then "I want a button in the top right corner
+     that allows you to use your superpower and automatically win the point"). Once a game, at any moment of a point.
+     The pearl coming to him (none coming, the one he sent last, called back; at his serve, one from his hand) leaves its
+     flight and rises to meet him, and time stands for everything else: Mr Plan holds, the other pearls hang where they
+     are. He gathers, the night dimming round him, gold turning off his guitar; he leaps four metres, the guitar
+     windmilling a turn and a half, a ring of gold where it goes (his rocket-world guitar smash, the windmill
+     Pete Townshend made a guitarist's); at the top it meets the pearl: a sunburst, the pearl driven down into Mr Plan's
+     far corner, faster than any stroke, a comet of gold; Mr Plan dives for it and does not get there; he lands in a ring
+     of dust. The camera rises with him, at his right shoulder, and follows the pearl down. */
+  var SUP = { T: 2.45, GATHER: 0.42, UP: 4.0, FLY: 0.4 };
+  function superStart(m) {
+    var cc = courtAt(m.k), pl = plans[m.k], lv = live(m), b = null, t0 = gt;
+    b = lv.filter(function (q) { return q.last === "them"; }).sort(function (x, y) { return abs(x.z - me.z) - abs(y.z - me.z); })[0] || lv.filter(function (q) { return q.last === "you"; }).sort(function (x, y) { return (y.id || 0) - (x.id || 0); })[0] || null;
+    if (!b) {
+      // (at his serve, or between pearls: one from his hand)
+      var s0 = serveFrom();
+      b = { id: m.nextId++, x: s0[0], y: s0[1], z: s0[2], vx: 0, vy: 0, vz: 0, net: false, spin: 0, last: "you", bounces: 0, serve: false, rally: 1, nemAt: gt, mark: null, dead: false };
+      m.balls.push(b); m.served = max(m.served, 1);
+    }
+    m.tosses = []; m.meterOn = false; m.pc = m.nc = null;
+    var tUp = Math.sqrt(2 * SUP.UP / CAPS.g), apex = t0 + SUP.GATHER + tUp;
+    // where the guitar meets it at the top: up, a little forward and to his right of his shoulder, as far as his arm and
+    // the guitar reach; facing the net
+    var d = norm([0.15, 0.8, -0.45]);
+    var C = [me.x + RIG.sR[0] + d[0] * RIG.reach, SUP.UP + RIG.sR[1] + d[1] * RIG.reach - 0.04, me.z + RIG.sR[2] + d[2] * RIG.reach];
+    var tx = (pl.x - cc[0] > 0 ? -1 : 1) * (COURT.HW - 0.45), tz = -(COURT.L - 0.5);
+    me.move = { kind: "overhead", reach: "super", t0: t0, sw: apex - 0.32, tc: apex, p: C, aim: norm([tx + cc[0] - C[0], -0.6, tz + cc[2] - C[2]]), fore: true,
+                own: [t0, t0 + SUP.T], end: t0 + SUP.T, up: t0 + SUP.GATHER, vy: CAPS.g * tUp, lockYaw: true, yawTo: 0,
+                drop: function (g) { return g < t0 + SUP.GATHER ? 0.12 + 0.3 * smooth((g - t0) / SUP.GATHER) : me.air ? 0.04 : 0.36 - 0.24 * smooth((g - t0 - SUP.GATHER - 2 * tUp) / 0.3); } };
+    me.vx = me.vz = 0; me.celeb = null; me.spin = null;
+    pl.want = { vel: [0, 0] }; pl.faceTo = Math.atan2(me.x - pl.x, -(me.z - pl.z)); pl.move = null;
+    b.super = true; b.mark = null; b.bounces = 0; b.net = false;
+    m.sup = { avail: false, armed: false, t0: t0, apex: apex, ball: b, p0: [b.x, b.y, b.z], v0: [b.vx * 0.4, b.vy * 0.4 + 2, b.vz * 0.4], C: C, shot: [tx, tz], struck: false, won: false, prev: m.phase };
+    m.phase = "super"; ascMod = { expo: 1, glow: ASC.glow };
+    superButton(); courtWhere();
+    return true;
+  }
+  function superStep(m, dt) {
+    var sp = m.sup, u = gt - sp.t0, b = sp.ball, cc = courtAt(m.k), pl = plans[m.k], gold = ["#fff4c2", "#ffd166", "#f3c98b", "#ffb347"];
+    // the pass: the night dims round him through the gathering and the leap, and glows the more at the strike
+    var dim = smooth(u / 0.3) * (1 - smooth((u - SUP.T + 0.5) / 0.5)), hit = sp.struck ? max(0, 1 - (gt - sp.hitT) / 0.5) : 0;
+    ascMod = { expo: 1 - 0.18 * dim + 0.25 * hit, glow: ASC.glow + 0.25 * dim + 0.45 * hit };
+    var pc = me.pose && me.pose.paddleC;
+    if (u < SUP.GATHER && pc && fxR() < 0.9) {   // gold turning off the guitar as he gathers
+      var a = fxR() * 2 * PI, e = fxR() * 2 - 1, r = Math.sqrt(1 - e * e);
+      fxAdd(pc.slice(), [r * Math.cos(a) * 3, e * 3, r * Math.sin(a) * 3], 0.45, pick(["·", "+", "*"]), pick(gold), 0.13, 0, false);
+      if (fxR() < 0.5) { fxAdd([me.x + (fxR() - 0.5) * 1.2, 0.05, me.z + (fxR() - 0.5) * 1.2], [0, 2 + fxR() * 2, 0], 0.6, "∴", pick(gold), 0.13, 0, false); }
+    }
+    if (!sp.struck && u >= SUP.GATHER && pc) { fxAdd(pc.slice(), [0, 0, 0], 0.5, pick(["*", "+", "◆"]), pick(gold), 0.16, 0, false); }   // the windmill's ring of gold
+    if (!sp.struck) {
+      // the pearl rises to meet the guitar at the top (a Hermite curve from where it was, half its speed, to the bout)
+      var k = clampV(u / (sp.apex - sp.t0), 0, 1), k2 = k * k, k3 = k2 * k, h00 = 2 * k3 - 3 * k2 + 1, h10 = k3 - 2 * k2 + k, h01 = -2 * k3 + 3 * k2, T = sp.apex - sp.t0;
+      var C = sp.C; if (pc && k > 0.85) { C = lerp3(C, pc, smooth((k - 0.85) / 0.15)); }
+      b.x = h00 * sp.p0[0] + h10 * T * sp.v0[0] + h01 * C[0]; b.y = h00 * sp.p0[1] + h10 * T * sp.v0[1] + h01 * C[1]; b.z = h00 * sp.p0[2] + h10 * T * sp.v0[2] + h01 * C[2];
+      b.spin = (b.spin || 0) + 12 * dt;
+      if (fxR() < 0.6) { fxAdd([b.x, b.y, b.z], [0, 0, 0], 0.3, "◇", pick(["#f2efe8", "#fff4c2"]), 0.12, 0, false); }
+      if (gt >= sp.apex) {
+        // the strike: a sunburst, the pearl driven down into the far corner
+        sp.struck = true; sp.hitT = gt;
+        b.last = "you"; b.serve = false; b.rally += 1; b.bounces = 0; b.net = false;
+        shoot(b, m.k, sp.shot[0], sp.shot[1], SUP.FLY);
+        fxBurst([b.x, b.y, b.z], "me", true);
+        for (var i = 0; i < 36; i += 1) { var ra = i / 36 * 2 * PI, rv = 7 + 2 * fxR(); fxAdd([b.x, b.y, b.z], [Math.cos(ra) * rv, Math.sin(ra) * rv, (fxR() - 0.5) * 2], 0.55, pick(["*", "+", "-", "◆"]), pick(gold), 0.2, 0, false); }
+        var L0 = ballLands(b, m.k);
+        if (L0) {   // (Mr Plan goes full length for it, and it is past him)
+          var dx = L0.x - pl.x, dz = L0.z - pl.z, dl = hypot(dx, dz) || 1;
+          athSwing(pl, { tc: gt + SUP.FLY + 0.02, p: [L0.x - dx / dl * 0.7, 0.3, L0.z - dz / dl * 0.7], kind: "drive", reach: "dive", aim: [0, 0, 1] }, gt);
+        }
+      }
+    } else if (!b.dead) {
+      var at = ballStep(b, m.k, dt);
+      if (fxR() < 0.95) { fxAdd([b.x, b.y, b.z], [-b.vx * 0.05, -b.vy * 0.05, -b.vz * 0.05], 0.4, pick(["*", "+", "·"]), pick(gold), 0.16, 0, false); }   // the comet
+      if (at) {
+        fxBurst([at[0], 0.1, at[1]], "me", true); fxRing([at[0], 0.03, at[1]], "me");
+        sp.won = true; pointBall(m, b, true, STR.superWon);
+      }
+    }
+    if (u >= SUP.T) {
+      if (!b.dead) { pointBall(m, b, true, STR.superWon); }
+      ascMod = null;
+      m.phase = live(m).length ? "rally" : "point"; m.t = gt;
+      if (m.phase === "rally") { m.meterOn = false; }
+      superButton(); courtWhere();
+    }
+  }
+  // the camera through it: at his right shoulder, rising with him, looking up at the meeting and then down along the
+  // pearl's way into the far corner; eased in and out of his own
+  function superCam(e0, yaw0, pitch0) {
+    var m = court.m, sp = m && m.sup; if (!m || m.phase !== "super" || !sp) { return null; }
+    var u = gt - sp.t0, w = smooth(u / 0.35) * (1 - smooth((u - SUP.T + 0.5) / 0.5)), b = sp.ball;
+    var tgt = [me.x + 0.1, 1.3 + me.y * 0.85, me.z - 3.0];
+    if (sp.struck) { tgt = lerp3(tgt, [b.x, max(0.6, b.y), b.z], 0.4 * smooth((gt - sp.hitT) / 0.3)); }
+    var e1 = [me.x + 2.0, 2.1 + 0.72 * me.y, me.z + 9.5], dx = tgt[0] - e1[0], dy = tgt[1] - e1[1], dz = tgt[2] - e1[2];
+    var yaw1 = Math.atan2(dx, -dz), pitch1 = Math.atan2(dy, hypot(dx, dz));
+    return { e: lerp3(e0, e1, w), yaw: yaw0 + angle(yaw1 - yaw0) * w, pitch: pitch0 + (pitch1 - pitch0) * w };
+  }
   // The hands: touch and mouse alike, the left half a stick (where the finger or the press lands is its middle), the
-  // right half a drag that turns the view (the way his return goes), a tap or a click anywhere a serve; Serve and
+  // right half a drag that turns the view (the way his return goes), a tap or a click anywhere stops the serve's bar;
   // Super; on a desk the keys too.
   var input = { keys: {}, stick: null, look: null, fire: false, taps: 0, down: {} };
   function inputClear() { input.keys = {}; input.stick = null; input.fire = false; input.down = {}; }
@@ -1610,7 +1793,6 @@
     }));
     window.addEventListener("keyup", function (e) { var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; input.keys[k] = false; if (!e.shiftKey) { input.keys.Shift = false; } });
     window.addEventListener("blur", function () { input.keys = {}; input.stick = null; });
-    $("serve").addEventListener("click", awake(function () { input.fire = true; }));
     $("super").addEventListener("click", awake(function () { superPress(); }));
   }
 
@@ -1664,6 +1846,7 @@
     if (canvas.width !== cw || canvas.height !== chh) { canvas.width = cw; canvas.height = chh; }
     me.pose = athPose(me, gt);
     var e = camera(frameDt), yaw = view.yaw, pitch = view.pitch;
+    cine = superCam(e, yaw, pitch);
     if (cine) { e = cine.e; yaw = cine.yaw; pitch = cine.pitch; }
     if (camOver) { e = camOver.e; yaw = camOver.yaw; pitch = camOver.pitch; }
     var vm = viewM(e, yaw, pitch);
@@ -1703,6 +1886,7 @@
     gl.uniformMatrix4fv(SU.uVP, false, cur.vp); gl.uniform3fv(SU.uEye, e); gl.uniform3fv(SU.uFog, SKY.gnd);
     // the athletes' key held to the view, from over the viewer's left shoulder, as his head's rig is (pearl.js, uRig)
     gl.uniform3fv(SU.uKeyV, norm(add(add(sc(r, -0.5), sc(u, 0.72)), sc(f, -0.5)))); gl.uniform1f(SU.uKMax, courts.length - 1);
+    cur.sun = norm(add(add(sc(r, 0.45), sc(u, 0.8)), sc(f, -0.4))); gl.uniform3fv(SU.uSunG, cur.sun); gl.uniform1f(SU.uGold, 0);
     drawCourts(); drawShadows(shadows);
     // the athletes
     drawAthlete(me, me.pose, true, false);
@@ -1751,6 +1935,23 @@
     }
     for (var j = 0; j < 10; j += 1) { var b = j / 10 * 2 * PI; fxAdd(p.slice(), [Math.cos(b) * 3, Math.sin(b) * 3, 0], 0.22, "·", C.hot[1], 0.12, 0, false); }
   }
+  // an echo: his shape in a few characters where the pearl is, for the moment of its stroke
+  function fxEcho(p, who) {
+    var C = FXC[who];
+    for (var i = 0; i < 9; i += 1) { fxAdd([p[0] + (fxR() - 0.5) * 0.5, max(0.1, p[1] - 0.9 + 1.8 * i / 8), p[2] + (fxR() - 0.5) * 0.3], [0, 0.2, 0], 0.4, pick(["◇", ":", "|", "∴"]), pick(C.swirl), 0.17, 0, false); }
+  }
+  // a blink: a line of characters from where he was to where he is, thinning, and a ring where he comes back
+  function fxBlink(a, b, who) {
+    var C = FXC[who], n = 14;
+    for (var i = 0; i <= n; i += 1) { var u = i / n; fxAdd([a[0] + (b[0] - a[0]) * u, a[1] + 0.5 * (fxR() - 0.5), a[2] + (b[2] - a[2]) * u], [0, 0.3, 0], 0.25 + 0.3 * u, pick([":", "∴", "·", "◇"]), pick(C.trail), 0.15, 0, false); }
+    for (var q = 0; q < 10; q += 1) { var t = q / 10 * 2 * PI; fxAdd([b[0], b[1], b[2]], [Math.cos(t) * 2.2, 0.4, Math.sin(t) * 2.2], 0.3, "◇", pick(C.swirl), 0.14, 0, false); }
+  }
+  // the mark answering his step onto it: a ring of gold running out along the court, a few sparks up
+  function fxRing(p, who) {
+    var C = FXC[who];
+    for (var q = 0; q < 16; q += 1) { var b = q / 16 * 2 * PI; fxAdd(p.slice(), [Math.cos(b) * 2.6, 0, Math.sin(b) * 2.6], 0.45, "◆", pick(["#f3c98b", "#ffd27a", C.hot[1]]), 0.12, 0, true); }
+    for (var j = 0; j < 6; j += 1) { fxAdd([p[0], 0.1, p[2]], [(fxR() - 0.5) * 1.2, 1.6 + fxR(), (fxR() - 0.5) * 1.2], 0.5, "+", pick(C.hot), 0.12, 3, false); }
+  }
   // how a body meets the court and the air, each frame: footfalls, sprint, leap, landing, skid
   function fxMove(a, who, dt) {
     var C = FXC[who], k = floor(a.phase / PI), fwd = [Math.sin(a.yaw), -Math.cos(a.yaw)], lat = [Math.cos(a.yaw), Math.sin(a.yaw)];
@@ -1775,8 +1976,19 @@
     if (a.skid > 0.5 && a.fxT > 0.03) { a.fxT = 0; fxAdd([a.x, 0.02, a.z], [0, 0, 0], 1.1, "=", pick(FXC.scuff), 0.18, 0, true); }
     a.fxAir = a.air; a.fxVy = a.vy;
   }
+  // the sun on his gold: where the guitar's top turns the sun to the eye, a glint (a star of characters, white-gold),
+  // and now and then a spark somewhere on it, as gold in the sun has
+  function fxGlint(dt) {
+    var ps = me.pose; if (!ps || !cur.sun || hideAth) { return; }
+    var c = ps.paddleC, v = norm(sub(cur.eye, c)), k = abs(dot(ps.paddleN, norm(add(cur.sun, v))));
+    me.glT = (me.glT || 0) + dt;
+    var j = function (r) { return [c[0] + (fxR() - 0.5) * r, c[1] + (fxR() - 0.5) * r, c[2] + (fxR() - 0.5) * r]; };
+    if (k > 0.93 && me.glT > 0.05) { me.glT = 0; fxAdd(j(0.18), [0, 0, 0], 0.16, "+", pick(["#fffbe8", "#ffe7a3", "#ffd166"]), 0.2 + 1.2 * (k - 0.93), 0, false); }
+    else if (fxR() < dt * 1.6) { fxAdd(j(0.5), [0, 0.1, 0], 0.22, pick(["+", "*", "·"]), pick(["#fff4c2", "#ffd166"]), 0.12, 0, false); }
+  }
   function fxStep(dt) {
     var e = cur.eye;
+    fxGlint(dt);
     [[me, "me"]].concat(plans.map(function (p) { return [p, "plan"]; }), stands.map(function (p) { return [p, "me"]; })).forEach(function (w) {
       var a = w[0]; if (a && hypot(a.x - e[0], a.z - e[2]) < 45) { fxMove(a, w[1], dt); }
     });
@@ -1815,7 +2027,7 @@
     c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
     var m = court.m, vp = cur.vp;
     fxDraw(c, W, H, vp);
-    hudBox.meter = null;
+    hudBox.meter = null; hudBox.mark = null; hudBox.banner = null;
     var toS = function (p) { var q = [0, 0, 0, 0]; for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0.05 ? [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H] : null; };
     var glyph = function (ch, x, y, size, col) { c.font = "700 " + size + "px ui-monospace, SFMono-Regular, Menlo, 'DejaVu Sans Mono', monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.7)"; c.strokeText(ch, x, y); c.fillStyle = col || "#f2efe8"; c.fillText(ch, x, y); };
     if (m) {
@@ -1823,7 +2035,35 @@
         if (b.dead || !b.mark || b.last !== "them" || b.bounces !== 0) { return; }
         for (var s = 0; s < 14; s += 1) { var a = s / 14 * 2 * PI, q = toS([b.mark.x + Math.cos(a) * 0.4, 0.02, b.mark.z + Math.sin(a) * 0.4]); if (q) { glyph("○", q[0], q[1], 11); } }
       });
+      if (m.phase === "serve" && !m.meterOn) {
+        // (where he serves from: gold diamonds round the spot on the court, breathing slowly (never a flash), and one in
+        // its middle; drawn over everything, so a mark behind him still shows through)
+        var sp = serveSpot(), br = 0.5 + 0.5 * Math.sin(gt * PI), rr = 0.42 + 0.05 * br;
+        for (var s2 = 0; s2 < 12; s2 += 1) { var a2 = s2 / 12 * 2 * PI, q2 = toS([sp[0] + Math.cos(a2) * rr, 0.02, sp[1] + Math.sin(a2) * rr]); if (q2) { glyph("◆", q2[0], q2[1], 10 + 2 * br, "#f3c98b"); } }
+        var qc = toS([sp[0], 0.02, sp[1]]), inset = 34;
+        if (qc && qc[0] > inset && qc[0] < W - inset && qc[1] > hudLow + inset && qc[1] < H - inset) { glyph("◆", qc[0], qc[1], 16, "#ffd27a"); hudBox.mark = { x: qc[0], y: qc[1] }; }
+        else {
+          // (off the screen, behind him or past its edge: at the edge, the way to it, a gold diamond and an arrow)
+          var cq = [0, 0, 0, 0], P = [sp[0], 0.02, sp[1]]; for (var i2 = 0; i2 < 4; i2 += 1) { cq[i2] = vp[i2] * P[0] + vp[4 + i2] * P[1] + vp[8 + i2] * P[2] + vp[12 + i2]; }
+          var ex = cq[0] / Math.abs(cq[3] || 1e-3), ey = -cq[1] / Math.abs(cq[3] || 1e-3); if (cq[3] < 0.05) { ex = -ex; ey = -ey; if (ey < 0.2) { ey = 1; } }
+          var an = Math.atan2(ey, ex), hx = (W / 2 - inset), hy = (H / 2 - inset), kk = min(hx / max(1e-3, Math.abs(Math.cos(an))), hy / max(1e-3, Math.abs(Math.sin(an))));
+          var mx2 = W / 2 + Math.cos(an) * kk, my2 = max(hudLow + inset, H / 2 + Math.sin(an) * kk);
+          glyph("◆", mx2, my2, 18 + 2 * br, "#ffd27a");
+          glyph("→↘↓↙←↖↑↗".charAt(((Math.round(an / (PI / 4)) % 8) + 8) % 8), mx2 - Math.cos(an) * 20, my2 - Math.sin(an) * 20, 16, "#f3c98b");
+          hudBox.mark = { x: mx2, y: my2, edge: true };
+        }
+      }
       if (m.meterOn && m.phase !== "super") { meterDraw(c, m, W, H, glyph); }
+      if (m.phase === "super" && m.sup.struck) {
+        // the strike: one flash of gold from where it is (once, never a flicker), and its name over the courts, in gold
+        var hu = gt - m.sup.hitT, qh = toS([m.sup.ball.x, m.sup.ball.y, m.sup.ball.z]) || [W / 2, H / 3];
+        if (hu < 0.3) { var gr = c.createRadialGradient(qh[0], qh[1], 0, qh[0], qh[1], max(W, H) * 0.8); gr.addColorStop(0, "rgba(255,226,150," + (0.4 * (1 - hu / 0.3)).toFixed(3) + ")"); gr.addColorStop(1, "rgba(255,180,60,0)"); c.fillStyle = gr; c.fillRect(0, 0, W, H); }
+        if (hu < 1.1) {
+          var bs = min(W * 0.085, 46) * (1 + 0.25 * (1 - smooth(hu / 0.25))), ba = 1 - smooth((hu - 0.75) / 0.35);
+          c.save(); c.globalAlpha = ba; glyph("◆ SUPER RETURN ◆", W / 2, max(hudLow + 40, H * 0.3), bs, "#ffd166"); c.restore();
+          hudBox.banner = { x: W / 2, y: max(hudLow + 40, H * 0.3) };
+        }
+      }
     }
     if (input.stick) { var st = input.stick, L = min(60, hypot(st.dx, st.dy)), an = Math.atan2(st.dy, st.dx); glyph("○", st.x, st.y, 46); glyph("◆", st.x + Math.cos(an) * L, st.y + Math.sin(an) * L, 22, "#f3c98b"); }
     // the last ten courts: a square each, its number in it; filled while it plays on by itself, gold while he plays it,
@@ -1896,6 +2136,17 @@
              swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w) { athCelebrate(a, w, gt); },
              step: function (a, sec) { for (var i = 0; i < round(sec * 60); i += 1) { gt += 1 / 60; athStep(a, 1 / 60, gt); } },
              meter: function () { var m = court.m; return m && m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
+             serveSpot: function () { return court.m ? serveSpot() : null; },
+             newSuper: function () { if (court.m) { court.m.sup = { avail: true, armed: false }; superButton(); } },   // (a new game's, for the tests)
+             // (the tests: run him to the serve's mark by the stick, as a player does, until the bar runs)
+             toServe: function () {
+               for (var i = 0; i < 600 && court.m && court.m.phase === "serve" && !court.m.meterOn; i += 1) {
+                 var sp = serveSpot(), wx = sp[0] - me.x, wz = sp[1] - me.z, L = hypot(wx, wz), y = view.yaw, k = 60 * min(1, L / 1.5) / (L || 1);
+                 input.stick = { id: -1, x: 0, y: 0, dx: (Math.cos(y) * wx + Math.sin(y) * wz) * k, dy: -(Math.sin(y) * wx - Math.cos(y) * wz) * k };
+                 this.run(1 / 60);
+               }
+               input.stick = null; return !!(court.m && court.m.meterOn);
+             },
              hide: function (on) { hideAth = on; }, fx: function () { return fx; }, camNow: function () { return { e: cur.eye.slice(), yaw: cur.yaw, pitch: cur.pitch }; },
              camAt: function (e, yaw, pitch, plain) { camOver = e && { e: e, yaw: yaw, pitch: pitch }; camPlain = !!plain; } };
   } };

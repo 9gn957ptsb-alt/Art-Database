@@ -16,7 +16,7 @@ async function page(b, view) {
 const shot = async (p, n) => { await p.evaluate(() => window.Pickleball.debug().draw()); await p.screenshot({ path: `${out}/${n}.png` }); };
 // to a rally: onto court one, serve one pearl hard, until Mr Plan's return is on its way back
 const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5);
-  for (let i = 0; i < 400 && !(d.court.m && d.court.m.meterOn); i++) { d.run(1 / 60); }
+  d.toServe();
   for (let i = 0; i < 200; i++) { const u = d.meter(); if (u != null && u >= 0.5 && u <= 0.7) { d.run(1 / 60, true); break; } d.run(1 / 60); }
   for (let i = 0; i < 400; i++) { d.run(1 / 60); const m = d.court.m; if (m && m.balls.some((b) => !b.dead && b.last === "them" && b.y > 1)) { break; } } };
 (async () => {
@@ -29,7 +29,7 @@ const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5
   await p.evaluate(rally); await shot(p, "2_phone_rally");          // a rally, his third person
   await p.close();
   ({ p, errs } = await page(b, phone)); all.push(errs);
-  await p.evaluate(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5); for (let i = 0; i < 400 && !(d.court.m && d.court.m.meterOn); i++) { d.run(1 / 60); } d.run(0.4); });
+  await p.evaluate(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5); d.toServe(); d.run(0.4); });
   await shot(p, "3_phone_serve");                                   // the serve: the bar
   await p.close();
   ({ p, errs } = await page(b, desk)); all.push(errs);

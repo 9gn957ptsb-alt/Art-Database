@@ -1,5 +1,5 @@
 /* Pickleball: the view fills whatever it is given (a phone upright or on its side, a desk, YouTube's frame), the words
-   and the two buttons over it as page elements, never glyphed. */
+   and the Super button over it as page elements, never glyphed (the serve has no button: he runs to its mark). */
 /* one look, by choice: characters glow on black, so the page is dark wherever it is shown */
 :root { --bg: #000; --fg: #f2efe8; --gold: #f3c98b; --edge: rgba(242, 239, 232, 0.5); --pane: rgba(10, 12, 20, 0.6); --shade: #000; color-scheme: dark; }
 html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
@@ -20,11 +20,12 @@ body { color: var(--fg); font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo,
 button { position: fixed; border: 1px solid var(--edge); background: var(--pane); color: var(--fg);
          font: inherit; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 999px; touch-action: manipulation; }
 button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-#serve { right: calc(16px + env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom));
-         width: 76px; height: 76px; border-radius: 50%; }
-#super { right: calc(16px + env(safe-area-inset-right)); bottom: calc(106px + env(safe-area-inset-bottom)); padding: 10px 16px; border-color: var(--gold); color: var(--gold); }
+/* the super return, in the top right corner while he plays a match (the artist, 28 Oct 2026: "I want a button in the
+   top right corner that allows you to use your superpower and automatically win the point"); the words at the top
+   stop short of it */
+#super { top: calc(8px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); min-width: 96px; min-height: 44px;
+         padding: 0 14px; border-color: var(--gold); color: var(--gold); font-weight: 700; }
 #super[aria-pressed="true"] { background: var(--gold); color: var(--bg); }
-#super:disabled { border-color: var(--edge); color: var(--fg); opacity: 0.35; }
+#super:disabled:not([aria-pressed="true"]) { border-color: var(--edge); color: var(--fg); opacity: 0.35; }
 body:not([data-phase]) #super, body[data-phase="walk"] #super { display: none; }
-#super { display: none; }   /* (until the super return's animation is in: the button arms nothing yet) */
-body[data-phase="serve"] #serve { border-color: var(--gold); color: var(--gold); }
+body[data-phase]:not([data-phase="walk"]) .top { right: calc(118px + env(safe-area-inset-right)); }

@@ -48,8 +48,8 @@ const MOCK = (saved, o) => `window.ytgame = (function () {
   check(won1.courts === 2 && won1.won === 1, "a court won opens the next beside it: " + JSON.stringify(won1));
   const t0 = await p.evaluate(() => { window.__yt.pause(); return window.Pickleball.debug().gt(); });
   await p.waitForTimeout(1500);
-  // paused, the game takes no input: a key, a tap on Serve
-  await p.keyboard.press(" "); await p.click("#serve", { force: true });
+  // paused, the game takes no input: a key, a tap on the view
+  await p.keyboard.press(" "); await p.mouse.click(300, 400);
   check(await p.evaluate(() => window.Pickleball.debug().input.fire === false), "no input while paused");
   const held = await p.evaluate(() => ({ gt: window.Pickleball.debug().gt(), running: window.Pickleball.debug().running(), store: window.__yt.store() }));
   check(!held.running && held.gt === t0, "the pause halts the loop and the game's clock (" + t0.toFixed(3) + " → " + held.gt.toFixed(3) + ")");
