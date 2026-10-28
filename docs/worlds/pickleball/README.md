@@ -1,4 +1,7 @@
-# Pickleball
+# Holographic Mr Pearl: Pickleball
+
+The artist, 28 Oct 2026: "Name the pickleball game: Holographic Mr Pearl: Pickleball".
+
 
 Holographic Mr Pearl's courts as a game of their own, made to become a YouTube Playable. Served at
 `/worlds/pickleball/`; packaged by `scripts/build_pickleball.js`.
@@ -13,21 +16,37 @@ for the ASCII aesthetic".
 
 The rocket world's courts (`../rocket/README.md`, "The courts"), their numbers and their rules: ten pickleball courts
 side by side, 20 by 44 feet, the kitchen 7 feet from the net; level one on court one, first to three; Mr Pearl serves
-every point, underhand and across, past the kitchen, the pearl his ball and his hat the paddle; the two-bounce rule; no
+every point, underhand and across, past the kitchen, the pearl his ball and his guitar the racket (below); the two-bounce rule; no
 volley from the kitchen; the ring of `○` where Mr Plan's shot will come down; the rally counted and the longest kept. A
 level won plays on by itself (his stand-in against that court's Mr Plan) and gives its tool to the Trojan horse, which
 rises a part at a time beyond the courts; a match lost there stops the court and its tool until it is played again, a
 level up. His nemesis is now **Mr Plan**, his negative (every colour turned over, lifted to show at night). The game
 starts in front of court one: there is no place to go back to.
 
-**Hands.** On a touch screen the left half is a stick (where the thumb lands is its middle), the right half a drag
-that turns the view (the way his return goes), a tap anywhere serves; Serve and Scope are buttons. On a desk: WASD or
-the arrows (Shift for full speed), a drag to turn, a click, Space, T or Enter to serve, R or the right button for the
-Scope. His strokes are his own: when Mr Plan's shot comes, the game finds where his paddle can meet it and the stroke
+**The serve** (the artist, 28 Oct 2026: "I want you to be able to serve up [to] 3 balls in one serve so you can play
+multiple balls/points at once. Use the scope view for the every serve and add an animation that you have to land a bar
+within a certain zone to have the opportunity to ace your opponent. Depending on where you click to stop the bar
+depends on how hard you serve"). At his serve the Scope comes up by itself, level across the net (his head the glass,
+his hat off, his nose the aim: where it looks, inside the diagonal service court, the serve goes), and a bar of
+characters runs in the dark above the net, a `◎` sweeping it there and back (1.15 s each way at level one, quicker each
+level). A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
+fault), then `- = + *` softer to harder (deeper and quicker), `◆` the gold ace zone (hard into the deep corner: a
+chance at an ace, four in five at level one and a twentieth less each level, Mr Plan going for it at full stretch and
+not getting there), `#` hard, `△` long (a fault). After each pearl the mark sweeps again: up to three pearls a serve
+(`○ ○ ○` above the bar, `◎` as each goes), while the serve is open (until 1.3 s after the last), each pearl a point of
+its own, all of them played at once; then the view is the third person's again. Mr Plan has one body: two pearls close
+together, and one may get by him; Mr Pearl, the same.
+
+**Hands.** Touch and mouse alike (YouTube asks both for everything): the left half is a stick (where the finger or the
+press lands is its middle), the right half a drag that turns the view (the way his return goes), a tap or a click
+anywhere stops the serve's bar; Serve, Scope and Super are buttons. On a desk the keys too: WASD or the arrows (Shift
+for full speed), Space, T or Enter to stop the bar, R or the right button for the Scope, E or Q for the super return. His strokes are his own: when Mr Plan's shot comes, the game finds where his paddle can meet it and the stroke
 goes then; the player's part is to be near, to aim and to serve.
 
 **Views.** His own (the artist: "maintain the perspectives of Mr Pearl to play"): the third person behind his head,
-his whole figure a third of the screen at rest, now on a critically damped spring so that his bursts read; and the
+his whole figure a quarter of the screen's height at rest (the rocket world has a third; the artist, 28 Oct 2026: "The
+third person view should be a little farther out for Pickleball given the speed in which Mr. Pearl can now move"), on a
+critically damped spring so that his bursts read; and the
 Scope, his head the glass and his nose the aim, its mark written `◎` and `+` (the tribar that marked it went with the
 unit).
 
@@ -50,13 +69,16 @@ dives often fall short.
 | top speed | 13 m/s | Usain Bolt's measured peak (Berlin, 2009) was about 12.4 m/s |
 | acceleration | 30 m/s² | a sprinter's first steps are about 8 to 10: 6 m/s in a fifth of a second |
 | braking | 42 m/s² | he stops harder than he starts; above 6 m/s a stop is a skid |
-| reach | 1.0 m standing, 2.1 m lunging, 3.8 m diving | his paddle (the hat) a third of a metre past his glove |
+| reach | 1.25 m standing, 2.35 m lunging, 4 m diving | his arm and his guitar make a lever a little over a metre from shoulder to bout |
 | leap | 1.6 m | the best standing vertical jumps measured are about 1.2 m |
 
 The rig is on PearlBody's parts (`../rocket/pearl.js`): two-bone legs solved to where each foot goes, the upper body
 dropped, bent at the hips and twisted for the stroke, the right arm turned about the shoulder so that the paddle is
-where the stroke wants it, the left for balance, the hat held in his right glove (the brim's round the paddle's face),
-the Koa bass on his back.
+where the stroke wants it, the left for balance. **The racket is his guitar** (the artist, 28 Oct 2026: "Mr Pearl should be playing with his
+Guitar as the racket too, not his hat", as he smashes with it in the rocket world): the Koa bass held by the neck in
+his right glove a hand's width below the nut, along the line of his arm, its lower bout the face, turned to where the
+shot goes; its strap left off (swung, it would loop out); his hat back on his head. Mr Plan and the stand-ins play
+with theirs the same way.
 
 Level shows in how soon Mr Plan reads the pearl (0.42 s at level one, 0.03 less a level), how rarely he misses (26%
 of his shots out or in the net at level one, down to 3%), how often his dives get there (half at level one), and how
@@ -79,30 +101,45 @@ and control is a page element over the characters.
 
 ## YouTube Playables
 
-What the bundle does for the Playables SDK (`https://www.youtube.com/game_api/v1`, read at 1.20261019.0100):
+Checked against YouTube's own requirements (developers.google.com/youtube/gaming/playables, read 28 Oct 2026: the
+integration, stability, design, privacy, language, money, accessibility and trust pages, the SDK reference at
+1.20261019.0100 and the Test Suite guide). What the bundle does:
 
 - **The SDK first.** `build_pickleball.js --playable` puts it as the first script, plain (its `firstFrameReady()`
   checks that). The site's own page never loads it.
-- **Ready.** `firstFrameReady()` after the first (black) frame, `gameReady()` after the first frame of the courts.
-- **Pause.** `onPause` cancels the frame and stops the game's own clock (nothing catches up at `onResume`) and saves;
-  the Page Visibility API is never used.
+- **Loading, then ready.** The page opens on the words "Loading the courts…" over black; `firstFrameReady()` is called
+  under them (the rule: only while a screen says it is loading). They go the frame the courts are first drawn, and
+  `gameReady()` follows, so nothing is shown that cannot be played.
+- **Pause.** `onPause` cancels the frame, stops the game's own clock (nothing catches up at `onResume`), drops what
+  the hands were holding and saves; while paused no touch, click or key does anything. The Page Visibility API is
+  never used.
 - **Save.** Through `saveData`/`loadData` inside YouTube (well under 3 MiB: the courts, the horse and the longest
-  rally), `localStorage` only outside.
-- **Score.** `sendScore` with the longest rally, an integer, when it grows.
+  rally), only after the load, `localStorage` only outside. A save from any version, or a broken one, is read field
+  by field as counts, or as a fresh start.
+- **Score.** `sendScore` with the longest rally, an integer, when it grows, saved first: the best sent is always the
+  save's, as the rule asks.
+- **The end.** When all ten courts are won and the Trojan horse stands, the game says it is complete, and the head
+  says so from then on (the rule: tell the player there is no more).
+- **Sharp.** Drawn at the screen's own pixels up to 3 to 1 (a phone's), so the characters are not upscaled soft.
 - **Language.** From `getLanguage()`, never the browser's; English only for now (every word is in one table, `STR`).
-- **No sound** (so nothing to mute), no links, no requests but the SDK, every script a static tag (YouTube's CSP puts
-  nonces on them), no inline script, no `eval`; any aspect ratio, touch, mouse and keys; a frame with no size (the
-  Android app's first, hidden one) draws nothing and breaks nothing.
-- **Size.** The zip is about 60 KB (five files).
+- **No sound** (so nothing to mute), no links, no sharing, no requests but the SDK, every script a static tag, no
+  inline script, no `eval`, no workers; any aspect ratio, touch, mouse and keys; Esc left alone; a frame with no size
+  (the Android app's first, hidden one) draws nothing and breaks nothing.
+- **Size.** The zip is about 65 KB (five files).
 
 `node scripts/build_pickleball.js --playable <dir>` writes the folder and `<dir>.zip`; `--artifact <file.html>` one
-self-contained page (no SDK). Getting it onto YouTube is the artist's part: Playables is invitation-only (the interest
-form, the Playables Developer Portal, a release tested with the hosted SDK Test Suite on desktop, mobile web, Android
-and iOS, then certification).
+self-contained page (no SDK). `notes/holographic-mr-pearl/harness/pb_playables.js` checks all of the above with a
+mock of the SDK, then the built bundle with the real SDK, served with YouTube's Content Security Policy header (the
+string the Test Suite guide gives) and nothing refused. Getting it onto YouTube is the artist's part: Playables is
+invitation-only (the interest form, the Playables Developer Portal, a release tested with the hosted SDK Test Suite
+on desktop, mobile web, Android and iOS, then certification). At the portal the artist picks the accessibility tags
+(the Entertainment Software Association's Accessible Games Initiative; a wrong tag breaks the rules) and confirms the
+trust pages: for everyone 13 and over and not made for children; the characters, the music (none) and the names the
+artist's own or cleared.
 
-**Weak:** the official requirement pages (developers.google.com) could not be read from the session that built this,
-only through search results, and the hosted Test Suite could not be run; the checks are a mock of the SDK and the real
-SDK outside YouTube (`notes/holographic-mr-pearl/harness/pb_playables.js`). The grid of characters is fixed to the
-screen, so what moves fast shimmers cell to cell. The marks outside the monospace font come from whatever font the
-device has, so the order of the set differs a little by device. The rest of Holographic Mr Pearl still draws in the
-impossible triangle; this game is the first in the new unit.
+**Weak:** the hosted Test Suite needs the game at a public address with the SDK, which this session could not give
+it; the checks are a mock of the SDK and the real SDK outside YouTube. The grid of characters is fixed to the screen,
+so what moves fast shimmers cell to cell. The marks outside the monospace font come from whatever font the device
+has, so the order of the set differs a little by device. Drawn at 3 to 1, a phone fills twice the pixels it did at 2:
+the frame rate there is unmeasured. The rest of Holographic Mr Pearl still draws in the impossible triangle; this game
+is the first in the new unit.
