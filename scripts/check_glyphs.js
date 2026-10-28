@@ -9,6 +9,7 @@
        light and its names.
      A museum (the National Gallery of Art): the building's overlay shown and drawn under its ring.
      A life (Picasso): the world's overlay drawn in the lens.
+     Every overlay in Glyph Light's ASCII style and no other (artist, 28 Oct 2026).
      No page errors anywhere.
      cd docs && python3 -m http.server 8811 &
      NODE_PATH=/opt/node22/lib/node_modules node scripts/check_glyphs.js [port] [shots dir]
@@ -36,7 +37,7 @@ const state = (P) => P.evaluate(() => (window.Glyphs ? Glyphs.overlays() : []).m
     const d = x.getImageData(0, 0, 96, 96).data;
     for (let i = 0; i < d.length; i += 4) { const l = d[i] + d[i + 1] + d[i + 2]; if (l > 150) lit++; else if (d[i + 3] > 200) dark++; }
   }
-  return { cls: c.className, parent: c.parentNode && String(c.parentNode.className).split(" ")[0], shown, w: c.width, h: c.height, cw: Math.round(r.width), ch: Math.round(r.height), lit, dark };
+  return { cls: c.className, parent: c.parentNode && String(c.parentNode.className).split(" ")[0], style: g.options.style, shown, w: c.width, h: c.height, cw: Math.round(r.width), ch: Math.round(r.height), lit, dark };
 }));
 
 async function run(browser, w, h, touch, dpr) {
@@ -45,7 +46,7 @@ async function run(browser, w, h, touch, dpr) {
   await ctx.addInitScript(() => { try { localStorage.setItem("dial.seen", JSON.stringify(["t:paris-fr", "l:pablo-picasso"])); } catch (e) {} });
   const P = await ctx.newPage();
   P.setDefaultTimeout(120000);
-  const errors = [];
+  const errors = [], styles = new Set();
   P.on("pageerror", (e) => errors.push(e.message));
   await P.route(/d32dm0rphc51dk\.cloudfront\.net|nasa\.gov|wikimedia\.org|artsy\.net/, (r) => r.fulfill({ status: 200, contentType: "image/svg+xml", body: PIC }));
   await P.goto(`http://localhost:${PORT}/v2/`, { waitUntil: "load" });
@@ -55,6 +56,7 @@ async function run(browser, w, h, touch, dpr) {
 
   // the world
   let s = await state(P);
+  s.forEach((o) => styles.add(o.style));
   const world = s.find((o) => o.parent === "stage");
   check(tag, !!world && world.shown, "the world's overlay is in the stage and shown", world);
   const sr = await P.evaluate(() => { const r = document.getElementById("stage").getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; });
@@ -77,6 +79,7 @@ async function run(browser, w, h, touch, dpr) {
   await P.waitForFunction(() => document.documentElement.hasAttribute("data-skyline") && document.querySelector(".skyline-clod"), null, { timeout: 120000 });
   await P.waitForTimeout(15000);
   s = await state(P);
+  s.forEach((o) => styles.add(o.style));
   const sky = s.find((o) => o.parent === "skyline"), w2 = s.find((o) => o.parent === "stage");
   check(tag, sky && sky.shown && sky.lit > 20, "the skyline's overlay is shown and drawn", sky);
   check(tag, w2 && !w2.shown, "the world's steps away while the skyline is up", w2 && w2.shown);
@@ -93,6 +96,7 @@ async function run(browser, w, h, touch, dpr) {
   await P.waitForFunction(() => document.querySelector("#building-map .building-clod"), null, { timeout: 120000 });
   await P.waitForTimeout(12000);
   s = await state(P);
+  s.forEach((o) => styles.add(o.style));
   const bld = s.find((o) => o.parent === "building-map");
   check(tag, bld && bld.shown && bld.lit > 10, "the building's overlay is shown and drawn", bld);
   await P.screenshot({ path: path.join(OUT, `glyphs-nga-${tag}.png`) });
@@ -101,11 +105,13 @@ async function run(browser, w, h, touch, dpr) {
   await P.evaluate(() => Lives.open("pablo-picasso"));
   await P.waitForTimeout(14000);
   s = await state(P);
+  s.forEach((o) => styles.add(o.style));
   const w3 = s.find((o) => o.parent === "stage");
   const lens = await P.evaluate(() => document.getElementById("stage").dataset.lens || "");
   check(tag, w3 && w3.shown && w3.lit > 2, "a life: the world's overlay drawn", { lens, w3 });
   await P.screenshot({ path: path.join(OUT, `glyphs-life-${tag}.png`) });
 
+  check(tag, styles.size === 1 && styles.has("ascii"), "every overlay in the ASCII style alone", [...styles]);
   check(tag, errors.length === 0, "no page errors", errors.slice(0, 5));
   await ctx.close();
 }

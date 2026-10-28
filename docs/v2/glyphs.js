@@ -14,6 +14,11 @@
  * The glyphs are the site's own categories' marks (KINDS.md), sorted by the ink they leave as Glyph Light sorts any
  * set: so the faintest light of the world is written ∴ and ∵ and the brightest ▢ and ◆, the world drawn in what it is
  * sorted into. GLYPHS = false brings the world back as it was.
+ *
+ * Only Glyph Light's ASCII style (artist, 28 Oct 2026, with its "A# ASCII" button: "Make sure you are just using the
+ * ASCII style from GLYPH Light and none of the other styles"): glyphs chosen by their light from a set, as its Glyphs
+ * row, which it shows under that style alone, chooses them. The engine keeps its dots, grain, scan and text for the
+ * pieces made before; no overlay here may take one (ASCII is set last, over whatever a view asks).
  */
 (function () {
   "use strict";
@@ -26,6 +31,7 @@
   // Toned for a world that is often pale (stone cities, cloud): no added contrast, the middles let down a step, and only
   // the real highlights glow (Glyph Light's own 1.2, 1 and 70 % had blown Paris's stone into solid white).
   const base = { set: SET, bg: BG, contrast: 1, gamma: 0.8, thresh: 0.82, glow: 0.5 };
+  const ASCII = { style: "ascii" };
   const made = new Map();                            // host -> overlay
   const live = (el) => el && el.isConnected;
 
@@ -51,7 +57,7 @@
       host: stage, before: trail, className: "world", sources,
       cell: () => (stage.dataset.lens ? 4 : cell()),
       active: () => !html.hasAttribute("data-skyline"),
-    }));
+    }, ASCII));
     made.set(stage, world);
   }
 
@@ -84,7 +90,7 @@
     for (const v of VIEWS) {
       const host = v.find();
       if (!live(host) || made.has(host)) continue;
-      const g = GlyphLight.create(Object.assign({}, base, v.make(host)));
+      const g = GlyphLight.create(Object.assign({}, base, v.make(host), ASCII));
       if (g) made.set(host, g);
     }
     for (const [host, g] of made) if (host !== stage && !live(host)) { g.destroy(); made.delete(host); }
