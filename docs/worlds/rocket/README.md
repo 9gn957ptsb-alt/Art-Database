@@ -504,15 +504,18 @@ picture as it is.
 through the provided slide bars are being implemented in all of the artifacts ... Keep in mind that the infinite
 texture that you are displaying is a storyboard and someone's thumb is the direction of how the story plays out ...
 almost like a flip book but instead of each sticky note being behind the other, they are placed side-by-side"). All of
-the page's controls are in the pass: its styles (ASCII, dots on a 4 by 4 Bayer order, grain, scan lines), its glyph sets
+the page's controls are in the pass but its styles: **ASCII only**, a glyph by the light of a set (the artist, 28 Oct
+2026, by way of the Artist Website's session: "Make sure you are just using the ASCII style from GLYPH Light and none of
+the other styles for the aesthetics of the artifacts I specified you to implement into"; and here: "Mr Pearl uses ASCII
+only"; the page's dots, grain and scan lines are gone from the game). Its glyph sets
 (fine, blocks, binary, kana and kanji as the page has them, and the custom set, the figure's, first; each sorted by the
 ink it leaves), its colour modes (full, mono, gold, blue), auto levels, exposure, contrast, midtones, detail (a cell
 sharpened against its neighbourhood), invert, the glow and where it starts (in the glyph, and a halo from the picture
 softened a few octaves), the image under the glyphs, the density, and its motions (pulse, shimmer, reveal, push in). The
 place is laid out in panels 12 m square, the frames of a storyboard side by side: the first where he wakes, as Glyph
 Light first came in (the figure's set, ASCII's way, full colour); each next a step from the one before (one slider
-moved, or a style, a set, a mode or a motion changed); the frames running in a serpentine, so that a frame's neighbours
-are the frame before it and the frame after, 8 by 8 of them and again past the last, every style, set, mode and motion,
+moved, or a set, a mode or a motion changed); the frames running in a serpentine, so that a frame's neighbours are the
+frame before it and the frame after, 8 by 8 of them and again past the last, every set, mode and motion,
 an inverted frame and an auto-levelled one somewhere among the 64. The thumb on the stick turns the pages, and every
 page is seen beside the next; where two frames meet on the ground they meet as two stills of a flip book laid side by
 side. The size of a glyph by distance stays the artist's own (6 px at 3.2 m), each frame's density a factor on it.
