@@ -34,20 +34,49 @@ gold while he plays one).
 **The serve** (the artist, 28 Oct 2026: "I want you to be able to serve up [to] 3 balls in one serve so you can play
 multiple balls/points at once. Use the scope view for the every serve and add an animation that you have to land a bar
 within a certain zone to have the opportunity to ace your opponent. Depending on where you click to stop the bar
-depends on how hard you serve"; later, "Get rid of the scope view in the Pickleball game"). At his serve the third
-person's view turns to face across the net (where it looks, inside the diagonal service court, the serve goes; a drag
-aims it), and a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.15 s each way on
+depends on how hard you serve"; later, "Get rid of the scope view in the Pickleball game", and "Get rid of the serve
+button and just have the animation start the serve position when you run to the right place"). There is no Serve
+button: a ring of gold `◆` breathes on the court where he serves from (behind the baseline, right of the centre on even
+points, left on odd), and the player runs him to it (off the screen, a `◆` and an arrow at the edge point the way). On
+it he steps onto the mark, turns to the net with a bounce, the mark answers with a ring of gold along the court, and
+the third person's view swings round to face across the net (where it looks, inside the diagonal service court, the
+serve goes; a drag aims it); a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.15 s each way on
 court one, quicker each court), its instruction written under it. A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
 fault), then `- = + *` softer to harder (deeper and quicker), `◆` the gold ace zone (hard into the deep corner: a
 chance at an ace, four in five at level one and a twentieth less each level, Mr Plan going for it at full stretch and
 not getting there), `#` hard, `△` long (a fault). After each pearl the mark sweeps again: up to three pearls a serve
 (`○ ○ ○` above the bar, `◎` as each goes), while the serve is open (until 1.3 s after the last), each pearl a point of
-its own, all of them played at once; then the view is the third person's again. Mr Plan has one body: two pearls close
-together, and one may get by him; Mr Pearl, the same.
+its own, all of them played at once; then the view is the third person's again.
+
+**Two or three pearls** (the artist, 28 Oct 2026: "Make sure that when I serve two or three balls, each ball counts as
+its own point and both players must play both balls"). Every pearl is a point of its own, counted the moment it is
+dead; the point that decides a match clears the pearls still up, without points. Both athletes play every pearl: with
+two or more in play the game runs Mr Pearl, as it runs Mr Plan, to each pearl that comes to him in turn (the stick is
+the player's again between pearls). Where no run gets there in time, he blinks (the hologram he is goes to it at once,
+a line of characters where he was); a pearl that must be met before the stroke that waits is met first; two that come
+together within his reach, one stroke plays both; and two at the same moment metres apart, an echo of him in
+characters plays the second. Mr Plan, the same. So none is lost for want of legs, and a stroke at full stretch goes out
+now and then instead (1% on court one, 26% at the hardest), so that a pearl of several is about as hard to win as a pearl
+alone. `notes/holographic-mr-pearl/harness/pb_multi.js` serves three every serve and counts: no pearl one side never
+went for, every pearl one point, and Mr Pearl's share of the points (on courts 1, 5 and 10: 100%, 59%, 42%, against
+97%, about 70% and 39% for a pearl alone).
+
+**The super return** (the artist, 28 Oct 2026: "Mr Pearl also gets one super return each game that is a spectacular and
+impressive animation that automatically wins Mr Pearl one point"; then "I want a button in the top right corner that
+allows you to use your superpower and automatically win the point"). The gold `◆ Super` button in the top right corner
+(E or Q on a desk), there while a match is on, once a game (a new one each game; spent, it stays, dimmed). A press
+plays it at once, at any moment of a point (between points, on the next): the pearl coming to him (none coming, the one
+he sent last, called back; at his serve, one from his hand) leaves its flight and rises to meet him, and time stands
+for everything else (Mr Plan holds; the other pearls hang where they are). He gathers, the night dimming round him and
+gold turning off the guitar; he leaps four metres, the guitar windmilling a turn and a half and leaving a ring of
+gold; at the top it meets the pearl: a sunburst, one flash of gold, "◆ SUPER RETURN ◆" over the courts, and the pearl
+driven down into Mr Plan's far corner, a comet; Mr Plan dives and does not get there; he lands in a ring of dust. The
+camera rises with him at his right shoulder and follows the pearl down. 2.45 s; the point is his, and the other
+pearls play on. `pb_super.js` tests it and takes its pictures.
 
 **Hands.** Touch and mouse alike (YouTube asks both for everything): the left half is a stick (where the finger or the
 press lands is its middle), the right half a drag that turns the view (the way his return goes), a tap or a click
-anywhere stops the serve's bar; Serve and Super are buttons. On a desk the keys too: WASD or the arrows (Shift
+anywhere stops the serve's bar; Super is the one button, top right. On a desk the keys too: WASD or the arrows (Shift
 for full speed), Space, T or Enter to stop the bar, E or Q for the super return. His strokes are his own: when Mr Plan's shot comes, the game finds where his paddle can meet it and the stroke
 goes then; the player's part is to be near, to aim and to serve.
 
@@ -87,7 +116,13 @@ where the stroke wants it, the left for balance. **The racket is his guitar** (t
 Guitar as the racket too, not his hat", as he smashes with it in the rocket world): the Koa bass held by the neck in
 his right glove a hand's width below the nut, along the line of his arm, its lower bout the face, turned to where the
 shot goes; its strap left off (swung, it would loop out); his hat back on his head. Mr Plan and the stand-ins play
-with theirs the same way.
+with theirs the same way. **His guitar is gold in the sun** (the artist, 28 Oct 2026: "His guitar should be more golden
+and displayed as if a bright sunlight was shining on an object made of gold"): shaded as a metal (its colour in what it
+reflects, gold's own reflectance, red full, green three quarters, blue a third), under a sun of its own over the
+viewer's shoulder, a hard glint where the sun's mirror angle falls and a broad sheen round it (Blinn's half-angle),
+whiter at a grazing angle (Schlick's Fresnel), the sunlit sky and the warm ground in its faces; in characters, deep
+amber in its shade, gold in its light, white-gold at the glint, always glowing; and where its top turns the sun to the
+eye, a glint of `+` over it, a spark now and then elsewhere on it. His stand-ins' too; Mr Plan's stays his negative's.
 
 Each court is harder than the last, along one curve: its share of the hardest is 1 - e^(-(court - 1) / 3), so 0.28
 at court two, three quarters at five, 0.95 at ten, and nearer the whole each court after without reaching it. Along it
@@ -135,8 +170,8 @@ characters and marks in ASCII"). Three prototypes (form, light, type) were made 
   and without him), the frame he is seen in blurred by a cell (a glance), and D, his light against a ring of ground
   two cells round him, (inside − ring) / (ring + 0.05); and S, how closely that light keeps his silhouette. The
   athletes are set in a heavy cut of the same characters (each glyph stroked round, in the atlas's third channel), at
-  full brightness, glowing, their colour lifted toward white only as far as it must be to be bright (the guitar keeps
-  its orange); Mr Plan's fill his ◇ ◆ with the keyboard's densest `# % @` (his thin marks left most of each cell
+  full brightness, glowing, their colour lifted toward white only as far as it must be to be bright (his guitar its own
+  gold, below); Mr Plan's fill his ◇ ◆ with the keyboard's densest `# % @` (his thin marks left most of each cell
   dark); the courts' surfaces quieter; two cells of night round every figure (the first dark, the second dimmed), as
   type is knocked out of a busy picture; and the lens narrowed from 70 to 58 degrees, so the far court and Mr Plan are a
   quarter larger while Mr Pearl keeps his quarter of the screen (the camera further back). The artist after the first
@@ -207,8 +242,8 @@ integration, stability, design, privacy, language, money, accessibility and trus
   inline script, no `eval`, no workers; any aspect ratio, touch, mouse and keys; Esc left alone; a frame with no size
   (the Android app's first, hidden one) draws nothing and breaks nothing.
 - **Any shape.** Every ratio YouTube names, 9:32 to 32:9, at its long side 1280 and at its smallest real screen: the
-  view fills it, the state is kept through a resize, and no word, button or the serve's bar covers
-  another (the words step aside while the bar runs; its instruction is written under it). The faint words and squares
+  view fills it, the state is kept through a resize, and no word, the Super button (top right, 96 by 44 px, the
+  words at the top stopping short of it) or the serve's bar covers another (the words step aside while the bar runs; its instruction is written under it). The faint words and squares
   of the HUD keep 4.5 to 1 against black (WCAG AA).
 - **Size.** The zip is about 63 KB (five files, none over 110 KB). His body's notes (the form study's "note" and
   "relation" lines, with the makers and models they name) are left out of the bundle.
@@ -224,7 +259,13 @@ trust pages: for everyone 13 and over and not made for children; the characters,
 artist's own or cleared.
 
 **Weak:** the hosted Test Suite needs the game at a public address with the SDK, which this session could not give
-it; the checks are a mock of the SDK and the real SDK outside YouTube. The grid of characters is fixed to the screen,
+it; the checks are a mock of the SDK and the real SDK outside YouTube. The Super button sits in the top right corner,
+where an app's own controls can lie over a full-screen game: on YouTube's apps it is unchecked. With two or three
+pearls in play the game moves him, so the player's legs matter less then (the stretch keeps the points as hard). The
+effects (bursts, glints, the super return's gold) are drawn over everything, a figure in front of them included, and
+their cost on a phone (up to 320 characters a frame) is unmeasured; every measurement here is software GL. On a
+portrait phone the narrower lens leaves Mr Plan out of the picture a little more often in a rally (2.3% of the frames
+against 1.4%). The grid of characters is fixed to the screen,
 so what moves fast shimmers cell to cell. The marks outside the monospace font come from whatever font the device
 has, so the order of the set differs a little by device. Drawn at 3 to 1, a phone fills twice the pixels it did at 2:
 the frame rate there is unmeasured. The rest of Holographic Mr Pearl still draws in the impossible triangle; this game
