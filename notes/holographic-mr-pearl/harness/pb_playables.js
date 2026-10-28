@@ -1,23 +1,29 @@
 // pb_playables.js - the pickleball game as a YouTube Playable (28 Oct 2026). With a mock of the SDK (ytgame, as if in
 // YouTube's frame): first frame then ready, each once; the language asked of the SDK; a pause halts the loop and the
 // game's clock and saves, a resume goes on; the save comes back on the next load; the score an integer; nothing in
-// localStorage. Then the built bundle (scripts/build_pickleball.js --playable) top-level with the real SDK: the SDK
-// the first script, no errors, no request to any host but this one and www.youtube.com; and a frame with no size.
+// localStorage; the loading words up at the first frame and gone at ready; no input while paused; old or broken saves
+// read without error; the end of the game told; a 3x screen drawn at 3x; the mouse moves him. Then the built bundle (scripts/build_pickleball.js --playable) top-level with the real SDK: the SDK
+// the first script, no errors, no request to any host but this one and www.youtube.com, nothing against YouTube's
+// Content Security Policy (served with the header the Test Suite guide gives); and a frame with no size.
 // node pb_playables.js [port]
 const { chromium } = require("playwright");
 const { execFileSync, spawn } = require("child_process");
 const path = require("path"), fs = require("fs"), os = require("os");
 const port = +(process.argv[2] || 8817), bad = [];
+// YouTube's Content Security Policy, as the SDK Test Suite guide gives it (developers.google.com, read 28 Oct 2026)
+const CSP = "default-src 'none'; script-src 'report-sample' 'self' 'unsafe-eval' 'unsafe-inline' blob: https://www.youtube.com/game_api/v0 https://www.youtube.com/game_api/v0/ https://www.youtube.com/game_api/v1 https://www.youtube.com/game_api/v1/; object-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com; connect-src 'self' blob: data:; sandbox allow-pointer-lock allow-same-origin allow-scripts; base-uri 'self'; manifest-src 'self'; worker-src 'self' blob:";
 const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (!ok) { bad.push(what); } };
-const MOCK = (saved) => `window.ytgame = (function () {
-  var calls = [], pause = [], resume = [], store = ${JSON.stringify(saved || "")};
-  window.__yt = { calls: calls, pause: function () { pause.forEach(function (f) { f(); }); }, resume: function () { resume.forEach(function (f) { f(); }); }, store: function () { return store; } };
+const MOCK = (saved, o) => `window.ytgame = (function () {
+  var calls = [], pause = [], resume = [], seen = {}, store = ${JSON.stringify(saved || "")}, fails = ${(o && o.loadFail) || 0}, delay = ${(o && o.loadDelay) || 0};
+  var loading = function () { var e = document.getElementById("loading"); return !!e && !e.hidden && getComputedStyle(e).display !== "none" && /loading/i.test(e.textContent); };
+  window.__yt = { calls: calls, seen: seen, pause: function () { pause.forEach(function (f) { f(); }); }, resume: function () { resume.forEach(function (f) { f(); }); }, store: function () { return store; } };
   var rec = function (n, v) { calls.push(n); return v; };
   return { IN_PLAYABLES_ENV: true, SDK_VERSION: "mock",
-    game: { firstFrameReady: function () { rec("firstFrameReady"); }, gameReady: function () { rec("gameReady"); },
-            saveData: function (s) { rec("saveData"); store = s; return Promise.resolve(); }, loadData: function () { rec("loadData"); return Promise.resolve(store); } },
+    game: { firstFrameReady: function () { seen.first = loading(); rec("firstFrameReady"); }, gameReady: function () { seen.ready = loading(); seen.readyAt = performance.now(); rec("gameReady"); },
+            saveData: function (s) { rec("saveData"); store = s; return Promise.resolve(); },
+            loadData: function () { rec("loadData"); if (fails > 0) { fails -= 1; return Promise.reject(new Error("API_UNAVAILABLE")); } return new Promise(function (r) { setTimeout(function () { r(store); }, delay); }); } },
     system: { onPause: function (f) { rec("onPause"); pause.push(f); return function () {}; }, onResume: function (f) { rec("onResume"); resume.push(f); return function () {}; },
-              isAudioEnabled: function () { return rec("isAudioEnabled", true); }, onAudioEnabledChange: function () { return function () {}; }, getLanguage: function () { rec("getLanguage"); return Promise.resolve("en"); } },
+              isAudioEnabled: function () { return rec("isAudioEnabled", true); }, onAudioEnabledChange: function () { rec("onAudioEnabledChange"); return function () {}; }, getLanguage: function () { rec("getLanguage"); return Promise.resolve("en"); } },
     engagement: { sendScore: function (o) { rec("sendScore:" + JSON.stringify(o.value) + ":" + Number.isInteger(o.value)); return Promise.resolve(); } },
     health: { logError: function () { rec("logError"); }, logWarning: function () { rec("logWarning"); } } };
 })();`;
@@ -32,10 +38,17 @@ const MOCK = (saved) => `window.ytgame = (function () {
   const fi = calls.indexOf("firstFrameReady"), gi = calls.indexOf("gameReady");
   check(fi >= 0 && gi > fi && calls.filter((c) => c === "firstFrameReady").length === 1 && calls.filter((c) => c === "gameReady").length === 1, "firstFrameReady, then gameReady, each once: " + calls.join(" "));
   check(calls.indexOf("getLanguage") >= 0 && calls.indexOf("loadData") >= 0, "the language and the save asked of the SDK");
+  const seen = await p.evaluate(() => window.__yt.seen);
+  check(seen.first === true && seen.ready === false, "the loading words show at firstFrameReady and are gone by gameReady: " + JSON.stringify({ first: seen.first, ready: seen.ready }));
+  check(seen.readyAt < 5000, "playable in under 5 s (the rule's SHOULD; software GL here, slower than a phone's): " + Math.round(seen.readyAt) + " ms");
+  check(calls.indexOf("isAudioEnabled") >= 0 && calls.indexOf("onAudioEnabledChange") >= 0, "YouTube's mute read and listened to (isAudioEnabled, onAudioEnabledChange)");
   // a level won, then the pause: the loop stops, the clock stands, the save goes to the SDK
   await p.evaluate(() => { const d = window.Pickleball.debug(); d.courts[0].won = true; d.courts[0].up = true; d.courts.best = 9; });
   const t0 = await p.evaluate(() => { window.__yt.pause(); return window.Pickleball.debug().gt(); });
   await p.waitForTimeout(1500);
+  // paused, the game takes no input: a key, a tap on Serve
+  await p.keyboard.press(" "); await p.click("#serve", { force: true });
+  check(await p.evaluate(() => window.Pickleball.debug().input.fire === false), "no input while paused");
   const held = await p.evaluate(() => ({ gt: window.Pickleball.debug().gt(), running: window.Pickleball.debug().running(), store: window.__yt.store() }));
   check(!held.running && held.gt === t0, "the pause halts the loop and the game's clock (" + t0.toFixed(3) + " → " + held.gt.toFixed(3) + ")");
   check(/"won":true/.test(held.store) && /"best":9/.test(held.store), "the pause saves through the SDK: " + held.store.slice(0, 90));
@@ -59,8 +72,56 @@ const MOCK = (saved) => `window.ytgame = (function () {
   await p.waitForTimeout(600);
   await p.evaluate(() => { document.getElementById("view").style.width = ""; document.getElementById("view").style.height = ""; });
   await p.waitForTimeout(600);
+  // the end of the game: every court won, and the horse finished
+  const end = await p.evaluate(() => { const d = window.Pickleball.debug(); d.courts.forEach((c) => { c.won = true; c.up = true; }); d.horse.work = d.COURT.WORK - 0.001; d.run(0.2); return { say: document.getElementById("say").textContent, where: document.getElementById("where").textContent }; });
+  check(/complete/.test(end.say) && /complete/.test(end.where), "the end of the game is told: " + end.where + " | " + end.say.slice(0, 60));
   check(errors.length === 0, "no errors with the mock, nor at no size: " + errors.slice(0, 2).join(" | "));
   await p.close();
+  // paused and resumed while it is still loading: it waits for the courts, then plays, with no error
+  p = await ctx.newPage(); { const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
+    await p.addInitScript(MOCK("", { loadDelay: 1500 }));
+    await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
+    await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("loadData") >= 0, null, { timeout: 120000 });
+    await p.evaluate(() => { window.__yt.pause(); window.__yt.resume(); });
+    await p.waitForFunction(() => window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 }); await p.waitForTimeout(500);
+    const st = await p.evaluate(() => ({ running: window.Pickleball.debug().running(), err: window.__yt.calls.filter((c) => /logError/.test(c)).length }));
+    check(errs.length === 0 && st.err === 0 && st.running, "paused and resumed while loading: no error, and it plays once loaded " + JSON.stringify(st) + errs.slice(0, 1).join(""));
+    await p.close(); }
+  // the cloud load fails once (asked again, loaded), or for good (never saved over)
+  for (const fails of [1, 2]) {
+    p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
+    await p.addInitScript(MOCK('{"v":1,"best":7,"horse":0,"courts":[{"level":1,"won":true,"up":true}]}', { loadFail: fails }));
+    await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
+    await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 });
+    const st = await p.evaluate(() => { window.__yt.pause(); window.__yt.resume(); const d = window.Pickleball.debug(); return { best: d.courts.best, loads: window.__yt.calls.filter((c) => c === "loadData").length, saves: window.__yt.calls.filter((c) => c === "saveData").length }; });
+    if (fails === 1) { check(errs.length === 0 && st.loads === 2 && st.best === 7 && st.saves >= 1, "a failed cloud load is asked again, and then loads: " + JSON.stringify(st)); }
+    else { check(errs.length === 0 && st.loads === 2 && st.saves === 0, "a cloud load that fails twice: the game plays, and never saves over the player's save: " + JSON.stringify(st)); }
+    await p.close();
+  }
+  // saves from another version, or broken: read without error
+  for (const old of ['{"v":0,"courts":[null,{"level":"3","won":1,"matches":"x"}],"best":"x","horse":-5}', "not json", "[1,2]"]) {
+    p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(String(e)));
+    await p.addInitScript(MOCK(old));
+    await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
+    await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 });
+    const got = await p.evaluate(() => { const d = window.Pickleball.debug(); return { l1: d.courts[1].level, w0: d.courts[0].won, best: d.courts.best, horse: d.horse.work }; });
+    check(errs.length === 0 && got.l1 >= 1 && got.best === 0 && got.horse === 0, "an old or broken save is read without error (" + old.slice(0, 24) + "): " + JSON.stringify(got));
+    await p.close();
+  }
+  // a 3x screen drawn at 3x (not upscaled, so not soft), and a mouse's drag on the left half moves him
+  const ctx3 = await b.newContext({ viewport: { width: 900, height: 600 }, deviceScaleFactor: 3 });
+  p = await ctx3.newPage(); p.on("pageerror", (e) => errors.push(String(e)));
+  await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
+  await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me && window.Pickleball.debug().running(), null, { timeout: 120000 });
+  await p.waitForTimeout(500);
+  check(await p.evaluate(() => document.getElementById("view").width === 2700), "a 3x screen is drawn at 3x: " + await p.evaluate(() => document.getElementById("view").width));
+  const z0 = await p.evaluate(() => window.Pickleball.debug().me.z);
+  await p.mouse.move(200, 400); await p.mouse.down(); await p.mouse.move(200, 330, { steps: 5 }); await p.waitForTimeout(900);
+  const mv = await p.evaluate(() => ({ stick: !!window.Pickleball.debug().input.stick, z: window.Pickleball.debug().me.z }));
+  await p.mouse.up();
+  check(mv.stick && z0 - mv.z > 0.3, "the mouse's drag on the left half moves him: " + (z0 - mv.z).toFixed(2) + " m forward");
+  check(errors.length === 0, "no errors at 3x nor with the mouse: " + errors.slice(0, 2).join(" | "));
+  await p.close(); await ctx3.close();
   // the built bundle, top-level, with the real SDK
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pbplay-")), outd = path.join(dir, "bundle");
   execFileSync("node", [path.join(__dirname, "../../../scripts/build_pickleball.js"), "--playable", outd], { stdio: "pipe" });
@@ -70,15 +131,22 @@ const MOCK = (saved) => `window.ytgame = (function () {
   const sport = 8890 + Math.floor(Math.random() * 50), srv = spawn("python3", ["-m", "http.server", String(sport), "--bind", "127.0.0.1"], { cwd: outd, stdio: "ignore" });
   await new Promise((r) => setTimeout(r, 800));
   try {
-    p = await ctx.newPage(); const errs = [], hosts = new Set();
+    p = await ctx.newPage(); const errs = [], hosts = new Set(), csp = [];
     p.on("pageerror", (e) => errs.push(String(e))); p.on("request", (r) => hosts.add(new URL(r.url()).host));
+    p.on("console", (m) => { if (/Content Security Policy/i.test(m.text())) { csp.push(m.text()); } });
+    await p.addInitScript(() => document.addEventListener("securitypolicyviolation", (e) => (window.__csp = window.__csp || []).push(e.violatedDirective + " " + e.blockedURI)));
+    await p.route("**/index.html", async (route) => { const r = await route.fetch(); route.fulfill({ response: r, headers: Object.assign({}, r.headers(), { "content-security-policy": CSP }) }); });
     await p.goto(`http://127.0.0.1:${sport}/index.html`);
     await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
     await p.waitForTimeout(1000);
     const st = await p.evaluate(() => ({ sdk: !!window.ytgame, inYT: window.ytgame && window.ytgame.IN_PLAYABLES_ENV, ver: window.ytgame && window.ytgame.SDK_VERSION, ascii: window.Pickleball.debug().ascOk(), running: window.Pickleball.debug().running() }));
     check(st.sdk && st.inYT === false && st.ascii && st.running, "the bundle runs with the real SDK outside YouTube: " + JSON.stringify(st));
     check(errs.length === 0, "no errors in the bundle: " + errs.slice(0, 2).join(" | "));
+    const v = (await p.evaluate(() => window.__csp || [])).concat(csp);
+    check(v.length === 0, "nothing against YouTube's Content Security Policy: " + v.slice(0, 2).join(" | "));
     check([...hosts].every((h) => h === "127.0.0.1:" + sport || h === "www.youtube.com"), "requests only here and to www.youtube.com: " + [...hosts].join(" "));
+    await p.evaluate(() => { new Image().src = "https://example.com/x.png"; }); await p.waitForTimeout(300);   // (and the header is on: an image from elsewhere is refused)
+    check((await p.evaluate(() => window.__csp || [])).some((x) => /img-src/.test(x)), "the policy is really on (a test image from elsewhere was refused)");
   } finally { srv.kill(); }
   await b.close();
   console.log(bad.length ? bad.length + " FAILED" : "all ok");
