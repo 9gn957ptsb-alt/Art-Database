@@ -2262,7 +2262,7 @@
         if (hu < 0.3) { var gr = c.createRadialGradient(qh[0], qh[1], 0, qh[0], qh[1], max(W, H) * 0.8); gr.addColorStop(0, "rgba(255,226,150," + (0.4 * (1 - hu / 0.3)).toFixed(3) + ")"); gr.addColorStop(1, "rgba(255,180,60,0)"); c.fillStyle = gr; c.fillRect(0, 0, W, H); }
         if (hu < 1.1) {
           var bs = min(W * 0.085, 46) * (1 + 0.25 * (1 - smooth(hu / 0.25))), ba = 1 - smooth((hu - 0.75) / 0.35);
-          c.save(); c.globalAlpha = ba; glyph("◆ SUPER RETURN ◆", W / 2, max(hudLow + 40, H * 0.3), bs, "#ffd166"); c.restore();
+          c.save(); c.globalAlpha = ba; glyph("◆ SUPER ◆", W / 2, max(hudLow + 40, H * 0.3), bs, "#ffd166"); c.restore();
           hudBox.banner = { x: W / 2, y: max(hudLow + 40, H * 0.3) };
         }
       }

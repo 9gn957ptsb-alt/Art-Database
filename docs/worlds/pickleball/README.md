@@ -77,7 +77,7 @@ plays it at once, at any moment of a point (between points, on the next): the pe
 he sent last, called back; at his serve, one from his hand) leaves its flight and rises to meet him, and time stands
 for everything else (Mr Plan holds; the other pearls hang where they are). He gathers, the night dimming round him and
 gold turning off the guitar; he leaps four metres, the guitar windmilling a turn and a half and leaving a ring of
-gold; at the top it meets the pearl: a sunburst, one flash of gold, "◆ SUPER RETURN ◆" over the courts, and the pearl
+gold; at the top it meets the pearl: a sunburst, one flash of gold, "◆ SUPER ◆" over the courts, and the pearl
 driven down into Mr Plan's far corner, a comet; Mr Plan dives and does not get there; he lands in a ring of dust. The
 camera rises with him at his right shoulder and follows the pearl down. 2.45 s; the point is his, and the other
 pearls play on. `pb_super.js` tests it and takes its pictures.
