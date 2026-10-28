@@ -42,7 +42,8 @@
  * plaster may be, its own floor first), the chooser drawing each choice as it would sit with the one paired with the
  * room first, a pick that changes its row and comes back to it, the wall's switch, Rooms you kept with The drawn room
  * and back, a pin that keeps its room (shown small) beside a set pinned before rooms (the drawn room), and Open for
- * both; Rooms you kept holds only interiors, three at a time with Three more, and another room keeps the five things.
+ * both (the older set also straight from the photo room); with its floor or walls on Its own, a Surface or a Colour
+ * chosen shows at once, and no choice shows pressed while Its own is on; Rooms you kept holds only interiors, three at a time with Three more, and another room keeps the five things.
  * With no interior kept the drawn room is as before (a building stays the view) with one hint; a keep in Sort
  * says what it is in a room, as its detail does; brought things' six chips follow Kind, What is it?, Ask Claude (the
  * name and the note only), their own room first in Rooms you kept and its floor check, asked by itself the first time
@@ -3266,6 +3267,88 @@ for (const cfg of CONFIGS) {
       assert.equal(await page.evaluate(() => document.activeElement.classList.contains('krow')), true);
       assert.match(await page.getAttribute('#view-set .krow[data-slot="wall"]', 'aria-label'), /is its light/, 'its walls as pinned');
       await noHScroll(page, 'room pinned');
+      assert.deepEqual(page.errors(), []);
+    } finally { await ctx.close(); }
+  });
+}
+
+// Open on a set pinned before rooms, straight from the photo room (The drawn room never pressed), shows that set's own
+// things; and with its floor or its walls on Its own, a Surface or a Colour chosen shows at once: laid on its floor, or on
+// its walls as paint where the plaster may be painted, else as its light. While Its own is on, no choice shows pressed.
+for (const cfg of CONFIGS.filter((c) => (c.w === 390 && c.scheme === 'light') || (c.w === 1280 && c.scheme === 'dark'))) {
+  test('See it as a room at ' + cfg.w + 'x' + cfg.h + ' ' + cfg.scheme + ': Open on an older set from the photo room; a Surface or a Colour chosen while Its own is on shows', { timeout: 90000 }, async () => {
+    const { ctx, page } = await newPage(cfg);
+    const shot = shooter(page, cfg);
+    try {
+      const deck = await (await fetch(new URL('deck.json', BASE))).json();
+      const { st: st0, room } = roomState(deck);
+      // the older set holds the drawn room's last picture and object, never what it would show first by itself
+      const last = (s) => { const p = FiveS.setPool(st0, deck, s); return p[p.length - 1]; };
+      const older = Object.assign({}, st0.sets[0], { picture: last('picture'), object: last('object') });
+      assert.notEqual(older.picture, FiveS.setPool(st0, deck, 'picture')[0]);
+      const st = Object.assign({}, st0, { sets: [older] });
+      const R = deck.cards.find((c) => c.id === room);
+      const paintable = !!(R.room && R.room.paint);
+      const img = (id) => deck.cards.find((c) => c.id === id).img;
+      await seedState(page, st);
+      await page.goto(BASE + '#set');
+      await page.click('#view-set [data-act="set-room"]');
+      await roomShown(page);
+      await page.click('#view-set [data-act="open-set"][data-i="0"]');
+      await page.waitForSelector('#view-set .room:not(.mini) .slot-wall');
+      for (const s of ['window', 'picture', 'object']) assert.equal(await page.getAttribute('#view-set .room:not(.mini) .slot-' + s + ' img', 'src'), img(older[s]), s + ' as pinned');
+      assert.match(await page.getAttribute('#view-set .room:not(.mini) .floor', 'style'), new RegExp(img(older.floor).replace(/[.]/g, '\\.')), 'floor as pinned');
+      await shot('o1-older');
+
+      // its own floor first; a kept Surface chosen is laid on it
+      await page.click('#view-set [data-act="room-pick"]');
+      await roomShown(page);
+      assert.match(await page.textContent('#view-set .krow[data-slot="floor"] .ki'), /^Its own/);
+      await page.click('#view-set .krow[data-slot="floor"]');
+      await page.waitForSelector('#sheet[open] .choice');
+      assert.equal(await page.textContent('#sheet .room-as [aria-pressed="true"]'), 'Its own');
+      assert.equal(await page.locator('#sheet .choice[aria-pressed="true"]').count(), 0, 'its own floor: no Surface is on it');
+      assert.match(await page.textContent('#sheet .lede'), /^Choose one of three( \(1 of \d+\))?\. Its own until you choose one; then it is laid as its floor\.$/);
+      await shot('o2-floor-own');
+      const surface = await page.getAttribute('#sheet .choice >> nth=0', 'data-id');
+      await page.click('#sheet .choice >> nth=0');
+      await sheetGone(page);
+      await page.waitForFunction(() => /, laid as its floor\. Choose another\.$/.test(document.querySelector('#view-set .krow[data-slot="floor"]').getAttribute('aria-label')));
+      assert.match(await page.textContent('#view-set .krow[data-slot="floor"] .ki'), /, laid as its floor$/);
+      await page.waitForFunction(() => /(^|\. )Its floor: .+, laid as its floor\.$/.test(document.getElementById('live').textContent));
+      await page.waitForSelector('#view-set .proom:not(.mini) .laid');
+      await shot('o3-floor-laid');
+      await page.click('#view-set .krow[data-slot="floor"]');
+      await page.waitForSelector('#sheet[open] .choice');
+      assert.equal(await page.textContent('#sheet .room-as [aria-pressed="true"]'), 'Laid on its floor');
+      assert.deepEqual(await page.$$eval('#sheet .choice[aria-pressed="true"]', (b) => b.map((x) => x.dataset.id)), [surface]);
+      assert.match(await page.textContent('#sheet .lede'), /\. Each is laid as its floor\.$/);
+      await page.keyboard.press('Escape');
+      await sheetGone(page);
+
+      // its walls on Its own; the Colour chosen goes on them the way they take it first
+      await page.click('#view-set .krow[data-slot="wall"]');
+      await page.waitForSelector('#sheet[open] .room-as');
+      await page.click('#sheet .room-as button:text-is("Its own")');
+      await page.waitForFunction(() => { const b = document.querySelector('#sheet .room-as [aria-pressed="true"]'); return b && b.textContent === 'Its own'; });
+      assert.equal(await page.locator('#sheet .choice[aria-pressed="true"]').count(), 0, 'its own walls: no Colour is on them');
+      assert.match(await page.textContent('#sheet .lede'), paintable ? /\. Its own until you choose one; then your colour is painted on .+\.$/ : /\. Its own until you choose one; then your colour is its light\.$/);
+      await page.waitForFunction(() => !document.querySelector('#view-set .proom:not(.mini) :is(.paint, .lightwash)'));
+      await shot('o4-wall-own');
+      const colour = await page.getAttribute('#sheet .choice >> nth=0', 'data-id');
+      await page.click('#sheet .choice >> nth=0');
+      await sheetGone(page);
+      await page.waitForFunction((re) => new RegExp(re).test(document.querySelector('#view-set .krow[data-slot="wall"]').getAttribute('aria-label')), paintable ? '^Its walls: .+, painted on ' : 'is its light');
+      await page.waitForFunction((re) => new RegExp(re).test(document.getElementById('live').textContent), paintable ? '(^|\\. )Its walls: .+, painted on .+\\.$' : '(^|\\. )Its walls: .+, its light\\.$');
+      await page.waitForSelector('#view-set .proom:not(.mini) ' + (paintable ? '.paint' : '.lightwash'));
+      await shot('o5-wall-back');
+      await page.click('#view-set .krow[data-slot="wall"]');
+      await page.waitForSelector('#sheet[open] .room-as');
+      assert.equal(await page.textContent('#sheet .room-as [aria-pressed="true"]'), paintable ? 'As paint' : 'As light');
+      assert.deepEqual(await page.$$eval('#sheet .choice[aria-pressed="true"]', (b) => b.map((x) => x.dataset.id)), [colour]);
+      await page.keyboard.press('Escape');
+      await sheetGone(page);
+      await noHScroll(page, 'room, its own');
       assert.deepEqual(page.errors(), []);
     } finally { await ctx.close(); }
   });

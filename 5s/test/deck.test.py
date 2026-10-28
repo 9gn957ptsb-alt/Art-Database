@@ -8,10 +8,31 @@ import sys
 import tempfile
 from pathlib import Path
 
+import numpy as np
+
 FIVE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(FIVE))
 from build_deck import KEPT_FAMILIES, corners_w, era_of  # noqa: E402
 from roles import ROLES  # noqa: E402
+
+
+def plane(r, pid, w, h):
+    """room.js's planeOf: a marked plane's cm to the w x h photo's px (sq2quad's homography) and back, and the px per cm
+    across the view at a point (what stands upright there is sized by it)"""
+    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = [(x / 100 * w, y / 100 * h) for x, y in r["planes"][pid]["q"]]
+    W, Hh = r["planes"][pid]["size"]
+    sx, sy, dx1, dx2, dy1, dy2 = x0 - x1 + x2 - x3, y0 - y1 + y2 - y3, x1 - x2, x3 - x2, y1 - y2, y3 - y2
+    den = dx1 * dy2 - dx2 * dy1
+    g, k = (sx * dy2 - dx2 * sy) / den, (dx1 * sy - sx * dy1) / den
+    M = np.array([[x1 - x0 + g * x1, x3 - x0 + k * x3, x0], [y1 - y0 + g * y1, y3 - y0 + k * y3, y0], [g, k, 1]]) @ np.diag([1 / W, 1 / Hh, 1])
+    to = lambda m: lambda x, y: (lambda v: v[:2] / v[2])(m @ [x, y, 1])
+    to_px, to_cm = to(M), to(np.linalg.inv(M))
+
+    def scale(x, y):
+        a, b = to_px(x + 1, y) - to_px(x, y), to_px(x, y + 1) - to_px(x, y)
+        return abs(a[0] * b[1] - a[1] * b[0]) / np.hypot(a[1], b[1])
+    return W, Hh, to_px, to_cm, scale
+
 
 old = json.loads((FIVE / "dist" / "deck.json").read_text())
 # dist may already hold the buildings: compare against its Artsy cards only (no source is Artsy)
@@ -84,6 +105,30 @@ with tempfile.TemporaryDirectory() as out:
         assert all(len(p) >= 3 and all(inside(x) for x in p) for p in polys), c["id"]
         names = [sp.get("name") for sp in r["spots"].values()] + [(r["paint"] or {}).get("name"), (r.get("opening") or {}).get("name"), r.get("walls"), (r.get("floor") or {}).get("what")]
         assert all(n is None or len(n) <= 40 for n in names), (c["id"], names)
+        # what is hung at a spot stays in the photo and on its own plane, scaled to fill the spot's box as room.js hangs it:
+        # a 100 cm picture, landscape and portrait, and in a room with no window a 60 cm view at hang2
+        w, h, S = c["w"], c["h"], r["spots"]
+        hung = [("hang", 100, 4 / 3), ("hang", 100, 3 / 4)] + ([("hang2", 60, 4 / 3)] if not r.get("opening") and "hang2" in S else [])
+        for k, cm, ar in hung:
+            W, Hh, to_px, to_cm, _ = plane(r, S[k]["plane"], w, h)
+            cx, cy = to_cm(S[k]["at"][0] / 100 * w, S[k]["at"][1] / 100 * h)
+            fw, fh = (cm, cm / ar) if ar >= 1 else (cm * ar, cm)
+            s = min(S[k]["box"][0] / fw, S[k]["box"][1] / fh) if S[k].get("box") else 1
+            cs = [(cx + i * fw * s / 2, cy + j * fh * s / 2) for i, j in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+            assert all(-1 <= x <= W + 1 and -1 <= y <= Hh + 1 for x, y in cs), (c["id"], k, ar, "off its plane")
+            assert all(0 <= x <= w and 0 <= y <= h for x, y in (to_px(*p) for p in cs)), (c["id"], k, ar, "out of the photo")
+        # a 112 cm pendant at the light spot, filling its box, is at least 8% of the photo's height
+        if "light" in S:
+            *_, to_cm, scale = plane(r, "f", w, h)
+            hpx = (min(S["light"]["box"]) if S["light"].get("box") else 112) * scale(*to_cm(S["light"]["at"][0] / 100 * w, S["light"]["at"][1] / 100 * h))
+            assert hpx >= 0.08 * h, (c["id"], "the pendant is too small to see", f"{hpx / h:.1%}")
+        # a 200 cm rug laid at the lay spot stays within its floor's sides and far edge (where the floor is narrower
+        # than the rug, it may overhang both sides evenly); toward the camera it may run out of the photo
+        if "lay" in S:
+            W, Hh, _, to_cm, _ = plane(r, S["lay"]["plane"], w, h)
+            cx, cy = to_cm(S["lay"]["at"][0] / 100 * w, S["lay"]["at"][1] / 100 * h)
+            tol = (200 - W) / 2 + 1 if W < 200 else 1   # 1 cm, as the hung checks allow
+            assert cx - 100 >= -tol and cx + 100 <= W + tol and cy - 100 >= -tol, (c["id"], "a rug laid here runs through a wall", round(cx), round(cy), W)
     rooms = [c["id"] for c in cards if "room" in c]
     roles = f", roles on {sum(1 for c in cards if 'role' in c)} cards, {len(rooms)} marked rooms" if any("role" in c for c in cards) else ", no roles (no data/5s roles.json)"
 print(f"ok: {len(artsy)} Artsy cards unchanged, {len(bld)} building cards{others}{roles}")

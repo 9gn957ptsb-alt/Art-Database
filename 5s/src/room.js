@@ -607,8 +607,9 @@
         rug.style.backgroundImage = 'url("' + (cut ? cut.url : t.src) + '")';
         return boxOf([[fx - rw / 2, fy - rh / 2], [fx + rw / 2, fy - rh / 2], [fx + rw / 2, fy + rh / 2], [fx - rw / 2, fy + rh / 2]].map(([x, y]) => F.toPx(x, y)));
       }
-      const s = F.scale(fx, fy), hpx = cm * s, wpx = hpx * ar, foot = F.toPx(fx, fy);
       const hangs = how === 'light' && sp === S.light, set = how === 'set' && sp === S.set && sp.top != null;
+      const fill = hangs && sp.box ? Math.min(sp.box[0] / (cm * ar), sp.box[1] / cm) : 1;   // a lamp in a vast room fills its box, as a picture does
+      const s = F.scale(fx, fy), hpx = cm * fill * s, wpx = hpx * ar, foot = F.toPx(fx, fy);
       const bottom = set ? sp.top / 100 * h : foot[1], top = hangs ? sp.top / 100 * h : bottom - hpx;
       if (!hangs && !set) {   // its contact shadow, lying in the floor's perspective
         const sw = Math.max(30, cm * ar * 0.9), { d, k } = planeDiv(F, wrap);

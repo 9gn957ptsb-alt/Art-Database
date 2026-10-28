@@ -1389,6 +1389,9 @@
     const floor = F.ROOM_AS.floor.indexOf(a.floor) >= 0 && !(a.floor === 'wall' && !canPaint(R)) ? a.floor : 'own';
     return { wall, floor };
   }
+  // A Surface or a Colour chosen while Its own is on shows: laid on its floor, or on its walls the way they take one first.
+  const asPicked = (R, s, as) => (s === 'floor' && as.floor === 'own' ? Object.assign({}, as, { floor: 'laid' })
+    : s === 'wall' && as.wall === 'own' ? Object.assign({}, as, { wall: asFor(R, null).wall }) : as);
 
   // A thing as FiveSRoom draws it (room-api.md): the card, what it is, and its picture.
   function roomThing(id, st) {
@@ -1565,6 +1568,7 @@
     const p = Object.assign({}, ui.proom);
     for (const k of SLOTS) if (k !== s && p[k] === id) p[k] = null;
     p[s] = id;
+    p.as = asPicked(cardOf(p.room), s, p.as);
     ui.proom = p;
     ui.openerSig = '#view-set .krow[data-slot="' + s + '"]';
     ui.opener = null;
@@ -1605,10 +1609,10 @@
         '<div class="actions"><button type="button" class="btn btn-keep" data-act="goto" data-view="sort">Go to Sort</button></div>';
     }
     const page = ui.chooserPage[slot] || 0, pages = Math.ceil(pool.length / 3), pg = ((page % pages) + pages) % pages;
-    const rel = placeWords(R, slot, roomThing(p[slot], st), p.as).rel;
+    const own = (slot === 'wall' || slot === 'floor') && p.as[slot] === 'own';   // nothing of theirs on it: no choice is pressed
+    const rel = placeWords(R, slot, roomThing(p[slot] || pool[0], st), asPicked(R, slot, p.as)).rel;   // with Its own on: how a choice will show
     const lead = slot === 'object' ? 'Each goes where what it is belongs.'
-      : (slot === 'wall' && p.as.wall === 'own') || (slot === 'floor' && p.as.floor === 'own') ? 'Its own stays until you choose another way.'
-      : rel ? (slot === 'wall' ? 'Your colour, ' : 'Each is ') + rel + '.' : '';
+      : rel ? (own ? 'Its own until you choose one; then ' + (slot === 'wall' ? 'your colour is ' : 'it is ') : slot === 'wall' ? 'Your colour, ' : 'Each is ') + rel + '.' : '';
     return asSwitchHTML(slot, p, R) + '<p class="lede">Choose one of three' + (pages > 1 ? ' (' + (pg + 1) + ' of ' + pages + ')' : '') + '. ' + esc(lead) + '</p>' +
       '<ul class="choices">' + F.setCandidates(st, deck, slot, page, p.room).map((id) => {
         const c = cardOf(id, st), thing = roomThing(id, st);
@@ -1621,7 +1625,7 @@
         const sub = slot === 'wall' ? (c.own ? 'from ' + c.title : (c.kind === 'colour' ? 'the colours of ' + (c.title || 'a work') : 'from ' + (c.title || 'a work'))) : (c.own ? 'Yours · ' + c.source : c.artist);
         const pr = F.pairing(st, p.room, id);
         const paired = pr ? 'You paired it with ' + roomName(R) + (pr.s ? ': ' + lowFirst(RL.saidText(st.saga.words, deck.words || {}, pr.s, pr.w)) : '.') : '';
-        return '<li><button type="button" class="choice" data-act="pick" data-slot="' + slot + '" data-id="' + esc(id) + '" aria-pressed="' + (p[slot] === id) + '">' + th +
+        return '<li><button type="button" class="choice" data-act="pick" data-slot="' + slot + '" data-id="' + esc(id) + '" aria-pressed="' + (p[slot] === id && !own) + '">' + th +
           '<span class="t">' + esc(t) + '</span><span class="s">' + esc(sub || '') + '</span>' + (tag ? '<span class="r">' + esc(tag.replace(/, $/, '')) + '</span>' : '') +
           (paired ? '<span class="p">' + esc(paired) + '</span>' : '') + '</button>' + whereBtn(c, 'linkbtn') + '</li>';
       }).join('') + '</ul>' +
@@ -4808,7 +4812,8 @@
           const things = { wall: s.wall, window: s.window, picture: s.picture, floor: s.floor, object: s.object };
           // a set pinned in a room you still have opens in it; the others open in the drawn room, as always
           const inRoom = !!s.room && roomList(active()).indexOf(s.room) >= 0;
-          if (inRoom) ui.proom = Object.assign({ room: s.room, as: s.as || null, chosen: true }, things); else ui.room = things;
+          // with its key, or ensureRoom takes it for a room never shown this visit and deals the pools' first instead
+          if (inRoom) ui.proom = Object.assign({ room: s.room, as: s.as || null, chosen: true }, things); else { ui.room = things; ui.roomKey = example ? 'ex' : 'me'; ui.chooserPage = {}; }
           ui.roomDrawn = !inRoom;
           renderView(); $('#main').scrollTop = 0; say('Opened ' + (s.name || 'the set') + ' in the room.');
           const b = $(inRoom ? '#view-set .krow' : '.slot-wall'); if (b) b.focus({ preventScroll: true });

@@ -7,10 +7,10 @@
 // and the words, on the synthetic fixture's cards through the engine's own whatIs.
 // Then mount in Chromium (Playwright), on the fixture's rooms with app.css: the layers each place draws, the
 // pointer buttons (aria-hidden, at least 44 px, onPick), update, rugs shot from above, at an angle and filling their
-// photo, a Surface On a wall with the other walls painted, the guess for an unmarked or brought room and its light, a
-// pinned mini, a photo that fails, a photo the canvas cannot read (another origin), resizing, Reduce Motion,
-// Step in's gate, light and dark at 390 and 1280. No server: the page's files are answered from 5s/ by
-// Playwright's routes. Saves screenshots for a person to look at.
+// photo, a lamp filling its light spot's box, a Surface On a wall with the other walls painted, the guess for an
+// unmarked or brought room and its light, a pinned mini, a photo that fails, a photo the canvas cannot read (another
+// origin), resizing, Reduce Motion, Step in's gate, light and dark at 390 and 1280. No server: the page's files are
+// answered from 5s/ by Playwright's routes. Saves screenshots for a person to look at.
 // Environment: ROOM_SHOTS (default: <tmpdir>/5s-room-shots).
 'use strict';
 
@@ -326,6 +326,18 @@ browserTest('the room\'s name goes to the foot of the photo while a lamp hangs u
   assert.deepEqual(await where(), { low: false, over: false }, 'a vase standing on the floor: the name is back at the top');
   await page.evaluate(() => T.mount('s001', { wall: 'c001', window: 's010', picture: 'i001', floor: 'u001', object: 'o002' }));
   assert.deepEqual(await where(), { low: false, over: false }, 'the lamp clear of the name: it stays at the top');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+browserTest('a lamp hung in a vast room fills its light spot\'s box, as a picture fills its own', async () => {
+  const { ctx, page, errors } = await newPage();
+  const small = (await page.evaluate((s) => T.mount('s001', s), SET1)).upright;
+  const marks = await page.evaluate(() => { const m = JSON.parse(JSON.stringify(T.card('s001').room)); m.spots.light = Object.assign({}, m.spots.light, { box: [9999, 336] }); return m; });
+  const big = (await page.evaluate(([s, m]) => T.mount('s001', s, { marks: m }), [SET1, marks])).upright;
+  // the pendant is 112 cm, so a box 336 cm tall (and wider than need be) draws it three times the size
+  near(big.h / small.h, 3, 0.02, 'three times as tall'); near(big.w / small.w, 3, 0.02, 'and as wide');
+  near(big.y, small.y, 0.3, 'hung from the same ceiling'); near(big.x + big.w / 2, small.x + small.w / 2, 0.3, 'over the same spot');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
