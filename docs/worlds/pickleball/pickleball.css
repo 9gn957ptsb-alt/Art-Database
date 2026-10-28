@@ -1,0 +1,24 @@
+/* Pickleball: the view fills whatever it is given (a phone upright or on its side, a desk, YouTube's frame), the words
+   and the two buttons over it as page elements, never glyphed. */
+/* one look, by choice: characters glow on black, so the page is dark wherever it is shown */
+:root { --bg: #000; --fg: #f2efe8; --gold: #f3c98b; --edge: rgba(242, 239, 232, 0.5); --pane: rgba(10, 12, 20, 0.6); --shade: #000; color-scheme: dark; }
+html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+body { color: var(--fg); font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo, "DejaVu Sans Mono", monospace;
+       -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#view, #hud { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#view { touch-action: none; }
+#hud { pointer-events: none; }
+.top { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left));
+       right: calc(12px + env(safe-area-inset-right)); pointer-events: none; }
+#where { letter-spacing: 0.12em; text-transform: uppercase; text-shadow: 0 0 3px var(--shade), 0 0 6px var(--shade); }
+#say { position: fixed; left: calc(12px + env(safe-area-inset-left)); top: calc(118px + env(safe-area-inset-top));
+       width: min(520px, calc(100% - 24px)); pointer-events: none;
+       text-shadow: 0 0 3px var(--shade), 0 0 8px var(--shade); transition: opacity 0.4s; }
+button { position: fixed; border: 1px solid var(--edge); background: var(--pane); color: var(--fg);
+         font: inherit; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 999px; touch-action: manipulation; }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#serve { right: calc(16px + env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom));
+         width: 76px; height: 76px; border-radius: 50%; }
+#scope { right: calc(16px + env(safe-area-inset-right)); bottom: calc(106px + env(safe-area-inset-bottom)); padding: 10px 16px; }
+#scope[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+body[data-phase="serve"] #serve { border-color: var(--gold); color: var(--gold); }
