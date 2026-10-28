@@ -39,8 +39,8 @@ const CONNECTOR = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.SMOKE_PORT) || 8800;
 const DIR = process.env.SMOKE_DIR || mkdtempSync(join(tmpdir(), '5s-connector-smoke-'));
 mkdirSync(DIR, { recursive: true });
-if (!existsSync(join(CONNECTOR, 'src', 'deck.generated.json'))) {
-  console.error('No src/deck.generated.json: run `npm run deck` (or `npm run deck -- --fixture`) first.');
+if (!['deck', 'files'].every((f) => existsSync(join(CONNECTOR, 'src', f + '.generated.json')))) {
+  console.error('No src/deck.generated.json or src/files.generated.json: run `npm run deck` (or `npm run deck -- --fixture`) first.');
   process.exit(1);
 }
 
