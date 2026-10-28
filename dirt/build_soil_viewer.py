@@ -2573,14 +2573,14 @@ addEventListener("load", () => {
   // discrete ones come in runs of Fibonacci lengths, the first the longest: styles (ascii 34, dots 13, grain 5, scan 3
   // frames), glyph sets (fine 21, the default 13, blocks 8, binary 5, kana 3, kanji 2), colours (full 21, gold 8, blue
   // 5, mono 3), and inverted three frames in 89. Glyph Light's video motions are laid out in place of time: push in as
-  // density, its glyphs a step larger at each of a run's three frames (5, 8 then 13 CSS px, or the overlay's three
-  // levels), as the ground's painting is pushed in by phi at each; shimmer seeded by the frame; reveal opening each chapter of 34 frames, and closing towards its end, so
+  // density, its glyphs a level larger at each of a run's three frames (blocks of 1, 2 then 4 cells a side), as the
+  // ground's painting is pushed in by phi at each; shimmer seeded by the frame; reveal opening each chapter of 34 frames, and closing towards its end, so
   // no frame jumps from light to dark; pulse as the glow. And no frame is unreadably dark or blown out: its exposure is
   // held so that the ground's lights (0.9) stay at phi^-2 or above and its middles (phi^-1) at 0.95 or below, whatever
   // the frame's contrast and midtones (Glyph Light's tone: times 2^EV, contrast about the middle, then the power
   // 1/midtones). Each frame is a still point (motion comes from the thumb), blended or dissolved into the next across
   // the gutter between them by glyphlight.js.
-  const PHI = (1 + Math.sqrt(5)) / 2, GA = 2 * Math.PI / (PHI * PHI), CELLS = [5, 8, 13], SETS = GlyphLight.SETS;
+  const PHI = (1 + Math.sqrt(5)) / 2, GA = 2 * Math.PI / (PHI * PHI), SETS = GlyphLight.SETS;
   const mod = (a, n) => ((a % n) + n) % n;
   const wave = (k, n, lo, hi, ph) => lo + (hi - lo) * (0.5 - 0.5 * Math.cos(2 * Math.PI * (k + 0.5) / n + ph * GA));
   const run = (k, list) => {
@@ -2598,8 +2598,8 @@ addEventListener("load", () => {
       style: run(k, STYLES), set: SETS[run(k, GLYPH_SETS)], mode: run(k, COLOURS), invert: mod(k, 89) >= 55 && mod(k, 89) < 58,
       contrast: wave(k, 21, 1, 1.6, 1), gamma: wave(k, 34, 0.75, 1.35, 2), detail: wave(k, 55, 0, 1.2, 3),
       glow: 0.35 + 0.5 * pulse, thresh: wave(k, 89, 0.6, 0.85, 4), under: wave(k, 144, 0, 0.38, 5),
-      cell: CELLS[j], level: j,                                  // the push in: a cell size, or a level of the overlay's
-    }, M.push ? M.push((j + 0.5) / 3) : {}, M.shimmer(k), { gain: reveal.gain == null ? 1 : reveal.gain });
+      level: j,                                                  // the push in: a level of the overlay's
+    }, M.push ? M.push((j + 0.5) / 3) : {}, M.shimmer(mod(k, 6765)), { gain: reveal.gain == null ? 1 : reveal.gain });   // seeds 1000 up: 0 is none
     const ev = (x, y) => Math.log2(((y ** s.gamma - 0.5) / s.contrast + 0.5) / x);       // the exposure taking x to y
     const held = (e) => Math.min(ev(1 / PHI, 0.95), Math.max(ev(0.9, 1 / (PHI * PHI)), e));
     s.exposure = held(wave(k, 13, -0.5, 0.5, 0));
@@ -2611,7 +2611,7 @@ addEventListener("load", () => {
   const region = { get w() { return 377 / cellsPerCss(); }, get h() { return 377 / cellsPerCss(); } };
   window.GLYPHS = GlyphLight.create(Object.assign(was, { origin },
     text ? { style: "text", text }
-      : { style: "ascii", set: SETS.fine, cell: CELLS[0], cells: CELLS, region, levels: "frozen", field: (i, j) => story(i + 13 * j) },
+      : { style: "ascii", set: SETS.fine, region, levels: "frozen", field: (i, j) => story(i + 13 * j) },
     window.DRIFT_GLYPHS_OPTIONS || {}));
 });
 </script>
