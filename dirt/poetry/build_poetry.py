@@ -129,9 +129,11 @@ def morph_codes(w, seg):
 # Aries, 23 Oct 2026: "I want the Morphology artifact to now inform how DRIFT and Picture Poetry are organized when they
 # come together", DRIFT's artifact itself not touched. Morphology Web links two words by the root they share; so DRIFT's
 # paintings are linked to the poems by the roots their titles share with the poems' words (kin), and DRIFT Poetry's copy
-# of DRIFT's engine lets the page choose which line a swimmer writes next (organize).
+# of DRIFT's engine lets the page choose which line a swimmer writes next (organize): the line of the storyboard's frame
+# it swims in (layer.js), or -1, the engine's own choice, or -2, rest (the view is still: a swimmer asks again a second on).
 ENGINE_TURN = ("p.line = p.last = verseNext(p.last); p.dir = right ? 1 : -1;",
-               "const kn = w.next ? w.next(p.last, x, y) : -1; p.line = p.last = kn >= 0 ? kn : verseNext(p.last); p.dir = right ? 1 : -1;")
+               "const kn = w.next ? w.next(p.last, x, y) : -1; if (kn < -1) { p.wait = t + 1; continue; } "
+               "p.line = p.last = kn >= 0 ? kn : verseNext(p.last); p.dir = right ? 1 : -1;")
 
 
 def works_of(page):
@@ -162,7 +164,7 @@ def kin(works, roots, morpholex):
 
 def organize(page):
     """DRIFT Poetry's one turn in its copy of DRIFT's engine: a swimmer asks the page which line to write next
-    (words().next, layer.js), and keeps the engine's own choice where the page answers -1."""
+    (words().next, layer.js), keeps the engine's own choice where the page answers -1, and rests where it answers -2."""
     if page.count(ENGINE_TURN[0]) != 1:
         print("DRIFT's engine has changed where the swimmers pick their lines: they keep its own choice (see ENGINE_TURN)")
         return page
@@ -378,6 +380,13 @@ def build(drift, out, sources, morpholex=None):
     if page.index("<script") != page.index("<script>window.DRIFT_WORDS"):
         raise SystemExit("one of DRIFT's scripts runs before its title, so before the letters are asked for: has DRIFT's page changed shape?")
     page = organize(page)
+    # the storyboard (layer.js) leans on DRIFT's page in two more places: say so where either is missing
+    if "uniform vec4 uWS;" not in page:
+        print("DRIFT's engine has no storyboard (uWS, WORDS in ground-gl.js): its calm country's lines and its gesture "
+              "will write lines by hash, not their frames' (publish DRIFT from this repository)")
+    if "DRIFT_GLYPHS_OPTIONS" not in page:
+        print("DRIFT's glyphs loader does not take window.DRIFT_GLYPHS_OPTIONS: Glyph Light will not take the storyboard's "
+              "frames (one point of its slider space, its text pinned to the screen)")
     if morpholex:
         spec["kin"] = kin(works_of(page), spec.get("roots", {}), morpholex)
     layer = (HERE / "layer.js").read_text(encoding="utf-8").replace("__POETRY__", json.dumps(spec, separators=(",", ":")))

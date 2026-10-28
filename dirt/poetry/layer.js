@@ -6,24 +6,30 @@
    are now taking Picture Poetry and implementing them into those distortions." So no page lies on the plane any more:
    Picture Poetry goes into DRIFT as the saved paintings do, in pieces, each piece into the process that suits it.
 
-   - The poems, a line at a time, into DRIFT's moving parts (WORDS in ground-gl.js, which this hands the glyphs and the
-     lines): each swimmer under the surface writes the lines of one poem in its wake, one after another; each line the
-     calm country draws opens into a line of the poems and swells back into a line, on a breath of its own; the gesture
-     carries lines along it as a river carries what is put in it. A verse line stays whole; a prose poem is broken at
-     its sentences and clauses.
-   - The photographs into DRIFT's collage, as a photo the viewer puts in goes (GLG.putIn): the first arrives torn out
-     where the visit begins, and the collage melts it and carries it off in pieces; every 144 seconds the next goes in
-     quietly, so the collage's torn pieces are of it; never over a photo the viewer has just put in.
-   - The buildings onto the ground, alone: a building to each square of a lattice of their own, 1597 CSS pixels wide,
-     dealt so that no two neighbours are alike, each drawn live by Picture Poetry's own model code on its place's DIRT
-     soil and turned by a swipe as in the book, with the creatures that stood by it on its page.
+   - The plane is a storyboard (Aries, 27 Oct 2026, below): the poems laid side by side along it in reading order, a
+     frame 610 CSS pixels wide to each line, each page's plot before its poem, so the thumb plays the story as it
+     flips a flip book.
+   - The poems, a line at a time, into DRIFT's moving parts (WORDS in ground-gl.js, which this hands the glyphs, the
+     lines and the storyboard): each swimmer under the surface writes the line of the frame it swims in, while the
+     view moves (it rests while the view is still); each line the calm country draws opens into its frame's line and
+     swells back into a line, on a breath of its own; the gesture carries each frame's line along it. A verse line
+     stays whole; a prose poem is broken at its sentences and clauses.
+   - The photographs into DRIFT's collage, as a photo the viewer puts in goes (GLG.putIn): each page's arrives torn out
+     at its plot's frame when the plot comes into view, and the collage melts it and carries it off in pieces; never
+     over a photo the viewer has just put in.
+   - The buildings onto the ground, alone: each in the middle of its plot's frame, all on one baseline along each row,
+     each drawn live by Picture Poetry's own model code on its place's DIRT soil and turned by a swipe as in the book,
+     with the creatures that stood by it on its page.
+   - Glyph Light (DRIFT's page lays it over everything) takes the storyboard too: each frame's glyphs its line's
+     letters, and each frame a point in the artifact's slider space (window.DRIFT_GLYPHS_OPTIONS).
    - A plot opens like a book when it is tapped (Aries, 21 Oct 2026: "Plots should be able to open like a book when
      clicked on"): it lifts off the ground and becomes the drawing on a cover in its page's colours, the cover swings
      open on its spine, and the leaves are its page of Picture Poetry: the building, large and turned by a swipe, with
      the book's note on it; the poem, set as the page sets it; the photograph and the creatures, with their notes.
    - A label names the poem a swimmer begins near the middle of the view.
-   - The books written for DRIFT Poetry (books/*.json, beside this file) lie on the ground among the buildings, each on a
-     plot of its own drawn by the same model code, and open as the plots do, into scenes (below: "a chronicle's leaves").
+   - The books written for DRIFT Poetry (books/*.json, beside this file) lie on the ground after the last page, each on
+     a plot of its own drawn by the same model code, and open as the plots do, into scenes (below: "a chronicle's
+     leaves").
 
    #nowords leaves DRIFT's lines and swimmers as they are; #nopoetry is DRIFT alone. */
 (function () {
@@ -31,10 +37,7 @@
   const SPEC = __POETRY__;
   if (typeof GLG === "undefined" || !GLG || /(?:^|&)nopoetry(?:&|$)/.test(location.hash.slice(1))) return;
   const stage = document.getElementById("stage"), field = document.getElementById("field");
-  const imul = Math.imul, P1 = 0.618033988749895;
-  function mixh(h) { h ^= h >>> 16; h = imul(h, 0x7feb352d); h ^= h >>> 15; h = imul(h, 0x846ca68b); h ^= h >>> 16; return h >>> 0; }
-  function h3(x, y, s) { return mixh((imul(x | 0, 0x27d4eb2d) ^ mixh((imul(y | 0, 0x165667b1) + (s >>> 0)) >>> 0)) >>> 0); }
-  const unit = (h) => (h >>> 8) / 16777216;
+  const P1 = 0.618033988749895;
   function loadImage(src) { return new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => no(new Error(src)); im.src = src; }); }
   /** DRIFT's view: its top left on the plane in CSS pixels, its size in device pixels, and device pixels a CSS one
    *  (DRIFT's vx, vy are in cells, R canvas pixels a cell). */
@@ -43,6 +46,157 @@
     return { W: field.width, H: field.height, dpr, x: Math.round(vx * R) / dpr, y: Math.round(vy * R) / dpr };
   }
   const onPlane = () => typeof MODE === "undefined" || MODE === "plane";
+  const mod = (a, n) => a - n * Math.floor(a / n);
+
+  // ---- the storyboard: the poems laid side by side, a frame to a line ----------------------------------------------
+  // Aries, 27 Oct 2026: "Keep in mind that the infinite texture that you are displaying is a storyboard and someone's
+  // thumb is the direction of how the story plays out. Have this inform the juxtapositions that you generate to create
+  // that infinite texture in what is next to what in a progression sense almost like a flip book but instead of each
+  // sticky note being behind the other, they are placed side-by-side. This especially holds true for DRIFT Poetry."
+  // So the plane is a strip of frames 610 CSS pixels wide in reading order: each page's plot (a frame to each of its
+  // buildings), then a frame to each line of its poem; between one poem and the next a kin frame, holding the line of
+  // the next whose words share roots with the last, the rarer the better (Morphology Web's link, the root two words
+  // share, in the gutter between them); after the last page the walled garden, the loop's hinge (pairi-daeza, a wall
+  // around); and round again. Forward is the view moving right, the thumb dragging right to left as a leaf turns, so
+  // a swipe plays the frames as a thumb flips a flip book: moment to moment, in Scott McCloud's terms (Understanding
+  // Comics, 1993), as Muybridge laid out The Horse in Motion (1878). Rows lie 1597 pixels apart, each the same story a
+  // golden share of it further on, so moving down skips ahead. A frame's line is what its swimmers write, what its calm
+  // marks breathe and its gesture carries (WORDS in ground-gl.js) and what its glyphs are made of; and each frame is a
+  // point in Glyph Light's slider space (below), so a swipe walks through it.
+  const FRAME = 610, ROW = 1597, BLD = SPEC.buildings || [], NB = BLD.length, story = [], plotAt = [], firstLine = [], LINES = [];
+  {
+    const poems = SPEC.poems || [], linesBy = poems.map((P) => linesOf(P)), start = [];
+    linesBy.forEach((ls, qi) => { start[qi] = LINES.length; LINES.push(...ls); });
+    const rootsOf = (l) => [...new Set([...l.matchAll(/[A-Za-z]+/g)].flatMap((m) => (SPEC.roots && SPEC.roots[m[0].toLowerCase()]) || []))];
+    const lines = new Map();                                          // a root: how many of the lines hold it
+    for (const l of LINES) for (const r of rootsOf(l)) lines.set(r, (lines.get(r) || 0) + 1);
+    const poemOf = (pi) => { const P = SPEC.pages[pi]; return P && P.n != null ? poems.findIndex((q) => q.n === P.n) : -1; };
+    SPEC.pages.forEach((P, pi) => {
+      const qi = poemOf(pi), ls = qi >= 0 ? linesBy[qi] : [], plots = [];
+      BLD.forEach((b, bi) => { if (b.page === pi) plots.push(bi); });
+      plots.forEach((bi, m) => { plotAt[bi] = story.length; story.push({ kind: "plot", pi, qi, bi, m, of: plots.length }); });
+      if (!ls.length) return;
+      firstLine[pi] = start[qi];
+      // its stanzas (its page keeps the empty lines between them; a prose poem is one), and its turn: the stanza begun
+      // nearest the golden section of its lines, if one is near it, else the line there
+      const sizes = [];
+      if (!poems[qi].prose) { let c = 0; for (const l of P.lines || []) { if (l.trim()) c++; else if (c) { sizes.push(c); c = 0; } } if (c) sizes.push(c); }
+      if (sizes.reduce((a, b) => a + b, 0) !== ls.length) sizes.splice(0, sizes.length, ls.length);
+      const gold = Math.round(ls.length * P1), begun = sizes.slice(0, -1).map((_, i) => sizes.slice(0, i + 1).reduce((a, b) => a + b, 0));
+      const near = begun.reduce((a, s) => (a < 0 || Math.abs(s - gold) < Math.abs(a - gold) ? s : a), -1);
+      const turn = near >= 0 && Math.abs(near - gold) <= ls.length * 0.146 ? near : gold;
+      let j = 0;
+      sizes.forEach((m) => { for (let k = 0; k < m; k++, j++) story.push({ kind: "line", pi, qi, line: start[qi] + j, j, n: ls.length, sj: k, sn: m, turn: j === turn }); });
+      const nq = poemOf(pi + 1);
+      if (nq < 0 || !SPEC.roots) return;
+      // (a root the fewer lines hold, the more it says: each shared root counts one over the lines holding it)
+      const here = new Set(ls.flatMap(rootsOf));
+      let best = -1, most = 0, root = "";
+      linesBy[nq].forEach((l, k) => {
+        const rs = rootsOf(l).filter((r) => here.has(r)).sort((a, b) => lines.get(a) - lines.get(b)), w = rs.reduce((a, r) => a + 1 / lines.get(r), 0);
+        if (w > most) { most = w; best = k; root = rs[0]; }
+      });
+      if (best >= 0) story.push({ kind: "kin", pi, qi: nq, next: pi + 1, line: start[nq] + best, root });
+    });
+  }
+  const FN = story.length, STEP = Math.round(FN * P1);                 // the story's frames; how many on a row begins
+  const rowOff = (cy) => mod(cy * STEP, FN);                          // (whole frames, so the engine's sum is the same)
+  /** The line each frame's swimmers, marks and gesture write: its own, a plot's its poem's first, else -1 (the garden). */
+  const lineOfFrame = (s) => (s.line != null ? s.line : firstLine[s.pi] != null ? firstLine[s.pi] : -1);
+  // handed to the engine with the letters (WORDS in ground-gl.js), which reads it every frame: laid once the visit begins
+  const STORY = { on: false, origin: [0, 0], frame: FRAME, row: ROW, step: STEP, lines: story.map(lineOfFrame) };
+
+  // ---- Glyph Light, frame by frame -----------------------------------------------------------------------------------
+  // Aries, 27 Oct 2026: "Make sure you are using the full dimensionality of the Glygh Light artifact. Make sure all of
+  // the changes available through the provided slide bars are being implemented in all of the artifacts." DRIFT's page
+  // lays Glyph Light over everything (its glyphs loader, build_soil_viewer.py), its glyphs here the poems' letters.
+  // This hands the loader the storyboard (window.DRIFT_GLYPHS_OPTIONS, merged into its own at the page's load): the
+  // glyphs pinned to the plane (origin), cut into the story's frames (region), each frame made of its own line's
+  // letters (text) and each a point in the artifact's slider space (field), the gutter between two a blend or a
+  // dissolve (glyphlight.js), phi^-4 of a frame each side of it (seam), so a frame's own line holds most of it. The
+  // point, frame by frame:
+  // - style: text, the poems' own, every frame; its glyphs the frame's line's letters (a plot's, its page's title, or
+  //   its poem's first line; the garden's, its name);
+  // - colour by page, from its paper: a dark page mono (page 6's black), a warm one gold, a cool one blue, else full;
+  // - density (glyphlight.js's level: cells x1, x2, x4): a line's letters at the poems' size; a plot's twice it; and
+  //   each poem pushed in over its last three lines (the artifact's push in, laid out as density: GlyphLight.motions.push
+  //   at the middle of each third of the run, levels 0, 1, 2), so its last line is written four times as large;
+  // - tone and glow stepped along each poem's lines, each on a Fibonacci period of its own (in lines), every poem
+  //   setting out from the artifact's own settings at its first line: exposure 0 +- 0.236 EV (13 lines), contrast
+  //   1.2 +- 0.236 (8), midtones phi^+-0.382 (21), detail 0 to 0.618 and back (34), glow 0.6 +- 0.236 (5), glow starts
+  //   at 0.7 +- 0.146 (21); the image under the glyphs half there at a plot (its building seen through its title),
+  //   phi^-3 at a kin frame, none on a line; levels frozen, so only the frames change the light;
+  // - the artifact's video motions laid out as places, not times (GlyphLight.motions, where glyphlight.js has them; else
+  //   as its page codes them): pulse along each stanza (its glow swelling twice in it), reveal over each poem's plot
+  //   (half lit, at 0.5 of the motion) to its first line (whole, at 0.75), shimmer seeded by the frame, and invert at
+  //   each poem's turn (the stanza begun nearest its golden section, else the line there).
+  const easeQ = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+  const MOTIONS = {                                                   // (as the artifact's page codes them, t a place)
+    pulse: (s) => ({ gain: 0.35 + 1.1 * (0.5 - 0.5 * Math.cos(4 * Math.PI * s)) }),
+    shimmer: (k) => ({ jitter: 0.16, seed: 1000 + k }),
+    reveal: (s) => { const k = easeQ(Math.min(1, s / 0.75)); return { ev: -5 * (1 - k), gain: 0.2 + 0.8 * k }; },
+    push: (s) => ({ level: Math.min(2, Math.floor(3 * easeQ(s))) }), // (zoom 1 to 1.3 there; here the cells x1, x2, x4)
+  };
+  const motion = (name, s) => ((window.GlyphLight && GlyphLight.motions && typeof GlyphLight.motions[name] === "function" ? GlyphLight.motions : MOTIONS)[name](s) || {});
+  /** A page's colour mode, from its paper's: dark, mono; warm (orange to yellow), gold; cool (cyan to blue), blue; else
+   *  full, the ground's own colours. */
+  function modeOf(pi) {
+    const p = (SPEC.pages[pi] || {}).paper;
+    if (!/^#[0-9a-f]{6}$/i.test(p || "")) return "full";
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(p.slice(i, i + 2), 16) / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if ((mx + mn) / 2 < 0.15) return "mono";
+    if (mx - mn < 0.01) return "full";
+    const hue = mod(mx === r ? 60 * ((g - b) / (mx - mn)) : mx === g ? 60 * ((b - r) / (mx - mn)) + 120 : 60 * ((r - g) / (mx - mn)) + 240, 360);
+    return hue >= 15 && hue < 70 ? "gold" : hue >= 170 && hue < 260 ? "blue" : "full";
+  }
+  const glyphText = story.map((s) => {
+    const P = SPEC.pages[s.pi], k = lineOfFrame(s);
+    return ((s.kind === "plot" && (P.title || (k < 0 && P.name))) || (k >= 0 ? LINES[k] : P.name)).replace(/\s+/g, " ").trim() + " ";
+  });
+  /** Frame f's point in Glyph Light's slider space (glyphlight.js's field: a frame's settings, and the motions' terms). */
+  function pointOf(f) {
+    const s = story[f], C = 2 * Math.PI;
+    const o = { style: "text", mode: modeOf(s.kind === "kin" ? s.next : s.pi), level: 0, exposure: 0, contrast: 1.2, gamma: 1, detail: 0,
+                invert: false, glow: 0.6, thresh: 0.7, under: 0, gain: 1, ev: 0 };
+    const add = (m) => { if (m.gain != null) o.gain *= m.gain; if (m.ev != null) o.ev += m.ev; if (m.jitter != null) o.jitter = m.jitter; if (m.seed != null) o.seed = m.seed; };
+    add(motion("shimmer", f));
+    if (s.kind === "plot") {
+      Object.assign(o, { level: 1, under: 0.5 });
+      if (s.qi >= 0) add(motion("reveal", 0.5 + (0.25 * s.m) / s.of));
+    } else if (s.kind === "kin") o.under = 0.236;
+    else {
+      const t = s.j, w = (p) => Math.sin((C * t) / p);
+      Object.assign(o, { exposure: 0.236 * w(13), contrast: 1.2 + 0.236 * w(8), gamma: 1.618033988749895 ** (0.382 * w(21)),
+                         detail: 0.618 * (0.5 - 0.5 * Math.cos((C * t) / 34)), glow: 0.6 + 0.236 * w(5), thresh: 0.7 + 0.146 * Math.cos((C * t) / 21),
+                         invert: s.turn });
+      add(motion("pulse", s.sj / s.sn));
+      if (t >= s.n - 3) { const m = motion("push", (t - (s.n - 3) + 0.5) / 3); if (m.level != null) o.level = m.level; }   // (each line the middle of its third)
+      if (t === 0) add(motion("reveal", 0.75));
+    }
+    for (const k in o) if (typeof o[k] === "number") o[k] = +o[k].toFixed(4);
+    return o;
+  }
+  const regionFrame = (i, j) => mod(i + rowOff(j), FN);               // (a region of glyphlight.js is a frame of the story)
+  const glField = (i, j) => pointOf(regionFrame(i, j)), glText = (i, j) => ({ text: glyphText[regionFrame(i, j)], at: 0 });
+  /** The overlay's top left on the story's plane (CSS pixels): DRIFT's view, less where the ground lies in the stage
+   *  (the loader passes DRIFT's own origin; this, merged over it, counts from where the story is laid, so glyphlight.js's
+   *  regions are the story's frames and their gutters fall where the story's do). */
+  function glOrigin() {
+    const v = view(), r = field.getBoundingClientRect(), h = stage.getBoundingClientRect();
+    return { x: v.x - (r.left - h.left) - shift[0], y: v.y - (r.top - h.top) - shift[1] };
+  }
+  // (a text that is a function is the new Glyph Light's: one before it, given one, would break, so it is given only
+  // where the motions say the new one is here)
+  // (and every frame's letters given at once, so its atlas is made once, not grown as frames come into view)
+  const glNew = !!(window.GlyphLight && GlyphLight.motions);
+  const glLetters = " " + [...new Set(glyphText.join("").replace(/\s+/g, ""))].join("");
+  if (FN) window.DRIFT_GLYPHS_OPTIONS = Object.assign(window.DRIFT_GLYPHS_OPTIONS || {}, { origin: glOrigin, region: { w: FRAME, h: ROW },
+    seam: 0.146, levels: "frozen", field: glField }, glNew ? { text: glText, letters: glLetters } : {});
+  /** Once the story is laid where the visit begins, Glyph Light's frames are found again (its cache cleared). */
+  function glLaid() {
+    const g = window.GLYPHS;
+    if (g && g.set && g.options && g.options.field === glField) g.set(Object.assign({ field: glField }, glNew ? { text: glText } : {}));
+  }
 
   // ---- the buildings, on the ground and turned by a swipe as in Picture Poetry -----------------------------------
   // Aries, 14 Oct 2026: "Make sure I can still rotate architecture buildings in DRIFT Poetry like I can in Picture
@@ -56,32 +210,39 @@
   stage.insertBefore(fig, field.nextSibling);
   new MutationObserver(() => { fig.style.visibility = field.style.visibility; }).observe(field, { attributes: true, attributeFilter: ["style"] });
   const fx = fig.getContext("2d");
-  const B = 1597, TAU = 2 * Math.PI, REST = TAU / 8, BLD = SPEC.buildings || [], NB = BLD.length;
+  const TAU = 2 * Math.PI, REST = TAU / 8;
   const isoNearest = (h) => Math.round((h - TAU / 8) / (TAU / 4)) * (TAU / 4) + TAU / 8;
   const ease = (q) => (q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const dotsOf = {}, turns = new Map();
-  let soilPx = null, soilN = 0, figDirty = true, turning = null, lastV = null, anchor = [0, 0], first = 0, shift = [0, 0], anchored = false;
+  let soilPx = null, soilN = 0, figDirty = true, turning = null, lastV = null, first = 0, shift = [0, 0], anchored = false, movedAt = -1e9;
   let bk = null;                                                      // the book open, if one is (below)
-  /** A square's middle, where its building stands: moved within phi^-1 of the square by its own hash. */
-  function seedOf(cx, cy) {
-    const h = h3(cx, cy, 59);
-    return { x: (cx + 0.5 + P1 * (unit(mixh((h + 1) >>> 0)) - 0.5)) * B + shift[0], y: (cy + 0.5 + P1 * (unit(mixh((h + 2) >>> 0)) - 0.5)) * B + shift[1] };
+  /** The frame a point on the plane (CSS pixels) lies in (f, in the story), how far across it (q, 0 to 1), its column
+   *  (i, frames from the story's origin) and its row (cy). */
+  function frameAt(px, py) {
+    const cy = Math.floor((py - shift[1]) / ROW), u = (px - shift[0]) / FRAME, i = Math.floor(u);
+    return { f: mod(i + rowOff(cy), FN), q: u - i, i, cy };
   }
-  /** Which building a square holds: dealt along the rows two apart, so that no two neighbours hold the same one. */
-  const bldOf = (cx, cy) => { const v = cx - anchor[0] + 2 * (cy - anchor[1]) + first; return v - NB * Math.floor(v / NB); };
-  /** The square the visit begins in holds a building (the one from page N, with #pageN; a book's plot, with its name, as
-   *  #paradise), standing right of the middle of the view and a little below it (in the middle, on a narrow screen),
-   *  clear of the caption. */
+  /** Where a building's copy stands (cx: its loop along its row times NB, and the building; cy: its row): in the middle
+   *  of its plot's frame, the foot of its plot (its outline at rest) on its row's baseline. */
+  function seedOf(cx, cy) {
+    const k = Math.floor(cx / NB), bi = cx - NB * k, b = BLD[bi];
+    return { x: shift[0] + (k * FN + plotAt[bi] - rowOff(cy) + 0.5) * FRAME, y: shift[1] + (cy + 0.5) * ROW - ((b.box[3] - b.box[1]) / 2) * P1 };
+  }
+  /** The visit begins at a plot (the building from page N, with #pageN; a book's plot, with its name, as #paradise; else
+   *  any), on a row of its own (any of 120), standing at phi^-2 of the view's width (in the middle, on a narrow
+   *  screen), so the story it opens lies to its right, and a little below the middle, clear of the caption. */
   function anchorAt(v) {
     const want = location.hash.match(/(?:^|[#&])page(\d+)(?:&|$)/), asked = location.hash.slice(1).split("&");
     const byPage = want ? BLD.findIndex((b) => SPEC.pages[b.page].n === +want[1]) : BLD.findIndex((b) => asked.includes(b.slug));
     first = byPage >= 0 ? byPage : Math.floor(Math.random() * Math.max(1, NB));
-    anchor = [Math.floor((Math.random() - 0.5) * 120), Math.floor((Math.random() - 0.5) * 120)];
+    const cy = Math.floor((Math.random() - 0.5) * 120), cw = v.W / v.dpr, ch = v.H / v.dpr;
     shift = [0, 0];
-    const s = seedOf(anchor[0], anchor[1]), cw = v.W / v.dpr, ch = v.H / v.dpr;
-    shift = [v.x + cw * (cw < 700 ? 0.5 : 0.62) - s.x, v.y + ch * 0.6 - s.y];
-    anchored = true;
+    const s = NB ? seedOf(first, cy) : { x: 0, y: 0 };
+    shift = [v.x + cw * (cw < 700 ? 0.5 : 0.382) - s.x, v.y + ch * 0.6 - s.y];
+    anchored = true; movedAt = performance.now();                     // (the visit's arrival moves the story as a swipe does)
+    STORY.origin = shift.slice(); STORY.on = FN > 0;
+    glLaid();                                                         // (Glyph Light's frames, found again where they now lie)
   }
   /** The soil of a place (latitude, longitude) as the book takes it: the DIRT soil tile, wrapped. */
   function soilFor(lat, lon) {
@@ -133,12 +294,17 @@
     if (best >= 0) { const b = BLD[best]; flock[best].push({ dx: c.box[0] - (b.box[0] + b.box[2]) / 2, dy: c.box[1] - (b.box[1] + b.box[3]) / 2, r: c.sheet }); }
   }
   if (SPEC.charSheet) loadImage(SPEC.charSheet).then((im) => { sheet.im = im; figDirty = true; }).catch(() => {});
-  /** The buildings' copies within reach of the view. */
+  /** The buildings' copies within reach of the view: each plot frame in it, on each row. */
   function copiesNear(v) {
     const out = [], x1 = v.x + v.W / v.dpr, y1 = v.y + v.H / v.dpr, reach = 377;
-    if (!NB) return out;
-    for (let gy = Math.floor((v.y - shift[1] - reach) / B); gy <= Math.floor((y1 - shift[1] + reach) / B); gy++)
-      for (let gx = Math.floor((v.x - shift[0] - reach) / B); gx <= Math.floor((x1 - shift[0] + reach) / B); gx++) out.push(copyOf(BLD[bldOf(gx, gy)], gx, gy));
+    if (!NB || !FN) return out;
+    for (let cy = Math.floor((v.y - shift[1] - reach) / ROW); cy <= Math.floor((y1 - shift[1] + reach) / ROW); cy++) {
+      const o = rowOff(cy);
+      for (let i = Math.floor((v.x - shift[0] - reach) / FRAME); i <= Math.floor((x1 - shift[0] + reach) / FRAME); i++) {
+        const s = story[mod(i + o, FN)];
+        if (s.kind === "plot") out.push(copyOf(BLD[s.bi], Math.floor((i + o) / FN) * NB + s.bi, cy));
+      }
+    }
     return out;
   }
   function drawBuildings(v) {
@@ -246,13 +412,13 @@
 
   // ---- the photographs, into DRIFT's collage ----------------------------------------------------------------------
   // As a photo the viewer puts in goes (drift.js): it arrives torn out where it is put in, and the collage melts it
-  // (the datamosh) and carries it off in torn pieces across the plane. The first arrives where the visit begins; every
-  // 144 seconds the next goes in quietly (no arrival: only the collage's pieces turn to it, phi^-1 of the usual
-  // share); and for 377 seconds after the viewer puts in a photo or a name of their own, theirs is left to drift. The
-  // photograph is the one of its family (Morphology's order, below): the page of the plot nearest the view's middle,
-  // else the next in turn.
+  // (the datamosh) and carries it off in torn pieces across the plane. By page, in the storyboard: when a page's plot
+  // comes into view (the visit begins at one, once DRIFT's ground is painted), its photograph arrives at the plot's
+  // frame, over its building, unless it was the last to arrive; at most one in 13 seconds, so a flick through the
+  // pages does not bury the plane in them; and for 377 seconds after the viewer puts in a photo or a name of their
+  // own, theirs is left to drift.
   const photoOf = new Map();                                          // a page (index) to its photograph, once it has come
-  let photoNext = Math.floor(Math.random() * 8), photoAt = -1, viewerAt = -1e9;
+  let photoPage = -1, photoAt = -1e9, viewerAt = -1e9;
   if (typeof GLG.putIn === "function") {
     const putIn = GLG.putIn;
     GLG.putIn = function (src, x, y, o) {
@@ -265,13 +431,17 @@
   function photos(now) {
     // (once DRIFT's ground is being painted: it has read back a frame of its own)
     if (groundAt < 0) { if (GLG.reflection && GLG.reflection()) groundAt = now; return; }
-    if (!photoOf.size || now - groundAt < 1618 || now - viewerAt < 377000) return;
-    const firstOne = photoAt < 0;
-    if (!firstOne && now - photoAt < 144000) return;
-    photoAt = now;
-    const b = lastV && plotNear(lastV.x + lastV.W / lastV.dpr / 2, lastV.y + lastV.H / lastV.dpr / 2), all = [...photoOf.values()];
-    const im = (b && photoOf.get(b.page)) || all[photoNext++ % all.length];
-    GLG.putIn(im, vx + VW * 0.38, vy + VH * 0.42, firstOne ? {} : { quiet: true, share: P1 });
+    if (!photoOf.size || !lastV || !anchored || now - groundAt < 1618 || now - viewerAt < 377000 || now - photoAt < 13000) return;
+    const v = lastV, w = v.W / v.dpr, mid = frameAt(v.x + w / 2, v.y + (v.H / v.dpr) * 0.6), o = rowOff(mid.cy);
+    let best = null;                                                  // the plot in view nearest the middle, with a photograph
+    for (let i = Math.floor((v.x - shift[0]) / FRAME); i <= Math.floor((v.x + w - shift[0]) / FRAME); i++) {
+      const s = story[mod(i + o, FN)];
+      if (s.kind === "plot" && photoOf.has(s.pi) && (!best || Math.abs(i - mid.i) < Math.abs(best.i - mid.i))) best = { i, s };
+    }
+    if (!best || best.s.pi === photoPage) return;
+    photoPage = best.s.pi; photoAt = now;
+    const x = shift[0] + (best.i + 0.5) * FRAME, y = shift[1] + (mid.cy + 0.5) * ROW - 233;   // (over its building)
+    GLG.putIn(photoOf.get(best.s.pi), (x * v.dpr) / R, (y * v.dpr) / R, {});
   }
 
   // ---- the label: the poem a swimmer begins near the middle of the view --------------------------------------------
@@ -301,9 +471,9 @@
       if (b.at <= verseSeen) continue;
       verseSeen = b.at;
       if (bk || Math.abs(b.x - (vx + VW / 2)) > VW * 0.3 || Math.abs(b.y - (vy + VH / 2)) > VH * 0.3) continue;
-      const P = SPEC.poems[linePoem[b.line]], w = why.get(b.line), y = w && w.x === b.x && w.y === b.y ? w : null;
+      const P = SPEC.poems[linePoem[b.line]], y = why.get(whyKey(b.line, b.x, b.y)) || null;
       if (!P) continue;
-      show(P.name, "Picture Poetry, page " + P.n + (!y ? "" : y.plot ? " · round its plot, " + y.plot.name
+      show(P.name, "Picture Poetry, page " + P.n + (!y ? "" : y.s ? whyOf(y.s)
         : " · its root " + y.root + ", in " + [PL.works[y.work].title || "Untitled", PL.works[y.work].artist].filter(Boolean).join(", ")));
       clearTimeout(poemTimer);
       poemTimer = setTimeout(() => label.classList.remove("on"), 6854);
@@ -315,54 +485,49 @@
   // that is in DRIFT Poetry ... guiding it as if its philosophy", organizing DRIFT's information and Picture Poetry's
   // where they come together here (neither artifact itself); and, of this first step, "give me a beta version ... keep it
   // very small". Morphology Web (https://claude.ai/artifact/9CYzDaxb6YYSDxm5y2G9zx) orders words by what they share: a
-  // root makes a family, and a link between two words is the root they share. Three tastes of that order:
-  // - A page of Picture Poetry is a family round its root, the plot. Within 610 CSS pixels of a plot (phi^-2 of its
-  //   square) the swimmers write its page's poem, in order, each taking the next line (the family recites it); and the
-  //   photograph that goes into the collage is the nearest plot's page's (above).
-  // - Between the plots, DRIFT's paintings and the poems are linked as the Web links its words: a swimmer writes a line
-  //   whose words share a root with the title of the painting it swims over (build_poetry.py roots the titles: SPEC.kin).
-  //   Elsewhere it writes as DRIFT has it (the engine's own choice), and the label says which order chose a line.
+  // root makes a family, and a link between two words is the root they share. Its tastes of that order:
+  // - A page of Picture Poetry is a family round its root, the plot: its frames follow its plot's in the storyboard
+  //   (above), and the swimmers in a frame write its line (the family recites it, in order, as the thumb goes on).
+  // - Between two poems, the kin frame: the line of the next whose words share roots with the last, the rarer the better.
+  // - In the walled garden, which has no poem, DRIFT's paintings and the poems are linked as the Web links its words: a
+  //   swimmer writes a line whose words share a root with the title of the painting it swims over (build_poetry.py
+  //   roots the titles: SPEC.kin); else it writes as DRIFT has it (the engine's own choice). The label says which order
+  //   chose a line.
   // - The link is named: when DRIFT names a painting, the root its title shares with the poems is written beside it, with
   //   the line it opens to.
   // (The swimmers ask nextLine through the one line build_poetry.py turns in DRIFT Poetry's copy of DRIFT's engine:
   // organize(). DRIFT itself is not touched.)
-  const FAMILY = 610, lineRoots = new Map(), why = new Map(), recited = new Map();
-  /** The plot whose family a point on the plane (CSS pixels) lies in: the nearest within FAMILY of its middle, or null. */
-  function plotNear(px, py) {
-    if (!anchored || !NB) return null;
-    const gx = Math.floor((px - shift[0]) / B), gy = Math.floor((py - shift[1]) / B);
-    let best = null, bd = FAMILY;
-    for (let y = gy - 1; y <= gy + 1; y++) for (let x = gx - 1; x <= gx + 1; x++) {
-      const s = seedOf(x, y), d = Math.hypot(px - s.x, py - s.y);
-      if (d < bd) { bd = d; best = BLD[bldOf(x, y)]; }
-    }
-    return best;
-  }
+  const STILL = 4236;                                                 // ms (phi^3 s) after the view last moved: still
+  const lineRoots = new Map(), why = new Map(), recited = new Map();
+  /** Why a line was chosen, kept for the swimmer it was chosen for, where (the latest few). */
+  const whyKey = (k, x, y) => k + "|" + x + "|" + y;
+  const because = (k, x, y, w) => { why.set(whyKey(k, x, y), w); if (why.size > 89) why.delete(why.keys().next().value); };
+  /** Why a swimmer writes the line it does, in a frame of the story, for the label. */
+  const whyOf = (s) => (s.kind === "kin" ? " · between two poems, the root " + s.root + " in both"
+    : s.kind === "plot" ? " · its plot, " + BLD[s.bi].name : " · line " + (s.j + 1) + " of " + s.n);
   /** DRIFT's painting at a cell of the plane, where its ground has been grown there, else -1. */
   function workAt(x, y) {
     if (typeof chunks === "undefined" || typeof ck !== "function" || typeof N === "undefined") return -1;
     const c = chunks.get(ck(Math.floor(x / N), Math.floor(y / N)));
     return c && c.work ? c.work[(((Math.floor(y) % N) + N) % N) * N + (((Math.floor(x) % N) + N) % N)] : -1;
   }
-  /** Of some lines, the next in turn (key: whose turn it is), so that a family's poem is recited in order and a root's
-   *  lines take turns. */
+  /** Of some lines, the next in turn (key: whose turn it is), so that a root's lines take turns. */
   function inTurn(key, ls) { const k = recited.get(key) || 0; recited.set(key, k + 1); return ls[k % ls.length]; }
-  /** The line a swimmer at (x, y) (cells) writes next, as Morphology orders them; -1 leaves the choice to DRIFT's
-   *  engine, which goes on with the swimmer's poem after its last line (after) or else picks one. */
+  /** The line a swimmer at (x, y) (cells) writes next: the line of the story's frame it swims in (a plot's, its poem's
+   *  first); -2 while the view is still, so the swimmers rest (the thumb moves the story; a line begun is finished);
+   *  -1 leaves the choice to DRIFT's engine, which goes on with the swimmer's poem after its last line or else picks
+   *  one (in the garden, where no root links it to the painting under it). */
   function nextLine(after, x, y) {
-    const dpr = field.width / Math.max(1, field.clientWidth), b = plotNear((x * R) / dpr, (y * R) / dpr);
-    const pi = b ? SPEC.poems.findIndex((q) => q.n === SPEC.pages[b.page].n) : -1;
-    if (pi >= 0) {
-      const k = inTurn("poem " + pi, linePoem.reduce((a, p, li) => (p === pi ? a.concat(li) : a), []));
-      why.set(k, { plot: b, x, y });
-      return k;
-    }
+    if (!anchored || !FN) return -1;
+    if (performance.now() - movedAt > STILL) return -2;
+    const dpr = field.width / Math.max(1, field.clientWidth), fr = frameAt((x * R) / dpr, (y * R) / dpr), s = story[fr.f], k = lineOfFrame(s);
+    if (k >= 0) { because(k, x, y, { f: fr.f, s }); return k; }
     const wi = workAt(x, y);
     for (const r of (wi >= 0 && SPEC.kin && SPEC.kin[wi]) || []) {
       const ls = lineRoots.get(r);
       if (!ls || !ls.size) continue;
       const k = inTurn("root " + r, [...ls]);
-      why.set(k, { root: r, work: wi, x, y });
+      because(k, x, y, { root: r, work: wi });
       return k;
     }
     return -1;
@@ -983,10 +1148,20 @@
     turn: (d) => turn(d), close: () => closeBook(),
     // the lines the swimmers have begun lately, and which of Morphology's orders chose each (or none: DRIFT's own)
     order: () => (GLG.verse ? GLG.verse().begun : []).map((b) => {
-      const w = why.get(b.line), y = w && w.x === b.x && w.y === b.y ? w : null;   // (chosen for this swimmer, here)
-      return { line: b.line, poem: (SPEC.poems[linePoem[b.line]] || {}).name, plot: y && y.plot ? y.plot.name : null, root: (y && y.root) || null,
-               work: y && y.work != null ? PL.works[y.work].title : null };
+      const y = why.get(whyKey(b.line, b.x, b.y)) || null;              // (chosen for this swimmer, here)
+      return { line: b.line, poem: (SPEC.poems[linePoem[b.line]] || {}).name, frame: y && y.s ? y.f : null, kind: y && y.s ? y.s.kind : null,
+               root: (y && (y.root || (y.s && y.s.root))) || null, work: y && y.work != null ? PL.works[y.work].title : null };
     }),
+    // the storyboard: the frame at the view's middle (f in the story, q how far across it, its page, its line or -1, and
+    // the row), every frame of the story, and the point in Glyph Light's slider space each frame is
+    frame() {
+      if (!anchored || !FN) return null;
+      const v = lastV || view(), fr = frameAt(v.x + v.W / v.dpr / 2, v.y + v.H / v.dpr / 2), s = story[fr.f], P = SPEC.pages[s.pi];
+      return { f: fr.f, q: +fr.q.toFixed(4), page: P.n != null ? P.n : P.name, line: s.line != null ? s.line : -1, kind: s.kind, row: fr.cy, glyphs: glyphText[fr.f] };
+    },
+    story: () => story.map((s, f) => ({ f, kind: s.kind, page: SPEC.pages[s.pi].n != null ? SPEC.pages[s.pi].n : SPEC.pages[s.pi].name, line: s.line != null ? s.line : -1,
+                                         writes: lineOfFrame(s), glyphs: glyphText[f], turn: !!s.turn, root: s.root || null, building: s.bi != null ? BLD[s.bi].name : null })),
+    glyphs: (f) => pointOf(f),
   });
 
   // ---- on DRIFT's frames ------------------------------------------------------------------------------------------
@@ -1006,7 +1181,10 @@
     }
     const v = view();
     if (!anchored) anchorAt(v);
-    if (!lastV || v.x !== lastV.x || v.y !== lastV.y || v.W !== lastV.W || v.H !== lastV.H || v.dpr !== lastV.dpr) { lastV = v; figDirty = true; }
+    if (!lastV || v.x !== lastV.x || v.y !== lastV.y || v.W !== lastV.W || v.H !== lastV.H || v.dpr !== lastV.dpr) {
+      if (lastV && (v.x !== lastV.x || v.y !== lastV.y)) movedAt = performance.now();   // (the thumb moved the story)
+      lastV = v; figDirty = true;
+    }
     turnStep(now);
     if (figDirty) { figDirty = false; drawBuildings(v); }
     photos(now);
@@ -1132,7 +1310,7 @@
       for (const c of text) { const a = adv[gi.get(c)]; at[0] += a[0]; at[1] += a[1]; ends.push([at[0], at[1]]); }
       GLG.words({ atlas: cv, slot: [SW, SH], cols: COLS, em: EM, origin: [OX, OY], glyphs: chars.length, adv, spread: SPREAD,
                   text: [...text].map((c) => gi.get(c)), ends, lines, poem: linePoem, space: gi.has(" ") ? gi.get(" ") : -1,
-                  shed, groups, next: nextLine });
+                  shed, groups, next: nextLine, story: STORY });
     };
     const sample = chars.join("");
     const fonts = document.fonts && document.fonts.load ? Promise.all(faces.map((f) => document.fonts.load(f, sample))) : Promise.resolve();

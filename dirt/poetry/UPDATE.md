@@ -91,6 +91,14 @@ repository.
    right only for a prose poem. The build refuses a DRIFT whose engine has no swimmers' lines (`GLG.verse`): publish DRIFT from this
    repository first.
 
+   The storyboard (README, "The storyboard") is not built: `layer.js` lays it out on every visit from what the build
+   gives it, so a new page takes its place in the strip with nothing more to do, and the kin frames come with
+   `--morpholex`. The build says when DRIFT's page lacks what it leans on: an engine without the storyboard (the calm
+   country's lines and the gesture then write lines by hash; publish DRIFT from this repository, or splice this
+   repository's engine into DRIFT's page first, `python3 dirt/engine/splice.py PAGE dirt/engine/ground-gl.js OUT`, and
+   build from that), or a glyphs loader that does not take `window.DRIFT_GLYPHS_OPTIONS` (Glyph Light then stays one
+   point of its slider space).
+
 8. **Look at it.** Serve `<scratch>/drift-poetry` with DRIFT's private folders beside it (`quilts/`, `antiquity/`,
    `faces/`, from DRIFT's files) and open `index.html#forcegl&pageN` in headless Chromium for each new or changed page
    (`pageN` begins beside the building of page N; `nopoetry` shows DRIFT alone; `nowords` leaves DRIFT's lines and
@@ -103,10 +111,16 @@ repository.
    book (`window.DRIFT_POETRY.book()` gives `{ open, busy, wide, pos, pages }`), at a phone's size and a desktop's:
    look at the cover, the first leaf, the poem (its indents as on its page, nothing cut off) and the last leaf, turn
    every leaf, and close it (Escape): it must lie down where it was, and `open` be false. A photograph of Picture
-   Poetry must arrive torn out near where the visit begins, a few seconds after the ground is painted. DRIFT's page
-   lays Glyph Light over all of it (`window.GLYPHS`, its text the poems): `GLYPHS.set({ active: () => false })` shows
-   the plane under the glyphs. On a software GPU (`--use-angle=swiftshader --enable-unsafe-swiftshader`, as
-   `dirt/engine/check_kaleidoscope.js` launches it) the page takes minutes to load: keep the views few and small.
+   Poetry must arrive torn out at the plot where the visit begins, a few seconds after the ground is painted. DRIFT's
+   page lays Glyph Light over all of it (`window.GLYPHS`, its text the poems): `GLYPHS.set({ active: () => false })`
+   shows the plane under the glyphs, and `GLYPHS.options.field` is the storyboard's where the loader took it. The
+   storyboard: `DRIFT_POETRY.frame()` must give page N's plot frame at the start with `#pageN` (`kind: "plot"`, `q`
+   0.5 on a phone), and a line's frame two frames right (move the view: `vx += 2 * 610 * field.width / field.clientWidth
+   / R`); `DRIFT_POETRY.story()` lists every frame (with the eight pages, 167); while the view moves the swimmers
+   write their frame's line (each of `DRIFT_POETRY.order()` names its frame, and that frame's line in `story()` is
+   the line), and while it is still they begin none. On a software GPU (`--use-angle=swiftshader
+   --enable-unsafe-swiftshader`, as `dirt/engine/check_kaleidoscope.js` launches it) the page takes minutes to load:
+   keep the views few and small.
 
 9. **Publish it** to DRIFT Poetry's url with the Artifact tool: `file_path` `<scratch>/drift-poetry/index.html`, and
    `files` mapping every `poetry/...` file of the build to its path (`photo-N.jpg`, `creatures.png`, `poems.json`,

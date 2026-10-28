@@ -2730,6 +2730,9 @@ uniform highp sampler2D uWText;     // the poems: per character its glyph and wh
                                     // text twice over; then each glyph's advance; then where each line begins and ends
 uniform ivec4 uWN;                  // characters, glyphs a face, lines; the row of the advances
 uniform ivec2 uWG;                  // the roots' lines (layer.js): how many groups, and the row their table begins
+uniform vec4 uWS;                   // the storyboard (layer.js): where its frames begin on the plane, a frame's width and a
+                                    // row's height, all in cells (a width of 0: no story yet)
+uniform ivec4 uWF;                  // its frames, the row their lines' table begins, and how many frames on a row begins
 uniform vec4 uWAt;                  // a slot's width and height (px), slots a row, an em (px)
 uniform vec2 uWO;                   // where a glyph's origin lies in its slot (px)
 uniform float uWOn;                 // 0 to 1, as they come in
@@ -2746,6 +2749,24 @@ float wAA(float e) { return 0.8 * uWAt.w * WQ / (e * 2.0) / (2.0 * uWSpread); }
 vec4 wTx(int i) { return texelFetch(uWText, ivec2(i & 1023, i >> 10), 0); }
 float wBegin(int i, int f) { if (i <= 0) return 0.0; vec4 v = wTx(i - 1); return f == 0 ? v.y : v.z; }
 vec4 wLine(uint k) { int n = int(k % uint(max(uWN.z, 1))); return texelFetch(uWText, ivec2(n & 1023, uWN.w + 1 + (n >> 10)), 0); }
+// The storyboard (DRIFT Poetry, layer.js; Aries, 27 Oct 2026: "the infinite texture that you are displaying is a
+// storyboard and someone's thumb is the direction of how the story plays out ... placed side-by-side"): the poems laid
+// along the plane in reading order, a frame of 610 CSS pixels to each line (a plot's frame before each poem), each row
+// of frames the same story a golden share further on. Each frame's marks and gesture write its line.
+/** The line of the poems that frame i (counted from the story's origin) of row cy holds, or -1 (a frame with none). */
+int wFrameLine(float i, float cy) {
+  float F = float(uWF.x), o = cy * float(uWF.z);
+  float f = i + o - F * floor(o / F);
+  f -= F * floor(f / F);
+  f = f >= F ? f - F : f < 0.0 ? f + F : f;                          // (a quotient a hair under a whole number)
+  return int(wTx(uWF.y * 1024 + int(f + 0.5)).x);
+}
+/** The line of the story's frame at p (cells), or -1. */
+int wStory(vec2 p) {
+  if (uWS.z <= 0.0 || uWF.x <= 0) return -1;
+  return wFrameLine(floor((p.x - uWS.x) / uWS.z), floor((p.y - uWS.y) / uWS.w));
+}
+int wHere = -1;                     // the line of the frame whose marks are being written (wCalm), or -1
 /** Glyph g of face f at e (em from its origin on the baseline: x on, y down), read at level of detail lod: its distance
  *  field (Green, "Improved Alpha-Tested Magnification for Vector Textures and Special Effects", SIGGRAPH 2007), 0.5 on
  *  its edge and more inside, so the letters can wear away and swell as well as be drawn. */
@@ -2782,16 +2803,24 @@ float wPrint(float x, float y, int st, int en, int f, float e, float rev, float 
   }
   return wInk(d, wAA(e), dil);
 }
-/** The line of the poems a mark hs writes in its cycle k (r: which of its rows, where it has several). A root's mark
- *  (wRoot) writes, in each beat, a line of that beat's root: one of the lines whose words share it (layer.js). */
+/** The line of the poems a mark hs writes in its cycle k (r: which of its rows, where it has several): in the
+ *  storyboard, its frame's line (wHere), on every breath; elsewhere a line of the poems by its hash. A root's mark
+ *  (wRoot) writes, in each beat, a line of that beat's root: one of the lines whose words share it (layer.js), and in
+ *  the storyboard the root's next line from its frame's on, so the spirit's simultaneity keeps the story's order. */
 vec4 wLineOf(uint hs, float k, int r) {
   uint h = mixh(hs ^ uint(int(k)) * 0x9E3779B9u ^ uint(r + 1000) * 2654435761u);
   if (uWG.x > 0 && wRoot(hs)) {
     int base = uWG.y * 1024;
     vec4 g = wTx(base + int(mixh(uint(int(k)) * 0x9E3779B9u + 17u) % uint(uWG.x)));
-    return wLine(uint(wTx(base + uWG.x + int(g.x) + int(h % uint(max(g.y, 1.0)))).x));
+    int at = base + uWG.x + int(g.x), n = max(int(g.y), 1);
+    if (wHere >= 0) {                                                // (a group's lines are in order: the first not before)
+      int lo = 0, hi = n;
+      for (int it = 0; it < 12; it++) { if (lo >= hi) break; int mid = (lo + hi) >> 1; if (int(wTx(at + mid).x) < wHere) lo = mid + 1; else hi = mid; }
+      return wLine(uint(wTx(at + (lo < n ? lo : 0)).x));
+    }
+    return wLine(uint(wTx(at + int(h % uint(n))).x));
   }
-  return wLine(h);
+  return wHere >= 0 ? wLine(uint(wHere)) : wLine(h);
 }
 /** A line of the poems ln written along a mark L em long, x em along the mark and y em off it (from the middle of the
  *  small letters), an em e high, in face f, as its cycle c has it now (wCycle): centred on the mark (or, as print is,
@@ -2835,6 +2864,7 @@ vec4 wCalm(uvec4 m, vec2 pc, vec2 cc) {
   uint h = m.x;
   int a = int(m.y & 255u);
   vec2 q = uintBitsToFloat(m.zw) + (pc - cc) * WQ;                   // this pixel in the area's painting
+  wHere = wStory(cc - uintBitsToFloat(m.zw) / WQ);                   // the story's frame its middle lies in: one line an area
   float cov = 0.0, al = 1.0, T = uWTime;
   vec3 ink = vec3(0.0);
   if (a < 100) {
@@ -2963,10 +2993,20 @@ vec4 wCalm(uvec4 m, vec2 pc, vec2 cc) {
   }
   return vec4(ink, cov * al);
 }
-/** The gesture (gesture() in GROUND_FS) written out: the poems carried along it a line at a time, as a river carries
- *  what is put in it (Jenny Holzer has projected words onto the Arno and the Tiber since 1996): a line every 40 em,
- *  drifting by at phi^-1 em a second, the way the eye reads (smooth scrolling reads as well as words flashed in one
- *  place: Kang and Muter, "Reading dynamically displayed text", 1989). */
+/** How far along the gesture's line (its amplitudes A, frequencies w and phases ph) a point at x lies, in cells: x and
+ *  half the integral of its slope squared, its slope being small. */
+float wArc(float x, vec3 A, vec3 w, vec3 ph) {
+  vec3 U = x * w + ph;
+  return x + 0.5 * (dot(A * A, vec3(x * 0.5) + sin(2.0 * U) / (4.0 * w))
+          + A.x * A.y * (sin(U.x - U.y) / (w.x - w.y) + sin(U.x + U.y) / (w.x + w.y))
+          + A.x * A.z * (sin(U.x - U.z) / (w.x - w.z) + sin(U.x + U.z) / (w.x + w.z))
+          + A.y * A.z * (sin(U.y - U.z) / (w.y - w.z) + sin(U.y + U.z) / (w.y + w.z)));
+}
+/** The gesture (gesture() in GROUND_FS) written out: the poems carried along it, as a river carries what is put in it
+ *  (Jenny Holzer has projected words onto the Arno and the Tiber since 1996). In the storyboard, each frame's line once
+ *  along it, in the middle of the frame (a line longer than its frame running on into the next, as the next's may into
+ *  it); where a frame holds no line, or before the story is laid, a line every 40 em, as DRIFT has it. It holds still:
+ *  the thumb moves the story past (it drifted by at phi^-1 em a second until 27 Oct 2026). */
 vec4 wGesture(uvec4 m, vec2 p) {
   const float GAPY = 987.0 * ${FKS}, E = 13.0;
   int band = int(floor(p.y / GAPY + 0.5));
@@ -2977,16 +3017,25 @@ vec4 wGesture(uvec4 m, vec2 p) {
   float y = (float(band) + 0.2 * (unit(mixh(h + 2u)) - 0.5)) * GAPY + 144.0 * sin(u.x) + 55.0 * sin(u.y) + 13.0 * sin(u.z);
   float dy = dot(A, cos(u)), k2 = 1.0 + dy * dy;
   float x = p.x + (p.y - y) * dy / k2;                                // the foot of the pixel on the line
-  // how far along the line that is: its slope is small, so the length is x and half the integral of the slope squared
-  vec3 U = x * w + ph3;
-  float F = dot(A * A, vec3(x * 0.5) + sin(2.0 * U) / (4.0 * w))
-          + A.x * A.y * (sin(U.x - U.y) / (w.x - w.y) + sin(U.x + U.y) / (w.x + w.y))
-          + A.x * A.z * (sin(U.x - U.z) / (w.x - w.z) + sin(U.x + U.z) / (w.x + w.z))
-          + A.y * A.z * (sin(U.y - U.z) / (w.y - w.z) + sin(U.y + U.z) / (w.y + w.z));
-  const float S = 40.0;
-  float X = (x + 0.5 * F) / E + 8192.0 + uWTime * P1, n = floor(X / S);
-  vec4 ln = wLine(mixh((h + 3u) ^ uint(int(n)) * 0x9E3779B9u));
-  float ink = wPrint(X - n * S - 3.0, (p.y - y) / sqrt(k2) / E, int(ln.x), int(ln.y), 0, E * WQ, 1e9, 0.0, 0.0);   // (the gesture has no breath: nothing shed)
+  float X = wArc(x, A, w, ph3) / E, yv = (p.y - y) / sqrt(k2) / E, ink = 0.0;   // how far along the line that is (em)
+  float fi = floor((x - uWS.x) / max(uWS.z, 1.0)), cy = floor((y - uWS.y) / max(uWS.w, 1.0));   // (the row: the line's)
+  int li = uWS.z > 0.0 && uWF.x > 0 ? wFrameLine(fi, cy) : -1;
+  if (li >= 0) {
+    float Xe[4];                                                     // where frames fi - 1 to fi + 2 begin along it (em)
+    for (int d = 0; d < 4; d++) Xe[d] = wArc(uWS.x + (fi + float(d - 1)) * uWS.z, A, w, ph3) / E;
+    for (int d = 0; d < 3; d++) {
+      int lj = d == 1 ? li : wFrameLine(fi + float(d - 1), cy);
+      if (lj < 0) continue;
+      vec4 ln = wLine(uint(lj));
+      float L = wBegin(int(ln.y), 0) - wBegin(int(ln.x), 0);
+      ink = max(ink, wPrint(X - 0.5 * (Xe[d] + Xe[d + 1] - L), yv, int(ln.x), int(ln.y), 0, E * WQ, 1e9, 0.0, 0.0));
+    }
+  } else {
+    const float S = 40.0;
+    float Xs = X + 8192.0, n = floor(Xs / S);
+    vec4 ln = wLine(mixh((h + 3u) ^ uint(int(n)) * 0x9E3779B9u));
+    ink = wPrint(Xs - n * S - 3.0, yv, int(ln.x), int(ln.y), 0, E * WQ, 1e9, 0.0, 0.0);   // (the gesture has no breath: nothing shed)
+  }
   return vec4(float(m.x & 255u), float((m.x >> 8) & 255u), float((m.x >> 16) & 255u), ink * 0.92);
 }
 `;
@@ -4784,7 +4833,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
    *  fall to 0 outside), a face after the other; w.slot [width, height], w.cols slots a row, w.em and w.origin [x, y]
    *  in pixels; w.glyphs a face; w.adv [face 0, face 1] per glyph (em); w.text the poems as glyphs; w.ends [face 0,
    *  face 1] where each character ends (em); w.lines [first, end] per line of the poems; w.poem which poem each line is
-   *  from; w.space the glyph of a space. False where the page did not ask for the letters before this began (DRIFT). */
+   *  from; w.space the glyph of a space; w.story the storyboard the page lays the poems out on (on, once laid; origin
+   *  [x, y], frame and row in CSS pixels on the plane; step, the frames on that each row begins; lines, each frame's
+   *  line or -1), read every frame, so the page may lay it later. False where the page did not ask for the letters
+   *  before this began (DRIFT). */
   function words(w) {
     if (!WORDS) return false;
     wordsSrc = w; wordsAt = performance.now();
@@ -4807,9 +4859,11 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     // ends in each face; then a row of the glyphs' advances; then each line's first character and its end
     // (and each character's shed code, layer.js; then the roots' groups: each its first line in the list and how many,
     // then the list of their lines)
+    // (and the storyboard's frames, w.story.lines: each frame's line, or -1)
     const n = w.text.length, rows = Math.ceil((2 * n) / 1024), gRow = rows + 1 + Math.ceil(w.lines.length / 1024);
     const groups = w.groups || [], G = groups.length, list = groups.flat();
-    const H = gRow + (G ? Math.ceil((G + list.length) / 1024) : 0), d = new Float32Array(1024 * H * 4);
+    const frames = (w.story && w.story.lines) || [], sRow = gRow + (G ? Math.ceil((G + list.length) / 1024) : 0);
+    const H = sRow + Math.ceil(frames.length / 1024), d = new Float32Array(1024 * Math.max(1, H) * 4);
     const t0 = w.ends[n - 1][0], t1 = w.ends[n - 1][1];
     for (let i = 0; i < 2 * n; i++) { const k = i % n, o = i < n ? 0 : 1; d.set([w.text[k], w.ends[k][0] + o * t0, w.ends[k][1] + o * t1, (w.shed && w.shed[k]) || 0], i * 4); }
     w.adv.forEach((a, g) => d.set([a[0], a[1], 0, 0], (rows * 1024 + g) * 4));
@@ -4817,11 +4871,12 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     let first = 0;
     groups.forEach((g, j) => { d.set([first, g.length, 0, 0], (gRow * 1024 + j) * 4); first += g.length; });
     list.forEach((l, i) => d.set([l, 0, 0, 0], (gRow * 1024 + G + i) * 4));
+    frames.forEach((l, f) => d.set([l, 0, 0, 0], (sRow * 1024 + f) * 4));
     gl.activeTexture(gl.TEXTURE17);
     gl.deleteTexture(tWText);
     tWText = tex(gl.TEXTURE_2D);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 1024, H, 0, gl.RGBA, gl.FLOAT, d);
-    wordsN = gl.getError() === gl.NO_ERROR ? [n, w.glyphs, w.lines.length, rows, G, gRow] : null;
+    wordsN = gl.getError() === gl.NO_ERROR ? [n, w.glyphs, w.lines.length, rows, G, gRow, frames.length, sRow] : null;
   }
   // ---- the swimmers' lines (WORDS: DRIFT Poetry) ------------------------------------------------------------------
   // Aries, 15 Oct 2026: "I don't mind having the language the most animated aspect of DRIFT Poetry, just as long as
@@ -5064,7 +5119,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   function link() {
     if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i, pending.j].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
     const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uChain", "uTier", "uWordsOn"]);
-    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster", "uWTime", "uWSpread", "uWG", "uTime", "uHold", "uStars", "uStarK", "uCellN"]);
+    const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster", "uWTime", "uWSpread", "uWG", "uWS", "uWF", "uTime", "uHold", "uStars", "uStarK", "uCellN"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
     // the formal pass is an addition: without it, the plane is as it was
@@ -5419,6 +5474,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
         gl.uniform4f(V.uWAt, w.slot[0], w.slot[1], w.cols, w.em);
         gl.uniform2f(V.uWO, w.origin[0], w.origin[1]);
         gl.uniform1f(V.uWSpread, w.spread || 8);
+        // the storyboard (layer.js lays it, in CSS pixels, once the visit has begun): in cells, as this canvas has them
+        const s = w.story, k = cv.width / Math.max(1, cv.clientWidth) / R;
+        if (s && s.on && wordsN[6]) { gl.uniform4f(V.uWS, s.origin[0] * k, s.origin[1] * k, s.frame * k, s.row * k); gl.uniform4i(V.uWF, wordsN[6], wordsN[7], s.step, 0); }
+        else gl.uniform4f(V.uWS, 0, 0, 0, 0);
       }
     }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
