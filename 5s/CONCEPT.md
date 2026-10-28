@@ -7,6 +7,12 @@ through it, in a blue-violet rounded square). Lightly cleaned of filler; nothing
 
 - "The slogan for this app will be: Entertain it All"
 
+The slogan stays the app's slogan; it is no longer shown in the app (28 Oct 2026):
+
+- "Just have the logo doing an animation every 30 seconds in the top left corner and get rid of ENTERTAIN IT
+  ALL, keep it in your notes as the slogan for the app. Make sure the logo has no background besides the
+  colors making it"
+
 ## The purpose (said after, the same day; it frames everything below)
 
 "This app really is going to capture any self-reflective process: what I have done so far with you

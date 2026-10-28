@@ -225,7 +225,7 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'motion.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js, Set\'s game, relate.js and kingdom, the photo room\'s room.js and the mark in motion\'s motion.js) load before app.js');
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'motion.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js, Set\'s game, relate.js and kingdom, the photo room\'s room.js and the logo\'s motion.js) load before app.js');
   const publish = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').split('## Publish')[1];
   for (const s of scripts) assert.ok(publish.indexOf('`' + s + '`') > 0, 'the README\'s Publish section ships ' + s + ', or the page loads a missing script');
   assert.equal((html.match(/<style data-fives="play">/g) || []).length, 1, 'play.css is inlined where the game and the board look for it');
@@ -251,10 +251,9 @@ for (const cfg of CONFIGS) {
         await page.waitForSelector('#intro:not([hidden]) #btn-start');
         assert.equal(await page.title(), 'Sort');
         assert.deepEqual(await visibleH1s(page), ['Today’s five']);
-        // the artist's slogan beside the logo, on one line inside the bar; the old line is gone (23 Oct 2026)
-        const slogan = await page.$eval('#bar-slogan', (n) => { const r = n.getBoundingClientRect(), b = n.closest('.bar').getBoundingClientRect(), l = document.getElementById('brand').getBoundingClientRect(); return { text: n.textContent, h: r.height, inBar: r.top >= b.top && r.bottom <= b.bottom && r.right <= b.right, afterLogo: r.left >= l.right, full: n.scrollWidth <= n.clientWidth + 1 }; });
-        assert.deepEqual(slogan, { text: 'Entertain it All', h: slogan.h, inBar: true, afterLogo: true, full: true });
-        assert.ok(slogan.h < 24, 'one line');
+        // the bar is the logo alone: the slogan is kept in CONCEPT.md, not shown (28 Oct 2026); the old line is gone too
+        assert.equal(await page.locator('#bar-slogan').count(), 0);
+        assert.ok(!/Entertain it All/i.test(await page.textContent('.bar')));
         assert.ok(!/quick judgments a day/i.test(await page.textContent('#app')));
         await noHScroll(page, 'intro');
         await shot('01-intro');
@@ -737,27 +736,37 @@ test('reduced motion: no ring, parts appear in the strip', { timeout: 60000 }, a
   } finally { await ctx.close(); }
 });
 
-test('the mark in motion: every pick loads, a keep plays its pick over the card, taking no taps, then goes', { timeout: 60000 }, async () => {
+test('the logo: its colours on nothing, playing every 30 seconds in the top left; nothing else moves on a keep', { timeout: 60000 }, async () => {
   const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
   try {
+    await page.clock.install();
     await page.goto(BASE + '#sort');
-    const m = await page.evaluate(() => ({ moments: Object.keys(FiveSMotion.picks).sort(), all: [...Motion.MOMENTS].map((x) => x.id || x).sort(),
-      missing: Object.values(FiveSMotion.picks).filter((p) => !Motion.get(p.family)).map((p) => p.family) }));
-    assert.deepEqual(m.moments, m.all, 'a pick for each of the sixteen moments');
-    assert.deepEqual(m.missing, [], 'every picked family is in motion.js');
-    await page.waitForSelector('canvas.fives-motion[data-moment="launch"]', { state: 'attached', timeout: 3000 });
+    await page.waitForSelector('#intro:not([hidden]) #btn-start');
+    // drawn: clear at the corners (no tile, no ground), the mark's colours in the middle; the intro's logo too
+    const px = (sel) => page.$eval(sel, (c) => {
+      const x = c.getContext('2d'), w = c.width, h = c.height, a = (i, j) => x.getImageData(i, j, 1, 1).data[3];
+      let ink = 0;
+      const d = x.getImageData(0, 0, w, h).data;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 200) ink++;
+      return { corners: [a(0, 0), a(w - 1, 0), a(0, h - 1), a(w - 1, h - 1)], ink: ink / (w * h) };
+    });
+    for (const sel of ['#brand-logo', '#intro canvas.intro-logo']) {
+      const d = await px(sel);
+      assert.deepEqual(d.corners, [0, 0, 0, 0], sel + ': nothing behind the colours');
+      assert.ok(d.ink > 0.15, sel + ': the mark is drawn (' + d.ink.toFixed(2) + ')');
+    }
+    const r = await page.$eval('#brand-logo', (c) => { const b = c.getBoundingClientRect(); return [b.left < 60, b.top < 60, !c.hidden]; });
+    assert.deepEqual(r, [true, true, true], 'top left');
+    assert.equal(await page.locator('#brand-mark').isHidden(), true, 'the stand-in stays hidden');
+    assert.equal(await page.locator('#brand-logo[data-playing]').count(), 0, 'still until 30 seconds');
+    await page.clock.runFor(30000);
+    await page.waitForSelector('#brand-logo[data-playing]', { state: 'attached', timeout: 3000 });
+    await page.clock.runFor(3000);
+    await page.waitForFunction(() => !document.querySelector('#brand-logo[data-playing]'), null, { timeout: 3000 });
     await page.click('#btn-start');
     await page.waitForSelector('#stack .card.is-top');
-    await page.waitForFunction(() => !document.querySelector('canvas.fives-motion'), null, { timeout: 6000 });   // launch and five-start end
-    const id = await topId(page);
     await page.click('#btn-keep');
-    const cv = await page.waitForSelector('canvas.fives-motion[data-moment="keep"]', { state: 'attached', timeout: 2000 });
-    assert.deepEqual(await cv.evaluate((n) => [getComputedStyle(n).pointerEvents, n.getAttribute('aria-hidden')]), ['none', 'true']);
-    await waitTopChange(page, id);
-    const next = await topId(page);
-    await page.click('#btn-pass');   // a tap during the keep's mark still reaches the app
-    await waitTopChange(page, next);
-    await page.waitForFunction(() => !document.querySelector('canvas.fives-motion'), null, { timeout: 4000 });
+    assert.equal(await page.locator('canvas.fives-motion').count(), 0, 'no mark plays over the card');
     assert.deepEqual(page.errors(), []);
   } finally { await ctx.close(); }
 });
