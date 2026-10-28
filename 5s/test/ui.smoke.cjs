@@ -225,7 +225,7 @@ test('the built page keeps the Artifact page contract', async () => {
   const links = html.match(/<link[^>]+rel="stylesheet"[^>]*>/g) || [];
   assert.ok(links.every((l) => /https:\/\/fonts\.googleapis\.com\//.test(l)), 'stylesheets only from Google Fonts');
   const scripts = (html.match(/<script[^>]*src="([^"]+)"/g) || []).map((x) => x.match(/src="([^"]+)"/)[1]);
-  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js, Set\'s game, relate.js and kingdom, and the photo room\'s room.js) load before app.js');
+  assert.deepEqual(scripts, ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'motion.js', 'app.js'], 'the hub drivers (and Connect your apps\' connect.js, Links out and in\'s links.js, Set\'s game, relate.js and kingdom, the photo room\'s room.js and the mark in motion\'s motion.js) load before app.js');
   const publish = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').split('## Publish')[1];
   for (const s of scripts) assert.ok(publish.indexOf('`' + s + '`') > 0, 'the README\'s Publish section ships ' + s + ', or the page loads a missing script');
   assert.equal((html.match(/<style data-fives="play">/g) || []).length, 1, 'play.css is inlined where the game and the board look for it');
@@ -734,6 +734,31 @@ test('reduced motion: no ring, parts appear in the strip', { timeout: 60000 }, a
     assert.ok(kept, 'parts listed in the strip');
     assert.equal(await page.locator('#fly-layer > *').count(), 0, 'nothing flies');
     await page.screenshot({ path: path.join(SHOTS, '390-reduced-strip.png') });
+  } finally { await ctx.close(); }
+});
+
+test('the mark in motion: every pick loads, a keep plays its pick over the card, taking no taps, then goes', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
+  try {
+    await page.goto(BASE + '#sort');
+    const m = await page.evaluate(() => ({ moments: Object.keys(FiveSMotion.picks).sort(), all: [...Motion.MOMENTS].map((x) => x.id || x).sort(),
+      missing: Object.values(FiveSMotion.picks).filter((p) => !Motion.get(p.family)).map((p) => p.family) }));
+    assert.deepEqual(m.moments, m.all, 'a pick for each of the sixteen moments');
+    assert.deepEqual(m.missing, [], 'every picked family is in motion.js');
+    await page.waitForSelector('canvas.fives-motion[data-moment="launch"]', { state: 'attached', timeout: 3000 });
+    await page.click('#btn-start');
+    await page.waitForSelector('#stack .card.is-top');
+    await page.waitForFunction(() => !document.querySelector('canvas.fives-motion'), null, { timeout: 6000 });   // launch and five-start end
+    const id = await topId(page);
+    await page.click('#btn-keep');
+    const cv = await page.waitForSelector('canvas.fives-motion[data-moment="keep"]', { state: 'attached', timeout: 2000 });
+    assert.deepEqual(await cv.evaluate((n) => [getComputedStyle(n).pointerEvents, n.getAttribute('aria-hidden')]), ['none', 'true']);
+    await waitTopChange(page, id);
+    const next = await topId(page);
+    await page.click('#btn-pass');   // a tap during the keep's mark still reaches the app
+    await waitTopChange(page, next);
+    await page.waitForFunction(() => !document.querySelector('canvas.fives-motion'), null, { timeout: 4000 });
+    assert.deepEqual(page.errors(), []);
   } finally { await ctx.close(); }
 });
 

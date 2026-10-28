@@ -42,6 +42,9 @@
   const mqReduce = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false, addEventListener() {} };
   const mqDark = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : { matches: false, addEventListener() {} };
   const reduced = () => !!mqReduce.matches;
+  // The mark in motion (motion.js): the artist's Motion Lab pick for a moment, played over `at`, never in the way.
+  const motion = (moment, at, o) => { try { if (window.FiveSMotion) window.FiveSMotion.play(moment, at, Object.assign({ reduced: reduced() }, o)); } catch (e) { /* the app goes on without it */ } };
+  const motionStop = (moment) => { try { if (window.FiveSMotion) window.FiveSMotion.stop(moment); } catch (e) { /* nothing playing */ } };
   const now = () => Date.now();
 
   // ---------------------------------------------------------------- small helpers
@@ -234,7 +237,7 @@
     lsSet(JSON.stringify(remote));
     ui.room = null; ui.proom = null;
     ui.topId = null;
-    if (deck) { ensureFive(); checkPath(); renderView(); updateChrome(); }
+    if (deck) { ensureFive(true); checkPath(); renderView(); updateChrome(); }
   }
 
   // ---------------------------------------------------------------- brought-in images
@@ -503,11 +506,12 @@
 
   // A five Sort deals anew when it opens: none, another day's, or one naming a card the deck no longer has.
   const staleFive = (st) => !st.five || st.five.day !== F.dayOf(now()) || st.five.ids.some((id) => !F.card(st, deck, id));
-  function ensureFive() {
+  function ensureFive(quiet) {
     if (!deck) return;
     if (staleFive(S)) {
       S = F.startFive(S, deck, now(), RL.ask(S, deck));   // one card of the five may follow from what they related in Set
       persist();
+      if (!quiet) setTimeout(() => { if (view === 'sort') motion('five-start', '#stack .card.is-top', { size: 140 }); }, 0);
     }
   }
 
@@ -539,7 +543,7 @@
     for (const m of F.path(S, deck, now())) {
       if (m.done && !m.announced) { st = F.markSeen(st, 'path:' + m.key); msgs.push('Path: ' + m.label + '. Done.'); }
     }
-    if (st !== S) { S = st; persist(); msgs.forEach(say); }
+    if (st !== S) { S = st; persist(); msgs.forEach(say); if (msgs.length) motion('path', '#pathchip', { size: 48 }); }
   }
 
   // ---------------------------------------------------------------- chrome: path chip, banner, step line
@@ -564,7 +568,7 @@
 
   function showView(v, opts) {
     if (VIEWS.indexOf(v) < 0) v = 'sort';
-    const changed = v !== view;
+    const changed = v !== view, from = view;
     if (changed && view === 'set') leaveSet();
     view = v;
     for (const x of VIEWS) {
@@ -584,6 +588,11 @@
     }
     updateChrome();
     renderView();
+    if (changed && ui.started) {
+      motion('tab', '#tab-' + v, { size: 48, direction: VIEWS.indexOf(v) < VIEWS.indexOf(from) ? 'left' : 'right' });
+      const empty = $('#view-' + v + ' .empty');
+      if (empty) motion('empty', empty, { size: 72 });
+    }
     if (v === 'sort') { ui.shownAt = performance.now(); restartRing(); }
     if (opts && opts.focus) {
       const h = $('#view-' + v + ' h1');
@@ -886,6 +895,7 @@
     const rect = top ? top.getBoundingClientRect() : null;
     if (top && how !== 'drag') top._dx = 0;
     flyOff(top, keep);
+    if (rect) motion(keep ? 'keep' : 'pass', rect, { size: 140 });
     const had = keep && c && c.kind !== 'colour' ? poolSize(S) : 0;
     commit(F.fivePass(res.state, now()), { noRender: true });   // a five sorted: one Pass for Set's game, once a day
     renderSort();
@@ -893,6 +903,7 @@
     const from = S.five && S.five.ask === id ? fromSet(id) : '';
     const ready = had === 5 && poolSize(S) === 6 && !example ? readyLine() : '';
     showStrip({ id, keep: !!keep, turn: res.turn, from, ready });
+    if (res.turn) motion('turn', '#strip', { size: 96 });
     if (keep && c && !c.own) flyParts(c, rect);
     let msg = c && c.own ? (keep ? 'Still yours: ' + (c.title || 'Untitled') + '.' : 'Let go: ' + (c.title || 'Untitled') + '. It moves to Let go in Split.')
       : (keep ? 'Kept: ' : 'Passed: ') + nameLine(c) + '.';
@@ -908,6 +919,8 @@
     }
     say(msg);
     if (F.fiveDone(S)) {
+      motion('five-done', '#summary', { size: 140 });
+      if (S.five && S.five.n === 1 && F.streak(S, now()) > 1) motion('streak', '#streak', { size: 48 });   // the day's first five adds a day
       const ae = doc.activeElement;
       if (!ae || ae === doc.body || ae.closest('#controls')) { const s = $('#summary h2'); if (s) { s.setAttribute('tabindex', '-1'); s.focus({ preventScroll: true }); } }
     }
@@ -922,6 +935,7 @@
     commit(F.undo(S), { noRender: true });
     hideStrip();
     renderSort();
+    motion('undo', '#stack .card.is-top', { size: 140 });
     const top = $('#stack .card.is-top');
     if (top && !reduced()) {
       const dir = last[1] ? 1 : -1;
@@ -1015,6 +1029,7 @@
     if (reduced() || !rect) return;
     const tab = $('#tab-split');
     if (!tab) return;
+    motion('split', tab, { size: 48 });
     const tr = tab.getBoundingClientRect();
     const tx = tr.left + tr.width / 2, ty = tr.top + 12;
     const layer = $('#fly-layer');
@@ -2339,6 +2354,7 @@
     const { spec, h } = await groundSpec(st);
     if (ui.seedKey !== key) return;
     const grow = !ui.seedGrown && !reduced();
+    if (!ui.seedGrown) motion('seed', cv, { size: 200 });
     ui.seedGrown = true;
     let res;
     try {
@@ -2883,6 +2899,7 @@
     const ready = b.items.filter((i) => i.status === 'ready');
     if (!ready.length) return;
     b.adding = true;
+    motion('bring', '#bring-progress', { size: 72 });
     let added = 0;
     for (let k = 0; k < ready.length; k++) {
       const it = ready[k];
@@ -4921,6 +4938,7 @@
       if (name) st = F.addNote(st, { q: 'set', ref: 'set:' + Math.floor(t / 1000), text: name }, t);
       commit(st);
       closeSheet();
+      motion('set-pin', '#view-set .pinned li', { size: 96 });
       say('Set pinned' + (name ? ': ' + name : '') + '.');
     } else if (kind === 'hub-user') {
       hubUseUser();
@@ -5102,9 +5120,14 @@
     const h = (location.hash || '').slice(1);
     view = VIEWS.indexOf(h) >= 0 ? h : 'sort';
     showView(view);
+    ui.started = true;
+    motion('launch', null, { size: 220 });
     lightUp();
+    const slow = setTimeout(() => motion('load', '#view-' + view + ' .loading', { size: 64, loop: true }), 700);
     await loadDeck();
-    if (deck) { ensureFive(); checkPath(); }
+    clearTimeout(slow);
+    motionStop('load');
+    if (deck) { ensureFive(true); checkPath(); }
     updateChrome();
     renderView();
     if (view === 'sort') { ui.shownAt = performance.now(); restartRing(); }

@@ -1,0 +1,253 @@
+{
+ "from": "the Motion Lab db motion/picks, version 50, read 28 Oct 2026",
+ "picks": {
+  "bring": {
+   "family": "collage",
+   "direction": "right",
+   "seed": "collage",
+   "params": {
+    "duration": 1600,
+    "easing": "outCubic",
+    "intensity": 0.6,
+    "palette": "logo",
+    "register": 0.45,
+    "ribbon": true,
+    "style": "paste",
+    "weight": 1
+   }
+  },
+  "empty": {
+   "family": "three",
+   "direction": "right",
+   "seed": "three",
+   "params": {
+    "choice": "seeded",
+    "duration": 1600,
+    "easing": "outCubic",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "strands",
+    "weight": 1
+   }
+  },
+  "five-done": {
+   "family": "echo",
+   "direction": "right",
+   "seed": "echo",
+   "params": {
+    "duration": 1200,
+    "easing": "outCubic",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "spread": 0.5,
+    "style": "ripple",
+    "weight": 1
+   }
+  },
+  "five-start": {
+   "family": "ring",
+   "direction": "right",
+   "seed": "ring",
+   "params": {
+    "duration": 1200,
+    "easing": "inOutCubic",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "size": 0.66,
+    "style": "open",
+    "thin": 0.55,
+    "weight": 1
+   }
+  },
+  "keep": {
+   "family": "swipe",
+   "direction": "right",
+   "seed": "swipe",
+   "params": {
+    "duration": 520,
+    "easing": "outBack",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "ride",
+    "trail": "auto",
+    "weight": 1
+   }
+  },
+  "launch": {
+   "family": "swarm",
+   "direction": "right",
+   "seed": "zt8j-09",
+   "params": {
+    "count": 500,
+    "duration": 2250,
+    "easing": "inOutQuad",
+    "intensity": 1,
+    "iteration": 17,
+    "look": "iterations",
+    "palette": "logo",
+    "ribbon": true,
+    "scatter": 1,
+    "shape": "dash",
+    "style": "gather",
+    "weight": 0.75
+   }
+  },
+  "load": {
+   "family": "pulse",
+   "direction": "right",
+   "seed": "pulse",
+   "params": {
+    "duration": 2600,
+    "easing": "inOutSine",
+    "flow": 0.5,
+    "frame": false,
+    "intensity": 0.5,
+    "lag": 0.06,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "breathe",
+    "weight": 1
+   }
+  },
+  "pass": {
+   "family": "swipe",
+   "direction": "left",
+   "seed": "swipe",
+   "params": {
+    "duration": 480,
+    "easing": "outBack",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "ride",
+    "trail": "auto",
+    "weight": 1
+   }
+  },
+  "path": {
+   "family": "path",
+   "direction": "right",
+   "seed": "path",
+   "params": {
+    "duration": 1200,
+    "easing": "inOutCubic",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "stop": 3,
+    "style": "frame",
+    "weight": 1
+   }
+  },
+  "seed": {
+   "family": "grow",
+   "direction": "right",
+   "seed": "grow",
+   "params": {
+    "depth": 120,
+    "duration": 2400,
+    "easing": "inOutCubic",
+    "face": true,
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "sprout",
+    "weight": 1
+   }
+  },
+  "set-pin": {
+   "family": "pin",
+   "direction": "right",
+   "seed": "pin",
+   "params": {
+    "duration": 1150,
+    "easing": "outCubic",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "hang",
+    "swing": 0.7,
+    "weight": 1
+   }
+  },
+  "split": {
+   "family": "split",
+   "direction": "right",
+   "seed": "split",
+   "params": {
+    "duration": 900,
+    "easing": "outCubic",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "chips",
+    "weight": 1
+   }
+  },
+  "streak": {
+   "family": "fill",
+   "direction": "right",
+   "seed": "fill",
+   "params": {
+    "bubbles": true,
+    "duration": 1000,
+    "easing": "inOutSine",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "steps",
+    "wave": 0.5,
+    "weight": 1
+   }
+  },
+  "tab": {
+   "family": "morph",
+   "direction": "right",
+   "seed": "morph",
+   "params": {
+    "duration": 420,
+    "easing": "outCubic",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "exchange",
+    "weight": 1
+   }
+  },
+  "turn": {
+   "family": "flip",
+   "direction": "right",
+   "seed": "flip",
+   "params": {
+    "duration": 1500,
+    "easing": "outBack",
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "turn",
+    "turns": 1,
+    "weight": 1
+   }
+  },
+  "undo": {
+   "family": "rewind",
+   "direction": "right",
+   "seed": "rewind",
+   "params": {
+    "duration": 520,
+    "easing": "outBack",
+    "ghost": "onion",
+    "ghosts": 4,
+    "intensity": 0.6,
+    "palette": "logo",
+    "ribbon": true,
+    "style": "retrace",
+    "weight": 1
+   }
+  }
+ }
+}

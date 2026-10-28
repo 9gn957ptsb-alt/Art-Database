@@ -64,7 +64,7 @@ test('API: the functions and constants, frozen; no network, clock, randomness or
   const page = readFileSync(join(here, '..', 'src', 'index.html'), 'utf8');
   assert.ok(page.indexOf('<script src="links.js">') > page.indexOf('<script src="connect.js">'));
   assert.ok(page.indexOf('<script src="links.js">') < page.indexOf('<script src="app.js">'));
-  assert.match(readFileSync(join(here, '..', 'build_page.py'), 'utf8'), /'links\.js', 'app\.js'\]/);
+  assert.match(readFileSync(join(here, '..', 'build_page.py'), 'utf8'), /'links\.js', 'motion\.js', 'app\.js'\]/);
 });
 
 test('eraOf: the deck\'s buckets (build_deck.py ERA_BUCKETS)', () => {

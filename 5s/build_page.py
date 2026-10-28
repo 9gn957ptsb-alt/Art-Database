@@ -6,12 +6,13 @@
 Writes OUT/index.html (src/index.html with app.css inlined in a <style> right after the <title> and
 <meta> at the top, as the Artifact page contract asks, and play.css inlined as <style data-fives="play">),
 copies engine.js, bring.js, ground.js, the hub's hub.js and hubpage.js, connect.js, Set's game (match.js,
-relate.js, board.js, play.js, and its kingdom map, kingdom.js), the photo room (room.js), links.js and app.js into OUT (the page loads them in that order, and the build
+relate.js, board.js, play.js, and its kingdom map, kingdom.js), the photo room (room.js), links.js, the mark in motion (motion.js, built: see build_motion) and app.js into OUT (the page loads them in that order, and the build
 stops if src/index.html loads any other list), copies DECK/deck.json and DECK/img/ (and
 DECK/logo.webp when present) into OUT when DECK is not OUT, and writes OUT/dev.html: the same page
 wrapped in the skeleton the Artifact platform adds at publish, for local testing.
 """
 import argparse
+import json
 import os
 import re
 import shutil
@@ -28,7 +29,9 @@ SRC = os.path.join(HERE, 'src')
 # Set, inside out adds relate.js (FiveSRelate: the deal from kept things, relations, Sort's ask), after match.js.
 # Its other eyes (deck.json's rhymes, words and each card's comp and feel) reach the page only in DECK's deck.json,
 # which build_deck.py writes to the git-ignored dist from data/5s.
-SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'app.js']
+# The mark in motion adds motion.js (FiveSMotion: the artist's sixteen Motion Lab picks), after links.js: built here from
+# motion/marks.js, the families the picks use, src/motion-picks.json and src/motion.js (build_motion below).
+SCRIPTS = ['engine.js', 'bring.js', 'ground.js', 'hub.js', 'hubpage.js', 'connect.js', 'match.js', 'relate.js', 'board.js', 'play.js', 'kingdom.js', 'room.js', 'links.js', 'motion.js', 'app.js']
 SCRIPT_RE = re.compile(r'<script\s+src="([^"]+)"')
 
 SKELETON_HEAD = (
@@ -78,6 +81,22 @@ def build_page():
     return html
 
 
+def build_motion():
+    """dist/motion.js: the lab's engine, only the families the picks use, the picks, then the app's player."""
+    motion = os.path.join(HERE, 'motion')
+    with open(os.path.join(SRC, 'motion-picks.json'), encoding='utf-8') as f:
+        picks = json.load(f)['picks']
+    parts = [open(os.path.join(motion, 'marks.js'), encoding='utf-8').read()]
+    for fam in sorted({p['family'] for p in picks.values()}):
+        path = os.path.join(motion, 'families', fam + '.js')
+        if not os.path.isfile(path):
+            sys.exit('motion-picks.json picks the family %r, which motion/families/ does not have' % fam)
+        parts.append(open(path, encoding='utf-8').read())
+    parts.append('window.FiveSMotionPicks = ' + json.dumps(picks, separators=(',', ':')) + ';')
+    parts.append(open(os.path.join(SRC, 'motion.js'), encoding='utf-8').read())
+    return '\n;\n'.join(parts)
+
+
 def copy_tree(src, dst):
     if os.path.isdir(dst):
         shutil.rmtree(dst)
@@ -99,7 +118,11 @@ def main(argv=None):
     with open(os.path.join(out, 'dev.html'), 'w', encoding='utf-8') as f:
         f.write(SKELETON_HEAD + page + SKELETON_TAIL)
     for name in SCRIPTS:
-        shutil.copyfile(os.path.join(SRC, name), os.path.join(out, name))
+        if name == 'motion.js':
+            with open(os.path.join(out, name), 'w', encoding='utf-8') as f:
+                f.write(build_motion())
+        else:
+            shutil.copyfile(os.path.join(SRC, name), os.path.join(out, name))
 
     copied = []
     if deck != out:

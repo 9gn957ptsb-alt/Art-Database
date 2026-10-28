@@ -21,7 +21,7 @@ build contract) before changing anything.
 | `build_deck.py` | the deck: `data/5s/artworks.db` + Artsy genes + images → `dist/deck.json`, `dist/img/`, `dist/logo.webp`; then the bookmarks from `buildings.json` + `data/aa/`; then what each card is in a room (`role`, `what`) from git-ignored `data/5s/roles.json`, and each interior's marked `room` from `data/5s/planes.json`, only in the git-ignored deck |
 | `buildings.json` | the artist's Architectural Authority bookmarks as chosen for the deck: each building's hero photo, surface crop, materials and genes (cards b001…, m001…) |
 | `roles.py` | what each deck card is and its relation to setting up a space ("a pendant lamp", lighting the room; an interior is the room): keeps git-ignored `data/5s/roles.json` whole against the built deck, adds what a rule judges (images, colours, Artsy pictures of places, painted surfaces), checks every entry and lists the cards to judge by eye; `build_deck.py` ships it on the cards |
-| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined, and `play.css` as `<style data-fives="play">`), the fourteen scripts in the order the page loads them (`hub.js`, `hubpage.js`, `connect.js`, `match.js`, `relate.js`, `board.js`, `play.js`, `kingdom.js`, `room.js` and `links.js` before `app.js`), and `dist/dev.html` |
+| `build_page.py` | the page: `src/` → `dist/index.html` (with `app.css` inlined, and `play.css` as `<style data-fives="play">`), the fifteen scripts in the order the page loads them (`hub.js`, `hubpage.js`, `connect.js`, `match.js`, `relate.js`, `board.js`, `play.js`, `kingdom.js`, `room.js`, `links.js` and `motion.js` before `app.js`; `motion.js` is built from `motion/marks.js`, the families the picks use, `src/motion-picks.json` and `src/motion.js`), and `dist/dev.html` |
 | `src/index.html` | the page itself, with no doctype, html, head or body (the Artifact adds them) |
 | `src/app.css`, `src/app.js` | styles and UI (including Your hub: Seed's last section and the Hub sheet, through GitHub's own pages) |
 | `src/engine.js` | pure logic: judgments, the taste model, turns, the five, profile, Path, seed (no DOM, clock or randomness) |
@@ -34,6 +34,7 @@ build contract) before changing anything.
 | `src/play.js`, `src/play.css` | Set's game in the page (`FiveSPlay`): the list of levels, a level (with its clock), its sound, motion and gestures; the game's, the board's and the kingdom's styles |
 | `src/kingdom.js` | Set's kingdom map (`FiveSKingdom`): an island for every five levels, each level won one of your things built on its plot, the next area under cloud; you pan and zoom it |
 | `src/room.js` | See it as a room (`FiveSRoom`): a kept interior's own photograph as the room, with the person's other kept things placed in it in its perspective |
+| `src/motion.js`, `src/motion-picks.json` | The mark in motion (`FiveSMotion`): the artist's pick for each of the sixteen moments, from the Motion Lab's db (`motion/picks`, read 28 Oct 2026; copy it again when the picks change), played once over where the moment happens, taking no taps |
 | `src/hub.js` | Your hub: GitHub's naming rules, the filled-in GitHub links, the api.github.com driver and the device-flow sign-in (`FiveSHub`) |
 | `src/hubpage.js` | Your hub: the standalone hub page built from the seed, for github.io (`FiveSHubPage`) |
 | `test/` | engine, match, bring, ground, play, kingdom, room and UI tests; `test/play.html` and `test/kingdom.html` are the game's and the kingdom's harnesses, `test/sim.mjs` its playtest; `test/fixture/` is a synthetic 50-card deck (no real data), with synthetic `roles.json` and `planes.json` (two marked interiors) that `make_fixture.py` puts on its cards through the deck build's own `add_roles` |
@@ -105,7 +106,7 @@ whose old height stays only under the building it was given to.
 Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing and is never
 published. The supporting files go with it at the same relative paths:
 
-- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `match.js`, `relate.js`, `board.js`, `play.js`, `kingdom.js`, `room.js`, `links.js`, `app.js`
+- `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `match.js`, `relate.js`, `board.js`, `play.js`, `kingdom.js`, `room.js`, `links.js`, `motion.js`, `app.js`
 - `deck.json`, `logo.webp`, `img/atlas.webp`
 - the 451 card images `img/{i,o,s,u,b,m}NNN.webp` (Colour cards have no image; `b` and `m` are the
   artist's Architectural Authority bookmarks, a building's Space or Object and its Surface)
@@ -129,12 +130,12 @@ and the data file door works without it. Paste a link itself works without it to
 words, Define through `sample`, or a pasted picture); the connector adds the page's own picture and
 facts, and whole boards and channels (SPEC.md, "As built, 22 Oct 2026").
 
-**Two publishes, because of the file count.** The page plus 468 supporting files is 469 files (about
+**Two publishes, because of the file count.** The page plus 469 supporting files is 470 files (about
 18 MB). One publish sends at most 255 files; a version holds up to 511.
 
-1. Publish the page with the fourteen scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, the Image and
+1. Publish the page with the fifteen scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, the Image and
    Object card images (`img/i*.webp`, `img/o*.webp`) and the bookmarks' 66 Spaces and Objects (`img/b*.webp`):
-   244 files.
+   245 files.
 2. Publish again to the same URL with the 80 Space card images (`img/s*.webp`), the 80 Surface crops
    (`img/u*.webp`) and the bookmarks' 65 Surfaces (`img/m*.webp`): 225 files. Files left out of a
    publish are kept.
