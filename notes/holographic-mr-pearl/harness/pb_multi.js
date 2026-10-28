@@ -27,7 +27,7 @@ const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10];
         m = d.court.m;
         // where to stand: the serve mark at the serve (when the game has one to run to), else the ring of the pearl that comes soonest
         let tx = 0.6, tz = C.L - 1.2;
-        if (m.phase === "serve" && !m.meterOn && spot()) { const s = spot(); tx = s[0]; tz = s[1]; }
+        if (((m.phase === "serve" && !m.meterOn) || (m.meterOn && m.served + m.tosses.length < NB)) && spot()) { const s = spot(); tx = s[0]; tz = s[1]; }   // (and on it while there are pearls to serve)
         const inc = m.balls.filter((q) => !q.dead && q.last === "them" && q.mark).sort((a, c) => (a.landT || 0) - (c.landT || 0))[0];
         if (inc) { tx = inc.mark.x - 0.5; tz = inc.mark.z + 1.2; }
         const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz);
@@ -56,7 +56,8 @@ const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10];
             const fault = /net|out|long|kitchen|fault/i.test(s.split(".")[0]);
             const busy = (who) => (who && who.ball !== q ? "busy with #" + who.ball.id : who ? "on it" : "free");
             if (!fault && q.last === "you" && !v.planTried && !q.ace && v.multi !== false && !/Super|super/.test(s)) { out.unplayedByPlan++; if (out.notes.length < 8) { out.notes.push("plan never went for #" + q.id + " (rally " + q.rally + ", serve " + !!q.serve + ", plan " + (v.planBusy || "free") + ", live " + m2.balls.filter((z) => !z.dead).length + ")"); } }
-            if (!fault && q.last === "them" && !v.meTried && v.multi) { out.unplayedByMe++; if (out.notes.length < 8) { out.notes.push("he never went for #" + q.id + " (rally " + q.rally + ", he " + (v.meBusy || "free") + ")"); } }
+            if (!fault && q.last === "them" && !v.meTried && v.multi && !/Super|super/.test(s)) {   // (Mr Plan's super return is met by the bar, not by running)
+              out.unplayedByMe++; if (out.notes.length < 8) { out.notes.push("he never went for #" + q.id + " (rally " + q.rally + ", he " + (v.meBusy || "free") + ")"); } }
             void busy;
           }
         });

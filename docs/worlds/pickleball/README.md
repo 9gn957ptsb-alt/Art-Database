@@ -44,14 +44,17 @@ multiple balls/points at once. Use the scope view for the every serve and add an
 within a certain zone to have the opportunity to ace your opponent. Depending on where you click to stop the bar
 depends on how hard you serve"; later, "Get rid of the scope view in the Pickleball game", and "Get rid of the serve
 button and just have the animation start the serve position when you run to the right place"). There is no Serve
-button: a ring of gold `◆` breathes on the court where he serves from (behind the baseline, right of the centre on even
-points, left on odd), and the player runs him to it (off the screen, a `◆` and an arrow at the edge point the way). On
-it he steps onto the mark, turns to the net with a bounce, the mark answers with a ring of gold along the court, and
+button: a bold gold circle glows on the court where he serves from (behind the baseline, right of the centre on even
+points, left on odd), half a metre across its radius, filled faintly, and every second a ring runs quickly out from it to
+twice its size (the artist, 28 Oct 2026: "Make the spot I need to run to to serve more apparent in a quick golden circle
+that serves as a strong visual cue of the spot"); off the screen the same circle, small, stands at the edge the way to it
+with an arrow. Within two of its radii he locks onto it (the artist: "As long as the user runs within two radius' of the
+serve spot, they should lock into the location to serve"): he steps onto the mark, turns to the net with a bounce, the mark answers with a ring of gold along the court, and
 the third person's view swings round to face across the net (where it looks, inside the diagonal service court, the
 serve goes; a drag aims it); a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.15 s each way on
 court one, quicker each court), its instruction written under it. A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
 fault), then `- = + *` softer to harder (deeper and quicker), `◆` the gold ace zone (hard into the deep corner: a
-chance at an ace, four in five at level one and a twentieth less each level, Mr Plan going for it at full stretch and
+chance at an ace, four in five on court one, two in three on court two, a third by court ten, Mr Plan going for it at full stretch and
 not getting there), `#` hard, `△` long (a fault). After each pearl the mark sweeps again: up to three pearls a serve
 (`○ ○ ○` above the bar, `◎` as each goes), while the serve is open (until 1.3 s after the last), each pearl a point of
 its own, all of them played at once; then the view is the third person's again.
@@ -63,8 +66,8 @@ two or more in play the game runs Mr Pearl, as it runs Mr Plan, to each pearl th
 the player's again between pearls). Where no run gets there in time, he blinks (the hologram he is goes to it at once,
 a line of characters where he was); a pearl that must be met before the stroke that waits is met first; two that come
 together within his reach, one stroke plays both; and two at the same moment metres apart, an echo of him in
-characters plays the second. Mr Plan, the same. So none is lost for want of legs, and a stroke at full stretch goes out
-now and then instead (1% on court one, 26% at the hardest), so that a pearl of several is about as hard to win as a pearl
+characters plays the second. Mr Plan, the same. So none is lost for want of legs; instead, while two or more are in play, a return of
+his goes out now and then (1% on court one, 26% at the hardest), so that a pearl of several is about as hard to win as a pearl
 alone. `notes/holographic-mr-pearl/harness/pb_multi.js` serves three every serve and counts: no pearl one side never
 went for, every pearl one point, and Mr Pearl's share of the points (on courts 1, 5 and 10: 100%, 59%, 42%, against
 97%, about 70% and 39% for a pearl alone).
@@ -82,16 +85,35 @@ driven down into Mr Plan's far corner, a comet; Mr Plan dives and does not get t
 camera rises with him at his right shoulder and follows the pearl down. 2.45 s; the point is his, and the other
 pearls play on. `pb_super.js` tests it and takes its pictures.
 
+**Mr Plan's super return** (the artist, 28 Oct 2026: "Mr. Plan should also have a super return, however, for him you
+have a chance to return his super return and it is the same moving bar that we have to choose where to serve, but you
+have to land in that ace zone to return Mr. Plan's super return"). Once a game, at a stroke he is to make (4% of his
+strokes on court one, 16% at the hardest, three times that when Mr Pearl is a point from the game), his negative of Mr
+Pearl's: the gathering, the four-metre windmill leap, the strike at the top in cyan, "◆ SUPER ◆" in cyan, the pearl
+driven at Mr Pearl's far corner. Then it comes in slow motion (a little over a quarter of its speed) and the serve's
+bar runs under the words "tap in ◆ the ace zone to return Mr Plan's super": a tap stops it; in the gold ace zone, Mr
+Pearl, the hologram, is at the pearl at once and sends it back deep, away from Mr Plan, and the rally plays on;
+anywhere else, or no tap before it lands, it is past him and the point is Mr Plan's. `pb_plansuper.js` tests both.
+
 **Hands.** Touch and mouse alike (YouTube asks both for everything): the left half is a stick (where the finger or the
-press lands is its middle), the right half a drag that turns the view (the way his return goes), a tap or a click
-anywhere stops the serve's bar; Super is the one button, top right. From the moment the game opens until the first
-serve a card says so in four lines (the artist, 28 Oct 2026: "Include a brief set of instructions on how to move around
-and how to serve when beginning court one as soon as you open up the game"): move, aim, serve, super, a finger's words
-on a touch screen and a desk's keys where there is a mouse; it steps aside while the serve's bar runs. On a desk the keys too: WASD or the arrows (Shift
+press lands is its middle), the right half a drag that turns the view (walking, or to aim the serve; never in a rally),
+a tap or a click
+anywhere stops the serve's bar; Super is the one button, top right. How to play comes as pop-ups at their moments (the artist,
+28 Oct 2026: "I want the how to to be pop-ups that happen when you're walking through that are cued by certain moments"):
+how to move as the game opens (gone once he moves), the open court as he walks about, the gold circle when a match
+begins, the bar when he is on the mark (under the bar), the ○ ring when Mr Plan first returns, the pearls when two or
+more are in play, the Super after the first point; each once (which have been shown is kept with the save), one at a
+time, the next waiting its turn, each gone once it is done or after its few seconds; a finger's words on a touch
+screen, a desk's keys where there is a mouse. `pb_tips.js` walks through them. On a desk the keys too: WASD or the arrows (Shift
 for full speed), Space, T or Enter to stop the bar, E or Q for the super return. His strokes are his own: when Mr Plan's shot comes, the game finds where his paddle can meet it and the stroke
 goes then; the player's part is to be near, to aim and to serve.
 
-**Views.** His own (the artist: "maintain the perspectives of Mr Pearl to play"): the third person behind his head,
+**Views.** His own (the artist: "maintain the perspectives of Mr Pearl to play"): the third person behind his head;
+in a rally it is held there, facing across the net, and nothing turns it (the artist, 28 Oct 2026: "When you are
+returning Mr. Plan's hits the ability to toggle with your right thumb the direction in which you look should be disabled
+and you should just be able to move around with your left thumb. There is a perspective behind Mr. Pearl that you can
+get in which you don't need to look right and left"): the right thumb's drag and the arrow keys turn it only walking or
+at the serve (to aim it), and in a rally his returns go for the open court, deep, away from where Mr Plan stands;
 his whole figure a quarter of the screen's height at rest (the rocket world has a third; the artist, 28 Oct 2026: "The
 third person view should be a little farther out for Pickleball given the speed in which Mr. Pearl can now move"), on a
 steadied (the artist, 28 Oct 2026: "The camera can get a bit jittery when you're moving so quickly back-and-forth, can
@@ -230,12 +252,15 @@ characters and marks in ASCII"). Three prototypes (form, light, type) were made 
   Schmitt trigger's band at each threshold, an outline's stroke kept while it still parts the figure's samples as well,
   and a change within one thing shown when it is asked for two frames running, a moving cell then following every
   frame; a frame after a pause, a cut or a jump of the camera holds nothing. `pb_flicker.js` reads back the glyphs
-  frame by frame: the cells that flip back (A, B, A within six frames) fell by 58 to 81% in a rally, a walk and at the
-  serve (by less in a sprint, a dive or a pan: 22 to 63%), a still view unchanged.
-- **The pearl** (the artist, 28 Oct 2026: "I need to be able to see the ball 33% better than I do now"): a warm glow
-  round each pearl in play, as large as a ball of 0.3 m at its distance, and the way it came, a few fading points.
-  `pb_measure.js` sums its light against the frame without it: on a phone 463 against 345 before (+34%; the paint
-  alone had brought it to 188), on a desk 52 against 24.
+  frame by frame: the cells that flip back (A, B, A within six frames) fell by 48 to 69% in a rally, a walk and at the
+  serve, phone and desk, against the version before (a sprint, a dive or a pan, measured once with the hold's first
+  version: by 22 to 63%), a still view unchanged.
+- **The pearl** (the artist, 28 Oct 2026: "I need to be able to see the ball 33% better than I do now", then "The ball
+  should be 33% bigger and twice as easy to see"): drawn a third larger than it plays (its solid, and a bright pearl-white
+  core over its character, the same third larger), a warm glow round it as large as a ball of 0.4 m at its distance,
+  and the way it came, a few fading points. `pb_measure.js` sums its light against the frame without it, at five
+  moments of a rally: 2.6 times what it was on a phone (2859 against 1100) and 2.3 times on a desk (363 against 160),
+  and the first step had already made it a third more than before (463 against 345 at one moment on a phone).
 
 Mr Pearl's head is the one thing seen as it is, the perfect sphere (his rule 5); every word and control is a page
 element over the characters.
@@ -301,7 +326,7 @@ artist's own or cleared.
 it; the checks are a mock of the SDK and the real SDK outside YouTube. The Super button sits in the top right corner,
 where an app's own controls can lie over a full-screen game: on YouTube's apps it is unchecked. With two or three
 pearls in play the game moves him, so the player's legs matter less then (the stretch keeps the points as hard). The
-the replays and the paint are measured in software GL only; a real phone's GPU must write the kinds of choice in the
+replays and the paint are measured in software GL only; a real phone's GPU must write the kinds of choice in the
 colours' low bits exactly (the steadiness and the paint ride on them). The effects (bursts, glints, the super return's
 gold, the pearl's glow) are drawn over everything, a figure in front of them included, and
 their cost on a phone (up to 320 characters a frame) is unmeasured; every measurement here is software GL. On a

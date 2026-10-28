@@ -39,6 +39,10 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isM
   // pearl: the frame (the view's canvas, characters) with the pearls and without, in a window round each
   if (!ONLY || ONLY === "pearl") for (const [name, view] of [["phone rally", PHONE], ["desk rally", DESK]]) {
     const p = await open(view); await p.evaluate(rally);
+    // (five moments of the rally, 0.15 s apart, averaged: one frame's pearl can sit half behind something)
+    const samples = [];
+    for (let sI = 0; sI < 5; sI++) {
+    if (sI) { await p.evaluate(() => window.Pickleball.debug().run(0.15)); }
     const r = await p.evaluate(() => {
       const d = window.Pickleball.debug(), m = d.court.m, v = document.getElementById("view");
       const grab = () => { d.draw(); const c = document.createElement("canvas"); c.width = v.width; c.height = v.height; const g = c.getContext("2d"); g.drawImage(v, 0, 0); const h = document.getElementById("hud"); g.drawImage(h, 0, 0, c.width, c.height); return g.getImageData(0, 0, c.width, c.height).data; };
@@ -53,7 +57,8 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isM
       });
       void vp; return { pearls: live.length, light: +total.toFixed(1), peak: +peak.toFixed(3) };
     });
-    out.pearl[name] = r; await p.close();
+    samples.push(r); }
+    out.pearl[name] = { pearls: samples.map((q) => q.pearls).join(","), light: +(samples.reduce((a, q) => a + q.light, 0) / samples.length).toFixed(1), each: samples.map((q) => q.light) }; await p.close();
   }
   // camera: the shuffle and the sprint, his eye each frame
   if (!ONLY || ONLY === "camera") { const p = await open(PHONE);
