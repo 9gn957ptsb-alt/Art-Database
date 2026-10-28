@@ -68,9 +68,10 @@ const check = (ok, what) => { say((ok ? "ok   " : "FAIL ") + what); if (!ok) { b
   const SB = await D(() => window.Rocket.debug().glyphStory());
   const F = SB.frames, has = (k, n) => Array.from({ length: n }, (_, v) => F.some((q) => q[k] === v)).every(Boolean);
   const keys = Object.keys(F[0]), stepsOk = F.slice(1).filter((q, i) => keys.filter((k) => q[k] !== F[i][k]).length <= 1).length;
-  check(F.length === SB.grid * SB.grid && has("style", 4) && has("set", 7) && has("mode", 4) && has("motion", 5) && F.some((q) => q.inv) && F.some((q) => q.auto),
-    "a storyboard of " + F.length + " frames, every style, glyph set, colour mode and motion in it, an inverted frame and an auto-levelled one");
-  check(F[0].style === 0 && F[0].set === 0 && F[0].mode === 0 && F[0].motion === 0 && stepsOk >= F.length * 0.8, "its first frame as Glyph Light came in; " + stepsOk + " of " + (F.length - 1) + " frames a step from the one before");
+  // (ASCII only, the artist, 28 Oct 2026: "Mr Pearl uses ASCII only": no frame has a style of its own)
+  check(F.length === SB.grid * SB.grid && F.every((q) => !("style" in q)) && has("set", 7) && has("mode", 4) && has("motion", 5) && F.some((q) => q.inv) && F.some((q) => q.auto),
+    "a storyboard of " + F.length + " frames, ASCII in every one, every glyph set, colour mode and motion in it, an inverted frame and an auto-levelled one");
+  check(F[0].set === 0 && F[0].mode === 0 && F[0].motion === 0 && stepsOk >= F.length * 0.8, "its first frame as Glyph Light came in; " + stepsOk + " of " + (F.length - 1) + " frames a step from the one before");
   // a few frames seen: he stands in each panel's middle, looking along its row
   const frameAt = (n) => { const g = SB.grid, j = Math.floor(n / g), i0 = n % g, i = j % 2 ? g - 1 - i0 : i0; return [SB.origin[0] + (i + 0.5) * SB.panel, SB.origin[1] + (j + 0.5) * SB.panel]; };
   for (const n of [1, 2, 9, 20, 41]) {

@@ -3201,13 +3201,16 @@
      are being implemented in all of the artifacts ... Keep in mind that the infinite texture that you are displaying is
      a storyboard and someone's thumb is the direction of how the story plays out ... almost like a flip book but
      instead of each sticky note being behind the other, they are placed side-by-side"). Every control the page has is
-     here: its styles (ASCII, dots, grain, scan), its glyph sets (fine, blocks, binary, kana, kanji, and a custom set,
+     here but its styles: ASCII's alone, a glyph by the light of a set (the artist, 28 Oct 2026, by way of the Artist
+     Website's session: "Make sure you are just using the ASCII style from GLYPH Light and none of the other styles for
+     the aesthetics of the artifacts I specified you to implement into"; and to me: "Mr Pearl uses ASCII only"; the
+     page's dots, grain and scan are not here). Its glyph sets (fine, blocks, binary, kana, kanji, and a custom set,
      here the figure's own, the first), its colour modes (full, mono, gold, blue), auto levels, exposure, contrast,
      midtones, detail, invert, glow and where the glow starts, the image under the glyphs, the density, and its motions
      (pulse, shimmer, reveal, push in). The place is laid out in panels GLYPH.PANEL metres square, the frames of a
      storyboard side by side: the first where he wakes, as Glyph Light first came in (the figure's set, ASCII's way,
-     full colour), each next a step from the one before (one slider moved, or a style, a set, a mode or a motion
-     changed), running in a serpentine so that a frame's neighbours are the frames before and after it, GLYPH.GRID by
+     full colour), each next a step from the one before (one slider moved, or a set, a mode or a motion changed),
+     running in a serpentine so that a frame's neighbours are the frames before and after it, GLYPH.GRID by
      GLYPH.GRID of them and again past the last. Walking plays them: the thumb on the stick turns the pages, and each
      page is seen beside the next. The size of a glyph by distance stays the artist's own (S0 at D0, as the square of
      nearness), each frame's density a factor on it. */
@@ -3263,8 +3266,6 @@
       "uniform vec2 uRes; uniform float uNear; uniform float uFar; uniform float uS0; uniform float uD0; uniform float uMin; uniform float uLit; uniform float uT; uniform float uPanel;",
       "uniform int uGrid; uniform int uStory; uniform float uNs[7]; uniform mat4 uInvVP; uniform vec2 uOrigin;",
       "out vec4 o;",
-      "const float BAY[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);",
-      "float bayer(ivec2 c) { return (BAY[(c.y & 3) * 4 + (c.x & 3)] + 0.5) / 16.0; }",
       "float hash(ivec2 c) { uint h = uint(c.x) * 0x27d4eb2du ^ (uint(c.y) * 0x165667b1u + 1337u); h ^= h >> 15; h *= 0x2c1b3c6du; h ^= h >> 12; h *= 0x297a2d39u; h ^= h >> 15; return float(h) / 4294967296.0; }",
       "float lumOf(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }",
       "vec3 tint(vec3 c, float l, int m) { if (m == 0) { return c; } if (m == 1) { return vec3(l); } if (m == 2) { return vec3(min(1.0, l * 1.1 + 0.078), l * 0.82, l * 0.35); } return vec3(l * 0.35, l * 0.75, min(1.0, l * 1.1 + 0.078)); }",
@@ -3284,7 +3285,7 @@
       "    fr = j * uGrid + ((j & 1) == 0 ? i : uGrid - 1 - i);",
       "  }",
       "  vec4 t0 = texelFetch(uTable, ivec2(0, fr), 0), t1 = texelFetch(uTable, ivec2(1, fr), 0), t2 = texelFetch(uTable, ivec2(2, fr), 0), t3 = texelFetch(uTable, ivec2(3, fr), 0);",
-      "  int style = int(t0.r * 3.0 + 0.5), set = int(t0.g * 6.0 + 0.5), mode = int(t0.b * 3.0 + 0.5), motion = int(t0.a * 4.0 + 0.5);",
+      "  int set = int(t0.g * 6.0 + 0.5), mode = int(t0.b * 3.0 + 0.5), motion = int(t0.a * 4.0 + 0.5);",
       "  float dens = 0.5 + t1.r * 1.5, expo = exp2(t1.g * 2.0 - 1.0), contr = 0.5 + t1.b * 1.5, gam = 0.5 + t1.a * 1.5;",
       "  float detail = t2.r * 2.0, inv = t2.g, glow = t2.b * 1.5, thresh = t2.a, under = t3.r, autoL = t3.g;",
       "  float s = uS0 * dens * (uD0 / d) * (uD0 / d);",
@@ -3306,20 +3307,11 @@
       "  if (motion == 3 && hash(ci) > fract(uT * 0.2) * 1.25) { o = vec4(pic.rgb, 1.0); return; }",   // reveal: the sweep not yet past the cell
       "  float N = uNs[set], cov = 0.0; vec3 lit = vec3(0.0);",
       "  ivec2 sh = motion == 2 ? ivec2(int(uT * 6.0), 0) : ivec2(0);",            // shimmer: the glyphs step with the time
-      "  if (style == 0) {",
-      "    float gi = min(floor(l * N), N - 1.0);",
-      "    if (motion == 2) { gi = clamp(gi + floor(hash(ci + sh) * 3.0) - 1.0, 0.0, N - 1.0); }",
-      "    if (gi > 0.0) { cov = textureLod(uAtlas, vec2((gi + uv.x) / 32.0, (float(set) + 1.0 - uv.y) / 7.0), max(0.0, 6.0 - L)).r; lit = min(vec3(1.0), col / (0.55 + 0.45 * l)); }",
-      "  } else if (style == 1) {",
-      "    if (all(greaterThanEqual(uv, vec2(0.14))) && all(lessThan(uv, vec2(0.86)))) {",
-      "      if (l > bayer(ci + sh)) { lit = min(vec3(1.0), col * (1.25 / max(0.35, max(col.r, max(col.g, col.b))))); cov = 1.0; } else if (l > 0.03) { lit = col * 0.35; cov = 1.0; }",
-      "    }",
-      "  } else if (style == 2) {",
-      "    if (l > hash(ci + sh)) { lit = min(vec3(1.0), col * (0.45 + 0.75 * l) + 0.078 * l); cov = 1.0; } else if (l > 0.04) { lit = col * 0.22; cov = 1.0; }",
-      "  } else {",
-      "    if (l >= 0.04 && uv.x < 0.82 && abs(uv.y - 0.5) < (0.12 + 0.6 * l) * 0.5) { lit = min(vec3(1.0), col * (0.6 + 0.6 * l) + 0.157 * l * l); cov = 1.0; }",
-      "  }",
-      "  vec3 g = lit * cov * (set == 0 && style == 0 ? uLit : 1.0) + col * under;",
+      // ASCII: the glyph of the set its light chooses, coloured by what it covers
+      "  float gi = min(floor(l * N), N - 1.0);",
+      "  if (motion == 2) { gi = clamp(gi + floor(hash(ci + sh) * 3.0) - 1.0, 0.0, N - 1.0); }",
+      "  if (gi > 0.0) { cov = textureLod(uAtlas, vec2((gi + uv.x) / 32.0, (float(set) + 1.0 - uv.y) / 7.0), max(0.0, 6.0 - L)).r; lit = min(vec3(1.0), col / (0.55 + 0.45 * l)); }",
+      "  vec3 g = lit * cov * (set == 0 ? uLit : 1.0) + col * under;",
       "  if (glow > 0.0 && l >= thresh) { g += lit * cov * glow * 0.6; }",
       // the glow's halo: the picture a few octaves softer, where it is over the threshold
       "  if (glow > 0.0) { vec3 hal = textureLod(uScene, gl_FragCoord.xy / uRes, L + 2.5).rgb; g += hal * glow * 0.5 * smoothstep(thresh, min(1.0, thresh + 0.2), lumOf(hal)); }",
@@ -3328,12 +3320,12 @@
     ["uScene", "uDepth", "uAtlas", "uTable", "uRes", "uNear", "uFar", "uS0", "uD0", "uMin", "uLit", "uT", "uPanel", "uGrid", "uStory", "uNs", "uInvVP", "uOrigin"].forEach(function (k) { GLU[k] = gl.getUniformLocation(glyphProg, k); });
   }
   // The storyboard: GRID x GRID frames, the first as Glyph Light came in, each next one step from the last, every
-  // style, set, mode and motion somewhere in it (those the walk of steps missed set into its later frames).
+  // set, mode and motion somewhere in it (those the walk of steps missed set into its later frames); ASCII throughout.
   function glyphStory() {
     var n = GLYPH.GRID * GLYPH.GRID, r = Pl.rng(seed * 23 + 11), out = [];
-    var f = { style: 0, set: 0, mode: 0, motion: 0, dens: 1, expo: 0, contr: 1, gam: 1, detail: 0, inv: 0, glow: 0.35, thresh: 0.7, under: GLYPH.UNDER, auto: 0 };
+    var f = { set: 0, mode: 0, motion: 0, dens: 1, expo: 0, contr: 1, gam: 1, detail: 0, inv: 0, glow: 0.35, thresh: 0.7, under: GLYPH.UNDER, auto: 0 };
     var steps = [
-      function () { f.style = (f.style + 1 + floor(r() * 3)) % 4; }, function () { f.set = (f.set + 1 + floor(r() * 6)) % 7; },
+      function () { f.set = (f.set + 1 + floor(r() * 6)) % 7; },
       function () { f.mode = (f.mode + 1 + floor(r() * 3)) % 4; }, function () { f.motion = (f.motion + 1 + floor(r() * 4)) % 5; },
       function () { f.dens = clampV(f.dens * (r() < 0.5 ? 0.75 : 1.33), 0.5, 2); }, function () { f.expo = clampV(f.expo + (r() - 0.5) * 0.8, -1, 1); },
       function () { f.contr = clampV(f.contr + (r() - 0.5) * 0.6, 0.6, 1.8); }, function () { f.gam = clampV(f.gam + (r() - 0.5) * 0.5, 0.6, 1.6); },
@@ -3343,7 +3335,7 @@
     ];
     for (var i = 0; i < n; i += 1) { if (i) { steps[floor(r() * steps.length)](); } out.push(Object.assign({}, f)); }
     var at = 8;
-    [["style", 4], ["set", 7], ["mode", 4], ["motion", 5]].forEach(function (dv) {
+    [["set", 7], ["mode", 4], ["motion", 5]].forEach(function (dv) {
       for (var v = 0; v < dv[1]; v += 1) {
         if (!out.some(function (q) { return q[dv[0]] === v; })) { out[at % n][dv[0]] = v; at += 5; }
       }
@@ -3361,7 +3353,7 @@
     var b = function (v) { return round(clampV(v, 0, 1) * 255); }, d = new Uint8Array(4 * 4 * glyphFrames.length);
     glyphFrames.forEach(function (q, i) {
       var o = i * 16;
-      [q.style / 3, q.set / 6, q.mode / 3, q.motion / 4, (q.dens - 0.5) / 1.5, (q.expo + 1) / 2, (q.contr - 0.5) / 1.5, (q.gam - 0.5) / 1.5,
+      [0, q.set / 6, q.mode / 3, q.motion / 4, (q.dens - 0.5) / 1.5, (q.expo + 1) / 2, (q.contr - 0.5) / 1.5, (q.gam - 0.5) / 1.5,
        q.detail / 2, q.inv, q.glow / 1.5, q.thresh, q.under, q.auto, 0, 0].forEach(function (v, k) { d[o + k] = b(v); });
     });
     if (!glyphTable) { glyphTable = gl.createTexture(); }
