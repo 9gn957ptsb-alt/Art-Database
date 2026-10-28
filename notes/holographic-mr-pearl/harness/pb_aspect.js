@@ -4,7 +4,7 @@
 // at its smallest real screen (a phone's short side, 360, for 9:16 and narrower or 16:9 and wider; 600 for the near
 // squares, 3:4 to 4:3, which are tablets, folding phones and windows): the canvas fills it at the screen's pixels,
 // nothing is lost, and no word, button or the serve's bar covers another or leaves the screen; walking, on a court,
-// and at the serve. node pb_aspect.js outdir [port]
+// at the serve, and in Mr Plan's super (its banner clear of the counter's bar). node pb_aspect.js outdir [port]
 const { chromium } = require("playwright");
 const [out, port] = process.argv.slice(2);
 require("fs").mkdirSync(out, { recursive: true });
@@ -16,9 +16,17 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me && window.Pickleball.debug().running(), null, { timeout: 120000 });
-  for (const where of ["walk", "court", "serve"]) {
+  for (const where of ["walk", "court", "serve", "plansuper"]) {
     if (where === "court") { await p.evaluate(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(0.5); }); }
     if (where === "serve") { await p.evaluate(() => { const d = window.Pickleball.debug(); d.toServe(); d.run(0.3); }); }
+    // (Mr Plan's super, just struck: its banner and the counter's bar both up; the game paused there)
+    if (where === "plansuper") { const ok = await p.evaluate(() => { const d = window.Pickleball.debug(), C = d.COURT, me = d.me; d.pause(true); d.PSUP.P0 = d.PSUP.P1 = 1; let lastFire = -99;
+      for (let i = 0; i < 60 * 60; i++) { const m = d.court.m; if (!m) { return false; } if (m.phase === "plansuper" && m.psup.struck) { d.run(0.15); return true; }
+        let tx = 0.6, tz = C.L - 1.2; if ((m.phase === "serve" && !m.meterOn) || (m.meterOn && m.served + m.tosses.length < 1)) { const s = d.serveSpot(); tx = s[0]; tz = s[1]; }
+        const inc = m.balls.filter((q) => !q.dead && q.last === "them" && q.mark)[0]; if (inc) { tx = inc.mark.x - 0.5; tz = inc.mark.z + 1.2; }
+        const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz); d.input.stick = L > 0.1 ? { id: -1, x: 0, y: 0, dx: dx / L * 60 * Math.min(1, L / 1.5), dy: dz / L * 60 * Math.min(1, L / 1.5) } : null;
+        const u = d.meter(), fire = m.phase !== "plansuper" && u != null && u >= 0.45 && u <= 0.66 && (m.served + m.tosses.length) < 1 && i - lastFire > 12; if (fire) { lastFire = i; } d.run(1 / 60, fire); }
+      return false; }); check(ok, "Mr Plan's super reached"); }
     await p.evaluate(() => window.Pickleball.debug().pause(true));
     const st0 = await p.evaluate(() => { const d = window.Pickleball.debug(); return JSON.stringify([d.me.x, d.me.z, d.court.m && d.court.m.k, d.courts.map((c) => c.level)]); });
     for (const [a, c] of R) {
@@ -34,7 +42,7 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
           const whereT = document.getElementById("where"), range = document.createRange(); range.selectNodeContents(whereT); const wr = range.getBoundingClientRect();
           const sz = Math.min(22, (innerWidth - 24 - 45) / 10), y0 = top.getBoundingClientRect().bottom + 8;
           const strip = { x: 12, y: y0, w: Math.min(10, d.courts.length) * (sz + 5), h: sz, n: "strip" }, words = { x: wr.left, y: wr.top, w: wr.width, h: wr.height, n: "where" };
-          const boxes = [words, strip, box(document.getElementById("say")), box(document.getElementById("super")), d.hud().meter && Object.assign({ n: "the serve's bar" }, d.hud().meter), d.hud().reticle && Object.assign({ n: "the Scope's mark" }, d.hud().reticle)].filter(Boolean);
+          const boxes = [words, strip, box(document.getElementById("say")), box(document.getElementById("help")), box(document.getElementById("super")), d.hud().meter && Object.assign({ n: "the serve's bar" }, d.hud().meter), d.hud().reticle && Object.assign({ n: "the Scope's mark" }, d.hud().reticle), d.hud().banner && d.hud().banner.w && Object.assign({ n: "the SUPER banner" }, d.hud().banner)].filter(Boolean);
           return { cw: v.width, ch: v.height, ew: Math.round(v.clientWidth * Math.min(3, devicePixelRatio)), eh: Math.round(v.clientHeight * Math.min(3, devicePixelRatio)), W: innerWidth, H: innerHeight, boxes,
                    st: JSON.stringify([d.me.x, d.me.z, d.court.m && d.court.m.k, d.courts.map((c) => c.level)]) };
         });
@@ -46,10 +54,10 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
         if (["9:32", "1:1", "32:9", "16:9"].includes(`${a}:${c}`) && size === "small") { await p.screenshot({ path: `${out}/${where}_${a}x${c}.png` }); }
       }
     }
-    await p.evaluate(() => window.Pickleball.debug().pause(false));
+    if (where !== "plansuper") { await p.evaluate(() => window.Pickleball.debug().pause(false)); }
   }
   check(errs.length === 0, "no errors: " + errs.slice(0, 2).join(" | "));
   await b.close();
-  console.log(bad.length ? bad.length + " FAILED" : "all ok: nine ratios, two sizes, walking, on a court and at the serve");
+  console.log(bad.length ? bad.length + " FAILED" : "all ok: nine ratios, two sizes, walking, on a court, at the serve and in Mr Plan's super");
   process.exit(bad.length ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(2); });

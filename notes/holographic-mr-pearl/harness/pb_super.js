@@ -59,7 +59,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     const d = window.Pickleball.debug(), C = d.COURT, me = d.me; let m = d.court.m, lastFire = -99;
     for (let i = 0; i < 60 * 20; i++) {
       m = d.court.m; if (!m) { break; }
-      let tx = 0.6, tz = C.L - 1.2; if (m.phase === "serve" && !m.meterOn) { const s = d.serveSpot(); tx = s[0]; tz = s[1]; }
+      let tx = 0.6, tz = C.L - 1.2; if ((m.phase === "serve" && !m.meterOn) || (m.meterOn && m.served + m.tosses.length < 3)) { const s = d.serveSpot(); tx = s[0]; tz = s[1]; }   // (on the mark while it serves: off it the serve is over)
       const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz);
       d.input.stick = L > 0.1 ? { id: -1, x: 0, y: 0, dx: dx / L * 60 * Math.min(1, L / 1.5), dy: dz / L * 60 * Math.min(1, L / 1.5) } : null;
       const u = d.meter(), fire = u != null && u >= 0.45 && u <= 0.66 && (m.served + m.tosses.length) < 3 && i - lastFire > 12; if (fire) { lastFire = i; }

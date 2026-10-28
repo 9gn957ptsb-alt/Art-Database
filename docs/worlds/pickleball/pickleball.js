@@ -102,7 +102,7 @@
     };
     me.score = function (n) {
       n = floor(n);
-      if (!inYT || !(n > sent) || !Number.isSafeInteger(n)) { return; }
+      if (!inYT || me.noSave || !(n > sent) || !Number.isSafeInteger(n)) { return; }   // (never saved: never sent)
       sent = n; call("sendScore", function () { return y.engagement.sendScore({ value: n }); });
     };
     window.addEventListener("error", function (e) { me.error(e.error || e.message); });
@@ -415,8 +415,24 @@
      quiet glyph whose spacing is its light (in a 4x4 Bayer order), the net #, a pole |, a lamp *, the night sky a few
      stars fixed to the sky. Each character is lit in the colour under it at full saturation, its value the cell's
      light, the brightest blooming (a halo drawn with the glyph, inside its cell); black between. Mr Pearl's head marks
-     its pixels (alpha 0.5) and passes through as it is. */
-  var ASC = { FLOOR: [8, 12], CEIL: [16, 24], S0: 6, D0: 3.2, expo: 1.15, gam: 0.85, lit: 1.25, glow: 0.55, edge: 0.42, edgeMin: 0.07,
+     its pixels (alpha 0.5) and passes through as it is.
+     Steadiness: every choice above is a threshold, and twelve point samples of a moving picture sit on one now this
+     side, now that, so an edge or a line flickered (| / |, - _ -, / blank /). So each choice is held by last frame's
+     (the cells are kept twice, this frame's and last frame's), three ways: as a Schmitt trigger holds, near its
+     threshold a cell keeps the glyph, the octave and the kind of choice it had; an outline's stroke keeps its way
+     while that way still parts the figure's samples from the rest as well as the new one (one sample changing sides
+     turned it a whole bin); and a change within one thing (a figure's strokes and tones, a court's lines and dots)
+     shows only when it is asked for two frames running, so a one-frame flip is never drawn, while a thing arriving
+     or leaving shows at once. The kind of choice and the change waiting ride in the colour channels' low bits (a
+     255th or three of a colour's value: unseen, and no second target to write). A frame not straight after the last
+     of the same view (a pause, a cut, a jump of the camera) holds nothing, so a single frame is drawn as it always
+     was. Read back frame by frame, the cells that flip back (A, B, A within six frames) fell by 62 to 84% in a rally,
+     a walk and at the serve (by less in a sprint, a dive or a pan: 22 to 63%), and a still view does not change at all. */
+  // (bg: each cell's own colour behind its character, dim, as ANSI art sets a cell's background: the courts read as
+  // painted surfaces, ultramarine, turquoise and emerald, not dots on black (the artist, 28 Oct 2026: "There's still a
+  // bit too much black, I want 33% more color so it looks a bit more like a Pickleball court"; pb_measure.js measures it,
+  // the frame's mean chroma))
+  var ASC = { FLOOR: [8, 12], CEIL: [16, 24], S0: 6, D0: 3.2, expo: 1.15, gam: 0.85, lit: 1.25, glow: 0.55, edge: 0.42, edgeMin: 0.07, bg: 0.43, halo: 0.6, haloR: 0.4, core: 1,
               FONT: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Roboto Mono', 'Noto Sans Symbols 2', monospace",
               KEYS: " .:-=+*#%@", BODY: " .:+*#%@", PLAN: " ◇◆#%@", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
   // the materials, written into the picture's alpha as 1 - id / 255 (his head's 0.5 stays apart from them)
@@ -529,10 +545,12 @@
       "#version 300 es", "precision highp float; precision highp int;",
       arr("RK", RK), arr("RP", RP), arr("EK", EK), arr("EP", EP), arr("FIX", fix),
       "const int PEARL_G = " + ix("◎") + ", PLUS_G = " + ix("+") + ", UNDER_G = " + ix("_") + ", DASH_G = " + ix("-") + ", BAR_G = " + ix("|") + ", SLASH_G = " + ix("/") + ", BACK_G = " + ix("\\") + ", STAR_G[3] = int[3](" + [ix("."), ix("+"), ix("*")].join(", ") + ");",
+      // the kinds of choice, held from frame to frame (0: none to hold)
+      "const int K_THING = 1, K_SMALL = 2, K_LINE = 3, K_EDGE = 4, K_SURF = 5, K_BODY = 6, K_MOAT = 7;",
       "float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }"].join("\n");
     A.cellP = compile(A.vs, [head,
-      "uniform sampler2D uScene; uniform highp sampler2D uDepth; uniform sampler2D uGV;",
-      "uniform vec2 uRes, uCell; uniform int uLev, uTop, uFloor, uBalls; uniform vec4 uBall[8];",
+      "uniform sampler2D uScene; uniform highp sampler2D uDepth; uniform sampler2D uGV; uniform sampler2D uPrev;",
+      "uniform vec2 uRes, uCell; uniform int uLev, uTop, uFloor, uBalls, uHold; uniform vec4 uBall[8];",
       "uniform float uNear, uFar, uRule, uExpo, uGam, uEdge, uEdgeMin, uFocal, uAsp;",
       "uniform vec3 uF, uR, uU, uEye; uniform vec2 uK;",
       "out vec4 o;",
@@ -542,16 +560,27 @@
       "float bayer(ivec2 p) { int x = p.x & 3, y = p.y & 3; int b = ((x ^ y) & 1) * 8 + (y & 1) * 4 + (((x ^ y) >> 1) & 1) * 2 + ((y >> 1) & 1); return (float(b) + 0.5) / 16.0; }",
       "float hash(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }",
       "vec3 hue(vec3 c) { return c / max(max(c.r, c.g), max(c.b, 1e-3)); }",
-      // a body's alphabet (Mr Plan's marks, else the keyboard's), at t in it, never under 'least'
-      "int ramp(int mat, float t, int least) {",
+      // a body's alphabet (Mr Plan's marks, else the keyboard's), at t in it, never under 'least'; last frame's tone
+      // (pg) held until t is a fifth of a band past its edge
+      "int ramp(int mat, float t, int least, int pg) {",
       "  int n = mat == 13 ? RP.length() : RK.length();",
-      "  int i = int(clamp(floor(t * float(n - 1) + 0.5), float(least), float(n - 1)));",
+      "  float x = t * float(n - 1);",
+      "  int i = int(clamp(floor(x + 0.5), float(least), float(n - 1)));",
+      "  for (int j = 0; j < 8; j++) { if (j >= n) { break; } if ((mat == 13 ? RP[j] : RK[j]) == pg && j >= least && abs(x - float(j)) < 0.7) { i = j; } }",
       "  return mat == 13 ? RP[i] : RK[i];",
       "}",
+      // a cell's colour with the kind of its choice in the channels' low bits, and w (a change waiting) in red's next
+      // (a quarter over the integer, so a device that truncates in writing it keeps the bits as one that rounds does)
+      "vec3 kept(vec3 c, int k, int w) { ivec3 q = (ivec3(clamp(c, 0.0, 1.0) * 255.0 + 0.5) & ivec3(~3, ~1, ~1)) | ivec3((k & 1) | (w << 1), (k >> 1) & 1, (k >> 2) & 1); return (vec3(q) + 0.25) / 255.0; }",
+      // which choices are one thing's (a figure's, a court's): a change between them waits a frame
+      "int fam(int k) { return k == K_SMALL || k == K_EDGE || k == K_BODY ? 1 : k == K_LINE || k == K_SURF ? 2 : 0; }",
       "void main() {",
       "  ivec2 ci = ivec2(gl_FragCoord.xy);",
       "  vec2 cs = uCell * exp2(float(uLev)), org = vec2(ci) * cs;",
       "  float lod = max(0.0, log2(min(cs.x / 3.0, cs.y / 4.0)) - 0.5);",
+      // last frame's choice here, at this octave: its glyph, whether it was shown (its octave was this), its kind
+      "  vec4 pv = texelFetch(uPrev, ci, uLev); int pa = int(pv.a * 255.0 + 0.5), pg = pa & 31; ivec3 pq = ivec3(pv.rgb * 255.0 + 0.5), pb = pq & 1;",
+      "  int pk = uHold * (pb.r | (pb.g << 1) | (pb.b << 2)), pw = (pq.r >> 1) & 1; bool pAct = pa >= 128;",
       // (under the floor only an athlete is ever written: the parts' materials first, the rest only if one is there)
       "  if (uLev < uFloor) {",
       "    bool any = false;",
@@ -581,8 +610,11 @@
       "  bool gold = mat == 17;",
       "  bool fig = who == 12 || who == 13;",
       "  float want = uRule * (" + ASC.D0.toFixed(3) + " / dn) * (" + ASC.D0.toFixed(3) + " / dn);",
-      "  int lv = uFloor + int(clamp(floor(log2(max(want, 1e-3)) + 0.5), 0.0, float(uTop - uFloor)));",
-      "  bool farFig = fig && 1.8 * uFocal / dn < 16.0 * uCell.y * exp2(float(uFloor));",
+      // (held: an octave shown last frame here stays a tenth of an octave past its edge, one not shown stays off as
+      // far; a far figure's octave three hundredths past its sixteen lines)
+      "  float hv = pk == 0 ? 0.0 : pAct ? 0.1 : -0.1;",
+      "  int lv = uFloor + int(clamp(floor(log2(max(want, 1e-3)) + 0.5 + (uLev > uFloor ? hv : 0.0)), 0.0, float(uTop - uFloor)));",
+      "  bool farFig = fig && 1.8 * uFocal / dn < 16.0 * uCell.y * exp2(float(uFloor)) * (uLev == uFloor ? 1.0 - 0.3 * hv : 1.0);",
       "  int act = (uLev == 0 || (uLev <= lv && !(uLev == uFloor && farFig))) ? 128 : 0;",
       // the pearl: in the one cell that holds its middle, unless something stands in front of it, and an octave larger
       // than its distance asks (the one character the game hangs on: at the floor it was lost in Mr Plan's marks)
@@ -593,7 +625,7 @@
       "    int tg = min(uTop, uFloor + 1 + int(clamp(floor(log2(max(wb, 1e-3)) + 0.5), 0.0, float(uTop - uFloor))));",
       "    if (uLev >= tg && (uLev == tg || act > 0) && b.x >= org.x && b.x < org.x + cs.x && b.y >= org.y && b.y < org.y + cs.y) {",
       "      float zb = lin(texelFetch(uDepth, ivec2(int(b.x), int(uRes.y - b.y)), 0).r);",
-      "      if (zb > b.z - 0.25) { o = vec4(1.0, 0.97, 0.9, float(PEARL_G + 64 + 128) / 255.0); return; }",
+      "      if (zb > b.z - 0.25) { o = vec4(kept(vec3(1.0, 0.97, 0.9), 0, 0), float(PEARL_G + 64 + 128) / 255.0); return; }",
       "    }",
       "  }",
       "  if (heads >= 9) { o = vec4(0.0, 0.0, 0.0, float(act) / 255.0); return; }",
@@ -611,7 +643,7 @@
       "    mn = min(mn, v[r]); sum += v[r]; cnt += 1.0;",
       "  }",
       "  float m = sum / max(cnt, 1.0), dz = bayer(ci), mo = ownV / max(own, 1.0);",
-      "  int g = 0, f = FIX[min(mat, 17)]; float V = 0.0; vec3 c = hue(col[hiO]);",
+      "  int g = 0, f = FIX[min(mat, 17)], kd = 0; float V = 0.0; vec3 c = hue(col[hiO]);",
       // the moat: a cell that is not a figure, beside one standing in front of it (its four neighbours' middles), is
       // left dark, so every athlete stands in a cell of night
       "  bool moat = false, moat2 = false;",
@@ -634,7 +666,7 @@
       "  vec2 win = who == 13 ? vec2(0.1, 0.62) : who == 12 ? vec2(0.4, 1.25) : vec2(0.06, 0.75);",
       // a figure under some twenty lines tall is written whole, every cell it touches in its own alphabet and light
       // (a small clear shape; drawn by its edges it was a scatter of strokes)
-      "  bool small = fig && 1.8 * uFocal / dn < 10.0 * cs.y;",
+      "  bool small = fig && 1.8 * uFocal / dn < 10.0 * cs.y * (pk == K_SMALL ? 1.03 : pk == K_EDGE || pk == K_BODY ? 0.97 : 1.0);",
       // (under the floor only the figure is written: a far athlete stands in a small clearing of the ground's type)
       "  if (uLev < uFloor && !fig) { o = vec4(0.0, 0.0, 0.0, float(act) / 255.0); return; }",
       "  if (mat == 0) {",
@@ -659,11 +691,13 @@
       "  } else if (f >= 0 && !surf) {",
       // a thing of one glyph (the net #, a pole |, a lamp *, dust '), where it is
       "    if (own >= (mat == 6 ? 2.0 : 1.0) && (mat != 6 || dz < 0.55)) { g = f; V = mix(0.45, 1.0, smoothstep(0.05, 0.7, ownM)) * (mat == 6 ? 0.5 : 1.0); }",
+      "    kd = K_THING;",
       "  } else if (small) {",
+      "    kd = K_SMALL;",
       "    if (own >= 1.0) {",
-      "      g = ramp(who, mix(0.7, 1.0, smoothstep(win.x, win.y, mo)), 1); V = mix(" + DEF.fillV[0].toFixed(3) + ", 1.0, smoothstep(0.1, 0.8, mo));",
+      "      g = ramp(who, mix(0.7, 1.0, smoothstep(win.x, win.y, mo)), 1, pk == K_SMALL ? pg : -1); V = mix(" + DEF.fillV[0].toFixed(3) + ", 1.0, smoothstep(0.1, 0.8, mo));",
       "    }",
-      "  } else if (surf && nx + nz > 0 && mx >= 0.3) {",
+      "  } else if (surf && nx + nz > 0 && mx >= 0.3 + (pk == K_LINE ? -0.04 : pk == K_SURF ? 0.04 : 0.0)) {",
       // a court's line: one stroke the way its light lies in the cell (the light's second moments, in the cell's own
       // proportions; better, where a part of it is on the line, the line's own axis seen from here); a line along a
       // cell's top or left edge is the neighbour's
@@ -685,12 +719,16 @@
       "    }",
       // its stroke: - (or _ along the cell's foot), / and \ about a cell's own diagonal, | upright, + where two cross
       "    float dg = degrees(atan(cs.y, cs.x));",
+      // (held: last frame's stroke keeps its way six degrees past a bin's edge, and its place in the cell an eighth)
+      "    float hs = pk == K_LINE ? 1.0 : 0.0; bool pD = pg == SLASH_G || pg == BACK_G, pH = pg == UNDER_G || pg == DASH_G;",
+      "    float b0 = 0.5 * dg + hs * (pH ? 6.0 : pD ? -6.0 : 0.0), b1 = 0.5 * (dg + 90.0) + hs * (pg == BAR_G ? -6.0 : pD ? 6.0 : 0.0);",
+      "    kd = K_LINE;",
       "    if (el < 0.2) { g = PLUS_G; }",
-      "    else if (abs(th) < 0.5 * dg) { g = mu.y > 0.68 ? UNDER_G : mu.y < 0.3 ? 0 : DASH_G; }",
-      "    else if (abs(th) > 0.5 * (dg + 90.0)) { g = mu.x < 0.22 ? 0 : BAR_G; }",
-      "    else { vec2 dv = vec2(cos(radians(th)), sin(radians(th))), off = (mu - 0.5) * cs; g = abs(off.x * dv.y - off.y * dv.x) > 0.38 * cs.x ? 0 : th < 0.0 ? SLASH_G : BACK_G; }",
+      "    else if (abs(th) < b0) { g = mu.y > 0.68 + hs * (pg == UNDER_G ? -0.08 : pg == DASH_G ? 0.08 : 0.0) ? UNDER_G : mu.y < 0.3 + hs * (pg == 0 ? 0.08 : pg == DASH_G ? -0.08 : 0.0) ? 0 : DASH_G; }",
+      "    else if (abs(th) > b1) { g = mu.x < 0.22 + hs * (pg == 0 ? 0.08 : pg == BAR_G ? -0.08 : 0.0) ? 0 : BAR_G; }",
+      "    else { vec2 dv = vec2(cos(radians(th)), sin(radians(th))), off = (mu - 0.5) * cs; g = abs(off.x * dv.y - off.y * dv.x) > (0.38 + hs * (pg == 0 ? -0.12 : pD ? 0.12 : 0.0)) * cs.x ? 0 : th < 0.0 ? SLASH_G : BACK_G; }",
       "    c = hue(col[hiR]); V = mix(0.5, 1.0, smoothstep(0.3, 0.7, mx));",
-      "  } else if (!surf && back > 0.0 && mx >= uEdgeMin && (mx - mn) / mx > uEdge) {",
+      "  } else if (!surf && back > 0.0 && mx >= uEdgeMin && (mx - mn) / mx > uEdge + (pk == K_EDGE ? -0.04 : pk == K_BODY ? 0.04 : 0.0)) {",
       // an edge: the character shaped most like the cell (the parts' light, its contrast drawn up, against each
       // candidate's ink, as the cosine of the two); a court's only from the strokes
       "    vec4 n0 = vec4(0.0), n1 = vec4(0.0), n2 = vec4(0.0), k0 = vec4(1.0), k1 = vec4(1.0), k2 = vec4(1.0);",
@@ -698,17 +736,20 @@
       "      float q = id[r] < 0 ? 0.0 : pow(v[r] / mx, 2.2), kq = id[r] < 0 ? 0.0 : 1.0;",
       "      if (r < 4) { n0[r] = q; k0[r] = kq; } else if (r < 8) { n1[r - 4] = q; k1[r - 4] = kq; } else { n2[r - 8] = q; k2[r - 8] = kq; }",
       "    }",
-      "    float best = -1.0;",
+      "    float best = -1.0, sp = -1.0; kd = K_EDGE;",
       // an athlete's silhouette: the stroke along it, by where his own front parts lie in the cell (their middle, from
       // the cell's: the inward normal, in the cell's own proportions), as a draughtsman's line; only where that is
       // ambiguous (a contour inside him, a speck) the glyph shaped most like the cell
       "    vec2 cen = vec2(0.0); float fr = 0.0;",
       "    for (int r = 0; r < 12; r++) { if (id[r] == mat && d[r] - dn <= tolF) { cen += (vec2(float(r % 3), float(r / 3)) + 0.5) / vec2(3.0, 4.0); fr += 1.0; } }",
       "    vec2 nI = (cen / max(fr, 1.0) - 0.5) * vec2(uAsp, 1.0); float cov = fr / max(cnt, 1.0);",
-      "    if (fig && fr > 0.0 && length(nI) > 0.09) {",
-      "      float dg = degrees(atan(cs.y, cs.x)), th = degrees(atan(abs(nI.y), abs(nI.x)));",
-      "      if (th < 45.0 - 0.5 * dg) { g = BAR_G; }",
-      "      else if (th > 90.0 - 0.5 * dg) { g = (nI.y < 0.0 ? cov > 0.55 : cov < 0.45) ? UNDER_G : DASH_G; }",
+      // (held: last frame's stroke stays a stroke to 0.06, keeps its way eight degrees past a bin's edge, and its _ or
+      // - a sample's coverage either side)
+      "    float he = pk == K_EDGE ? 1.0 : 0.0; bool qD = pg == SLASH_G || pg == BACK_G, qH = pg == UNDER_G || pg == DASH_G;",
+      "    if (fig && fr > 0.0 && length(nI) > 0.09 + he * (qD || qH || pg == BAR_G ? -0.03 : 0.03)) {",
+      "      float dg = degrees(atan(cs.y, cs.x)), th = degrees(atan(abs(nI.y), abs(nI.x))), hc = he * (pg == UNDER_G ? -0.06 : pg == DASH_G ? 0.06 : 0.0);",
+      "      if (th < 45.0 - 0.5 * dg + he * (pg == BAR_G ? 8.0 : qD ? -8.0 : 0.0)) { g = BAR_G; }",
+      "      else if (th > 90.0 - 0.5 * dg + he * (qH ? -8.0 : qD ? 8.0 : 0.0)) { g = (nI.y < 0.0 ? cov > 0.55 + hc : cov < 0.45 - hc) ? UNDER_G : DASH_G; }",
       "      else { g = nI.x * nI.y < 0.0 ? BACK_G : SLASH_G; }",
       "      best = 2.0;",
       "    }",
@@ -720,12 +761,28 @@
       "      float gg = dot(g0, g0) + dot(g1, g1) + dot(g2, g2);",
       "      float s = (dot(n0, g0) + dot(n1, g1) + dot(n2, g2)) * inversesqrt(max(gg, 1e-4));",
       "      if (s > best) { best = s; g = e; }",
+      "      if (e == pg) { sp = s; }",
+      "    }",
+      "    if (he > 0.0 && best < 1.5 && sp > -0.5 && best - sp < 0.05) { g = pg; }",
+      "    bool qV = pg == BAR_G, nH = g == UNDER_G || g == DASH_G;",
+      "    if (he > 0.0 && best > 1.5 && (qV || qD || qH) && !(qH && nH) && pg != g) {",
+      "      vec2 cF = vec2(0.0), cB = vec2(0.0); float nf = 0.0, nb = 0.0;",
+      "      for (int r = 0; r < 12; r++) { if (id[r] < 0) { continue; } vec2 p = (vec2(float(r % 3), float(r / 3)) + 0.5) / vec2(3.0, 4.0) * vec2(uAsp, 1.0); if (id[r] == mat && d[r] - dn <= tolF) { cF += p; nf += 1.0; } else { cB += p; nb += 1.0; } }",
+      "      if (nb > 0.0) {",
+      "        cF /= nf; cB /= nb; vec2 m0 = 0.5 * (cF + cB);",
+      "        vec2 wP = qV ? vec2(1.0, 0.0) : qH ? vec2(0.0, 1.0) : pg == SLASH_G ? vec2(1.0, uAsp) : vec2(1.0, -uAsp);",
+      "        vec2 wN = g == BAR_G ? vec2(1.0, 0.0) : nH ? vec2(0.0, 1.0) : g == SLASH_G ? vec2(1.0, uAsp) : vec2(1.0, -uAsp);",
+      "        wP *= dot(cF - cB, wP) < 0.0 ? -1.0 : 1.0; wN *= dot(cF - cB, wN) < 0.0 ? -1.0 : 1.0;",
+      "        float eP = 0.0, eN = 0.0;",
+      "        for (int r = 0; r < 12; r++) { if (id[r] < 0) { continue; } vec2 p = (vec2(float(r % 3), float(r / 3)) + 0.5) / vec2(3.0, 4.0) * vec2(uAsp, 1.0) - m0; bool fo = id[r] == mat && d[r] - dn <= tolF; eP += (dot(p, wP) > 0.0) != fo ? 1.0 : 0.0; eN += (dot(p, wN) > 0.0) != fo ? 1.0 : 0.0; }",
+      "        if (eP <= eN) { g = pg; }",
+      "      }",
       "    }",
       "    c = fig ? mix(hue(col[hiR]), who == 13 ? vec3(0.3, 0.95, 1.0) : vec3(1.0, 0.72, 0.28), 0.8) : hue(col[hiR]); V = mix(fig ? " + DEF.edgeV.toFixed(3) + " : 0.6, 1.0, smoothstep(0.0, 0.6, mx));",   // (an athlete's outline in his accent: Mr Pearl's gold, Mr Plan's cyan)
       "  } else if (f >= 0) {",
       // a surface: its own glyph, its spacing its light (in Bayer order)
       "    float lo = mat == 1 ? 0.1 : mat == 2 ? 0.12 : 0.05, hi = mat == 1 ? 0.3 : mat == 2 ? 0.4 : 0.2;",
-      "    if (max(smoothstep(lo, hi, m), mat == 1 ? 0.14 : 0.0) > dz) { g = f; }",   // (the ground off the courts: a faint teal field, never black)
+      "    if (max(smoothstep(lo, hi, m), mat == 1 ? 0.14 : 0.0) > dz + (pk == K_SURF ? (pg == f ? -0.04 : 0.04) : 0.0)) { g = f; }", "    kd = K_SURF;",   // (the ground off the courts: a faint teal field, never black)
       "    V = max(mix(0.32, 1.0, smoothstep(0.05, 0.8, m)) * " + DEF.surfV.toFixed(3) + ", mat == 1 ? 0.12 : 0.0);",
       "  } else {",
       // a body: its alphabet by its own light, one tone to a band (dithered, a figure was a checkerboard), the light
@@ -736,21 +793,23 @@
       // (a body near enough for the larger type is a quieter texture under its outline: the outline carries the form,
       // and the near glyphs, four times the floor's area, do not wall the view)
       "    float big = uLev > uFloor ? 1.0 : 0.0;",
-      "    g = ramp(who, mix(who == 13 ? " + DEF.fillPlan.toFixed(3) + " : " + DEF.fill.toFixed(3) + ", 1.0, smoothstep(win.x, win.y, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big), 1);",
+      "    g = ramp(who, mix(who == 13 ? " + DEF.fillPlan.toFixed(3) + " : " + DEF.fill.toFixed(3) + ", 1.0, smoothstep(win.x, win.y, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big), 1, pk == K_BODY ? pg : -1); kd = K_BODY;",
       "    V = mix(" + DEF.fillV[0].toFixed(3) + ", " + DEF.fillV[1].toFixed(3) + ", smoothstep(0.0, 0.8, bt)) * (1.0 - " + DEF.near.toFixed(3) + " * big);",
       "  }",
       "  if (fig && !gold) { vec3 tn = who == 13 ? vec3(0.66, 0.92, 1.0) : vec3(1.0, 0.86, 0.62); c = mix(c, tn, 0.5); float lc = dot(c, vec3(0.299, 0.587, 0.114)), lt = dot(tn, vec3(0.299, 0.587, 0.114)); c = mix(c, tn, clamp((" + DEF.lum.toFixed(3) + " - lc) / max(lt - lc, 1e-3), 0.0, 1.0)); }",   // (never bare white: his champagne, Mr Plan's ice)
       // (his guitar, gold in the sun: deep amber in its shade, gold in its light, white-gold where the sun glints off it)
       "  if (gold && g > 0) { float gl = mo; c = mix(vec3(0.72, 0.36, 0.04), vec3(1.0, 0.74, 0.18), smoothstep(0.15, 0.55, gl)); c = mix(c, vec3(1.0, 0.97, 0.86), smoothstep(0.7, 0.95, gl)); V = max(V, mix(0.55, 1.0, smoothstep(0.15, 0.75, gl))); }",
-      "  if (moat) { g = STAR_G[0]; V = 0.09; c = vec3(0.42, 0.34, 1.0); } else if (moat2) { V *= " + DEF.moat2.toFixed(3) + "; }",   // (the moat a dim indigo, night rather than a hole)
+      "  if (moat) { g = STAR_G[0]; V = 0.09; c = vec3(0.42, 0.34, 1.0); kd = 0; } else if (moat2) { V *= " + DEF.moat2.toFixed(3) + "; kd = K_MOAT; }",   // (the moat a dim indigo, night rather than a hole)
       // (the ground's own characters glow too, in their colour: the court's ultramarine, the kitchen's turquoise, the
       // run-off's emerald, the night's violet fill the dark between them, colour in place of black, and no flat fill)
+      "  int w = 0;",
+      "  if (pk != 0 && fam(pk) == fam(kd) && fam(kd) != 0 && (g != pg || act != (pa & 128))) { w = 1; if (pw == 0) { g = pg; act = pa & 128; kd = pk; } }",   // (the flag kept while a cell keeps changing: the first change waits a frame, a moving cell then follows each frame)
       "  int bloom = (mat == 8 || V > 0.93 || (fig && g > 0) || (g > 0 && (surf || mat <= 1))) ? 64 : 0, heavy = fig && g > 0 ? 32 : 0;",
-      "  o = vec4(c * V, float(g + heavy + bloom + act) / 255.0);",
+      "  o = vec4(kept(c * V, kd, w), float(g + heavy + bloom + act) / 255.0);",
       "}"].join("\n"));
     A.setP = compile(A.vs, [head,
       "uniform sampler2D uScene; uniform sampler2D uCells; uniform sampler2D uAtlas;",
-      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow;",
+      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow, uBg;",
       "out vec4 o;",
       "void main() {",
       "  vec4 pic = texelFetch(uScene, ivec2(gl_FragCoord.xy), 0);",
@@ -759,14 +818,23 @@
       "  int k = uTop; ivec2 cs = uCell << k, ci = pd / cs; vec4 t = texelFetch(uCells, ci, k);",
       "  while (k > 0 && t.a < 0.5) { k--; cs = uCell << k; ci = pd / cs; t = texelFetch(uCells, ci, k); }",   // the largest cell that is one
       "  int a = int(t.a * 255.0 + 0.5), g = a & 31;",
-      "  if (g == 0) { o = vec4(0.0, 0.0, 0.0, 1.0); return; }",
+      // the paint under the type: a court's surfaces and its lines (their kind, in the colour's low bits) over the
+      // picture itself, the cell's average, dimmed and its colour drawn up; nothing under a figure, a thing or the sky
+      "  ivec3 kb = ivec3(t.rgb * 255.0 + 0.5) & 1; int kd = kb.r | (kb.g << 1) | (kb.b << 2); vec3 bg = vec3(0.0);",
+      "  if (kd == K_SURF || kd == K_LINE || kd == K_MOAT) {",
+      "    vec2 cc = vec2(ci * cs) + 0.5 * vec2(cs);",
+      "    vec3 sc = textureLod(uScene, vec2(cc.x, uRes.y - cc.y) / uRes, log2(float(max(cs.x, cs.y)))).rgb, hu = sc / max(max(sc.r, sc.g), max(sc.b, 1e-3));",
+      "    bg = mix(sc, hu * max(max(sc.r, sc.g), sc.b), 0.5) * uBg * (kd == K_MOAT ? 0.35 : 1.0);",   // (the cell of night round a figure kept bare, the next a shadow on the paint)
+      "  }",
+      "  if (g == 0) { o = vec4(bg, 1.0); return; }",
       "  ivec2 at = ivec2((g % uAtl[k].y) * cs.x, uAtl[k].x + (g / uAtl[k].y) * cs.y) + pd - ci * cs;",
       "  vec3 ink = texelFetch(uAtlas, at, 0).rgb;",
-      "  o = vec4(t.rgb * (((a & 32) != 0 ? ink.b : ink.r) * uLit + ((a & 64) != 0 ? ink.g * uGlow : 0.0)), 1.0);",
+      "  float ik = (a & 32) != 0 ? ink.b : ink.r;",
+      "  o = vec4(t.rgb * (ik * uLit + ((a & 64) != 0 ? ink.g * uGlow : 0.0)) + bg * (1.0 - ik), 1.0);",
       "}"].join("\n"));
     A.CU = {}; A.SU = {};
-    ["uScene", "uDepth", "uGV", "uRes", "uCell", "uLev", "uTop", "uFloor", "uBalls", "uBall", "uNear", "uFar", "uRule", "uExpo", "uGam", "uEdge", "uEdgeMin", "uFocal", "uAsp", "uEye", "uF", "uR", "uU", "uK"].forEach(function (k) { A.CU[k] = gl.getUniformLocation(A.cellP, k); });
-    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
+    ["uScene", "uDepth", "uGV", "uPrev", "uHold", "uRes", "uCell", "uLev", "uTop", "uFloor", "uBalls", "uBall", "uNear", "uFar", "uRule", "uExpo", "uGam", "uEdge", "uEdgeMin", "uFocal", "uAsp", "uEye", "uF", "uR", "uU", "uK"].forEach(function (k) { A.CU[k] = gl.getUniformLocation(A.cellP, k); });
+    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow", "uBg"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
   }
   // the grid for this screen: the type's floor and ceiling (CSS px, a phone's and a desk's), the cell its advance by
   // its bar, in device pixels; an octave under the floor for far athletes where that is still 12 device pixels
@@ -785,7 +853,7 @@
     }
     asc.G = G;
     if (!asc.fb || asc.w !== w || asc.h !== h) {
-      if (asc.fb) { gl.deleteFramebuffer(asc.fb); gl.deleteTexture(asc.col); gl.deleteTexture(asc.dep); gl.deleteFramebuffer(asc.cfb); gl.deleteTexture(asc.cells); }
+      if (asc.fb) { gl.deleteFramebuffer(asc.fb); gl.deleteTexture(asc.col); gl.deleteTexture(asc.dep); gl.deleteFramebuffer(asc.cfb); asc.cells.forEach(function (t) { gl.deleteTexture(t); }); }
       var col = gl.createTexture(), dep = gl.createTexture(), fb = gl.createFramebuffer();
       gl.bindTexture(gl.TEXTURE_2D, col);
       gl.texStorage2D(gl.TEXTURE_2D, floor(Math.log2(max(w, h))) + 1, gl.RGBA8, w, h);
@@ -798,10 +866,11 @@
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, col, 0);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, dep, 0);
       asc.ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
-      // the cells: a texel each, an octave a level (the grid's size rounded up so every octave halves it exactly)
-      var u = 1 << G.top, gw = Math.ceil(Math.ceil(w / G.cw) / u) * u, gh = Math.ceil(Math.ceil(h / G.ch) / u) * u, cells = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, cells); gl.texStorage2D(gl.TEXTURE_2D, G.top + 1, gl.RGBA8, gw, gh); texNearest();
-      asc.fb = fb; asc.col = col; asc.dep = dep; asc.w = w; asc.h = h; asc.cells = cells; asc.gw = gw; asc.gh = gh; asc.cfb = gl.createFramebuffer();
+      // the cells: a texel each, an octave a level (the grid's size rounded up so every octave halves it exactly); twice,
+      // this frame's and last frame's, in turn
+      var u = 1 << G.top, gw = Math.ceil(Math.ceil(w / G.cw) / u) * u, gh = Math.ceil(Math.ceil(h / G.ch) / u) * u;
+      var cells = [0, 1].map(function () { var t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texStorage2D(gl.TEXTURE_2D, G.top + 1, gl.RGBA8, gw, gh); texNearest(); return t; });
+      asc.fb = fb; asc.col = col; asc.dep = dep; asc.w = w; asc.h = h; asc.cells = cells; asc.turn = 0; asc.last = null; asc.gw = gw; asc.gh = gh; asc.cfb = gl.createFramebuffer();
       if (!asc.ok) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); return false; }   // (a device without it: the scene straight to the screen)
     }
     asc.balls = [];
@@ -812,7 +881,7 @@
   function ascBall(p, w, h) {
     var vp = cur.vp, q = [0, 0, 0, 0];
     for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; }
-    if (!asc || !asc.balls || q[3] < 0.05 || asc.balls.length >= 8) { return; }
+    if (!asc || !asc.balls || q[3] < 0.05 || asc.balls.length >= 32) { return; }   // (eight pearls, four numbers each)
     var x = (q[0] / q[3] * 0.5 + 0.5) * w, y = (0.5 - q[1] / q[3] * 0.5) * h;
     if (x >= 0 && x < w && y >= 0 && y < h) { asc.balls.push(x, y, q[3], 0); }
   }
@@ -833,23 +902,32 @@
     gl.uniform1f(CU.uRule, ASC.S0 * dpr * (md.s0 || 1) / (G.cw << G.F)); gl.uniform1i(CU.uFloor, G.F);
     gl.uniform1f(CU.uExpo, ASC.expo * (md.expo || 1)); gl.uniform1f(CU.uGam, ASC.gam); gl.uniform1f(CU.uEdge, ASC.edge); gl.uniform1f(CU.uEdgeMin, ASC.edgeMin);
     var bl = new Float32Array(32); bl.set(A.balls.slice(0, 32)); gl.uniform4fv(CU.uBall, bl); gl.uniform1i(CU.uBalls, A.balls.length / 4);
+    // last frame's choices, held only if it was the frame just before of the same view (not after a pause, a cut, a
+    // jump of the camera: then this frame is drawn as a single frame is)
+    var now = A.cells[A.turn], L = A.last, e = cur.eye;
+    var hold = L && gt - L.t <= 0.1 && hypot(e[0] - L.e[0], e[1] - L.e[1], e[2] - L.e[2]) < 1 && abs(angle(yaw - L.yaw)) < 0.15 && abs(pitch - L.pitch) < 0.15;
+    A.last = { t: gt, e: e.slice(), yaw: yaw, pitch: pitch };
+    gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, A.cells[1 - A.turn]); gl.uniform1i(CU.uPrev, 5); gl.uniform1i(CU.uHold, hold ? 1 : 0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.disable(gl.DITHER);   // (the low bits carry the kinds: never dithered)
     gl.bindFramebuffer(gl.FRAMEBUFFER, A.cfb);
     for (var k = 0; k <= G.top; k += 1) {
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, A.cells, k);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, now, k);
       gl.viewport(0, 0, A.gw >> k, A.gh >> k); gl.uniform1i(CU.uLev, k);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
     // the setting: each pixel its cell's glyph
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
+    gl.enable(gl.DITHER); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h);
     gl.useProgram(A.setP);
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, A.col); gl.uniform1i(SU.uScene, 2);
-    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, A.cells); gl.uniform1i(SU.uCells, 3);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, now); gl.uniform1i(SU.uCells, 3);
     gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, A.atlas); gl.uniform1i(SU.uAtlas, 4);
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform2f(SU.uRes, w, h); gl.uniform2i(SU.uCell, G.cw, G.ch); gl.uniform1i(SU.uTop, G.top);
     var at = new Int32Array(8); A.rows.forEach(function (q, i) { at[i * 2] = q.y; at[i * 2 + 1] = q.cols; }); gl.uniform2iv(SU.uAtl, at);
-    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow);
+    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow); gl.uniform1f(SU.uBg, ASC.bg);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    A.turn = 1 - A.turn;
   }
 
   /* ---- the scene ---------------------------------------------------------------------------------------------------
@@ -1113,7 +1191,7 @@
   var STR = {
     courts: "The courts", wonN: function (n) { return n + (n === 1 ? " court won" : " courts won"); }, open: function (k) { return "court " + (k + 1) + " open"; },
     welcome: "Holographic Mr Pearl: Pickleball. One court at night, Mr Plan on it. Win it and the next appears beside it, harder: how many courts can you win? Walk onto court one.",
-    match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Run to the gold ◆ behind the baseline to serve."; },
+    match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Run to the gold circle behind the baseline to serve."; },
     meterHint: "tap to stop it · further is harder · ◆ a chance at an ace",
     head: function (m) {
       var lv = m.balls.filter(function (q) { return !q.dead; }), r = lv.reduce(function (a, q) { return max(a, q.rally); }, 0);
@@ -1122,14 +1200,50 @@
     long: "The serve went long.", kitchenVolley: "A volley from the kitchen: a fault.", kitchenVolleyPlan: "Mr Plan volleys from the kitchen: a fault.", ace: "An ace: Mr Plan never got to it.", aceZone: "The ace zone: hard into the deep corner.",
     superNext: "Super return: on the next point.", superUsed: "Your super return is spent this game: a new one with the next game.",
     superWon: "Super return: the point is yours.",
+    planSuper: "Mr Plan's super return! Stop the bar in ◆ return to send it back.", counterHint: "tap in ◆ return to send Mr Plan's super back",
+    planSuperOr: "Mr Plan's super return! Stop the bar in ◆ return, or use your ◆ Super.", counterHintOr: "tap in ◆ return, or ◆ Super top right",
+    superCounter: "Your super return meets Mr Plan's.", superCounterWon: "Your super return beats Mr Plan's: the point is yours.",
+    counterOk: "Returned: Mr Plan's super goes back over the net.", counterMiss: "Not in ◆ return: Mr Plan's super is past you.", planSuperWon: "Mr Plan's super return.",
     net: "Into the net.", netPlan: "Mr Plan puts it into the net.", kitchen: "The serve fell in the kitchen.", out: "Out.", outPlan: "Mr Plan hits it out.",
     twice: "It bounced twice: you did not reach it.", twicePlan: "Twice on its side: Mr Plan did not reach it.",
     rally: function (y, t, r) { return y + " – " + t + ", a rally of " + r + "."; },
-    planTakes: function (t, y) { return "Mr Plan takes it, " + t + " – " + y + ". Again from love: run to the gold ◆ to serve."; },
+    planTakes: function (t, y) { return "Mr Plan takes it, " + t + " – " + y + ". Again from love: run to the gold circle to serve."; },
     won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder."; },
-    standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; }
+    standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; },
+    // how to play, at its moments (the artist, 28 Oct 2026: "Include a brief set of instructions on how to move around
+    // and how to serve when beginning court one as soon as you open up the game", then "I want the how to to be pop-ups
+    // that happen when you're walking through that are cued by certain moments"): a finger's words and a desk's
+    tips: {
+      move: ["Move: drag on the left half of the screen.", "Move: W A S D, Shift to sprint (or drag on the left half)."],
+      court: ["Walk onto the open court to play Mr Plan.", "Walk onto the open court to play Mr Plan."],
+      serve: ["Your serve: run to the gold circle behind the baseline.", "Your serve: run to the gold circle behind the baseline."],
+      bar: ["Tap to stop the bar: further is harder, ◆ a chance at an ace. Tap again for a 2nd and a 3rd pearl.", "Space stops the bar: further is harder, ◆ a chance at an ace. Again for a 2nd and a 3rd pearl."],
+      rally: ["Run to the ○ ring where his shot comes down: your stroke is your own, aimed at the open court.", "Run to the ○ ring where his shot comes down: your stroke is your own, aimed at the open court."],
+      multi: ["Two or three pearls: each is a point of its own, and the game runs you to each.", "Two or three pearls: each is a point of its own, and the game runs you to each."],
+      super: ["◆ Super, top right: once a game, a leap that wins the point.", "◆ Super, top right, or E: once a game, a leap that wins the point."] }
   };
-  var sayT = 0;
+  var sayT = 0, helpOn = false;
+  // The tips: each shown once (which have been is kept with the save), one at a time, the next waiting its turn, each
+  // gone once it is done (he moves, he serves) or after its time.
+  var TIPS = { order: ["move", "court", "serve", "bar", "rally", "multi", "super"], life: { move: 9, court: 8, serve: 9, bar: 12, rally: 7, multi: 6, super: 7 }, seen: 0, cur: null, queue: [] };
+  function tipBit(key) { return 1 << TIPS.order.indexOf(key); }
+  function tip(key) { if ((TIPS.seen & tipBit(key)) || (TIPS.cur && TIPS.cur.key === key) || TIPS.queue.indexOf(key) >= 0) { return; } TIPS.queue.push(key); }
+  function tipDone(key) {
+    if (TIPS.cur && TIPS.cur.key === key) { TIPS.cur.done = true; return; }
+    var i = TIPS.queue.indexOf(key); if (i >= 0 && key !== "rally") { TIPS.queue.splice(i, 1); TIPS.seen |= tipBit(key); save(); }   // (done before its turn: not needed; the rally's stroke is the game's, so its tip waits)
+  }
+  function tipStep() {
+    var el = $("help"), c = TIPS.cur; if (!el) { return; }
+    if (c) { if (el.style.opacity !== "0") { c.vis += gt - c.at; } c.at = gt; }   // (its time runs while it can be read: not under a bar)
+    if (c && ((c.done && (c.vis > 1.2 || c.vis === 0)) || c.vis > TIPS.life[c.key])) { el.hidden = true; helpOn = false; TIPS.seen |= tipBit(c.key); TIPS.cur = c = null; save(); }
+    if (!c && TIPS.queue.length) {
+      var key = TIPS.queue.shift(), fine = window.matchMedia && window.matchMedia("(pointer: fine)").matches;
+      el.textContent = ""; var h = document.createElement("div"); h.className = "h"; h.textContent = "◆ How to play"; el.appendChild(h);
+      el.appendChild(document.createTextNode(STR.tips[key][fine ? 1 : 0]));
+      el.hidden = false; el.style.opacity = "1"; helpOn = true; TIPS.cur = { key: key, t0: gt, at: gt, vis: 0, done: false };
+    }
+  }
+
   function say(t, keep) { var e = $("say"); if (e.textContent !== t) { e.textContent = t; } e.style.opacity = "1"; sayT = gt + (keep ? 6 : 3.5); }
   // The courts: every one won and the one open, the newest, beside the last won; court k is level k + 1. A save from any
   // version, or none, is read field by field as counts, or as a fresh start: the first version's ten courts as the run
@@ -1137,7 +1251,7 @@
   function count(x, d) { x = +x; return isFinite(x) && x >= 0 ? floor(x) : d; }
   function courtsInit(saved) {
     if (!saved || typeof saved !== "object") { saved = {}; }
-    var won = count(saved.won, -1);
+    var won = count(saved.won, -1); TIPS.seen = count(saved.tips, 0) & 127;
     if (won < 0) { won = 0; if (Array.isArray(saved.courts)) { while (saved.courts[won] && saved.courts[won].won === true) { won += 1; } } }
     courts = [];
     for (var k = 0; k <= min(won, 999); k += 1) { courtAdd(); courts[k].won = courts[k].up = k < won; }
@@ -1150,13 +1264,13 @@
     stands.push(athlete(palMe, cc[0], cc[2] + COURT.L - 0.5, 0, true));
   }
   function wonCount() { return courts.length - 1; }   // (every court but the open one; the score)
-  function stateOf() { return { v: 2, won: wonCount(), rally: courts.best }; }
-  function save() { if (courts) { YT.save(stateOf()); } }
+  function stateOf() { return { v: 2, won: wonCount(), rally: courts.best, tips: TIPS.seen }; }
+  function save() { return courts ? YT.save(stateOf()) : Promise.resolve(); }
   // The courts won play on wherever he is, and keep winning (the artist: "Previous courts still automatically play and
   // you win each game as you advance"): a point every four to eight seconds, Mr Plan taking some, never the third.
   function courtsSim(dt) {
     courts.forEach(function (c) {
-      if (!c.up || gt < c.next) { return; }
+      if (!c.up || c.rec || gt < c.next) { return; }   // (a recording keeps its own score)
       c.next = gt + 4 + 4 * rng();
       if (c.them < COURT.WIN - 1 && rng() < 0.3) { c.them += 1; } else { c.you += 1; }
       if (c.you >= COURT.WIN) { c.you = c.them = 0; }
@@ -1179,7 +1293,7 @@
      three quarters at five, 0.95 at ten, and nears the whole without reaching it, so every court is harder than the
      last and none is beyond winning. Each number goes from court one's to the hardest's along it; pb_curve.js plays
      the courts to measure what that makes of them. (stretch: with two or three pearls in play the game runs him to each,
-     so none is lost for want of legs; his stroke at full stretch then goes out as often as this, so a pearl of several is
+     so none is lost for want of legs; while two or more are in play a return of his goes out as often as this, so a pearl of several is
      about as hard to win as a pearl alone: pb_multi.js measures it.) */
   var HARD = { K: 3,
     one:  { wait: 0.42, err: 0.26, T: 1.25, dive: 0.5, lunge: 0.82, flair: 0.14, lob: 0.1, wide: 0.4, deep: 3.6, dink: 0, ace: 0.8, sweep: 1.15, stretch: 0.01 },
@@ -1195,10 +1309,11 @@
     var c = courts[k];
     court.m = { k: k, level: c.level, sk: nemSkill(c.level), you: 0, them: 0, n: 0, phase: "serve", t: gt, pc: null, nc: null, replan: 0,
                 balls: [], tosses: [], served: 0, pts: 0, stops: [], meterOn: false, meterT0: 0, serveOpen: 0, nextId: 1, lastTc: -9,
-                sup: { avail: true, armed: false } };
+                sup: { avail: true, armed: false }, psup: { avail: true }, rec: recNew() };
     superButton();
     var pl = plans[k]; pl.want = null;
     say(STR.match(k + 1, c.level), true);
+    tipDone("court"); tip("serve");
     courtWhere();
   }
   // Behind the baseline, the right of the centre mark on even points and the left on odd, as a server stands.
@@ -1233,7 +1348,7 @@
   }
   function copyBall(b) { return { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz, net: b.net, spin: 0 }; }
   // Where the pearl first comes down (court-world x, z), stepping a copy on.
-  function ballLands(b, k) { var q = copyBall(b); for (var i = 0; i < 300; i += 1) { var at = ballStep(q, k, 1 / 60); if (at) { return { x: at[0], z: at[1] }; } } return null; }
+  function ballLands(b, k) { var q = copyBall(b); for (var i = 0; i < 300; i += 1) { var at = ballStep(q, k, 1 / 60); if (at) { return { x: at[0], z: at[1], t: gt + (i + 1) / 60 }; } } return null; }
   function mayVolley(b, m, z) { return b.rally >= 3 && abs(z - courtAt(m.k)[2]) > COURT.K; }
   // Where an athlete on side (+1 his, -1 Mr Plan's) can meet the pearl b next: the flight stepped ahead on a copy, every
   // 1/90 s for up to 2.4 s; the contacts the rules allow (on his side, coming to him, after its bounce, or on the volley
@@ -1280,15 +1395,19 @@
      it hard into the deep corner, where Mr Plan may not get it at all; past the end it goes long. After each pearl the
      mark sweeps again: up to three pearls in a serve, each a point of its own, played at once, while the serve is open
      (until 1.3 s after the last); then the view is the third person's again. */
-  var SERVE = { SOFT: 0.12, ACE: [0.72, 0.84], LONG: 0.94, MAX: 3, OPEN: 1.3, GAP: 0.34, ON: 0.5 };
+  // (the mark a gold circle of R metres; within two of its radii he is taken onto it, the artist, 28 Oct 2026: "As long
+  // as the user runs within two radius' of the serve spot, they should lock into the location to serve")
+  var SERVE = { SOFT: 0.12, ACE: [0.72, 0.84], LONG: 0.94, MAX: 3, OPEN: 1.3, GAP: 0.34, R: 0.5, ON: 1.0, LEAD: 0.3 };
   function servePeriod(m) { return m.sk.sweep; }   // the sweep, there and back half of it: quicker each court
   function meterAt(m) { var u = (max(0, gt - m.meterT0) / servePeriod(m)) % 2; return u < 1 ? u : 2 - u; }
-  function aceChance(m) { return m.sk.ace; }   // (an opportunity, not a gift: four in five on court one, less each court)
+  function aceChance(m) { return m.sk.ace; }   // (an opportunity, not a gift: four in five on court one, a third by court ten)
   function serveTap(m) {
-    if (m.served + m.tosses.length >= SERVE.MAX || (m.pc && m.phase === "rally")) { return; }
+    var sp = serveSpot();
+    if (m.served + m.tosses.length >= SERVE.MAX || (m.pc && m.phase === "rally") || hypot(me.x - sp[0], me.z - sp[1]) > SERVE.ON) { return; }   // (only from the mark)
+    tipDone("bar");   // (he has served)
     var u = meterAt(m), last = m.tosses.length ? m.tosses[m.tosses.length - 1].tc : m.lastTc || -9, tc = max(gt + 0.3, last + SERVE.GAP);
-    m.tosses.push({ u: u, tc: tc, t0: tc - 0.3 });
-    m.meterT0 = gt; m.stops.push(u);
+    m.tosses.push({ u: u, tc: tc, t0: tc - 0.3, yaw: view.yaw });   // (aimed where he looked at the tap)
+    m.meterT0 = gt + SERVE.LEAD; m.stops.push(u); m.serveOpen = max(m.serveOpen, gt + SERVE.OPEN);   // (the serve open from the tap)
     athSwing(me, { tc: tc, p: serveFrom(), kind: "serve", aim: [0, 0, -1] }, gt);
     if (m.phase === "serve") { m.phase = "toss"; }
   }
@@ -1301,7 +1420,7 @@
     else if (u >= SERVE.LONG) { depth = COURT.L + 0.5 + 1.4 * (u - SERVE.LONG) / (1 - SERVE.LONG); Tf = 0.95; }
     else if (u >= SERVE.ACE[0] && u < SERVE.ACE[1]) { depth = COURT.L - 0.35; Tf = 0.8; ace = true; }
     else { var k2 = (u - SERVE.SOFT) / (SERVE.LONG - SERVE.SOFT); depth = COURT.K + 0.6 + k2 * (COURT.L - COURT.K - 1.0); Tf = 1.45 - 0.55 * k2; }
-    var lz = b.z - cc[2], lx = b.x - cc[0], tz = -depth, tx = lx + Math.tan(view.yaw) * (lz - tz);
+    var lz = b.z - cc[2], lx = b.x - cc[0], tz = -depth, tx = lx + Math.tan(toss.yaw != null ? toss.yaw : view.yaw) * (lz - tz);
     tx = ace ? side * (COURT.HW - 0.35) : side * clampV(side * tx, 0.3, COURT.HW - 0.3);
     shoot(b, m.k, tx, tz, Tf);
     fxBurst([b.x, b.y, b.z], "me", ace);
@@ -1329,6 +1448,7 @@
   function matchStep(dt, c) {
     var m = court.m, cc = courtAt(m.k), pl = plans[m.k], fire = c.fire;
     if (m.phase === "super") { superStep(m, dt); return; }
+    if (m.phase === "plansuper") { psupStep(m, dt, fire); return; }
     if (m.sup.armed && (m.phase === "serve" || m.phase === "toss" || m.phase === "rally") && superStart(m)) { return; }
     if (m.phase === "serve") {
       // (he runs to his serve himself, to the gold mark (the artist, 28 Oct 2026: "Get rid of the serve button and just
@@ -1337,17 +1457,18 @@
       var sp = serveSpot();
       pl.want = { to: [cc[0], cc[2] - COURT.L - 0.6] }; pl.faceTo = PI;
       if (!m.meterOn && hypot(me.x - sp[0], me.z - sp[1]) < SERVE.ON) {
-        m.meterOn = true; m.meterT0 = gt + 0.35; view.yaw = 0; athSplit(me, gt);
+        m.meterOn = true; m.meterT0 = gt + 0.35; athSplit(me, gt); tipDone("serve"); tip("bar");
         fxRing([sp[0], 0.03, sp[1]], "me");
       }
-      if (m.meterOn) { me.want = { to: sp, k: 0.5 }; me.faceTo = m.n % 2 ? 0.12 : -0.12; if (fire && gt >= m.meterT0) { serveTap(m); } }
+      if (m.meterOn) { me.want = { to: sp, k: 0.8 }; me.faceTo = m.n % 2 ? 0.12 : -0.12; if (fire && gt >= m.meterT0) { serveTap(m); } }
     } else if (m.phase === "toss" || m.phase === "rally") {
-      if (m.meterOn && fire && gt < m.serveOpen) { serveTap(m); }
+      if (m.meterOn && fire && gt < m.serveOpen && gt >= m.meterT0) { serveTap(m); }   // (not in the sweep's lead-in: a double tap is one pearl)
       if (m.tosses.length) { me.want = { vel: [0, 0] }; }
     }
     // the pearls tossed and struck, each at its stroke's contact
     while (m.tosses.length && gt >= m.tosses[0].tc) { serveBall(m, m.tosses.shift()); if (m.phase === "toss") { m.phase = "rally"; } }
-    if (m.meterOn && m.phase === "rally" && !m.tosses.length && (gt >= m.serveOpen || m.served >= SERVE.MAX)) { m.meterOn = false; }
+    var sp1 = serveSpot();
+    if (m.meterOn && m.phase === "rally" && !m.tosses.length && (gt >= m.serveOpen || m.served >= SERVE.MAX || hypot(me.x - sp1[0], me.z - sp1[1]) > SERVE.ON)) { m.meterOn = false; }   // (off the mark, the serve is over)
     // every pearl: its flight, its bounces, its points (rolling on a while when dead)
     m.balls.forEach(function (b) {
       var at = ballStep(b, m.k, dt);
@@ -1366,8 +1487,9 @@
     } else if (m.phase === "point" && gt - m.t >= 1.4) {
       m.balls = [];
       if (m.you >= COURT.WIN) { levelWon(); return; }
-      if (m.them >= COURT.WIN) { say(STR.planTakes(m.them, m.you), true); m.you = m.them = 0; m.sup = { avail: true, armed: false }; superButton(); }   // (a new game: a new super return)
+      if (m.them >= COURT.WIN) { say(STR.planTakes(m.them, m.you), true); m.you = m.them = 0; m.sup = { avail: true, armed: m.sup.armed }; m.psup = { avail: true }; m.rec = recNew(); superButton(); }   // (a new game: a new super return)
       m.n += max(1, m.pts); m.pts = 0; m.served = 0; m.stops = []; m.phase = "serve"; courtWhere();
+      if (m.sup.avail) { tip("super"); }   // (after the first point: the super, for the next)
     }
     if (m.phase === "rally" || m.phase === "point") {
       // between strokes Mr Plan comes back towards the middle of his baseline, a little inside it; he faces the pearl
@@ -1422,7 +1544,7 @@
       q.last = "you"; q.bounces = 0; q.serve = false; q.rally += 1; q.nemAt = gt + m.sk.wait; q.mark = null;
       var fl = rng(); q.flair = fl < m.sk.flair ? "dive" : fl < 2 * m.sk.flair ? "lunge" : null;
     };
-    hit(b, pc.aimAt);
+    hit(b, pc.aimAt); tipDone("rally");
     doubles(m, b, 1).forEach(function (q) { hit(q, aimPoint(m, { p: [q.x, q.y, q.z] })); });
     athSplit(plans[m.k], gt);
   }
@@ -1442,9 +1564,18 @@
     });
   }
   // Where his return goes: the view's way, deep, as the rocket world aimed it (the far baseline less up to 1.6 m).
+  // (and then, the artist, 28 Oct 2026: "When you are returning Mr. Plan's hits the ability to toggle with your right
+  // thumb the direction in which you look should be disabled and you should just be able to move around with your left
+  // thumb": in a rally the view is held behind him facing the net, and his returns go for the open court, away from
+  // where Mr Plan stands, deep)
   function aimPoint(m, c) {
-    var cc = courtAt(m.k), lz = c.p[2] - cc[2], lx = c.p[0] - cc[0], dz = -(COURT.L - 0.6 - 1.6 * rng());
-    return [cc[0] + clampV(lx + Math.tan(view.yaw) * (lz - dz), -COURT.HW + 0.3, COURT.HW - 0.3), cc[2] + dz];
+    var cc = courtAt(m.k), plx = plans[m.k].x - cc[0], dz = -(COURT.L - 0.6 - 1.6 * rng());
+    return [cc[0] + clampV(-(plx >= 0 ? 1 : -1) * (0.5 + 1.3 * rng()), -COURT.HW + 0.3, COURT.HW - 0.3), cc[2] + dz];
+  }
+  // whether the view may be turned: walking, or at the serve and while it is open (to aim each pearl); never once a pearl
+  // comes back to him
+  function canLook() {   // (and while the serve is open, to aim the next pearl, until a pearl comes back to him)
+    var m = court.m; return !m || m.phase === "serve" || (m.meterOn && (m.phase === "toss" || m.phase === "rally") && !m.balls.some(function (b) { return !b.dead && b.last === "them"; }));
   }
   // Mr Plan's: after his wait he reads the pearls, runs to where he will meet the soonest he can (his legs' reach
   // added), and strokes: away from Mr Pearl, deeper and wider as his level is, a dink into the kitchen, a lob; now and
@@ -1463,7 +1594,7 @@
       if (best) {
         // (stand off from the contact by most of his reach, the pearl on his right: his right is -x, facing +z)
         if (!m.nc) { pl.want = { to: [best.p[0] + 0.55, best.p[2] - 0.35] }; }
-        if (best.t <= leadOf(best, 0.28) + 0.02) { planPlan(m, pl, best); }
+        if (best.t <= leadOf(best, 0.28) + 0.02) { if (psupWill(m, best)) { psupStart(m, best.ball); return; } planPlan(m, pl, best); }
       }
     }
     if (m.nc && multi) { pl.want = { to: [m.nc.p[0] + 0.55, m.nc.p[2] - 0.35] }; }
@@ -1494,20 +1625,80 @@
       shoot(q, m.k, sh[0], sh[1], sh[2]);
       fxBurst([q.x, q.y, q.z], "plan", false);
       q.last = "them"; q.bounces = 0; q.serve = false; q.rally += 1;
-      var L0 = ballLands(q, m.k); q.mark = L0 && { x: L0.x, z: L0.z };
+      var L0 = ballLands(q, m.k); q.mark = L0 && { x: L0.x, z: L0.z, t: L0.t };
     };
-    hit(nb, nc.shot);
+    hit(nb, nc.shot); tip("rally");
     doubles(m, nb, -1).forEach(function (q) { if (!q.ace) { hit(q, [clampV(-nc.shot[0] * 0.6 + (rng() - 0.5), -COURT.HW + 0.3, COURT.HW - 0.3), clampV(nc.shot[1] - 1 + 2 * rng(), COURT.K + 0.5, COURT.L - 0.3), nc.shot[2] + 0.1]); } });
     athSplit(me, gt);
   }
+  /* -- the matches won, played again (the artist, 28 Oct 2026: "Make sure that the games that are repeating are
+     repeating the actual motions of the game in which you won"). While he plays a match, twenty times a second: all a
+     pose is made of, his and Mr Plan's (place, turn, lean, crouch, stride, speed, and the stroke, the dive or the leap
+     each is in, with its own clock), the pearls in play, the score, and every burst; the last 90 seconds kept. A court
+     won plays that again, over and over with a breath between, his stand-in in his steps and its Mr Plan in his, the
+     pearls on their own ways. The twelve courts won last keep theirs (some 400 KB each); an older one, or one won
+     before this version, rallies as before. */
+  var REC = { HZ: 20, SEC: 90, KEEP: 12, S: 55 }, AF = ["x", "y", "z", "yaw", "drop", "wide", "leanF", "leanS", "phase", "speed", "vx", "vz", "kick", "skid", "splitT"];
+  function recNew() { var n = REC.HZ * REC.SEC; return { f: new Float32Array(n * REC.S), r: new Array(n * 6), n: 0, cap: n, t0: gt, last: -1e9, fx: [] }; }
+  function recPut(rec, m) {
+    if (gt - rec.last < 1 / REC.HZ - 1e-4) { return; }
+    rec.last = gt;
+    var i = rec.n % rec.cap, o = i * REC.S, f = rec.f;
+    f[o] = gt - rec.t0; f[o + 1] = m.you; f[o + 2] = m.them;
+    [me, plans[m.k]].forEach(function (a, j) {
+      var b = o + 3 + j * 17;
+      AF.forEach(function (key, q) { f[b + q] = key === "splitT" ? (a.splitT != null ? a.splitT - rec.t0 : -1e4) : (a[key] || 0); });
+      f[b + 15] = a.air ? 1 : 0; f[b + 16] = a.hop ? 1 : 0;
+      rec.r[i * 6 + j * 3] = a.move; rec.r[i * 6 + j * 3 + 1] = a.celeb; rec.r[i * 6 + j * 3 + 2] = a.spin;
+    });
+    for (var q = 0; q < 3; q += 1) { f[o + 37 + q * 6 + 4] = 0; }
+    m.balls.forEach(function (b) { if (b.dead && gt - b.deadT > 0.3) { return; } var c = o + 37 + (b.id % 3) * 6; f[c] = b.x; f[c + 1] = b.y; f[c + 2] = b.z; f[c + 3] = b.spin || 0; f[c + 4] = 1; f[c + 5] = b.id; });
+    rec.n += 1;
+  }
+  // a court won takes the match's recording (in its order, oldest first), and only the twelve last won keep one
+  function recKeep(k, rec) {
+    if (!rec || rec.n < 2) { return; }
+    var count = min(rec.n, rec.cap), start = rec.n > rec.cap ? rec.n % rec.cap : 0, first = rec.f[start * REC.S];
+    courts[k].rec = { f: rec.f, r: rec.r, cap: rec.cap, start: start, count: count, t0: rec.t0, first: first,
+                      dur: rec.f[((start + count - 1) % rec.cap) * REC.S] - first, fx: rec.fx.filter(function (e) { return e.t >= first; }), prev: -1 };
+    var kept = courts.filter(function (c) { return c.rec; });
+    while (kept.length > REC.KEEP) { kept.shift().rec = null; }
+  }
+  // a won court, at its moment in the loop: its two athletes set as they were, its pearls, its score, its bursts
+  function replayStep(cv, k) {
+    var R = cv.rec, S = REC.S, st = stands[k], pl = plans[k], rt = max(0, (gt - cv.t0) % (R.dur + 2)), tt = min(rt, R.dur);
+    var ix = function (i) { return (R.start + i) % R.cap; }, T = function (i) { return R.f[ix(i) * S] - R.first; };
+    var i = clampV(floor(tt * REC.HZ), 0, R.count - 2);
+    while (i > 0 && T(i) > tt) { i -= 1; } while (i < R.count - 2 && T(i + 1) <= tt) { i += 1; }
+    var o0 = ix(i) * S, o1 = ix(i + 1) * S, t0 = T(i), t1 = T(i + 1), u = t1 > t0 ? clampV((tt - t0) / (t1 - t0), 0, 1) : 0, f = R.f;
+    [st, pl].forEach(function (a, j) {
+      var b0 = o0 + 3 + j * 17, b1 = o1 + 3 + j * 17;
+      AF.forEach(function (key, q) { var x0 = f[b0 + q], x1 = f[b1 + q]; a[key] = key === "yaw" ? x0 + angle(x1 - x0) * u : key === "splitT" ? R.t0 + x0 : x0 + (x1 - x0) * u; });
+      a.air = f[b0 + 15] > 0.5; a.hop = f[b0 + 16] > 0.5; a.stepL = clampV(0.3 + 0.16 * a.speed, 0.3, 2.3);
+      var ri = ix(i) * 6 + j * 3; a.move = R.r[ri]; a.celeb = R.r[ri + 1]; a.spin = R.r[ri + 2];
+      a.replayT = R.t0 + f[o0] + (f[o1] - f[o0]) * u;
+    });
+    cv.rp = [];
+    for (var q = 0; q < 3; q += 1) {
+      var c0 = o0 + 37 + q * 6, c1 = o1 + 37 + q * 6; if (f[c0 + 4] < 0.5) { continue; }
+      var w = f[c1 + 4] > 0.5 && f[c1 + 5] === f[c0 + 5] ? u : 0;
+      cv.rp.push([[f[c0] + (f[c1] - f[c0]) * w, f[c0 + 1] + (f[c1 + 1] - f[c0 + 1]) * w, f[c0 + 2] + (f[c1 + 2] - f[c0 + 2]) * w], f[c0 + 3]]);
+    }
+    cv.you = f[o0 + 1]; cv.them = f[o0 + 2];
+    // (the bursts, as they burst then; a new loop starts them over)
+    var at = R.first + tt; if (rt < R.prev) { R.prev = -1; }
+    if (abs(courtAt(k)[0] - cur.eye[0]) < 60) { replaying = true; R.fx.forEach(function (e) { if (e.t > R.first + R.prev && e.t <= at) { fxBurst(e.p.slice(), e.who, e.big); } }); replaying = false; }
+    R.prev = tt;
+  }
   function levelWon() {
     var m = court.m, c = courts[m.k];
+    recKeep(m.k, m.rec);
     c.won = true; c.up = true; c.you = c.them = 0; c.t0 = gt; c.next = gt + 4; c.i = -1;
     court.m = null; court.told[m.k + "u"] = 1;
     stands[m.k].x = courtAt(m.k)[0] + 1.5; stands[m.k].z = COURT.L + 0.5;   // (his stand-in comes on behind him)
     if (m.k === courts.length - 1) { courtAdd(); }   // (the next court appears beside it)
     say(STR.won(m.k, m.you, m.them), true);
-    save(); YT.score(wonCount()); courtWhere();   // (saved first: the best sent must be the save's)
+    var best = wonCount(); save().then(function () { YT.score(best); }, YT.warn); courtWhere();   // (sent once saved: the best sent must be the save's)
   }
   // Between matches: walking, and onto a court its match (if it is open and not playing by itself).
   function courtStep(dt, c) {
@@ -1537,6 +1728,7 @@
       var cc = courtAt(k), pl = plans[k], st = stands[k];
       if (m && m.k === k) { return; }
       if (!cv.up) { pl.want = { to: [cc[0], cc[2] - COURT.L - 0.6] }; pl.faceTo = PI; return; }
+      if (cv.rec) { replayStep(cv, k); return; }
       // (shot i is struck at t0 + 1.3 i, the even ones by the stand-in from his baseline, the odd by Mr Plan from his;
       // when one is struck, the other splits, runs to where the next is met and winds up to meet it then)
       var u = (gt - cv.t0) / 1.3, i = floor(u), ax = function (j) { return cc[0] + Math.sin(j * 1.7 + k) * 1.6; };
@@ -1554,16 +1746,24 @@
     var c = controls(dt);
     courtStep(dt, c);
     athStep(me, dt, gt);
-    for (var k = 0; k < courts.length; k += 1) { athStep(plans[k], dt, gt); if (courts[k].up) { athStep(stands[k], dt, gt); } }
+    for (var k = 0; k < courts.length; k += 1) { if (courts[k].up && courts[k].rec) { continue; } athStep(plans[k], dt, gt); if (courts[k].up) { athStep(stands[k], dt, gt); } }   // (a recording sets its two itself)
+    if (court.m && court.m.rec) { recPut(court.m.rec, court.m); }
     // dust where a skid plants its foot, and where a dive lands
     [me].concat(plans).forEach(function (a) {
       if (a.skid > 0.5 && dust.length < 60 && rng() < 0.7) { dust.push({ x: a.x + (rng() - 0.5) * 0.3, y: 0.05, z: a.z + (rng() - 0.5) * 0.3, vx: -a.vx * 0.15 + (rng() - 0.5), vy: 0.6 + rng(), vz: -a.vz * 0.15 + (rng() - 0.5), t: gt }); }
     });
     dust = dust.filter(function (d) { d.vy -= 3 * dt; d.x += d.vx * dt; d.y = max(0.02, d.y + d.vy * dt); d.z += d.vz * dt; return gt - d.t < 0.7; });
     fxStep(dt);
+    // (the tips' own moments: he has moved; he walks about off the courts; two pearls or more in play)
+    if (TIPS.from && hypot(me.x - TIPS.from[0], me.z - TIPS.from[1]) > 1.5) { tipDone("move"); TIPS.from = null; }
+    if (!court.m && !TIPS.from && gt > 6) { tip("court"); }
+    if (court.m && live(court.m).length > 1) { tip("multi"); }
+    tipStep();
     input.fire = false;   // (a tap is spent on the frame that reads it)
     // (the words step aside while the serve's bar runs: the bar carries its own, and they would cover it on a short screen)
-    var sayOn = gt <= sayT && !(court.m && court.m.meterOn) ? "1" : "0"; if ($("say").style.opacity !== sayOn) { $("say").style.opacity = sayOn; }
+    var cm = court.m, bar = cm && (cm.meterOn || (cm.phase === "plansuper" && cm.psup.struck && !cm.psup.tapped));
+    var sayOn = gt <= sayT && !bar ? "1" : "0"; if ($("say").style.opacity !== sayOn) { $("say").style.opacity = sayOn; }
+    if (helpOn) { var hOn = bar && !(TIPS.cur && TIPS.cur.key === "bar") ? "0" : "1"; if ($("help").style.opacity !== hOn) { $("help").style.opacity = hOn; } }
   }
 
   /* ---- the views and the hands ----------------------------------------------------------------------------------
@@ -1600,18 +1800,47 @@
     return [f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0];
   }
   function clampPitch(p) { return clampV(p, TP.DOWN, TP.UP); }
+  // Steadier (the artist, 28 Oct 2026: "The camera can get a bit jittery when you're moving so quickly back-and-forth,
+  // can you stabilize the perspective 50% more when moving?"; pb_measure.js measures it, his eye through jukes, a
+  // shuffle and a sprint). A window, as the cameras of side-scrolling games keep one: the view stands on a place of
+  // its own on the ground, which does not move while he is in the middle of the picture (CAM.z0 of the half width at
+  // his distance across the view, along it CAM.along[0] metres); toward the window's edge it moves with him, at a
+  // share of his speed that grows smoothly to the whole of it there (CAM.z1), never running on past him (his own
+  // following of a following had swung past him at each turn: that swing was the jitter); its own speed eased over
+  // CAM.lag seconds, so quick steps back and forth average out and it never stops dead at a turn; a sprint outruns the
+  // easing, and at CAM.hold of the window it holds him there; when he slows it drifts home.
+  var CAM = { z0: 0.45, z1: 0.75, home: 0.9, along: [0.7, 1.5], lag: 0.3, hold: 1.15 };
   function camera(dt) {
+    var cm = court.m, lead = cm && cm.meterOn && cm.phase === "serve" && gt < cm.meterT0;   // (on the mark: the view swings round to the net)
+    if (!canLook() || lead) { var ke = min(1, dt * (lead ? 12 : 4)); view.yaw += angle(0 - view.yaw) * ke; view.pitch += (REST - view.pitch) * ke; }   // (in a rally: behind him, facing across)
     var hd = [me.x, body.head.centre[1] + min(me.y, 0.6) * 0.5, me.z], f = lookDir(view.yaw, view.pitch - AIM);
-    var tp = [hd[0] - f[0] * TP.HEAD, hd[1] - f[1] * TP.HEAD, hd[2] - f[2] * TP.HEAD];
+    if (!view.s) { view.s = hd.slice(); }
+    var r = [Math.cos(view.yaw), 0, Math.sin(view.yaw)], fw = [Math.sin(view.yaw), 0, -Math.cos(view.yaw)];
+    var hw = TP.D * T35 * canvas.clientWidth / max(1, canvas.clientHeight);   // (the half width at his distance)
+    if (!view.sv) { view.sv = [0, 0]; }
+    var axis = function (a, z0, z1, j) {
+      var c = view.s[0] * a[0] + view.s[2] * a[2], h = hd[0] * a[0] + hd[2] * a[2], vh = me.vx * a[0] + me.vz * a[2], o = h - c, sg = o < 0 ? -1 : 1;
+      var v = (vh * sg > 0 ? vh * smooth((abs(o) - z0) / (z1 - z0)) : 0) + o * CAM.home * (1 - smooth(abs(vh) / 2.5));
+      // (its own speed eased over CAM.lag seconds: no stop dead at his turn)
+      view.sv[j] = CAM.lag > 0 ? view.sv[j] + (v - view.sv[j]) * min(1, dt / CAM.lag) : v; c += view.sv[j] * dt;
+      if (abs(h - c) > CAM.hold * z1) { c = h - sg * CAM.hold * z1; }   // (a sprint, a blink, a jump: the window goes with him)
+      return c;
+    };
+    var cr = axis(r, CAM.z0 * hw, CAM.z1 * hw, 0), cf = axis(fw, CAM.along[0], CAM.along[1], 1);
+    view.s = [cr * r[0] + cf * fw[0], hd[1], cr * r[2] + cf * fw[2]];
+    var tp = [view.s[0] - f[0] * TP.HEAD, hd[1] - f[1] * TP.HEAD, view.s[2] - f[2] * TP.HEAD];
     if (!view.e) { view.e = tp.slice(); }
-    for (var i = 0; i < 3; i += 1) { var o = { x: view.e[i], xv: view.ev[i] }; spring(o, "x", tp[i], dt, 11); view.e[i] = o.x; view.ev[i] = o.xv; }
+    // (on the ground the window is the steadying; the eye goes with it, and springs only up and down, his hops)
+    view.e[0] = tp[0]; view.e[2] = tp[2]; view.ev[0] = view.ev[2] = 0;
+    var o2 = { x: view.e[1], xv: view.ev[1] }; spring(o2, "x", tp[1], dt, 11); view.e[1] = o2.x; view.ev[1] = o2.xv;
     return view.e;
   }
   // The serve's bar, in characters: soft (a fault in the kitchen), softer to harder, the gold ace zone,
   // hard, long; the mark (◎) sweeping it; the pearls of this serve, served (◎) and still to serve (○).
-  function meterDraw(c, m, W, H, glyph) {
-    // (in the dark over the net, below the HUD's lines however they wrap)
-    var N = 25, cw = min(13, (W - 48) / N), x0 = W / 2 - N * cw / 2, y0 = max(H * 0.37, hudLow + 56), u = meterAt(m), ramp = "-=+*", i;
+  function meterDraw(c, m, W, H, glyph, cu) {
+    // (in the dark over the net, below the HUD's lines however they wrap; cu: the counter to Mr Plan's super, its own
+    // mark, its own words, no pearls to count)
+    var N = 25, cw = min(13, (W - 48) / N), x0 = W / 2 - N * cw / 2, y0 = max(H * 0.37, hudLow + 56), u = cu != null ? cu : meterAt(m), ramp = "-=+*", i;
     for (i = 0; i < N; i += 1) {
       var v = (i + 0.5) / N, ch, col = "#f2efe8";
       if (v < SERVE.SOFT) { ch = "."; col = "#8a8f9a"; }
@@ -1622,12 +1851,13 @@
       glyph(ch, x0 + (i + 0.5) * cw, y0, 14, col);
     }
     glyph("◎", x0 + u * N * cw, y0 - 16, 18, "#f3c98b");
-    m.stops.forEach(function (v) { glyph("·", x0 + v * N * cw, y0 + 14, 14, "#f2efe8"); });
+    if (cu == null) { m.stops.forEach(function (v) { glyph("·", x0 + v * N * cw, y0 + 14, 14, "#f2efe8"); }); }   // (the serve's own, not the counter's)
     c.font = "500 10px ui-monospace, SFMono-Regular, Menlo, monospace";
-    glyph("soft", x0 + 2 * cw, y0 + 30, 10); glyph("ace", x0 + (SERVE.ACE[0] + SERVE.ACE[1]) / 2 * N * cw, y0 + 30, 10, "#f3c98b"); glyph("long", x0 + (N - 1.5) * cw, y0 + 30, 10, "#e07a5f");
-    for (i = 0; i < SERVE.MAX; i += 1) { glyph(i < m.served + m.tosses.length ? "◎" : "○", W / 2 + (i - 1) * 22, y0 - 40, 16, i < m.served + m.tosses.length ? "#f3c98b" : "#f2efe8"); }
-    var hs = min(10, (W - 24) / STR.meterHint.length / 0.6); glyph(STR.meterHint, W / 2, y0 + 48, hs);
-    hudBox.meter = { x: min(x0, W / 2 - STR.meterHint.length * hs * 0.31), y: y0 - 50, w: max(N * cw, STR.meterHint.length * hs * 0.62), h: 106 };
+    // (the zone's word: "ace" on the serve's bar, "return" on the counter to Mr Plan's super)
+    glyph("soft", x0 + 2 * cw, y0 + 30, 10); glyph(cu != null ? "return" : "ace", x0 + (SERVE.ACE[0] + SERVE.ACE[1]) / 2 * N * cw, y0 + 30, 10, "#f3c98b"); glyph("long", x0 + (N - 1.5) * cw, y0 + 30, 10, "#e07a5f");
+    if (cu == null) { for (i = 0; i < SERVE.MAX; i += 1) { glyph(i < m.served + m.tosses.length ? "◎" : "○", W / 2 + (i - 1) * 22, y0 - 40, 16, i < m.served + m.tosses.length ? "#f3c98b" : "#f2efe8"); } }
+    var hint = cu != null ? (m.sup.avail ? STR.counterHintOr : STR.counterHint) : STR.meterHint, hs = min(10, (W - 24) / hint.length / 0.6); glyph(hint, W / 2, y0 + 48, hs, cu != null ? "#9ff3ff" : null);
+    hudBox.meter = { x: min(x0, W / 2 - hint.length * hs * 0.31), y: y0 - 50, w: max(N * cw, hint.length * hs * 0.62), h: 106 };
   }
   /* -- the super return: once a game (see below, "the super return") -- */
   function superButton() {
@@ -1640,8 +1870,9 @@
     var m = court.m;
     if (!m || m.phase === "super" || m.sup.armed) { return; }
     if (!m.sup.avail) { say(STR.superUsed); return; }
-    m.sup.armed = true;
+    m.sup.armed = true; tipDone("super");
     if (m.phase === "point") { say(STR.superNext); }
+    if (m.phase === "plansuper") { say(STR.superCounter, true); }   // (it meets his: see psupStep)
     superButton();
   }
   /* -- the super return (the artist, 28 Oct 2026: "Mr Pearl also gets one super return each game that is a spectacular
@@ -1655,9 +1886,9 @@
      far corner, faster than any stroke, a comet of gold; Mr Plan dives for it and does not get there; he lands in a ring
      of dust. The camera rises with him, at his right shoulder, and follows the pearl down. */
   var SUP = { T: 2.45, GATHER: 0.42, UP: 4.0, FLY: 0.4 };
-  function superStart(m) {
+  function superStart(m, only, why) {
     var cc = courtAt(m.k), pl = plans[m.k], lv = live(m), b = null, t0 = gt;
-    b = lv.filter(function (q) { return q.last === "them"; }).sort(function (x, y) { return abs(x.z - me.z) - abs(y.z - me.z); })[0] || lv.filter(function (q) { return q.last === "you"; }).sort(function (x, y) { return (y.id || 0) - (x.id || 0); })[0] || null;
+    b = only || lv.filter(function (q) { return q.last === "them"; }).sort(function (x, y) { return abs(x.z - me.z) - abs(y.z - me.z); })[0] || lv.filter(function (q) { return q.last === "you"; }).sort(function (x, y) { return (y.id || 0) - (x.id || 0); })[0] || null;
     if (!b) {
       // (at his serve, or between pearls: one from his hand)
       var s0 = serveFrom();
@@ -1677,7 +1908,7 @@
     me.vx = me.vz = 0; me.celeb = null; me.spin = null;
     pl.want = { vel: [0, 0] }; pl.faceTo = Math.atan2(me.x - pl.x, -(me.z - pl.z)); pl.move = null;
     b.super = true; b.mark = null; b.bounces = 0; b.net = false;
-    m.sup = { avail: false, armed: false, t0: t0, apex: apex, ball: b, p0: [b.x, b.y, b.z], v0: [b.vx * 0.4, b.vy * 0.4 + 2, b.vz * 0.4], C: C, shot: [tx, tz], struck: false, won: false, prev: m.phase };
+    m.sup = { avail: false, armed: false, t0: t0, apex: apex, ball: b, p0: [b.x, b.y, b.z], v0: [b.vx * 0.4, b.vy * 0.4 + 2, b.vz * 0.4], C: C, shot: [tx, tz], struck: false, won: false, prev: m.phase, why: why || STR.superWon };
     m.phase = "super"; ascMod = { expo: 1, glow: ASC.glow };
     superButton(); courtWhere();
     return true;
@@ -1719,16 +1950,94 @@
       if (fxR() < 0.95) { fxAdd([b.x, b.y, b.z], [-b.vx * 0.05, -b.vy * 0.05, -b.vz * 0.05], 0.4, pick(["*", "+", "·"]), pick(gold), 0.16, 0, false); }   // the comet
       if (at) {
         fxBurst([at[0], 0.1, at[1]], "me", true); fxRing([at[0], 0.03, at[1]], "me");
-        sp.won = true; pointBall(m, b, true, STR.superWon);
+        sp.won = true; pointBall(m, b, true, sp.why);
       }
     }
     if (u >= SUP.T) {
-      if (!b.dead) { pointBall(m, b, true, STR.superWon); }
+      if (!b.dead) { pointBall(m, b, true, sp.why); }
       ascMod = null;
       m.phase = live(m).length ? "rally" : "point"; m.t = gt;
       if (m.phase === "rally") { m.meterOn = false; }
       superButton(); courtWhere();
     }
+  }
+  /* -- Mr Plan's super return (the artist, 28 Oct 2026: "Mr. Plan should also have a super return, however, for him you
+     have a chance to return his super return and it is the same moving bar that we have to choose where to serve, but
+     you have to land in that ace zone to return Mr. Plan's super return"). Once a game, at a stroke he is to make (more
+     likely each court, three times as likely when Mr Pearl is a point from the game): his negative of Mr Pearl's, the
+     gathering, the four-metre windmill leap, the strike at the top in cyan, the pearl driven at Mr Pearl's far corner.
+     Then it comes in slow motion, and the serve's bar runs: a tap stops it; in the gold ace zone, Mr Pearl, the
+     hologram, is at the pearl at once and sends it back (the rally plays on); anywhere else, or no tap before it lands,
+     it is past him and the point is Mr Plan's. */
+  var PSUP = { SLOW: 0.28, FLY: 0.55, P0: 0.04, P1: 0.16 };
+  function psupWill(m, c) {
+    if (!m.psup || !m.psup.avail || m.phase !== "rally" || m.tosses.length || c.ball.ace || c.blink || c.ball.rally < 3) { return false; }   // (never his return of serve: its counter would be a volley of the third shot, against the two-bounce rule)
+    var p = (PSUP.P0 + (PSUP.P1 - PSUP.P0) * hardness(m.level)) * (m.you === COURT.WIN - 1 ? 3 : 1);
+    return rng() < min(0.6, p);
+  }
+  function psupStart(m, b) {
+    var cc = courtAt(m.k), pl = plans[m.k], t0 = gt, tUp = Math.sqrt(2 * SUP.UP / CAPS.g), apex = t0 + SUP.GATHER + tUp;
+    // (where his guitar meets it at the top: his frame turned to face Mr Pearl, so his right is -x and ahead is +z)
+    var d = norm([-0.15, 0.8, 0.45]), C = [pl.x - RIG.sR[0] + d[0] * RIG.reach, SUP.UP + RIG.sR[1] + d[1] * RIG.reach - 0.04, pl.z - RIG.sR[2] + d[2] * RIG.reach];
+    var tx = (me.x - cc[0] > 0 ? -1 : 1) * (COURT.HW - 0.45), tz = COURT.L - 0.5;
+    pl.move = { kind: "overhead", reach: "super", t0: t0, sw: apex - 0.32, tc: apex, p: C, aim: norm([tx + cc[0] - C[0], -0.6, tz + cc[2] - C[2]]), fore: true,
+                own: [t0, t0 + SUP.T], end: t0 + SUP.T, up: t0 + SUP.GATHER, vy: CAPS.g * tUp, lockYaw: true, yawTo: PI,
+                drop: function (g) { return g < t0 + SUP.GATHER ? 0.12 + 0.3 * smooth((g - t0) / SUP.GATHER) : pl.air ? 0.04 : 0.36 - 0.24 * smooth((g - t0 - SUP.GATHER - 2 * tUp) / 0.3); } };
+    pl.vx = pl.vz = 0; pl.celeb = null; pl.spin = null;
+    m.pc = m.nc = null; b.mark = null; b.net = false; m.meterOn = false; m.tosses = [];   // (the serve is over: as the super return ends it)
+    m.psup = { avail: false, t0: t0, apex: apex, ball: b, p0: [b.x, b.y, b.z], v0: [b.vx * 0.4, b.vy * 0.4 + 2, b.vz * 0.4], C: C, shot: [tx, tz], struck: false, tapped: false, ok: false };
+    m.phase = "plansuper"; ascMod = { expo: 1, glow: ASC.glow };
+    say(m.sup.avail ? STR.planSuperOr : STR.planSuper, true); superButton(); courtWhere();
+  }
+  function psupStep(m, dt, fire) {
+    var sp = m.psup, u = gt - sp.t0, b = sp.ball, cc = courtAt(m.k), pl = plans[m.k], ice = ["#e8fdff", "#9ff3ff", "#5ce1e6", "#b39cff"];
+    var dim = smooth(u / 0.3), hit = sp.struck ? max(0, 1 - (gt - sp.hitT) / 0.5) : 0;
+    ascMod = { expo: 1 - 0.15 * dim + 0.2 * hit, glow: ASC.glow + 0.2 * dim + 0.4 * hit };
+    var pc = pl.pose && pl.pose.paddleC;
+    if (!sp.struck) {
+      if (u < SUP.GATHER && pc && fxR() < 0.9) { var a = fxR() * 2 * PI, e = fxR() * 2 - 1, r = Math.sqrt(1 - e * e); fxAdd(pc.slice(), [r * Math.cos(a) * 3, e * 3, r * Math.sin(a) * 3], 0.45, pick(["·", "◇", "*"]), pick(ice), 0.13, 0, false); }
+      if (u >= SUP.GATHER && pc) { fxAdd(pc.slice(), [0, 0, 0], 0.5, pick(["◇", "◆", "+"]), pick(ice), 0.16, 0, false); }   // (his windmill's ring, cyan)
+      var k = clampV(u / (sp.apex - sp.t0), 0, 1), k2 = k * k, k3 = k2 * k, h00 = 2 * k3 - 3 * k2 + 1, h10 = k3 - 2 * k2 + k, h01 = -2 * k3 + 3 * k2, T = sp.apex - sp.t0;
+      var C = sp.C; if (pc && k > 0.85) { C = lerp3(C, pc, smooth((k - 0.85) / 0.15)); }
+      b.x = h00 * sp.p0[0] + h10 * T * sp.v0[0] + h01 * C[0]; b.y = h00 * sp.p0[1] + h10 * T * sp.v0[1] + h01 * C[1]; b.z = h00 * sp.p0[2] + h10 * T * sp.v0[2] + h01 * C[2];
+      b.spin = (b.spin || 0) + 12 * dt;
+      if (gt >= sp.apex) {
+        sp.struck = true; sp.hitT = gt; sp.barT = gt;
+        b.last = "them"; b.serve = false; b.rally += 1; b.bounces = 0; b.net = false;
+        shoot(b, m.k, sp.shot[0], sp.shot[1], PSUP.FLY);
+        fxBurst([b.x, b.y, b.z], "plan", true);
+        for (var i = 0; i < 36; i += 1) { var ra = i / 36 * 2 * PI, rv = 7 + 2 * fxR(); fxAdd([b.x, b.y, b.z], [Math.cos(ra) * rv, Math.sin(ra) * rv, (fxR() - 0.5) * 2], 0.55, pick(["*", "+", "-", "◇"]), pick(ice), 0.2, 0, false); }
+        athSplit(me, gt);
+      }
+      return;
+    }
+    // (or his own super, pressed (the artist, 28 Oct 2026: "You can also choose to use your super to automatically
+    // counteract Mr. plans super and win the point"): it takes the pearl struck at him, and the point is his)
+    if (m.sup.armed && !b.dead) { ascMod = null; superStart(m, b, STR.superCounterWon); return; }
+    // the counter: the bar runs while the pearl comes, slowly; one tap
+    if (!sp.tapped && fire) {
+      sp.tapped = true; sp.u = sp.uNow; sp.ok = sp.u >= SERVE.ACE[0] && sp.u < SERVE.ACE[1];
+      say(sp.ok ? STR.counterOk : STR.counterMiss);
+    }
+    var per = servePeriod(m), uu = ((gt - sp.barT) / per) % 2; sp.uNow = uu < 1 ? uu : 2 - uu;
+    var at = ballStep(b, m.k, dt * (sp.tapped && !sp.ok ? 1 : PSUP.SLOW));
+    if (fxR() < 0.9) { fxAdd([b.x, b.y, b.z], [0, 0, 0], 0.4, pick(["*", "◇", "·"]), pick(ice), 0.15, 0, false); }   // (its comet, cyan)
+    if (sp.ok && b.z - cc[2] > COURT.K + 0.3 && b.y < CAPS.top + 0.5) {
+      // returned: the hologram at the pearl at once, and back it goes, deep, away from Mr Plan
+      blinkTo(me, { p: [b.x, b.y, b.z] }, "me");
+      var plx = pl.x - cc[0], bx = -(plx >= 0 ? 1 : -1) * (0.6 + 1.2 * rng()), bz = -(COURT.L - 0.8 - 1.2 * rng());
+      athSwing(me, { tc: gt + 0.05, p: [b.x, b.y, b.z], kind: b.y > 1.6 ? "overhead" : "drive", aim: norm([bx + cc[0] - b.x, 0.3, bz + cc[2] - b.z]) }, gt);
+      shoot(b, m.k, bx, bz, 1.0);
+      fxBurst([b.x, b.y, b.z], "me", true); fxRing([b.x, 0.03, b.z], "me");
+      b.last = "you"; b.bounces = 0; b.rally += 1; b.nemAt = gt + m.sk.wait; b.super = false;
+      psupEnd(m); return;
+    }
+    if (at) { if (!b.dead) { pointBall(m, b, false, STR.planSuperWon); } psupEnd(m); }
+  }
+  function psupEnd(m) {
+    ascMod = null;
+    m.phase = live(m).length ? "rally" : "point"; m.t = gt;
+    superButton(); courtWhere();
   }
   // the camera through it: at his right shoulder, rising with him, looking up at the meeting and then down along the
   // pearl's way into the far corner; eased in and out of his own
@@ -1751,11 +2060,11 @@
     var k = input.keys, fwd = 0, side = 0, full = CAPS.vmax;
     if (input.stick) { var s = input.stick, L = min(1, hypot(s.dx, s.dy) / 60), a = Math.atan2(s.dx, -s.dy); fwd = Math.cos(a) * L; side = Math.sin(a) * L; full = CAPS.vmax * Math.pow(L, 0.6) / (L || 1); }
     else {
-      fwd = (k.w || k.ArrowUp ? 1 : 0) - (k.s || k.ArrowDown ? 1 : 0); side = (k.d ? 1 : 0) - (k.a ? 1 : 0);
+      fwd = (k.w || k.ArrowUp ? 1 : 0) - (k.s || k.ArrowDown ? 1 : 0); var held = !canLook(); side = (k.d || (held && k.ArrowRight) ? 1 : 0) - (k.a || (held && k.ArrowLeft) ? 1 : 0);   // (the view held, the side arrows step sideways)
       var n = hypot(fwd, side); if (n > 1) { fwd /= n; side /= n; }
       full = k.Shift ? CAPS.vmax : 0.62 * CAPS.vmax;
     }
-    if (k.ArrowLeft) { view.yaw -= 2.2 / 60; } if (k.ArrowRight) { view.yaw += 2.2 / 60; }
+    if (canLook()) { if (k.ArrowLeft) { view.yaw -= 2.2 / 60; } if (k.ArrowRight) { view.yaw += 2.2 / 60; } }
     var y = view.yaw, v = [(Math.sin(y) * fwd + Math.cos(y) * side) * full, (-Math.cos(y) * fwd + Math.sin(y) * side) * full];
     return { vel: v, fire: input.fire };
   }
@@ -1767,26 +2076,29 @@
       var down = input.down;   // (a mouse's drag on the left half is the stick too: the requirements ask the mouse for everything)
       down[e.pointerId] = { x: e.clientX, y: e.clientY, t: performance.now(), moved: 0, stick: half(e.clientX) && !input.stick };
       if (down[e.pointerId].stick) { input.stick = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0 }; }
+      // (a bar up: the tap is where the finger lands, not where it lifts; not the stick's touch in a rally, which moves him)
+      var m = court.m, bar = m && (m.meterOn || (m.phase === "plansuper" && m.psup.struck && !m.psup.tapped));
+      if (bar && !(down[e.pointerId].stick && m.phase === "rally")) { input.fire = true; input.taps += 1; down[e.pointerId].fired = true; }
     }));
     canvas.addEventListener("pointermove", awake(function (e) {
       var d = input.down[e.pointerId]; if (!d) { return; }
       var mx = e.clientX - d.x, my = e.clientY - d.y; d.moved = max(d.moved, hypot(mx, my));
       if (d.stick && input.stick && input.stick.id === e.pointerId) { input.stick.dx = mx; input.stick.dy = my; return; }
       var k = e.pointerType === "mouse" ? 0.0045 : 0.006;
-      view.yaw += (e.clientX - (d.lx == null ? d.x : d.lx)) * k; view.pitch = clampPitch(view.pitch - (e.clientY - (d.ly == null ? d.y : d.ly)) * k);
+      if (canLook()) { view.yaw += (e.clientX - (d.lx == null ? d.x : d.lx)) * k; view.pitch = clampPitch(view.pitch - (e.clientY - (d.ly == null ? d.y : d.ly)) * k); }
       d.lx = e.clientX; d.ly = e.clientY;
     }));
     var up = function (e) {
       var d = input.down[e.pointerId]; if (!d) { return; }
       delete input.down[e.pointerId];
       if (input.stick && input.stick.id === e.pointerId) { input.stick = null; }
-      if (!YT.paused && d.moved < 10 && performance.now() - d.t < 350) { input.fire = true; input.taps += 1; }
+      if (!YT.paused && !d.fired && d.moved < 10 && performance.now() - d.t < 350) { input.fire = true; input.taps += 1; }
     };
     canvas.addEventListener("pointerup", up); canvas.addEventListener("pointercancel", function (e) { delete input.down[e.pointerId]; if (input.stick && input.stick.id === e.pointerId) { input.stick = null; } });
     canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
     window.addEventListener("keydown", awake(function (e) {
       var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      if (k === " " || k === "t" || k === "Enter") { input.fire = true; e.preventDefault(); }
+      if (k === " " || k === "t" || k === "Enter") { if (!e.repeat) { input.fire = true; } e.preventDefault(); }   // (a key held is one tap)
       else if (k === "e" || k === "q") { superPress(); }
       input.keys[k] = true; if (e.shiftKey) { input.keys.Shift = true; }
       if (k.indexOf("Arrow") === 0) { e.preventDefault(); }
@@ -1866,17 +2178,19 @@
     // the pearls in the air, first, for the shadows they cast: the courts that play on (the pearl back and forth
     // between them, a shot each 1.3 s), and the match's
     var pearls = [];
-    courts.forEach(function (cv, k) {
-      if (!cv.up || (m && m.k === k) || !near(courtAt(k)[0])) { return; }
-      var cc = courtAt(k), uu = (gt - cv.t0) / 1.3, ii = floor(uu), ff = uu - ii, ax = function (j) { return cc[0] + Math.sin(j * 1.7 + k) * 1.6; };
-      var zs = cc[2] + COURT.L - 0.5, zn = cc[2] - COURT.L + 0.5, za = ii % 2 ? zn : zs, zb = ii % 2 ? zs : zn;
-      pearls.push([[ax(ii) + (ax(ii + 1) - ax(ii)) * ff, 0.8 + 1.4 * Math.sin(PI * ff), za + (zb - za) * ff], uu * 9]);
-    });
+    // (the match's first: the pearl characters are kept for eight, and the match's must have theirs)
     if (m) {
       m.balls.forEach(function (b) { if (!b.dead || gt - b.deadT < 1.4) { pearls.push([[b.x, b.y, b.z], b.spin]); } });
       // (a pearl tossed: dropped from his hand to below his waist, where the racket meets it)
       m.tosses.forEach(function (q) { if (gt >= q.t0) { var tu = clampV((gt - q.t0) / 0.3, 0, 1), s0 = serveFrom(); pearls.push([[s0[0], 1.0 - (1.0 - s0[1]) * tu * tu, s0[2]], 0]); } });
     }
+    courts.forEach(function (cv, k) {
+      if (!cv.up || (m && m.k === k) || !near(courtAt(k)[0])) { return; }
+      if (cv.rec) { (cv.rp || []).forEach(function (q) { pearls.push(q); }); return; }
+      var cc = courtAt(k), uu = (gt - cv.t0) / 1.3, ii = floor(uu), ff = uu - ii, ax = function (j) { return cc[0] + Math.sin(j * 1.7 + k) * 1.6; };
+      var zs = cc[2] + COURT.L - 0.5, zn = cc[2] - COURT.L + 0.5, za = ii % 2 ? zn : zs, zb = ii % 2 ? zs : zn;
+      pearls.push([[ax(ii) + (ax(ii + 1) - ax(ii)) * ff, 0.8 + 1.4 * Math.sin(PI * ff), za + (zb - za) * ff], uu * 9]);
+    });
     // the contact shadows: each athlete's (wider and fainter off the ground) and each pearl's (its height, told)
     var shadows = [], cast = function (x, z, y, rr, st) { if (hypot(x - e[0], z - e[2]) < 60) { shadows.push([x, z, rr, st]); } };
     var who = [me].concat(plans.filter(function (p) { return near(p.x); }), stands.filter(function (st, k) { return courts[k].up && !(m && m.k === k) && near(st.x); }));
@@ -1892,8 +2206,9 @@
     drawAthlete(me, me.pose, true, false);
     courts.forEach(function (cv, k) {
       if (!near(courtAt(k)[0])) { return; }
-      drawAthlete(plans[k], plans[k].pose = athPose(plans[k], gt), false);
-      if (cv.up && !(m && m.k === k)) { drawAthlete(stands[k], athPose(stands[k], gt), false); }
+      var rp = cv.up && cv.rec && !(m && m.k === k);
+      drawAthlete(plans[k], plans[k].pose = athPose(plans[k], rp ? plans[k].replayT : gt), false);
+      if (cv.up && !(m && m.k === k)) { drawAthlete(stands[k], athPose(stands[k], rp ? stands[k].replayT : gt), false); }
     });
     pearls.forEach(function (q) { drawBall(q[0], q[1]); });
     paint(MAT.DUST);
@@ -1903,9 +2218,12 @@
     if (into) { ascEnd(cw, chh, dpr, yaw, pitch); }
     overlay(dpr);
   }
+  // (the pearl drawn a third larger than it plays, the artist, 28 Oct 2026: "The ball should be 33% bigger and twice as
+  // easy to see": its solid, its glow, and a bright core over its character on the HUD, the same third larger)
+  var PEARL = { big: 1.33 };
   function drawBall(p, spin) {
     // (lit from within; never under three pixels across, so far off it still shows in its cell)
-    var h = body.cell * max(1, 1.5 * pixA * hypot(p[0] - cur.eye[0], p[1] - cur.eye[1], p[2] - cur.eye[2]) / (3 * body.cell));
+    var h = PEARL.big * body.cell * max(1, 1.5 * pixA * hypot(p[0] - cur.eye[0], p[1] - cur.eye[1], p[2] - cur.eye[2]) / (3 * body.cell));
     paint(MAT.PEARL); drawSolid(ballMesh, mul(T(p[0], p[1], p[2]), mul(RX(spin || 0), mul(S(h), T(-3, -3, -3)))), CT.pearl, null, 2.2);
     if (asc && asc.balls) { ascBall(p, canvas.width, canvas.height); }
   }
@@ -1917,7 +2235,7 @@
      under the feet a puff at each footfall and a scuff left on the court; behind a sprint the air it leaves; round a
      leap the air turning; at a hard landing a ring rushing out along the court; at a skid or a dive's slide, streaks.
      Their chance is their own (fxR), so the game's own (rng) plays the same with or without them. */
-  var fx = [], fxS = 20261028;
+  var fx = [], fxS = 20261028, replaying = false;
   function fxR() { fxS = (fxS * 1103515245 + 12345) >>> 0; return fxS / 4294967296; }
   var FXC = {   // the colours: the burst's heat, the air's trail, the air turning, the court's dust and its scuff
     me: { hot: ["#fff4d6", "#ffd166", "#ff9f43", "#ff5e7e"], trail: ["#ffe6a8", "#ffb86b", "#ff8fa3"], swirl: ["#bdf7ff", "#e6c6ff", "#fff1c1"] },
@@ -1927,6 +2245,7 @@
   function fxAdd(p, v, life, ch, col, size, g, flat) { if (fx.length < 320) { fx.push({ p: p, v: v, t0: gt, life: life, ch: ch, col: col, size: size, g: g, flat: flat }); } }
   // a burst where the pearl is struck: a white-hot core, sparks out on every side (falling a little), a ring
   function fxBurst(p, who, big) {
+    var mr = court.m && court.m.rec; if (mr && !replaying && abs(p[0] - courtAt(court.m.k)[0]) < COURT.GAP / 2) { mr.fx.push({ t: gt - mr.t0, p: p.slice(), who: who, big: big }); if (mr.fx.length > 400) { mr.fx.shift(); } }
     var C = FXC[who], n = big ? 22 : 14, sp = big ? 5.5 : 4;
     fxAdd(p.slice(), [0, 0, 0], 0.14, "*", C.hot[0], big ? 0.5 : 0.36, 0, false);
     for (var i = 0; i < n; i += 1) {
@@ -2031,37 +2350,79 @@
     var toS = function (p) { var q = [0, 0, 0, 0]; for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0.05 ? [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H] : null; };
     var glyph = function (ch, x, y, size, col) { c.font = "700 " + size + "px ui-monospace, SFMono-Regular, Menlo, 'DejaVu Sans Mono', monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.7)"; c.strokeText(ch, x, y); c.fillStyle = col || "#f2efe8"; c.fillText(ch, x, y); };
     if (m) {
+      // the pearl in play, easier to see (the artist, 28 Oct 2026: "I need to be able to see the ball 33% better than
+      // I do now"; pb_measure.js measures its light against the frame without it): a warm glow round its character,
+      // as large as a ball of haloR metres at its distance, and the way it came, a few fading points
+      c.save(); c.globalCompositeOperation = "lighter";
+      m.balls.forEach(function (b) {
+        if (b.dead) { return; }
+        var q = [0, 0, 0, 0], P = [b.x, b.y, b.z]; for (var i3 = 0; i3 < 4; i3 += 1) { q[i3] = vp[i3] * P[0] + vp[4 + i3] * P[1] + vp[8 + i3] * P[2] + vp[12 + i3]; }
+        if (q[3] < 0.1) { return; }
+        var sx = (q[0] / q[3] * 0.5 + 0.5) * W, sy = (0.5 - q[1] / q[3] * 0.5) * H, R = clampV(ASC.haloR * H / (2 * q[3] * T35), 12, 60);
+        var gr = c.createRadialGradient(sx, sy, 0, sx, sy, R); gr.addColorStop(0, "rgba(255,246,222," + ASC.halo.toFixed(3) + ")"); gr.addColorStop(0.45, "rgba(255,226,170," + (ASC.halo * 0.45).toFixed(3) + ")"); gr.addColorStop(1, "rgba(255,200,120,0)");
+        c.fillStyle = gr; c.fillRect(sx - R, sy - R, 2 * R, 2 * R);
+        // (its core: a disc the pearl's own size, a third larger, pearl white, lit from within)
+        var cr = clampV(PEARL.big * pearlR() * H / (2 * q[3] * T35), 3.5, 0.6 * R);   // (inside its glow, near the eye too)
+        if (ASC.core) { c.fillStyle = "rgba(255,252,240,0.95)"; c.beginPath(); c.arc(sx, sy, cr, 0, 2 * PI); c.fill(); }
+        b.tr = (b.tr || []); b.tr.push([sx, sy]); if (b.tr.length > 7) { b.tr.shift(); }
+        b.tr.forEach(function (t, j) { if (j < b.tr.length - 1) { c.fillStyle = "rgba(255,238,200," + (0.35 * (j + 1) / b.tr.length).toFixed(3) + ")"; c.beginPath(); c.arc(t[0], t[1], max(1.5, R * 0.16 * (j + 1) / b.tr.length), 0, 2 * PI); c.fill(); } });
+      });
+      c.restore();
       m.balls.forEach(function (b) {
         if (b.dead || !b.mark || b.last !== "them" || b.bounces !== 0) { return; }
         for (var s = 0; s < 14; s += 1) { var a = s / 14 * 2 * PI, q = toS([b.mark.x + Math.cos(a) * 0.4, 0.02, b.mark.z + Math.sin(a) * 0.4]); if (q) { glyph("○", q[0], q[1], 11); } }
       });
       if (m.phase === "serve" && !m.meterOn) {
-        // (where he serves from: gold diamonds round the spot on the court, breathing slowly (never a flash), and one in
-        // its middle; drawn over everything, so a mark behind him still shows through)
-        var sp = serveSpot(), br = 0.5 + 0.5 * Math.sin(gt * PI), rr = 0.42 + 0.05 * br;
-        for (var s2 = 0; s2 < 12; s2 += 1) { var a2 = s2 / 12 * 2 * PI, q2 = toS([sp[0] + Math.cos(a2) * rr, 0.02, sp[1] + Math.sin(a2) * rr]); if (q2) { glyph("◆", q2[0], q2[1], 10 + 2 * br, "#f3c98b"); } }
+        // (where he serves from, the artist, 28 Oct 2026: "Make the spot I need to run to to serve more apparent in a quick
+        // golden circle that serves as a strong visual cue of the spot": a bold gold circle on the court, glowing, filled
+        // faintly, and every second a ring running quickly out from it to twice its size, where the lock begins; drawn
+        // over everything, so a mark behind him still shows through; a ring that grows and fades, never a flash)
+        var sp = serveSpot(), ring = function (rad) { var pts = []; for (var s2 = 0; s2 <= 32; s2 += 1) { var a2 = s2 / 32 * 2 * PI, q2 = toS([sp[0] + Math.cos(a2) * rad, 0.02, sp[1] + Math.sin(a2) * rad]); if (!q2) { return null; } pts.push(q2); } return pts; };
+        var path = function (pts) { c.beginPath(); pts.forEach(function (q2, i2) { if (i2) { c.lineTo(q2[0], q2[1]); } else { c.moveTo(q2[0], q2[1]); } }); c.closePath(); };
+        var main = ring(SERVE.R);
+        if (main) {
+          c.save(); path(main); c.fillStyle = "rgba(255,209,102,0.22)"; c.fill();
+          c.shadowColor = "#ffd166"; c.shadowBlur = 14; c.lineWidth = 4; c.strokeStyle = "#ffd166"; c.stroke();
+          c.shadowBlur = 0; c.lineWidth = 1.5; c.strokeStyle = "#fff4d6"; c.stroke();
+          var pu = (gt % 1.1) / 0.55, pr = pu < 1 ? ring(SERVE.R * (1 + pu)) : null;   // (the ring running out, half of each second and a tenth)
+          if (pr) { path(pr); c.lineWidth = 3; c.strokeStyle = "rgba(255,209,102," + (0.85 * (1 - pu)).toFixed(3) + ")"; c.stroke(); }
+          c.restore();
+        }
         var qc = toS([sp[0], 0.02, sp[1]]), inset = 34;
-        if (qc && qc[0] > inset && qc[0] < W - inset && qc[1] > hudLow + inset && qc[1] < H - inset) { glyph("◆", qc[0], qc[1], 16, "#ffd27a"); hudBox.mark = { x: qc[0], y: qc[1] }; }
+        if (qc && qc[0] > inset && qc[0] < W - inset && qc[1] > hudLow + inset && qc[1] < H - inset) { glyph("◆", qc[0], qc[1], 18, "#ffd27a"); hudBox.mark = { x: qc[0], y: qc[1] }; }
         else {
           // (off the screen, behind him or past its edge: at the edge, the way to it, a gold diamond and an arrow)
           var cq = [0, 0, 0, 0], P = [sp[0], 0.02, sp[1]]; for (var i2 = 0; i2 < 4; i2 += 1) { cq[i2] = vp[i2] * P[0] + vp[4 + i2] * P[1] + vp[8 + i2] * P[2] + vp[12 + i2]; }
-          var ex = cq[0] / Math.abs(cq[3] || 1e-3), ey = -cq[1] / Math.abs(cq[3] || 1e-3); if (cq[3] < 0.05) { ex = -ex; ey = -ey; if (ey < 0.2) { ey = 1; } }
+          var ex = cq[0] / Math.abs(cq[3] || 1e-3), ey = -cq[1] / Math.abs(cq[3] || 1e-3); if (cq[3] < 0.05 && ey < 0.2) { ey = 1; }   // (behind: |w| keeps its side; the bottom edge)
           var an = Math.atan2(ey, ex), hx = (W / 2 - inset), hy = (H / 2 - inset), kk = min(hx / max(1e-3, Math.abs(Math.cos(an))), hy / max(1e-3, Math.abs(Math.sin(an))));
           var mx2 = W / 2 + Math.cos(an) * kk, my2 = max(hudLow + inset, H / 2 + Math.sin(an) * kk);
-          glyph("◆", mx2, my2, 18 + 2 * br, "#ffd27a");
-          glyph("→↘↓↙←↖↑↗".charAt(((Math.round(an / (PI / 4)) % 8) + 8) % 8), mx2 - Math.cos(an) * 20, my2 - Math.sin(an) * 20, 16, "#f3c98b");
+          // (the same bold gold circle, small, at the edge the way to it, its ring running out, and an arrow)
+          c.save(); c.beginPath(); c.arc(mx2, my2, 15, 0, 2 * PI); c.fillStyle = "rgba(255,209,102,0.25)"; c.fill();
+          c.shadowColor = "#ffd166"; c.shadowBlur = 12; c.lineWidth = 4; c.strokeStyle = "#ffd166"; c.stroke(); c.shadowBlur = 0;
+          var eu = (gt % 1.1) / 0.55; if (eu < 1) { c.beginPath(); c.arc(mx2, my2, 15 * (1 + eu), 0, 2 * PI); c.lineWidth = 3; c.strokeStyle = "rgba(255,209,102," + (0.85 * (1 - eu)).toFixed(3) + ")"; c.stroke(); }
+          c.restore();
+          glyph("◆", mx2, my2, 13, "#fff4d6");
+          glyph("→↘↓↙←↖↑↗".charAt(((Math.round(an / (PI / 4)) % 8) + 8) % 8), mx2 - Math.cos(an) * 30, my2 - Math.sin(an) * 30, 20, "#ffd166");
           hudBox.mark = { x: mx2, y: my2, edge: true };
         }
       }
-      if (m.meterOn && m.phase !== "super") { meterDraw(c, m, W, H, glyph); }
+      if (m.meterOn && m.phase !== "super" && m.phase !== "plansuper") { meterDraw(c, m, W, H, glyph); }
+      if (m.phase === "plansuper" && m.psup.struck) {
+        var ph = gt - m.psup.hitT, qp = toS([m.psup.ball.x, m.psup.ball.y, m.psup.ball.z]) || [W / 2, H / 3];
+        if (ph < 0.3) { var gp = c.createRadialGradient(qp[0], qp[1], 0, qp[0], qp[1], max(W, H) * 0.8); gp.addColorStop(0, "rgba(160,240,255," + (0.35 * (1 - ph / 0.3)).toFixed(3) + ")"); gp.addColorStop(1, "rgba(90,160,255,0)"); c.fillStyle = gp; c.fillRect(0, 0, W, H); }
+        // (its name clear of the counter's bar: above it where there is room, on a short screen under it)
+        var mY = max(H * 0.37, hudLow + 56), bs0 = min(W * 0.085, 46), bsA = min(bs0, (mY - 50 - hudLow - 6) / 1.2), bsz = bsA >= 18 ? bsA : bs0, bY = bsA >= 18 ? (hudLow + mY - 50) / 2 : mY + 60 + 0.6 * bs0;
+        if (ph < 1.0 && bY + 0.6 * bsz < H) { c.save(); c.globalAlpha = 1 - smooth((ph - 0.65) / 0.35); glyph("◆ SUPER ◆", W / 2, bY, bsz, "#9ff3ff"); c.restore(); hudBox.banner = { x: W / 2 - 2.7 * bsz, y: bY - 0.6 * bsz, w: 5.4 * bsz, h: 1.2 * bsz }; }
+        if (!m.psup.tapped) { meterDraw(c, m, W, H, glyph, m.psup.uNow || 0); }
+      }
       if (m.phase === "super" && m.sup.struck) {
         // the strike: one flash of gold from where it is (once, never a flicker), and its name over the courts, in gold
         var hu = gt - m.sup.hitT, qh = toS([m.sup.ball.x, m.sup.ball.y, m.sup.ball.z]) || [W / 2, H / 3];
         if (hu < 0.3) { var gr = c.createRadialGradient(qh[0], qh[1], 0, qh[0], qh[1], max(W, H) * 0.8); gr.addColorStop(0, "rgba(255,226,150," + (0.4 * (1 - hu / 0.3)).toFixed(3) + ")"); gr.addColorStop(1, "rgba(255,180,60,0)"); c.fillStyle = gr; c.fillRect(0, 0, W, H); }
         if (hu < 1.1) {
           var bs = min(W * 0.085, 46) * (1 + 0.25 * (1 - smooth(hu / 0.25))), ba = 1 - smooth((hu - 0.75) / 0.35);
-          c.save(); c.globalAlpha = ba; glyph("◆ SUPER RETURN ◆", W / 2, max(hudLow + 40, H * 0.3), bs, "#ffd166"); c.restore();
-          hudBox.banner = { x: W / 2, y: max(hudLow + 40, H * 0.3) };
+          c.save(); c.globalAlpha = ba; glyph("◆ SUPER ◆", W / 2, max(hudLow + 40, H * 0.3), bs, "#ffd166"); c.restore();
+          var bY2 = max(hudLow + 40, H * 0.3); hudBox.banner = { x: W / 2 - 2.7 * bs, y: bY2 - 0.6 * bs, w: 5.4 * bs, h: 1.2 * bs };   // (its box, for the tests)
         }
       }
     }
@@ -2079,6 +2440,10 @@
     var ly = y0 + sz;
     hudLow = ly + 8;
     var sy = round(ly + 16) + "px"; if (sayEl.style.top !== sy) { sayEl.style.top = sy; }
+    if (helpOn) {
+      var he = $("help"), mb = hudBox.meter, onBar = mb && TIPS.cur && TIPS.cur.key === "bar";
+      var hy = round(onBar ? mb.y + mb.h + 8 : ly + 16 + (sayEl.textContent && sayEl.style.opacity !== "0" ? sayEl.offsetHeight + 10 : 0)) + "px"; if (he.style.top !== hy) { he.style.top = hy; }
+    }
     var o = 1 - gt / 0.6;
     if (o > 0) { c.fillStyle = "rgba(0,0,0," + o.toFixed(3) + ")"; c.fillRect(0, 0, W, H); }
   }
@@ -2103,11 +2468,18 @@
     canvas = $("view"); hud = $("hud");
     gl = canvas.getContext("webgl2", { antialias: false, alpha: false, depth: true });
     if (!gl) { $("loading").textContent = "This game needs WebGL 2."; YT.firstFrame(); return; }
+    // (a phone can take the GL context away, in the background or short of memory: asked back, all is built anew)
+    canvas.addEventListener("webglcontextlost", function (e) { e.preventDefault(); stop(); });
+    canvas.addEventListener("webglcontextrestored", function () {
+      if (!body) { return; }
+      try { sceneInit(); bodyMeshes(body); asc = null; ascInit(); } catch (x) { YT.warn(x); asc = null; }
+      start();
+    });
     // the first frame, before his body is built: black under the loading words (index.html), and told
     gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
     requestAnimationFrame(function () { YT.firstFrame(); });
     YT.onPause(function () { stop(); inputClear(); save(); });
-    YT.onResume(function () { start(); });
+    YT.onResume(function () { if (asc) { asc.last = null; } start(); });   // (the first frame after a resume holds nothing: drawn as a single frame is)
     var spec = window.PEARL_BODY ? Promise.resolve(window.PEARL_BODY) : fetch("../rocket/pearl-body.json").then(function (r) { return r.json(); });
     Promise.all([YT.init(), spec]).then(function (got) {
       body = PB.build(got[1]);
@@ -2120,6 +2492,7 @@
       bindInput();
       courtWhere();
       say(STR.welcome, true);
+      tip("move"); TIPS.from = [me.x, me.z];
       start();
     }).then(null, function (e) { YT.error(e); $("loading").textContent = "The courts could not be built."; });
   }
@@ -2127,16 +2500,19 @@
 
   // For the tests: the state, and a way to step the game without the frames' clock.
   window.Pickleball = { debug: function () {
-    return { me: me, plans: plans, stands: stands, court: court, courts: courts, view: view, skill: nemSkill, won: wonCount,
+    // (draw: run() steps the camera once a step, as a frame does; a draw adds no step of its own)
+    return { me: me, plans: plans, stands: stands, court: court, courts: courts, view: view, skill: nemSkill, won: wonCount, ASC: ASC, CAM: CAM, PSUP: PSUP,
              winCourt: function () { if (court.m) { court.m.you = COURT.WIN; levelWon(); } }, CAPS: CAPS, COURT: COURT, YT: YT, STR: STR,
              glyphs: asc && asc.glyphs, gt: function () { return gt; }, input: input, enter: function (k) { me.x = courtAt(k)[0] + 0.5; me.z = COURT.L - 1; },
              run: function (sec, fire) { var n = round(sec * 60); for (var i = 0; i < n; i += 1) { gt += 1 / 60; if (fire && i === 0) { input.fire = true; } stepAll(1 / 60); camera(1 / 60); } },
-             draw: function () { frameDt = 1 / 60; draw(); }, pause: function (on) { if (on) { YT.paused = true; stop(); } else { YT.paused = false; start(); } },
+             draw: function () { frameDt = 0; draw(); }, pause: function (on) { if (on) { YT.paused = true; stop(); } else { YT.paused = false; start(); } },
              running: function () { return !!raf; }, pose: athPose, planContact: planContact, ascOk: function () { return !!(asc && asc.ok); },
              swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w) { athCelebrate(a, w, gt); },
              step: function (a, sec) { for (var i = 0; i < round(sec * 60); i += 1) { gt += 1 / 60; athStep(a, 1 / 60, gt); } },
-             meter: function () { var m = court.m; return m && m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
+             meter: function () { var m = court.m; return !m ? null : m.phase === "plansuper" ? (m.psup.struck && !m.psup.tapped ? m.psup.uNow : null) : m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
              serveSpot: function () { return court.m ? serveSpot() : null; },
+             tipsSeen: function () { return TIPS.seen; },
+             toScreen: function (p) { var vp = cur.vp, q = [0, 0, 0, 0]; for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0.05 ? [(q[0] / q[3] * 0.5 + 0.5) * canvas.clientWidth, (0.5 - q[1] / q[3] * 0.5) * canvas.clientHeight] : null; },
              newSuper: function () { if (court.m) { court.m.sup = { avail: true, armed: false }; superButton(); } },   // (a new game's, for the tests)
              // (the tests: run him to the serve's mark by the stick, as a player does, until the bar runs)
              toServe: function () {

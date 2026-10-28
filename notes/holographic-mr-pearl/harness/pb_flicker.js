@@ -10,7 +10,7 @@
 //   a_rally_still  the camera held still behind court one during a rally (things move; the courts do not)
 //   b_empty_still  the camera held still on an empty part of court one (nothing moves: both numbers must be 0)
 //   c_walk_side    his own third-person camera while he walks slowly sideways (the stick held)
-//   d_scope_serve  the Scope at the serve while the bar runs
+//   d_scope_serve  the serve's view while the bar runs (the Scope, in a game that has one)
 // node pb_flicker.js port [outfile]   (outfile: the numbers as JSON; beside it, <outfile>_<view>_<scene>.png, the last
 // frame with every cell that flipped back marked in red, brighter the more often; PB_VIEWS=phone or desk: one view)
 const { chromium } = require("playwright");
@@ -70,7 +70,7 @@ const scenes = {
   a_rally_still: {
     setup: () => {
       const d = window.Pickleball.debug(); d.enter(0); d.run(2.5);
-      for (let i = 0; i < 400 && !(d.court.m && d.court.m.meterOn); i++) { d.run(1 / 60); }
+      d.toServe();
       for (let i = 0; i < 200; i++) { const u = d.meter(); if (u != null && u >= 0.5 && u <= 0.7) { d.run(1 / 60, true); break; } d.run(1 / 60); }
       for (let i = 0; i < 400; i++) { d.run(1 / 60); const m = d.court.m; if (m && m.balls.some((b) => !b.dead && b.last === "them" && b.y > 1)) { break; } }
       d.camAt([0, 4.5, 13], 0, -0.32);
@@ -83,7 +83,7 @@ const scenes = {
   d_scope_serve: {
     setup: () => {
       const d = window.Pickleball.debug(); d.enter(0); d.run(2.5);
-      for (let i = 0; i < 400 && !(d.court.m && d.court.m.meterOn); i++) { d.run(1 / 60); }
+      d.toServe();
       d.run(0.4);
     } },
 };

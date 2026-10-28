@@ -1,7 +1,8 @@
 // pb_curve.js - how hard each court is (28 Oct 2026; the artist: "each court gets progressively harder. By the time you
 // get to court 10, the game should be very hard"). Two players run the courts: the ideal one (pb_game's bot: always on
 // the ring Mr Plan's shot comes down to, serving hard or into the ace zone) and a human one (it reads the ring a fifth of
-// a second late, stands up to 0.9 m off it, and stops the serve's bar with a tenth of a second's slack). For each court
+// a second late, stands up to 0.9 m off it, and stops each bar at a point of its own within a tenth of the bar either
+// side of its aim: the serve's, and Mr Plan's counter within 0.08 of the ace zone). For each court
 // it plays matches and counts points and matches won. node pb_curve.js [port] [matches] [courts...]
 const { chromium } = require("playwright");
 const [port, nArg, ...ls] = process.argv.slice(2);
@@ -25,7 +26,8 @@ const N = +(nArg || 6), LEVELS = ls.length ? ls.map(Number) : [1, 2, 3, 5, 7, 10
           if (!d.court.m) { m = begin(); last = [0, 0]; }
           m = d.court.m;
           let tx = 0.6, tz = C.L - 1.2;
-          if (m.phase === "serve" && !m.meterOn) { const sv = d.serveSpot(); tx = sv[0]; tz = sv[1]; }   // (to the serve's mark)
+          const want = 1 + (serves % 3);
+          if ((m.phase === "serve" && !m.meterOn) || (m.meterOn && m.served + m.tosses.length < want)) { const sv = d.serveSpot(); tx = sv[0]; tz = sv[1]; }   // (to the serve's mark, and on it while there are pearls to serve: off it the serve is over)
           const inc = m.balls.filter((q) => !q.dead && q.last === "them" && q.mark)[0];
           if (inc) {
             if (who === "ideal") { tx = inc.mark.x - 0.5; tz = inc.mark.z + 1.2; }
@@ -34,9 +36,17 @@ const N = +(nArg || 6), LEVELS = ls.length ? ls.map(Number) : [1, 2, 3, 5, 7, 10
           }
           const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz);
           d.input.stick = L > 0.2 ? { id: -1, x: 0, y: 0, dx: dx / L * 60 * Math.min(1, L / 2), dy: dz / L * 60 * Math.min(1, L / 2) } : null;
-          const u = d.meter(), want = 1 + (serves % 3), slack = who === "human" ? 0.1 : 0;
-          const stopAt = serves % 2 ? [d.SERVE.ACE[0] + 0.01 - slack, d.SERVE.ACE[1] - 0.01 + slack] : [0.45 - slack, 0.7 + slack];
-          const fire = u != null && u >= stopAt[0] && u <= stopAt[1] && (m.served + m.tosses.length) < want && i - lastFire > 12;
+          const u = d.meter(), slack = who === "human" ? 0.1 : 0;
+          const stopAt = serves % 2 ? [d.SERVE.ACE[0] + 0.01, d.SERVE.ACE[1] - 0.01] : [0.45, 0.7];
+          // (the human's stop: a point of its own each pearl, within a tenth either side of the aim's middle)
+          const k8 = m.served + m.tosses.length + 10 * serves; if (seen.k8 !== k8) { seen.k8 = k8; seen.at = (stopAt[0] + stopAt[1]) / 2 + (rnd() - 0.5) * 2 * slack; }
+          let fire = (who === "ideal" ? u != null && u >= stopAt[0] && u <= stopAt[1] : u != null && Math.abs(u - seen.at) < 0.02) && (m.served + m.tosses.length) < want && i - lastFire > 12;
+          // Mr Plan's super return: the counter's bar, stopped in the ace zone (the ideal player in its middle; the human one
+          // at a point it picks, up to 0.08 either side of the zone)
+          if (m.phase === "plansuper") {
+            if (m.psup !== seen.ps) { seen.ps = m.psup; seen.aim = who === "ideal" ? (d.SERVE.ACE[0] + d.SERVE.ACE[1]) / 2 : d.SERVE.ACE[0] - 0.08 + rnd() * (d.SERVE.ACE[1] - d.SERVE.ACE[0] + 0.16); }
+            fire = u != null && Math.abs(u - seen.aim) < 0.02;
+          }
           if (fire) { lastFire = i; }
           const was = m.phase;
           d.run(1 / 60, fire);
