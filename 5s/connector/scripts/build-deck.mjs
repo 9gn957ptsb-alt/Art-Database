@@ -98,7 +98,7 @@ for (const top of ['s', 'pp']) {
   if (!existsSync(join(PUB, top))) continue;
   for (const rel of readdirSync(join(PUB, top), { recursive: true })) {
     const p = join(PUB, top, rel);
-    if (!statSync(p).isFile()) continue;
+    if (!statSync(p).isFile() || rel.split(sep).some((x) => x.startsWith('.'))) continue;   // a .DS_Store is no file of ours
     const type = TYPES[extname(p)];
     if (!type) throw new Error('public/' + top + ' holds a kind of file the Worker has no type for: ' + extname(p));
     files['/' + top + '/' + rel.split(sep).join('/')] = type === 'image/jpeg' ? { type, base64: readFileSync(p).toString('base64') } : { type, text: readFileSync(p, 'utf8') };

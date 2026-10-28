@@ -4,6 +4,10 @@
  * token, so Cloudflare refuses them (401); a Worker's own code uploads with the token itself.
  */
 
+// Buffer (nodejs_compat) decodes a page in well under a millisecond; atob and a per-byte callback took ~40 ms,
+// four times Workers Free's 10 ms of CPU a request.
+import { Buffer } from 'node:buffer';
+
 // What public/_headers gave /s/*: the card fetches the models from Claude's own origin.
 const PUBLIC = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff' };
 
@@ -16,7 +20,7 @@ export function bundledFiles(files) {
   const decoded = new Map();
   const body = (f) => {
     if (f.text != null) return f.text;
-    if (!decoded.has(f)) decoded.set(f, Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0)));
+    if (!decoded.has(f)) decoded.set(f, Buffer.from(f.base64, 'base64'));
     return decoded.get(f);
   };
   return {

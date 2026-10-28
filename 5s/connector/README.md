@@ -520,7 +520,11 @@ and start a new session. wrangler then reads it itself; the session still never 
 
 **After a change** to the connector, the engine, `hub.js` or `hubpage.js`, or a rebuilt deck:
 `npm run things && npm run deck && npm test && npx wrangler deploy` (things needs `data/5s/fives/`, as
-above). The secrets and the KV namespace stay.
+above). The secrets and the KV namespace stay. The repository's `.claude/settings.json` lets a session
+run `npx wrangler deploy` (the artist's permission, 28 Oct 2026) as that command alone, so for the
+deploy put the two variables in `5s/connector/.env` instead of exporting them
+(`WRANGLER_SEND_METRICS=false` and `CLOUDFLARE_API_TOKEN=attached-by-the-environment`, a line each;
+gitignored, and the stand-in is no secret) and run `npx wrangler deploy` by itself.
 
 ### 6. In Claude
 

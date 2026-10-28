@@ -5,6 +5,8 @@ node_modules/
 !.dev.vars.example
 src/deck.generated.json
 src/files.generated.json
+# wrangler's own settings for a deploy (README step 4): a stand-in token, never a real one, but never committed
+.env
 # The Worker's static files, built by npm run things from git-ignored data/5s/fives/ (models, pages): never committed
 # (all but .assetsignore, which keeps the folder in git: wrangler dev and deploy need it, even before npm run things)
 public/*
