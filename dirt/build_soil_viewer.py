@@ -2573,8 +2573,8 @@ addEventListener("load", () => {
   // paintings best, with its auto levels), the continuous controls slow waves around them, each round in a Fibonacci
   // number of frames of its own (and its own phase, a golden angle on from the last), so every combination comes
   // round: exposure +-phi^-3 EV in 13, contrast 1.1 to 1.382 in 21, midtones phi^+-1/5 in 34, detail 0 to phi^-1 in
-  // 55, the glow phi^-2 to phi^-1 by the pulse in 8, the glow starting at 0.72 to 0.85 in 89 (and never below 0.45 +
-  // 0.6 glow, so a strong glow is a few lights, not every cell), the picture under the glyphs 0 to phi^-3 in 144. The
+  // 55, the glow 0.5 to phi^-1 by the pulse in 8, the glow starting at 0.7 to 0.82 in 89 (and never below 0.4 + 0.6
+  // glow, so a strong glow is a few lights, not every cell), the picture under the glyphs 0 to phi^-3 in 144. The
   // discrete ones change only between runs of three frames (below), so a run is one moment pushed in, and come in runs
   // of Fibonacci lengths counted in runs, the first the longest: glyph sets (fine 8, the default 5, blocks 3, binary 2,
   // kana 1, kanji 1), colours (full 8, gold 3, blue 2, mono 1), and inverted one run in 34. The style is ASCII
@@ -2604,11 +2604,11 @@ addEventListener("load", () => {
     const j = mod(k, 3), r = Math.floor(k / 3), c = mod(k, 34), edge = Math.min(c + 0.5, 34 - c - 0.5);   // (r: its run)
     const reveal = M.reveal(Math.min(0.75, edge / 3)), set = run(r, GLYPH_SETS), invert = mod(r, 34) === 21;
     const pulse = Math.min(1, Math.max(0, (M.pulse((mod(k, 8) + 0.5) / 16).gain - 0.35) / 1.1));   // its swing, 0 to 1
-    const P2 = 1 / (PHI * PHI), P3 = P2 / PHI, glow = P2 + (1 / PHI - P2) * pulse, full = set === "blocks" || set === "binary";
+    const P2 = 1 / (PHI * PHI), P3 = P2 / PHI, glow = 0.5 + (1 / PHI - 0.5) * pulse, full = set === "blocks" || set === "binary";
     const s = Object.assign({
       style: "ascii", set: SETS[set], mode: run(r, COLOURS), invert,
       contrast: wave(k, 21, 1.1, 1.382, 1), gamma: wave(k, 34, PHI ** -0.2, PHI ** 0.2, 2), detail: wave(k, 55, 0, 1 / PHI, 3),
-      glow, thresh: Math.max(0.45 + 0.6 * glow, wave(k, 89, 0.72, 0.85, 4)), under: wave(k, 144, 0, P3, 5),
+      glow, thresh: Math.max(0.4 + 0.6 * glow, wave(k, 89, 0.7, 0.82, 4)), under: wave(k, 144, 0, P3, 5),
       level: j === 2 || set === "kana" || set === "kanji" ? 1 : 0,                         // the push in, as a level
     }, M.shimmer(mod(k, 6765)), { gain: Math.max(1 / PHI, reveal.gain == null ? 1 : reveal.gain) });   // seeds 1000 up: 0 is none
     const ev = (x, y) => Math.log2(((y ** s.gamma - 0.5) / s.contrast + 0.5) / x);       // the exposure taking x to y
