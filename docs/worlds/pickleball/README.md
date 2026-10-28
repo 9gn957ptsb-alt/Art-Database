@@ -105,17 +105,32 @@ the human one a fifth of a second late and up to 0.9 m off it):
 
 ## ASCII, built in
 
-The only way a frame reaches the screen. The scene (plain solids, plainly lit: the courts at night under their
-floodlights, the athletes' cells, the pearl) is drawn into a picture of its own, and the picture is written
-again as characters, each a cell whose side goes as the square of nearness (6 CSS px at 3.2 m, the artist's rule from
-the rocket world), never under 5 CSS px on a phone or 6 on a desk, and never the picture itself: far off a thing is
-small characters, and the sky is characters too. A cell's colour is the picture's mean over it, its character chosen by
-its lightness, lit in its colour, the light ones glowing, black between. **The unit** is what the artist prescribed for
-the ASCII aesthetic, in place of the impossible triangle: Glyph Light's ASCII style with the keyboard's characters and
-the site's category marks in one set (` .:-=+*#%@` and `∴∵→○◇△◎¶▢◆`; the artist, 28 Oct 2026: "Do marks and keyboard
-characters"), sorted by the ink each leaves, measured on the device (in Chromium's fonts:
-` .-:→△∴∵*◇+▢=○%◎◆#¶@`). Mr Pearl's head is the one thing seen as it is, the perfect sphere (his rule 5); every word
-and control is a page element over the characters.
+The only way a frame reaches the screen (the artist, 28 Oct 2026: "The graphics for the Pickleball game [are] not
+refined enough, I can't make anything out as the user. Make sure it looks hyper polished, just because we are using the
+ASCII aesthetic, doesn't mean we can't achieve any other aesthetic. We are just achieving the aesthetic using the
+characters and marks in ASCII"). Three prototypes (form, light, type) were made against the same six pictures
+(`notes/holographic-mr-pearl/harness/pb_look.js`), judged, and merged:
+
+- **Type.** The picture is set as a terminal sets it: cells as wide as the font's advance and as tall as its `|`, so
+  bars join into one line and `_` into one rule; the glyphs drawn crisp at every size the grid uses. A cell's size
+  still goes as the square of nearness (the artist's rule from the rocket world, 6 CSS px at 3.2 m, in octaves), but
+  never under 8 CSS px on a phone or 12 on a desk (it was 5 and 6: glyphs four pixels high, which no one could read)
+  nor over one octave more. A far athlete is set an octave under the floor where a glyph keeps twelve device pixels,
+  and the pearl an octave over, the one character the game hangs on.
+- **Form.** Each pixel carries its material, so each thing writes its own alphabet: Mr Pearl the keyboard's (` .:+*#%`,
+  Glyph Light's style), Mr Plan the site's marks (` ∴○◇◆`, his negative), a court surface one quiet glyph spaced by its
+  light, the net `#`, a pole `|`, a lamp `*`, the pearl one `◎`, a few stars fixed to the sky. A figure's edge is a
+  stroke turned the way the edge runs (`| / \ _ -`, as in Acerola's ASCII shader, 2024), over a quieter fill; his hat
+  is a shape of its own, so from behind hat and back are two; a court line is one stroke the way it runs on the screen,
+  `+` where two cross.
+- **Light.** A designed night: each court in its own floodlight pool with dark seams between, the athletes lit by
+  their court's four lamps, a key held to the view, a rim and a darkening toward the feet, contact shadows (a pearl's
+  wider and fainter the higher it flies), haze; the athletes and the pearl brightest, the courts in the middle, the
+  ground and the sky dark. Each character is lit in the colour under it, its value the cell's light, the brightest
+  blooming inside its cell; black between.
+
+Mr Pearl's head is the one thing seen as it is, the perfect sphere (his rule 5); every word and control is a page
+element over the characters.
 
 ## YouTube Playables
 
