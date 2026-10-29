@@ -89,7 +89,8 @@ want the games that you have won to save even when I go out of the artifact so t
 when I return to the games resort to a simple back and forth"): each match written once, the first time it is saved,
 as the steps from frame to frame of each of its 55 columns in thousandths (a millimetre, a millisecond), each step in
 as few bytes as it needs, in base 64, with its strokes, flips and spins and its bursts (a 71-second match: 138 KB);
-the newest first, as many as 2.4 MB holds (twelve, inside YouTube's 3 MiB with the rest of the save); read back, each
+the newest first, as many as fit with the rest of the save under the 500 KiB YouTube recommends (the artist, 29 Oct
+2026: "Cap it then at 500 KiB"; some three to nine matches, by their length); read back, each
 plays again within a millimetre of how it played before (`pb_replay.js` reloads and compares). One won before this
 version, or one that will not read, rallies as before. The
 score is the number of courts won; the HUD keeps the last ten as squares (filled while they play on by themselves,
@@ -399,7 +400,8 @@ integration, stability, design, privacy, language, money, accessibility and trus
   is still loading waits for the courts. The Page Visibility API is never used.
 - **Mute.** No sound yet; YouTube's mute is read (`isAudioEnabled`) and followed (`onAudioEnabledChange`) all the
   same, so a sound added later starts from it.
-- **Save.** Through `saveData`/`loadData` inside YouTube (a few bytes: the courts won and the longest rally), only
+- **Save.** Through `saveData`/`loadData` inside YouTube (the courts won, the longest rally, the tips shown, and the
+  newest won matches' recordings that fit, the whole under 500 KiB), only
   after the load, `localStorage` only outside. A save from any version, or a broken one, is read field by field as
   counts, or as a fresh start (the first version's ten courts as the run of them won from the first; its horse goes). A load that fails is asked again once; if it fails again the game plays
   and never saves, so the player's cloud save is never written over.
@@ -432,9 +434,8 @@ artist's own or cleared.
 
 **Weak:** the hosted Test Suite needs the game at a public address with the SDK, which this session could not give
 it; the checks are a mock of the SDK and the real SDK outside YouTube. The Super button sits in the top right corner,
-where an app's own controls can lie over a full-screen game: on YouTube's apps it is unchecked. The recordings of the
-matches won live only in memory: after a reload (on YouTube, every new session) a court won before rallies as
-scripted, not as it was won. With two or three
+where an app's own controls can lie over a full-screen game: on YouTube's apps it is unchecked. Only the newest matches won that fit in 500 KiB are kept with the
+save: after a reload (on YouTube, every new session) a court won before those rallies as scripted, not as it was won. With two or three
 pearls in play the game moves him, so the player's legs matter less then (the stretch keeps the points as hard). The
 replays and the paint are measured in software GL only; a real phone's GPU must write the kinds of choice in the
 colours' low bits exactly (the steadiness and the paint ride on them). The effects (bursts, glints, the super return's
