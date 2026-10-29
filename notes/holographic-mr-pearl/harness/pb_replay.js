@@ -78,7 +78,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   // kept: in the save, and played again after a reload
   if (r.rec) {
     const sv = await p.evaluate(() => { const d = window.Pickleball.debug(); d.state(); const s = localStorage.getItem("pickleball-save-v1") || "{}", o = JSON.parse(s); return { len: s.length, keys: Object.keys(o.recs || {}), one: o.recs && o.recs["0"] ? JSON.stringify(o.recs["0"]).length : 0 }; });
-    check(sv.keys.includes("0") && sv.len < 3e6, `the save holds court one's match (${sv.one} characters for ${r.frames} frames; the save ${sv.len})`);
+    check(sv.keys.includes("0") && sv.len < 512000, `the save holds court one's match (${sv.one} characters for ${r.frames} frames; the save ${sv.len})`);
     await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
     const back = await p.evaluate((samples) => {
       const d = window.Pickleball.debug(); d.pause(true); const cv = d.courts[0], st = d.stands[0], pl = d.plans[0];
@@ -100,12 +100,13 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     check(back.n > 600 && back.maxE < 0.02, `and plays it again where they were (${back.n} frames, the largest gap ${back.maxE} m)`);
     check(back.moves === 0 || back.same >= 0.95 * back.moves, `in the same strokes (${back.same} of ${back.moves})`);
     check(back.scoreOff === 0, `with its score as it went (${back.scoreOff} frames off)`);
-    // twenty matches in a save: the newest twelve come back, and the save stays inside YouTube's 3 MiB
+    // twenty matches in a save (as an older version kept): the newest twelve come back, and the save written again keeps
+    // only the newest that fit under 500 KiB (the artist, 29 Oct 2026: "Cap it then at 500 KiB")
     const put = await p.evaluate(() => { const o = JSON.parse(localStorage.getItem("pickleball-save-v1")), r0 = o.recs["0"]; o.won = 20; o.recs = {}; for (let k = 0; k < 20; k++) { o.recs[k] = r0; } const s = JSON.stringify(o); try { localStorage.setItem("pickleball-save-v1", s); return s.length; } catch (e) { return -1; } });
     await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
     const bg = await p.evaluate(() => { const d = window.Pickleball.debug(); d.pause(true); const kept = d.courts.filter((c) => c.rec).map((c) => c.k), s = d.state(); return { kept, len: s.length, saved: Object.keys(JSON.parse(s).recs).map(Number).sort((a, b) => a - b) }; });
     check(put > 0 && bg.kept.length === 12 && bg.kept[0] === 8 && bg.kept[11] === 19, `twenty in a save (${put} characters): the newest twelve come back (${bg.kept.join(" ")})`);
-    check(bg.len < 3e6 && bg.saved.length > 0 && bg.saved[bg.saved.length - 1] === 19, `the save under 3 MiB (${bg.len} characters, ${bg.saved.length} matches: ${bg.saved.join(" ")})`);
+    check(bg.len < 512000 && bg.saved.length > 0 && bg.saved.every((k, i) => k === 20 - bg.saved.length + i), `the save under 500 KiB: the newest that fit (${bg.len} characters, ${bg.saved.length} matches: ${bg.saved.join(" ")})`);
     await p.evaluate(() => localStorage.clear());
   }
   check(!errs.length, "no errors: " + errs.slice(0, 2).join(" | "));
