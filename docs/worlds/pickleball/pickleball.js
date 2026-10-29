@@ -1887,7 +1887,7 @@
      won plays that again, over and over with a breath between, his stand-in in his steps and its Mr Plan in his, the
      pearls on their own ways. The twelve courts won last keep theirs (some 400 KB each); an older one, or one won
      before this version, rallies as before. */
-  var REC = { HZ: 20, SEC: 90, KEEP: 12, S: 55, ROOM: 2.4e6 }, AF = ["x", "y", "z", "yaw", "drop", "wide", "leanF", "leanS", "phase", "speed", "vx", "vz", "kick", "skid", "splitT"];
+  var REC = { HZ: 20, SEC: 90, KEEP: 12, S: 55, ROOM: 5.1e5 }, AF = ["x", "y", "z", "yaw", "drop", "wide", "leanF", "leanS", "phase", "speed", "vx", "vz", "kick", "skid", "splitT"];
   function recNew() { var n = REC.HZ * REC.SEC; return { f: new Float32Array(n * REC.S), r: new Array(n * 6), n: 0, cap: n, t0: gt, last: -1e9, fx: [] }; }
   function recPut(rec, m) {
     if (gt - rec.last < 1 / REC.HZ - 1e-4) { return; }
@@ -1923,7 +1923,8 @@
      a byte, the eighth saying another follows), in base 64; the strokes, flips and spins it holds as one table and, for
      each athlete, the frames where his changes (their crouch is a function, left out: a replay poses its two from the
      crouch recorded, it does not step them); its bursts as they were. Some 50 to 150 KB a match. The newest go in first,
-     as many as REC.ROOM holds (inside YouTube's 3 MiB with the rest of the save); read back, each plays again. */
+     as many as REC.ROOM holds: the whole save under the 500 KiB YouTube recommends (the artist, 29 Oct 2026: "Cap it then
+     at 500 KiB"), some three to nine matches; read back, each plays again. The rest stay in memory while the game runs. */
   var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", B64I = {};
   B64.split("").forEach(function (ch, i) { B64I[ch] = i; });
   function recPack(R) {
