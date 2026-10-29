@@ -8,6 +8,7 @@
 //            far off the middle of the screen he goes in a sprint (his middle, in the screen's half widths)
 // node pb_measure.js [port] [label]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const [port, label] = process.argv.slice(2);
 const url = `http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`;
 const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }, DESK = { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 };
@@ -16,7 +17,7 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isM
   const out = { label: label || "", colour: {}, pearl: {}, camera: {} };
   // (PB_ONLY: one of colour, pearl, camera; PB_SET: a JSON of ASC values to try, PB_CAM of CAM values, for tuning)
   const ONLY = process.env.PB_ONLY || "", SET = process.env.PB_SET ? JSON.parse(process.env.PB_SET) : null, CAMSET = process.env.PB_CAM ? JSON.parse(process.env.PB_CAM) : null;
-  const open = async (view) => { const p = await b.newPage(view); await p.goto(url); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 }); await p.evaluate((set) => { const d = window.Pickleball.debug(); d.pause(true); if (set && d.ASC) { Object.assign(d.ASC, set); } if (set && set.cam && d.CAM) { Object.assign(d.CAM, set.cam); } }, SET); return p; };
+  const open = async (view) => { const p = await b.newPage(view); await seed(p); await p.goto(url); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 }); await p.evaluate((set) => { const d = window.Pickleball.debug(); d.pause(true); if (set && d.ASC) { Object.assign(d.ASC, set); } if (set && set.cam && d.CAM) { Object.assign(d.CAM, set.cam); } }, SET); return p; };
   const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5); d.toServe();
     for (let i = 0; i < 200; i++) { const u = d.meter(); if (u != null && u >= 0.5 && u <= 0.7) { d.run(1 / 60, true); break; } d.run(1 / 60); }
     for (let i = 0; i < 400; i++) { d.run(1 / 60); const m = d.court.m; if (m && m.balls.some((q) => !q.dead && q.last === "them" && q.y > 1)) { break; } } };

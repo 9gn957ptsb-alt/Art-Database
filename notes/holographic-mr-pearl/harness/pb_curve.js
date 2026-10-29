@@ -3,17 +3,21 @@
 // the ring Mr Plan's shot comes down to, serving hard or into the ace zone) and a human one (it reads the ring a fifth of
 // a second late, stands up to 0.9 m off it, and stops each bar at a point of its own within a tenth of the bar either
 // side of its aim: the serve's, and Mr Plan's counter within 0.08 of the ace zone). For each court
-// it plays matches and counts points and matches won. node pb_curve.js [port] [matches] [courts...]
+// it plays matches and counts points and matches won. node pb_curve.js [port] [matches] [courts...]; PB_UP=1 measures
+// the courts as they were before every court was made a tenth harder (the game's HARD.UP, 1.1 now).
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const [port, nArg, ...ls] = process.argv.slice(2);
 const N = +(nArg || 6), LEVELS = ls.length ? ls.map(Number) : [1, 2, 3, 5, 7, 10, 13, 16, 20];
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const p = await b.newPage({ viewport: { width: 390, height: 844 } }), errs = [];
+  await seed(p);   // (past the walk-through: pb_walk.js tests it)
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
-  await p.evaluate(() => window.Pickleball.debug().pause(true));
+  await p.evaluate((up) => { const d = window.Pickleball.debug(); d.pause(true); if (up) { d.HARD.UP = up; } }, +process.env.PB_UP || 0);
+  console.log("HARD.UP", await p.evaluate(() => window.Pickleball.debug().HARD.UP));
   const rows = [];
   for (const level of LEVELS) {
     for (const who of ["ideal", "human"]) {

@@ -2,11 +2,13 @@
 // Pickleball game [are] not refined enough, I can't make anything out as the user. Make sure it looks hyper polished").
 // The game paused and stepped by its own debug hooks, so each run is the same moment. node pb_look.js outdir [port]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const [out, port] = process.argv.slice(2);
 require("fs").mkdirSync(out, { recursive: true });
 const url = `http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`;
 async function page(b, view) {
   const p = await b.newPage(view), errs = [];
+  await seed(p);   // (past the walk-through: pb_walk.js tests it)
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(url);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });

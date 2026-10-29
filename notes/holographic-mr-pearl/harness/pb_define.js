@@ -6,6 +6,7 @@
 // (inside - ring) / (ring + 0.05), the light he stands out by (D); and S, how closely that light keeps his shape.
 // node pb_define.js [port] [label]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const [port, label] = process.argv.slice(2);
 const url = `http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`;
 const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5);
@@ -22,6 +23,7 @@ const VIEWS = [
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] }), rows = [];
   for (const V of VIEWS) {
     const p = await b.newPage(V.view);
+    await seed(p);   // (past the walk-through: pb_walk.js tests it)
     await p.goto(url);
     await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
     await p.evaluate(() => window.Pickleball.debug().pause(true));

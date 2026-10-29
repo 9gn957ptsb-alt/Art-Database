@@ -4,12 +4,14 @@
 // a rally until he uses it; then the bar: stopped in the ace zone, the pearl goes back and the rally plays on; stopped
 // outside it, the point is his; once a game. Pictures through it. node pb_plansuper.js outdir [port]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const [out, port] = process.argv.slice(2);
 require("fs").mkdirSync(out, { recursive: true });
 let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (!ok) { bad++; } };
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }), errs = [];
+  await seed(p);   // (past the walk-through: pb_walk.js tests it)
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
