@@ -282,7 +282,12 @@ far more than a tenth harder), and his super return comes as much more often. Th
 two players win 10% fewer points together (the human-like one 59.7% of points down to 55.0%, the ideal one 72.4% to
 63.2%); at 1.1 it had been 18% and 23% fewer. Court by court the numbers move by more than chance at this many matches,
 so the tenth is the whole run's; the bars' quicker sweep is not felt by these players (they stop it where they aim),
-so to a person it is a little more.
+so to a person it is a little more. **Then every court after the first harder again** (the artist, 29 Oct 2026: "The
+game is still a bit too easy, make each level 10% harder except for the first level"): the same numbers moved by 1.05
+once more on court two and every court after it (`HARD.UP2`), court one and its walk-through as they were. Measured
+the same way, 30 matches a court at courts 1, 2, 3, 5, 7, 10 and 13 (`PB_UP2=1` is the game before it): on the courts
+after the first the two players win 12% fewer points (the human-like one 60.3% down to 53.3%, the ideal one 70.8% to
+62.1%); on court one 89% and 100%, from 90% and 98%, as it was within chance.
 Measured by `notes/holographic-mr-pearl/harness/pb_curve.js` (the ideal player always on the ring, the human one a
 fifth of a second late and up to 0.9 m off it, its stops on the bars a tenth either side of its aim). Before Mr Plan's
 super return and the returns aimed for the open court, 12 matches a court:

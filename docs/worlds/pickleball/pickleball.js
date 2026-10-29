@@ -1465,10 +1465,12 @@
      the courts to measure what that makes of them. (stretch: with two or three pearls in play the game runs him to each,
      so none is lost for want of legs; while two or more are in play a return of his goes out as often as this, so a pearl of several is
      about as hard to win as a pearl alone: pb_multi.js measures it.) */
-  var HARD = { K: 3, UP: 1.05, FLOOR: 0.3, QUICK: 0.96,
+  var HARD = { K: 3, UP: 1.05, UP2: 1.05, FLOOR: 0.3, QUICK: 0.96,
     one:  { wait: 0.42, err: 0.26, T: 1.25, dive: 0.5, lunge: 0.82, flair: 0.14, lob: 0.1, wide: 0.4, deep: 3.6, dink: 0, ace: 0.8, sweep: 1.15, stretch: 0.01 },
     most: { wait: 0.125, err: 0.066, T: 0.845, dive: 0.89, lunge: 0.96, flair: 0.24, lob: 0.21, wide: 2.13, deep: 6.15, dink: 0.29, ace: 0.31, sweep: 0.71, stretch: 0.26 } };
   function hardness(level) { return 1 - Math.exp(-(max(1, level) - 1) / HARD.K); }
+  // (how far his numbers are moved: by HARD.UP on every court, and by HARD.UP2 more on every court after the first)
+  function upOf(level) { return HARD.UP * (max(1, level) >= 2 ? HARD.UP2 : 1); }
   function nemSkill(level) {
     var h = hardness(level), o = {};
     Object.keys(HARD.one).forEach(function (k) { o[k] = HARD.one[k] + (HARD.most[k] - HARD.one[k]) * h; });
@@ -1479,11 +1481,16 @@
     // his misses at court ten to a third); his flair is show, not skill, and stays; his super return as much more often
     // (psupWill). HARD.UP 1.05 makes pb_curve.js's two players win a tenth fewer points together, 30 matches a court
     // (the human-like one 7.9% fewer, the ideal one 12.8%; 1.1 had made it 18% and 23%); PB_UP=1 there measures the game
-    // as it was, beside the game as it is.
+    // as it was, beside the game as it is. Then (the artist, 29 Oct 2026: "The game is still a bit too easy, make each
+    // level 10% harder except for the first level") HARD.UP2 more on every court but the first, the walk-through's court
+    // as it was: measured the same way, 30 matches a court at courts 1 2 3 5 7 10 13 (PB_UP2=1 in pb_curve.js is the game
+    // before it), HARD.UP2 1.05 has the two players win 12% fewer points on the courts after the first (the human-like one
+    // 60.3% to 53.3%, the ideal one 70.8% to 62.1%), the first as it was (89% and 100%, from 90% and 98%).
+    var up = upOf(level);
     Object.keys(o).forEach(function (k) {
       if (k === "flair") { return; }
-      if (k === "dive" || k === "lunge") { o[k] = 1 - (1 - o[k]) / HARD.UP; return; }
-      o[k] = HARD.most[k] > HARD.one[k] ? o[k] * HARD.UP : o[k] / HARD.UP;
+      if (k === "dive" || k === "lunge") { o[k] = 1 - (1 - o[k]) / up; return; }
+      o[k] = HARD.most[k] > HARD.one[k] ? o[k] * up : o[k] / up;
     });
     // The serve's bar quicker every court, without end (the artist, 29 Oct 2026: "The speed of the moving dot in the
     // serve bar should progressively get faster as you increase in levels"): the curve's own sweep had all but stopped
@@ -2285,7 +2292,7 @@
   function psupWill(m, c) {
     if (TUT.on) { return !!(m.psup && m.psup.avail && m.phase === "rally" && !m.tosses.length && !c.blink && c.ball.serve); }   // (the walk-through: his first return)
     if (!m.psup || !m.psup.avail || m.phase !== "rally" || m.tosses.length || c.ball.ace || c.blink || c.ball.rally < 3) { return false; }   // (never his return of serve: its counter would be a volley of the third shot, against the two-bounce rule)
-    var p = (PSUP.P0 + (PSUP.P1 - PSUP.P0) * hardness(m.level)) * HARD.UP * (m.you === COURT.WIN - 1 ? 3 : 1);
+    var p = (PSUP.P0 + (PSUP.P1 - PSUP.P0) * hardness(m.level)) * upOf(m.level) * (m.you === COURT.WIN - 1 ? 3 : 1);
     return rng() < min(0.6, p);
   }
   function psupStart(m, b) {

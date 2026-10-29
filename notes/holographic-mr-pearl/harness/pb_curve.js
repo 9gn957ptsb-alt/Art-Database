@@ -16,8 +16,8 @@ const N = +(nArg || 6), LEVELS = ls.length ? ls.map(Number) : [1, 2, 3, 5, 7, 10
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
-  await p.evaluate((up) => { const d = window.Pickleball.debug(); d.pause(true); if (up) { d.HARD.UP = up; } }, +process.env.PB_UP || 0);
-  console.log("HARD.UP", await p.evaluate(() => window.Pickleball.debug().HARD.UP));
+  await p.evaluate(([up, up2]) => { const d = window.Pickleball.debug(); d.pause(true); if (up) { d.HARD.UP = up; } if (up2) { d.HARD.UP2 = up2; } }, [+process.env.PB_UP || 0, +process.env.PB_UP2 || 0]);
+  console.log("HARD.UP", await p.evaluate(() => window.Pickleball.debug().HARD.UP), "HARD.UP2 (courts after the first)", await p.evaluate(() => window.Pickleball.debug().HARD.UP2));
   const rows = [];
   for (const level of LEVELS) {
     for (const who of ["ideal", "human"]) {
