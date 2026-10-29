@@ -1190,7 +1190,7 @@
   function courtAt(k) { return [k * COURT.GAP, 0, 0]; }
   var STR = {
     courts: "The courts", wonN: function (n) { return n + (n === 1 ? " court won" : " courts won"); }, open: function (k) { return "court " + (k + 1) + " open"; },
-    welcome: "Holographic Mr Pearl: Pickleball. One court at night, Mr Plan on it. Win it and the next appears beside it, harder: how many courts can you win? Walk onto court one.",
+    welcome: "Mr Pearl vs Mr Plan\nWin 3 points to advance\nHow many courts can you win?",   // (the artist's own three lines, 29 Oct 2026)
     match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Run to the gold circle behind the baseline to serve."; },
     head: function (m) {
       var lv = m.balls.filter(function (q) { return !q.dead; }), r = lv.reduce(function (a, q) { return max(a, q.rally); }, 0);
