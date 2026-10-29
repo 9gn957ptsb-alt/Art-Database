@@ -94,7 +94,11 @@ the newest first, as many as fit with the rest of the save under the 500 KiB You
 plays again within a millimetre of how it played before (`pb_replay.js` reloads and compares). One won before this
 version, or one that will not read, rallies as before. The
 score is the number of courts won; the HUD keeps the last ten as squares (filled while they play on by themselves,
-gold while he plays one). **A square's number tapped takes him there** (the artist, 28 Oct 2026: "once you get a
+gold while he plays one). **The match's score is always there beside them** (the artist, 29 Oct 2026: "make sure that
+the score of the game is always visible to the right of the court squares at the top"): "you 1 – 0 Mr Plan", his points
+in gold, Mr Plan's in cyan, a point won lighting its number a moment; its room comes first, the squares sharing what
+is left (fewer, never under 20 px), and on a screen too narrow for the names, the points alone (`pb_aspect.js` checks
+it at every ratio; the walk-through's 0 – 0 and 1 – 0 in `pb_walk.js`). **A square's number tapped takes him there** (the artist, 28 Oct 2026: "once you get a
 certain amount like 20, the 21st Court is pretty far from where you start. I want you to be able to click on the court
 number and it teleport you to that location, I don't want it to automatically put you in the serving position but right
 beside it so that you only have to take three steps to be in the Golden Circle"): between matches (in one the numbers
