@@ -4,13 +4,16 @@
 // on the next point, and the match he goes on to win is recorded from its start; a match's recording takes its own
 // court's bursts only; the serve goes where he looked at the tap; on the mark the view swings round to the net, not
 // cut; in a rally the side arrows step him sideways; Mr Plan's super return ends the serve, so the next one starts at
-// the gold circle; the GL context lost and given back, the picture comes back. node pb_rules.js [port]
+// the gold circle; the GL context lost and given back, the picture comes back; the serve's bar quicker every court.
+// node pb_rules.js [port]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const [port] = process.argv.slice(2);
 let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (!ok) { bad++; } };
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const p = await b.newPage({ viewport: { width: 390, height: 844 } }), errs = [];
+  await seed(p);   // (past the walk-through: pb_walk.js tests it)
   p.on("pageerror", (e) => errs.push(String(e)));
   const url = `http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`;
   const fresh = async (save) => {
@@ -163,6 +166,24 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   const l1 = await lum();
   check(lost === "restored" && l0 > 1 && l1 > 0.5 * l0, `the GL context lost and given back: the picture comes back (${lost}; light ${l0} before, ${l1} after)`);
 
+  // the serve's bar quicker every court, without end (the artist, 29 Oct 2026: "The speed of the moving dot in the serve
+  // bar should progressively get faster as you increase in levels"): the numbers, courts 1 to 200, each quicker than the
+  // last and none at the floor; and the dot itself, timed across the bar at the serve on courts 1, 10 and 20
+  await fresh();
+  const sw = await p.evaluate(() => {
+    const d = window.Pickleball.debug(), H = d.HARD; let down = true, prev = 99, min = 99;
+    for (let l = 1; l <= 200; l++) { const v = d.skill(l).sweep; if (!(v < prev)) { down = false; } prev = v; min = Math.min(min, v); }
+    const timed = [1, 10, 20].map((l) => {
+      d.enter(d.courts.length - 1); d.run(0.3); const m = d.court.m; m.level = l; m.sk = d.skill(l); d.toServe(); d.run(0.4);
+      let t0 = null, t1 = null; for (let i = 0; i < 600 && t1 == null; i++) { const u = d.meter(); if (u != null) { if (t0 == null && u >= 0.1 && u < 0.5) { t0 = d.gt(); } else if (t0 != null && u >= 0.9) { t1 = d.gt(); } } d.run(1 / 120); }
+      const out = { level: l, sweep: +m.sk.sweep.toFixed(3), across: t1 != null ? +((t1 - t0) / 0.8).toFixed(3) : null };
+      m.you = 3; d.winCourt(); d.run(0.3); return out;
+    });
+    return { down, above: min > H.FLOOR, min: +min.toFixed(4), floor: H.FLOOR, one: +d.skill(1).sweep.toFixed(3), timed };
+  });
+  check(sw.down && sw.above && sw.one > 1.0, `the bar quicker every court, 1 to 200, never at its floor (${sw.one} s a sweep on court one, ${sw.min} on court 200, the floor ${sw.floor})`);
+  const tm = sw.timed;
+  check(tm.every((x) => x.across != null && Math.abs(x.across - x.sweep) < 0.03) && tm[0].across > tm[1].across && tm[1].across > tm[2].across, "and the dot itself, timed across the bar, quicker on court 10 than 1 and on 20 than 10: " + JSON.stringify(tm));
   check(!errs.length, "no errors: " + errs.slice(0, 2).join(" | "));
   console.log(bad ? bad + " FAILED" : "all ok");
   await b.close(); process.exit(bad ? 1 : 0);

@@ -2,12 +2,14 @@
 // (and its roll), leap (the overhead), the backflip; plain (the cells as they are) and in the ASCII pass.
 // node pb_moves.js outdir [port]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const fs = require("fs");
 const [out, port] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const p = await b.newPage({ viewport: { width: 640, height: 480 } }), errors = [];
+  await seed(p);   // (past the walk-through: pb_walk.js tests it)
   p.on("pageerror", (e) => errors.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me);

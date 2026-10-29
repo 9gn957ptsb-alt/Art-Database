@@ -14,6 +14,7 @@
 // node pb_flicker.js port [outfile]   (outfile: the numbers as JSON; beside it, <outfile>_<view>_<scene>.png, the last
 // frame with every cell that flipped back marked in red, brighter the more often; PB_VIEWS=phone or desk: one view)
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const fs = require("fs");
 const [port, outfile] = process.argv.slice(2);
 const url = `http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`;
@@ -95,6 +96,7 @@ const scenes = {
   for (const [vn, view] of Object.entries(views).filter(([n]) => !process.env.PB_VIEWS || process.env.PB_VIEWS.split(",").includes(n))) {
     for (const [sn, sc] of Object.entries(scenes)) {
       const p = await b.newPage(view);
+      await seed(p);   // (past the walk-through: pb_walk.js tests it)
       p.on("pageerror", (e) => errs.push(String(e)));
       await p.addInitScript(hook);
       await p.goto(url);

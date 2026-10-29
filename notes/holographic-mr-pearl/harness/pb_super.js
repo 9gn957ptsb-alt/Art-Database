@@ -3,6 +3,7 @@
 // the point it is used in, once a game, from the serve, in a rally of one pearl and in a rally of three (the other two
 // held, then played on); pictures through it. node pb_super.js outdir [port] [phone|desk]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const [out, port, kind] = process.argv.slice(2);
 require("fs").mkdirSync(out, { recursive: true });
 const VIEW = kind === "desk" ? { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 } : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true };
@@ -10,6 +11,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const p = await b.newPage(VIEW), errs = [];
+  await seed(p);   // (past the walk-through: pb_walk.js tests it)
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
@@ -24,8 +26,8 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   q = await btn();
   check(q.shown && !q.disabled, "on a court it is there and ready");
   check(q.x + q.w > q.W - 40 && q.y < 40 && q.w >= 44 && q.h >= 44, "in the top right corner, a finger's size: " + JSON.stringify(q));
-  const where = await D(() => { const r = document.getElementById("where").getBoundingClientRect(), s = document.getElementById("super").getBoundingClientRect(); return { right: r.right, sl: s.left }; });
-  check(where.right <= where.sl, "the words at the top stop short of it: " + JSON.stringify(where));
+  const where = await D(() => { const d = window.Pickleball.debug(); d.draw(); const r = d.hud().strip, s = document.getElementById("super").getBoundingClientRect(); return { right: r.x + r.w, sl: s.left }; });
+  check(where.right <= where.sl, "the courts' squares at the top stop short of it: " + JSON.stringify(where));
 
   // 1. at the serve: a press, and the point is his
   const one = async (label, setup) => {

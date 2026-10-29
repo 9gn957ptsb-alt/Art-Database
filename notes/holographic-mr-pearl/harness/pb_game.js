@@ -3,6 +3,7 @@
 // athletes move as athletes (speeds, split-steps, lunges, dives, leaps), and screenshots for the eye.
 // node pb_game.js phone|desk outdir [port] [url]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const fs = require("fs");
 const [view, out, port, url] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
@@ -13,6 +14,7 @@ const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") + what); if (
 (async () => {
   const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
   const page = await browser.newPage(V), errors = [], hosts = new Set();
+  await seed(page);   // (past the walk-through: pb_walk.js tests it)
   page.on("pageerror", (e) => errors.push(String(e))); page.on("console", (m) => { if (m.type() === "error") { errors.push(m.text()); } });
   page.on("request", (r) => hosts.add(new URL(r.url()).host));
   await page.goto(url || `http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);

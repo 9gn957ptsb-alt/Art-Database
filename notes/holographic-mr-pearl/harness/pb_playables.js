@@ -69,8 +69,9 @@ const MOCK = (saved, o) => `window.ytgame = (function () {
   await p.addInitScript(MOCK(store));
   await p.goto(`http://127.0.0.1:${port}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.__yt && window.__yt.calls.indexOf("gameReady") >= 0, null, { timeout: 120000 });
-  const back = await p.evaluate(() => { const d = window.Pickleball.debug(); return { courts: d.courts.length, won: d.courts[0].won, up: d.courts[0].up, best: d.courts.best }; });
+  const back = await p.evaluate(() => { const d = window.Pickleball.debug(); return { courts: d.courts.length, won: d.courts[0].won, up: d.courts[0].up, best: d.courts.best, rec: !!d.courts[0].rec }; });
   check(back.courts === 2 && back.won && back.up && back.best === 9, "the save comes back: " + JSON.stringify(back));
+  check(back.rec && /"recs":\{"0":/.test(store) && store.length < 3e6, "the match won kept through the SDK's save, and played again (" + store.length + " characters)");
   // a frame with no size (the Android app's hidden first view), then its size again
   await p.evaluate(() => { document.getElementById("view").style.width = "0px"; document.getElementById("view").style.height = "0px"; });
   await p.waitForTimeout(600);

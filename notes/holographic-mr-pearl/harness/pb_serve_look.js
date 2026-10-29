@@ -1,11 +1,13 @@
 // pb_serve_look.js - pictures of the serve (28 Oct 2026): the Scope up and the bar running under it, then three pearls
 // in play, then the third person's view, now a quarter of the screen to his figure. node pb_serve_look.js outdir [port]
 const { chromium } = require("playwright");
+const seed = require("./pb_seed");
 const [out, port] = process.argv.slice(2);
 require("fs").mkdirSync(out, { recursive: true });
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }), errs = [];
+  await seed(p);   // (past the walk-through: pb_walk.js tests it)
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me);
