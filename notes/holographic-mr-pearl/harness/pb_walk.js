@@ -176,8 +176,9 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   const pz = await D(() => { const d = window.Pickleball.debug(); d.pause(true); document.getElementById("super").click(); return d.court.m.sup.armed; });
   check(!pz, "paused, a press of the Super does nothing");
   // a court won in it ends it, nothing left standing
-  const wc = await D(() => { const d = window.Pickleball.debug(); d.winCourt(); d.run(0.5); return { on: d.tut().on, done: d.tut().done, stop: d.tut().stop, courts: d.courts.length }; });
+  const wc = await D(() => { const d = window.Pickleball.debug(); d.winCourt(); d.run(0.5); d.draw(); const pl = d.hud().pearls.find((q) => q.k === 0); return { on: d.tut().on, done: d.tut().done, stop: d.tut().stop, courts: d.courts.length, cele: pl && +pl.cele.toFixed(2), up: pl && pl.up }; });
   check(!wc.on && wc.done && !wc.stop && wc.courts === 2, "a court won in it ends it: " + JSON.stringify(wc));
+  check(wc.up && wc.cele > 0 && wc.cele < 1, "and its pearl, won, celebrates (the artist, 29 Oct 2026: \"a subtle celebratory animation every time you are victorious\"): " + wc.cele);
   await D(() => localStorage.clear());
   const g = await D(() => ["tc", "last", "u", "wd", "mb", "raw", "dt", "ck", "ab", "zx", "lines"].filter((k) => k in window));
   check(!g.length, "no stray globals: " + g.join(" "));
