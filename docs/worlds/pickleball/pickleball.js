@@ -2923,7 +2923,7 @@
       if (q && q[0] > 12 && q[0] < W - 12 && q[1] > hudLow && q[1] < H - 12) { txt("◆", q[0], q[1] + bob, 18, G.gold); lab("play", STR.cue.play, q[0], q[1] - 24, G.gold, 13); }
       trail([cc[0], cc[2] + COURT.L - 1]);
       var bt = document.querySelector("#courts button:last-child");
-      if (bt) { var br = bt.getBoundingClientRect(); if (!CUE.rm && st) { ripple({ left: st.x + st.w - st.h, top: st.y, width: st.h, height: st.h }, beat() / 0.8, 6); } lab("go", STR.cue.go[hand], br.right + 10, br.top + br.height / 2, G.gold, 12, "left"); }
+      if (bt) { var br = bt.getBoundingClientRect(); if (!CUE.rm && st) { ripple({ left: st.x + st.w - st.h, top: st.y, width: st.h, height: st.h }, beat() / 0.8, st.h / 2); } lab("go", STR.cue.go[hand], br.right + 10, br.top + br.height / 2, G.gold, 12, "left"); }
     }
     else if (key === "serve") { circleCue(); }
     else if (key === "bar") { if (m && m.served + m.tosses.length < 1) { barCue(); } }
@@ -3040,12 +3040,13 @@
     // (on a narrow screen in a match, beside the Super, fewer squares, each wide enough for its number)
     var right = sb.width ? min(tr.right, sb.left - 10) : tr.right, fs = courts.length > 99 ? 10 : 12, need = 0.61 * fs * String(courts.length).length + 6;
     // (the match's score beside them, always (the artist, 29 Oct 2026: "make sure that the score of the game is always
-    // visible to the right of the court squares at the top"): his points in gold, Mr Plan's in his cyan, named; its room
+    // visible to the right of the court squares at the top"; then "It should say Mr Pearl instead of you for the
+    // scoreboard"): Mr Pearl's points in gold, Mr Plan's in his cyan, each named; its room
     // first, the squares in what is left, no smaller than 20 px; on a screen too narrow for its names, the points alone)
     var sc = null;
     if (m) {
       var part = function (t, f, col) { c.font = "700 " + f + "px ui-monospace, SFMono-Regular, Menlo, monospace"; return { t: t, f: f, col: col, w: c.measureText(t).width }; };
-      var full = [part("you ", 12, "#c9c6bd"), part(String(m.you), 18, "#ffd166"), part(" – ", 18, "#f2efe8"), part(String(m.them), 18, "#9ff3ff"), part(" Mr Plan", 12, "#c9c6bd")];
+      var full = [part("Mr Pearl ", 12, "#c9c6bd"), part(String(m.you), 18, "#ffd166"), part(" – ", 18, "#f2efe8"), part(String(m.them), 18, "#9ff3ff"), part(" Mr Plan", 12, "#c9c6bd")];
       var ws = function (ps) { return ps.reduce(function (a2, q2) { return a2 + q2.w; }, 0); };
       sc = right - x0 - ws(full) - 14 >= 20 ? full : full.slice(1, 4);
       sc = { parts: sc, w: ws(sc) }; right -= sc.w + 14; need = max(need, 20);
@@ -3056,11 +3057,24 @@
     hudBox.strip = { x: x0, y: y0, w: cnt * (sz + gap) - gap, h: sz };
     courtButtons(n0, sz, gap, x0, y0);
     c.font = "600 " + fs + "px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
+    // (each a pearl, not a square (the artist, 29 Oct 2026: "I want the squares that indicate the game number to also
+    // be pearls instead of squares"): a won court's whole, lit from above left, its sheen faintly rose and blue, its
+    // number dark in it; the one he plays ringed in gold; the open one a pearl's outline, a glint at its shoulder)
     courts.slice(n0).forEach(function (q, j) {
-      var x = x0 + j * (sz + gap), on = m && m.k === q.k;
-      if (q.up) { c.fillStyle = "rgba(236,236,228,0.92)"; c.fillRect(x, y0, sz, sz); }
-      c.strokeStyle = on ? "#f3c98b" : "rgba(236,236,228,0.9)"; c.lineWidth = on ? 2 : 1; c.strokeRect(x + 0.5, y0 + 0.5, sz - 1, sz - 1);
-      c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.k + 1), x + sz / 2, y0 + sz / 2 + 0.5);
+      var x = x0 + j * (sz + gap), on = m && m.k === q.k, r = sz / 2, cx = x + r, cy = y0 + r;
+      c.save(); c.beginPath(); c.arc(cx, cy, r - 0.5, 0, 2 * PI);
+      if (q.up) {
+        var pg = c.createRadialGradient(cx - 0.35 * r, cy - 0.4 * r, 0.05 * r, cx, cy, r);
+        pg.addColorStop(0, "#ffffff"); pg.addColorStop(0.35, "#f3eee6"); pg.addColorStop(0.75, "#d6cfc4"); pg.addColorStop(1, "#ada597");
+        c.fillStyle = pg; c.fill(); c.lineWidth = 1; c.strokeStyle = "rgba(255,226,240,0.55)"; c.stroke();
+        c.beginPath(); c.arc(cx, cy, r - 2, 0.15 * PI, 0.6 * PI); c.strokeStyle = "rgba(170,205,255,0.45)"; c.lineWidth = 1.5; c.stroke();   // (a cool sheen low on its right)
+      } else {
+        c.fillStyle = on ? "rgba(243,201,139,0.14)" : "rgba(236,236,228,0.08)"; c.fill();
+        c.lineWidth = on ? 2 : 1; c.strokeStyle = on ? "#f3c98b" : "rgba(236,236,228,0.9)"; c.stroke();
+        c.beginPath(); c.arc(cx - 0.38 * r, cy - 0.42 * r, max(1.2, 0.12 * r), 0, 2 * PI); c.fillStyle = "rgba(255,255,255,0.55)"; c.fill();   // (the glint)
+      }
+      c.restore();
+      c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.k + 1), cx, cy + 0.5);
     });
     hudBox.score = null; if (!sc) { HUD.score = null; }   // (a new match's 0 - 0 comes in without a flash)
     if (sc) {
@@ -3069,8 +3083,8 @@
       var fl2 = CUE.rm ? 0 : max(0, 1 - (CUE.rt - HUD.flash) / 0.5), sx2 = hudBox.strip.x + hudBox.strip.w + 14, sy2 = y0 + sz / 2;
       c.textAlign = "left"; c.textBaseline = "middle";
       sc.parts.forEach(function (q2) {
-        var f2 = q2.f === 18 && q2.t !== " – " ? q2.f * (1 + 0.3 * fl2) : q2.f;
-        c.font = "700 " + f2 + "px ui-monospace, SFMono-Regular, Menlo, monospace"; c.lineWidth = 4; c.strokeStyle = "rgba(0,0,0,0.85)"; c.strokeText(q2.t, sx2, sy2); c.fillStyle = q2.col; c.fillText(q2.t, sx2, sy2); sx2 += q2.w;
+        var f2 = q2.f === 18 && q2.t !== " – " ? q2.f * (1 + 0.3 * fl2) : q2.f, mx = sx2 + q2.w / 2;   // (a number lit grows about its own middle)
+        c.textAlign = "center"; c.font = "700 " + f2 + "px ui-monospace, SFMono-Regular, Menlo, monospace"; c.lineWidth = 4; c.strokeStyle = "rgba(0,0,0,0.85)"; c.strokeText(q2.t, mx, sy2); c.fillStyle = q2.col; c.fillText(q2.t, mx, sy2); sx2 += q2.w;
       });
       hudBox.score = { x: hudBox.strip.x + hudBox.strip.w + 14, y: sy2 - 13, w: sc.w, h: 26, you: m.you, them: m.them, named: sc.parts.length === 5 };
     }
