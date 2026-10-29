@@ -10,24 +10,18 @@ body { color: var(--fg); font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo,
 #hud { pointer-events: none; }
 .top { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left));
        right: calc(12px + env(safe-area-inset-right)); pointer-events: none; }
-/* (the words over the characters: a wide dark halo, so a pole or a lamp behind a line of words gives way to it) */
-#where { letter-spacing: 0.12em; text-transform: uppercase; text-shadow: 0 0 3px var(--shade), 0 0 6px var(--shade), 0 0 14px var(--shade), 0 0 14px var(--shade); }
+/* (the words at the top went, the courts' squares the top now (the artist, 28 Oct 2026: "Take out the writing above the
+   court numbers at the very top and just have the court number squares be the top"): kept for a screen reader only) */
+#where { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 #loading { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); letter-spacing: 0.12em; text-transform: uppercase; }
 #loading[hidden] { display: none; }
 #say { position: fixed; left: calc(12px + env(safe-area-inset-left)); top: calc(118px + env(safe-area-inset-top));
        width: min(520px, calc(100% - 24px)); pointer-events: none;
        text-shadow: 0 0 3px var(--shade), 0 0 8px var(--shade), 0 0 16px var(--shade), 0 0 16px var(--shade); transition: opacity 0.4s; }
-/* how to play, at its moments: one tip at a time, popping up under the words (under the serve's bar, for the bar's) */
-#help { position: fixed; left: calc(12px + env(safe-area-inset-left)); top: calc(190px + env(safe-area-inset-top));
-        width: min(460px, calc(100% - 24px)); box-sizing: border-box; pointer-events: none; padding: 9px 12px;
-        font-size: 11.5px; line-height: 1.5; border: 1px solid rgba(243, 201, 139, 0.55); border-radius: 10px;
-        background: rgba(6, 8, 14, 0.82); transition: opacity 0.3s; animation: tip-in 0.28s ease-out; }
-@keyframes tip-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { #help { animation: none; } }
-#help b { color: var(--gold); font-weight: 700; letter-spacing: 0.06em; }
-#help .h { color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
-#help[hidden] { display: none; }
-@media (max-height: 460px) { #help { font-size: 10px; line-height: 1.35; padding: 6px 10px; } }
+/* how to play: shown on the thing itself, on the HUD (the artist, 29 Oct 2026: "I don't like this chat box for the
+   method of showing users how to play. I want a more interactive learning experience for users"); its sentences kept
+   here for a screen reader only, as the words at the top are */
+#help { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 button { position: fixed; border: 1px solid var(--edge); background: var(--pane); color: var(--fg);
          font: inherit; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 999px; touch-action: manipulation; }
 button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -38,5 +32,15 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
          padding: 0 14px; border-color: var(--gold); color: var(--gold); font-weight: 700; }
 #super[aria-pressed="true"] { background: var(--gold); color: var(--bg); }
 #super:disabled:not([aria-pressed="true"]) { border-color: var(--edge); color: var(--fg); opacity: 0.35; }
+/* (the walk-through's last step waits for it: a steady gold outline; the ripple round it is the HUD's, on the beat) */
+#super.nudge { box-shadow: 0 0 0 3px rgba(243, 201, 139, 0.45); }
 body:not([data-phase]) #super, body[data-phase="walk"] #super { display: none; }
 body[data-phase]:not([data-phase="walk"]) .top { right: calc(118px + env(safe-area-inset-right)); }
+/* the courts' numbers: a button over each square the HUD draws (the artist, 28 Oct 2026: "I want you to be able to
+   click on the court number and it teleport you to that location"), a finger's height; between matches only, so in a
+   match a tap there is the game's (the bar, the stick) */
+#courts { position: fixed; inset: 0; pointer-events: none; }
+#courts button { pointer-events: auto; padding: 0; border: 0; border-radius: 6px; background: transparent; color: transparent;
+                 font-size: 1px; letter-spacing: 0; overflow: hidden; }
+#courts button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+body[data-phase]:not([data-phase="walk"]) #courts { visibility: hidden; }

@@ -26,6 +26,56 @@ starts with just 1 court. Once you beat that first court, the second court adjac
 each time you win a court. Previous courts still automatically play and you win each game as you advance. The goal is
 to see how many courts you can win. each court gets progressively harder. By the time you get to court 10, the game
 should be very hard"). The game starts in front of one court, under its floodlights, and nothing else stands there.
+
+**A first game is walked through** (the artist, 28 Oct 2026: "The first court should be a walk-through, that takes you
+step-by-step all the things you can do"; then, 29 Oct 2026, its steps set out: "I want there to be a suggestive gesture
+of a finger touching the screen forward on the left side and I want the gold circle for the serve spot to show up
+immediately. When you get to the serve spot I want a golden arrow to point down to the ace region of the serve bar and
+the words "tap anywhere" to pop up. Make sure the walkthrough words are twice as big as they currently are. Once you tap
+to serve the game should freeze and then the words "serve up to three pearls at a time" to pop up and then a 3 seconds
+later another text pops up that reads "tap anywhere to continue". Regardless of how many times a user taps on the first
+serve of the first game, only one ball should be served. Once you serve it, Mr Plan will use his super on his first
+return and after the animation for his super starts it should freeze and the words "Each player can use one super per
+game" after 3 seconds it should say "tap anywhere to continue". After the user taps the animation for Mr Plan's return
+should continue a little bit and right as the ball goes over the net the screen should freeze again and the words "Hit
+the return" should pop up as the same golden arrow should be pointing down above the bar but this time to the section
+labeled return. Once the user gets a chance to land the dot running in the bar into the return zone, the animation
+should continue for another split second before it freezes again and the words pop up "or use your super to counter" in
+which a golden arrow points to the super button in the top right. This will be a free super use that only happens in
+the first game because once the user hit the super button Mr Pearl will go on to win the point, but will maintain
+having another super for the first game. Once Mr Pearl wins that first point and returns to the second serve the
+walkthrough is over and the user is winning 1-0 with another super"). With no court won and the walk-through not yet
+done, court one's match begins on the first frame, its gold circle there at once, he three steps from it (where its
+number puts him, below). On the left half a hand's ghost touches the screen, a gold ring where it lands, and pushes
+forward along a line of gold dots, then lifts, each 1.6 s (on a desk, with the W key beside it); it gives way while his
+own thumb moves him. Each later time a touch is wanted, its gesture too (the artist, 29 Oct 2026: "There should be touch
+gestures as well for each time the user is supposed to touch the screen during the walkthrough"): the hand's ghost where
+the right thumb rests, hovering, and pressing, a gold ring where it touches, while a tap would do it (at the bar, as the
+mark comes into the gold; at "to continue", on the beat; at the Super, its finger on the button; on a desk, its key
+beside it). On the mark a gold arrow, bobbing, points down at the bar's ace zone, "tap anywhere" over it (beside it on a
+short screen; "click anywhere", "press space" on a desk); a tap in a fault's part of the bar only says so, under the bar
+and to a screen reader ("too soft", "too long"), and the bar runs on, so the one pearl is always served, and however many taps follow, one pearl it is. As the guitar
+strikes it the game stands still: "serve up to three pearls at a time", and three seconds on, "tap anywhere to
+continue" (a tap before then does nothing). Mr Plan's first return is his super; just over half a second into it, him
+in the air, still again: "Each player can use one super per game", then the same. A tap, and his windmill strike and
+the pearl's slow flight go on; as it crosses the net, still: "Hit the return", the same arrow down at the counter's
+bar, now at its return zone, its mark running while the game stands (outside the zone, "missed", and it runs on). In
+the zone, "◆ return", a quarter of a second more, then still, the counter's bar gone: "or use your super to counter",
+an arrow up at the Super, which ripples and is the one thing that goes on (a tap elsewhere draws an arrow toward it). A
+tap at a stop is read once, as the finger lands. His Super meets Mr Plan's
+and wins the point, the first of the match: 1 - 0. It was free: as its play ends his Super is his again for the
+game, Mr Plan's spent, and with the second serve the walk-through is over (the words under the squares say so). Its words are 26 px, twice
+the cues' 13, wrapped to the screen and placed clear of the Super, the squares, the bar and the players; a screen
+reader hears each step's sentence (a polite live region, out of sight), and "to continue" once it shows. Done is kept
+with the save (a court won ends it too, and what it showed is not shown again as tips). `pb_walk.js` plays it upright,
+on its side and on a desk with a bot that does only what the screen shows, and taps where it should not on the way (in
+a fault's part of the bar, before "to continue", outside the return zone, beside the Super, a burst after its serve):
+each does nothing but say so.
+
+**The courts' squares are the top** (the artist, 28 Oct 2026: "Take out the writing above the court numbers at the very
+top and just have the court number squares be the top"): the line that stood above them (court, level, the score,
+the rally, the courts won) is gone from the screen (kept for a screen reader); the score is said after each point, in
+the words under the squares. In a match the squares stop short of the Super button, smaller on a narrow screen.
 A match lost starts again from love on the same court; a court won plays on by itself (his stand-in against that
 court's Mr Plan, never losing a match) and the next court appears beside it, harder. There is no last court. **A court
 won plays again the match he won on it** (the artist, 28 Oct 2026: "Make sure that the games that are repeating are
@@ -34,10 +84,28 @@ Mr Plan's are made of (place, turn, lean, crouch, stride, speed, and the stroke,
 clock), the pearls in play, the score and the bursts are kept, the last 90 seconds; the court won loops that, a
 breath between, his stand-in in his steps, its Mr Plan in his. `pb_replay.js` plays court one to a win and checks the
 loop: the two within 1.2 cm of where they were, in the same strokes, the pearls and the score as they went. The
-twelve courts won last keep theirs (some 400 KB each); an older one, or one won before this version (a save keeps no
-recording), rallies as before. The
+twelve courts won last keep theirs (some 400 KB each in play), **and the save keeps them** (the artist, 29 Oct 2026: "I
+want the games that you have won to save even when I go out of the artifact so they are always replaying. Right now
+when I return to the games resort to a simple back and forth"): each match written once, the first time it is saved,
+as the steps from frame to frame of each of its 55 columns in thousandths (a millimetre, a millisecond), each step in
+as few bytes as it needs, in base 64, with its strokes, flips and spins and its bursts (a 71-second match: 138 KB);
+the newest first, as many as 2.4 MB holds (twelve, inside YouTube's 3 MiB with the rest of the save); read back, each
+plays again within a millimetre of how it played before (`pb_replay.js` reloads and compares). One won before this
+version, or one that will not read, rallies as before. The
 score is the number of courts won; the HUD keeps the last ten as squares (filled while they play on by themselves,
-gold while he plays one).
+gold while he plays one). **A square's number tapped takes him there** (the artist, 28 Oct 2026: "once you get a
+certain amount like 20, the 21st Court is pretty far from where you start. I want you to be able to click on the court
+number and it teleport you to that location, I don't want it to automatically put you in the serving position but right
+beside it so that you only have to take three steps to be in the Golden Circle"): between matches (in one the numbers
+are only numbers), he blinks to the open court, 4.5 m out past its sideline and 1.5 m back from the first point's gold
+circle, its match begun so the circle is there, the view turned a little off it so the ring stands beside him and not
+over his hat; his stride lengthens as he speeds up, so a walk takes three steps to lock onto it (2.75 measured), a
+sprint 2.3, a gentle push 3.6. Straight ahead takes him in: at the serve, before he is on the circle, a way within 30
+degrees of it goes straight to it (the view turned off it would otherwise have him walk past, 1.4 m wide). Not the corner behind the circle: a floodlight's pole stood there between the view and him.
+And on any way he goes, no pole is drawn within 2.5 m of the view or within a metre of its line to him: walking into
+the circle from beside it the view's arm lies along the corner's pole, a wall of bars down the picture. A won
+court's number puts him behind its baseline to watch it play. Each square is a button 48 px tall over the 28 px square
+(transparent: the HUD draws the square), made again only when the row changes. `pb_go.js` taps them, phone and desk.
 
 **The serve** (the artist, 28 Oct 2026: "I want you to be able to serve up [to] 3 balls in one serve so you can play
 multiple balls/points at once. Use the scope view for the every serve and add an animation that you have to land a bar
@@ -51,8 +119,7 @@ that serves as a strong visual cue of the spot"); off the screen the same circle
 with an arrow. Within two of its radii he locks onto it (the artist: "As long as the user runs within two radius' of the
 serve spot, they should lock into the location to serve"): he steps onto the mark, turns to the net with a bounce, the mark answers with a ring of gold along the court, and
 the third person's view swings round to face across the net (where it looks at the tap, inside the diagonal service
-court, the serve goes; a drag aims it, each pearl while the serve is open); a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.15 s each way on
-court one, quicker each court), its instruction written under it. A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
+court, the serve goes; a drag aims it, each pearl while the serve is open); a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.10 s each way on court one, quicker every court), its instruction written under it. A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
 fault), then `- = + *` softer to harder (deeper and quicker), `◆` the gold ace zone (hard into the deep corner: a
 chance at an ace, four in five on court one, two in three on court two, a third by court ten, Mr Plan going for it at full stretch and
 not getting there), `#` hard, `△` long (a fault). After each pearl the mark sweeps again from the start, a moment after
@@ -76,7 +143,7 @@ returns aimed and Mr Plan's super in play; 100%, 59%, 42% before them, against 9
 
 **The super return** (the artist, 28 Oct 2026: "Mr Pearl also gets one super return each game that is a spectacular and
 impressive animation that automatically wins Mr Pearl one point"; then "I want a button in the top right corner that
-allows you to use your superpower and automatically win the point"). The gold `◆ Super` button in the top right corner
+allows you to use your superpower and automatically win the point"). The gold `Super` button (just the word: the artist, 29 Oct 2026, "Get rid of the dot to the left of super in the button and just have the word") in the top right corner
 (E or Q on a desk), there while a match is on, once a game (a new one each game; spent, it stays, dimmed). A press
 plays it at once, at any moment of a point (between points, on the next): the pearl coming to him (none coming, the one
 he sent last, called back; at his serve, one from his hand) leaves its flight and rises to meet him, and time stands
@@ -108,15 +175,19 @@ words and Mr Plan's warning say so while it is there to use. While it plays the 
 **Hands.** Touch and mouse alike (YouTube asks both for everything): the left half is a stick (where the finger or the
 press lands is its middle), the right half a drag that turns the view (walking, or to aim the serve; never in a rally),
 a tap or a click
-anywhere stops the serve's bar; Super is the one button, top right. How to play comes as pop-ups at their moments (the artist,
-28 Oct 2026: "I want the how to to be pop-ups that happen when you're walking through that are cued by certain moments"):
-how to move as the game opens (gone once he moves), the open court as he walks about, the gold circle when a match
-begins, the bar when he is on the mark (under the bar), the ○ ring when Mr Plan first returns, the pearls when two or
-more are in play, the Super after the first point; each once (which have been shown is kept with the save), one at a
-time, the next waiting its turn, each gone once it is done or after its few seconds in view (its time stops while a bar
-covers it; the ring's waits for its turn even if he has already struck, his stroke being the game's), kept as shown
-once gone; a finger's words on a touch
-screen, a desk's keys where there is a mouse. `pb_tips.js` walks through them. On a desk the keys too: WASD or the arrows (in a rally, the view held, ← and → step him sideways; Shift
+anywhere stops the serve's bar; Super is the one button in a match, top right; between matches the courts' numbers
+are buttons, each taking him to its court. A button presses as the finger lifts from it (a phone makes no click for a
+second finger's tap while the stick's thumb is down), or with Enter or Space when it has the keyboard's focus. Beyond the walk-through (above), how to play comes at its moments (the artist,
+28 Oct 2026: "I want the how to to be pop-ups that happen when you're walking through that are cued by certain moments"),
+shown the same way, on the things themselves: the ghost stick pushing up as the game opens (on a desk W A S D, W the
+way, Shift to run; gone once he moves); walking about, "◆ play" over the open court, a trail to it and its number's
+square rippling, "← or tap"; a match begun, the trail to the gold circle and "serve here"; on the mark, the ghost tap
+under the bar; after the first pearl, "again" for a second and a third; Mr Plan's first return, "get here" and the
+trail; two or three pearls in play, their numbers over them; the Super after the first point, a ripple round it, "wins
+any point", "one a game". Each once (which have been shown is kept with the save), one at a time, the next waiting its
+turn, each gone once it is done or after its few seconds with its cue in view; a finger's words on a touch screen, a
+desk's keys where there is a mouse, each one's sentence for a screen reader. `pb_tips.js` walks through them on a phone
+and a desk. On a desk the keys too: WASD or the arrows (in a rally, the view held, ← and → step him sideways; Shift
 for full speed), Space, T or Enter to stop the bar, E or Q for the super return. His strokes are his own: when Mr Plan's shot comes, the game finds where his paddle can meet it and the stroke
 goes then; the player's part is to be near, to aim and to serve.
 
@@ -184,7 +255,21 @@ at court two, three quarters at five, 0.95 at ten, and nearer the whole each cou
 go how soon Mr Plan reads the pearl (0.42 s on court one, 0.125 at the hardest), how rarely he misses (26% of his shots
 out or in the net, down to 6.6%), how often his dives and lunges get there, how he places it (deeper, wider, faster:
 1.25 s across, down to 0.845), dinks into the kitchen from court three, lobs to be leapt for, and the serve: its bar
-quickens (1.15 s a sweep, down to 0.71) and the ace zone pays less often (four in five, down to three in ten).
+quickens and the ace zone pays less often (four in five, down to three in ten). The bar quickens every court, without
+end (the artist, 29 Oct 2026: "The speed of the moving dot in the serve bar should progressively get faster as you
+increase in levels"): along the curve alone it had all but stopped by court ten (0.70 s a sweep, 0.68 at twenty), so
+what it takes above 0.3 s now shrinks by 4% each court: 1.10 s on court one, 0.95 on two, 0.71 on five, 0.58 on ten,
+0.47 on twenty, 0.35 on fifty, each court's quicker than the last and none at 0.3 (`pb_rules.js` checks courts 1 to
+200, and times the dot itself across the bar on courts 1, 10 and 20). Mr Plan's super's counter runs on the same bar.
+**And every court a little harder again** (the artist, 29 Oct 2026: "Make the game 10% harder on each level"): each of
+those numbers moved by a factor of 1.05 the way the curve calls harder, on every court, court one's too; for his dives
+and lunges it is his misses that are fewer (his success raised by a tenth had cut his misses at court ten to a third:
+far more than a tenth harder), and his super return comes as much more often. The factor was set by what it does:
+`pb_curve.js` played 30 matches a court on nine courts, the game as it was (`PB_UP=1`) beside each factor; at 1.05 its
+two players win 10% fewer points together (the human-like one 59.7% of points down to 55.0%, the ideal one 72.4% to
+63.2%); at 1.1 it had been 18% and 23% fewer. Court by court the numbers move by more than chance at this many matches,
+so the tenth is the whole run's; the bars' quicker sweep is not felt by these players (they stop it where they aim),
+so to a person it is a little more.
 Measured by `notes/holographic-mr-pearl/harness/pb_curve.js` (the ideal player always on the ring, the human one a
 fifth of a second late and up to 0.9 m off it, its stops on the bars a tenth either side of its aim). Before Mr Plan's
 super return and the returns aimed for the open court, 12 matches a court:
@@ -328,9 +413,11 @@ integration, stability, design, privacy, language, money, accessibility and trus
   (the Android app's first, hidden one) draws nothing and breaks nothing.
 - **Any shape.** Every ratio YouTube names, 9:32 to 32:9, at its long side 1280 and at its smallest real screen: the
   view fills it, the state is kept through a resize, and no word, the Super button (top right, 96 by 48 px, the
-  words at the top stopping short of it) or the serve's bar covers another (the words step aside while the bar runs; its instruction is written under it). The faint words and squares
-  of the HUD keep 4.5 to 1 against black (WCAG AA).
-- **Size.** The zip is about 96 KB (five files; the largest, pickleball.js, about 204 KB, inside the 512 KiB a file should keep under). His body's notes (the form study's "note" and
+  courts' squares at the top stopping short of it), the courts' numbers (between matches, 48 px tall) or the serve's bar covers another (the words step aside while the bar runs; its instruction is written under it). The faint words and squares
+  of the HUD keep 4.5 to 1 against black (WCAG AA). The cues' words keep 12 px inside the screen and off the Super,
+  the squares, Mr Plan's banner and the bar (but the bar's own): each tries its side, then the next that fits, else is
+  left out and the motion says it.
+- **Size.** The zip is about 116 KB (five files; the largest, pickleball.js, about 261 KB, inside the 512 KiB a file should keep under). His body's notes (the form study's "note" and
   "relation" lines, with the makers and models they name) are left out of the bundle.
 
 `node scripts/build_pickleball.js --playable <dir>` writes the folder and `<dir>.zip`; `--artifact <file.html>` one
