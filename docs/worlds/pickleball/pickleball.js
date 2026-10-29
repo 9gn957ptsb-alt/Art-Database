@@ -2679,6 +2679,7 @@
     var res = [], st = hudBox.strip, sayE = $("say");
     if (sb.width) { res.push({ x: sb.left - 6, y: sb.top - 6, w: sb.width + 12, h: sb.height + 12, k: 9 }); }   // (k: what meeting it costs a word with no free place; the controls never)
     if (st) { res.push({ x: st.x - 6, y: 0, w: st.w + 12, h: st.y + max(st.h, 42) + 4, k: 9 }); }
+    if (hudBox.score) { var hs2 = hudBox.score; res.push({ x: hs2.x - 6, y: 0, w: hs2.w + 12, h: hs2.y + hs2.h + 6, k: 9 }); }
     if (hudBox.banner) { res.push(hudBox.banner); }
     if (sayE.style.opacity !== "0" && sayE.textContent) { var sr = sayE.getBoundingClientRect(); res.push({ x: sr.left, y: sr.top, w: sr.width, h: sr.height }); }
     var meets = function (a, b) { return !!a && !!b && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h; };
@@ -2940,7 +2941,7 @@
       return true;
     });
   }
-  var sayEl = null, hudLow = 0, hudBox = {};   // (hudBox: where the bar was drawn, for the tests)
+  var sayEl = null, hudLow = 0, hudBox = {}, HUD = { score: null, flash: -9 };   // (hudBox: where the bar was drawn, for the tests)
   function overlay(dpr) {
     sayEl = sayEl || $("say");
     var c = hud.getContext("2d"), W = hud.clientWidth, H = hud.clientHeight;
@@ -3038,8 +3039,19 @@
     var tr = document.querySelector(".top").getBoundingClientRect(), sb = $("super").getBoundingClientRect(), gap = 5, x0 = tr.left, y0 = tr.top;
     // (on a narrow screen in a match, beside the Super, fewer squares, each wide enough for its number)
     var right = sb.width ? min(tr.right, sb.left - 10) : tr.right, fs = courts.length > 99 ? 10 : 12, need = 0.61 * fs * String(courts.length).length + 6;
+    // (the match's score beside them, always (the artist, 29 Oct 2026: "make sure that the score of the game is always
+    // visible to the right of the court squares at the top"): his points in gold, Mr Plan's in his cyan, named; its room
+    // first, the squares in what is left, no smaller than 20 px; on a screen too narrow for its names, the points alone)
+    var sc = null;
+    if (m) {
+      var part = function (t, f, col) { c.font = "700 " + f + "px ui-monospace, SFMono-Regular, Menlo, monospace"; return { t: t, f: f, col: col, w: c.measureText(t).width }; };
+      var full = [part("you ", 12, "#c9c6bd"), part(String(m.you), 18, "#ffd166"), part(" – ", 18, "#f2efe8"), part(String(m.them), 18, "#9ff3ff"), part(" Mr Plan", 12, "#c9c6bd")];
+      var ws = function (ps) { return ps.reduce(function (a2, q2) { return a2 + q2.w; }, 0); };
+      sc = right - x0 - ws(full) - 14 >= 20 ? full : full.slice(1, 4);
+      sc = { parts: sc, w: ws(sc) }; right -= sc.w + 14; need = max(need, 20);
+    }
     var cnt = min(10, courts.length, max(1, floor((right - x0 + gap) / (need + gap)))), sz = min(28, (right - x0 - 9 * gap) / 10);
-    if (cnt < min(10, courts.length)) { sz = min(28, (right - x0 - (cnt - 1) * gap) / cnt); }
+    if (cnt < min(10, courts.length) || sz < need) { sz = min(28, (right - x0 - (cnt - 1) * gap) / cnt); }   // (fewer, or too small at a tenth of the room: the room shared by those shown)
     var n0 = max(0, courts.length - cnt);
     hudBox.strip = { x: x0, y: y0, w: cnt * (sz + gap) - gap, h: sz };
     courtButtons(n0, sz, gap, x0, y0);
@@ -3050,6 +3062,18 @@
       c.strokeStyle = on ? "#f3c98b" : "rgba(236,236,228,0.9)"; c.lineWidth = on ? 2 : 1; c.strokeRect(x + 0.5, y0 + 0.5, sz - 1, sz - 1);
       c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.k + 1), x + sz / 2, y0 + sz / 2 + 0.5);
     });
+    hudBox.score = null; if (!sc) { HUD.score = null; }   // (a new match's 0 - 0 comes in without a flash)
+    if (sc) {
+      // (a point won lights its number a moment)
+      var key2 = m.you + ":" + m.them; if (HUD.score !== key2) { HUD.flash = HUD.score == null ? -9 : CUE.rt; HUD.score = key2; }
+      var fl2 = CUE.rm ? 0 : max(0, 1 - (CUE.rt - HUD.flash) / 0.5), sx2 = hudBox.strip.x + hudBox.strip.w + 14, sy2 = y0 + sz / 2;
+      c.textAlign = "left"; c.textBaseline = "middle";
+      sc.parts.forEach(function (q2) {
+        var f2 = q2.f === 18 && q2.t !== " – " ? q2.f * (1 + 0.3 * fl2) : q2.f;
+        c.font = "700 " + f2 + "px ui-monospace, SFMono-Regular, Menlo, monospace"; c.lineWidth = 4; c.strokeStyle = "rgba(0,0,0,0.85)"; c.strokeText(q2.t, sx2, sy2); c.fillStyle = q2.col; c.fillText(q2.t, sx2, sy2); sx2 += q2.w;
+      });
+      hudBox.score = { x: hudBox.strip.x + hudBox.strip.w + 14, y: sy2 - 13, w: sc.w, h: 26, you: m.you, them: m.them, named: sc.parts.length === 5 };
+    }
     var ly = max(y0 + max(sz, 26), sb.height ? sb.bottom - 8 : 0);   // (the words under the squares' buttons, and under the Super)
     hudLow = ly + 8;
     var sy = round(ly + 16) + "px"; if (sayEl.style.top !== sy) { sayEl.style.top = sy; }

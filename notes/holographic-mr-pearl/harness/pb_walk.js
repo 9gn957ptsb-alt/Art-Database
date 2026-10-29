@@ -46,7 +46,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     const off = (q.items || []).filter((it) => it.what !== "pop" && (it.x < 11.5 || it.y < 11.5 || it.x + it.w > W - 11.5 || it.y + it.h > H - 11.5 || meets(it, sup) || meets(it, st))).map((it) => it.what + ":" + Math.round(it.x) + "," + Math.round(it.y));
     return { key: q.key, stop: q.stop, cont: q.cont, ghost: q.ghost, keys: q.keys || [], items: q.items || [], arrows: q.arrows || [], off, W, H, gt: d.gt(),
              sr: { text: e.textContent, w: r.width, h: r.height }, sup: { disabled: s.disabled, nudge: s.classList.contains("nudge") },
-             meter: d.hud().meter, mark: d.hud().mark, strip: st, say: document.getElementById("say").style.opacity,
+             meter: d.hud().meter, mark: d.hud().mark, strip: st, score: d.hud().score, say: document.getElementById("say").style.opacity,
              m: m && { phase: m.phase, you: m.you, them: m.them, served: m.served, tosses: m.tosses.length, meterOn: m.meterOn } };
   });
 
@@ -59,6 +59,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(c.key === "move" && c.ghost && c.ghost.finger && c.ghost.x < c.W / 2 && c.ghost.dy === -1 && (!desk || c.keys.some((k) => k.ch === "W" && k.lit)), `step one: a finger's ghost on the left half pushing forward${desk ? ", and W" : ""}`);
   check(!c.items.filter((x) => x.what !== "pop").length && c.sr.w <= 1.5 && /left half/.test(c.sr.text), `no words on it; its sentence for a screen reader only ("${c.sr.text.slice(0, 50)}")`);
   check(c.say === "0" && c.strip && c.strip.y <= 12, "the words under the squares quiet; the squares the top");
+  check(c.score && c.score.you === 0 && c.score.them === 0 && c.score.x >= c.strip.x + c.strip.w && c.score.x + c.score.w <= c.W, `the score, 0 - 0, right of the squares (${JSON.stringify(c.score)})`);
   await shot("1_move");
   const ys = await D(() => { const d = window.Pickleball.debug(), y = []; for (let i = 0; i < 12; i++) { d.run(0.1); d.draw(); const g = d.hud().cue.ghost; if (g && g.shown) { y.push(Math.round(g.y)); } } return y; });
   check(ys.length > 4 && Math.max(...ys) - Math.min(...ys) > 40, `its touch moves forward up the screen, and lifts (${ys.join(" ")})`);
@@ -142,8 +143,9 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(sentences.every((t) => t && t.length > 10), "each step's sentence for a screen reader: " + sentences.map((t) => (t || "").slice(0, 22)).join(" | "));
 
   // the end: 1 - 0, his Super back, Mr Plan's spent, the second serve; done kept
-  const end = await D(() => { const d = window.Pickleball.debug(), m = d.court.m; for (let i = 0; i < 600 && !(m.phase === "serve" && m.n >= 1); i++) { d.run(1 / 60); } d.run(0.3); d.draw(); const s = JSON.parse(localStorage.getItem("pickleball-save-v1") || "{}"); return { phase: m.phase, n: m.n, you: m.you, them: m.them, sup: m.sup.avail, psup: m.psup.avail, on: d.tut().on, done: d.tut().done, tut: s.tut, tips: s.tips, key: d.hud().cue.key, say: document.getElementById("say").textContent, dis: document.getElementById("super").disabled }; });
+  const end = await D(() => { const d = window.Pickleball.debug(), m = d.court.m; for (let i = 0; i < 600 && !(m.phase === "serve" && m.n >= 1); i++) { d.run(1 / 60); } d.run(0.3); d.draw(); const sc = d.hud().score; const s = JSON.parse(localStorage.getItem("pickleball-save-v1") || "{}"); return { score: sc && sc.you + "-" + sc.them, phase: m.phase, n: m.n, you: m.you, them: m.them, sup: m.sup.avail, psup: m.psup.avail, on: d.tut().on, done: d.tut().done, tut: s.tut, tips: s.tips, key: d.hud().cue.key, say: document.getElementById("say").textContent, dis: document.getElementById("super").disabled }; });
   check(end.phase === "serve" && end.n === 1 && end.you === 1 && end.them === 0 && end.sup && !end.dis && !end.psup && !end.on && end.done, `the second serve: 1 - 0, another Super, Mr Plan's spent, the walk-through over (${JSON.stringify(end)})`);
+  check(end.score === "1-0", "the score at the top reads 1 - 0: " + end.score);
   check(end.tut === 1 && (end.tips & 0b1001101) === 0b1001101 && /1 – 0/.test(end.say), "done kept with the save; the words under the squares say so");
   await shot("7_after");
   await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });

@@ -46,7 +46,7 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
           const cb = [...document.querySelectorAll("#courts button")].map((e) => e.getBoundingClientRect()), cv = getComputedStyle(document.getElementById("courts")).visibility !== "hidden";
           const taps = cv && cb.length ? { x: Math.min(...cb.map((q) => q.left)), y: Math.min(...cb.map((q) => q.top)), w: Math.max(...cb.map((q) => q.right)) - Math.min(...cb.map((q) => q.left)), h: Math.max(...cb.map((q) => q.bottom)) - Math.min(...cb.map((q) => q.top)), n: "the courts' buttons" } : null;
           const strip = Object.assign({ n: "strip" }, d.hud().strip);
-          const boxes = [strip, taps, box(document.getElementById("say")), box(document.getElementById("help")), box(document.getElementById("super")), d.hud().meter && Object.assign({ n: "the serve's bar" }, d.hud().meter), d.hud().reticle && Object.assign({ n: "the Scope's mark" }, d.hud().reticle), d.hud().banner && d.hud().banner.w && Object.assign({ n: "the SUPER banner" }, d.hud().banner)].filter(Boolean);
+          const boxes = [strip, d.hud().score && Object.assign({ n: "the score" }, d.hud().score), taps, box(document.getElementById("say")), box(document.getElementById("help")), box(document.getElementById("super")), d.hud().meter && Object.assign({ n: "the serve's bar" }, d.hud().meter), d.hud().reticle && Object.assign({ n: "the Scope's mark" }, d.hud().reticle), d.hud().banner && d.hud().banner.w && Object.assign({ n: "the SUPER banner" }, d.hud().banner)].filter(Boolean);
           return { cw: v.width, ch: v.height, ew: Math.round(v.clientWidth * Math.min(3, devicePixelRatio)), eh: Math.round(v.clientHeight * Math.min(3, devicePixelRatio)), W: innerWidth, H: innerHeight, boxes,
                    st: JSON.stringify([d.me.x, d.me.z, d.court.m && d.court.m.k, d.courts.map((c) => c.level)]) };
         });
@@ -76,13 +76,17 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
         const d = window.Pickleball.debug(); d.draw(); d.draw();
         const st = d.hud().strip, su = document.getElementById("super"), sb = su.getBoundingClientRect(), shown = getComputedStyle(su).display !== "none";
         const bt = [...document.querySelectorAll("#courts button")].map((e) => e.getBoundingClientRect()), taps = getComputedStyle(document.getElementById("courts")).visibility !== "hidden";
-        return { n: d.court.m ? 1 : 0, squares: Math.round((st.w + 5) / (st.h + 5)), strip: st, sup: shown ? { x: sb.left, bottom: sb.bottom } : null, sayTop: parseFloat(document.getElementById("say").style.top), btnBottom: taps && bt.length ? Math.max(...bt.map((q) => q.bottom)) : 0, W: innerWidth };
+        const sc = d.hud().score, m = d.court.m;
+        return { n: d.court.m ? 1 : 0, squares: Math.round((st.w + 5) / (st.h + 5)), strip: st, score: sc && { x: Math.round(sc.x), w: Math.round(sc.w), named: sc.named, right: m && sc.you === m.you && sc.them === m.them }, sup: shown ? { x: sb.left, bottom: sb.bottom } : null, sayTop: parseFloat(document.getElementById("say").style.top), btnBottom: taps && bt.length ? Math.max(...bt.map((q) => q.bottom)) : 0, W: innerWidth };
       });
       const tag = `${match ? "in a match" : "between matches"} ${w}x${h}`;
       // (between matches ten; in a match beside the Super as many as fit, each wide enough for its two digits)
       check((match ? r.squares >= 1 && r.squares <= 10 && r.strip.h >= 20 : r.squares === 10) && r.strip.x + r.strip.w <= r.W, `${tag}: ${r.squares} squares of ${Math.round(r.strip.h)} px inside the screen ${JSON.stringify(r.strip)}`);
       if (match) { check(!!r.sup && r.strip.x + r.strip.w <= r.sup.x && r.sayTop >= r.sup.bottom, `${tag}: the squares short of the Super, the words under it ${JSON.stringify(r)}`); }
       else { check(r.btnBottom > 0 && r.sayTop >= r.btnBottom, `${tag}: the words under the numbers' buttons ${JSON.stringify(r)}`); }
+      // (in a match its score always there, right of the squares, short of the Super (the artist, 29 Oct 2026); between, none)
+      if (match) { check(!!r.score && r.score.right && r.score.x >= r.strip.x + r.strip.w + 8 && r.score.x + r.score.w <= r.sup.x - 4, `${tag}: the score right of the squares, short of the Super ${JSON.stringify(r.score)}`); }
+      else { check(!r.score, `${tag}: no score between matches`); }
     }
   }
   check(errs.length === 0, "no errors: " + errs.slice(0, 2).join(" | "));
