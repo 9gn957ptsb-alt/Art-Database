@@ -1192,7 +1192,6 @@
     courts: "The courts", wonN: function (n) { return n + (n === 1 ? " court won" : " courts won"); }, open: function (k) { return "court " + (k + 1) + " open"; },
     welcome: "Holographic Mr Pearl: Pickleball. One court at night, Mr Plan on it. Win it and the next appears beside it, harder: how many courts can you win? Walk onto court one.",
     match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Run to the gold circle behind the baseline to serve."; },
-    meterHint: "tap to stop it · further is harder · ◆ a chance at an ace",
     head: function (m) {
       var lv = m.balls.filter(function (q) { return !q.dead; }), r = lv.reduce(function (a, q) { return max(a, q.rally); }, 0);
       return "Court " + (m.k + 1) + " · level " + m.level + " · you " + m.you + " – " + m.them + " Mr Plan" + (lv.length > 1 ? " · " + lv.length + " pearls" : "") + " · rally " + r + " · " + STR.wonN(wonCount());
@@ -2163,8 +2162,9 @@
     // (the zone's word: "ace" on the serve's bar, "return" on the counter to Mr Plan's super)
     glyph("soft", x0 + 2 * cw, y0 + 30, 10); glyph(cu != null ? "return" : "ace", x0 + (SERVE.ACE[0] + SERVE.ACE[1]) / 2 * N * cw, y0 + 30, 10, "#f3c98b"); glyph("long", x0 + (N - 1.5) * cw, y0 + 30, 10, "#e07a5f");
     if (cu == null) { for (i = 0; i < serveMax(); i += 1) { var nx = i === m.served + m.tosses.length && ck === "pearls"; glyph(i < m.served + m.tosses.length ? "◎" : "○", W / 2 + (i - (serveMax() - 1) / 2) * 22, y0 - 40, nx ? 20 : 16, i < m.served + m.tosses.length ? "#f3c98b" : nx ? CUE_COL.gold : "#f2efe8"); } }
-    if (cue) { hudBox.meter = { x: x0, y: y0 - 50, w: N * cw, h: 90, x0: x0, cw: cw, y0: y0, N: N }; return; }
-    var hint = cu != null ? (m.sup.avail ? STR.counterHintOr : STR.counterHint) : STR.meterHint, hs = min(10, (W - 24) / hint.length / 0.6); glyph(hint, W / 2, y0 + 48, hs, cu != null ? "#9ff3ff" : null);
+    // (the serve's bar has no words under it (the artist, 29 Oct 2026: "Get rid of this text"); the counter's keeps its own)
+    if (cue || cu == null) { hudBox.meter = { x: x0, y: y0 - 50, w: N * cw, h: 90, x0: x0, cw: cw, y0: y0, N: N }; return; }
+    var hint = m.sup.avail ? STR.counterHintOr : STR.counterHint, hs = min(10, (W - 24) / hint.length / 0.6); glyph(hint, W / 2, y0 + 48, hs, "#9ff3ff");
     hudBox.meter = { x: min(x0, W / 2 - hint.length * hs * 0.31), y: y0 - 50, w: max(N * cw, hint.length * hs * 0.62), h: 106, x0: x0, cw: cw, y0: y0, N: N };
   }
   /* -- the super return: once a game (see below, "the super return") -- */
