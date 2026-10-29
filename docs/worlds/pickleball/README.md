@@ -124,7 +124,7 @@ that serves as a strong visual cue of the spot"); off the screen the same circle
 with an arrow. Within two of its radii he locks onto it (the artist: "As long as the user runs within two radius' of the
 serve spot, they should lock into the location to serve"): he steps onto the mark, turns to the net with a bounce, the mark answers with a ring of gold along the court, and
 the third person's view swings round to face across the net (where it looks at the tap, inside the diagonal service
-court, the serve goes; a drag aims it, each pearl while the serve is open); a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.10 s each way on court one, quicker every court), its instruction written under it. A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
+court, the serve goes; a drag aims it, each pearl while the serve is open); a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.10 s each way on court one, quicker every court), no words under it (the artist, 29 Oct 2026, of "tap to stop it · further is harder · ◆ a chance at an ace": "Get rid of this text"). A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
 fault), then `- = + *` softer to harder (deeper and quicker), `◆` the gold ace zone (hard into the deep corner: a
 chance at an ace, four in five on court one, two in three on court two, a third by court ten, Mr Plan going for it at full stretch and
 not getting there), `#` hard, `△` long (a fault). After each pearl the mark sweeps again from the start, a moment after
@@ -419,7 +419,7 @@ integration, stability, design, privacy, language, money, accessibility and trus
   (the Android app's first, hidden one) draws nothing and breaks nothing.
 - **Any shape.** Every ratio YouTube names, 9:32 to 32:9, at its long side 1280 and at its smallest real screen: the
   view fills it, the state is kept through a resize, and no word, the Super button (top right, 96 by 48 px, the
-  courts' squares at the top stopping short of it), the courts' numbers (between matches, 48 px tall) or the serve's bar covers another (the words step aside while the bar runs; its instruction is written under it). The faint words and squares
+  courts' squares at the top stopping short of it), the courts' numbers (between matches, 48 px tall) or the serve's bar covers another (the words step aside while the bar runs; Mr Plan's counter has its instruction under it). The faint words and squares
   of the HUD keep 4.5 to 1 against black (WCAG AA). The cues' words keep 12 px inside the screen and off the Super,
   the squares, Mr Plan's banner and the bar (but the bar's own): each tries its side, then the next that fits, else is
   left out and the motion says it.
