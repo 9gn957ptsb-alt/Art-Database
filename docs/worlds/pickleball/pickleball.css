@@ -16,7 +16,7 @@ body { color: var(--fg); font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo,
 #loading { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); letter-spacing: 0.12em; text-transform: uppercase; }
 #loading[hidden] { display: none; }
 #say { position: fixed; left: calc(12px + env(safe-area-inset-left)); top: calc(118px + env(safe-area-inset-top));
-       width: min(520px, calc(100% - 24px)); pointer-events: none;
+       width: min(520px, calc(100% - 24px)); pointer-events: none; white-space: pre-line;   /* (a line break in the words is kept) */
        text-shadow: 0 0 3px var(--shade), 0 0 8px var(--shade), 0 0 16px var(--shade), 0 0 16px var(--shade); transition: opacity 0.4s; }
 /* how to play: shown on the thing itself, on the HUD (the artist, 29 Oct 2026: "I don't like this chat box for the
    method of showing users how to play. I want a more interactive learning experience for users"); its sentences kept
