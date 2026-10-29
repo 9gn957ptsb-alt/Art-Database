@@ -1998,7 +1998,7 @@
     if (TUT.on) { tutFinish(); }
     recKeep(m.k, m.rec);
     c.won = true; c.up = true; c.you = c.them = 0; c.t0 = gt; c.next = gt + 4; c.i = -1;
-    court.m = null; court.told[m.k + "u"] = 1;
+    court.m = null; court.told[m.k + "u"] = 1; HUD.cele = { k: m.k, t0: CUE.rt };   // (its pearl celebrates: the HUD)
     stands[m.k].x = courtAt(m.k)[0] + 1.5; stands[m.k].z = COURT.L + 0.5;   // (his stand-in comes on behind him)
     if (m.k === courts.length - 1) { courtAdd(); }   // (the next court appears beside it)
     say(STR.won(m.k, m.you, m.them), true);
@@ -2941,7 +2941,7 @@
       return true;
     });
   }
-  var sayEl = null, hudLow = 0, hudBox = {}, HUD = { score: null, flash: -9 };   // (hudBox: where the bar was drawn, for the tests)
+  var sayEl = null, hudLow = 0, hudBox = {}, HUD = { score: null, flash: -9, cele: null };   // (hudBox: where the bar was drawn, for the tests)
   function overlay(dpr) {
     sayEl = sayEl || $("say");
     var c = hud.getContext("2d"), W = hud.clientWidth, H = hud.clientHeight;
@@ -3058,23 +3058,67 @@
     courtButtons(n0, sz, gap, x0, y0);
     c.font = "600 " + fs + "px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
     // (each a pearl, not a square (the artist, 29 Oct 2026: "I want the squares that indicate the game number to also
-    // be pearls instead of squares"): a won court's whole, lit from above left, its sheen faintly rose and blue, its
-    // number dark in it; the one he plays ringed in gold; the open one a pearl's outline, a glint at its shoulder)
+    // be pearls instead of squares"), with his head's shine ("Give the pearls indicating the game number a bit of shine
+    // like Mr Pearl's head"): lit as the covers light his head (pearl.js HEAD_FS): its body his median pinkish grey
+    // (#b9aca9), a thin film's rose, teal and gold over it, a soft cool lift low on the left, the warm sun's sharp
+    // highlight on the right shoulder, clear of the number; a won court's whole, its number dark; the one he plays
+    // glass ringed in gold, the open one glass, their numbers light and outlined.)
+    hudBox.pearls = [];
+    var cele = HUD.cele && CUE.rt - HUD.cele.t0 < 1.6 ? HUD.cele : null, cj = cele ? cele.k - (courts[n0] ? courts[n0].k : 0) : -1;
+    sz = max(4, sz);   // (never a negative radius, however narrow the screen)
+    // (a court just won, every time ("a subtle celebratory animation every time you are victorious"): behind the row, a
+    // warm glow fading, and sparks of gold and pearl flying out a little and gone within a second, kept in the row's band;
+    // where motion is reduced, the glow alone)
+    if (cele && cj >= 0 && cj < courts.length - n0) {
+      var cr = sz / 2, ccx = x0 + cj * (sz + gap) + cr, ccy = y0 + cr, cu0 = (CUE.rt - cele.t0) / 1.6;
+      var hg = c.createRadialGradient(ccx, ccy, cr * 0.6, ccx, ccy, cr * 2.2); hg.addColorStop(0, "rgba(255,209,102," + (0.38 * (1 - clampV(cu0 / 0.8, 0, 1))).toFixed(3) + ")"); hg.addColorStop(1, "rgba(255,209,102,0)");
+      c.fillStyle = hg; c.fillRect(ccx - 2.2 * cr, ccy - 2.2 * cr, 4.4 * cr, 4.4 * cr);
+      if (!CUE.rm) {
+        var su = clampV(cu0 / 0.6, 0, 1);
+        c.save(); c.globalAlpha = 1 - su; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "700 " + max(8, round(cr * 0.75)) + "px ui-monospace, SFMono-Regular, Menlo, monospace";
+        for (var k2 = 0; k2 < 10; k2 += 1) {
+          var a2 = k2 / 10 * 2 * PI + 0.3, d2 = cr * (1.1 + 0.6 * smooth(su)), sx3 = ccx + Math.cos(a2) * d2, sy3 = clampV(ccy + Math.sin(a2) * d2 * 0.45, 4, y0 + sz + 6);
+          if (k2 % 2) { c.beginPath(); c.arc(sx3, sy3, max(1, cr * 0.09), 0, 2 * PI); c.fillStyle = "#fff4e6"; c.fill(); } else { c.fillStyle = "#ffd166"; c.fillText("✦", sx3, sy3); }
+        }
+        c.restore();
+      }
+    }
     courts.slice(n0).forEach(function (q, j) {
-      var x = x0 + j * (sz + gap), on = m && m.k === q.k, r = sz / 2, cx = x + r, cy = y0 + r;
-      c.save(); c.beginPath(); c.arc(cx, cy, r - 0.5, 0, 2 * PI);
+      var x = x0 + j * (sz + gap), on = m && m.k === q.k, r = sz / 2, cx = x + r, cy = y0 + r, cu = cele && cele.k === q.k ? (CUE.rt - cele.t0) / 1.6 : -1;
+      // (just won: it swells and settles, number and all, and a glint sweeps it)
+      var pop = cu >= 0 && !CUE.rm ? 1 + 0.28 * Math.sin(PI * clampV(cu / 0.35, 0, 1)) * (1 - clampV(cu / 0.35, 0, 1) * 0.3) : 1;
+      var blob = function (bx, by, br, col) { var g3 = c.createRadialGradient(bx, by, 0, bx, by, br); g3.addColorStop(0, col); g3.addColorStop(1, col.replace(/[\d.]+\)$/, "0)")); c.fillStyle = g3; c.fillRect(-r, -r, 2 * r, 2 * r); };
+      c.save(); c.translate(cx, cy); c.scale(pop, pop);
+      c.beginPath(); c.arc(0, 0, r - 0.5, 0, 2 * PI);
       if (q.up) {
-        var pg = c.createRadialGradient(cx - 0.35 * r, cy - 0.4 * r, 0.05 * r, cx, cy, r);
-        pg.addColorStop(0, "#ffffff"); pg.addColorStop(0.35, "#f3eee6"); pg.addColorStop(0.75, "#d6cfc4"); pg.addColorStop(1, "#ada597");
-        c.fillStyle = pg; c.fill(); c.lineWidth = 1; c.strokeStyle = "rgba(255,226,240,0.55)"; c.stroke();
-        c.beginPath(); c.arc(cx, cy, r - 2, 0.15 * PI, 0.6 * PI); c.strokeStyle = "rgba(170,205,255,0.45)"; c.lineWidth = 1.5; c.stroke();   // (a cool sheen low on its right)
-      } else {
-        c.fillStyle = on ? "rgba(243,201,139,0.14)" : "rgba(236,236,228,0.08)"; c.fill();
-        c.lineWidth = on ? 2 : 1; c.strokeStyle = on ? "#f3c98b" : "rgba(236,236,228,0.9)"; c.stroke();
-        c.beginPath(); c.arc(cx - 0.38 * r, cy - 0.42 * r, max(1.2, 0.12 * r), 0, 2 * PI); c.fillStyle = "rgba(255,255,255,0.55)"; c.fill();   // (the glint)
+        var pg = c.createRadialGradient(0.15 * r, -0.15 * r, 0.05 * r, 0, 0, 1.05 * r);
+        pg.addColorStop(0, "#f4efed"); pg.addColorStop(0.35, "#d9cfcc"); pg.addColorStop(0.7, "#b9aca9"); pg.addColorStop(1, "#8d8180");
+        c.fillStyle = pg; c.fill();
+      } else { c.fillStyle = "rgba(236,236,228,0.06)"; c.fill(); }
+      c.save(); c.clip();
+      var w3 = q.up ? 1 : 0.45;   // (glass takes the same light, fainter)
+      blob(-0.45 * r, 0.35 * r, 0.6 * r, "rgba(255,150,200," + (0.3 * w3).toFixed(3) + ")");    // (the film: rose low on the left,
+      blob(0, -0.55 * r, 0.6 * r, "rgba(120,220,210," + (0.28 * w3).toFixed(3) + ")");         // teal at the top,
+      blob(0.55 * r, 0.05 * r, 0.6 * r, "rgba(255,220,120," + (0.3 * w3).toFixed(3) + ")");    // gold on the right)
+      blob(-0.55 * r, 0.15 * r, 0.55 * r, "rgba(190,215,255," + (0.35 * w3).toFixed(3) + ")"); // (the cool key, a soft lift low on the left)
+      blob(0.95 * r, -0.1 * r, 0.7 * r, "rgba(255,186,120," + (0.5 * w3).toFixed(3) + ")");    // (the warm sun's rim on the right)
+      if (cu >= 0 && !CUE.rm) {   // (the win's glint, sweeping across it)
+        var sw = clampV((cu - 0.15) / 0.35, -1, 2);
+        if (sw > -0.2 && sw < 1.2) { var gx = -1.6 * r + 3.2 * r * sw, gg = c.createLinearGradient(gx - 0.5 * r, -r, gx + 0.5 * r, r); gg.addColorStop(0, "rgba(255,255,255,0)"); gg.addColorStop(0.5, "rgba(255,255,255,0.55)"); gg.addColorStop(1, "rgba(255,255,255,0)"); c.fillStyle = gg; c.fillRect(-r, -r, 2 * r, 2 * r); }
       }
       c.restore();
-      c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.k + 1), cx, cy + 0.5);
+      if (c.createConicGradient) {   // (the film's colours round its rim)
+        var fg = c.createConicGradient(-0.6, 0, 0); fg.addColorStop(0, "rgba(255,170,205,0.75)"); fg.addColorStop(0.33, "rgba(170,240,205,0.6)"); fg.addColorStop(0.66, "rgba(165,195,255,0.7)"); fg.addColorStop(1, "rgba(255,170,205,0.75)");
+        c.beginPath(); c.arc(0, 0, r - 1, 0, 2 * PI); c.lineWidth = q.up ? 1.5 : 1; c.strokeStyle = fg; c.stroke();
+      }
+      if (!q.up) { c.beginPath(); c.arc(0, 0, r - 0.5, 0, 2 * PI); c.lineWidth = on ? 2 : 1; c.strokeStyle = on ? "#f3c98b" : "rgba(236,236,228,0.9)"; c.stroke(); }
+      // (the warm sun's sharp highlight, high on the right shoulder: off the number however many its digits)
+      c.beginPath(); c.ellipse(0.55 * r, -0.55 * r, max(1, 0.15 * r), max(0.8, 0.09 * r), 0.7, 0, 2 * PI); c.fillStyle = "rgba(255,255,255," + (q.up ? 0.95 : 0.7) + ")"; c.fill();
+      // (its number, swelling with it; a light one outlined so it holds against the glass)
+      if (!q.up) { c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.7)"; c.strokeText(String(q.k + 1), 0, 0.5); }
+      c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.k + 1), 0, 0.5);
+      c.restore();
+      hudBox.pearls.push({ k: q.k, x: cx, y: cy, r: r * pop, up: !!q.up, on: !!on, cele: cu });
     });
     hudBox.score = null; if (!sc) { HUD.score = null; }   // (a new match's 0 - 0 comes in without a flash)
     if (sc) {

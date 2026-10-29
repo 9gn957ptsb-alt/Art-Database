@@ -95,7 +95,14 @@ plays again within a millimetre of how it played before (`pb_replay.js` reloads 
 version, or one that will not read, rallies as before. The
 score is the number of courts won; the HUD keeps the last ten as pearls (the artist, 29 Oct 2026: "I want the squares
 that indicate the game number to also be pearls instead of squares"): whole, lit and sheened while they play on by
-themselves, ringed in gold while he plays one, an outline with a glint while it waits. **The match's score is always there beside them** (the artist, 29 Oct 2026: "make sure that
+themselves, ringed in gold while he plays one, an outline with a glint while it waits; each with **his head's shine**
+(the artist, 29 Oct 2026: "Give the pearls indicating the game number a bit of shine like Mr Pearl's head and a subtle
+celebratory animation every time you are victorious"): lit as the covers light his head (pearl.js HEAD_FS), his median
+pinkish grey (#b9aca9), a thin film's rose, teal and gold, a soft cool lift low on the left, the warm sun's rim and sharp
+highlight on the right, high, clear of the number; the glass ones take the same light, fainter, their numbers outlined.
+A court won celebrates: its pearl swells and settles, number and all, a glint sweeps it, and behind the row a warm glow
+fades while sparks of gold and pearl fly a little way and are gone within a second, kept in the row's band; where
+motion is reduced, the glow alone (`pb_walk.js` checks it). **The match's score is always there beside them** (the artist, 29 Oct 2026: "make sure that
 the score of the game is always visible to the right of the court squares at the top"): "Mr Pearl 1 – 0 Mr Plan" (the artist: "It should say Mr Pearl
 instead of you for the scoreboard"), his points in gold, Mr Plan's in cyan, a point won lighting its number a moment; its room comes first, the squares sharing what
 is left (fewer, never under 20 px), and on a screen too narrow for the names, the points alone (`pb_aspect.js` checks
