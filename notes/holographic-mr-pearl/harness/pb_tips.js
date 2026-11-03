@@ -2,7 +2,8 @@
 // you're walking through that are cued by certain moments"), shown on the things themselves, not in a card (29 Oct 2026:
 // "I don't like this chat box for the method of showing users how to play. I want a more interactive learning experience
 // for users"). Past the walk-through: from the start, the ghost of the stick (on a desk the keys, Shift to run), gone
-// once he moves; walking about, a trail to the open court and "← or tap" by its square; onto the court, the trail to the
+// once he moves; walking about, a trail to the open court, its words naming the coupe (the courts' numbers are not
+// buttons now: pb_drive.js has the coupe's own cue); onto the court, the trail to the
 // gold circle; on the mark, the ghost tap under the bar; after the first pearl, "again"; Mr Plan's first return, "get
 // here" and the trail. Each once, one at a time, its sentence for a screen reader only, every word inside the screen and
 // clear of the controls; kept with the save, so after a reload none comes back.
@@ -44,7 +45,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   t = await tip(); check(t.key !== "move", "gone once he moves");
   await step(6);
   t = await tip();
-  check(t.key === "court" && has(t, "go") && t.trail && t.trail.n > 0 && /open court/.test(t.text) && t.sr && !t.off.length, `walking about: the trail to the open court, "${desk ? "← or click" : "← or tap"}" by its square (${t.items.join(", ")}) ${t.off.join(" ")}`);
+  check(t.key === "court" && !has(t, "go") && t.trail && t.trail.n > 0 && /open court/.test(t.text) && /coupe/.test(t.text) && t.sr && !t.off.length, `walking about: the trail to the open court, its sentence naming the coupe, no "← or tap" (${t.items.join(", ")}; ${t.text}) ${t.off.join(" ")}`);
   await p.screenshot({ path: `${out}/2_court.png` });
   await p.evaluate(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(1.6); });
   t = await tip(); check(t.key === "serve" && has(t, "here") && t.trail && t.trail.n > 0 && !t.off.length, `onto the court: "serve here" and the trail to it (${t.items.join(", ")})`);

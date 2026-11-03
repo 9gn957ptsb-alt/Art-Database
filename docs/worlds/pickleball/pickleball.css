@@ -36,11 +36,10 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 #super.nudge { box-shadow: 0 0 0 3px rgba(243, 201, 139, 0.45); }
 body:not([data-phase]) #super, body[data-phase="walk"] #super { display: none; }
 body[data-phase]:not([data-phase="walk"]) .top { right: calc(118px + env(safe-area-inset-right)); }
-/* the courts' numbers: a button over each square the HUD draws (the artist, 28 Oct 2026: "I want you to be able to
-   click on the court number and it teleport you to that location"), a finger's height; between matches only, so in a
-   match a tap there is the game's (the bar, the stick) */
-#courts { position: fixed; inset: 0; pointer-events: none; }
-#courts button { pointer-events: auto; padding: 0; border: 0; border-radius: 6px; background: transparent; color: transparent;
-                 font-size: 1px; letter-spacing: 0; overflow: hidden; }
-#courts button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
-body[data-phase]:not([data-phase="walk"]) #courts { visibility: hidden; }
+/* the coupe's button (the artist, 29 Oct 2026: "I want you to be able to drive the orange coupe to get to your court
+   instead of being able to click on the court number and teleport there"): Drive beside it, Get out in it, low on the
+   right where a thumb is, between matches only */
+#ride { right: calc(14px + env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); min-width: 104px; min-height: 48px;
+        padding: 0 16px; border-color: var(--gold); color: var(--gold); font-weight: 700; }
+#ride[hidden] { display: none; }
+body[data-phase]:not([data-phase="walk"]) #ride { display: none; }

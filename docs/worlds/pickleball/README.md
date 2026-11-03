@@ -106,19 +106,40 @@ motion is reduced, the glow alone (`pb_walk.js` checks it). **The match's score 
 the score of the game is always visible to the right of the court squares at the top"): "Mr Pearl 1 – 0 Mr Plan" (the artist: "It should say Mr Pearl
 instead of you for the scoreboard"), his points in gold, Mr Plan's in cyan, a point won lighting its number a moment; its room comes first, the squares sharing what
 is left (fewer, never under 20 px), and on a screen too narrow for the names, the points alone (`pb_aspect.js` checks
-it at every ratio; the walk-through's 0 – 0 and 1 – 0 in `pb_walk.js`). **A square's number tapped takes him there** (the artist, 28 Oct 2026: "once you get a
-certain amount like 20, the 21st Court is pretty far from where you start. I want you to be able to click on the court
-number and it teleport you to that location, I don't want it to automatically put you in the serving position but right
-beside it so that you only have to take three steps to be in the Golden Circle"): between matches (in one the numbers
-are only numbers), he blinks to the open court, 4.5 m out past its sideline and 1.5 m back from the first point's gold
-circle, its match begun so the circle is there, the view turned a little off it so the ring stands beside him and not
-over his hat; his stride lengthens as he speeds up, so a walk takes three steps to lock onto it (2.75 measured), a
-sprint 2.3, a gentle push 3.6. Straight ahead takes him in: at the serve, before he is on the circle, a way within 30
+it at every ratio; the walk-through's 0 – 0 and 1 – 0 in `pb_walk.js`). **The orange coupe, the staircase and his hat** (the artist, 29 Oct 2026, of the Frank
+Ocean ideas: "For the frank ocean suggestions implement 5 and The connection ... For the spiral staircase have it be
+adjacent to the orange coupe sitting by court 1. I want you to be able to drive the orange coupe to get to your court
+instead of being able to click on the court number and teleport there. Make sure that the orange coupe cannot drive
+onto the highest numbered court you have yet to win that way it stays parked off the court and doesn't glitch any
+games. I want you to be able to climb the staircase with Mr Pearl and when you jump off at a certain height I want Mr
+Pearl to use his hat like a paraglider and be able to glide down anywhere below"). Five was night driving: the
+floodlights as a headlight's glare, and an unbranded orange coupe by court one, for the orange BMW on the cover of
+Nostalgia, Ultra (2011). The connection was Endless (2016), the spiral staircase built through it: here a step for
+each court won. The squares' numbers are numbers again (the teleport they were, from 28 Oct 2026, is gone).
+- *The coupe* is parked on the road behind the baselines, left of court one, nose toward the courts: boxes, as
+  everything here is, an eighties coupe's long bonnet, short boot and lip of a spoiler, no badge, its windows open (his
+  head shows at the wheel), its lamps lit. Beside it, between matches, a button low on the right says Drive (F on a
+  desk); in it, Get out. It steers as a car does (a bicycle's model, 2.55 m between the axles: the front wheels turned,
+  less the faster it goes, the back following): the stick up or W its throttle (24 m/s flat out), left and right or A
+  and D its wheel, down or S a brake and then reverse; the view comes round behind it and stands back. It stops (two
+  discs, its front and back, pushed out of what they meet; head on, a bump back) at the open court's run-off, so it is
+  never on the court whose match it would begin, at the nets of the courts won, at the floodlights' poles, at the
+  staircase and at the edge of the ground; a court that opens under it puts it off. Out by his door, he stands clear
+  of it and walks on, through neither it nor the staircase. On foot or in the coupe, a match begins only on foot.
+- *The staircase* winds about a post beside the coupe, a step 0.6 m up and a tenth of a turn round for every court
+  won, nothing but its post before the first. At its foot the stick pushed into it climbs, bounding a step at a time
+  round the spiral (the view comes round behind the stairs' way; up climbs, down comes down); a tap (Space) jumps off,
+  outward along his way, as the stick up does at the top.
+- *His hat*: falling off the stairs from 1.5 m or more, it opens over him as a canopy, three and a half times its
+  size, upright, on four lines to his shoulders, and he glides (7.5 m/s, sinking 1.35 m/s): the stick turns him and
+  banks the canopy, up a little faster, down slower and so steeper; he lands anywhere below, the hat back on his head
+  (on the open court, its match; on a step from above, the stairs again). From the top of four steps that is about
+  16 m of glide, and more with every court.
+`pb_drive.js` drives it, climbs and glides, phone and desk, with real taps and keys. Straight ahead takes him in: at the serve, before he is on the circle, a way within 30
 degrees of it goes straight to it (the view turned off it would otherwise have him walk past, 1.4 m wide). Not the corner behind the circle: a floodlight's pole stood there between the view and him.
 And on any way he goes, no pole is drawn within 2.5 m of the view or within a metre of its line to him: walking into
 the circle from beside it the view's arm lies along the corner's pole, a wall of bars down the picture. A won
-court's number puts him behind its baseline to watch it play. Each square is a button 48 px tall over the 28 px square
-(transparent: the HUD draws the square), made again only when the row changes. `pb_go.js` taps them, phone and desk.
+court is there to drive over or walk onto and watch.
 
 **The serve** (the artist, 28 Oct 2026: "I want you to be able to serve up [to] 3 balls in one serve so you can play
 multiple balls/points at once. Use the scope view for the every serve and add an animation that you have to land a bar
@@ -188,13 +209,13 @@ words and Mr Plan's warning say so while it is there to use. While it plays the 
 **Hands.** Touch and mouse alike (YouTube asks both for everything): the left half is a stick (where the finger or the
 press lands is its middle), the right half a drag that turns the view (walking, or to aim the serve; never in a rally),
 a tap or a click
-anywhere stops the serve's bar; Super is the one button in a match, top right; between matches the courts' numbers
-are buttons, each taking him to its court. A button presses as the finger lifts from it (a phone makes no click for a
+anywhere stops the serve's bar; Super is the one button in a match, top right; between matches, beside the coupe,
+Drive (in it, Get out), low on the right, and F on a desk. A button presses as the finger lifts from it (a phone makes no click for a
 second finger's tap while the stick's thumb is down), or with Enter or Space when it has the keyboard's focus. Beyond the walk-through (above), how to play comes at its moments (the artist,
 28 Oct 2026: "I want the how to to be pop-ups that happen when you're walking through that are cued by certain moments"),
 shown the same way, on the things themselves: the ghost stick pushing up as the game opens (on a desk W A S D, W the
-way, Shift to run; gone once he moves); walking about, "◆ play" over the open court, a trail to it and its number's
-square rippling, "← or tap"; a match begun, the trail to the gold circle and "serve here"; on the mark, the ghost tap
+way, Shift to run; gone once he moves); walking about, "◆ play" over the open court, a trail to it and, when it is a
+drive away, "◆ drive" over the coupe; a match begun, the trail to the gold circle and "serve here"; on the mark, the ghost tap
 under the bar; after the first pearl, "again" for a second and a third; Mr Plan's first return, "get here" and the
 trail; two or three pearls in play, their numbers over them; the Super after the first point, a ripple round it, "wins
 any point", "one a game". Each once (which have been shown is kept with the save), one at a time, the next waiting its
@@ -400,6 +421,9 @@ violet; bigger for an overhead or an ace); at each footfall a puff of `. : ∴` 
 fades from the court; behind a sprint a wake of `~ - =` at his chest and hips; round a leap or a dive the air turning
 (`∴ ∵ ~`); at a hard landing a ring rushing out along the court; at a skid, streaks. Their chance is their own, so the
 game plays the same with or without them. `pb_game.js` checks a burst at every stroke and the footfalls' marks.
+The glare (five's night driving: "the floodlights as headlight glare"): over the characters, a streak across each
+floodlight's lamp that is lit and seen, as a lens draws one at night, its core warm and its streak blue, fainter with
+distance; the coupe's headlights as they face the view, its tail lamps red as they do; brighter while he drives.
 
 ## YouTube Playables
 
@@ -432,11 +456,11 @@ integration, stability, design, privacy, language, money, accessibility and trus
   (the Android app's first, hidden one) draws nothing and breaks nothing.
 - **Any shape.** Every ratio YouTube names, 9:32 to 32:9, at its long side 1280 and at its smallest real screen: the
   view fills it, the state is kept through a resize, and no word, the Super button (top right, 96 by 48 px, the
-  courts' squares at the top stopping short of it), the courts' numbers (between matches, 48 px tall) or the serve's bar covers another (the words step aside while the bar runs; Mr Plan's counter has its instruction under it). The faint words and squares
+  courts' squares at the top stopping short of it), the coupe's button (between matches, beside it, 104 by 48 px, low on the right) or the serve's bar covers another (the words step aside while the bar runs; Mr Plan's counter has its instruction under it). The faint words and squares
   of the HUD keep 4.5 to 1 against black (WCAG AA). The cues' words keep 12 px inside the screen and off the Super,
   the squares, Mr Plan's banner and the bar (but the bar's own): each tries its side, then the next that fits, else is
   left out and the motion says it.
-- **Size.** The zip is about 116 KB (five files; the largest, pickleball.js, about 261 KB, inside the 512 KiB a file should keep under). His body's notes (the form study's "note" and
+- **Size.** The zip is about 129 KB (five files; the largest, pickleball.js, about 300 KB, inside the 512 KiB a file should keep under). His body's notes (the form study's "note" and
   "relation" lines, with the makers and models they name) are left out of the bundle.
 
 `node scripts/build_pickleball.js --playable <dir>` writes the folder and `<dir>.zip`; `--artifact <file.html>` one
