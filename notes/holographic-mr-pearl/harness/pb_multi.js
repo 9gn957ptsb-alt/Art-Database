@@ -3,12 +3,16 @@
 // the ring of the pearl that comes soonest) serves N pearls every serve; for every pearl it counts who struck it and
 // how it ended, and for every point that the score moved by exactly one. A pearl that ends without the other side
 // having gone for it (no stroke planned on it, not a fault of the side that struck it last), while two or more were in
-// play, is "unplayed" (one pearl alone the player runs to: missing it is the game).
+// play, is "unplayed" (one pearl alone the player runs to: missing it is the game). Since 30 Oct 2026 (the artist: "there
+// needs to be some sort of mandatory interaction from the user when multiple pearls are in play") the game rushes him to
+// a pearl only while the stick pushes toward its ring, so a pearl he does not push toward may go unplayed by him, as one
+// alone may: counted, not a failure. It checks that the help comes (strokes rushed or blinked to, "helped") while the bot
+// pushes, and with PB_IDLE=1 (the stick let go once the serve is off) that none comes and he wins far fewer points.
 // node pb_multi.js [port] [pearls per serve] [courts...]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
 const [port, nArg, ...ls] = process.argv.slice(2);
-const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10];
+const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10], IDLE = !!process.env.PB_IDLE;
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const p = await b.newPage({ viewport: { width: 390, height: 844 } }), errs = [];
@@ -19,8 +23,9 @@ const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10];
   await p.evaluate(() => window.Pickleball.debug().pause(true));
   let bad = 0;
   for (const level of LEVELS) {
-    const r = await p.evaluate(({ level, NB }) => {
-      const d = window.Pickleball.debug(), C = d.COURT, me = d.me, out = { level, balls: 0, unplayedByPlan: 0, unplayedByMe: 0, planStrokes: 0, myStrokes: 0, pointsYou: 0, pointsThem: 0, miscounts: 0, ends: {}, notes: [] };
+    const r = await p.evaluate(({ level, NB, IDLE }) => {
+      const d = window.Pickleball.debug(), C = d.COURT, me = d.me, out = { level, idle: IDLE, balls: 0, unplayedByPlan: 0, unplayedByMe: 0, planStrokes: 0, myStrokes: 0, helped: 0, blinks: 0, pointsYou: 0, pointsThem: 0, miscounts: 0, ends: {}, notes: [] };
+      let lastPc = null;
       const begin = () => { d.enter(d.courts.length - 1); d.run(0.4); const m = d.court.m; m.level = level; m.sk = d.skill(level); return m; };
       const spot = () => (d.serveSpot ? d.serveSpot() : null);
       let m = begin(), seen = new Map(), lastFire = -99, last = [m.you, m.them], said = "", lastM = m;   // (a match the last court left on goes on: its score so far)
@@ -34,6 +39,7 @@ const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10];
         if (inc) { tx = inc.mark.x - 0.5; tz = inc.mark.z + 1.2; }
         const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz);
         d.input.stick = L > 0.08 ? { id: -1, x: 0, y: 0, dx: dx / L * 60 * Math.min(1, L / 1.5), dy: dz / L * 60 * Math.min(1, L / 1.5) } : null;
+        if (IDLE && !(m.phase === "serve" || m.meterOn)) { d.input.stick = null; }   // (idle: the stick let go once the serve is off)
         const u = d.meter();
         let fire = u != null && u >= 0.4 && u <= 0.66 && (m.served + m.tosses.length) < NB && i - lastFire > 12;
         if (m.phase === "plansuper") { fire = u != null && Math.abs(u - (d.SERVE.ACE[0] + d.SERVE.ACE[1]) / 2) < 0.02; }   // (Mr Plan's super: the counter, in the ace zone)
@@ -45,6 +51,7 @@ const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10];
         const m2 = d.court.m || m;
         if (m2.nc && seen.has(m2.nc.ball)) { seen.get(m2.nc.ball).planTried = true; }
         if (m2.pc && seen.has(m2.pc.ball)) { seen.get(m2.pc.ball).meTried = true; }
+        if (m2.pc && m2.pc !== lastPc) { lastPc = m2.pc; if (m2.pc.help) { out.helped++; } if (m2.pc.blink) { out.blinks++; } }
         seen.forEach((v, q) => { if (!q.dead && q.last === "you" && m2.nc && m2.nc.ball !== q) { v.planBusy = "was busy with #" + m2.nc.ball.id; } if (!q.dead && q.last === "them" && m2.pc && m2.pc.ball !== q) { v.meBusy = "was busy with #" + m2.pc.ball.id; } });
         const s = document.getElementById("say").textContent;
         seen.forEach((v, q) => {
@@ -77,13 +84,19 @@ const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10];
         last = mm ? [mm.you, mm.them] : [0, 0]; lastM = mm;
       }
       return out;
-    }, { level, NB });
-    console.log(JSON.stringify(r));
+    }, { level, NB, IDLE });
     r.youShare = (100 * r.pointsYou / Math.max(1, r.pointsYou + r.pointsThem)).toFixed(0) + "%";
-    if (r.unplayedByPlan > 0 || r.unplayedByMe > 0 || r.miscounts > 0) { bad++; }
+    console.log(JSON.stringify(r));
+    // (Mr Plan plays every pearl; each pearl one point; the help only for a push: some while the bot pushes, none idle)
+    // (and idle, on court five and up, a share well short of a half: he plays only what comes to him where he stands, so
+    // it is no longer the game playing for him; 3 Nov 2026, three pearls: 16% and 7% idle, 79% and 49% pushing; one
+    // pearl idle, 13% and 7%)
+    const share = r.pointsYou / Math.max(1, r.pointsYou + r.pointsThem);
+    if (IDLE && level >= 5 && NB > 1 && share > 0.3) { bad++; console.log("FAIL court " + level + ": idle, still " + Math.round(100 * share) + "% of the points"); }
+    if (r.unplayedByPlan > 0 || r.miscounts > 0 || (IDLE ? r.helped + r.blinks > 0 : NB > 1 && r.helped === 0)) { bad++; console.log("FAIL court " + level + (IDLE ? ": help with the stick let go" : r.helped === 0 ? ": no help while pushing" : ": a pearl Mr Plan never went for, or a miscount")); }
   }
   console.log(errs.length ? "ERRORS " + errs.slice(0, 2).join(" | ") : "no errors");
-  console.log(bad ? "NOT OK: a pearl one side never went for, or a pearl that did not count as exactly one point" : "all ok");
+  console.log(bad ? "NOT OK" : "all ok" + (IDLE ? " (idle: no help)" : ""));
   await b.close();
   process.exit(bad || errs.length ? 1 : 0);
 })();

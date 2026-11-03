@@ -6,6 +6,11 @@
 //   camera   his eye through a shuffle (the stick hard left and right, 0.4 s each, 6 s) and a sprint: the eye's jitter
 //            (its lateral position less its own one-second mean, as a root mean square, and its acceleration's), and how
 //            far off the middle of the screen he goes in a sprint (his middle, in the screen's half widths)
+//   drag     the right thumb (the artist, 30 Oct 2026: "33% smoother ... This applies to both the left and right thumb
+//            controls"): a finger dragged left and right across the right half, 80 px each way in 0.4 s with a pixel
+//            and a half of tremor, its moves coming as a phone's do, unevenly (1, 1, 0, 2 a frame): the view's turn's
+//            acceleration (its yaw's second difference, a root mean square, per second squared) and its lag behind the
+//            finger (the frames that best fit the one to the other)
 // node pb_measure.js [port] [label]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -15,7 +20,7 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isM
 (async () => {
   const b = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const out = { label: label || "", colour: {}, pearl: {}, camera: {} };
-  // (PB_ONLY: one of colour, pearl, camera; PB_SET: a JSON of ASC values to try, PB_CAM of CAM values, for tuning)
+  // (PB_ONLY: one of colour, pearl, camera, drag; PB_SET: a JSON of ASC values to try, PB_CAM of CAM values, for tuning)
   const ONLY = process.env.PB_ONLY || "", SET = process.env.PB_SET ? JSON.parse(process.env.PB_SET) : null, CAMSET = process.env.PB_CAM ? JSON.parse(process.env.PB_CAM) : null;
   const open = async (view) => { const p = await b.newPage(view); await seed(p); await p.goto(url); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 }); await p.evaluate((set) => { const d = window.Pickleball.debug(); d.pause(true); if (set && d.ASC) { Object.assign(d.ASC, set); } if (set && set.cam && d.CAM) { Object.assign(d.CAM, set.cam); } }, SET); return p; };
   const rally = () => { const d = window.Pickleball.debug(); d.enter(0); d.run(2.5); d.toServe();
@@ -61,6 +66,28 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isM
     samples.push(r); }
     out.pearl[name] = { pearls: samples.map((q) => q.pearls).join(","), light: +(samples.reduce((a, q) => a + q.light, 0) / samples.length).toFixed(1), each: samples.map((q) => q.light) }; await p.close();
   }
+  // drag: the right thumb's turn of the view, between matches (where it turns the view), real pointer events
+  if (!ONLY || ONLY === "drag") { const p = await open(PHONE);
+  out.drag = await p.evaluate(() => {
+    const d = window.Pickleball.debug(); d.run(1.0); d.YT.paused = false;   // (awake to input; the frames still the test's own)
+    const cv = document.getElementById("view"), ev = (type, x, y) => cv.dispatchEvent(new PointerEvent(type, { pointerId: 7, pointerType: "touch", clientX: x, clientY: y, bubbles: true, cancelable: true, button: 0, isPrimary: true }));
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, pat = [1, 1, 0, 2], x0 = 300, y0 = 420;
+    ev("pointerdown", x0, y0); const yaws = [], fing = []; let fx = x0;
+    for (let f = 0; f < 288; f++) {
+      const ph = (f % 48) / 24, tri = ph < 1 ? ph : 2 - ph, target = x0 - 40 + 80 * tri;   // (80 px each way, 0.4 s)
+      const n = pat[f % 4], prev = fx;
+      for (let j = 1; j <= n; j++) { const xx = prev + (target - prev) * j / n + (rnd() - 0.5) * 3; ev("pointermove", xx, y0 + (rnd() - 0.5) * 3); }
+      if (n) { fx = target; }
+      fing.push(target); d.run(1 / 60); yaws.push(d.view.yaw);
+    }
+    ev("pointerup", fx, y0); d.YT.paused = true;
+    let acc = 0; for (let i = 1; i < yaws.length - 1; i++) { acc += Math.pow((yaws[i + 1] - 2 * yaws[i] + yaws[i - 1]) * 3600, 2); }
+    // (the lag: the shift of the finger's path that best matches the view's, in frames)
+    const k = 0.006, fy = fing.map((v) => (v - fing[0]) * k), yy = yaws.map((v) => v - yaws[0]); let best = 0, bestE = 1e9;
+    for (let lag = 0; lag <= 8; lag++) { let e = 0; for (let i = 20; i < yy.length; i++) { e += Math.pow(yy[i] - fy[i - lag], 2); } if (e < bestE) { bestE = e; best = lag; } }
+    return { accel: +Math.sqrt(acc / (yaws.length - 2)).toFixed(2), lagFrames: best, turned: +(Math.max(...yy) - Math.min(...yy)).toFixed(3) };
+  });
+  await p.close(); }
   // camera: the shuffle and the sprint, his eye each frame
   if (!ONLY || ONLY === "camera") { const p = await open(PHONE);
     if (CAMSET) { await p.evaluate((c) => Object.assign(window.Pickleball.debug().CAM, c), CAMSET); }

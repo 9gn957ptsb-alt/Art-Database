@@ -18,7 +18,10 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me && window.Pickleball.debug().running(), null, { timeout: 120000 });
-  for (const where of ["walk", "court", "serve", "plansuper"]) {
+  for (const where of ["coupe", "walk", "court", "serve", "plansuper"]) {
+    // (beside the coupe: its Drive button, low on the right, at every ratio; then back where he began, the button gone)
+    if (where === "coupe") { const on = await p.evaluate(() => { const d = window.Pickleball.debug(); d.pause(true); d.me.x = d.car.x; d.me.z = d.car.z - 1.6; d.run(0.2); d.pause(false); const b2 = document.getElementById("ride"); return !b2.hidden && getComputedStyle(b2).display !== "none"; }); check(on, "beside the coupe: its Drive button shows"); }
+    if (where === "walk") { await p.evaluate(() => { const d = window.Pickleball.debug(); d.pause(true); d.me.x = 2.2; d.me.z = d.COURT.L + 5; d.run(0.2); d.pause(false); }); }
     if (where === "court") { await p.evaluate(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(0.5); }); }
     if (where === "serve") { await p.evaluate(() => { const d = window.Pickleball.debug(); d.toServe(); d.run(0.3); }); }
     // (Mr Plan's super, just struck: its banner and the counter's bar both up; the game paused there)
@@ -42,9 +45,8 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
           const box = (el) => { if (!el || getComputedStyle(el).display === "none" || el.hidden || el.style.opacity === "0" || !el.textContent.trim() && el.tagName !== "BUTTON") { return null; } const q = el.getBoundingClientRect(); return { x: q.left, y: q.top, w: q.width, h: q.height, n: el.id || el.className }; };
           // (no words at the top now: the courts' squares are the top, the box the HUD drew them in)
           const v = document.getElementById("view");
-          // (the numbers' buttons, a finger's height over the squares: one box round them all, when they are there to tap)
-          const cb = [...document.querySelectorAll("#courts button")].map((e) => e.getBoundingClientRect()), cv = getComputedStyle(document.getElementById("courts")).visibility !== "hidden";
-          const taps = cv && cb.length ? { x: Math.min(...cb.map((q) => q.left)), y: Math.min(...cb.map((q) => q.top)), w: Math.max(...cb.map((q) => q.right)) - Math.min(...cb.map((q) => q.left)), h: Math.max(...cb.map((q) => q.bottom)) - Math.min(...cb.map((q) => q.top)), n: "the courts' buttons" } : null;
+          // (the courts' numbers are not buttons now (the coupe took their place, 29 Oct 2026): the coupe's button when it shows)
+          const taps = box(document.getElementById("ride")); if (taps) { taps.n = "the coupe's button"; }
           const strip = Object.assign({ n: "strip" }, d.hud().strip);
           const boxes = [strip, d.hud().score && Object.assign({ n: "the score" }, d.hud().score), taps, box(document.getElementById("say")), box(document.getElementById("help")), box(document.getElementById("super")), d.hud().meter && Object.assign({ n: "the serve's bar" }, d.hud().meter), d.hud().reticle && Object.assign({ n: "the Scope's mark" }, d.hud().reticle), d.hud().banner && d.hud().banner.w && Object.assign({ n: "the SUPER banner" }, d.hud().banner)].filter(Boolean);
           return { cw: v.width, ch: v.height, ew: Math.round(v.clientWidth * Math.min(3, devicePixelRatio)), eh: Math.round(v.clientHeight * Math.min(3, devicePixelRatio)), W: innerWidth, H: innerHeight, boxes,
@@ -54,8 +56,6 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
         check(r.st === st0, `${tag}: the state kept through the resize`);
         r.boxes.forEach((q) => check(q.x >= 0 && q.y >= 0 && q.x + q.w <= r.W + 0.5 && q.y + q.h <= r.H + 0.5, `${tag}: ${q.n} inside the screen ${JSON.stringify(q)}`));
         for (let i = 0; i < r.boxes.length; i++) { for (let j = i + 1; j < r.boxes.length; j++) { const A = r.boxes[i], B = r.boxes[j];
-          // (the buttons lie over the squares they name: that pair is meant to overlap)
-          if ([A.n, B.n].includes("strip") && [A.n, B.n].includes("the courts' buttons")) { continue; }
           if (A.x < B.x + B.w && B.x < A.x + A.w && A.y < B.y + B.h && B.y < A.y + A.h) { check(false, `${tag}: ${A.n} and ${B.n} overlap`); } } }
         if (["9:32", "1:1", "32:9", "16:9"].includes(`${a}:${c}`) && size === "small") { await p.screenshot({ path: `${out}/${where}_${a}x${c}.png` }); }
       }
@@ -64,7 +64,7 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
   }
   // ten squares, twenty courts won: in a match on the phones where a row of 28 px squares reached the Super (430 wide)
   // and the narrowest (9:32), the squares short of the Super and the words under it; between matches the words under
-  // the numbers' buttons (48 px tall), on every phone
+  // the squares, on every phone
   await p.evaluate(() => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: 20, tut: 1 })); });
   await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
   await p.evaluate(() => { const d = window.Pickleball.debug(); d.pause(true); d.enter(20); d.run(0.5); });
@@ -75,15 +75,15 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
       const r = await p.evaluate(() => {
         const d = window.Pickleball.debug(); d.draw(); d.draw();
         const st = d.hud().strip, su = document.getElementById("super"), sb = su.getBoundingClientRect(), shown = getComputedStyle(su).display !== "none";
-        const bt = [...document.querySelectorAll("#courts button")].map((e) => e.getBoundingClientRect()), taps = getComputedStyle(document.getElementById("courts")).visibility !== "hidden";
+        const bt = [], taps = false;   // (no numbers' buttons now: the words go under the squares)
         const sc = d.hud().score, m = d.court.m;
-        return { n: d.court.m ? 1 : 0, squares: Math.round((st.w + 5) / (st.h + 5)), strip: st, score: sc && { x: Math.round(sc.x), w: Math.round(sc.w), named: sc.named, right: m && sc.you === m.you && sc.them === m.them }, sup: shown ? { x: sb.left, bottom: sb.bottom } : null, sayTop: parseFloat(document.getElementById("say").style.top), btnBottom: taps && bt.length ? Math.max(...bt.map((q) => q.bottom)) : 0, W: innerWidth };
+        return { n: d.court.m ? 1 : 0, squares: Math.round((st.w + 5) / (st.h + 5)), strip: st, score: sc && { x: Math.round(sc.x), w: Math.round(sc.w), named: sc.named, right: m && sc.you === m.you && sc.them === m.them }, sup: shown ? { x: sb.left, bottom: sb.bottom } : null, sayTop: parseFloat(document.getElementById("say").style.top), btnBottom: st.y + st.h, W: innerWidth };
       });
       const tag = `${match ? "in a match" : "between matches"} ${w}x${h}`;
       // (between matches ten; in a match beside the Super as many as fit, each wide enough for its two digits)
       check((match ? r.squares >= 1 && r.squares <= 10 && r.strip.h >= 20 : r.squares === 10) && r.strip.x + r.strip.w <= r.W, `${tag}: ${r.squares} squares of ${Math.round(r.strip.h)} px inside the screen ${JSON.stringify(r.strip)}`);
       if (match) { check(!!r.sup && r.strip.x + r.strip.w <= r.sup.x && r.sayTop >= r.sup.bottom, `${tag}: the squares short of the Super, the words under it ${JSON.stringify(r)}`); }
-      else { check(r.btnBottom > 0 && r.sayTop >= r.btnBottom, `${tag}: the words under the numbers' buttons ${JSON.stringify(r)}`); }
+      else { check(r.btnBottom > 0 && r.sayTop >= r.btnBottom, `${tag}: the words under the squares ${JSON.stringify(r)}`); }
       // (in a match its score always there, right of the squares, short of the Super (the artist, 29 Oct 2026); between, none)
       if (match) { check(!!r.score && r.score.right && r.score.x >= r.strip.x + r.strip.w + 8 && r.score.x + r.score.w <= r.sup.x - 4, `${tag}: the score right of the squares, short of the Super ${JSON.stringify(r.score)}`); }
       else { check(!r.score, `${tag}: no score between matches`); }
