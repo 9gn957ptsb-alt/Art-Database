@@ -45,8 +45,7 @@ which a golden arrow points to the super button in the top right. This will be a
 the first game because once the user hit the super button Mr Pearl will go on to win the point, but will maintain
 having another super for the first game. Once Mr Pearl wins that first point and returns to the second serve the
 walkthrough is over and the user is winning 1-0 with another super"). With no court won and the walk-through not yet
-done, court one's match begins on the first frame, its gold circle there at once, he three steps from it (where its
-number puts him, below). On the left half a hand's ghost touches the screen, a gold ring where it lands, and pushes
+done, court one's match begins on the first frame, its gold circle there at once, he three steps from it. On the left half a hand's ghost touches the screen, a gold ring where it lands, and pushes
 forward along a line of gold dots, then lifts, each 1.6 s (on a desk, with the W key beside it); it gives way while his
 own thumb moves him. Each later time a touch is wanted, its gesture too (the artist, 29 Oct 2026: "There should be touch
 gestures as well for each time the user is supposed to touch the screen during the walkthrough"): the hand's ghost where
@@ -151,8 +150,10 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   driving it and then hops back out of the car and gets back into his place to play the game"): when he wins a game
   with the coupe within 14 m of the court's run-off, he runs to its door, his head and hat show at the wheel, it drives
   two turns of a 2.2 m circle on the side away from the court, its tail out, its tyres smoking and scuffing the ground,
-  parks as it stood, and he runs back to his baseline; then the new game's serve. The view goes to him and the coupe
-  from the court's side, and back; the match's recording starts after it.
+  parks as it stood, and he runs back to his baseline; then the new game's serve (some 7 to 8 s in all). The view goes to
+  him and the coupe from the court's side, and back once he is at his baseline, before the serve; the match's recording
+  starts after it. His game's line keeps its score with the donut in it ("Mr Plan takes it, 3 – 1, and the coupe for a
+  donut."); the coupe turns smoothly however it was parked, and its smoke is the same on any display.
 `pb_drive.js` drives it round the courts, up the ramp and off it, climbs, glides and watches the donut, phone and desk, with real taps and keys. Straight ahead takes him in: at the serve, before he is on the circle, a way within 30
 degrees of it goes straight to it (the view turned off it would otherwise have him walk past, 1.4 m wide). Not the corner behind the circle: a floodlight's pole stood there between the view and him.
 And on any way he goes, no pole is drawn within 2.5 m of the view or within a metre of its line to him: walking into
@@ -184,10 +185,13 @@ person's again.
 its own point and both players must play both balls"). Every pearl is a point of its own, counted the moment it is
 dead; the point that decides a match clears the pearls still up, without points. Both athletes play every pearl: with
 two or more in play the game runs Mr Pearl, as it runs Mr Plan, to each pearl that comes to him in turn, but only to a
-pearl the stick pushes toward (within 47 degrees of its ○ ring, past a seventh of the stick's throw or any key; the
+pearl the stick pushes toward (within 47 degrees of its ○ ring as the view draws it, the neck's turn counted, past a
+seventh of the stick's throw or any key; the
 artist, 30 Oct 2026: "there needs to be some sort of mandatory interaction from the user when multiple pearls are in
 play so that it isn't a automatic gameplay ... That should be true for however, many pearls are in play"): a pearl he
-does not push toward is his own legs' to reach from where he is, as a pearl alone is, or it gets by. Its ring turns ◆
+does not push toward, two or more up, is his only if it comes to him where he stands (a stroke standing, a dig or a leap:
+no rush, no blink, no echo, no lunge, no dive), or it gets by; so with the stick let go he wins as few points as with one
+pearl. Its ring turns ◆
 as his push takes it. Where no run gets there in time, he blinks (the hologram he is goes to it at once,
 a line of characters where he was); a pearl that must be met before the stroke that waits is met first; two that come
 together within his reach, one stroke plays both; and two at the same moment metres apart, an echo of him in
@@ -195,8 +199,10 @@ characters plays the second. Mr Plan, the same. So none he goes for is lost for 
 rushed him to goes out now and then (1% on court one, 26% at the hardest), so that a pearl of several is about as hard to
 win as a pearl alone. `notes/holographic-mr-pearl/harness/pb_multi.js` serves three every serve and counts: no pearl Mr Plan
 never went for, every pearl one point, the help coming while its bot pushes toward each ring, and Mr Pearl's share of
-the points. On courts 1, 5 and 10, pushing: 97%, 63%, 47%; with the stick let go once the serve is off (`PB_IDLE=1`) no
-help at all, and 96%, 35%, 26% (court one's Mr Plan errs into his reach). Before the push was asked, 95%, 60%, 56%.
+the points. On courts 1, 5 and 10, pushing: 100%, 79%, 49%; with the stick let go once the serve is off (`PB_IDLE=1`) no
+help at all, and 57%, 16%, 7%, as one pearl a serve let go gives (56%, 13%, 7%: `PB_IDLE=1 node pb_multi.js 8817 1`). Both count Mr Plan's supers returned on the bar,
+which now win the point (7 or 8 a court); some 25 to 70 points a court, so a few points either way. Before the push was
+asked, 95%, 60%, 56%.
 
 **The super return** (the artist, 28 Oct 2026: "Mr Pearl also gets one super return each game that is a spectacular and
 impressive animation that automatically wins Mr Pearl one point"; then "I want a button in the top right corner that
@@ -267,7 +273,34 @@ home. `pb_measure.js`, his eye through quick steps back and forth (0.25 s each w
 one camera step a frame as the game takes it (the tests had stepped it twice, and the 60% and 52% first given here
 were measured so: corrected): the view's own back and forth 54% and 61% less than the spring's, its acceleration a
 quarter less in the quick steps and 16% more in the shuffle, and in a sprint he stays in the picture (his middle 0.90
-of the half width from the screen's, where the spring lost him, at 1.61). The lens is about 46 degrees top to bottom (it was 70, then 58), the
+of the half width from the screen's, where the spring lost him, at 1.61). Then a third smoother, both thumbs (the
+artist, 30 Oct 2026: "The game is still a bit too jittery, it needs to be 33% smoother when you're running back and forth
+and sharply changing your directions. This applies to both the left and right thumb controls"): the stick's way eased
+over a quarter of a second (a reversal a quick turn, not a jump), the window wider (from a quarter of the half width to
+nine tenths of it) and its speed eased over 0.6 s, catching up with him quickly from seven tenths of its hold, the hold a
+stiff spring rather than a wall. `pb_measure.js` against the game before (its own copy, served apart): the view's back
+and forth 41% less in the quick steps and 39% in the shuffle, its acceleration 37% and 36% less, and in a sprint he stays
+in the picture (0.93 of the half width). A node copy of the window reproduced those numbers exactly and was swept for
+them: without the stick's easing no window reached a third on all four with him kept
+in the picture. The right thumb's drag is now a turn the view eases into over 30 ms: `pb_measure.js`'s drag (a finger
+80 px each way in 0.4 s with a tremor, its moves coming as a phone's do, unevenly) turns the view with two thirds less
+acceleration (98.6 to 33.9 rad/s²), a frame (17 ms) behind the finger. The arrow keys turn it 2.2 rad a second whatever
+the frame rate (they had turned it twice as fast at 120 frames a second).
+**The neck** (the artist, 30 Oct 2026, of a rally filmed on a phone: "When the game perspective no longer captures the
+ball or barely Mr Pearl like this I want your view to turn like a neck left and right to compensate for keeping the
+pearls in view"): in a rally the view, held behind him facing across, turns up to 0.9 rad either way (2 rad a second at
+most, on a spring so no start or stop is sudden, and back when it can), as far as the pearl he must play next needs to be
+inside seven tenths of the half width: it holds while the pearl is, and follows that edge once it is not, never a hold
+then a snap; then, as far as each fits too, where it comes down and the other pearls coming to him (not a pearl already
+past him, nor anything behind him). It turns about him, so he stays in the middle, and a pearl served while it is
+turned goes where the view's own way aims it, not the neck's. The point over, it comes home, and whatever turn is left when the rally's view ends unwinds at the same rate
+(never left in the serve's view). The stick keeps the court's way while it turns (up is still the net), so a held thumb does not swerve. A
+phone held upright sees only 11 degrees either side of the middle; a shot wide to his side lands level with him, and its
+ring would need the view turned three quarters of a right angle, the court gone from it, so the ring is not always shown.
+`pb_neck.js` plays rallies on court ten on a phone (390 by 844), three pearls a serve, against the game before: the next
+pearl out of the picture in 28% of the rally's frames (44% before), where it comes down 49% (60%), Mr Pearl 3% (10%); Mr
+Plan, not followed, out more often (49%, from 25%). (Turned in hold-and-snap ticks at a bare rate it kept a little more
+in view, 24% and 40%, but shuddered; the spring keeps it smooth.) The lens is about 46 degrees top to bottom (it was 70, then 58), the
 camera a third further back each time (the artist, 28 Oct 2026: "keep the athletes the same size, I want to be a bit
 further behind him"): a dolly zoom, his figure held to the same footprint on the screen (pb_define measures it: 147,800
 device px at a phone's rally, 147,600 before), the far court and Mr Plan larger with each step. The Scope, his head the glass, went (the artist, 28 Oct 2026: "Get rid of the scope view").
@@ -484,7 +517,7 @@ integration, stability, design, privacy, language, money, accessibility and trus
   of the HUD keep 4.5 to 1 against black (WCAG AA). The cues' words keep 12 px inside the screen and off the Super,
   the squares, Mr Plan's banner and the bar (but the bar's own): each tries its side, then the next that fits, else is
   left out and the motion says it.
-- **Size.** The zip is about 129 KB (five files; the largest, pickleball.js, about 300 KB, inside the 512 KiB a file should keep under). His body's notes (the form study's "note" and
+- **Size.** The zip is about 138 KB (five files; the largest, pickleball.js, about 327 KB, inside the 512 KiB a file should keep under). His body's notes (the form study's "note" and
   "relation" lines, with the makers and models they name) are left out of the bundle.
 
 `node scripts/build_pickleball.js --playable <dir>` writes the folder and `<dir>.zip`; `--artifact <file.html>` one

@@ -88,6 +88,11 @@ const NB = +(nArg || 3), LEVELS = ls.length ? ls.map(Number) : [1, 5, 10], IDLE 
     r.youShare = (100 * r.pointsYou / Math.max(1, r.pointsYou + r.pointsThem)).toFixed(0) + "%";
     console.log(JSON.stringify(r));
     // (Mr Plan plays every pearl; each pearl one point; the help only for a push: some while the bot pushes, none idle)
+    // (and idle, on court five and up, a share well short of a half: he plays only what comes to him where he stands, so
+    // it is no longer the game playing for him; 3 Nov 2026, three pearls: 16% and 7% idle, 79% and 49% pushing; one
+    // pearl idle, 13% and 7%)
+    const share = r.pointsYou / Math.max(1, r.pointsYou + r.pointsThem);
+    if (IDLE && level >= 5 && NB > 1 && share > 0.3) { bad++; console.log("FAIL court " + level + ": idle, still " + Math.round(100 * share) + "% of the points"); }
     if (r.unplayedByPlan > 0 || r.miscounts > 0 || (IDLE ? r.helped + r.blinks > 0 : NB > 1 && r.helped === 0)) { bad++; console.log("FAIL court " + level + (IDLE ? ": help with the stick let go" : r.helped === 0 ? ": no help while pushing" : ": a pearl Mr Plan never went for, or a miscount")); }
   }
   console.log(errs.length ? "ERRORS " + errs.slice(0, 2).join(" | ") : "no errors");

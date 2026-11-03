@@ -68,7 +68,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   const r3 = await p.evaluate(() => {
     const d = window.Pickleball.debug(), m = d.court.m, armed = m.sup.armed, rec0 = m.rec;
     let phases = new Set(), t = 0;
-    for (let i = 0; i < 60 * 4; i++) { d.run(1 / 60); if (d.court.m) { phases.add(d.court.m.phase); } if (m.phase === "super" && !t) { t = d.gt(); } }
+    for (let i = 0; i < 60 * 12; i++) { d.run(1 / 60); if (d.court.m) { phases.add(d.court.m.phase); } if (m.phase === "super" && !t) { t = d.gt(); } }   // (12 s: the coupe parked by court one, his donut first, 6.8 s)
     return { armed, super: phases.has("super"), newRec: m.rec !== rec0, recFrom: +(m.rec.t0 - (t || d.gt())).toFixed(2) };
   });
   check(r3.armed && r3.super, `the super pressed as Mr Plan takes it comes on the next point: ${JSON.stringify(r3)}`);

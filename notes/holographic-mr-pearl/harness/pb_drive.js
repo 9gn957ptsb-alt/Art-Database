@@ -229,10 +229,10 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(r11.key === "court" && r11.drive && /coupe/.test(r11.tip), `the court tip marks the coupe ("drive") and says it (${r11.tip})`);
   await shot("4cue");
   // paused: the button and F do nothing
-  const r12 = await D(() => { const d = window.Pickleball.debug(), c = d.car; d.me.x = c.x; d.me.z = c.z - 1.6; d.run(0.2); d.YT.paused = true; return d.ride.mode; });
+  const r12 = await D(() => { const d = window.Pickleball.debug(), c = d.car, b2 = document.getElementById("ride"); d.me.x = c.x; d.me.z = c.z - 1.6; d.run(0.2); const shown = !b2.hidden && getComputedStyle(b2).display !== "none" && b2.textContent === "Drive" && d.carGap(d.me.x, d.me.z) < 1.5; d.YT.paused = true; return { mode: d.ride.mode, shown }; });   // (the button showing, so the press below would take him in unpaused)
   if (desk) { await p.keyboard.press("f"); } else { const q = await D(() => { const r = document.getElementById("ride").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); await p.touchscreen.tap(q[0], q[1]); }
   const r13 = await D(() => window.Pickleball.debug().ride.mode);
-  check(r12 === null && r13 === null, "paused, the button does nothing");
+  check(r12.shown && r12.mode === null && r13 === null, `paused, the button does nothing (it showed "Drive" beside the coupe: ${JSON.stringify(r12)})`);
   // Mr Plan's donut: a game he wins with the coupe beside the court; and none with it far off
   await p.evaluate(() => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: 3, rally: 4, tut: 1, tips: 255 })); });
   await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });

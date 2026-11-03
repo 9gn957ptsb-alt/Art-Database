@@ -74,7 +74,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
       d.run(1 / 60, fire); return true;
     };
   });
-  const rally = await p.evaluate(() => { const d = window.Pickleball.debug(); for (let i = 0; i < 60 * 40; i++) { if (!window.__play(i)) { break; } if (/ring/.test(document.getElementById("help").textContent)) { d.input.stick = null; d.draw(); return d.hud().cue.key; } } d.input.stick = null; return null; });
+  const rally = await p.evaluate(() => { const d = window.Pickleball.debug(); for (let i = 0; i < 60 * 40; i++) { if (!window.__play(i)) { break; } if (/^Run to the ○ ring/.test(document.getElementById("help").textContent)) { d.input.stick = null; d.draw(); return d.hud().cue.key; } } d.input.stick = null; return null; });
   t = await tip();
   check(rally === "rally" && (has(t, "get") || t.ready) && !t.off.length, `Mr Plan's return: "get here" and the trail (${t.items.join(", ")})`);
   await p.screenshot({ path: `${out}/6_rally.png` });
