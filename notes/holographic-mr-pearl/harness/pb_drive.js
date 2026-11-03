@@ -6,11 +6,17 @@
 // below"). With four courts won: the courts' numbers are no longer buttons; beside the coupe its button says Drive, a
 // real tap (the F key on the desk) gets him in; driven by the stick (the keys on the desk) along the courts and then
 // straight at the open court, flat out, it never gets onto it or its run-off (the match is not begun under it); out,
-// he stands clear of it, and walks onto the court, its match begun; the nets of the courts won, the floodlights'
-// poles, the edge of the ground stop it; a court opened under it puts it off; at the staircase's foot the stick up
+// he stands clear of it, and walks onto the court, its match begun; nothing else stops it (the artist, 30 Oct 2026:
+// "There should be nothing that stops the orange coupe besides the highest court from moving. you should be able to
+// drive around all the courts like a race car track"): through a won court's net, past a pole, round the open court's
+// far end, only the far edge of the ground; a court opened under it puts it off; at the staircase's foot the stick up
 // climbs (a step for each court won), on past the top he leaps, falling from 1.5 m his hat opens as a canopy, the
 // stick steers it, and he lands; a tap on the stairs jumps off; under his hat over the open court its match begins
-// only once he is down; on a step from above, the stairs again; the court tip marks the coupe; paused, nothing.
+// only once he is down; on the ramp from above, the ramp again; the coupe drives up the ramp (the artist: "Have the
+// spiral staircase, be wide enough for the orange coupe to be able to drive on it"), launches off its top and glides
+// under his hat, him in it, down to the ground; Mr Plan, winning a game with the coupe beside the court, takes it for a
+// donut and is back at his baseline for the serve, the coupe as it stood (and not with it far off); the court tip
+// marks the coupe; paused, nothing.
 // node pb_drive.js outdir [port] [phone|desk]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -116,30 +122,37 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     const d = window.Pickleball.debug(), c = d.car, C = d.COURT; d.winCourt(); d.run(0.2);
     const k = d.courts.length - 1, R = d.CAR.R, h = d.CAR.L / 2 - d.CAR.W / 2, o = {};
     d.me.x = 4 * C.GAP + 7; d.me.z = C.L + 8; d.ride.mode = "car"; c.x = 4 * C.GAP; c.z = 8; c.yaw = 0; c.v = 0;   // (on court five, now won, facing its net)
-    for (let i = 0; i < 180; i++) { window.__in(1, 0); d.run(1 / 60); }
-    o.net = c.z - h;   // (its front disc's middle, past the net at z 0 by its radius at least)
+    for (let i = 0; i < 120; i++) { window.__in(1, 0); d.run(1 / 60); }
+    o.net = c.z;   // (through the net at z 0: past it)
     c.x = 3.5 * C.GAP; c.z = C.L + 9; c.yaw = 0; c.v = 0;   // (behind the floodlight pole at x 42, z 10.7, facing it)
-    for (let i = 0; i < 180; i++) { window.__in(1, 0); d.run(1 / 60); }
-    o.pole = Math.hypot(c.x + Math.sin(c.yaw) * h - 3.5 * C.GAP, c.z - Math.cos(c.yaw) * h - (C.L + 4));
-    c.x = -20; c.z = 0; c.yaw = -Math.PI / 2; c.v = 0;
+    for (let i = 0; i < 90; i++) { window.__in(1, 0); d.run(1 / 60); }
+    o.pole = c.z - (C.L + 4);   // (past it: negative)
+    // (round the open court's far end: down the street past its end, across, up the far side, never on its run-off)
+    const box = [k * C.GAP - 5.5, k * C.GAP + 5.5, -C.L - 3.5, C.L + 3.5], gap = () => Math.min(...[h, -h].map((q) => { const px = c.x + Math.sin(c.yaw) * q, pz = c.z - Math.cos(c.yaw) * q, qx = Math.max(box[0], Math.min(box[1], px)), qz = Math.max(box[2], Math.min(box[3], pz)); return (px > box[0] && px < box[1] && pz > box[2] && pz < box[3]) ? -1 : Math.hypot(px - qx, pz - qz) - R; }));
+    c.x = k * C.GAP - 14; c.z = C.L + 9; c.yaw = Math.PI / 2; c.v = 0; let worst = 99;
+    const go = (tx, tz, sec) => { for (let i = 0; i < sec * 60; i++) { const want = Math.atan2(tx - c.x, -(tz - c.z)), err = Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)); if (Math.hypot(tx - c.x, tz - c.z) < 3) { break; } window.__in(Math.abs(err) > 1.2 ? 0.6 : 1, Math.max(-1, Math.min(1, err * 2.5))); d.run(1 / 60); worst = Math.min(worst, gap()); } };
+    go(k * C.GAP + 14, C.L + 9, 8); go(k * C.GAP + 14, -C.L - 9, 8); go(k * C.GAP - 14, -C.L - 9, 8);
+    o.round = c.z < 0 && c.x < k * C.GAP; o.worst = worst;
+    c.x = -40; c.z = 0; c.yaw = -Math.PI / 2; c.v = 0;
     for (let i = 0; i < 300; i++) { window.__in(1, 0); d.run(1 / 60); }
     o.edge = c.x; o.x0 = d.BOUND.x0;
     window.__off(); d.ride.mode = null; c.x = k * C.GAP; c.z = 1; c.yaw = 0; c.v = 0; d.run(0.1);   // (the open court's middle: put off it)
-    const box = [k * C.GAP - 5.5, k * C.GAP + 5.5, -C.L - 3.5, C.L + 3.5];
     o.off = Math.min(...[h, -h].map((q) => { const px = c.x + Math.sin(c.yaw) * q, pz = c.z - Math.cos(c.yaw) * q, qx = Math.max(box[0], Math.min(box[1], px)), qz = Math.max(box[2], Math.min(box[3], pz)); return (px > box[0] && px < box[1] && pz > box[2] && pz < box[3]) ? -1 : Math.hypot(px - qx, pz - qz) - R; }));
     o.R = R; return o;
   });
-  check(r5.net >= 0.08 + r5.R - 0.03, `a won court's net stops it (its front ${r5.net.toFixed(2)} m from the net's middle)`);
-  check(r5.pole >= r5.R - 0.03, `a floodlight pole stops it (${r5.pole.toFixed(2)} m)`);
-  check(r5.edge >= r5.x0 + r5.R - 0.03 - 1.3, `the edge of the ground stops it (x ${r5.edge.toFixed(2)})`);
+  check(r5.net < -1, `through a won court's net, nothing stopping it (z ${r5.net.toFixed(2)})`);
+  check(r5.pole < -1, `past a floodlight pole, nothing stopping it (${r5.pole.toFixed(2)} m past)`);
+  check(r5.round && r5.worst >= -0.02, `round the open court's far end, a track round all the courts, never on its run-off (${r5.worst.toFixed(3)} m clear)`);
+  check(r5.edge >= r5.x0 + r5.R - 0.03 - 1.3 && r5.edge < r5.x0 + 3, `only the far edge of the ground stops it (x ${r5.edge.toFixed(2)})`);
   check(r5.off >= -0.02, `left standing on a court as it opened: put off its run-off (${r5.off.toFixed(3)} m clear)`);
   // the staircase: up from its foot, a step for each court won, on past the top, the hat, steering, down
   await p.evaluate(() => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: 5, rally: 4, tut: 1, tips: 255 })); });
   await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
-  await D((dk) => { const d = window.Pickleball.debug(); d.pause(true); d.run(0.3);
+  const helpers = () => D((dk) => { const d = window.Pickleball.debug(); d.pause(true); d.run(0.3);
     window.__in = (fwd, side) => { if (dk) { d.input.stick = null; Object.assign(d.input.keys, { w: fwd > 0.3, s: fwd < -0.3, d: side > 0.3, a: side < -0.3 }); } else { const l = Math.max(1, Math.hypot(fwd, side)); d.input.stick = fwd || side ? { id: -1, x: 0, y: 0, dx: side / l * 60, dy: -fwd / l * 60 } : null; } };
     window.__toward = (wx, wz) => { const y = d.view.yaw, f = Math.sin(y) * wx - Math.cos(y) * wz, s = Math.cos(y) * wx + Math.sin(y) * wz, l = Math.hypot(f, s) || 1; window.__in(f / l, s / l); };
     window.__off = () => { d.input.stick = null; Object.assign(d.input.keys, { w: false, s: false, a: false, d: false }); }; }, desk);
+  await helpers();
   const r6 = await D(() => {
     const d = window.Pickleball.debug(), F = d.stairAt(-1), n = d.won(), o = { n, log: [] };
     d.me.x = F.x + 2; d.me.z = F.z + 0.6; d.run(0.1);
@@ -176,22 +189,37 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   // under the canopy over the open court: its match only once he is down; onto a step from above, the stairs
   const r9 = await D(() => {
     const d = window.Pickleball.debug(), C = d.COURT, k = d.courts.length - 1, o = {};
-    d.ride.mode = "glide"; d.ride.hd = Math.PI; d.ride.u = 1; d.me.x = k * C.GAP; d.me.z = 1.5; d.me.y = 4; d.me.vx = 0; d.me.vz = 0; d.me.vy = -1.35;
-    let early = false;
-    for (let i = 0; i < 400 && !d.court.m; i++) { window.__in(-1, 0); d.run(1 / 60); if (d.court.m && d.me.y > 0.05) { early = true; } }
-    window.__off(); o.match = d.court.m && d.court.m.k; o.k = k; o.early = early; o.y = d.me.y;
+    d.ride.mode = "glide"; d.ride.hd = 0; d.ride.u = 1; d.me.x = k * C.GAP + 0.5; d.me.z = C.L - 0.3; d.me.y = 0.6; d.me.vx = 0; d.me.vz = -5; d.me.vy = -1.35;   // (over its near half, toward the net: down on it about 3 m on)
+    let early = false, down = -1, i = 0;
+    for (; i < 400 && !d.court.m; i++) { window.__off(); d.run(1 / 60); if (d.court.m && d.me.y > 0.05) { early = true; } if (down < 0 && d.ride.mode === null) { down = i; } }
+    o.match = d.court.m && d.court.m.k; o.k = k; o.early = early; o.y = d.me.y; o.after = i - down; o.z = d.me.z;
     return o;
   });
-  check(r9.match === r9.k && !r9.early, `glided down onto the open court: its match begun once he was down (court ${r9.match + 1}), not in the air`);
+  check(r9.match === r9.k && !r9.early && r9.after <= 3, `glided down onto the open court: its match begun as he came down (court ${r9.match + 1}, ${r9.after} frames after, at z ${r9.z.toFixed(2)}), not in the air, the stick let go`);
   await p.evaluate(() => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: 5, rally: 4, tut: 1, tips: 1 })); });
-  await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
+  await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 }); await helpers();
   const r10 = await D(() => {
     const d = window.Pickleball.debug(); d.pause(true); d.run(0.3);
     const s2 = d.stairAt(2); d.ride.mode = "glide"; d.ride.u = 1; d.ride.hd = 0; d.me.x = s2.x; d.me.z = s2.z; d.me.y = s2.y + 0.6; d.me.vx = d.me.vz = 0; d.me.vy = -1.35;
     for (let i = 0; i < 90 && d.ride.mode === "glide"; i++) { d.run(1 / 60); d.me.vx = d.me.vz = 0; }
     return { mode: d.ride.mode, s: d.ride.s, y: d.me.y, top: s2.y };
   });
-  check(r10.mode === "stair" && r10.s === 2 && Math.abs(r10.y - r10.top) < 0.01, `down onto a step from above: on the stairs again (step ${r10.s + 1}, ${r10.y.toFixed(2)} m)`);
+  check(r10.mode === "stair" && Math.abs(r10.s - 2) < 0.05 && Math.abs(r10.y - r10.top) < 0.05, `down onto the ramp from above: on it again (step ${(r10.s + 1).toFixed(2)}, ${r10.y.toFixed(2)} m)`);
+  // the coupe up the ramp, off its top, under his hat, down
+  const rc = await D(() => {
+    const d = window.Pickleball.debug(), c = d.car, F = d.stairAt(-1), w = d.stairWay(-1), C = d.COURT, k = d.courts.length - 1, o = { n: d.won() };
+    d.ride.mode = null; c.mode = "ground"; c.x = F.x - w[0] * 5; c.z = F.z - w[1] * 5; c.yaw = Math.atan2(w[0], -w[1]); c.v = 0; c.y = 0;
+    d.me.x = c.x + 2.5; d.me.z = c.z; d.run(0.05); d.ride.mode = "car";
+    let ramp = false, topY = 0, glide = false, uMax = 0, i = 0;
+    for (; i < 60 * 20 && !(glide && c.mode === "ground"); i++) { window.__in(c.mode === "glide" ? 0.2 : 1, 0); d.run(1 / 60); ramp = ramp || c.mode === "ramp"; topY = Math.max(topY, c.y); glide = glide || c.mode === "glide"; uMax = Math.max(uMax, d.ride.u); }
+    window.__off(); d.run(0.5);
+    o.ramp = ramp; o.topY = topY; o.glide = glide; o.uMax = uMax; o.end = c.mode; o.y = c.y; o.u = d.ride.u; o.inCar = d.ride.mode === "car";
+    return o;
+  });
+  check(rc.ramp && rc.topY >= rc.n * 0.6 - 0.05, `the coupe drives up the ramp to its top (${rc.topY.toFixed(2)} m, ${rc.n} steps)`);
+  check(rc.glide && rc.uMax > 0.99 && rc.inCar, "off the top it launches, and his hat opens over the coupe, him in it");
+  check(rc.end === "ground" && rc.y === 0 && rc.u === 0, "the coupe glides down and lands, the hat back on his head");
+  await shot("5ramp");
   // the court tip marks the coupe while the open court is a drive away
   const r11 = await D(() => {
     const d = window.Pickleball.debug(), c = d.car; d.ride.mode = null; d.me.x = c.x + 7; d.me.z = c.z - 1; d.me.y = 0; d.view.yaw = -Math.PI / 2; d.view.s = null; d.view.e = null;
@@ -205,6 +233,25 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   if (desk) { await p.keyboard.press("f"); } else { const q = await D(() => { const r = document.getElementById("ride").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); await p.touchscreen.tap(q[0], q[1]); }
   const r13 = await D(() => window.Pickleball.debug().ride.mode);
   check(r12 === null && r13 === null, "paused, the button does nothing");
+  // Mr Plan's donut: a game he wins with the coupe beside the court; and none with it far off
+  await p.evaluate(() => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: 3, rally: 4, tut: 1, tips: 255 })); });
+  await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
+  const dn = await D(() => {
+    const d = window.Pickleball.debug(), c = d.car, C = d.COURT, k = d.courts.length - 1; d.pause(true); d.run(0.3);
+    const win = (cx, cz) => {
+      c.x = cx; c.z = cz; c.yaw = -Math.PI / 2; c.v = 0; const P0 = [c.x, c.z, c.yaw];
+      if (!d.court.m) { d.enter(k); d.run(0.5); }
+      const m = d.court.m; m.them = C.WIN; m.phase = "point"; m.t = d.gt() - 2; d.run(1 / 60);
+      const stages = []; let inCar = false, i = 0;
+      for (; i < 60 * 20 && m.phase === "donut"; i++) { if (m.dn && stages[stages.length - 1] !== m.dn.stage) { stages.push(m.dn.stage); } inCar = inCar || !!(m.dn && m.dn.inCar); d.run(1 / 60); }
+      const pl = d.plans[k];
+      return { stages, inCar, secs: +(i / 60).toFixed(1), phase: m.phase, back: Math.hypot(c.x - P0[0], c.z - P0[1]) + Math.abs(Math.atan2(Math.sin(c.yaw - P0[2]), Math.cos(c.yaw - P0[2]))), plan: Math.hypot(pl.x - k * C.GAP, pl.z - (-C.L - 0.6)), score: [m.you, m.them] };
+    };
+    return { near: win(k * C.GAP + 3, C.L + 6.9), far: win(-9.6, C.L + 6.7) };
+  });
+  check(dn.near.stages.join(",") === "run,drive,back" && dn.near.inCar && dn.near.phase === "serve" && dn.near.back < 0.01 && dn.near.plan < 0.6 && dn.near.secs < 9,
+        `Mr Plan wins a game with the coupe beside the court: he runs to it, drives a donut, and is back at his baseline for the serve in ${dn.near.secs} s, the coupe as it stood (${JSON.stringify(dn.near)})`);
+  check(dn.far.stages.length === 0 && dn.far.phase === "serve", `with the coupe far off, no donut (${JSON.stringify(dn.far)})`);
   check(errs.length === 0, "no errors: " + errs.slice(0, 3).join(" | "));
   await b.close();
   console.log(bad ? bad + " FAILED" : "all ok");

@@ -1,8 +1,10 @@
 // pb_plansuper.js - Mr Plan's super return (the artist, 28 Oct 2026: "Mr. Plan should also have a super return, however,
 // for him you have a chance to return his super return and it is the same moving bar that we have to choose where to
 // serve, but you have to land in that ace zone to return Mr. Plan's super return"). His chance made certain for the test;
-// a rally until he uses it; then the bar: stopped in the ace zone, the pearl goes back and the rally plays on; stopped
-// outside it, the point is his; once a game. Pictures through it. node pb_plansuper.js outdir [port]
+// a rally until he uses it; then the bar: stopped in the ace zone, the pearl goes back past him and the point is Mr
+// Pearl's (the artist, 30 Oct 2026: "If you successfully return Mr Plan's super using the return bar that pops up to give
+// you a chance to, I want your return to automatically win you the point"), his own Super unspent; stopped outside it,
+// the point is Mr Plan's; once a game. Pictures through it. node pb_plansuper.js outdir [port]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
 const [out, port] = process.argv.slice(2);
@@ -56,7 +58,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   console.log(JSON.stringify(a));
   check(a.started && a.struck, "Mr Plan uses his super in a rally");
   check(a.maxY > 3.5, "he leaps high: " + a.maxY + " m");
-  check(a.tapped && a.ok && a.them === 0 && a.ballLast === "you" && !a.ballDead && (a.phase === "rally" || a.phase === "point"), "the bar stopped in the ace zone: the pearl goes back and the rally plays on");
+  check(a.tapped && a.ok && a.you === 1 && a.them === 0 && a.ballLast === "you" && a.ballDead && a.supAvail && /beats Mr Plan's super/.test(a.say), `the bar stopped in the ace zone: the pearl goes back past him and the point is Mr Pearl's, his Super unspent (${a.say})`);
   check(a.again === false, "once a game: spent");
   // once a game, for real: forced on every stroke, the rest of this game sees no second
   const second = await p.evaluate(() => {

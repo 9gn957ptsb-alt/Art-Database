@@ -119,23 +119,41 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
 - *The coupe* is parked on the road behind the baselines, left of court one, nose toward the courts: boxes, as
   everything here is, an eighties coupe's long bonnet, short boot and lip of a spoiler, no badge, its windows open (his
   head shows at the wheel), its lamps lit. Beside it, between matches, a button low on the right says Drive (F on a
-  desk); in it, Get out. It steers as a car does (a bicycle's model, 2.55 m between the axles: the front wheels turned,
-  less the faster it goes, the back following): the stick up or W its throttle (24 m/s flat out), left and right or A
-  and D its wheel, down or S a brake and then reverse; the view comes round behind it and stands back. It stops (two
-  discs, its front and back, pushed out of what they meet; head on, a bump back) at the open court's run-off, so it is
-  never on the court whose match it would begin, at the nets of the courts won, at the floodlights' poles, at the
-  staircase and at the edge of the ground; a court that opens under it puts it off. Out by his door, he stands clear
-  of it and walks on, through neither it nor the staircase. On foot or in the coupe, a match begins only on foot.
-- *The staircase* winds about a post beside the coupe, a step 0.6 m up and a tenth of a turn round for every court
-  won, nothing but its post before the first. At its foot the stick pushed into it climbs, bounding a step at a time
-  round the spiral (the view comes round behind the stairs' way; up climbs, down comes down); a tap (Space) jumps off,
-  outward along his way, as the stick up does at the top.
-- *His hat*: falling off the stairs from 1.5 m or more, it opens over him as a canopy, three and a half times its
-  size, upright, on four lines to his shoulders, and he glides (7.5 m/s, sinking 1.35 m/s): the stick turns him and
-  banks the canopy, up a little faster, down slower and so steeper; he lands anywhere below, the hat back on his head
-  (on the open court, its match; on a step from above, the stairs again). From the top of four steps that is about
-  16 m of glide, and more with every court.
-`pb_drive.js` drives it, climbs and glides, phone and desk, with real taps and keys. Straight ahead takes him in: at the serve, before he is on the circle, a way within 30
+  desk); in it, Get out (at speed it brakes to a stop for him first). It steers as a car does (a bicycle's model, 2.55 m
+  between the axles: the front wheels turned, less the faster it goes, the back following): the stick up or W its
+  throttle (24 m/s flat out; eased off, a coast), left and right or A and D its wheel (W and D together both whole), down
+  or S a brake and then reverse; the view comes round behind it and stands back. Only the open court's run-off stops it
+  (two discs, its front and back, pushed out of it with its corners kept off too; head on, a bump back, at a slant a
+  slide), so it is never on the court whose match it would begin; nothing else does (the artist, 30 Oct 2026: "There
+  should be nothing that stops the orange coupe besides the highest court from moving. you should be able to drive
+  around all the courts like a race car track"): through the nets and past the poles of the courts won, round the
+  open court's far end, to the edge of the ground 25 m past the newest court and far round the rest; a court that opens
+  under it puts it off. It moves in steps of at most half a metre, so a slow frame never carries it onto the court. Out
+  by his door, he stands clear of it and walks on. On foot or in the coupe, a match begins only on foot.
+- *The staircase* is a ramp of steps wound about a post beside the coupe, wide enough to drive (the artist, 30 Oct
+  2026: "Have the spiral staircase, be wide enough for the orange coupe to be able to drive on it that way someone can
+  drive up in the coop and launch from the top where Mr. Pearl stays in the car, but still uses his hat as a paraglider
+  for him in the car"): a step 0.6 m up and a tenth of a turn round for every court won, 3.2 m across, its middle 5 m
+  from the post, each step a slab tilted to the next (two halves across, keeping to the circle, a beam to the post), so
+  the way up is smooth; nothing but its post before the first. On foot, at its foot, the stick pushed its way walks him
+  up (the push that put him on keeps him climbing until it is let go; then, the view behind the way up, up climbs and
+  down comes down); a tap (Space) jumps off, outward along his way, as the stick up does at the top. Under the ramp he
+  walks free. The coupe, driven onto its foot along its way, goes up it with the spiral at its wheel (14 m/s at most),
+  backs down it, and on up past the top launches.
+- *His hat*: falling from 1.5 m or more, it opens over him as a canopy, three and a half times its size, upright, on
+  four lines to his shoulders, and he glides (7.5 m/s, sinking 1.35 m/s): the stick turns him and banks the canopy, up a
+  little faster, down slower and so steeper; he lands anywhere below, the hat back on his head (on the open court, its
+  match; on the ramp from above, the ramp). In the coupe, off the ramp's top, it opens over the coupe, five times its
+  size, its lines to the roof's corners, and the coupe glides as he would (11 m/s, sinking 1.8 m/s, the wheel turning
+  it), down onto the ground or the ramp. From the top of five steps that is about 25 m of glide, and more every court.
+- *Mr Plan's donut* (the artist, 30 Oct 2026: "Whenever the orange coupe is nearby to the court you're playing on and
+  Mr. plan wins the game. I want a short animation where Mr. plan gets in the orange coupe and does a quick donut
+  driving it and then hops back out of the car and gets back into his place to play the game"): when he wins a game
+  with the coupe within 14 m of the court's run-off, he runs to its door, his head and hat show at the wheel, it drives
+  two turns of a 2.2 m circle on the side away from the court, its tail out, its tyres smoking and scuffing the ground,
+  parks as it stood, and he runs back to his baseline; then the new game's serve. The view goes to him and the coupe
+  from the court's side, and back; the match's recording starts after it.
+`pb_drive.js` drives it round the courts, up the ramp and off it, climbs, glides and watches the donut, phone and desk, with real taps and keys. Straight ahead takes him in: at the serve, before he is on the circle, a way within 30
 degrees of it goes straight to it (the view turned off it would otherwise have him walk past, 1.4 m wide). Not the corner behind the circle: a floodlight's pole stood there between the view and him.
 And on any way he goes, no pole is drawn within 2.5 m of the view or within a metre of its line to him: walking into
 the circle from beside it the view's arm lies along the corner's pole, a wall of bars down the picture. A won
@@ -153,7 +171,7 @@ that serves as a strong visual cue of the spot"); off the screen the same circle
 with an arrow. Within two of its radii he locks onto it (the artist: "As long as the user runs within two radius' of the
 serve spot, they should lock into the location to serve"): he steps onto the mark, turns to the net with a bounce, the mark answers with a ring of gold along the court, and
 the third person's view swings round to face across the net (where it looks at the tap, inside the diagonal service
-court, the serve goes; a drag aims it, each pearl while the serve is open); a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.10 s each way on court one, quicker every court), no words under it (the artist, 29 Oct 2026, of "tap to stop it · further is harder · ◆ a chance at an ace": "Get rid of this text"). A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
+court, the serve goes; a drag aims it, each pearl while the serve is open); a bar of characters runs in the dark above the net, a `◎` sweeping it there and back (1.10 s each way on court one, quicker every court), no words under it (the artist, 29 Oct 2026, of "tap to stop it · further is harder · ◆ a chance at an ace": "Get rid of this text") but its own three, "ace" under its gold zone and "soft" and "long" a row lower at its ends, 20 px, its characters a tenth larger than they were, Mr Plan's counter bar the same and its words under it on two lines where one will not fit (the artist, 30 Oct 2026: "Make the text for the serve bar, as well as, the return bar when Mr.Plan uses his super, twice as big and the overall bar symbols 10% bigger"). A tap stops it, and where it stops is how hard he serves: `. . .` too soft (the pearl falls in the kitchen, a
 fault), then `- = + *` softer to harder (deeper and quicker), `◆` the gold ace zone (hard into the deep corner: a
 chance at an ace, four in five on court one, two in three on court two, a third by court ten, Mr Plan going for it at full stretch and
 not getting there), `#` hard, `△` long (a fault). After each pearl the mark sweeps again from the start, a moment after
@@ -165,15 +183,20 @@ person's again.
 **Two or three pearls** (the artist, 28 Oct 2026: "Make sure that when I serve two or three balls, each ball counts as
 its own point and both players must play both balls"). Every pearl is a point of its own, counted the moment it is
 dead; the point that decides a match clears the pearls still up, without points. Both athletes play every pearl: with
-two or more in play the game runs Mr Pearl, as it runs Mr Plan, to each pearl that comes to him in turn (the stick is
-the player's again between pearls). Where no run gets there in time, he blinks (the hologram he is goes to it at once,
+two or more in play the game runs Mr Pearl, as it runs Mr Plan, to each pearl that comes to him in turn, but only to a
+pearl the stick pushes toward (within 47 degrees of its ○ ring, past a seventh of the stick's throw or any key; the
+artist, 30 Oct 2026: "there needs to be some sort of mandatory interaction from the user when multiple pearls are in
+play so that it isn't a automatic gameplay ... That should be true for however, many pearls are in play"): a pearl he
+does not push toward is his own legs' to reach from where he is, as a pearl alone is, or it gets by. Its ring turns ◆
+as his push takes it. Where no run gets there in time, he blinks (the hologram he is goes to it at once,
 a line of characters where he was); a pearl that must be met before the stroke that waits is met first; two that come
 together within his reach, one stroke plays both; and two at the same moment metres apart, an echo of him in
-characters plays the second. Mr Plan, the same. So none is lost for want of legs; instead, while two or more are in play, a return of
-his goes out now and then (1% on court one, 26% at the hardest), so that a pearl of several is about as hard to win as a pearl
-alone. `notes/holographic-mr-pearl/harness/pb_multi.js` serves three every serve and counts: no pearl one side never
-went for, every pearl one point, and Mr Pearl's share of the points (on courts 1, 5 and 10: 95%, 60%, 56%, with his
-returns aimed and Mr Plan's super in play; 100%, 59%, 42% before them, against 97%, about 70% and 39% for a pearl alone).
+characters plays the second. Mr Plan, the same. So none he goes for is lost for want of legs; instead, a return the game
+rushed him to goes out now and then (1% on court one, 26% at the hardest), so that a pearl of several is about as hard to
+win as a pearl alone. `notes/holographic-mr-pearl/harness/pb_multi.js` serves three every serve and counts: no pearl Mr Plan
+never went for, every pearl one point, the help coming while its bot pushes toward each ring, and Mr Pearl's share of
+the points. On courts 1, 5 and 10, pushing: 97%, 63%, 47%; with the stick let go once the serve is off (`PB_IDLE=1`) no
+help at all, and 96%, 35%, 26% (court one's Mr Plan errs into his reach). Before the push was asked, 95%, 60%, 56%.
 
 **The super return** (the artist, 28 Oct 2026: "Mr Pearl also gets one super return each game that is a spectacular and
 impressive animation that automatically wins Mr Pearl one point"; then "I want a button in the top right corner that
@@ -196,10 +219,11 @@ serve, where Mr Pearl's answer would volley the third shot against the two-bounc
 Pearl's: the gathering, the four-metre windmill leap, the strike at the top in cyan, "◆ SUPER ◆" in cyan, the pearl
 driven at Mr Pearl's far corner. Then it comes in slow motion (a little over a quarter of its speed) and the serve's
 bar runs, its gold zone marked "return" there rather than "ace" (the artist, 28 Oct 2026: "When attempting to return
-Mr. plans super return, have the bar not say Ace but return"), under the words "tap in ◆ return to send Mr Plan's super
-back": a tap stops it; in the gold zone, Mr
-Pearl, the hologram, is at the pearl at once and sends it back deep, away from Mr Plan, and the rally plays on;
-anywhere else, or no tap before it lands, it is past him and the point is Mr Plan's. Or his own Super, if it is
+Mr. plans super return, have the bar not say Ace but return"), under the words "tap in ◆ return to win the point": a
+tap stops it; in the gold zone, Mr Pearl, the hologram, is at the pearl at once and drives it into the corner away from
+Mr Plan, his dive short of it, and the point is Mr Pearl's (the artist, 30 Oct 2026: "If you successfully return Mr
+Plan's super using the return bar that pops up to give you a chance to, I want your return to automatically win you the
+point"; his own Super is kept, and in the walk-through the tap rehearses it, the point there his free Super's); anywhere else, or no tap before it lands, it is past him and the point is Mr Plan's. Or his own Super, if it is
 unspent this game (the artist, 28 Oct 2026: "You can also choose to use your super to automatically counteract Mr.
 plans super and win the point"): pressed at any moment of Mr Plan's, in his gathering or with the pearl on its way,
 Mr Pearl's super return meets it as soon as it is struck, his leap taking that pearl, and the point is his; the bar's

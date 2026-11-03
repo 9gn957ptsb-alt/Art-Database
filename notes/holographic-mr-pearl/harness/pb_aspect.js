@@ -18,7 +18,10 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
   p.on("pageerror", (e) => errs.push(String(e)));
   await p.goto(`http://127.0.0.1:${port || 8817}/worlds/pickleball/index.html`);
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me && window.Pickleball.debug().running(), null, { timeout: 120000 });
-  for (const where of ["walk", "court", "serve", "plansuper"]) {
+  for (const where of ["coupe", "walk", "court", "serve", "plansuper"]) {
+    // (beside the coupe: its Drive button, low on the right, at every ratio; then back where he began, the button gone)
+    if (where === "coupe") { const on = await p.evaluate(() => { const d = window.Pickleball.debug(); d.pause(true); d.me.x = d.car.x; d.me.z = d.car.z - 1.6; d.run(0.2); d.pause(false); const b2 = document.getElementById("ride"); return !b2.hidden && getComputedStyle(b2).display !== "none"; }); check(on, "beside the coupe: its Drive button shows"); }
+    if (where === "walk") { await p.evaluate(() => { const d = window.Pickleball.debug(); d.pause(true); d.me.x = 2.2; d.me.z = d.COURT.L + 5; d.run(0.2); d.pause(false); }); }
     if (where === "court") { await p.evaluate(() => { const d = window.Pickleball.debug(); d.enter(0); d.run(0.5); }); }
     if (where === "serve") { await p.evaluate(() => { const d = window.Pickleball.debug(); d.toServe(); d.run(0.3); }); }
     // (Mr Plan's super, just struck: its banner and the counter's bar both up; the game paused there)
@@ -43,7 +46,7 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
           // (no words at the top now: the courts' squares are the top, the box the HUD drew them in)
           const v = document.getElementById("view");
           // (the courts' numbers are not buttons now (the coupe took their place, 29 Oct 2026): the coupe's button when it shows)
-          const taps = box(document.getElementById("ride"));
+          const taps = box(document.getElementById("ride")); if (taps) { taps.n = "the coupe's button"; }
           const strip = Object.assign({ n: "strip" }, d.hud().strip);
           const boxes = [strip, d.hud().score && Object.assign({ n: "the score" }, d.hud().score), taps, box(document.getElementById("say")), box(document.getElementById("help")), box(document.getElementById("super")), d.hud().meter && Object.assign({ n: "the serve's bar" }, d.hud().meter), d.hud().reticle && Object.assign({ n: "the Scope's mark" }, d.hud().reticle), d.hud().banner && d.hud().banner.w && Object.assign({ n: "the SUPER banner" }, d.hud().banner)].filter(Boolean);
           return { cw: v.width, ch: v.height, ew: Math.round(v.clientWidth * Math.min(3, devicePixelRatio)), eh: Math.round(v.clientHeight * Math.min(3, devicePixelRatio)), W: innerWidth, H: innerHeight, boxes,
