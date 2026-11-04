@@ -1,5 +1,5 @@
 // pb_moves.js - Mr Pearl's moves, one picture each, seen from his side: ready, sprint, skid, split-step, lunge, dive
-// (and its roll), leap (the overhead), the backflip; plain (the cells as they are) and in the ASCII pass.
+// (and its roll), leap (the overhead), the backflip (a game won), the spin (a point won); plain (the cells as they are) and in the ASCII pass.
 // node pb_moves.js outdir [port]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -37,8 +37,9 @@ fs.mkdirSync(out, { recursive: true });
     ["09_overhead_hit", reset + "d.swing(me, { tc: d.gt() + 0.62, p: [me.x + 0.3, 3.3, me.z - 0.5], kind: 'overhead', reach: 'leap', aim: [0, -0.3, -1] }); d.step(me, 0.66);"],
     ["10_drive_wind", reset + "d.swing(me, { tc: d.gt() + 0.28, p: [me.x + 0.7, 0.9, me.z - 0.3], kind: 'drive', aim: [0, 0.2, -1] }); d.step(me, 0.16);"],
     ["11_drive_hit", reset + "d.swing(me, { tc: d.gt() + 0.28, p: [me.x + 0.7, 0.9, me.z - 0.3], kind: 'drive', aim: [0, 0.2, -1] }); d.step(me, 0.3);"],
-    ["12_flip_a", reset + "d.celebrate(me, true); d.step(me, 0.3);"],
-    ["13_flip_b", reset + "d.celebrate(me, true); d.step(me, 0.5);"],
+    ["12_flip_a", reset + "d.celebrate(me, true, true); d.step(me, 0.3);"],
+    ["13_flip_b", reset + "d.celebrate(me, true, true); d.step(me, 0.5);"],
+    ["14_spin", reset + "d.celebrate(me, true, false); d.step(me, 0.25);"],
   ];
   for (const [n, s] of moves) { await shot(n, true, s); }
   for (const [n, s] of moves.filter((m) => /sprint|dive_roll|leap|flip_a|lunge/.test(m[0]))) { await shot(n, false, s); }

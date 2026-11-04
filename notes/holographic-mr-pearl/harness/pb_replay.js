@@ -83,6 +83,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     const back = await p.evaluate((samples) => {
       const d = window.Pickleball.debug(); d.pause(true); const cv = d.courts[0], st = d.stands[0], pl = d.plans[0];
       if (!cv.rec || !cv.won) { return { rec: false }; }
+      samples.sort((a, b) => a[0] - b[0]);   // (in the match's own time: a match shorter than the 20 s sampled wraps round its loop)
       const find = (t) => { let lo = 0, hi = samples.length - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (samples[mid][0] <= t) { lo = mid; } else { hi = mid; } } return [lo, hi]; };
       const at = (t, j) => { const [lo, hi] = find(t), a = samples[lo], c = samples[hi], u = c[0] > a[0] ? Math.max(0, Math.min(1, (t - a[0]) / (c[0] - a[0]))) : 0; return [a[j] + (c[j] - a[j]) * u, a[j + 1] + (c[j + 1] - a[j + 1]) * u]; };
       let maxE = 0, n = 0, moves = 0, same = 0, scoreOff = 0;
