@@ -204,7 +204,8 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   goes turns round the bend at more than the grip, the nose into the bend ahead of it and the tail out, smoke and scuffs
   off the back tyres, a little speed scrubbed; let go, the grip comes back and it straightens in under half a second.
   *The lap* is timed from the chequered line, crossed the lap's way (along the near straight toward the open court),
-  round each bend's far side on the track, and over the line again, to the hundredth; crossed the wrong way,
+  round each bend's far side on the track, and over the line again (cut across the infield, or past the line beside
+  the track, and the lap running is void), to the hundredth; crossed the wrong way,
   out of the coupe, or a court won: no lap. In the coupe the lap runs under the courts' squares (`LAP 0:12.34`), the one
   just done for three seconds (`BEST` or its place), and this track's best three (`TOP`), kept with the save in
   milliseconds; each lap is said as it ends. A court won makes the track longer, so its best three start again
@@ -212,7 +213,8 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   nothing (the Donut button still does one at any speed, a stop first). Hits on the ground's edge are measured along
   the way the coupe goes, so a drift against it is turned along it and slowed, not a rail. Everyone stands on the
   track's ground (Mr Plan going to the coupe for his donut, Mr Pearl roaming off his court between points); shadows lie
-  on its slope
+  on its slope, his footfalls, the gold trail and the view on foot rise with it; Drift is out of the Tab order (Shift
+  is the keyboard's)
   (`pb_track.js`, phone and desk: where it lies with one court won, four and twelve, the bowl and no step in the ground,
   a bot's laps timed and saved and back after a reload, the wrong way and a cut, the grip, the Drift by a real finger
   and by Shift, standing on the bowl).

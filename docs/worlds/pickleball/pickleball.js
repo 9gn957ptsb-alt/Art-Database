@@ -2191,7 +2191,9 @@
     var xL = TRK.XL, xR = trkXR(), xS = (xL + xR) / 2, t = trkAt(car.x, car.z), on = t.d > -1.5 && t.d < TRK.W + 1.5;
     if (on && LAP.cp === 0 && car.x > xR + TRK.R * 0.6 && abs(car.z) < 7) { LAP.cp = 1; }   // (round each bend's far side, on the track)
     if (on && LAP.cp === 1 && car.x < xL - TRK.R * 0.6 && abs(car.z) < 7) { LAP.cp = 2; }
-    if (!on || z0 <= 0 || car.z <= 0) { return; }
+    if (LAP.t0 != null && t.d < -3) { LAP.t0 = null; LAP.cp = 0; return; }   // (cut across the infield, well inside the inner edge: no lap)
+    if (z0 <= 0 || car.z <= 0) { return; }
+    if (!on) { if (LAP.t0 != null && (x0 - xS) * (car.x - xS) <= 0 && x0 !== car.x) { LAP.t0 = null; LAP.cp = 0; } return; }   // (past the line beside the track, not over it: no lap)
     if (x0 < xS && car.x >= xS) {
       var tc = gt - dt + dt * (xS - x0) / max(1e-6, car.x - x0);
       if (LAP.t0 != null && LAP.cp === 2) { lapDone(tc - LAP.t0); }
@@ -2753,7 +2755,8 @@
     var rr0 = [Math.cos(view.yaw), Math.sin(view.yaw)]; view.vs = (view.vs || 0) + ((me.vx * rr0[0] + me.vz * rr0[1]) - (view.vs || 0)) * min(1, dt / 0.5);
     var foot = 1 + CAM.dolly * smooth(abs(view.vs) / 9);
     var zk = { x: view.zk || 1, xv: view.zkv || 0 }; spring(zk, "x", ride.mode === "car" && !cm ? 1.6 + 0.4 * ride.u : ride.u > 0 && !cm ? 1 + 0.45 * ride.u : foot, dt, 3); view.zk = zk.x; view.zkv = zk.xv;
-    var hd = [me.x, body.head.centre[1] + (aloft ? me.y : min(me.y, 0.6) * 0.5), me.z], f = lookDir(view.yaw, view.pitch - AIM);
+    var gy = ride.mode ? 0 : groundAt(me.x, me.z);   // (on foot, up the track's bowl: the view with him, a hop still damped)
+    var hd = [me.x, body.head.centre[1] + (aloft ? me.y : gy + min(me.y - gy, 0.6) * 0.5), me.z], f = lookDir(view.yaw, view.pitch - AIM);
     if (!view.s) { view.s = hd.slice(); }
     var r = [Math.cos(view.yaw), 0, Math.sin(view.yaw)], fw = [Math.sin(view.yaw), 0, -Math.cos(view.yaw)];
     var hw = TP.D * T35 * canvas.clientWidth / max(1, canvas.clientHeight) * view.zk;   // (the half width at his distance, as far back as the view stands)
@@ -3566,7 +3569,7 @@
   function fxMove(a, who, dt) {
     var C = FXC[who], k = floor(a.phase / PI), fwd = [Math.sin(a.yaw), -Math.cos(a.yaw)], lat = [Math.cos(a.yaw), Math.sin(a.yaw)];
     if (a.fxK != null && k !== a.fxK && !a.air && a.speed > 1.2) {
-      var sd = k % 2 ? 0.13 : -0.13, fp = [a.x + lat[0] * sd, 0.02, a.z + lat[1] * sd];
+      var sd = k % 2 ? 0.13 : -0.13, fp = [a.x + lat[0] * sd, groundAt(a.x, a.z) + 0.02, a.z + lat[1] * sd];
       for (var i = 0; i < 3 + floor(a.speed / 4); i += 1) { fxAdd(fp.slice(), [(fxR() - 0.5) * 0.8 - a.vx * 0.08, 0.4 + 0.6 * fxR(), (fxR() - 0.5) * 0.8 - a.vz * 0.08], 0.32 + 0.2 * fxR(), pick([".", ":", "∴"]), pick(FXC.dust), 0.1, 1.5, false); }
       fxAdd(fp.slice(), [0, 0, 0], 1.3, a.speed > 6 ? "=" : "_", pick(FXC.scuff), 0.16, 0, true);
     }
@@ -3581,9 +3584,9 @@
       for (var j = 0; j < 2; j += 1) { var th = gt * 9 + j * PI, r = 0.6; fxAdd([a.x + Math.cos(th) * r, a.y + 0.5 + 0.6 * fxR(), a.z + Math.sin(th) * r], [-Math.sin(th) * 2.4, 0.5, Math.cos(th) * 2.4], 0.42, pick(["∴", "∵", "~"]), pick(C.swirl), 0.14, 0, false); }
     }
     if (a.fxAir && !a.air && a.fxVy < -2.5) {   // a hard landing: a ring along the court, and its dust
-      for (var q = 0; q < 18; q += 1) { var b = q / 18 * 2 * PI, v = 3 + 0.6 * fxR(); fxAdd([a.x, 0.02, a.z], [Math.cos(b) * v, 0, Math.sin(b) * v], 0.5, pick([".", ":", "*"]), pick(FXC.dust), 0.13, 0, true); }
+      for (var q = 0; q < 18; q += 1) { var b = q / 18 * 2 * PI, v = 3 + 0.6 * fxR(); fxAdd([a.x, groundAt(a.x, a.z) + 0.02, a.z], [Math.cos(b) * v, 0, Math.sin(b) * v], 0.5, pick([".", ":", "*"]), pick(FXC.dust), 0.13, 0, true); }
     }
-    if (a.skid > 0.5 && a.fxT > 0.03) { a.fxT = 0; fxAdd([a.x, 0.02, a.z], [0, 0, 0], 1.1, "=", pick(FXC.scuff), 0.18, 0, true); }
+    if (a.skid > 0.5 && a.fxT > 0.03) { a.fxT = 0; fxAdd([a.x, groundAt(a.x, a.z) + 0.02, a.z], [0, 0, 0], 1.1, "=", pick(FXC.scuff), 0.18, 0, true); }
     a.fxAir = a.air; a.fxVy = a.vy;
   }
   // the sun on his gold: where the guitar's top turns the sun to the eye, a glint (a star of characters, white-gold),
@@ -3694,7 +3697,7 @@
     };
     var beat = function () { return ((rt - CUE.b0) % CUE_BEAT + CUE_BEAT) % CUE_BEAT; };
     // his figure on the screen, and where the left hand goes (clear of him)
-    var fig = (function () { var hd = toS([me.x, 1.95, me.z]), ft = toS([me.x, 0, me.z]); if (!hd || !ft) { return null; } var h = ft[1] - hd[1]; return { x: hd[0] - 0.3 * h, y: hd[1], w: 0.6 * h, h: h }; })();
+    var fig = (function () { var hd = toS([me.x, me.y + 1.95, me.z]), ft = toS([me.x, me.y, me.z]); if (!hd || !ft) { return null; } var h = ft[1] - hd[1]; return { x: hd[0] - 0.3 * h, y: hd[1], w: 0.6 * h, h: h }; })();
     var LH = (function () {
       var x = clampV(0.2 * W, 46, 0.5 * W - 46), y = H - clampV(0.16 * H, 80, 150), bx = function () { return { x: x - 55, y: y - 55, w: 110, h: 110 }; };
       if (fig && meets(bx(), fig)) { x = max(46, fig.x - 62); if (meets(bx(), fig)) { y = fig.y - 64; } }
@@ -3734,7 +3737,7 @@
       var ux = wx / L, uz = wz / L, a1 = L - 0.5, n = clampV(floor((a1 - 0.5) / 0.4) + 1, 1, 16), stp = n > 1 ? (a1 - 0.5) / (n - 1) : 0;
       var sp = hypot(me.vx, me.vz), right = sp > 1 && (me.vx * ux + me.vz * uz) / sp > 0.85, ph = (rt % CUE_BEAT) / CUE_BEAT, drawn = 0;
       for (var i = 0; i < n; i += 1) {
-        var dd = 0.5 + stp * i, q = toS([me.x + ux * dd, 0.02, me.z + uz * dd]); if (!q || !free({ x: q[0] - 4, y: q[1] - 4, w: 8, h: 8 }, true)) { continue; }
+        var dd = 0.5 + stp * i, q = toS([me.x + ux * dd, groundAt(me.x + ux * dd, me.z + uz * dd) + 0.02, me.z + uz * dd]); if (!q || !free({ x: q[0] - 4, y: q[1] - 4, w: 8, h: 8 }, true)) { continue; }
         txt("·", q[0], q[1], 16, G.gold, "center", right ? 1 : CUE.rm ? 0.75 : 0.35 + 0.65 * max(0, 1 - 4 * abs(i / max(1, n - 1) - ph))); drawn += 1;
       }
       out.trail = { n: drawn, right: right };
