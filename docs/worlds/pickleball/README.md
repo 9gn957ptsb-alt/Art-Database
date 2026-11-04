@@ -209,8 +209,19 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   stick apart, each whole at the drawn ring's 45 degrees (full throttle and full lock together on the ring), a little
   dead in the middle, the brake as hard as the stick is pulled, the turn asked as a rate never past the
   tyres' grip at that speed (12 m/s² sideways, more up the bowl: full lock at 24 m/s pulled 59 m/s², 6 g, before; now
-  12), eased in over a seventh of a second and straight as soon as the wheel is let go; on the track, the wheel let go,
-  it lines itself up with the track's way. *The Drift* (a button over Donut and Get out, in the right half clear of the stick, held; Shift on the desk): the way it
+  12), eased in over a seventh of a second and straight as soon as the wheel is let go. *On the track it is held*
+  (the artist, 4 Nov 2026: "The coop needs to be a lot easier to drive, have it lock on to the center of the race car
+  track when you were driving the coupe making it really hard to actually fall off the track. When slowing down to a very
+  low speed, you are allowed to move more off the track ... very smooth and non-disruptive to me passing through it or
+  getting out of it"): going along it (within 35 degrees of its way) faster than a crawl, its middle line catches the
+  coupe, eased in over some 0.4 s; held, it follows the track round both bends by itself (steering for the way a moment
+  ahead), the wheel moving it across its lane up to 2.6 m and, let go, back to the middle; faster than about 7 m/s its
+  edges hold it 1.1 m in, only against going further out (merging, it is never shoved across), and it stays held
+  while it brakes for Get out, so it stops on the track. Under 3.5 m/s it lets go, so slowed to a crawl it drives off where it likes; driven across
+  the track, not along it, nothing catches it. Over the bank's crest its lean is read over its length and eased, so
+  crossing it does not jolt (`pb_lock.js`: flat out with the wheel let go, three laps within 0.6 m of the middle line;
+  a sloppy driver's wheel never gets it off; across at 10 m/s, not caught; onto it at 26 degrees, caught with no snap;
+  slowed, off at will; over the bank on foot and in the coupe, no jolt). *The Drift* (a button over Donut and Get out, in the right half clear of the stick, held; Shift on the desk): the way it
   goes turns round the bend at more than the grip, the nose into the bend ahead of it and the tail out, smoke and scuffs
   off the back tyres, a little speed scrubbed; let go, the grip comes back and it straightens in under half a second.
   *The lap* is timed from the chequered line, crossed the lap's way (along the near straight toward the open court),
