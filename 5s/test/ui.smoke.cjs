@@ -771,6 +771,25 @@ test('the logo: its colours on nothing, playing every 30 seconds in the top left
   } finally { await ctx.close(); }
 });
 
+test('the crystal hand shows the first drag to Keep, takes no taps, and stops once a card is judged', { timeout: 60000 }, async () => {
+  const { ctx, page } = await newPage({ w: 390, h: 844, scheme: 'light', touch: true });
+  try {
+    await page.goto(BASE + '#sort');
+    await page.click('#btn-start');
+    await page.waitForSelector('#stack .card.is-top');
+    const hand = await page.waitForSelector('img.fx-hand', { state: 'attached', timeout: 6000 });
+    assert.deepEqual(await hand.evaluate((n) => [getComputedStyle(n).pointerEvents, n.getAttribute('aria-hidden'), n.getAttribute('src')]), ['none', 'true', 'img/hand.webp']);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(SHOTS, '390-light-hand-sort.png') });
+    const id = await topId(page);
+    await page.click('#btn-keep');   // a tap reaches the app through the hand
+    await waitTopChange(page, id);
+    await page.waitForTimeout(4500);
+    assert.equal(await page.locator('img.fx-hand').count(), 0, 'gone after the first judgment');
+    assert.deepEqual(page.errors(), []);
+  } finally { await ctx.close(); }
+});
+
 test('works when storage throws', { timeout: 60000 }, async () => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();

@@ -43,6 +43,28 @@
 
   // One stylesheet for the game and the board: play.css, next to this script, unless the page already has it.
   const here = (document.currentScript && document.currentScript.src) || '';
+  // The crystal hand (the artist's, 4 Nov 2026): the gesture hint. hand(from, to) points at `from` (an element or a
+  // rect), travels to `to` and fades; it takes no taps, is hidden from VoiceOver, and returns a stop(). Its fingertip
+  // sits at 46% across and 14% down img/hand.webp; no picture there, no hint.
+  const HAND = 'img/hand.webp', HAND_W = 56, HAND_TIP = [0.46, 0.14];
+  function hand(from, to, ms) {
+    const at = (x) => { const r = x && x.getBoundingClientRect ? x.getBoundingClientRect() : x; return r ? [r.left + r.width / 2, r.top + r.height / 2] : null; };
+    const a = at(from), b = at(to || from);
+    if (!a || !b || !document.body || typeof Element.prototype.animate !== 'function') return () => {};
+    const img = document.createElement('img');
+    img.src = HAND; img.alt = ''; img.className = 'fx-hand'; img.setAttribute('aria-hidden', 'true'); img.draggable = false;
+    const dx = HAND_W * HAND_TIP[0], dy = HAND_W * (232 / 128) * HAND_TIP[1];
+    img.style.cssText = 'position:fixed;z-index:70;pointer-events:none;width:' + HAND_W + 'px;left:' + (a[0] - dx) + 'px;top:' + (a[1] - dy) + 'px;opacity:0';
+    const end = () => { try { anim.cancel(); } catch (e) { /* gone */ } img.remove(); };
+    img.onerror = end;
+    document.body.appendChild(img);
+    const go = 'translate(' + (b[0] - a[0]) + 'px,' + (b[1] - a[1]) + 'px)';
+    const anim = img.animate([{ opacity: 0, transform: 'translate(0,0) scale(1.08)' }, { opacity: 1, transform: 'translate(0,0) scale(1)', offset: 0.18 },
+      { opacity: 1, transform: go, offset: 0.78 }, { opacity: 0, transform: go }], { duration: ms || 1800, easing: 'ease-in-out' });
+    anim.onfinish = end;
+    return end;
+  }
+
   function ensureCss() { // -> a promise, settled once the styles apply
     const had = document.querySelector('[data-fives="play"]');
     if (had) return had.sheet || had.tagName === 'STYLE' ? Promise.resolve() : new Promise((r) => { had.addEventListener('load', r); had.addEventListener('error', r); });
@@ -2190,10 +2212,16 @@
     });
 
     // ---------------------------------------------------------- hints and the coach: a line only, nothing leans
-    let hintT = 0;
-    function hintOff() { clearTimeout(hintT); hintT = 0; }
+    let hintT = 0, handStop = () => {};
+    function hintOff() { clearTimeout(hintT); hintT = 0; handStop(); handStop = () => {}; }
     function idleHint() { hintOff(); if (set.hints && started && !ended && !free && phase === 'idle') hintT = setTimeout(() => showHint(false), HINT_MS); }
-    function showHint(manual) { if (ended || free || !started) return; sayShow(SET_HINT, '', 5000); if (manual) tell(SET_HINT); }
+    function showHint(manual) {
+      if (ended || free || !started) return;
+      sayShow(SET_HINT, '', 5000);
+      if (manual) tell(SET_HINT);
+      const on = slots().map((id, i) => (id ? i : -1)).filter((i) => i >= 0);   // the crystal hand carries the first onto the next
+      if (!reduce && on.length > 1) { handStop(); handStop = hand(cells[on[0]], cells[on[1]]); }
+    }
     let coachEl = null;
     function coachOn() {
       if (!lv.coach || free) return;
@@ -2409,5 +2437,5 @@
     };
   }
 
-  root.FiveSPlay = Object.freeze({ version: 1, mount, mountMap, mountSet });
+  root.FiveSPlay = Object.freeze({ version: 1, mount, mountMap, mountSet, hand });
 })(typeof self !== 'undefined' ? self : globalThis);

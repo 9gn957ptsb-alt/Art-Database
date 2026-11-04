@@ -578,6 +578,7 @@
       try { history.replaceState(null, '', '#' + v); } catch (e) { try { location.hash = v; } catch (e2) { /* no hash here */ } }
     }
     if (changed) {
+      if (v !== 'sort') sortHand();   // leaving Sort: the hand goes
       $('#main').scrollTop = 0;
       ui.confirm = null;
       $$('#fly-layer > *').forEach((n) => { try { n.getAnimations().forEach((a) => a.finish()); } catch (e) { /* done */ } n.remove(); });
@@ -667,6 +668,22 @@
     if (!intro && done) renderSummary();
     updateControls();
     renderStrip();
+    sortHand();
+  }
+
+  // The crystal hand shows the first drag to Keep, until a card is first judged (FiveSPlay.hand): after a pause, again
+  // every six seconds; never under Reduce Motion or with hints off.
+  function sortHand() {
+    clearTimeout(ui.handT);
+    if (ui.handStop) { ui.handStop(); ui.handStop = null; }
+    if (view !== 'sort' || !S.seen.intro || S.j.length || F.fiveDone(S) || reduced() || (S.opts && S.opts.hints === false) || !window.FiveSPlay) return;
+    ui.handT = setTimeout(function again() {
+      const top = $('#stack .card.is-top');
+      if (!top || view !== 'sort' || S.j.length) return;
+      const r = top.getBoundingClientRect();
+      ui.handStop = window.FiveSPlay.hand(r, { left: r.left + r.width * 0.85, top: r.top + r.height / 2, width: 0, height: 0 }, 1600);
+      ui.handT = setTimeout(again, 6000);
+    }, 3500);
   }
 
   function updateCounter() {

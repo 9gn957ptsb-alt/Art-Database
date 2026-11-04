@@ -107,7 +107,7 @@ Publish `dist/index.html` as the page. `dist/dev.html` is only for local testing
 published. The supporting files go with it at the same relative paths:
 
 - `engine.js`, `bring.js`, `ground.js`, `hub.js`, `hubpage.js`, `connect.js`, `match.js`, `relate.js`, `board.js`, `play.js`, `kingdom.js`, `room.js`, `links.js`, `motion.js`, `app.js`
-- `deck.json`, `logo.webp`, `img/atlas.webp`
+- `deck.json`, `logo.webp`, `img/atlas.webp`, `img/hand.webp` (the crystal hand, the gesture hint: from the git-ignored `data/5s/hand.webp`, which `build_page.py` copies in)
 - the 451 card images `img/{i,o,s,u,b,m}NNN.webp` (Colour cards have no image; `b` and `m` are the
   artist's Architectural Authority bookmarks, a building's Space or Object and its Surface)
 
@@ -130,12 +130,12 @@ and the data file door works without it. Paste a link itself works without it to
 words, Define through `sample`, or a pasted picture); the connector adds the page's own picture and
 facts, and whole boards and channels (SPEC.md, "As built, 22 Oct 2026").
 
-**Two publishes, because of the file count.** The page plus 469 supporting files is 470 files (about
+**Two publishes, because of the file count.** The page plus 470 supporting files is 471 files (about
 18 MB). One publish sends at most 255 files; a version holds up to 511.
 
-1. Publish the page with the fifteen scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, the Image and
+1. Publish the page with the fifteen scripts, `deck.json`, `logo.webp`, `img/atlas.webp`, `img/hand.webp`, the Image and
    Object card images (`img/i*.webp`, `img/o*.webp`) and the bookmarks' 66 Spaces and Objects (`img/b*.webp`):
-   245 files.
+   246 files.
 2. Publish again to the same URL with the 80 Space card images (`img/s*.webp`), the 80 Surface crops
    (`img/u*.webp`) and the bookmarks' 65 Surfaces (`img/m*.webp`): 225 files. Files left out of a
    publish are kept.

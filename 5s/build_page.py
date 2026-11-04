@@ -142,6 +142,13 @@ def main(argv=None):
             shutil.copyfile(logo, os.path.join(out, 'logo.webp'))
             copied.append('logo.webp')
 
+    # The crystal hand, the gesture hint (play.js hand): git-ignored with the images, as it is a picture the artist was given.
+    hand = os.path.join(HERE, '..', 'data', '5s', 'hand.webp')
+    if os.path.isfile(hand):
+        os.makedirs(os.path.join(out, 'img'), exist_ok=True)
+        shutil.copyfile(hand, os.path.join(out, 'img', 'hand.webp'))
+        copied.append('img/hand.webp')
+
     size = os.path.getsize(os.path.join(out, 'index.html'))
     print('built %s (index.html %d bytes; %s%s)' % (
         out, size, ', '.join(SCRIPTS), (', ' + ', '.join(copied)) if copied else ''))
