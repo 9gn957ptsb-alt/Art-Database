@@ -32,7 +32,15 @@ start the next level. Users need to be able to run anywhere when they are not in
 one too, its net, Mr Plan's end, round behind them all, to the edge of the ground. Only one thing begins a game: the open
 court's bold gold circle, behind its baseline where he serves from, shown whenever he is not playing; stepping onto it
 (within three quarters of a metre of its middle, on foot) begins that court's match, the serve at once. Nothing pulls him
-toward it: the lock that takes him onto the circle works only in a match. The court tip says it ("Step onto the open
+toward it: the lock that takes him onto the circle works only in a match, and only within 5 m of it. **And between
+points** (the artist, 4 Nov 2026: "Make sure I can still go anywhere in between points in a game"): the point over, Mr
+Plan's donut, the serve until he is on its circle, he runs anywhere too, the match waiting; the gold circle shows him the
+way back (at the screen's edge when it is off it) and the serve begins there. Only a rally, from his serve to the point's
+end, holds him to his court (and the walk-through, which keeps him to court one). A Super pressed while he is off his
+court waits till he is back on it; the match's recording keeps him, standing, at his court's edge while he is off it, so
+a won court's replay never sends its Mr Pearl across the others; Mr Plan's donut is seen from the court's middle, not
+from wherever he has gone. The coupe and the staircase's post are
+solid to him wherever he runs. The court tip says it ("Step onto the open
 court's gold circle to play Mr Plan, or drive the orange coupe to it"), its ◆ over the circle and its trail to it.
 
 **A first game is walked through** (the artist, 28 Oct 2026: "The first court should be a walk-through, that takes you
@@ -176,6 +184,12 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   him and the coupe from the court's side, and back once he is at his baseline, before the serve; the match's recording
   starts after it. His game's line keeps its score with the donut in it ("Mr Plan takes it, 3 – 1, and the coupe for a
   donut."); the coupe turns smoothly however it was parked, and its smoke is the same on any display.
+- *His own donut* (the artist, 4 Nov 2026: "Mr Pearl should be able to do donuts in the coupe as well"): in the coupe on
+  the ground, a tap (Space on the desk) drives the same two turns, its tail out and smoking, round a circle at its side,
+  the side away from the open court first, kept clear of that court's run-off, the ground's edge and the staircase (no
+  room either side: none); at speed, a stop first, braking as for the way out; it parks where it began, him still in
+  it. Meanwhile the view is not whirled round with it and the
+  button does nothing.
 `pb_drive.js` drives it round the courts, up the ramp and off it, climbs, glides and watches the donut, phone and desk, with real taps and keys. Straight ahead takes him in: at the serve, before he is on the circle, a way within 30
 degrees of it goes straight to it (the view turned off it would otherwise have him walk past, 1.4 m wide). Not the corner behind the circle: a floodlight's pole stood there between the view and him.
 And on any way he goes, no pole is drawn within 2.5 m of the view or within a metre of its line to him: walking into
@@ -348,7 +362,10 @@ sprint (dust), turns once round on a planted foot when a sprint reverses, hops a
 and lands low. Every stroke is scheduled: where and when the pearl can be met is found ahead, and the stroke winds up
 so that the paddle is there then (wind-up, contact, follow-through), with the run, the lunge, the dive (flat out,
 landed, a roll, up again) or the leap (a scissor kick at the top, the overhead) that it needs. A point won is a
-standing backflip; a point lost, a shake of the head. Mr Plan has a showman's streak: on some returns (14% a dive and
+standing backflip; a point lost, a shake of the head. Mr Pearl's every win, each point and each court, is a backflip at
+once (the artist, 4 Nov 2026: "he should do a back flip immediately after each win"): a stroke still going is let go;
+in the air, or down in a dive or a lunge, it comes the moment he is up; with a pearl still to be served, when the rally
+is over (`pb_rules.js`). Mr Plan has a showman's streak: on some returns (14% a dive and
 14% a lunge at level one, more each level) he goes for the dive or the lunge on purpose, and at the lower levels his
 dives often fall short.
 

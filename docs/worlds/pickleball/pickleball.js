@@ -196,6 +196,7 @@
       if (a.y <= 0) { a.kick = min(0.28, -a.vy * 0.06); a.y = 0; a.vy = 0; a.hop = false; }
     }
     a.air = a.y > 0.002;
+    if (a.flipQ != null && !flipWait(a, gt)) { if (gt - a.flipQ < 2) { athCelebrate(a, true, gt); } a.flipQ = null; }
     var ax = (a.vx - ovx) / dt, az = (a.vz - ovz) / dt, q = min(1, dt * 12);
     a.ax += (ax - a.ax) * q; a.az += (az - a.az) * q;
     a.speed = hypot(a.vx, a.vz);
@@ -277,8 +278,12 @@
     return m;
   }
   function athSplit(a, gt) { if (!a.air && !(a.move && a.move.own)) { a.vy = 1.75; a.y = 0.001; a.hop = true; a.splitT = gt; } }
+  // (his body busy: in the air, or down in a dive or a lunge, whose pose a flip would cut off in a frame)
+  function flipWait(a, gt) { var m = a.move; return a.air || !!(m && m.own && gt < m.end && (m.reach === "dive" || m.reach === "lunge")); }
   function athCelebrate(a, won, gt) {
-    if (a.move && a.move.own && gt < a.move.end) { return; }
+    // (Mr Pearl's every win a backflip, at once: a stroke let go; in the air, or down in a dive or a lunge, the moment he is up)
+    if (won && a === me) { if (flipWait(a, gt)) { a.flipQ = gt; return; } a.move = null; a.spin = null; a.flipQ = null; }
+    else if (a.move && a.move.own && gt < a.move.end) { return; }
     if (won) { a.celeb = { kind: "flip", t0: gt }; a.vy = 4.6; a.y = 0.001; a.vx *= 0.3; a.vz *= 0.3; }
     else { a.celeb = { kind: "shake", t0: gt }; }
   }
@@ -1227,7 +1232,7 @@
     standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; },
     // the coupe, the stairs, his hat: [a finger, a desk]
     ride: { drive: "Drive", out: "Get out", driveSr: "Drive the orange coupe", outSr: "Get out of the coupe",
-            car: ["The coupe: push up to drive, left and right to steer, down to brake. Round all the courts; it parks beside the open one.", "The coupe: W to drive, A and D to steer, S to brake, F to get out. Round all the courts; it parks beside the open one."],
+            car: ["The coupe: push up to drive, left and right to steer, down to brake, tap for a donut. Round all the courts; it parks beside the open one.", "The coupe: W to drive, A and D to steer, S to brake, Space for a donut, F to get out. Round all the courts; it parks beside the open one."],
             stairs: ["The staircase: a step for each court won. Push up to climb, tap to jump off.", "The staircase: a step for each court won. W to climb, Space to jump off."],
             ramp: ["Up the staircase: it steers itself round, then level and out along its board. Hold on to launch off the end.", "Up the staircase: it steers itself round, then level and out along its board. W on to launch off the end."],
             carHat: ["His hat opens over the coupe: steer it down anywhere.", "His hat opens over the coupe: A and D steer it down anywhere."],
@@ -1537,7 +1542,7 @@
     // (the first point's circle: serveSpot() with n = 0)
     var cv = courts[k], cc = courtAt(k), sp = [cc[0] + 0.9, cc[2] + COURT.L + 0.4], to = cv.up ? [cc[0], cc[2] + COURT.L + 3.0] : [sp[0] + 4.5, sp[1] + 1.5];
     var yaw = cv.up ? 0 : Math.atan2(sp[0] - to[0], -(sp[1] - to[1]));
-    ride.mode = null; ride.u = 0; me.x = to[0]; me.z = to[1]; me.y = 0; me.vx = me.vz = me.vy = 0; me.ax = me.az = 0; me.air = false; me.hop = false; me.move = null; me.celeb = null; me.spin = null; me.yaw = yaw; me.faceTo = cv.up ? null : yaw;
+    ride.mode = null; ride.u = 0; ride.dn = null; ride.dnQ = false; me.x = to[0]; me.z = to[1]; me.y = 0; me.vx = me.vz = me.vy = 0; me.ax = me.az = 0; me.air = false; me.hop = false; me.move = null; me.celeb = null; me.spin = null; me.yaw = yaw; me.faceTo = cv.up ? null : yaw;
     // (the view starts over there, turned a little right of the circle: straight ahead, the ring on the ground sat over
     // his hat like a halo, as if he were on it already; turned, it stands to his left, the way he walks; less on a
     // narrow screen, where 0.3 put it at the edge)
@@ -1694,7 +1699,7 @@
     if (!tut && cueKey() === "multi") { cuePop(STR.cue.pop.plus, [b.x, 0.4, b.z], toYou ? CUE_COL.gold : CUE_COL.ice); }
     var over = m.you >= COURT.WIN || m.them >= COURT.WIN;
     if (over) { m.balls.forEach(function (q) { if (!q.dead) { q.dead = true; q.deadT = gt; q.mark = null; q.cleared = true; } }); m.tosses = []; m.pc = m.nc = null; }
-    if (over || !live(m).length) { athCelebrate(toYou ? me : plans[m.k], true, gt); athCelebrate(toYou ? plans[m.k] : me, false, gt); }
+    if (over || (!live(m).length && !m.tosses.length)) { athCelebrate(toYou ? me : plans[m.k], true, gt); athCelebrate(toYou ? plans[m.k] : me, false, gt); }
     courtWhere();
   }
   function matchStep(dt, c) {
@@ -1702,7 +1707,7 @@
     if (m.phase === "super") { superStep(m, dt); return; }
     if (m.phase === "plansuper") { psupStep(m, dt, fire); return; }
     if (m.phase === "donut") { donutStep(m, dt); return; }
-    if (m.sup.armed && (m.phase === "serve" || m.phase === "toss" || m.phase === "rally") && superStart(m)) { return; }
+    if (m.sup.armed && (m.phase === "serve" || m.phase === "toss" || m.phase === "rally") && inCourt(m.k) && superStart(m)) { return; }   // (roamed off between points: it waits till he is back)
     if (m.phase === "serve") {
       // (he runs to his serve himself, to the gold mark (the artist, 28 Oct 2026: "Get rid of the serve button and just
       // have the animation start the serve position when you run to the right place"); there he steps onto it, turns
@@ -1917,6 +1922,9 @@
      won plays that again, over and over with a breath between, his stand-in in his steps and its Mr Plan in his, the
      pearls on their own ways. The twelve courts won last keep theirs (some 400 KB each); an older one, or one won
      before this version, rallies as before. */
+  // his half of a court in a match, its run-off and all: where a rally holds him
+  var CBOX = { x: COURT.HW + 2.5, z0: 0.25, z1: COURT.L + 3.5 };
+  function inCourt(k, pad) { var cm = courtAt(k), e = (pad || 0) + 1e-6; return abs(me.x - cm[0]) <= CBOX.x + e && me.z >= cm[2] + CBOX.z0 - e && me.z <= cm[2] + CBOX.z1 + e; }
   var REC = { HZ: 20, SEC: 90, KEEP: 12, S: 55, ROOM: 5.1e5 }, AF = ["x", "y", "z", "yaw", "drop", "wide", "leanF", "leanS", "phase", "speed", "vx", "vz", "kick", "skid", "splitT"];
   function recNew() { var n = REC.HZ * REC.SEC; return { f: new Float32Array(n * REC.S), r: new Array(n * 6), n: 0, cap: n, t0: gt, last: -1e9, fx: [] }; }
   function recPut(rec, m) {
@@ -1924,9 +1932,12 @@
     rec.last = gt;
     var i = rec.n % rec.cap, o = i * REC.S, f = rec.f;
     f[o] = gt - rec.t0; f[o + 1] = m.you; f[o + 2] = m.them;
+    // (roamed off his court between points: kept at its edge, standing, so the replay's Mr Pearl never leaves it)
+    var cm = courtAt(m.k), off = !inCourt(m.k, 0.5);
     [me, plans[m.k]].forEach(function (a, j) {
       var b = o + 3 + j * 17;
       AF.forEach(function (key, q) { f[b + q] = key === "splitT" ? (a.splitT != null ? a.splitT - rec.t0 : -1e4) : (a[key] || 0); });
+      if (j === 0 && off) { f[b] = clampV(a.x, cm[0] - CBOX.x, cm[0] + CBOX.x); f[b + 2] = clampV(a.z, cm[2] + CBOX.z0, cm[2] + CBOX.z1); f[b + 9] = f[b + 10] = f[b + 11] = 0; }
       f[b + 15] = a.air ? 1 : 0; f[b + 16] = a.hop ? 1 : 0;
       rec.r[i * 6 + j * 3] = a.move; rec.r[i * 6 + j * 3 + 1] = a.celeb; rec.r[i * 6 + j * 3 + 2] = a.spin;
     });
@@ -2050,10 +2061,14 @@
       if (on && courts[k].up) { var cv = courts[k], key = k + "u"; if (court.told[key] !== 1) { court.told[key] = 1; say(STR.standin(k, cv.you, cv.them)); } }
       if (onOpenSpot()) { court.told = {}; matchOn(courts.length - 1); }   // (the open court's match: from its gold circle only)
     }
-    // his bounds: his court while he plays it, else the row of them
+    // his bounds: his court while a point is played; between points (the artist, 4 Nov 2026: "Make sure I can still go
+    // anywhere in between points in a game": the point over, Mr Plan's donut, the serve before he is on its circle) and
+    // between games, the ground round all the courts, the coupe and the staircase's post solid; the next serve from the
+    // gold circle, wherever he has gone. (Not in the walk-through: it keeps him to court one.)
     m = court.m;
-    if (m) { var cm = courtAt(m.k); me.x = clampV(me.x, cm[0] - COURT.HW - 2.5, cm[0] + COURT.HW + 2.5); me.z = clampV(me.z, cm[2] + 0.25, cm[2] + COURT.L + 3.5); }
-    else { me.x = clampV(me.x, BOUND.x0, boundX1()); me.z = clampV(me.z, BOUND.z0, BOUND.z1); }   // (round all the courts: the coupe's track, the staircase's ground)
+    var roam = m && !TUT.on && ((m.phase === "serve" && !m.meterOn) || m.phase === "point" || m.phase === "donut");
+    if (m && !roam) { var cm = courtAt(m.k); me.x = clampV(me.x, cm[0] - CBOX.x, cm[0] + CBOX.x); me.z = clampV(me.z, cm[2] + CBOX.z0, cm[2] + CBOX.z1); }
+    else { me.x = clampV(me.x, BOUND.x0, boundX1()); me.z = clampV(me.z, BOUND.z0, BOUND.z1); if (roam) { footHit(); } }   // (round all the courts: the coupe's track, the staircase's ground)
     // every athlete: the courts that play on (their stand-in and Mr Plan rallying, as the rocket world drew them, each
     // shot now a stroke), the idle Mr Plans at their baselines, and the two in the match
     courts.forEach(function (cv, k) {
@@ -2204,10 +2219,10 @@
   function rideToggle() {
     if (court.m || TUT.on) { return; }
     if (ride.mode === "car") {
-      if (car.mode !== "ground") { return; }   // (not on the ramp, nor in the air)
+      if (car.mode !== "ground" || ride.dn) { return; }   // (not on the ramp, nor in the air, nor in a donut)
       if (abs(car.v) > 0.6) { ride.out = !ride.out; } else { carOut(); }   // (at speed: a stop first, then out; again, on again)
     } else if (carNear()) {
-      ride.mode = "car"; ride.out = false; me.move = null; me.celeb = null; me.spin = null; me.hop = false; me.skid = 0;
+      ride.mode = "car"; ride.out = false; ride.dn = null; ride.dnQ = false; me.move = null; me.celeb = null; me.spin = null; me.hop = false; me.skid = 0;
       if (!ride.told.car) { ride.told.car = 1; say(STR.ride.car[deskI()], true); }
     }
     rideButton();
@@ -2359,10 +2374,26 @@
     }
     me.want = { keep: true };
   }
+  // his own donut (a tap in the coupe, on the ground): round a circle at its side, the side away from the open court
+  // first, kept clear of it, the ground's edge and the staircase; parked again as it stood. No room either side: none
+  function myDonut() {
+    var A = carAxes(), cx = (courts.length - 1) * COURT.GAP, zL = COURT.L + 3.5, far = DONUT.R + CAR.L / 2 + 0.6;
+    var off = function (C) { return hypot(C[0] - clampV(C[0], cx - COURT.GAP / 2 + 0.5, cx + COURT.GAP / 2 - 0.5), C[1] - clampV(C[1], -zL, zL)); };
+    var ok = function (C) { return off(C) > far && C[0] - far > BOUND.x0 && C[0] + far < boundX1() && C[1] - far > BOUND.z0 && C[1] + far < BOUND.z1 && hypot(C[0] - STAIR.c[0], C[1] - STAIR.c[1]) > STAIR.R1 + far; };
+    var w = [1, -1].map(function (s) { return { s: s, C: [car.x + s * A.rx * DONUT.R, car.z + s * A.rz * DONUT.R] }; })
+      .sort(function (a, b) { return off(b.C) - off(a.C); }).filter(function (o) { return ok(o.C); })[0];
+    // (on its right it goes round forward, ph rising; on its left, ph falling)
+    if (w) { ride.dn = { t1: gt, P0: [car.x, car.z, car.yaw], C: w.C, ph0: Math.atan2(car.z - w.C[1], car.x - w.C[0]), dir: w.s }; }
+  }
   // between matches, before his body's step: the coupe (his, or standing where he left it), the stairs, the air
   function rideStep(dt, c) {
     if (court.m || dt <= 0) { return; }
-    carStep(dt, ride.mode === "car" ? c : null);
+    // (a tap at speed: a stop first, braking as for the way out, then the donut)
+    if (ride.mode === "car" && !ride.dn && c && c.fire && car.mode === "ground" && !ride.out && !TUT.on) { ride.dnQ = true; }
+    if (ride.dnQ && (ride.mode !== "car" || car.mode !== "ground" || ride.out)) { ride.dnQ = false; }
+    if (ride.dnQ && abs(car.v) < 0.6) { ride.dnQ = false; myDonut(); }
+    if (ride.dn) { if (donutDrive(ride.dn, dt) >= 1) { var P = ride.dn.P0; car.x = P[0]; car.z = P[1]; car.yaw = P[2]; car.v = 0; car.steer = 0; ride.dn = null; } }
+    else { carStep(dt, ride.mode === "car" && !ride.dnQ ? c : null); }
     if (ride.mode === "car") {
       if (ride.out && car.mode !== "ground") { ride.out = false; rideButton(); }   // (never left braking on the ramp with no wheel and no way out)
       if (ride.out && car.mode === "ground" && abs(car.v) < 0.6) { carOut(); }
@@ -2562,7 +2593,7 @@
     // (off the ground off the stairs: the view goes up with him; in the coupe, on the stairs, under his hat, it comes
     // round behind the way he goes, unless a finger or the mouse is turning it; and further back for the coupe and the canopy)
     var aloft = !cm && (ride.mode === "stair" || ride.mode === "fly" || ride.mode === "glide" || (ride.mode === "car" && car.y > 0.05)), look = Object.keys(input.down).some(function (id) { return !input.down[id].stick; });
-    var chase = cm ? null : ride.mode === "car" ? (abs(car.v) > 0.5 || car.mode !== "ground" ? car.yaw : null) : ride.mode === "stair" ? (function (w) { return Math.atan2(w[0], -w[1]); })(stairWay(ride.s)) : ride.mode === "glide" ? ride.hd : null;
+    var chase = cm ? null : ride.mode === "car" ? (ride.dn ? null : abs(car.v) > 0.5 || car.mode !== "ground" ? car.yaw : null) : ride.mode === "stair" ? (function (w) { return Math.atan2(w[0], -w[1]); })(stairWay(ride.s)) : ride.mode === "glide" ? ride.hd : null;
     if (chase != null && !look) { view.yaw += angle(chase - view.yaw) * min(1, dt * (ride.mode === "car" ? 2.4 : ride.mode === "stair" ? 5 : 2)); }   // (the stairs turn fast: close behind them)
     // (on foot, back a little as his speed across the view keeps up, CAM.dolly at most: room for the window to give)
     // (his speed across the view held over half a second: a sprint's, not a shuffle's, whose way keeps turning)
@@ -2689,7 +2720,7 @@
     me.move = { kind: "overhead", reach: "super", t0: t0, sw: apex - 0.32, tc: apex, p: C, aim: norm([tx + cc[0] - C[0], -0.6, tz + cc[2] - C[2]]), fore: true,
                 own: [t0, t0 + SUP.T], end: t0 + SUP.T, up: t0 + SUP.GATHER, vy: CAPS.g * tUp, lockYaw: true, yawTo: 0,
                 drop: function (g) { return g < t0 + SUP.GATHER ? 0.12 + 0.3 * smooth((g - t0) / SUP.GATHER) : me.air ? 0.04 : 0.36 - 0.24 * smooth((g - t0 - SUP.GATHER - 2 * tUp) / 0.3); } };
-    me.vx = me.vz = 0; me.celeb = null; me.spin = null;
+    me.vx = me.vz = 0; me.celeb = null; me.spin = null; me.flipQ = null;
     pl.want = { vel: [0, 0] }; pl.faceTo = Math.atan2(me.x - pl.x, -(me.z - pl.z)); pl.move = null;
     b.super = true; b.mark = null; b.bounces = 0; b.net = false;
     m.sup = { avail: false, armed: false, t0: t0, apex: apex, ball: b, p0: [b.x, b.y, b.z], v0: [b.vx * 0.4, b.vy * 0.4 + 2, b.vz * 0.4], C: C, shot: [tx, tz], struck: false, won: false, prev: m.phase, why: why || STR.superWon };
@@ -2854,6 +2885,28 @@
     m.dn = { stage: "run", t0: gt, P0: [car.x, car.z, car.yaw], C: C, ph0: Math.atan2(car.z - C[1], car.x - C[0]), door: [car.x - A.rx * (CAR.W / 2 + 0.5), car.z - A.rz * (CAR.W / 2 + 0.5)] };
     say(took ? took.replace(/\. Again/, ", and the coupe for a donut. Again") : STR.donut, true);   // (his game's line kept, the donut in it)
   }
+  // the coupe's donut (his or Mr Plan's), d.t1 its start: round the circle twice, eased in and out, the nose turned in,
+  // the tail swung out, smoke off the back wheels; the part done back (1: done)
+  function donutDrive(d, dt) {
+    var sg = d.dir || 1, u = clampV((gt - d.t1) / DONUT.T, 0, 1), e = u * u * (3 - 2 * u), ph = d.ph0 + sg * DONUT.TURNS * 2 * PI * e, dr = sg * DONUT.DRIFT * Math.sin(PI * u);
+    car.x = d.C[0] + DONUT.R * Math.cos(ph); car.z = d.C[1] + DONUT.R * Math.sin(ph);
+    // (the way round is ph + PI, as the ground's x and z turn (ph the other way, dir -1); + DRIFT is the nose turned in.
+    // Blended unwrapped from where it stood, the whole turns taken off past half way (no change while the blend is
+    // full), so it never snaps)
+    var rel = angle(d.ph0 + (sg > 0 ? PI : 0) - d.P0[2]) + (ph - d.ph0) + dr - (u > 0.5 ? sg * 2 * PI * DONUT.TURNS : 0);
+    car.yaw = angle(d.P0[2] + rel * smooth(u / 0.15) * (1 - smooth((u - 0.85) / 0.15)));
+    car.v = 2 * PI * DONUT.R * DONUT.TURNS / DONUT.T; car.steer = 0.5 * Math.sin(PI * u);
+    var A = carAxes();
+    for (d.smT = (d.smT || 0) + dt; d.smT >= 1 / 60; d.smT -= 1 / 60) {   // (as at 60 Hz on any display)
+      if (fx.length >= 300) { continue; }
+      [-1, 1].forEach(function (s) {
+        var rp = [car.x - A.fx * 1.3 + A.rx * s * 0.8, 0.15, car.z - A.fz * 1.3 + A.rz * s * 0.8];
+        fxAdd(rp.slice(), [(fxR() - 0.5) * 1.2, 0.6 + 0.8 * fxR(), (fxR() - 0.5) * 1.2], 0.9 + 0.5 * fxR(), pick(["~", "*", ":", "."]), pick(FXC.dust), 0.22, -0.4, false);
+        if (fxR() < 0.5) { fxAdd([rp[0], 0.02, rp[2]], [0, 0, 0], 1.6, "=", pick(FXC.scuff), 0.16, 0, true); }
+      });
+    }
+    return u;
+  }
   function donutStep(m, dt) {
     var d = m.dn, pl = plans[m.k], cc = courtAt(m.k), base = [cc[0], cc[2] - COURT.L - 0.6];
     var tgt = d.stage === "drive" ? [car.x, 1.0, car.z] : [pl.x, 1.0, pl.z]; d.cam = d.cam ? lerp3(d.cam, tgt, min(1, dt * 3)) : tgt;   // (what the view looks at, eased)
@@ -2861,23 +2914,7 @@
       pl.want = { to: d.door }; pl.faceTo = null;
       if (hypot(pl.x - d.door[0], pl.z - d.door[1]) < 0.6 || gt - d.t0 > DONUT.RUN) { d.stage = "drive"; d.t1 = gt; d.inCar = true; pl.want = null; pl.vx = pl.vz = 0; }
     } else if (d.stage === "drive") {
-      // (round the circle twice, eased in and out, the nose turned in: the tail swung out; parked again as it stood)
-      var u = clampV((gt - d.t1) / DONUT.T, 0, 1), e = u * u * (3 - 2 * u), ph = d.ph0 + DONUT.TURNS * 2 * PI * e, dr = DONUT.DRIFT * Math.sin(PI * u);
-      car.x = d.C[0] + DONUT.R * Math.cos(ph); car.z = d.C[1] + DONUT.R * Math.sin(ph);
-      // (the way round is ph + PI, as the ground's x and z turn; + DRIFT is the nose turned in. Blended unwrapped from
-      // where it stood, the whole turns taken off past half way (no change while the blend is full), so it never snaps)
-      var rel = angle(d.ph0 + PI - d.P0[2]) + (ph - d.ph0) + dr - (u > 0.5 ? 2 * PI * DONUT.TURNS : 0);
-      car.yaw = angle(d.P0[2] + rel * smooth(u / 0.15) * (1 - smooth((u - 0.85) / 0.15)));
-      car.v = 2 * PI * DONUT.R * DONUT.TURNS / DONUT.T; car.steer = 0.5 * Math.sin(PI * u);
-      var A = carAxes();
-      for (d.smT = (d.smT || 0) + dt; d.smT >= 1 / 60; d.smT -= 1 / 60) {   // (as at 60 Hz on any display)
-        if (fx.length >= 300) { continue; }
-        [-1, 1].forEach(function (s) {
-          var rp = [car.x - A.fx * 1.3 + A.rx * s * 0.8, 0.15, car.z - A.fz * 1.3 + A.rz * s * 0.8];
-          fxAdd(rp.slice(), [(fxR() - 0.5) * 1.2, 0.6 + 0.8 * fxR(), (fxR() - 0.5) * 1.2], 0.9 + 0.5 * fxR(), pick(["~", "*", ":", "."]), pick(FXC.dust), 0.22, -0.4, false);
-          if (fxR() < 0.5) { fxAdd([rp[0], 0.02, rp[2]], [0, 0, 0], 1.6, "=", pick(FXC.scuff), 0.16, 0, true); }
-        });
-      }
+      var u = donutDrive(d, dt);
       pl.x = car.x; pl.z = car.z; pl.vx = pl.vz = 0;   // (in it)
       if (u >= 1) { car.x = d.P0[0]; car.z = d.P0[1]; car.yaw = d.P0[2]; car.v = 0; car.steer = 0; d.stage = "back"; d.t2 = gt; d.inCar = false; pl.x = d.door[0]; pl.z = d.door[1]; }
     } else {
@@ -2886,12 +2923,13 @@
       if (d.t3) { pl.faceTo = PI; if (gt - d.t3 >= 0.8) { m.dn = null; m.phase = "serve"; m.rec = recNew(); courtWhere(); } }
     }
   }
-  // the view through it: from the court's side, past him and the coupe, eased in and out of his own
+  // the view through it: from the court's side, on the coupe, eased in and out of his own
   function donutCam(e0, yaw0, pitch0) {
     var m = court.m, d = m && m.dn; if (!m || m.phase !== "donut" || !d) { return null; }
     var w = smooth((gt - d.t0) / 0.6) * (d.t3 ? 1 - smooth((gt - d.t3) / 0.8) : 1);   // (in, and out once he is at his baseline)
     if (!d.cam) { return null; }
-    var t = d.cam, ox = t[0] - me.x, oz = t[2] - me.z, ol = hypot(ox, oz) || 1, e1 = [t[0] - ox / ol * 12.5, 5.5, t[2] - oz / ol * 12.5];
+    // (from the court's middle: he may be anywhere between games, even by the coupe)
+    var t = d.cam, cc = courtAt(m.k), ox = t[0] - cc[0], oz = t[2] - cc[2], ol = hypot(ox, oz) || 1, e1 = [t[0] - ox / ol * 12.5, 5.5, t[2] - oz / ol * 12.5];
     var dx = t[0] - e1[0], dy = t[1] - e1[1], dz = t[2] - e1[2], yaw1 = Math.atan2(dx, -dz), pitch1 = Math.atan2(dy, hypot(dx, dz)) + AIM * 0.4;
     return { e: lerp3(e0, e1, w), yaw: yaw0 + angle(yaw1 - yaw0) * w, pitch: pitch0 + (pitch1 - pitch0) * w };
   }
@@ -2927,7 +2965,7 @@
     var cm = court.m;
     if (cm && cm.phase === "serve" && !cm.meterOn && (v[0] || v[1])) {
       var sp = serveSpot(), wx = sp[0] - me.x, wz = sp[1] - me.z, wl = hypot(wx, wz), vl = hypot(v[0], v[1]);
-      if (wl > 0.05 && (v[0] * wx + v[1] * wz) / (vl * wl) > Math.cos(0.82)) { v = [wx / wl * vl, wz / wl * vl]; }
+      if (wl > 0.05 && wl < 5 && (v[0] * wx + v[1] * wz) / (vl * wl) > Math.cos(0.82)) { v = [wx / wl * vl, wz / wl * vl]; }   // (only near it: farther off, between points, he runs where he likes)
     }
     if (rf != null && ride.mode === "car") { fwd = rf; side = rs; }   // (in the coupe, W and D together are the throttle and the wheel, each whole)
     // (on foot the way eased over CAM.stick: a reversal a quick turn, not a jump; not in the coupe, on the ramp, in the air)
@@ -3907,7 +3945,7 @@
              run: function (sec, fire) { var n = round(sec * 60); for (var i = 0; i < n; i += 1) { if (fire && i === 0) { input.fire = true; } CUE.rt += 1 / 60; if (tutHeld()) { continue; } gt += 1 / 60; stepAll(1 / 60); camera(1 / 60); } },
              draw: function () { frameDt = 0; draw(); }, pause: function (on) { if (on) { YT.paused = true; stop(); } else { YT.paused = false; start(); } },
              running: function () { return !!raf; }, pose: athPose, planContact: planContact, ascOk: function () { return !!(asc && asc.ok); },
-             swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w) { athCelebrate(a, w, gt); },
+             swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w) { athCelebrate(a, w, gt); }, point: function (b, you) { if (court.m) { pointBall(court.m, b, you, ""); } },
              step: function (a, sec) { for (var i = 0; i < round(sec * 60); i += 1) { gt += 1 / 60; athStep(a, 1 / 60, gt); } },
              meter: function () { var m = court.m; return !m ? null : m.phase === "plansuper" ? (m.psup.struck && !m.psup.tapped ? m.psup.uNow : null) : m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
              serveSpot: function () { return court.m ? serveSpot() : null; },
