@@ -43,6 +43,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   play, have the logo slip into that perspective from a dust hardening into water than earth. The name duh needs to form in
   the same way, but have another short animation itself while the logo remains still that highlights it. it should be a
   different animation than any preceding ones."
+- "Have the name have lines like the Warner Bros logo you see in Looney Tunes, same colors, that lead to a point off the
+  bottom edge that creates a block letter effect" (done as gold faces, red sides and a dark outline, the classic cartoon
+  look; the exact colours could not be checked online)
 
 ## The purpose (said after, the same day; it frames everything below)
 
