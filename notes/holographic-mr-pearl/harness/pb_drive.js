@@ -110,9 +110,10 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   await press();
   const r4 = await D(() => {
     const d = window.Pickleball.debug(), c = d.car, C = d.COURT, k = d.courts.length - 1; d.run(0.1);
+    for (let i = 0; i < 90 && d.ride.mode === "car"; i++) { d.run(1 / 60); }   // (still rolling, down the berm: a stop first, then out)
     const A = { fx: Math.sin(c.yaw), fz: -Math.cos(c.yaw), rx: Math.cos(c.yaw), rz: Math.sin(c.yaw) }, dx = d.me.x - c.x, dz = d.me.z - c.z;
     const clear = Math.abs(dx * A.fx + dz * A.fz) >= d.CAR.L / 2 + 0.25 || Math.abs(dx * A.rx + dz * A.rz) >= d.CAR.W / 2 + 0.25;
-    const o = { mode: d.ride.mode, clear, text: document.getElementById("ride").textContent, y: d.me.y };
+    const o = { mode: d.ride.mode, clear, text: document.getElementById("ride").textContent, y: d.me.y, g: d.groundAt(d.me.x, d.me.z), car: [+c.x.toFixed(1), +c.z.toFixed(1), +c.v.toFixed(2), +c.y.toFixed(2), +(dx * A.fx + dz * A.fz).toFixed(2), +(dx * A.rx + dz * A.rz).toFixed(2)] };
     for (let i = 0; i < 600 && !d.court.m && Math.hypot(k * C.GAP + 0.5 - d.me.x, 3 - d.me.z) > 0.4; i++) { window.__toward(k * C.GAP + 0.5 - d.me.x, 3 - d.me.z); d.run(1 / 60); }
     window.__off(); d.run(0.5); o.middle = [+d.me.x.toFixed(1), +d.me.z.toFixed(1)]; o.free = !d.court.m && Math.abs(d.me.x - k * C.GAP) < C.HW && d.me.z > 0.5 && d.me.z < C.L;   // (on its near half, where a step began it before)
     for (let i = 0; i < 600 && !d.court.m; i++) { window.__toward(k * C.GAP + 0.9 - d.me.x, C.L + 0.4 - d.me.z); d.run(1 / 60); }
@@ -120,7 +121,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     o.match = d.court.m && d.court.m.k; o.k = k; const b2 = document.getElementById("ride"); o.hidden = b2.hidden || getComputedStyle(b2).display === "none";
     return o;
   });
-  check(r4.mode === null && r4.clear && r4.y === 0, "out of the coupe: on foot beside it, not in it");
+  check(r4.mode === null && r4.clear && Math.abs(r4.y - r4.g) < 0.005, `out of the coupe: on foot beside it, not in it, on the ground (${r4.y.toFixed(3)} m, the ground ${r4.g.toFixed(3)}; ${r4.mode}, clear ${r4.clear}, car ${JSON.stringify(r4.car)})`);
   check(r4.free && r4.match === r4.k && r4.hidden, `ran into the open court's middle, nothing begun (at ${r4.middle}); onto its gold circle: its match (court ${r4.match + 1}), no Drive button in it`);
   // the courts won: their nets stop it; a pole; the edge; a court opened under it puts it off
   const r5 = await D(() => {
@@ -174,7 +175,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
       if (glide) { gi += 1; if (gi < 36) { window.__in(0, -1); } else { window.__off(); if (gi === 36) { o.turned = Math.atan2(Math.sin(d.ride.hd - hd0), Math.cos(d.ride.hd - hd0)); } } }   // (left for 0.6 s)
     }
     o.glide = glide; o.openY = openY; o.turned = o.turned || 0;
-    o.landed = d.ride.mode; o.y = d.me.y; window.__off(); d.run(0.5); o.u = d.ride.u;
+    o.landed = d.ride.mode; o.y = d.me.y; o.g = d.groundAt(d.me.x, d.me.z); window.__off(); d.run(0.5); o.u = d.ride.u;
     return o;
   });
   check(r6.on === "stair", "at the staircase's foot, the stick pushed up its way: on the stairs");
@@ -182,7 +183,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(r6.sMax > r6.end - 0.15 && Math.abs(r6.offYaw - Math.PI / 2) < 0.05, `level round and out along the board to its end, off it straight on toward the courts (yaw ${r6.offYaw.toFixed(2)}, at x ${r6.offX.toFixed(1)})`);
   check(r6.glide && r6.openY >= 1.5, `off the board he leaps, and from ${r6.openY.toFixed(2)} m his hat opens: gliding`);
   check(r6.turned < -0.5 && r6.turned > -1.2, `the stick turned the canopy left (${r6.turned.toFixed(2)} rad in 0.6 s)`);
-  check(r6.landed === null && r6.y === 0 && r6.u === 0, "he landed, on foot, the hat back on his head");
+  check(r6.landed === null && Math.abs(r6.y - r6.g) < 0.005 && r6.u === 0, `he landed, on foot, on the ground (${r6.y.toFixed(3)} m, the ground there ${r6.g.toFixed(3)}: the track's bowl if over it), the hat back on his head`);
   // a tap on the stairs jumps off; the shot under the canopy
   const r7 = await D(() => {
     const d = window.Pickleball.debug(); d.ride.mode = "stair"; d.ride.s = 3; d.ride.off = [0, 0]; d.run(0.05); return d.ride.mode; });
@@ -228,7 +229,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     }
     o.level = level; o.stepV = stepV; o.off = off; o.end0 = d.stairEnd(); o.P = { x: d.topPath().end.x + d.TOP.BOARD, z: d.topPath().end.z, y: d.topPath().y };
     window.__off(); d.run(0.5);
-    o.ramp = ramp; o.topY = topY; o.glide = glide; o.uMax = uMax; o.end = c.mode; o.y = c.y; o.u = d.ride.u; o.inCar = d.ride.mode === "car";
+    o.ramp = ramp; o.topY = topY; o.glide = glide; o.uMax = uMax; o.end = c.mode; o.y = c.y; o.g = d.groundAt(c.x, c.z); o.u = d.ride.u; o.inCar = d.ride.mode === "car";
     return o;
   });
   check(rc.ramp && rc.topY >= rc.n * 0.6 - 0.05, `the coupe drives up the ramp to its top (${rc.topY.toFixed(2)} m, ${rc.n} steps)`);
@@ -237,7 +238,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
         `past the top step level round the spiral and out along the board, off its end toward the courts (yaw ${rc.off && rc.off.yaw.toFixed(2)}, at ${rc.off && rc.off.x.toFixed(1)}, ${rc.off && rc.off.z.toFixed(1)}, ${rc.off && rc.off.y.toFixed(2)} m)`);
   check(rc.off && rc.stepV <= 14.05 && rc.off.v > 18, `a running start: up the steps at most 14 m/s, off the board at ${rc.off && rc.off.v.toFixed(1)} m/s`);
   check(rc.glide && rc.uMax > 0.99 && rc.inCar, "off the board it launches, and his hat opens over the coupe, him in it");
-  check(rc.end === "ground" && rc.y === 0 && rc.u === 0, "the coupe glides down and lands, the hat back on his head");
+  check(rc.end === "ground" && Math.abs(rc.y - rc.g) < 0.005 && rc.u === 0, `the coupe glides down and lands on the ground (${rc.y.toFixed(3)} m, the ground there ${rc.g.toFixed(3)}), the hat back on his head`);
   await shot("5ramp");
   // the court tip marks the coupe while the open court is a drive away
   const r11 = await D(() => {
@@ -362,7 +363,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   const kx = await D(() => { const d = window.Pickleball.debug(); return (d.courts.length - 1) * d.COURT.GAP; });
   const d2 = await myDn(kx - 8.5, 0, 0);   // (its right toward the open court)
   const d3 = await myDn(H[0], H[1], H[2], 16);
-  check(d3.started && d3.stop > 0.4 && d3.stop < 1.0 && d3.slid > 3 && d3.turns > 1.8 && d3.back < 0.01, `a tap at 16 m/s: braked to a stop first (${d3.stop} s, ${d3.slid} m), then the donut, parked where it stopped (${JSON.stringify(d3)})`);
+  check(!d3.started && d3.v > 2, `a tap (or Space) at 16 m/s: no donut and no stop, a stray one mid-lap spoils nothing (the Donut button at speed: a stop, then the donut, below) (${JSON.stringify(d3)})`);
   // the Donut button (the artist, 4 Nov 2026: "Make sure that when I am driving the coupe forward there is a button that
   // says donut and that's the same animation as Mr. plan doing it happens to you in the coupe when pushing the button"):
   // driving forward, it shows over Get out; a real tap on it: a stop, the donut, seen as Mr Plan's is (from outside the
