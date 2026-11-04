@@ -34,6 +34,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
   crystal hand, its starburst, three sparkles and DUH: the intro ends on DUH, not on the 5s mark)
 - "It’s way too complicated, I also don’t like the lines for stats in the duh logo. Apply this image to the duh intro,
   make linear perspective apparent in the animation" (the image: the PowerBook G4 with the road on its screen)
+- "Stars in the duh logo*" (the correction: "stats" was "stars")
+- "Also make the hand gesture in the logo have interesting but simple degrees of transparency"
 
 ## The purpose (said after, the same day; it frames everything below)
 
