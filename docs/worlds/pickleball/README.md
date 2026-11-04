@@ -184,6 +184,38 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   him and the coupe from the court's side, and back once he is at his baseline, before the serve; the match's recording
   starts after it. His game's line keeps its score with the donut in it ("Mr Plan takes it, 3 – 1, and the coupe for a
   donut."); the coupe turns smoothly however it was parked, and its smoke is the same on any display.
+- *The race track* (the artist, 4 Nov 2026: "Put a race car track around the courts. Have a slight upwards circle bend in
+  the corners of the tracks like your going up a bowl. Then have it level at the midpoint between the corners. Add a
+  drift button that allows you drift when coming up on corners. The car needs to be much easier to control, like your
+  play Grand Tarismo. Have a start line on the track that times your lap. Keep track of the top 3"): an oval 8 m wide
+  round every court and the staircase, its straights along the courts 18.5 m out from their middle line, its bends half
+  circles about the staircase (x −15) and about the open court, so every court won makes it 24 m longer (146 m a lap
+  with one court, 218 with four). Across it, from the inner edge, the ground rises as a circle's arc to 1.5 m at the
+  outer edge (a bowl), all round the bends, the rise easing off along each straight to level at its middle; past the
+  outer edge a berm runs back down over 4 m. Tarmac in `=`, lit by itself (the floodlights do not reach it), red and
+  white kerbs round the bends, a white line along each edge, and a chequered line across the near straight at its
+  middle. The coupe sits on the bowl, leaning with it (pitch and roll from the ground under its corners), slower up it
+  and quicker down; Mr Pearl walks on it, gets out onto it, lands on it. *The handling* is a pad's: up and across on the
+  stick apart, each whole at the drawn ring's 45 degrees (full throttle and full lock together on the ring), a little
+  dead in the middle, the brake as hard as the stick is pulled, the turn asked as a rate never past the
+  tyres' grip at that speed (12 m/s² sideways, more up the bowl: full lock at 24 m/s pulled 59 m/s², 6 g, before; now
+  12), eased in over a seventh of a second and straight as soon as the wheel is let go; on the track, the wheel let go,
+  it lines itself up with the track's way. *The Drift* (a button over Donut and Get out, in the right half clear of the stick, held; Shift on the desk): the way it
+  goes turns round the bend at more than the grip, the nose into the bend ahead of it and the tail out, smoke and scuffs
+  off the back tyres, a little speed scrubbed; let go, the grip comes back and it straightens in under half a second.
+  *The lap* is timed from the chequered line, crossed the lap's way (along the near straight toward the open court),
+  round each bend's far side on the track, and over the line again, to the hundredth; crossed the wrong way,
+  out of the coupe, or a court won: no lap. In the coupe the lap runs under the courts' squares (`LAP 0:12.34`), the one
+  just done for three seconds (`BEST` or its place), and this track's best three (`TOP`), kept with the save in
+  milliseconds; each lap is said as it ends. A court won makes the track longer, so its best three start again
+  A tap on the screen or Space starts a donut only when the coupe is nearly stopped, so a stray one mid-lap spoils
+  nothing (the Donut button still does one at any speed, a stop first). Hits on the ground's edge are measured along
+  the way the coupe goes, so a drift against it is turned along it and slowed, not a rail. Everyone stands on the
+  track's ground (Mr Plan going to the coupe for his donut, Mr Pearl roaming off his court between points); shadows lie
+  on its slope
+  (`pb_track.js`, phone and desk: where it lies with one court won, four and twelve, the bowl and no step in the ground,
+  a bot's laps timed and saved and back after a reload, the wrong way and a cut, the grip, the Drift by a real finger
+  and by Shift, standing on the bowl).
 - *Its music* (the artist, 4 Nov 2026: "I want musical notes always coming out of the car when someone is driving it"):
   whenever someone is at the wheel, Mr Pearl (driving, parked in it, on the ramp, in the air) or Mr Plan in his donut,
   notes (♪ ♫ ♬ ♩) come out of its open windows, either side, five a second on any display, in the driver's own colours;
