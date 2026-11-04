@@ -29,7 +29,7 @@ build contract) before changing anything.
 | `src/connect.js` | Connect your apps (`FiveSConnect`): an app's "download your data" file read on the device (JSON, web pages, spreadsheets, text, .zip), and the one client of the 5s connector through the `mcp` capability (server `"5s"`) |
 | `src/ground.js` | draws Seed's isometric island on a canvas (and the kingdom's islands, with their plots and buildings) |
 | `src/match.js` | Set's game, pure (`FiveSMatch`): Candy Crush Saga's rules with the person's own things, the 30 levels, the suits (the person's threads), pairings, the saga |
-| `src/relate.js` | Set, inside out, pure (`FiveSRelate`): boards dealt from the person's kept pictures, relations (alike or unlike, in what) and the answers, what a win builds and how tall, the kingdom's ties and mist, Sort's one card from Set |
+| `src/relate.js` | Set, inside out, pure (`FiveSRelate`): boards dealt from the person's kept pictures, relations (alike or unlike, in what: first how they group, the six gestalt ways saved as the person's words, then the five aspects) and the answers, what a win builds and how tall, the kingdom's ties and mist, Sort's one card from Set |
 | `src/board.js` | Set's mood board (`FiveSBoard`): what you keep, in masonry, grouped by what you put together |
 | `src/play.js`, `src/play.css` | Set's game in the page (`FiveSPlay`): the list of levels, a level (with its clock), its sound, motion and gestures; the game's, the board's and the kingdom's styles |
 | `src/kingdom.js` | Set's kingdom map (`FiveSKingdom`): an island for every five levels, each level won one of your things built on its plot, the next area under cloud; you pan and zoom it |

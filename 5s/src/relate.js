@@ -23,6 +23,11 @@
 
   const ASPECTS = FiveS.ASPECTS;                  // ['layout', 'line', 'light', 'mass', 'mood'], w 1..5
   const W0 = FiveS.WORD0;                         // w 10 + i: saga.words[i]
+  // The gestalt ways of grouping, the "in what" row (the artist, 4 Nov 2026: "The application of this app is the application
+  // of gestalt principles"). Each is saved as one of the person's words, and groups as its nearest aspect, so the game
+  // deals from it as from that aspect; relations said in an aspect before keep reading as they were.
+  const GESTALT = Object.freeze({ similarity: 'light', proximity: 'layout', continuation: 'line', closure: 'mass', 'figure and ground': 'layout', 'common fate': 'line' });
+  const GESTALT_WORDS = Object.freeze(Object.keys(GESTALT));
   const PICS = ['image', 'object', 'space', 'surface'];   // Colour cards stay on the mood board, out of play
 
   // The six areas (match.js EPISODES' names and lines): which way arrivals lean, in turn (1 tests, 0 extends).
@@ -135,7 +140,7 @@
   const inAspect = (T, id, A) => T.words[id].filter((w) => T.aspectOf[w] === A);
   function aspectOfW(T, w) {   // an aspect said, or the aspect of one of others' words the person made theirs; an own word has none
     if (w >= 1 && w <= 5) return ASPECTS[w - 1];
-    return isWord(w) ? T.aspectOf[T.vocab[w - W0]] || null : null;
+    return isWord(w) ? T.aspectOf[T.vocab[w - W0]] || GESTALT[T.vocab[w - W0]] || null : null;
   }
   /** wordOf(vocab, w) -> what w says: '', an aspect, or one of the person's words. */
   function wordOf(vocab, w) {
@@ -143,7 +148,7 @@
     return isWord(w) ? (vocab || [])[w - W0] || '' : '';
   }
   // what the person said, in their words: "alike", "alike in line", "alike: airy" (others' word made theirs), "unlike: ‘a held breath’"
-  const said = (T, s, w) => { const t = wordOf(T.vocab, w); return (s > 0 ? 'alike' : 'unlike') + (!t ? '' : w <= 5 ? ' in ' + t : T.aspectOf[t] ? ': ' + t : ': ‘' + t + '’'); };
+  const said = (T, s, w) => { const t = wordOf(T.vocab, w); return (s > 0 ? 'alike' : 'unlike') + (!t ? '' : w <= 5 ? ' in ' + t : GESTALT[t] ? ' by ' + t : T.aspectOf[t] ? ': ' + t : ': ‘' + t + '’'); };
   const alpha = (T, g) => 12 / (12 + rels(T, g).length);
 
   // ---------------------------------------------------------------- the deal
@@ -266,12 +271,13 @@
       : { kind: 'agree', line: 'Others’ words set them apart too: ' + xs[0] + ' · ' + ys[0] + '.' };
   }
 
-  /** chips(table, game | null, a, b, s) -> {mine: [w], aspects: [1..5], others: [word]}: the "in what" row.
-   *  The person's own words first (most said), then the aspects, then others' words drawn from the two. */
+  /** chips(table, game | null, a, b, s) -> {mine: [w], gestalt: [word], aspects: [1..5], others: [word]}: the "in what" row.
+   *  The person's own words first (most said), then the gestalt ways of grouping (the row Set shows first), then the
+   *  aspects, then others' words drawn from the two. */
   function chips(T, g, a, b, s) {
     const n = new Map();
     for (const r of rels(T, g)) if (isWord(r.w)) n.set(r.w, (n.get(r.w) || 0) + 1);
-    const mine = Array.from(n.keys()).sort((x, y) => n.get(y) - n.get(x) || x - y).slice(0, 3);
+    const mine = Array.from(n.keys()).filter((w) => !GESTALT[wordOf(T.vocab, w)]).sort((x, y) => n.get(y) - n.get(x) || x - y).slice(0, 3);
     const taken = new Set(mine.map((w) => wordOf(T.vocab, w)));
     let others;
     if (s === 1) others = shared(T, a, b).concat(T.words[a].indexOf('allover') >= 0 && T.words[b].indexOf('allover') >= 0 ? ['allover'] : []);
@@ -280,7 +286,7 @@
       others = [];
       for (let i = 0; i < Math.max(A.length, B.length); i++) { if (A[i]) others.push(A[i]); if (B[i]) others.push(B[i]); }
     }
-    return { mine, aspects: [1, 2, 3, 4, 5], others: others.filter((v) => !taken.has(v)).slice(0, 3) };
+    return { mine, gestalt: GESTALT_WORDS.slice(), aspects: [1, 2, 3, 4, 5], others: others.filter((v) => !taken.has(v) && !GESTALT[v]).slice(0, 3) };
   }
 
   /** say(game, table, x, y, s, w) -> {game, answer, arrival}: x (the carried one) is set beside y, said s in w.
@@ -476,7 +482,7 @@
 
   const FiveSRelate = Object.freeze({
     version: 1, AREAS, COACH,
-    level, table, leads, newGame, chips, answer, say, pass, back, result, ways, storeys, build, kingdom, saidText,
+    level, table, leads, newGame, chips, answer, say, pass, back, result, ways, storeys, build, kingdom, saidText, GESTALT,
     relate, addWord, wordOf, ask, why, unsetShare,
   });
   if (typeof module === 'object' && module.exports) module.exports = FiveSRelate;

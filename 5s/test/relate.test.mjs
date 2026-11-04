@@ -90,6 +90,22 @@ test('a level: every move a relation, the carried one is set, one stays, the boa
     ['Alike in line.', 'Unlike: ‘a held breath’.', 'Alike: sunny.', 'Unlike.']);
 });
 
+test('the in-what row is the gestalt ways of grouping: saved as the person\'s words, said by name, dealt as their aspect', () => {
+  const st = keeping(), T = RL.table(st, deck, []);
+  const g = RL.newGame(RL.level(7), T, 'seven');
+  const [x, y] = g.slots.filter(Boolean);
+  const c = RL.chips(T, g, x, y, 1);
+  assert.deepEqual(c.gestalt, ['similarity', 'proximity', 'continuation', 'closure', 'figure and ground', 'common fate']);
+  assert.ok(Object.values(RL.GESTALT).every((a) => F.ASPECTS.includes(a)), 'each groups as one of the five aspects');
+  const { words, w } = RL.addWord([], 'similarity');
+  assert.deepEqual([words, RL.saidText(words, {}, 1, w), RL.saidText(['figure and ground'], {}, -1, 10)],
+    [['similarity'], 'Alike by similarity.', 'Unlike by figure and ground.']);
+  const T2 = Object.assign({}, T, { vocab: words });
+  const r = RL.say(g, T2, x, y, 1, w);
+  assert.ok(r.answer && typeof r.answer.line === 'string', 'a grouping is answered like any relation');
+  assert.ok(!RL.chips(T2, r.game, x, y, 1).mine.length, 'a grouping never repeats under Your words');
+});
+
 test('the answers: the person first, then other eyes; again, turn, shared, apart, agree, yours, first, brought', () => {
   const st = keeping(), T = RL.table(st, deck, []);
   const A = (x, y, s, w, g) => RL.answer(T, g || null, x, y, s, w);

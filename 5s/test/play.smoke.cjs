@@ -745,7 +745,8 @@ test('Set level 1 by touch at 390 x 664: three ways in, the coach, carry, flick,
   assert.equal(await page.textContent('.fs-sayrow'), 'Put back');
   await page.click('.fs-sbtn[data-s="1"]');
   assert.equal(await page.textContent('.fs-q2'), 'Alike in what?');
-  assert.deepEqual(await page.$$eval('.fs-chip:not(.fs-mine):not(.fs-drawn):not(.fs-add)', (bs) => bs.map((b) => b.textContent)), ['Layout', 'Line', 'Light', 'Mass', 'Mood']);
+  assert.deepEqual(await page.$$eval('.fs-chip.fs-gestalt', (bs) => bs.map((b) => b.textContent)), ['Similarity', 'Proximity', 'Continuation', 'Closure', 'Figure and ground', 'Common fate'], 'how they group, first (gestalt, 4 Nov 2026)');
+  assert.deepEqual(await page.$$eval('.fs-chip:not(.fs-mine):not(.fs-drawn):not(.fs-add):not(.fs-gestalt)', (bs) => bs.map((b) => b.textContent)), ['Layout', 'Line', 'Light', 'Mass', 'Mood']);
   assert.deepEqual(await page.$$eval('.fs-chip.fs-drawn', (bs) => bs.map((b) => b.textContent)), RL.chips(T, g, x, y, 1).others);
   await settle();
   await shot(page, 'set-after-alike-390');

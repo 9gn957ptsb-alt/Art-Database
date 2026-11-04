@@ -2003,6 +2003,7 @@
       what.innerHTML = '<h3 class="fs-q2">' + (a.s > 0 ? 'Alike' : 'Unlike') + ' in what?</h3>' +
         (c.mine.length ? '<div class="fs-chips" role="group" aria-label="Your words"><span class="fs-lab" aria-hidden="true">Your words</span>' +
           c.mine.map((w) => chip('w', w, RL.wordOf(T.vocab, w), 'fs-mine')).join('') + '</div>' : '') +
+        '<div class="fs-chips" role="group" aria-label="How they group"><span class="fs-lab" aria-hidden="true">How they group</span>' + c.gestalt.map((t) => chip('o', t, up1(t), 'fs-gestalt')).join('') + '</div>' +
         '<div class="fs-chips" role="group" aria-label="Aspects">' + c.aspects.map((w) => chip('w', w, up1(ASPECTS[w - 1]), '')).join('') + '</div>' +
         '<div class="fs-chips">' + (a.typing ? '<form class="fs-wordf"><input class="fs-word" type="text" maxlength="24" enterkeyhint="done" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Your word"></form>'
           : '<button type="button" class="fs-chip fs-add" data-add>+ Your word</button>') + '</div>' +
