@@ -46,6 +46,11 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Have the name have lines like the Warner Bros logo you see in Looney Tunes, same colors, that lead to a point off the
   bottom edge that creates a block letter effect" (done as gold faces, red sides and a dark outline, the classic cartoon
   look; the exact colours could not be checked online)
+- "The name just has to come from the bottom edge up using those Looney Tunes lines and colors. The animation for the
+  name should be a bit goofy, but very solid and aesthetically rich."
+- "Add green and light brown as well to the red layering underneath the name duh making it a block affect"
+- "Have it rise up like you’re in holographic mode and safely land in place, letting out the colors beneath it, as
+  clouds of smoke dissipating on the ground from its rocket landing"
 
 ## The purpose (said after, the same day; it frames everything below)
 
