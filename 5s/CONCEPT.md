@@ -32,6 +32,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
   simple in the end, minimalist."
 - "Take out the 5s logo in the sequence and add the new version of this layout as the final logo that appears" (the
   crystal hand, its starburst, three sparkles and DUH: the intro ends on DUH, not on the 5s mark)
+- "It’s way too complicated, I also don’t like the lines for stats in the duh logo. Apply this image to the duh intro,
+  make linear perspective apparent in the animation" (the image: the PowerBook G4 with the road on its screen)
 
 ## The purpose (said after, the same day; it frames everything below)
 
