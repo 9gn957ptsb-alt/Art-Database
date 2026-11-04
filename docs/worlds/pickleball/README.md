@@ -27,6 +27,14 @@ each time you win a court. Previous courts still automatically play and you win 
 to see how many courts you can win. each court gets progressively harder. By the time you get to court 10, the game
 should be very hard"). The game starts in front of one court, under its floodlights, and nothing else stands there.
 
+**Between games he runs anywhere** (the artist, 4 Nov 2026: "It won't let me run around all of the courts if I am yet to
+start the next level. Users need to be able to run anywhere when they are not in a game"): across every court, the open
+one too, its net, Mr Plan's end, round behind them all, to the edge of the ground. Only one thing begins a game: the open
+court's bold gold circle, behind its baseline where he serves from, shown whenever he is not playing; stepping onto it
+(within three quarters of a metre of its middle, on foot) begins that court's match, the serve at once. Nothing pulls him
+toward it: the lock that takes him onto the circle works only in a match. The court tip says it ("Step onto the open
+court's gold circle to play Mr Plan, or drive the orange coupe to it"), its ◆ over the circle and its trail to it.
+
 **A first game is walked through** (the artist, 28 Oct 2026: "The first court should be a walk-through, that takes you
 step-by-step all the things you can do"; then, 29 Oct 2026, its steps set out: "I want there to be a suggestive gesture
 of a finger touching the screen forward on the left side and I want the gold circle for the serve spot to show up
@@ -128,7 +136,7 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   around all the courts like a race car track"): through the nets and past the poles of the courts won, round the
   open court's far end, to the edge of the ground 25 m past the newest court and far round the rest; a court that opens
   under it puts it off. It moves in steps of at most half a metre, so a slow frame never carries it onto the court. Out
-  by his door, he stands clear of it and walks on. On foot or in the coupe, a match begins only on foot.
+  by his door, he stands clear of it and walks on. A match begins only on foot, on the open court's gold circle.
 - *The staircase* is a ramp of steps wound about a post beside the coupe, wide enough to drive (the artist, 30 Oct
   2026: "Have the spiral staircase, be wide enough for the orange coupe to be able to drive on it that way someone can
   drive up in the coop and launch from the top where Mr. Pearl stays in the car, but still uses his hat as a paraglider
@@ -136,13 +144,27 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   from the post, each step a slab tilted to the next (two halves across, keeping to the circle, a beam to the post), so
   the way up is smooth; nothing but its post before the first. On foot, at its foot, the stick pushed its way walks him
   up (the push that put him on keeps him climbing until it is let go; then, the view behind the way up, up climbs and
-  down comes down); a tap (Space) jumps off, outward along his way, as the stick up does at the top. Under the ramp he
-  walks free. The coupe, driven onto its foot along its way, goes up it with the spiral at its wheel (14 m/s at most),
-  backs down it, and on up past the top launches.
+  down comes down); a tap (Space) jumps off, outward along his way, as the stick up does at the board's end. Under the
+  ramp he walks free. The coupe, driven onto its foot along its way, goes up it with the spiral at its wheel (14 m/s at
+  most), backs down it, and on past the top runs out along the board and launches off its end.
+- *The board* (the artist, 4 Nov 2026: "I want the highest step to lead out flat perpendicular to the courts that way
+  you can get a running start to drive off onto the courts. Wherever the highest step is in relation to where it is in
+  the sequence of the circle, just have the shape of it continue flat around the spiral until it can lead out like a
+  diving board perpendicular to the courts"): from the top step, wherever round the circle it stands, the way goes on
+  level at its height, round the spiral as the steps do, until it faces the courts (across their length, toward court
+  one), then straight out 11.4 m, a diving board on two posts, its end free just short of court one's net post. Where the level way
+  comes round more than half a turn, and so over the lower steps, it widens out from the post as it goes (3.6 m, from a
+  sixth of a turn in to a half), a lane of its own outside them; nearer the post it hangs from beams, farther out it stands
+  on posts. On it the coupe is no longer held to the steps' 14 m/s: flat out to 24, a running start, and off the end it
+  flies on toward the courts (five courts won: off from 3 m at 21 m/s, its hat open over it, down by court three), never
+  so fast that it would come down on the open court's run-off (with one court won, 12.5 m/s at most: a hop onto court
+  one); in the air the run-off stops it, it never bounces back off it. On foot he runs it and leaps off its end straight
+  on, or a tap jumps him off its side, away from the post. With ten courts won it is 6 m up after half a turn level, high
+  over the first turn's steps, a glide to court five. `pb_drive.js` drives it with one, five and six won.
 - *His hat*: falling from 1.5 m or more, it opens over him as a canopy, three and a half times its size, upright, on
   four lines to his shoulders, and he glides (7.5 m/s, sinking 1.35 m/s): the stick turns him and banks the canopy, up a
-  little faster, down slower and so steeper; he lands anywhere below, the hat back on his head (on the open court, its
-  match; on the ramp from above, the ramp). In the coupe, off the ramp's top, it opens over the coupe, five times its
+  little faster, down slower and so steeper; he lands anywhere below, the hat back on his head (on the open court,
+  nothing begun: its gold circle, on foot, begins its match; on the ramp or the board from above, the ramp). In the coupe, off the board's end, it opens over the coupe, five times its
   size, its lines to the roof's corners, and the coupe glides as he would (11 m/s, sinking 1.8 m/s, the wheel turning
   it), down onto the ground or the ramp. From the top of five steps that is about 25 m of glide, and more every court.
 - *Mr Plan's donut* (the artist, 30 Oct 2026: "Whenever the orange coupe is nearby to the court you're playing on and
@@ -244,7 +266,7 @@ Drive (in it, Get out), low on the right, and F on a desk. A button presses as t
 second finger's tap while the stick's thumb is down), or with Enter or Space when it has the keyboard's focus. Beyond the walk-through (above), how to play comes at its moments (the artist,
 28 Oct 2026: "I want the how to to be pop-ups that happen when you're walking through that are cued by certain moments"),
 shown the same way, on the things themselves: the ghost stick pushing up as the game opens (on a desk W A S D, W the
-way, Shift to run; gone once he moves); walking about, "◆ play" over the open court, a trail to it and, when it is a
+way, Shift to run; gone once he moves); walking about, "◆ play" over the open court's gold circle, a trail to it and, when it is a
 drive away, "◆ drive" over the coupe; a match begun, the trail to the gold circle and "serve here"; on the mark, the ghost tap
 under the bar; after the first pearl, "again" for a second and a third; Mr Plan's first return, "get here" and the
 trail; two or three pearls in play, their numbers over them; the Super after the first point, a ripple round it, "wins
@@ -288,19 +310,23 @@ acceleration (98.6 to 33.9 rad/s²), a frame (17 ms) behind the finger. The arro
 the frame rate (they had turned it twice as fast at 120 frames a second).
 **The neck** (the artist, 30 Oct 2026, of a rally filmed on a phone: "When the game perspective no longer captures the
 ball or barely Mr Pearl like this I want your view to turn like a neck left and right to compensate for keeping the
-pearls in view"): in a rally the view, held behind him facing across, turns up to 0.9 rad either way (2 rad a second at
-most, on a spring so no start or stop is sudden, and back when it can), as far as the pearl he must play next needs to be
-inside seven tenths of the half width: it holds while the pearl is, and follows that edge once it is not, never a hold
-then a snap; then, as far as each fits too, where it comes down and the other pearls coming to him (not a pearl already
+pearls in view"; then, 4 Nov 2026: "I dont like how the camera swivels now to compensate for Mr Pearl and or the ball
+going out of view, it's too much and makes it harder to keep track of all the balls. Find a middle ground between how it
+used to be and how it is now"): in a rally the view, held behind him facing across, turns up to 0.45 rad either way (1 rad
+a second at most, on a spring so no start or stop is sudden, and back when it can), as far as the pearl he must play next
+needs to be inside 95% of the half width: it holds while the pearl is, nearly to the edge, and follows that edge once it
+is not, never a hold then a snap; then, as far as each fits too, where it comes down and the other pearls coming to him (not a pearl already
 past him, nor anything behind him). It turns about him, so he stays in the middle, and a pearl served while it is
 turned goes where the view's own way aims it, not the neck's. The point over, it comes home, and whatever turn is left when the rally's view ends unwinds at the same rate
 (never left in the serve's view). The stick keeps the court's way while it turns (up is still the net), so a held thumb does not swerve. A
 phone held upright sees only 11 degrees either side of the middle; a shot wide to his side lands level with him, and its
 ring would need the view turned three quarters of a right angle, the court gone from it, so the ring is not always shown.
-`pb_neck.js` plays rallies on court ten on a phone (390 by 844), three pearls a serve, against the game before: the next
-pearl out of the picture in 28% of the rally's frames (44% before), where it comes down 49% (60%), Mr Pearl 3% (10%); Mr
-Plan, not followed, out more often (49%, from 25%). (Turned in hold-and-snap ticks at a bare rate it kept a little more
-in view, 24% and 40%, but shuddered; the spring keeps it smooth.) The lens is about 46 degrees top to bottom (it was 70, then 58), the
+`pb_neck.js` plays rallies on court ten on a phone (390 by 844), three pearls a serve, and measures how far the view
+swivels a second and what goes out of the picture; `PB_NECK` tries other numbers on the same rallies. The middle ground
+swivels half as much as the first neck (0.36 rad a second, from 0.73; 0.9 rad at most and 2 a second, it held to seven
+tenths of the half width), turned 0.25 rad on average (from 0.41): where the next pearl comes down is out of the picture in
+40% of the rally's frames (31% with the first neck, 52% with none), the pearl itself 41% (27%, 38%), Mr Pearl 7% (6%,
+9%). A few rallies a run, so those shares move by ten points from run to run; the swivel holds steady. The lens is about 46 degrees top to bottom (it was 70, then 58), the
 camera a third further back each time (the artist, 28 Oct 2026: "keep the athletes the same size, I want to be a bit
 further behind him"): a dolly zoom, his figure held to the same footprint on the screen (pb_define measures it: 147,800
 device px at a phone's rally, 147,600 before), the far court and Mr Plan larger with each step. The Scope, his head the glass, went (the artist, 28 Oct 2026: "Get rid of the scope view").
@@ -517,7 +543,7 @@ integration, stability, design, privacy, language, money, accessibility and trus
   of the HUD keep 4.5 to 1 against black (WCAG AA). The cues' words keep 12 px inside the screen and off the Super,
   the squares, Mr Plan's banner and the bar (but the bar's own): each tries its side, then the next that fits, else is
   left out and the motion says it.
-- **Size.** The zip is about 138 KB (five files; the largest, pickleball.js, about 327 KB, inside the 512 KiB a file should keep under). His body's notes (the form study's "note" and
+- **Size.** The zip is about 141 KB (five files; the largest, pickleball.js, about 337 KB, inside the 512 KiB a file should keep under). His body's notes (the form study's "note" and
   "relation" lines, with the makers and models they name) are left out of the bundle.
 
 `node scripts/build_pickleball.js --playable <dir>` writes the folder and `<dir>.zip`; `--artifact <file.html>` one
