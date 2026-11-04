@@ -39,6 +39,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "The two stars like this I like in the logo" (shown: the soft eight-point starburst on the crystal hand's fingertip; the
   hand's own two, at the fingertip and at the glass's foot, stay; the drawn "+" stars stay out)
 - "I’m talking about the ones circled in green, get rid of thise" (circled: the three "+" stars under the hand)
+- "Get rid of the laptop screensaver beginning in the animation. I like the single point perspective lines that come into
+  play, have the logo slip into that perspective from a dust hardening into water than earth. The name duh needs to form in
+  the same way, but have another short animation itself while the logo remains still that highlights it. it should be a
+  different animation than any preceding ones."
 
 ## The purpose (said after, the same day; it frames everything below)
 
