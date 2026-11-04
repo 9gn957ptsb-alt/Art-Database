@@ -5,8 +5,8 @@
 // court's bursts only; the serve goes where he looked at the tap; on the mark the view swings round to the net, not
 // cut; in a rally the side arrows step him sideways; Mr Plan's super return ends the serve, so the next one starts at
 // the gold circle; the GL context lost and given back, the picture comes back; the serve's bar quicker every court;
-// between points he goes anywhere, back to the gold circle to serve, and in a rally is held to his court; and every
-// point and court he wins, a backflip at once (his swing let go; in the air or a dive, as he is up; a pearl still to
+// between points he goes anywhere, back to the gold circle to serve, and in a rally is held to his court; each point
+// he wins a spin, each game a backflip, at once (his swing let go; in the air or a dive, as he is up; a pearl still to
 // serve, when the rally is over); roamed off, the recording keeps him at his court's edge and an armed Super waits
 // till he is back.
 // node pb_rules.js [port]
@@ -209,8 +209,10 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(rr.mark && rr.mark.edge, `and the gold circle shows him the way back, at the screen's edge (${JSON.stringify(rr.mark)})`);
   check(rr.on, "back on the gold circle: the serve");
   check(rr.rally === "rally" && rr.heldOff <= rr.limit + 0.25, `in the rally he is held to his court (${rr.heldOff} m off its middle at most, ${rr.limit} allowed and a frame's sprint)`);
-  // 12. his backflip (the artist, 4 Nov 2026: "he should do a back flip immediately after each win"): a point won mid
-  // swing, at once, the swing let go; a point won in the air, the moment he lands; the court won, at once
+  // 12. a spin for each point he wins, a backflip for each game (the artist, 4 Nov 2026: "Just do the back flip after
+  // each game won, have him do a spin after each point won"): a point won mid swing, the spin at once, the swing let
+  // go; in the air, the moment he lands; with a pearl still to be served, none till the rally is over; down in a dive,
+  // once he is up; the court won, the backflip at once
   await fresh({ v: 2, won: 2, tut: 1, tips: 255 });
   const fl = await p.evaluate(() => {
     const d = window.Pickleball.debug(), me = d.me, k = d.courts.length - 1, o = {};
@@ -220,31 +222,40 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
       d.toServe(); d.run(0.2);
       for (let i = 0; i < 300; i++) { const u = d.meter(); if (u != null && u > 0.5 && u < 0.66 && d.gt() >= m.meterT0) { d.run(1 / 60, true); break; } d.run(1 / 60); }
       for (let i = 0; i < 180 && !(m.phase === "rally" && m.balls.some((q) => !q.dead)); i++) { d.run(1 / 60); }
-      d.run(0.1); return m.balls.find((q) => !q.dead);
+      d.run(0.1); me.spin = null; me.celeb = null; return m.balls.find((q) => !q.dead);   // (the last ones' cleared: their pose's draw, which these steps skip, clears them)
     };
+    const spun = () => !!(me.spin && me.spin.T === 0.7), flipped = () => !!(me.celeb && me.celeb.kind === "flip");
     let b = serve(); o.r1 = m.phase;
     me.move = { kind: "test", own: [d.gt() - 0.1, d.gt() + 0.5], end: d.gt() + 0.6 }; d.point(b, true);
-    o.swing = { flip: !!(me.celeb && me.celeb.kind === "flip"), move: me.move, vy: +me.vy.toFixed(2), score: m.you };
+    o.swing = { spin: spun(), flip: flipped(), move: me.move, vy: +me.vy.toFixed(2), score: m.you };
     d.run(1.3); b = serve(); o.r2 = m.phase;
-    me.celeb = null;   // (the last one's, cleared by its pose's draw, which these steps skip)
-    me.y = 0.6; me.vy = 1.5; me.air = true; d.point(b, true); o.air = { now: !!(me.celeb && me.celeb.kind === "flip") };
-    let landT = null, flipT = null, top = 0; const t0 = d.gt();
-    for (let i = 0; i < 240; i++) { d.run(1 / 60); if (landT == null && me.y <= 0.002) { landT = d.gt(); } if (flipT == null && me.celeb && me.celeb.kind === "flip") { flipT = d.gt(); } if (flipT != null) { top = Math.max(top, me.y); } }
-    o.air.land = landT && +(landT - t0).toFixed(3); o.air.flip = flipT && +(flipT - t0).toFixed(3); o.air.top = +top.toFixed(2);
-    // (a pearl still to be served: the rally not over, no flip yet; down in a dive: the flip once he is up)
-    m.you = 0; b = serve(); me.celeb = null; m.tosses.push({ test: true }); d.point(b, true); o.toss = { flip: !!(me.celeb && me.celeb.kind === "flip"), score: m.you }; m.tosses.length = 0;
-    b = serve(); me.celeb = null; const T = d.gt(); me.move = { reach: "dive", own: [T + 5, T + 6], end: T + 0.5 }; d.point(b, true);
-    o.dive = { now: !!(me.celeb && me.celeb.kind === "flip"), kept: !!me.move };
-    for (let i = 0; i < 60 && o.dive.flip == null; i++) { d.run(1 / 60); if (me.celeb && me.celeb.kind === "flip") { o.dive.flip = +(d.gt() - T).toFixed(3); } }
-    b = serve(); o.r3 = m.phase; o.before = m.you; me.celeb = null; d.point(b, true);
-    o.court = { flip: !!(me.celeb && me.celeb.kind === "flip"), over: m.you, won: d.won() };
+    me.y = 0.6; me.vy = 1.5; me.air = true; d.point(b, true); o.air = { now: spun() };
+    let landT = null, spinT = null; const t0 = d.gt();
+    for (let i = 0; i < 240; i++) { d.run(1 / 60); if (landT == null && me.y <= 0.002) { landT = d.gt(); } if (spinT == null && spun()) { spinT = d.gt(); } }
+    o.air.land = landT && +(landT - t0).toFixed(3); o.air.spin = spinT && +(spinT - t0).toFixed(3); o.air.flip = flipped();
+    m.you = 0; b = serve(); m.tosses.push({ test: true }); d.point(b, true); o.toss = { spin: spun(), flip: flipped(), score: m.you }; m.tosses.length = 0;
+    b = serve(); const T = d.gt(); me.move = { reach: "dive", own: [T + 5, T + 6], end: T + 0.5 }; d.point(b, true);
+    o.dive = { now: spun(), kept: !!me.move };
+    for (let i = 0; i < 60 && o.dive.spin == null; i++) { d.run(1 / 60); if (spun()) { o.dive.spin = +(d.gt() - T).toFixed(3); } }
+    // (in his sprint's own turn: the spin once it is over; two pearls, the first his, the last Mr Plan's: his spin and
+    // Mr Plan's flip as the rally ends, none before)
+    b = serve(); m.you = 1; const T2 = d.gt(); me.spin = { t0: T2 - 0.1, T: 0.4 }; d.point(b, true); o.sprint = { now: spun() };
+    for (let i = 0; i < 60 && o.sprint.spin == null; i++) { d.run(1 / 60); if (spun()) { o.sprint.spin = +(d.gt() - T2).toFixed(3); } }
+    m.you = 0; b = serve(); const pl = d.plans[k], b2 = { id: 99, x: b.x, y: 0.5, z: -3, vx: 0, vy: 0, vz: 0, dead: false, rally: 1, last: "you", bounces: 0, mark: null };
+    m.balls.push(b2); pl.celeb = null; d.point(b, true); o.multi = { first: spun(), score: [m.you, m.them] };
+    d.point(b2, false); m.balls = m.balls.filter((q) => q !== b2);
+    o.multi.end = spun(); o.multi.shake = !!(me.celeb && me.celeb.kind === "shake"); o.multi.planFlip = !!(pl.celeb && pl.celeb.kind === "flip"); o.multi.score2 = [m.you, m.them];
+    b = serve(); m.you = 2; m.them = 0; o.r3 = m.phase; o.before = m.you; d.point(b, true);
+    o.court = { flip: flipped(), spin: spun(), vy: +me.vy.toFixed(2), over: m.you, won: d.won() };
     return o;
   });
-  check(fl.r1 === "rally" && fl.swing.flip && fl.swing.move === null && fl.swing.vy > 4 && fl.swing.score === 1, `a point won mid swing: the backflip at once, the swing let go (${JSON.stringify(fl.swing)})`);
-  check(fl.r2 === "rally" && !fl.air.now && fl.air.land != null && fl.air.flip != null && fl.air.flip - fl.air.land < 0.02 && fl.air.top > 0.8, `a point won in the air: the backflip the moment he lands (${JSON.stringify(fl.air)})`);
-  check(!fl.toss.flip && fl.toss.score === 1, `a point won with a pearl still to be served: no flip until the rally is over (${JSON.stringify(fl.toss)})`);
-  check(!fl.dive.now && fl.dive.kept && fl.dive.flip != null && Math.abs(fl.dive.flip - 0.5) < 0.04, `a point won down in a dive: the dive kept, the flip the moment it ends (${JSON.stringify(fl.dive)})`);
-  check(fl.r3 === "rally" && fl.before === 2 && fl.court.flip, `the court won: the backflip at once (${JSON.stringify(fl.court)})`);
+  check(fl.r1 === "rally" && fl.swing.spin && !fl.swing.flip && fl.swing.move === null && fl.swing.vy < 1 && fl.swing.score === 1, `a point won mid swing: a spin at once, no backflip, the swing let go (${JSON.stringify(fl.swing)})`);
+  check(fl.r2 === "rally" && !fl.air.now && fl.air.land != null && fl.air.spin != null && fl.air.spin - fl.air.land < 0.02 && !fl.air.flip, `a point won in the air: the spin the moment he lands (${JSON.stringify(fl.air)})`);
+  check(!fl.toss.spin && !fl.toss.flip && fl.toss.score === 1, `a point won with a pearl still to be served: nothing until the rally is over (${JSON.stringify(fl.toss)})`);
+  check(!fl.dive.now && fl.dive.kept && fl.dive.spin != null && Math.abs(fl.dive.spin - 0.5) < 0.04, `a point won down in a dive: the dive kept, the spin the moment it ends (${JSON.stringify(fl.dive)})`);
+  check(!fl.sprint.now && fl.sprint.spin != null && Math.abs(fl.sprint.spin - 0.3) < 0.04, `a point won in his sprint's own turn: the spin once that turn is over, not cut in a frame (${JSON.stringify(fl.sprint)})`);
+  check(!fl.multi.first && fl.multi.end && !fl.multi.shake && fl.multi.planFlip, `two pearls, the first his, the last Mr Plan's: none till the rally ends, then his spin and Mr Plan's flip (${JSON.stringify(fl.multi)})`);
+  check(fl.r3 === "rally" && fl.before === 2 && fl.court.flip && !fl.court.spin && fl.court.vy > 4, `the game won: the backflip at once (${JSON.stringify(fl.court)})`);
   // 13. roamed off between points: the match's recording keeps him at his court's edge, standing (so a won court's
   // replay keeps him on it), and a Super armed out there waits till he is back on his court, then goes, no jump
   await fresh({ v: 2, won: 2, tut: 1, tips: 255 });
