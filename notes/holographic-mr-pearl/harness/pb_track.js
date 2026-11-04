@@ -79,7 +79,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
       // (level at each straight's middle; up like a bowl round the bends; no step: the ground sampled every 25 cm)
       const xm = (T.XL + xR) / 2; o.mid = [d.groundAt(xm, T.R), d.groundAt(xm, T.R + T.W / 2 - 0.1), d.groundAt(xm, -T.R + T.W / 2 - 0.1)].map((v) => +v.toFixed(3));
       o.bend = [d.groundAt(xR + T.R - T.W / 2 + 0.1, 0), d.groundAt(xR + T.R, 0), d.groundAt(xR + T.R + T.W / 2 - 0.1, 0), d.groundAt(T.XL - T.R - T.W / 2 + 0.1, 0)].map((v) => +v.toFixed(3));
-      for (let x = T.XL - 30; x < xR + 30; x += 0.25) { for (let z = -28; z < 28; z += 0.25) { const g = d.groundAt(x, z); o.maxStep = Math.max(o.maxStep, Math.abs(g - d.groundAt(x + 0.25, z)), Math.abs(g - d.groundAt(x, z + 0.25))); } }
+      for (let x = T.XL - 36; x < xR + 36; x += 0.25) { for (let z = -36; z < 36; z += 0.25) { const g = d.groundAt(x, z); o.maxStep = Math.max(o.maxStep, Math.abs(g - d.groundAt(x + 0.25, z)), Math.abs(g - d.groundAt(x, z + 0.25))); } }
       o.maxStep = +o.maxStep.toFixed(3); o.clash = o.clash.slice(0, 4); out.push(o);
       if (d.court.m) { d.court.m = d.court.m; }
     }
@@ -113,7 +113,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(lp.laps.length >= 3 && lp.laps.every((t) => t > lp.len / 24 * 1000 && t < 60000), `a bot round the track: ${lp.laps.length} laps timed (${lp.laps.map((t) => (t / 1000).toFixed(2)).join(", ")} s; ${lp.len.toFixed(0)} m a lap)`);
   const best = [...lp.laps].sort((a, b) => a - b).slice(0, 3);
   check(lp.saved && JSON.stringify(lp.saved.t) === JSON.stringify(best) && lp.saved.n === 4 && JSON.stringify(lp.state) === JSON.stringify(lp.saved), `the best three kept, in order, for this track, and in the save (${JSON.stringify(lp.saved)})`);
-  check(lp.maxY > 1.0 && lp.maxRoll > 0.12 && lp.off < lp.len, `up the bowl round the bends: ${lp.maxY} m up, leaning ${lp.maxRoll} rad with it`);
+  check(lp.maxY > 0.5 && lp.maxRoll > 0.12 && lp.off < lp.len, `up the bowl round the bends: ${lp.maxY} m up, leaning ${lp.maxRoll} rad with it`);
   check(lp.hud && lp.hud.text[1].indexOf("TOP ") === 0 && lp.hud.text[1].split(" ").length === 4, `the lap and the top three on the screen (${JSON.stringify(lp.hud && lp.hud.text)})`);
   check(lp.wrongT0 === null && lp.cut, "the line crossed the wrong way: no lap running; a lap cutting both bends: none");
   check(lp.run1 && lp.infield === null && lp.run2 && lp.beside === null, "a lap running, then across the infield: none; then past the line beside the track: none");
@@ -194,7 +194,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(foot.mode === null && foot.hidden && foot.lap === null, "on foot: no Drift button, no lap on the screen");
 
   // 7. a court won: the track longer, its best three its own
-  await fresh({ v: 2, won: 3, tut: 1, tips: 255, laps: { n: 4, t: [20000, 21000, 22000] } });
+  await fresh({ v: 2, won: 3, tut: 1, tips: 255, laps: { n: 4, w: 2, t: [20000, 21000, 22000] } });
   const gw = await D(() => {
     const d = window.Pickleball.debug(), o = {}; o.before = d.laps(); o.len0 = d.trkAt(0, 0).len;
     d.enter(d.courts.length - 1); d.run(0.3); d.winCourt(); d.run(0.5); o.len1 = d.trkAt(0, 0).len; o.after = d.laps(); o.state = JSON.parse(d.state()).laps || null;

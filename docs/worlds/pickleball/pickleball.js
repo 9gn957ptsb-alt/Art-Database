@@ -454,7 +454,7 @@
               FONT: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Roboto Mono', 'Noto Sans Symbols 2', monospace",
               KEYS: " .:-=+*#%@", BODY: " .:+*#%@", PLAN: " ◇◆#%@", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
   // the materials, written into the picture's alpha as 1 - id / 255 (his head's 0.5 stays apart from them)
-  var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, CAR: 11, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16, GOLD: 17, STEP: 18, TRACK: 19 };   // (a hat its own: from behind, hat and back are two shapes)
+  var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, CAR: 11, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16, GOLD: 17, STEP: 18, TRACK: 19, GARDEN: 20, WATER: 21, PLANT: 22 };   // (a hat its own: from behind, hat and back are two shapes)
   // Definition (the artist, 28 Oct 2026: "It's still really hard to see anything, objects need to be three times as
   // defined as they are now"; notes/holographic-mr-pearl/harness/pb_define.js measures it, an athlete's light against
   // the ground round him at a glance): the athletes' fill dense and bright, never faint (fill: the least of its
@@ -472,7 +472,7 @@
     var p = document.createElement("canvas").getContext("2d"); p.font = ascFont(100);
     var bar = p.measureText("|"), adv = p.measureText("M").width / 100;
     var up = (bar.actualBoundingBoxAscent || 76) / 100, dn = (bar.actualBoundingBoxDescent || 24) / 100;
-    var chars = (ASC.KEYS + ASC.EDGES + ASC.MARKS).split("").filter(function (c, i, a) { return a.indexOf(c) === i; });
+    var chars = (ASC.KEYS + ASC.EDGES + ASC.MARKS + "~").split("").filter(function (c, i, a) { return a.indexOf(c) === i; });
     if (chars.length > 31) { throw new Error("pickleball: a cell holds its glyph in five bits (the sixth: heavy)"); }
     var vs = "#version 300 es\nvoid main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }";
     asc = { adv: adv, up: up, dn: dn, chars: chars, N: chars.length, glyphs: chars.join(""), vs: vs, ok: true, w: 0, h: 0, grid: "", fb: null, cfb: null };
@@ -558,7 +558,7 @@
     var EK = ramp(ASC.EDGES), EP = ramp(ASC.EDGES);
     var arr = function (n, a) { return "const int " + n + "[" + a.length + "] = int[" + a.length + "](" + a.join(", ") + ");"; };
     // a material's own glyph where it is one quiet texture (-1: the keyboard's ramp, -2: the marks')
-    var fix = [-3, ix("."), ix("."), ix(":"), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2, -1, -1, ix("=")];   // (the track's tarmac: =)
+    var fix = [-3, ix("."), ix("."), ix(":"), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2, -1, -1, ix("="), ix(":"), ix("~"), -1];   // (the track's tarmac: =; the gardens' gravel and beds :, their water ~, their plants a body's)
     var head = [
       "#version 300 es", "precision highp float; precision highp int;",
       arr("RK", RK), arr("RP", RP), arr("EK", EK), arr("EP", EP), arr("FIX", fix),
@@ -568,7 +568,7 @@
       "float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }"].join("\n");
     A.cellP = compile(A.vs, [head,
       "uniform sampler2D uScene; uniform highp sampler2D uDepth; uniform sampler2D uGV; uniform sampler2D uPrev;",
-      "uniform vec2 uRes, uCell; uniform int uLev, uTop, uFloor, uBalls, uHold; uniform vec4 uBall[8];",
+      "uniform vec2 uRes, uCell; uniform int uLev, uTop, uFloor, uBalls, uHold, uGdOn; uniform vec4 uBall[8];",   // (uGdOn: the garden's look on)
       "uniform float uNear, uFar, uRule, uExpo, uGam, uEdge, uEdgeMin, uFocal, uAsp;",
       "uniform vec3 uF, uR, uU, uEye; uniform vec2 uK;",
       "out vec4 o;",
@@ -589,7 +589,7 @@
       "}",
       // a cell's colour with the kind of its choice in the channels' low bits, and w (a change waiting) in red's next
       // (a quarter over the integer, so a device that truncates in writing it keeps the bits as one that rounds does)
-      "vec3 kept(vec3 c, int k, int w) { ivec3 q = (ivec3(clamp(c, 0.0, 1.0) * 255.0 + 0.5) & ivec3(~3, ~1, ~1)) | ivec3((k & 1) | (w << 1), (k >> 1) & 1, (k >> 2) & 1); return (vec3(q) + 0.25) / 255.0; }",
+      "vec3 kept(vec3 c, int k, int w, int gd) { ivec3 q = (ivec3(clamp(c, 0.0, 1.0) * 255.0 + 0.5) & ivec3(~3, uGdOn == 1 ? ~3 : ~1, ~1)) | ivec3((k & 1) | (w << 1), ((k >> 1) & 1) | (gd << 1), (k >> 2) & 1); return (vec3(q) + 0.25) / 255.0; }",   // (gd: the garden's cell, in green's second bit)
       // which choices are one thing's (a figure's, a court's): a change between them waits a frame
       "int fam(int k) { return k == K_SMALL || k == K_EDGE || k == K_BODY ? 1 : k == K_LINE || k == K_SURF ? 2 : 0; }",
       "void main() {",
@@ -601,12 +601,12 @@
       "  int pk = uHold * (pb.r | (pb.g << 1) | (pb.b << 2)), pw = (pq.r >> 1) & 1; bool pAct = pa >= 128;",
       // (under the floor only an athlete is ever written: the parts' materials first, the rest only if one is there)
       "  if (uLev < uFloor) {",
-      "    bool any = false;",
-      "    for (int r = 0; r < 12; r++) { vec2 pd = org + (vec2(float(r % 3), float(r / 3)) + 0.5) * cs / vec2(3.0, 4.0); int k = int(floor((1.0 - texelFetch(uScene, ivec2(int(pd.x), int(uRes.y - pd.y)), 0).a) * 255.0 + 0.5)); any = any || (k >= 12 && k <= 17 && k != 14) || k == 9; }",
-      "    if (!any) { o = vec4(0.0, 0.0, 0.0, 128.0 / 255.0); return; }",
+      "    bool any = false; int ag = 0;",
+      "    for (int r = 0; r < 12; r++) { vec2 pd = org + (vec2(float(r % 3), float(r / 3)) + 0.5) * cs / vec2(3.0, 4.0); int raw = int(floor((1.0 - texelFetch(uScene, ivec2(int(pd.x), int(uRes.y - pd.y)), 0).a) * 255.0 + 0.5)), k = raw & 31; ag |= (raw >> 5) & 1; any = any || (k >= 12 && k <= 17 && k != 14) || k == 9; }",
+      "    if (!any) { o = vec4(kept(vec3(0.0), 0, 0, ag), 128.0 / 255.0); return; }",   // (in the garden, its paper)
       "  }",
       "  float v[12], d[12]; int id[12]; vec3 col[12];",
-      "  float dn = 1e4; int near = -1, heads = 0;",
+      "  float dn = 1e4; int near = -1, heads = 0, gb = 0;",   // (gb: which samples lie in the garden, its look on)
       "  for (int r = 0; r < 12; r++) {",
       "    vec2 pd = org + (vec2(float(r % 3), float(r / 3)) + 0.5) * cs / vec2(3.0, 4.0);",
       "    v[r] = 0.0; d[r] = 1e4; id[r] = 0; col[r] = vec3(0.0);",
@@ -616,14 +616,14 @@
       "    col[r] = textureLod(uScene, (vec2(pu) + 0.5) / uRes, lod).rgb;",
       "    d[r] = lin(texelFetch(uDepth, pu, 0).r);",
       "    if (a > 0.25 && a < 0.75) { id[r] = -1; heads++; continue; }",   // his head: not this cell's to write
-      "    id[r] = int(floor((1.0 - a) * 255.0 + 0.5));",
+      "    int raw = int(floor((1.0 - a) * 255.0 + 0.5)); id[r] = raw & 31; gb |= ((raw >> 5) & 1) << r;",
       "    if (id[r] != 0 && d[r] < dn) { dn = d[r]; near = r; }",
       "  }",
       // the octave this cell's nearest thing asks for (the rule, from the floor up), and whether this cell is one at
       // this octave. A far athlete (under sixteen lines tall at the floor) is set an octave under the floor, where
       // there is one (a character still twelve device pixels high): the rule's own 'far off, smaller characters', for
       // the one far thing that needs the lines to have a hat, a body and legs (at the floor Mr Plan was a blob)
-      "  int mat = near >= 0 ? id[near] : 0;",
+      "  int mat = near >= 0 ? id[near] : 0, gd = near >= 0 ? (gb >> near) & 1 : 0;",   // (the garden's, by the same nearest thing)
       "  int who = mat == 15 || mat == 17 ? 12 : mat == 16 ? 13 : mat;",   // (whose: a hat, or his gold guitar, is written in its owner's alphabet)
       "  bool gold = mat == 17;",
       "  bool fig = who == 12 || who == 13;",
@@ -643,10 +643,10 @@
       "    int tg = min(uTop, uFloor + 1 + int(clamp(floor(log2(max(wb, 1e-3)) + 0.5), 0.0, float(uTop - uFloor))));",
       "    if (uLev >= tg && (uLev == tg || act > 0) && b.x >= org.x && b.x < org.x + cs.x && b.y >= org.y && b.y < org.y + cs.y) {",
       "      float zb = lin(texelFetch(uDepth, ivec2(int(b.x), int(uRes.y - b.y)), 0).r);",
-      "      if (zb > b.z - 0.25) { o = vec4(kept(vec3(1.0, 0.97, 0.9), 0, 0), float(PEARL_G + 64 + 128) / 255.0); return; }",
+      "      if (zb > b.z - 0.25) { o = vec4(kept(vec3(1.0, 0.97, 0.9), 0, 0, 0), float(PEARL_G + 64 + 128) / 255.0); return; }",
       "    }",
       "  }",
-      "  if (heads >= 9) { o = vec4(0.0, 0.0, 0.0, float(act) / 255.0); return; }",
+      "  if (heads >= 9) { o = vec4(kept(vec3(0.0), 0, 0, near >= 0 ? gd : uGdOn), float(act) / 255.0); return; }",   // (round his head in the garden: its paper too; all head, he is in it when its look is on)
       // the parts: each its light, those well behind the cell's nearest thing let go dark (the pearl's light too: it
       // is written in its own cell); and how much of the cell is its nearest thing's own
       "  float tol = 0.12 * dn + 0.25, tolF = 0.04 * dn + 0.06, mx = 0.0, mn = 1e4, sum = 0.0, cnt = 0.0, own = 0.0, ownV = 0.0, ownM = -1.0, back = 0.0; int hiR = 0, hiO = 0;",
@@ -661,7 +661,7 @@
       "    mn = min(mn, v[r]); sum += v[r]; cnt += 1.0;",
       "  }",
       "  float m = sum / max(cnt, 1.0), dz = bayer(ci), mo = ownV / max(own, 1.0);",
-      "  int g = 0, f = FIX[min(mat, 19)], kd = 0; float V = 0.0; vec3 c = hue(col[hiO]);",
+      "  int g = 0, f = FIX[min(mat, 22)], kd = 0; float V = 0.0; vec3 c = hue(col[hiO]);",
       // the moat: a cell that is not a figure, beside one standing in front of it (its four neighbours' middles), is
       // left dark, so every athlete stands in a cell of night
       "  bool moat = false, moat2 = false;",
@@ -670,11 +670,11 @@
       "      int qd = q & 3; float qr = q < 4 ? 1.0 : 2.0;",
       "      vec2 pd = org + 0.5 * cs + vec2(qd == 0 ? -1.0 : qd == 1 ? 1.0 : 0.0, qd == 2 ? -1.0 : qd == 3 ? 1.0 : 0.0) * cs * qr;",
       "      if (pd.x < 0.0 || pd.y < 0.0 || pd.x >= uRes.x || pd.y >= uRes.y) { continue; }",
-      "      ivec2 pu = ivec2(int(pd.x), int(uRes.y - pd.y)); int k = int(floor((1.0 - texelFetch(uScene, pu, 0).a) * 255.0 + 0.5));",
+      "      ivec2 pu = ivec2(int(pd.x), int(uRes.y - pd.y)); int k = int(floor((1.0 - texelFetch(uScene, pu, 0).a) * 255.0 + 0.5)) & 31;",
       "      if (k >= 12 && k <= 17 && k != 14 && lin(texelFetch(uDepth, pu, 0).r) < dn - 0.2) { if (q < 4) { moat = true; } else { moat2 = true; } }",
       "    }",
       "  }",
-      "  bool surf = mat <= 5 || mat == 14 || mat == 19;",
+      "  bool surf = mat <= 5 || mat == 14 || mat == 19 || mat == 20 || mat == 21;",
       // (the parts on a court's line or within a few pixels of one, and which way it runs: a surface is stroked only
       // there; its boundary with the next zone, or with the net's foot, is a change of texture, never a stroke)
       "  int nx = 0, nz = 0, ra = near;",
@@ -686,7 +686,7 @@
       // (a small clear shape; drawn by its edges it was a scatter of strokes)
       "  bool small = fig && 1.8 * uFocal / dn < 10.0 * cs.y * (pk == K_SMALL ? 1.03 : pk == K_EDGE || pk == K_BODY ? 0.97 : 1.0);",
       // (under the floor only the figure is written: a far athlete stands in a small clearing of the ground's type)
-      "  if (uLev < uFloor && !fig) { o = vec4(0.0, 0.0, 0.0, float(act) / 255.0); return; }",
+      "  if (uLev < uFloor && !fig) { o = vec4(kept(vec3(0.0), 0, 0, gd), float(act) / 255.0); return; }",
       "  if (mat == 0) {",
       // the sky: dark, a few stars, fixed to the sky (a star in the one cell its direction falls in)
       "    vec2 nd = vec2((org.x + 0.5 * cs.x) / uRes.x * 2.0 - 1.0, 1.0 - (org.y + 0.5 * cs.y) / uRes.y * 2.0);",
@@ -799,9 +799,10 @@
       "    c = fig ? mix(hue(col[hiR]), who == 13 ? vec3(0.3, 0.95, 1.0) : vec3(1.0, 0.72, 0.28), 0.8) : hue(col[hiR]); V = mix(fig ? " + DEF.edgeV.toFixed(3) + " : 0.6, 1.0, smoothstep(0.0, 0.6, mx));",   // (an athlete's outline in his accent: Mr Pearl's gold, Mr Plan's cyan)
       "  } else if (f >= 0) {",
       // a surface: its own glyph, its spacing its light (in Bayer order)
-      "    float lo = mat == 1 || mat == 19 ? 0.1 : mat == 2 ? 0.12 : 0.05, hi = mat == 1 || mat == 19 ? 0.3 : mat == 2 ? 0.4 : 0.2;",
-      "    if (max(smoothstep(lo, hi, m), mat == 1 || mat == 19 ? 0.14 : 0.0) > dz + (pk == K_SURF ? (pg == f ? -0.04 : 0.04) : 0.0)) { g = f; }", "    kd = K_SURF;",   // (the ground off the courts: a faint teal field, never black)
-      "    V = max(mix(0.32, 1.0, smoothstep(0.05, 0.8, m)) * " + DEF.surfV.toFixed(3) + ", mat == 1 || mat == 19 ? 0.12 : 0.0);",
+      "    bool ownS = mat == 1 || mat >= 19;",
+      "    float lo = ownS ? 0.1 : mat == 2 ? 0.12 : 0.05, hi = ownS ? 0.3 : mat == 2 ? 0.4 : 0.2;",
+      "    if (max(smoothstep(lo, hi, m), ownS ? 0.14 : 0.0) > dz + (pk == K_SURF ? (pg == f ? -0.04 : 0.04) : 0.0)) { g = f; }", "    kd = K_SURF;",   // (the ground off the courts: a faint teal field, never black)
+      "    V = max(mix(0.32, 1.0, smoothstep(0.05, 0.8, m)) * " + DEF.surfV.toFixed(3) + ", ownS ? 0.12 : 0.0);",
       "  } else {",
       // a body: its alphabet by its own light, one tone to a band (dithered, a figure was a checkerboard), the light
       // taken half from round the cell (so a tone holds over a part, not flickering cell to cell with the voxels'
@@ -823,11 +824,11 @@
       "  int w = 0;",
       "  if (pk != 0 && fam(pk) == fam(kd) && fam(kd) != 0 && (g != pg || act != (pa & 128))) { w = 1; if (pw == 0) { g = pg; act = pa & 128; kd = pk; } }",   // (the flag kept while a cell keeps changing: the first change waits a frame, a moving cell then follows each frame)
       "  int bloom = (mat == 8 || V > 0.93 || (fig && g > 0) || (g > 0 && (surf || mat <= 1))) ? 64 : 0, heavy = fig && g > 0 ? 32 : 0;",
-      "  o = vec4(kept(c * V, kd, w), float(g + heavy + bloom + act) / 255.0);",
+      "  o = vec4(kept(c * V, kd, w, gd), float(g + heavy + bloom + act) / 255.0);",
       "}"].join("\n"));
     A.setP = compile(A.vs, [head,
       "uniform sampler2D uScene; uniform sampler2D uCells; uniform sampler2D uAtlas;",
-      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow, uBg;",
+      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow, uBg, uInv;",
       "out vec4 o;",
       "void main() {",
       "  vec4 pic = texelFetch(uScene, ivec2(gl_FragCoord.xy), 0);",
@@ -844,15 +845,30 @@
       "    vec3 sc = textureLod(uScene, vec2(cc.x, uRes.y - cc.y) / uRes, log2(float(max(cs.x, cs.y)))).rgb, hu = sc / max(max(sc.r, sc.g), max(sc.b, 1e-3));",
       "    bg = mix(sc, hu * max(max(sc.r, sc.g), sc.b), 0.5) * uBg * (kd == K_MOAT ? 0.35 : 1.0);",   // (the cell of night round a figure kept bare, the next a shadow on the paint)
       "  }",
-      "  if (g == 0) { o = vec4(bg, 1.0); return; }",
-      "  ivec2 at = ivec2((g % uAtl[k].y) * cs.x, uAtl[k].x + (g / uAtl[k].y) * cs.y) + pd - ci * cs;",
-      "  vec3 ink = texelFetch(uAtlas, at, 0).rgb;",
-      "  float ik = (a & 32) != 0 ? ink.b : ink.r;",
-      "  o = vec4(t.rgb * (ik * uLit + ((a & 64) != 0 ? ink.g * uGlow : 0.0)) + bg * (1.0 - ik), 1.0);",
+      "  float ik = 0.0, gw = 0.0;",
+      "  if (g > 0) {",
+      "    ivec2 at = ivec2((g % uAtl[k].y) * cs.x, uAtl[k].x + (g / uAtl[k].y) * cs.y) + pd - ci * cs;",
+      "    vec3 ink = texelFetch(uAtlas, at, 0).rgb;",
+      "    ik = (a & 32) != 0 ? ink.b : ink.r; gw = (a & 64) != 0 ? ink.g : 0.0;",
+      "  }",
+      "  vec3 oN = g == 0 ? bg : t.rgb * (ik * uLit + gw * uGlow) + bg * (1.0 - ik);",
+      // the garden's inverse (the artist, 4 Nov 2026: "the opposite in presence as far as brightness [and] detail to the
+      // current ASCII aesthetic"): reverse video, the terminal's own inverse, in the cell's own hue: its ground light (the
+      // darker the cell was, the lighter), its characters cut in dark ink, the same characters; no glow on paper
+      "  float inv = uInv * float((int(t.g * 255.0 + 0.5) >> 1) & 1);",
+      "  if (inv > 0.0) {",
+      "    vec2 cc2 = vec2(ci * cs) + 0.5 * vec2(cs);",
+      "    vec3 sc = textureLod(uScene, vec2(cc2.x, uRes.y - cc2.y) / uRes, log2(float(max(cs.x, cs.y)))).rgb, cl = g > 0 ? t.rgb : sc;",
+      "    float mc = max(max(cl.r, cl.g), cl.b); vec3 hu = mc > 0.02 ? cl / mc : vec3(1.0, 0.96, 0.88);",
+      "    float lv = max(max(oN.r, oN.g), oN.b);",
+      "    vec3 paper = mix(hu, vec3(1.0, 0.98, 0.93), 0.45) * mix(0.96, 0.74, clamp(lv * 1.6, 0.0, 1.0)), dark = hu * 0.1;",
+      "    o = vec4(mix(oN, mix(paper, dark, clamp(ik + 0.35 * gw * ik, 0.0, 1.0)), inv), 1.0); return;",
+      "  }",
+      "  o = vec4(oN, 1.0);",
       "}"].join("\n"));
     A.CU = {}; A.SU = {};
-    ["uScene", "uDepth", "uGV", "uPrev", "uHold", "uRes", "uCell", "uLev", "uTop", "uFloor", "uBalls", "uBall", "uNear", "uFar", "uRule", "uExpo", "uGam", "uEdge", "uEdgeMin", "uFocal", "uAsp", "uEye", "uF", "uR", "uU", "uK"].forEach(function (k) { A.CU[k] = gl.getUniformLocation(A.cellP, k); });
-    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow", "uBg"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
+    ["uScene", "uDepth", "uGV", "uPrev", "uHold", "uGdOn", "uRes", "uCell", "uLev", "uTop", "uFloor", "uBalls", "uBall", "uNear", "uFar", "uRule", "uExpo", "uGam", "uEdge", "uEdgeMin", "uFocal", "uAsp", "uEye", "uF", "uR", "uU", "uK"].forEach(function (k) { A.CU[k] = gl.getUniformLocation(A.cellP, k); });
+    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow", "uBg", "uInv"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
   }
   // the grid for this screen: the type's floor and ceiling (CSS px, a phone's and a desk's), the cell its advance by
   // its bar, in device pixels; an octave under the floor for far athletes where that is still 12 device pixels
@@ -918,7 +934,7 @@
     gl.uniform2f(CU.uRes, w, h); gl.uniform2f(CU.uCell, G.cw, G.ch); gl.uniform1i(CU.uTop, G.top); gl.uniform1f(CU.uFocal, h / (2 * T35)); gl.uniform1f(CU.uAsp, G.cw / G.ch);
     gl.uniform1f(CU.uNear, NEAR); gl.uniform1f(CU.uFar, FAR);
     gl.uniform1f(CU.uRule, ASC.S0 * dpr * (md.s0 || 1) / (G.cw << G.F)); gl.uniform1i(CU.uFloor, G.F);
-    gl.uniform1f(CU.uExpo, ASC.expo * (md.expo || 1)); gl.uniform1f(CU.uGam, ASC.gam); gl.uniform1f(CU.uEdge, ASC.edge); gl.uniform1f(CU.uEdgeMin, ASC.edgeMin);
+    gl.uniform1i(CU.uGdOn, GINV.u > 0 ? 1 : 0); gl.uniform1f(CU.uExpo, ASC.expo * (md.expo || 1)); gl.uniform1f(CU.uGam, ASC.gam); gl.uniform1f(CU.uEdge, ASC.edge); gl.uniform1f(CU.uEdgeMin, ASC.edgeMin);
     var bl = new Float32Array(32); bl.set(A.balls.slice(0, 32)); gl.uniform4fv(CU.uBall, bl); gl.uniform1i(CU.uBalls, A.balls.length / 4);
     // last frame's choices, held only if it was the frame just before of the same view (not after a pause, a cut, a
     // jump of the camera: then this frame is drawn as a single frame is)
@@ -943,7 +959,7 @@
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform2f(SU.uRes, w, h); gl.uniform2i(SU.uCell, G.cw, G.ch); gl.uniform1i(SU.uTop, G.top);
     var at = new Int32Array(8); A.rows.forEach(function (q, i) { at[i * 2] = q.y; at[i * 2 + 1] = q.cols; }); gl.uniform2iv(SU.uAtl, at);
-    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow); gl.uniform1f(SU.uBg, ASC.bg);
+    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow); gl.uniform1f(SU.uBg, ASC.bg); gl.uniform1f(SU.uInv, smooth(GINV.u));
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     A.turn = 1 - A.turn;
   }
@@ -1002,8 +1018,11 @@
       "precision highp float;",
       "uniform vec4 uPal[64]; uniform vec3 uCol; uniform int uUse; uniform vec3 uEye; uniform float uEmit; uniform vec3 uFog;",
       "uniform float uMat, uGround, uAO, uGold; uniform vec4 uCrt; uniform vec3 uLnC, uRim, uKeyV, uSunG;",
+      "uniform vec4 uGdn; uniform float uGdnOn;",   // (the garden: the bends' middles, the inner edge's reach, the courts' block's half depth; on while the inverse look is)
       "in vec3 vN; in vec3 vW; flat in int vI; out vec4 o;",
       poolGLSL(),
+      // the garden's ground, as gdnAt has it: in from the track's inner edge, out of the courts' block
+      "bool garden(vec2 q) { float qx = clamp(q.x, uGdn.x, uGdn.y); return length(vec2(q.x - qx, q.y)) < uGdn.z && !(q.x > " + f(-COURT.GAP / 2) + " && q.x < uGdn.y + " + f(COURT.GAP / 2) + " && abs(q.y) < uGdn.w); }",
       // a court's line: never under a pixel and a half across, however far (a 6 cm line at 20 m is a third of one, and
       // was lost between the cells)
       "float lp(float d, float hw, float g) { return abs(d) / g - max(hw / g, 0.75); }",
@@ -1055,9 +1074,10 @@
       "  }",
       "  c = 1.0 - exp(-1.3 * c);",
       "  c = mix(c, uFog, clamp(1.0 - exp(-max(length(vW - uEye) - 50.0, 0.0) * 0.008), 0.0, 0.8));",
-      "  o = vec4(c, 1.0 - mat / 255.0);",   // (its material, for the characters)
+      "  float gf = uGdnOn > 0.5 && mat != 9.0 && garden(vW.xz) ? 32.0 : 0.0;",   // (in the garden, while he is: flagged, the pearls aside)
+      "  o = vec4(c, 1.0 - (mat + gf) / 255.0);",   // (its material, for the characters; +32 the garden's)
       "}"].join("\n"));
-    ["uVP", "uM", "uWide", "uPal", "uCol", "uUse", "uEye", "uEmit", "uFog", "uMat", "uGround", "uAO", "uCrt", "uLnC", "uRim", "uKeyV", "uKMax", "uGold", "uSunG"].forEach(function (k) { SU[k] = gl.getUniformLocation(solid, k); });
+    ["uVP", "uM", "uWide", "uPal", "uCol", "uUse", "uEye", "uEmit", "uFog", "uMat", "uGround", "uAO", "uCrt", "uLnC", "uRim", "uKeyV", "uKMax", "uGold", "uSunG", "uGdn", "uGdnOn"].forEach(function (k) { SU[k] = gl.getUniformLocation(solid, k); });
     skyP = compile([
       "#version 300 es",
       "uniform vec3 uF; uniform vec3 uR; uniform vec3 uU; uniform vec2 uK;",
@@ -1110,8 +1130,9 @@
     gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 28, 12);
     gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 28, 24);
     gl.bindVertexArray(null);
-    return { vao: vao, n: arr.length / 7 };
+    return { vao: vao, n: arr.length / 7, buf: buf };
   }
+  function unload(m) { if (m && m.buf) { gl.deleteBuffer(m.buf); gl.deleteVertexArray(m.vao); m.buf = null; m.n = 0; } }   // (a mesh no longer drawn, its GPU memory back)
   // cells (x, y, z, id) to their faces open to the air, in cell units; k > 1 merges k³ cells into one (far off)
   function meshCells(blocks, k) {
     var occ = {}, list = [], key = function (x, y, z) { return x + "," + y + "," + z; };
@@ -1244,12 +1265,13 @@
     won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder: step onto its gold circle to play."; },
     standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; },
     // the coupe, the stairs, his hat: [a finger, a desk]
+    portal: { here: "The portal: through it, Holographic Mr Pearl.", soon: "The portal: a way through to another game, soon.", link: "Holographic Mr Pearl \u2197", linkSr: "Through the portal: Holographic Mr Pearl" },
     lap: { now: function (t) { return "LAP " + (t == null ? "-:--.--" : lapFmt(t * 1000)); },
            last: function (ms, r) { return "LAP " + lapFmt(ms) + (r === 0 ? "  BEST" : r > 0 ? "  #" + (r + 1) : ""); },
            top: function (L) { return "TOP " + (L.length ? L.map(lapFmt).join(" ") : "-"); },
            done: function (ms, r, L) { return "Lap " + lapFmt(ms) + (r === 0 ? ": your best on this track." : r > 0 ? ": number " + (r + 1) + " of your top three." : ".") + " Top three: " + L.map(lapFmt).join(", ") + "."; } },
     ride: { drive: "Drive", out: "Get out", drift: "Drift", driftSr: "Drift: hold it into a bend", driveSr: "Drive the orange coupe", outSr: "Get out of the coupe", donut: "Donut", donutSr: "Do a donut in the coupe",
-            room: "No room for a donut here: out in the open, away from the open court.",
+            room: "No room for a donut here: away from the staircase.",
             car: ["The coupe: push up to drive, left and right to steer, down to brake; hold Drift into a bend. Round the track: the chequered line times your lap. Donut (or a tap) for a donut.", "The coupe: W to drive, A and D to steer, S to brake; hold Shift (or Drift) into a bend. Round the track: the chequered line times your lap. Space or Donut for a donut, F to get out."],
             stairs: ["The staircase: a step for each court won. Push up to climb, tap to jump off.", "The staircase: a step for each court won. W to climb, Space to jump off."],
             ramp: ["Up the staircase: it steers itself round, then level and out along its board. Hold on to launch off the end.", "Up the staircase: it steers itself round, then level and out along its board. W on to launch off the end."],
@@ -1260,7 +1282,7 @@
     // the artist's own (twice the cues' size: "Make sure the walkthrough words are twice as big as they currently are"),
     // [touch, mouse, keys] where they differ; its sentences, a finger's and a desk's, for a screen reader
     walk: {
-      tap: ["tap anywhere", "click anywhere", "press space"], three: "serve up to three pearls at a time", each: "Each player can use one super per game",
+      tap: ["tap anywhere", "click anywhere", "press space"], three: "serve up to three pearls at a time", each: "Each player can use one super per game", skip: "Skip tutorial", skipSr: "Skip the tutorial",
       cont: ["tap anywhere to continue", "click anywhere to continue", "press space to continue"], hit: "Hit the return", counter: "or use your super to counter",
       sr: {
         move: ["Walk-through. Drag your left thumb forward on the left half of the screen, into the gold circle.", "Walk-through. W, or drag forward on the left half of the screen, into the gold circle."],
@@ -1345,7 +1367,26 @@
   var TUT = { on: false, done: false, card: null, stop: null, sT: 0, said: false, seen: {}, runT: 0, u0: 0, free: false };
   function tutStart() {
     TUT.on = true; TUT.seen = {}; TUT.stop = null; TUT.runT = 0;
-    courtPlace(0); court.on = -1; court.told = {}; matchOn(0); superButton();
+    courtPlace(0); court.on = -1; court.told = {}; matchOn(0); superButton(); skipButton();
+  }
+  // The walk-through's Skip (the artist, 4 Nov 2026: "Add a skip button at the very beginning to skip the tutorial"): top
+  // left from its first moment to its end; pressed, he stands between games as after the walk-through and a reload, free
+  // to roam and drive, court one's gold circle his to step on for a match (its tips come the usual way, once each)
+  function skipButton() {
+    var b = $("skip"); if (!b) { return; }
+    if (b.hidden === TUT.on) { b.hidden = !TUT.on; }
+    if (TUT.on && b.textContent !== STR.walk.skip) { b.textContent = STR.walk.skip; b.setAttribute("aria-label", STR.walk.skipSr); }
+  }
+  function tutSkip() {
+    if (!TUT.on) { return; }
+    TUT.on = false; TUT.done = true; TUT.stop = null; TUT.free = false; tutCard(null);
+    ascMod = null; CUE.pops = []; CUE.miss = null; input.fire = false;
+    var pl = plans[0], cc = courtAt(0);   // (Mr Plan back at his baseline, whatever he was doing)
+    pl.move = pl.celeb = pl.spin = pl.celebQ = null; pl.want = null; pl.x = cc[0]; pl.z = cc[2] - COURT.L - 0.6; pl.y = 0; pl.vx = pl.vz = pl.vy = 0; pl.air = false; pl.yaw = pl.faceTo = PI;
+    court.m = null; court.told = {};   // (the match, its pearls and its recording with it)
+    courtPlace(0); me.celebQ = null;   // (three steps from the gold circle: no match starts by itself)
+    skipButton(); superButton(); rideButton(); courtWhere(); save();
+    say(STR.welcome, true); tip("move"); TIPS.from = [me.x, me.z];   // (as a reload after the walk-through begins)
   }
   // its step, for the cues to draw; its sentence for a screen reader
   function tutCard(key) {
@@ -1398,7 +1439,7 @@
     TUT.on = false; TUT.done = true; TUT.stop = null; tutCard(null);
     ["move", "serve", "bar", "super"].forEach(function (k) { TIPS.seen |= tipBit(k); });
     TIPS.queue = TIPS.queue.filter(function (k) { return !(TIPS.seen & tipBit(k)); });
-    superButton(); save(); tip("pearls");
+    superButton(); skipButton(); save(); tip("pearls");
   }
   function serveMax() { return TUT.on ? 1 : SERVE.MAX; }
   /* -- the cues: how to play, shown on the thing itself (the artist, 29 Oct 2026: "I don't like this chat box for the
@@ -1455,10 +1496,10 @@
     for (var k = 0; k <= min(won, 999); k += 1) { courtAdd(); courts[k].won = courts[k].up = k < won; }
     courts.best = count(saved.rally != null ? saved.rally : saved.best, 0);   // (the longest rally: the first version kept it as "best")
     // (the track's best laps: only for the track as long as it is now, three at most, each a time that could be)
-    var lp = saved.laps; courts.laps = null;
-    if (lp && typeof lp === "object" && count(lp.n, -1) === courts.length && Array.isArray(lp.t)) {
+    var lp = saved.laps; courts.laps = null;   // (w: the track's shape; a time on the shorter track before 4 Nov 2026 is dropped)
+    if (lp && typeof lp === "object" && count(lp.n, -1) === courts.length && lp.w === TRK.V && Array.isArray(lp.t)) {
       var lt = lp.t.map(function (x) { return count(x, -1); }).filter(function (x) { return x > 1000 && x < 3600000; }).sort(function (a, b) { return a - b; }).slice(0, 3);
-      if (lt.length) { courts.laps = { n: courts.length, t: lt }; }
+      if (lt.length) { courts.laps = { n: courts.length, w: TRK.V, t: lt }; }
     }
     // (the matches won, played again: each read back, the newest twelve; one that will not read rallies as before)
     var rs = saved.recs && typeof saved.recs === "object" ? saved.recs : {};
@@ -2070,6 +2111,7 @@
     court.m = null; court.told[m.k + "u"] = 1; HUD.cele = { k: m.k, t0: CUE.rt };   // (its pearl celebrates: the HUD)
     stands[m.k].x = courtAt(m.k)[0] + 1.5; stands[m.k].z = COURT.L + 0.5;   // (his stand-in comes on behind him)
     if (m.k === courts.length - 1) { courtAdd(); }   // (the next court appears beside it)
+    if (car.mode === "ramp") { car.s = min(car.s, stairEnd()); }   // (an empty coupe left on the ramp: on it still, the way out risen a step under it, on its board's tip if it was there; not launched off a shorter board)
     say(STR.won(m.k, m.you, m.them), true);
     var best = wonCount(); save().then(function () { YT.score(best); }, YT.warn); courtWhere();   // (sent once saved: the best sent must be the save's)
   }
@@ -2095,7 +2137,7 @@
     m = court.m;
     var roam = m && !TUT.on && ((m.phase === "serve" && !m.meterOn) || m.phase === "point" || m.phase === "donut");
     if (m && !roam) { var cm = courtAt(m.k); me.x = clampV(me.x, cm[0] - CBOX.x, cm[0] + CBOX.x); me.z = clampV(me.z, cm[2] + CBOX.z0, cm[2] + CBOX.z1); }
-    else { me.x = clampV(me.x, BOUND.x0, boundX1()); me.z = clampV(me.z, BOUND.z0, BOUND.z1); if (roam) { footHit(); } }   // (round all the courts: the coupe's track, the staircase's ground)
+    // (otherwise free: round all the courts and past the track, through the coupe and the staircase's post, as far as he goes)
     // every athlete: the courts that play on (their stand-in and Mr Plan rallying, as the rocket world drew them, each
     // shot now a stroke), the idle Mr Plans at their baselines, and the two in the match
     courts.forEach(function (cv, k) {
@@ -2132,10 +2174,10 @@
      The coupe, boxes as everything here is: an eighties coupe's long bonnet, short boot and lip of a spoiler, its windows
      open (his head shows at the wheel), its lamps lit. It steers as a car does (a bicycle's model: the front wheels
      turned, the back following them), the stick or W A S D its throttle and wheel (back: a brake, then reverse), the
-     view coming round behind it. Only the open court's run-off stops it (the court he has yet to win, whose match would
-     begin under it: it parks beside it), and the edge of the ground, far round the courts: through the nets and past
-     the poles of the courts won, a track round them all. F, or the button, gets him in and out (at speed it brakes to a
-     stop first); out, it holds where it stands.
+     view coming round behind it. Nothing stops it (the artist, 4 Nov 2026: "there are no physical barriers"): through
+     the nets and past the poles, onto the open court and across it, round the track and on past it. F, or the button,
+     gets him in and out anywhere (at speed it brakes to a stop first; on the ramp, out onto its steps); out, it holds
+     where it stands, on the open court too, in the way.
      The staircase is a ramp of steps wound about a post, wide enough to drive (3.2 m across, its middle 5 m out): a step
      0.6 m up and a tenth of a turn round for every court won, only the post before the first, each step a slab tilted
      to the next so the way up is smooth. At its foot he walks up it with the stick pushed its way (the view comes round
@@ -2152,7 +2194,7 @@
   var STAIR = { c: [-15, COURT.L - 1.7], RISE: 0.6, DA: PI / 5, A0: PI / 2 + PI / 5, R0: 3.4, R1: 6.6, RW: 5, POST: 0.35, CLIMB: 2.2 };
   STAIR.LEN = hypot(STAIR.RW * STAIR.DA, STAIR.RISE); STAIR.SLOPE = Math.atan2(STAIR.RISE, STAIR.RW * STAIR.DA);   // (a step's length along the way up, and its slope)
   var GLIDE = { OPEN: 1.5, V: 7.5, SINK: 1.35, TURN: 1.7, K: 3.4, LIFT: 2.7, TILT: 0.565, BC: [0.003, 1.471, 0.062] };
-  var BOUND = { x0: -45, z0: -COURT.L - 22, z1: COURT.L + 22, past: 29 };   // (the ground, round all the courts, the staircase and the track; past the newest court by BOUND.past)
+  var BOUND = { x0: -55, z0: -COURT.L - 30, z1: COURT.L + 30, past: 37 };   // (the ground, round all the courts, the staircase and the track; past the newest court by BOUND.past)
   var ride = { mode: null, s: -1, off: [0, 0], u: 0, hd: 0, bank: 0, dir: 1, lag: false, out: false, told: {} };   // (mode: "car", "stair", "fly", "glide"; null: on foot)
   function stairsN() { return wonCount(); }
   function boundX1() { return (courts.length - 1) * COURT.GAP + BOUND.past; }
@@ -2162,8 +2204,11 @@
   // (XL, 0), round the staircase, and (the open court's x, 0), so a court won adds its length to both straights. Across
   // it, from its inner edge, it rises as a circle's arc to H at the outer edge (a bowl), all round the bends, the rise
   // easing off along each straight to nothing at its middle; past the outer edge a berm runs down to the ground.
-  var TRK = { R: 18.5, W: 8, H: 1.5, BERM: 4, XL: -15, D: [0, 0.25, 0.4, 0.9, 2.2, 3.5, 4.8, 6.1, 7.1, 7.6, 7.75, 8, 10, 12] };
+  // (the artist, 4 Nov 2026: "Make the track a half a court length back and have beautiful plants and flowers fill in
+  // the space": R 18.5 m out, then half a court's length, COURT.L, further: the gardens between it and the courts)
+  var TRK = { R: 18.5 + COURT.L, W: 8, H: 1.5, BERM: 4, XL: -15, D: [0, 0.25, 0.4, 0.9, 2.2, 3.5, 4.8, 6.1, 7.1, 7.6, 7.75, 8, 10, 12] };
   TRK.RB = (TRK.W * TRK.W + TRK.H * TRK.H) / (2 * TRK.H);   // (the bowl's circle: level at the inner edge, H up at the outer)
+  TRK.V = 2;   // (the track's shape, kept with the best laps: 2 since it moved half a court out, 4 Nov 2026)
   function trkXR() { return (courts.length - 1) * COURT.GAP; }
   // a point's place on it: d across from the inner edge (0..W on it), b how much of the bend's rise it has, s along the
   // centre line from the near straight's start the lap's way (+x along z > 0, round by the open court, back along
@@ -2175,6 +2220,22 @@
     else { r = abs(z); sa = z >= 0 ? x - xL : St + PI * R + (xR - x); b = 1 - smooth(min(x - xL, xR - x) / max(0.5, St / 2 - 2.5)); yw = z >= 0 ? PI / 2 : -PI / 2; }   // (level for 2.5 m either side of the middle: the line on it)
     return { d: r - (R - TRK.W / 2), b: b, s: sa, len: 2 * St + 2 * PI * R, yaw: yw };
   }
+  // The bends' floodlights (the artist, 4 Nov 2026: "Have spotlight floodlights lights along the corners of the track and
+  // accent linear lighting along the edges of the track"): four towers round the outside of each bend, past the berm,
+  // each lamp aimed down at the track's middle line; their pools baked into the tarmac's colours, their glare and beams
+  // drawn over the view. (The edges' light strips are in the track's mesh.)
+  TRK.TOWER = { N: 4, OUT: 1.5, H: 13 };
+  function trkTowers() {
+    var R = TRK.R, rT = R + TRK.W / 2 + TRK.BERM + TRK.TOWER.OUT, xR = trkXR(), out = [];
+    for (var i = 0; i < TRK.TOWER.N; i += 1) {
+      var a = PI * (i + 0.5) / TRK.TOWER.N;
+      out.push({ p: [xR + rT * Math.sin(a), TRK.TOWER.H, rT * Math.cos(a)], aim: [xR + R * Math.sin(a), 0, R * Math.cos(a)] });
+      out.push({ p: [TRK.XL - rT * Math.sin(a), TRK.TOWER.H, -rT * Math.cos(a)], aim: [TRK.XL - R * Math.sin(a), 0, -R * Math.cos(a)] });
+    }
+    return out;
+  }
+  // (how much of a tower's pool falls on a point: whole within 3 m of where it aims, gone by 10 m)
+  function trkLit(x, z, T) { var L = 0; T.forEach(function (t) { L = max(L, 1 - smooth((hypot(x - t.aim[0], z - t.aim[2]) - 3) / 7)); }); return L; }
   function trkRise(d, b) {
     if (d <= 0 || b <= 0 || d >= TRK.W + TRK.BERM) { return 0; }
     return b * (d <= TRK.W ? TRK.RB - Math.sqrt(TRK.RB * TRK.RB - d * d) : TRK.H * (1 - (d - TRK.W) / TRK.BERM));
@@ -2205,7 +2266,7 @@
     L.push(ms); L.sort(function (a, b) { return a - b; }); var r = L.indexOf(ms); r = r < 3 ? r : -1; L = L.slice(0, 3);
     LAP.last = { ms: ms, r: r, at: gt };
     say(STR.lap.done(ms, r, L), true);
-    if (r >= 0) { courts.laps = { n: courts.length, t: L }; save(); }
+    if (r >= 0) { courts.laps = { n: courts.length, w: TRK.V, t: L }; save(); }
   }
   // the ground's height: the track's bowl and berm, the level ground everywhere else
   function groundAt(x, z) { if (!courts) { return 0; } var t = trkAt(x, z); return trkRise(t.d, t.b); }
@@ -2227,10 +2288,7 @@
       if (prev) { L += hypot(x - prev[0], z - prev[1]); } P.pts.push({ dl: dl, u: L, x: x, z: z }); prev = [x, z];
     }
     P.arc = L; P.end = P.pts[N]; P.len = L + TOP.BOARD;
-    // (off its end at v, falling from P.y with its lift, it comes down v times the flight on: no faster than lands the
-    // coupe short of the open court's run-off, its front clear; from two courts won it is never reached)
-    var g = CAPS.g, tf = (1.2 + Math.sqrt(1.44 + 2 * g * P.y)) / g, wall = (courts.length - 1) * COURT.GAP - COURT.GAP / 2 + 0.5 - CAR.R - CAR.EDGE - CAR.L / 2;
-    P.vmax = clampV((wall - (P.end.x + TOP.BOARD) - 0.5) / tf, 6, CAR.VMAX); P.k = courts.length;
+    P.vmax = CAR.VMAX; P.k = courts.length;   // (off its end at any speed: wherever it comes down, nothing in the way)
     topC = P; return P;
   }
   // (the place and the way at u metres along the way out: on the level arc, from its sampled length; then the board)
@@ -2292,13 +2350,14 @@
     var A = carAxes(), dx = x - car.x, dz = z - car.z;
     return hypot(max(0, abs(dx * A.fx + dz * A.fz) - CAR.L / 2), max(0, abs(dx * A.rx + dz * A.rz) - CAR.W / 2));
   }
-  function carNear() { return !court.m && !TUT.on && ride.mode === null && me.y - groundAt(me.x, me.z) < 0.05 && car.mode === "ground" && carGap(me.x, me.z) < 1.3; }
+  function carNear() {   // (beside it on the ground, or on the steps beside it standing on the ramp)
+    var foot = ride.mode === null && me.y - groundAt(me.x, me.z) < 0.05 && car.mode === "ground", step = ride.mode === "stair" && car.mode === "ramp" && abs(me.y - car.y) < 0.8;
+    return !court.m && !TUT.on && (foot || step) && carGap(me.x, me.z) < 1.3;
+  }
   function deskI() { return CUE.hand === "touch" ? 0 : 1; }
-  // out by his door (the left), or the right if the left is past the edge or on the post; the coupe holds there
+  // out by his door (the left), wherever it stands, the open court too; the coupe holds there
   function carOut() {
-    var A = carAxes(), door = function (sd) { return [car.x - sd * A.rx * (CAR.W / 2 + 0.55) + A.fx * 0.3, car.z - sd * A.rz * (CAR.W / 2 + 0.55) + A.fz * 0.3]; };
-    var ok = function (p) { return p[0] > BOUND.x0 && p[0] < boundX1() && p[1] > BOUND.z0 && p[1] < BOUND.z1 && hypot(p[0] - STAIR.c[0], p[1] - STAIR.c[1]) > STAIR.POST + 0.4; };
-    var p = ok(door(1)) ? door(1) : ok(door(-1)) ? door(-1) : door(1);
+    var A = carAxes(), p = [car.x - A.rx * (CAR.W / 2 + 0.55) + A.fx * 0.3, car.z - A.rz * (CAR.W / 2 + 0.55) + A.fz * 0.3];
     ride.mode = null; ride.out = false; car.v = 0; me.x = p[0]; me.z = p[1]; me.y = groundAt(p[0], p[1]); me.g0 = me.y; me.vx = me.vz = me.vy = 0; me.ax = me.az = 0; me.yaw = car.yaw; me.faceTo = null; me.want = null;
     if (TIPS.from) { TIPS.from = [me.x, me.z]; }
     rideButton();
@@ -2306,7 +2365,13 @@
   function rideToggle() {
     if (court.m || TUT.on) { return; }
     if (ride.mode === "car") {
-      if (car.mode !== "ground" || ride.dn) { return; }   // (not on the ramp, nor in the air, nor in a donut)
+      if (ride.dn) { return; }   // (not in a donut)
+      if (car.mode === "ramp") {   // (on the ramp: stopped, and out onto the steps where it stands; it holds there, braked)
+        var s0 = max(-1, min(car.s, stairEnd()) - (CAR.L / 2 + 0.6) / STAIR.LEN); car.v = 0; ride.mode = "stair"; ride.out = false; ride.s = s0; ride.off = (car.off || [0, 0]).slice(); ride.lag = false; ride.dir = 1; ride.at = stairAt(s0);   // (out behind it, down the way: not in it)
+        me.x = ride.at.x + ride.off[0]; me.z = ride.at.z + ride.off[1]; me.y = ride.at.y; me.vx = me.vz = me.vy = 0; me.yaw = car.yaw; me.faceTo = null; me.want = { keep: true };
+        rideButton(); return;
+      }
+      if (car.mode !== "ground") { return; }   // (in the air: once it is down)
       if (abs(car.v) > 0.6) { ride.out = !ride.out; } else { carOut(); }   // (at speed: a stop first, then out; again, on again)
     } else if (carNear()) {
       ride.mode = "car"; ride.out = false; ride.dn = null; ride.dnQ = false; me.move = null; me.celeb = null; me.spin = null; me.hop = false; me.skid = 0;
@@ -2314,7 +2379,7 @@
     }
     rideButton();
   }
-  // the coupe's step, his or standing, in steps of at most half a metre (a slow frame does not carry it into the court)
+  // the coupe's step, his or standing, in steps of at most half a metre (a slow frame does not carry it past the ramp's foot)
   function carStep(dt, c) {
     var N = max(1, Math.ceil(abs(car.v) * dt / 0.5)), h = dt / N;
     for (var i = 0; i < N; i += 1) { carSub(h, c); }
@@ -2371,7 +2436,7 @@
     var air = car.mode === "fly" || car.mode === "glide", y0 = car.y;
     if (!air) {
       var want = thr > 0 ? thr * CAR.VMAX : thr < 0 ? thr * CAR.VREV : 0;
-      if (car.mode === "ramp") { var vmx = car.s <= n - 1 ? CAR.RAMP : topPath().vmax; want = clampV(want, -vmx, vmx); }   // (on the steps 14 m/s; on the level way out and its board flat out, a running start, short of the open court)
+      if (car.mode === "ramp") { var vmx = car.s <= n - 1 ? CAR.RAMP : topPath().vmax; want = clampV(want, -vmx, vmx); }   // (on the steps 14 m/s; on the level way out and its board flat out, a running start)
       // (the throttle up: its pull; eased off, a coast; against the way it goes, the brake; nobody driving, the brake)
       var acc = !drive ? CAR.BRAKE : want * car.v < 0 ? CAR.BRAKE * min(1, abs(thr) * 1.5) : thr !== 0 && abs(want) >= abs(car.v) ? CAR.ACC : CAR.COAST;   // (the brake as hard as the stick is pulled)
       car.v += clampV(want - car.v, -acc * dt, acc * dt);
@@ -2420,42 +2485,10 @@
         }
       }
     }
-    carHit();
   }
-  // the coupe as two discs (its front and back), pushed out of the open court's run-off (its corners kept off it too)
-  // and kept on the ground: nothing else stops it; meeting it head on, a bump back, along it a slide
-  function carHit() {
-    var k = courts.length - 1, A = carAxes(), h = CAR.L / 2 - CAR.W / 2, R = CAR.R, hit = false;
-    var push = function (dx, dz) {
-      // (measured along the way it goes, a drift's too, not the nose)
-      var vh0 = car.vh != null && car.mode === "ground" ? car.vh : car.yaw, ux = Math.sin(vh0), uz = -Math.cos(vh0);
-      car.x += dx; car.z += dz; var l = hypot(dx, dz) || 1, cn = (ux * dx + uz * dz) / l * (car.v < 0 ? -1 : 1);
-      if (cn < -0.7 && abs(car.v) > 4 && car.mode === "ground") { car.v *= -0.15; hit = true; }   // (head on at speed: back)
-      else if (cn <= -0.7 && car.mode !== "ground") { car.v *= max(0, 1 + cn); }   // (in the air: stopped against it, down beside it)
-      else if (cn <= -0.7) { car.v *= 1 + 0.5 * cn * min(1, abs(car.v) / 4); }   // (head on, slow: it stops against it)
-      else if (cn < 0) {   // (at a slant: turned onto the wall's line, so the next step does not meet it again, the into-wall share of its speed gone once)
-        var nx = dx / l, nz = dz / l, fn = ux * nx + uz * nz, hx = ux - fn * nx, hz = uz - fn * nz;
-        if (hypot(hx, hz) > 1e-6) { var nv = Math.atan2(hx, -hz); car.yaw = angle(car.yaw + angle(nv - vh0)); car.vh = nv; A = carAxes(); }   // (the way it goes onto the wall's line, the nose turned with it: a drift's slip kept)
-        car.v *= Math.sqrt(max(0, 1 - cn * cn));
-      }
-    };
-    var box = function (px, pz, x0, x1, z0, z1, RR) {
-      var qx = clampV(px, x0, x1), qz = clampV(pz, z0, z1), dx = px - qx, dz = pz - qz, d = hypot(dx, dz);
-      if (d >= RR) { return; }
-      if (d > 1e-6) { push(dx / d * (RR - d), dz / d * (RR - d)); return; }
-      var e = [px - x0, x1 - px, pz - z0, z1 - pz], m = min(min(e[0], e[1]), min(e[2], e[3])), j = e.indexOf(m);
-      push(j === 0 ? -(m + RR) : j === 1 ? m + RR : 0, j === 2 ? -(m + RR) : j === 3 ? m + RR : 0);
-    };
-    for (var pass = 0; pass < 2; pass += 1) {
-      [h, -h].forEach(function (o) {
-        var px = function () { return car.x + A.fx * o; }, pz = function () { return car.z + A.fz * o; };
-        var cx = k * COURT.GAP; box(px(), pz(), cx - COURT.GAP / 2 + 0.5, cx + COURT.GAP / 2 - 0.5, -COURT.L - 3.5, COURT.L + 3.5, R + CAR.EDGE);
-        var bx = clampV(px(), BOUND.x0 + R, boundX1() - R), bz = clampV(pz(), BOUND.z0 + R, BOUND.z1 - R);
-        if (bx !== px() || bz !== pz()) { push(bx - px(), bz - pz()); }
-      });
-    }
-    if (hit && ride.mode === "car" && gt - (ride.bump || -9) > 0.4) { ride.bump = gt; fxRing([car.x + A.fx * car.v * 0.1, car.y + 0.3, car.z], "me"); }
-  }
+  // (No barrier: the artist, 4 Nov 2026: "Make sure that I can drive anywhere in the coupe ... there are no physical
+  // barriers". The open court's run-off no longer pushes it off, nor the world's edge holds it: past the towers the
+  // ground goes on, dark, as far as it is driven.)
   // the ramp on foot: on at its foot, the stick pushing up its way
   function stairMount(c) {
     if (stairsN() < 1 || hypot(c.vel[0], c.vel[1]) < 1) { return false; }
@@ -2512,11 +2545,11 @@
     me.want = { keep: true };
   }
   // his own donut (a tap in the coupe, on the ground): round a circle at its side, the side away from the open court
-  // first, kept clear of it, the ground's edge and the staircase; parked again as it stood. No room either side: none
+  // first; only the staircase kept clear (nothing else is in the way); parked again as it stood. No room either side: none
   function myDonut() {
     var A = carAxes(), cx = (courts.length - 1) * COURT.GAP, zL = COURT.L + 3.5, far = DONUT.R + CAR.L / 2 + 0.6;
     var off = function (C) { return hypot(C[0] - clampV(C[0], cx - COURT.GAP / 2 + 0.5, cx + COURT.GAP / 2 - 0.5), C[1] - clampV(C[1], -zL, zL)); };
-    var ok = function (C) { return off(C) > far && C[0] - far > BOUND.x0 && C[0] + far < boundX1() && C[1] - far > BOUND.z0 && C[1] + far < BOUND.z1 && hypot(C[0] - STAIR.c[0], C[1] - STAIR.c[1]) > STAIR.R1 + far; };
+    var ok = function (C) { return hypot(C[0] - STAIR.c[0], C[1] - STAIR.c[1]) > STAIR.R1 + far; };
     var w = [1, -1].map(function (s) { return { s: s, C: [car.x + s * A.rx * DONUT.R, car.z + s * A.rz * DONUT.R] }; })
       .sort(function (a, b) { return off(b.C) - off(a.C); }).filter(function (o) { return ok(o.C); })[0];
     // (on its right it goes round forward, ph rising; on its left, ph falling)
@@ -2570,41 +2603,35 @@
           ride.mode = "glide"; ride.hd = hypot(me.vx, me.vz) > 0.5 ? Math.atan2(me.vx, -me.vz) : me.yaw; ride.bank = 0;
           if (!ride.told.hat) { ride.told.hat = 1; say(STR.ride.hat[deskI()], true); }
         }
-        // (the post is solid in the air too)
-        var sx = me.x - STAIR.c[0], sz = me.z - STAIR.c[1], sd = hypot(sx, sz), pr = STAIR.POST + 0.3;
-        if (sd < pr && sd > 1e-6) { me.x = STAIR.c[0] + sx / sd * pr; me.z = STAIR.c[1] + sz / sd * pr; }
       }
-      if (ride.mode === null) { footHit(); }
       if (ride.mode === null && stairsN() === 0 && !ride.told.post && hypot(me.x - STAIR.c[0], me.z - STAIR.c[1]) < 4) { ride.told.post = 1; say(STR.ride.post, true); }
     }
     // (the canopy opening, and closing as he lands: over him, or over the coupe he is in)
     var open = ride.mode === "glide" || (ride.mode === "car" && car.mode === "glide");
     ride.u = open ? min(1, ride.u + dt / 0.35) : max(0, ride.u - dt / 0.25);
   }
-  // on foot: not through the coupe, nor the staircase's post (under the ramp, he walks free)
-  function footHit() {
-    var A = carAxes(), dx = me.x - car.x, dz = me.z - car.z, lf = dx * A.fx + dz * A.fz, lr = dx * A.rx + dz * A.rz, hf = CAR.L / 2 + 0.3, hr = CAR.W / 2 + 0.3;
-    if (car.y - groundAt(car.x, car.z) < 1.5 && abs(lf) < hf && abs(lr) < hr) {   // (on its ground, the bowl's too: not in the air over him)
-      if (hf - abs(lf) < hr - abs(lr)) { lf = lf < 0 ? -hf : hf; } else { lr = lr < 0 ? -hr : hr; }
-      me.x = car.x + A.fx * lf + A.rx * lr; me.z = car.z + A.fz * lf + A.rz * lr;
-    }
-    var R = STAIR.POST + 0.3, sx = me.x - STAIR.c[0], sz = me.z - STAIR.c[1], d = hypot(sx, sz);
-    if (d < R && d > 1e-6) { me.x = STAIR.c[0] + sx / d * R; me.z = STAIR.c[1] + sz / d * R; }
-    var gq = groundAt(me.x, me.z); if (!me.air && (gq > 0 || me.g0 > 0) && abs(me.y - gq) < 0.3) { me.y = gq; me.g0 = gq; }   // (pushed clear on the bowl: on it where he is put)
-  }
   // the button: Drive beside the coupe, Get out in it (on the ground; at speed it brakes to a stop for him first)
   function rideButton() {
     var b = $("ride"); if (!b) { return; }
-    var inCar = ride.mode === "car", show = !court.m && !TUT.on && (inCar ? car.mode === "ground" && !ride.dn : carNear()), t = inCar ? STR.ride.out : STR.ride.drive;   // (not in a donut: it could not get him out)
+    var inCar = ride.mode === "car", gnd = car.mode === "ground", show = !court.m && !TUT.on && (inCar ? (gnd || car.mode === "ramp") && !ride.dn : carNear()), t = inCar ? STR.ride.out : STR.ride.drive;   // (not in a donut: it could not get him out; on the ground or the ramp, wherever it is)
     if (b.hidden === show) { b.hidden = !show; }
     if (show && b.textContent !== t) { b.textContent = t; b.setAttribute("aria-label", inCar ? STR.ride.outSr : STR.ride.driveSr); }
-    var dn = $("donut"), dshow = show && inCar && !ride.out && !ride.dn && !ride.dnQ;   // (gone while it brakes for it and drives it)
+    var tk = inCar ? trkAt(car.x, car.z).d : -9, onTrk = tk > -0.5 && tk < TRK.W + 0.5;   // (on the track: no Donut button, the artist, 4 Nov 2026: "Take the donut button off when the coupe is driving on the track")
+    var dn = $("donut"), dshow = show && inCar && gnd && !ride.out && !ride.dn && !ride.dnQ && !onTrk, drs = show && inCar && gnd && !ride.out && !ride.dn && !ride.dnQ;   // (gone while it brakes for it and drives it)
     var dr = $("drift");   // (Drift: beside Get out while it is driven, held as a pedal; lit while held)
-    if (dr) { if (dr.hidden === dshow) { dr.hidden = !dshow; } if (!dshow && input.drift != null) { input.drift = null; } var pr = input.drift != null ? "true" : "false"; if (dr.getAttribute("aria-pressed") !== pr) { dr.setAttribute("aria-pressed", pr); } }
+    if (dr) { if (dr.hidden === drs) { dr.hidden = !drs; } if (!drs && input.drift != null) { input.drift = null; } var pr = input.drift != null ? "true" : "false"; if (dr.getAttribute("aria-pressed") !== pr) { dr.setAttribute("aria-pressed", pr); } }
     if (dn && dn.hidden === dshow) { dn.hidden = !dshow; if (dshow && dn.textContent !== STR.ride.donut) { dn.textContent = STR.ride.donut; dn.setAttribute("aria-label", STR.ride.donutSr); } }
   }
   // the Donut button, a tap or Space in the coupe on the ground: at speed a stop first, braking as for the way out, then it
   function donutPress() { if (ride.mode === "car" && !ride.dn && car.mode === "ground" && !ride.out && !court.m && !TUT.on) { ride.dnQ = true; rideButton(); } }
+  // the garden's inverse look: on while he (on foot, or in the coupe) is in the garden, faded in and out
+  var GINV = { on: false, u: 0, FADE: 0.35, vis: 1 };
+  function ginvStep(dt) {
+    var px = ride.mode === "car" ? car.x : me.x, pz = ride.mode === "car" ? car.z : me.z; GINV.on = !!courts && gdnAt(px, pz); GINV.u = clampV(GINV.u + (GINV.on ? dt : -dt) / GINV.FADE, 0, 1);
+    // (the garden recedes while he plays a match: behind Mr Plan it is what the pearls are seen against, and with it there
+    // they were measured a tenth to a fifth less clear than with dark ground: the artist asked twice for them to be seen)
+    GINV.vis = clampV(GINV.vis + (court.m ? -dt : dt) / 0.6, 0, 1);
+  }
   function stepAll(dt) {
     var c = controls(dt), y0 = me.y;
     courtStep(dt, c);
@@ -2618,12 +2645,12 @@
       if (a.skid > 0.5 && dust.length < 60 && rng() < 0.7) { dust.push({ x: a.x + (rng() - 0.5) * 0.3, y: 0.05, z: a.z + (rng() - 0.5) * 0.3, vx: -a.vx * 0.15 + (rng() - 0.5), vy: 0.6 + rng(), vz: -a.vz * 0.15 + (rng() - 0.5), t: gt }); }
     });
     dust = dust.filter(function (d) { d.vy -= 3 * dt; d.x += d.vx * dt; d.y = max(0.02, d.y + d.vy * dt); d.z += d.vz * dt; return gt - d.t < 0.7; });
-    fxStep(dt);
+    fxStep(dt); ginvStep(dt);
     // (the tips' own moments: he has moved; he walks about off the courts; two pearls or more in play)
     if (TIPS.from && hypot(me.x - TIPS.from[0], me.z - TIPS.from[1]) > 1.5) { tipDone("move"); TIPS.from = null; }
     if (!court.m && !TIPS.from && gt > 6) { tip("court"); }
     if (court.m && live(court.m).length > 1) { tip("multi"); }
-    tipStep(); tutStep(); rideButton();
+    tipStep(); tutStep(); rideButton(); portalStep();
     input.fire = false;   // (a tap is spent on the frame that reads it)
     // (the words step aside while the serve's bar runs: the bar carries its own, and they would cover it on a short screen)
     var cm = court.m, bar = cm && (cm.meterOn || (cm.phase === "plansuper" && cm.psup.struck && !cm.psup.tapped && !TUT.on));
@@ -3035,10 +3062,13 @@
   }
   function donutStart(m, took) {
     var cx = m.k * COURT.GAP, qx = clampV(car.x, cx - COURT.GAP / 2 + 0.5, cx + COURT.GAP / 2 - 0.5), qz = clampV(car.z, -COURT.L - 3.5, COURT.L + 3.5);
-    var ax = car.x - qx, az = car.z - qz, al = hypot(ax, az) || 1, A = carAxes();
+    var ax = car.x - qx, az = car.z - qz, A = carAxes();
+    if (hypot(ax, az) < 1e-6) { ax = A.rx; az = A.rz; }   // (the coupe left on the court: round a circle at its side)
+    var al = hypot(ax, az);
     var C = [car.x + ax / al * DONUT.R, car.z + az / al * DONUT.R];   // (the circle's middle: away from the court, the coupe on its edge)
+    var away = [ax / al, az / al];   // (the view's way, fixed for the donut: a target passing the court's middle would whip it round)
     m.phase = "donut"; m.meterOn = false;
-    m.dn = { stage: "run", t0: gt, P0: [car.x, car.z, car.yaw], C: C, ph0: Math.atan2(car.z - C[1], car.x - C[0]), door: [car.x - A.rx * (CAR.W / 2 + 0.5), car.z - A.rz * (CAR.W / 2 + 0.5)] };
+    m.dn = { stage: "run", t0: gt, P0: [car.x, car.z, car.yaw], C: C, away: away, ph0: Math.atan2(car.z - C[1], car.x - C[0]), door: [car.x - A.rx * (CAR.W / 2 + 0.5), car.z - A.rz * (CAR.W / 2 + 0.5)] };
     say(took ? took.replace(/\. Again/, ", and the coupe for a donut. Again") : STR.donut, true);   // (his game's line kept, the donut in it)
   }
   // the coupe's donut (his or Mr Plan's), d.t1 its start: round the circle twice, eased in and out, the nose turned in,
@@ -3095,7 +3125,7 @@
     if (!d || !d.cam) { return null; }
     // (12.5 m off, or as far as the whole circle and the coupe on it need to fit the screen's width: on a phone held
     // upright some 22 m)
-    var far = donutFar(), t = d.cam, ox = t[0] - o[0], oz = t[2] - o[1], ol = hypot(ox, oz) || 1, e1 = [t[0] - ox / ol * far, 5.5, t[2] - oz / ol * far];
+    var far = donutFar(), t = d.cam, ox = d.away ? d.away[0] : t[0] - o[0], oz = d.away ? d.away[1] : t[2] - o[1], ol = hypot(ox, oz) || 1, e1 = [t[0] - ox / ol * far, 5.5, t[2] - oz / ol * far];   // (Mr Plan's: from the court's side of it, its way fixed)
     var dx = t[0] - e1[0], dy = t[1] - e1[1], dz = t[2] - e1[2], yaw1 = Math.atan2(dx, -dz), pitch1 = Math.atan2(dy, hypot(dx, dz)) + AIM * 0.4;
     return { e: lerp3(e0, e1, w), yaw: yaw0 + angle(yaw1 - yaw0) * w, pitch: pitch0 + (pitch1 - pitch0) * w };
   }
@@ -3174,7 +3204,7 @@
     canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
     window.addEventListener("keydown", awake(function (e) {
       var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      if ((k === " " || k === "Enter") && e.target && e.target.closest && e.target.closest("#super, #ride, #donut, #drift")) { return; }   // (a button focused: the key presses it)
+      if ((k === " " || k === "Enter") && e.target && e.target.closest && e.target.closest("#super, #ride, #donut, #drift, #portal, #skip")) { return; }   // (a button focused: the key presses it)
       if ("wasdteqf ".indexOf(k) >= 0 || k === "Enter" || k === "Shift" || k.indexOf("Arrow") === 0) { CUE.hand = "keys"; if (TUT.on && TUT.stop === "sup" && k !== "e" && k !== "q") { CUE.wrongT = CUE.rt; } }
       if (k === " " || k === "t" || k === "Enter") { if (!e.repeat) { input.fire = true; } e.preventDefault(); }   // (a key held is one tap)
       else if (k === "e" || k === "q") { superPress(); }
@@ -3191,7 +3221,8 @@
     drB.addEventListener("mousedown", function (e) { e.preventDefault(); });
     drB.addEventListener("pointerdown", awake(function (e) { if (e.button !== 0) { return; } input.drift = e.pointerId; try { drB.setPointerCapture(e.pointerId); } catch (x) { /* fine */ } e.preventDefault(); rideButton(); }));
     ["pointerup", "pointercancel", "lostpointercapture"].forEach(function (ev) { drB.addEventListener(ev, function (e) { if (input.drift === e.pointerId) { input.drift = null; rideButton(); } }); });
-    tapOn($("donut"), function (e) { if (e && e.type === "pointerup") { $("donut").blur(); } donutPress(); });   // (blurred after a finger or a click: Space after it is the bar's)
+    tapOn($("donut"), function (e) { if (e && e.type === "pointerup") { $("donut").blur(); } donutPress(); });
+    tapOn($("skip"), function (e) { if (e && e.type === "pointerup") { $("skip").blur(); } tutSkip(); });   // (the walk-through's Skip)   // (blurred after a finger or a click: Space after it is the bar's)
   }
 
   /* ---- drawing a frame ---------------------------------------------------------------------------------------------- */
@@ -3226,13 +3257,23 @@
       paint(MAT.NET); cbox([x, COURT.NET / 2 + 0.03, 0], [nw, COURT.NET - 0.06, 0.03], CT.net);
       paint(MAT.LINE, [0, 1, 0]); cbox([x, COURT.NET, 0], [nw, 0.07, 0.05], CT.line);   // (its tape)
     }
-    paint(MAT.TRACK, null, true); drawSolid(trkMesh(), T(0, 0, 0), null, TRK.pal, 0.75);   // (lit by itself: the floodlights do not reach it)
+    paint(MAT.TRACK, null, true); drawSolid(trkMesh(), T(0, 0, 0), null, TRK.pal, 0.75);   // (lit by itself: the courts' floodlights do not reach it)
+    paint(MAT.LINE, null, true); drawSolid(trkC.ledX, T(0, 0, 0), null, TRK.ledPal, 2.4);   // (the edges' strips, glowing)
+    paint(MAT.LINEZ, null, true); drawSolid(trkC.ledZ, T(0, 0, 0), null, TRK.ledPal, 2.4);
+    trkC.towers.forEach(function (t) {
+      if (abs(t.p[0] - ex) > SEEN) { return; }
+      var ps = poleSight(t.p[0], t.p[2]), dx = t.aim[0] - t.p[0], dz = t.aim[2] - t.p[2];
+      if (ps.w > 0) { paint(MAT.POLE, [1, 0, 1]); cbox([t.p[0], t.p[1] / 2, t.p[2]], [0.3 * ps.w, t.p[1], 0.3 * ps.w], CT.pole); }
+      if (ps.lamp) { paint(MAT.LAMP); cbox([t.p[0], t.p[1] + 0.2, t.p[2]], [2.2, 0.7, 0.8], CT.lamp, 2.6, [0, 1, 0], Math.atan2(-dx, -dz)); }
+    });
+    gdnDraw(ex); portalDraw();
     paint(MAT.GROUND, null, true);
     var gx0 = min(ex - SEEN - 30, BOUND.x0 - 10), gx1 = max(ex + SEEN + 30, boundX1() + 10);   // (under the whole track too, however long)
-    cbox([(gx0 + gx1) / 2, -0.05, 0], [gx1 - gx0, 0.1, 2 * SEEN], CT.ground);
+    cbox([(gx0 + gx1) / 2, -0.05, cur.eye[2]], [gx1 - gx0, 0.1, 2 * SEEN + 80], CT.ground);   // (round the eye in z as in x: driven far out, the ground still under it)
     // the floodlights: a pole at each court's corners, its lamp lit; not one the view stands against, nor one between
     // the view and him (as he walks into the gold circle from beside it, the view's arm lies along the corner's pole: a
     // wall of bars down the picture, through him; within POLE_NEAR of the eye, or within a metre of the line to him)
+    gl.uniform1f(SU.uGdnOn, 0);   // (the floodlights belong to the courts' block: none of them in the garden's look)
     for (var j = 0; j <= courts.length; j += 1) {
       if (abs((j - 0.5) * COURT.GAP - ex) > SEEN) { continue; }
       [-1, 1].forEach(function (s) {
@@ -3242,12 +3283,177 @@
         paint(MAT.LAMP); cbox([px, 9.1, pz - s * 0.2], [1.2, 0.35, 0.5], CT.lamp, 2.4);
       });
     }
+    gl.uniform1f(SU.uGdnOn, GINV.u > 0 ? 1 : 0);   // (and on again for what stands in it)
+  }
+  // The garden (the artist, 4 Nov 2026: "have beautiful plants and flowers fill in the space but in a mix style of a
+  // Japanese Gardens and Claude Monet's house garden where he painted his Lillie's", then the same day: "Make the
+  // surrounding garden a lot simpler and uniform"): between the courts and the track, in characters as everything here
+  // is, the same all the way round, in bands that follow the track's inner edge: a gravel walk by the courts, a lily
+  // canal between stone edges (its pads in two even rows, a pink or a white flower on every other one: Monet's), a moss
+  // bank of clipped round shrubs every three metres (a Japanese garden's karikomi), and at the two ends, round the
+  // staircase and past the open court, gravel raked in lines that follow the same curve. Decoration: he and the coupe
+  // pass through it. Built a court's length at a time, nearest first, and freed far off.
+  var GP = { GRAVEL: 0, MOSS: 1, WATER: 2, STONE: 3, PAD: 4, PINK: 5, WHITE: 6, SHRUB: 7, SHRUB2: 8, RAKE: 9 };
+  GP.pal = (function (L) { var p = new Float32Array(256); L.forEach(function (c, i) { p[i * 4] = c[0]; p[i * 4 + 1] = c[1]; p[i * 4 + 2] = c[2]; }); return p; })([[104, 98, 88], [52, 106, 66], [30, 74, 140], [96, 96, 104],
+                  [58, 128, 72], [236, 140, 184], [240, 236, 226], [40, 96, 58], [62, 126, 76], [128, 122, 110]]);
+  // (its bands, metres in from the track's inner edge: moss, water, gravel; past the walk's inner side at the ends, the
+  // raked field; the walk's inner side is |z| = GDN_Z on the straights, where the courts' block ends)
+  var GB = { MOSS: [0.3, 3.6], WATER: [3.9, 7.4], WALK: [7.7, 10.2], EDGE: 0.3, SHRUB: 3, PAD: 1.6, RAKE: 0.8 };
+  var GDN = {};
+  function gdnIn() { return TRK.R - TRK.W / 2; }   // (the track's inner edge, from its middle line between the bends)
+  function gdnZ() { return gdnIn() - GB.WALK[1]; }   // (the courts' block, its run-offs and poles: the garden starts past it)
+  // the garden's own ground, by where it is: in from the track's inner edge, out of the courts' block (the region the
+  // inverse look is for, in the shader too: uGdn)
+  function gdnAt(x, z) {
+    var xL = TRK.XL, xR = trkXR(), qx = clampV(x, xL, xR), din = gdnIn() - hypot(x - qx, z);
+    return din >= 0 && !(x > -COURT.GAP / 2 && x < xR + COURT.GAP / 2 && abs(z) < gdnZ());
+  }
+  // (which chunk a place is in: the left end, a court's length, the open court's (its key with e: the right bend begins
+  // in it), the right end)
+  function gdnKey(x) { var N = courts.length, xR = (N - 1) * COURT.GAP; if (x < -COURT.GAP / 2) { return "L"; } if (x >= xR + COURT.GAP / 2) { return "R" + N; } var k = clampV(Math.floor((x + COURT.GAP / 2) / COURT.GAP), 0, N - 1); return "c" + k + (k === N - 1 ? "e" : ""); }
+  function gdnBuild(key) {
+    var S = [], Wt = [], Pl = [], foot = [], flats = [], xL = TRK.XL, xR = trkXR(), Ri = gdnIn();
+    var mine = function (x) { return gdnKey(x) === key; };
+    var tri = function (o, a, b, c, y, id) { o.push(a[0], y, a[1], 0, 1, 0, id, b[0], y, b[1], 0, 1, 0, id, c[0], y, c[1], 0, 1, 0, id); };
+    var quad = function (o, a, b, c, d, y, id) { tri(o, a, b, c, y, id); tri(o, a, c, d, y, id); flats.push([a, b, c, d]); };
+    var box = function (cx, cy, cz, sx, sy, sz, id, yaw) {   // (a box into the plants' mesh, turned about its upright)
+      foot.push([cx, cz, max(sx, sz) / 2]);
+      var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0), P = function (a, b, d) { var x = a * sx / 2, z = d * sz / 2; return [cx + c * x - sn * z, cy + b * sy / 2, cz + sn * x + c * z]; };
+      [[[1, 0, 0], [1, -1, -1], [1, 1, -1], [1, 1, 1], [1, -1, 1]], [[-1, 0, 0], [-1, -1, 1], [-1, 1, 1], [-1, 1, -1], [-1, -1, -1]], [[0, 1, 0], [-1, 1, -1], [-1, 1, 1], [1, 1, 1], [1, 1, -1]],
+       [[0, 0, 1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]], [[0, 0, -1], [1, -1, -1], [-1, -1, -1], [-1, 1, -1], [1, 1, -1]]].forEach(function (f) {
+        var n = [c * f[0][0] - sn * f[0][2], f[0][1], sn * f[0][0] + c * f[0][2]], q = [P.apply(null, f[1]), P.apply(null, f[2]), P.apply(null, f[3]), P.apply(null, f[4])];
+        [0, 1, 2, 0, 2, 3].forEach(function (i) { Pl.push(q[i][0], q[i][1], q[i][2], n[0], n[1], n[2], id); });
+      });   // (no underside: it stands on the ground)
+    };
+    // (the loop at r from the line between the bends' middles: its straights cut at every six metres and at the bends,
+    // so a court's length is whole pieces; each bend in 24)
+    var pt = function (seg, u, r) {   // (seg 0 the far straight, 1 the right bend, 2 the near straight, 3 the left bend)
+      if (seg === 0) { return [u, -r]; } if (seg === 2) { return [u, r]; }
+      var a = u, c0 = seg === 1 ? xR : xL; return [c0 + r * Math.cos(a), r * Math.sin(a)];
+    };
+    var cuts = [xL]; for (var x6 = Math.ceil(xL / 6) * 6; x6 < xR; x6 += 6) { if (x6 > xL) { cuts.push(x6); } } cuts.push(xR);
+    var pieces = [];   // ([seg, u0, u1]): the straights by the cuts, the bends by angle
+    for (var i = 0; i + 1 < cuts.length; i += 1) { if (cuts[i + 1] > cuts[i]) { pieces.push([0, cuts[i], cuts[i + 1]], [2, cuts[i], cuts[i + 1]]); } }
+    var rA = [], cA = Math.acos(clampV(COURT.GAP / 2 / (Ri - GB.WALK[1]), -1, 1));   // (the right bend cut at the open court's block's corner too, where the walk meets the raked fan)
+    for (var b = 0; b <= 24; b += 1) { rA.push(-PI / 2 + PI * b / 24); } rA.push(-cA, cA); rA.sort(function (p1, p2) { return p1 - p2; });
+    for (b = 0; b + 1 < rA.length; b += 1) { if (rA[b + 1] - rA[b] > 1e-6) { pieces.push([1, rA[b], rA[b + 1]]); } }
+    for (b = 0; b < 24; b += 1) { pieces.push([3, PI / 2 + PI * b / 24, PI / 2 + PI * (b + 1) / 24]); }
+    var zB = gdnZ(), xB = xR + COURT.GAP / 2, keepOut = function (q) { if (q[0] > -COURT.GAP / 2 && q[0] < xB - 1e-6 && abs(q[1]) < zB) { q[1] = q[1] < 0 ? -zB : zB; } return q; };   // (where the right bend begins, its inner bands kept off the open court's block)
+    var band = function (d0, d1, y, id, o) {   // (a band of the loop, d0 to d1 in from the inner edge, the pieces whose middle is in this chunk)
+      pieces.forEach(function (q) {
+        var a0 = keepOut(pt(q[0], q[1], Ri - d0)), a1 = keepOut(pt(q[0], q[2], Ri - d0)), b1 = keepOut(pt(q[0], q[2], Ri - d1)), b0 = keepOut(pt(q[0], q[1], Ri - d1));
+        if (mine((a0[0] + a1[0] + b0[0] + b1[0]) / 4)) { quad(o || S, a0, a1, b1, b0, y, id); }
+      });
+    };
+    var along = function (d, step, fn, half) {   // (places along the loop d in, every step metres: on the straights at fixed x, on the bends evenly; each with its index)
+      var r = Ri - d, sh = half ? 0 : step / 2, i0 = Math.floor((xL - sh) / step + 1e-6) + 1, i1 = Math.ceil((xR - sh) / step - 1e-6) - 1;
+      for (var i = i0; i <= i1; i += 1) { var x = sh + i * step; fn(x, -r, i); fn(x, r, i); }   // (strictly between the bends' middles: the joins are the bends')
+      var n = max(1, Math.round(PI * r / step));
+      for (var j = 0; j <= (half ? n : n - 1); j += 1) { var a = PI * (j + (half ? 0 : 0.5)) / n; fn(xR + r * Math.sin(a), -r * Math.cos(a), j); fn(xL - r * Math.sin(a), r * Math.cos(a), j); }   // (a half row's joins are the bends' own)
+    };
+    // the bands' ground: moss, the canal's stone edges and water, the walk
+    band(GB.MOSS[0], GB.MOSS[1], 0.006, GP.MOSS);
+    band(GB.MOSS[1], GB.WATER[0], 0.008, GP.STONE); band(GB.WATER[1], GB.WALK[0], 0.008, GP.STONE);
+    band(GB.WATER[0], GB.WATER[1], 0.01, GP.WATER, Wt);
+    band(GB.WALK[0], GB.WALK[1], 0.006, GP.GRAVEL);
+    // the two ends inside the walk: gravel, raked in lines along the same curve (the courts' block keeps its own ground)
+    var rIn = Ri - GB.WALK[1], fan = function (c0, a0, a1) { for (var f = 0; f < 24; f += 1) { var u0 = a0 + (a1 - a0) * f / 24, u1 = a0 + (a1 - a0) * (f + 1) / 24; var A = [c0[0] + rIn * Math.cos(u0), c0[1] + rIn * Math.sin(u0)], B = [c0[0] + rIn * Math.cos(u1), c0[1] + rIn * Math.sin(u1)]; if (mine((A[0] + B[0] + c0[0]) / 3)) { tri(S, c0, A, B, 0.005, GP.GRAVEL); flats.push([c0, A, B, B]); } } };
+    if (key === "L") { var lx = -COURT.GAP / 2; quad(S, [xL, -rIn], [lx, -rIn], [lx, rIn], [xL, rIn], 0.005, GP.GRAVEL); fan([xL, 0], PI / 2, 3 * PI / 2); }
+    if (key === "R" + courts.length) { var ra = Math.acos(clampV(COURT.GAP / 2 / rIn, -1, 1)), rx = xR + COURT.GAP / 2; for (var f = 0; f < 16; f += 1) { var u0 = -ra + 2 * ra * f / 16, u1 = -ra + 2 * ra * (f + 1) / 16; tri(S, [rx, 0], [xR + rIn * Math.cos(u0), rIn * Math.sin(u0)], [xR + rIn * Math.cos(u1), rIn * Math.sin(u1)], 0.005, GP.GRAVEL); flats.push([[rx, 0], [xR + rIn * Math.cos(u0), rIn * Math.sin(u0)], [xR + rIn * Math.cos(u1), rIn * Math.sin(u1)], [rx, 0]]); } }
+    if (key === "L" || key === "R" + courts.length) {
+      var endX = key === "L" ? -COURT.GAP / 2 : xR + COURT.GAP / 2, sgn = key === "L" ? -1 : 1;
+      for (var rr = rIn - GB.RAKE; rr > 0.5; rr -= GB.RAKE) {   // (each line: along the straight to the block's end, round the bend)
+        var c0 = key === "L" ? xL : xR;
+        if (key === "L") { [-1, 1].forEach(function (s) { quad(S, [xL, s * rr - 0.04], [endX, s * rr - 0.04], [endX, s * rr + 0.04], [xL, s * rr + 0.04], 0.007, GP.RAKE); }); }
+        for (var q = 0; q < 24; q += 1) {
+          var v0 = PI / 2 + PI * q / 24, v1 = PI / 2 + PI * (q + 1) / 24, ang = function (v) { return key === "L" ? v : v - PI; };
+          var p0 = [c0 + rr * Math.cos(ang(v0)), rr * Math.sin(ang(v0))], p1 = [c0 + rr * Math.cos(ang(v1)), rr * Math.sin(ang(v1))];
+          if (sgn * (p0[0] - endX) < 0 || sgn * (p1[0] - endX) < 0) { continue; }   // (the right end: only past the open court's block)
+          var nx0 = Math.cos(ang(v0)) * 0.04, nz0 = Math.sin(ang(v0)) * 0.04, nx1 = Math.cos(ang(v1)) * 0.04, nz1 = Math.sin(ang(v1)) * 0.04;
+          quad(S, [p0[0] - nx0, p0[1] - nz0], [p1[0] - nx1, p1[1] - nz1], [p1[0] + nx1, p1[1] + nz1], [p0[0] + nx0, p0[1] + nz0], 0.007, GP.RAKE);
+        }
+      }
+    }
+    // the canal's pads, in two even rows, a flower on every other one, pink and white by turns
+    [[GB.WATER[0] + 1.0, false], [GB.WATER[1] - 1.0, true]].forEach(function (row) {
+      along(row[0], GB.PAD, function (x, z, i) {
+        if (!mine(x)) { return; }
+        for (var k = 0; k < 8; k += 1) { var a0 = 2 * PI * k / 8, a1 = 2 * PI * (k + 1) / 8; if (k === 1) { continue; }   // (a lily pad's notch)
+          tri(S, [x, z], [x + 0.42 * Math.cos(a0), z + 0.42 * Math.sin(a0)], [x + 0.42 * Math.cos(a1), z + 0.42 * Math.sin(a1)], 0.014, GP.PAD); }
+        var q = ((i % 4) + 4) % 4; if (q % 2) { box(x + 0.1, 0.07, z + 0.05, 0.16, 0.1, 0.16, q === 1 ? GP.PINK : GP.WHITE, 0.4); }   // (every other pad by its place, pink and white by turns, both sides alike)
+      }, row[1]);
+    });
+    // the moss bank's clipped shrubs, every SHRUB metres, each the same: a low round mound and its crown
+    along((GB.MOSS[0] + GB.MOSS[1]) / 2, GB.SHRUB, function (x, z) {
+      if (!mine(x)) { return; }
+      box(x, 0.3, z, 1.5, 0.6, 1.5, GP.SHRUB, PI / 4); box(x, 0.3, z, 1.5, 0.6, 1.5, GP.SHRUB, 0); box(x, 0.72, z, 0.95, 0.42, 0.95, GP.SHRUB2, PI / 8);
+    });
+    var up = function (a) { return a.length ? upload(a) : null; };
+    return { surf: up(S), water: up(Wt), plant: up(Pl), foot: foot, flats: flats };   // (foot: each box's middle and half reach; flats: each flat's corners; for the tests)
+  }
+  // The portal (the artist, 4 Nov 2026: "make an almost invisible tunnel, like the black hole in the movie interstellar
+  // and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"): over the lily
+  // canal at the staircase's end a black sphere, hardly there but for its rings, the light of a disc round it, tilted and
+  // turning, and that light bent round its edge facing the view; faint from afar, brighter close by. In it, a way
+  // through to Holographic Mr Pearl: in the Artifact its Artifact, on the site its page there; inside YouTube none (a
+  // Playable may not lead out). Later (the artist): Holographic Mr Pearl Quarterback, inside the same Playable.
+  var PORTAL = { c: [-30, 2.7, -0.5], r: 1.7, SITE: "../rocket/index.html", mesh: null };   // (in the Artifact the build gives its way: window.PB_PORTAL)
+  function sphereMesh(n, m) {
+    var out = [], P = function (i, j) { var th = PI * j / m, ph = 2 * PI * i / n; return [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)]; };
+    for (var i = 0; i < n; i += 1) { for (var j = 0; j < m; j += 1) { var a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), d = P(i, j + 1); [a, b, c, a, c, d].forEach(function (q) { out.push(q[0], q[1], q[2], q[0], q[1], q[2], 0); }); } }
+    return upload(out);
+  }
+  function portalDraw() {
+    var P = PORTAL, e = cur.eye, dd = hypot(P.c[0] - e[0], P.c[1] - e[1], P.c[2] - e[2]); if (dd > 90) { return; }
+    if (!P.mesh) { P.mesh = sphereMesh(20, 14); }
+    if (dd > P.r + 0.3) {   // (the dark: nothing lit, no rim, no haze; only what it hides shows it. Not with the eye inside it)
+      paint(MAT.PLANT, null, false, [0, 0, 0], 0); gl.uniform3fv(SU.uFog, [0, 0, 0]);
+      drawSolid(P.mesh, mul(T(P.c[0], P.c[1], P.c[2]), S(P.r, P.r, P.r)), [0.002, 0.002, 0.002], null, 0); gl.uniform3fv(SU.uFog, SKY.gnd);
+    }
+    var glow = 0.25 + 1.7 * smooth((26 - dd) / 20), tilt = 0.2, yaw = Math.atan2(P.c[0] - e[0], -(P.c[2] - e[2])), ux = Math.cos(yaw), uz = Math.sin(yaw);
+    paint(MAT.LAMP);
+    for (var i = 0; i < 36; i += 1) {   // (the disc: round it, tilted, turning)
+      var a = 2 * PI * i / 36 + gt * 0.35, rd = P.r * (1.75 + 0.18 * Math.sin(3 * a));
+      cbox([P.c[0] + rd * Math.cos(a), P.c[1] + rd * Math.sin(a) * Math.sin(tilt), P.c[2] + rd * Math.sin(a) * Math.cos(tilt)], [0.13, 0.05, 0.13], [1, 0.8, 0.52], glow);
+    }
+    for (var j = 0; j < 30; j += 1) {   // (its light bent round the edge, facing the view)
+      var b = 2 * PI * j / 30 - gt * 0.2, rr = P.r * 1.12;
+      cbox([P.c[0] + rr * Math.cos(b) * ux, P.c[1] + rr * Math.sin(b), P.c[2] + rr * Math.cos(b) * uz], [0.09, 0.09, 0.09], [1, 0.94, 0.84], glow * 0.8);
+    }
+  }
+  function portalStep() {
+    var a = $("portal"); if (!a) { return; }
+    var near = !court.m && !TUT.on && !ride.mode && hypot(me.x - PORTAL.c[0], me.z - PORTAL.c[2]) < PORTAL.r + 0.9 && me.y < PORTAL.c[1] + PORTAL.r;
+    if (YT.inYT) { if (!a.hidden) { a.hidden = true; } if (near && !ride.told.portal) { ride.told.portal = 1; say(STR.portal.soon, true); } return; }
+    if (a.hidden === near) { a.hidden = !near; }
+    if (near && !ride.told.portal) { ride.told.portal = 1; say(STR.portal.here, true); }
+  }
+  function gdnChunk(key) { if (!GDN[key]) { GDN[key] = gdnBuild(key); } return GDN[key]; }
+  function gdnFree(g) { if (g) { unload(g.surf); unload(g.water); unload(g.plant); } }
+  var GDN_NEAR = 66;   // (the plants drawn within this of the eye, in x: past about 60 m a flower is smaller than a cell)
+  function gdnDraw(ex) {
+    var gv = smooth(GINV.vis); if (gv < 0.02) { return; }   // (gone while he plays a match)
+    var keys = [], N = courts.length, keep = {}, made = 0;
+    var want = function (key, x, half) { var dx = abs(x - ex) - half; if (dx < SEEN + 24) { keep[key] = 1; } if (dx < SEEN) { keys.push({ k: key, d: max(dx, 0) }); } };
+    for (var k = 0; k < N; k += 1) { want("c" + k + (k === N - 1 ? "e" : ""), k * COURT.GAP, COURT.GAP / 2); }
+    var ri = gdnIn(); want("L", (TRK.XL - ri - COURT.GAP / 2) / 2, (-COURT.GAP / 2 - TRK.XL + ri) / 2); want("R" + N, (N - 1) * COURT.GAP + (COURT.GAP / 2 + ri) / 2, (ri - COURT.GAP / 2) / 2);
+    Object.keys(GDN).forEach(function (kk) { if (!keep[kk]) { gdnFree(GDN[kk]); delete GDN[kk]; } });   // (far off, or the old far end's: freed; each is built again exactly, from its key)
+    keys.sort(function (a, b) { return a.d - b.d; });
+    var I = T(0, 0, 0), ch = [];
+    keys.forEach(function (q) { if (!GDN[q.k]) { if (made) { return; } made = 1; GDN[q.k] = gdnBuild(q.k); } ch.push({ g: GDN[q.k], near: q.d < GDN_NEAR }); });   // (the nearest first, one new a frame: no hitch)
+    // (lit as for an evening, quietly: in the match's view it lies behind Mr Plan, and the pearls are seen against it)
+    paint(MAT.GARDEN, null, true); ch.forEach(function (c) { if (c.g.surf) { drawSolid(c.g.surf, I, null, GP.pal, 0.4 * gv); } });
+    paint(MAT.WATER, null, true); ch.forEach(function (c) { if (c.g.water) { drawSolid(c.g.water, I, null, GP.pal, 0.55 * gv); } });
+    paint(MAT.PLANT, null, false, RIM.none, 1); if (gv > 0.98) { ch.forEach(function (c) { if (c.near && c.g.plant) { drawSolid(c.g.plant, I, null, GP.pal, 0.6); } }); }   // (the shrubs and flowers, lit by the key light too, would not fade: gone as the fade begins, back once it is done)
   }
   // the track's mesh, for the number of courts (and again after a lost GL context): the centre line the lap's way, across
   // it TRK.D's strips from the inner edge out, its bowl and berm; kerbs striped red and white round the bends, a white
   // line along each edge, a chequered line across the near straight at its middle (the start and the finish)
   var trkC = null;
-  TRK.pal = (function () { var p = new Float32Array(256); [[42, 42, 66], [236, 234, 244], [222, 44, 66], [16, 16, 22], [64, 54, 96]].forEach(function (c, i) { p[i * 4] = c[0]; p[i * 4 + 1] = c[1]; p[i * 4 + 2] = c[2]; }); return p; })();   // (tarmac, white, kerb red, black, the berm)
+  var palOf = function (L) { var p = new Float32Array(256); L.forEach(function (c, i) { p[i * 4] = c[0]; p[i * 4 + 1] = c[1]; p[i * 4 + 2] = c[2]; }); return p; };
+  // (tarmac, white, kerb red, black, the berm; then under the floodlights: tarmac half lit and lit, kerb red lit, berm lit)
+  TRK.pal = palOf([[42, 42, 66], [236, 234, 244], [222, 44, 66], [16, 16, 22], [64, 54, 96], [74, 72, 104], [108, 106, 142], [255, 96, 116], [102, 88, 142]]);
+  TRK.ledPal = palOf([[126, 240, 255], [232, 170, 255]]);   // (the strips: cyan along the inner edge, violet along the outer)
   function trkMesh() {
     if (trkC && trkC.n === courts.length) { return trkC.mesh; }
     var out = [], R = TRK.R, W = TRK.W, xL = TRK.XL, xR = trkXR(), St = xR - xL, P = [], i, j;
@@ -3263,16 +3469,23 @@
       if (n[1] < 0) { n = [-n[0], -n[1], -n[2]]; }
       [a, b2, c].forEach(function (p) { out.push(p[0], p[1], p[2], n[0], n[1], n[2], id); });
     };
-    var sAt = 0;
+    var sAt = 0, TW = trkTowers(), ledX = [], ledZ = [];
+    var strip = function (q0, q1, d0, d1, id) {   // (a light strip along an edge, a touch over the tarmac, its stroke along x or z)
+      var o = abs(q1.x - q0.x) >= abs(q1.z - q0.z) ? ledX : ledZ, sv = out; out = o;
+      var A = at(q0, d0), B = at(q1, d0), C = at(q1, d1), E = at(q0, d1); [A, B, C, E].forEach(function (p) { p[1] += 0.014; });
+      tri(A, B, C, id); tri(A, C, E, id); out = sv;
+    };
     for (i = 0; i < P.length; i += 1) {
       var q0 = P[i], q1 = P[(i + 1) % P.length], seg = hypot(q1.x - q0.x, q1.z - q0.z), bend = q0.bend || q1.bend, stripe = floor(sAt / 1.6) % 2;
       for (j = 0; j < D.length - 1; j += 1) {
         if (j >= 11 && q0.b < 0.01 && q1.b < 0.01) { continue; }   // (no rise, no berm)
         var kerb = bend && (j <= 2 || (j >= 8 && j <= 10)), line = !bend && (j === 1 || j === 9);
         var id = j >= 11 ? 4 : kerb ? (stripe ? 1 : 2) : line ? 1 : 0;
-        var A = at(q0, D[j]), B = at(q1, D[j]), C = at(q1, D[j + 1]), E = at(q0, D[j + 1]);
+        var A = at(q0, D[j]), B = at(q1, D[j]), C = at(q1, D[j + 1]), E = at(q0, D[j + 1]), Lq = trkLit((A[0] + C[0]) / 2, (A[2] + C[2]) / 2, TW);
+        if (id === 0) { id = Lq > 0.66 ? 6 : Lq > 0.3 ? 5 : 0; } else if (id === 2 && Lq > 0.45) { id = 7; } else if (id === 4 && Lq > 0.45) { id = 8; }
         tri(A, B, C, id); tri(A, C, E, id);
       }
+      strip(q0, q1, 0.02, 0.16, 0); strip(q0, q1, W - 0.16, W - 0.02, 1);
       sAt += seg;
     }
     // the line: two rows of eight checks across the near straight's middle, a touch over the tarmac
@@ -3284,7 +3497,8 @@
         tri([x0, y(x0, z0), z0], [x1b, y(x1b, z0), z0], [x1b, y(x1b, z1), z1], id2); tri([x0, y(x0, z0), z0], [x1b, y(x1b, z1), z1], [x0, y(x0, z1), z1], id2);
       }
     }
-    trkC = { n: courts.length, mesh: upload(out), xS: xS };
+    if (trkC) { unload(trkC.mesh); unload(trkC.ledX); unload(trkC.ledZ); }   // (the shorter track's, a court ago)
+    trkC = { n: courts.length, mesh: upload(out), xS: xS, ledX: upload(ledX), ledZ: upload(ledZ), towers: TW };
     return trkC.mesh;
   }
   // how much of a pole is drawn (narrowing over the last metre to the view and the last half metre to the line to him,
@@ -3426,6 +3640,17 @@
         var a = k * clampV(14 / ps.far, 0.15, 0.8); flare([px, 9.1, pz - s * 0.2], a, "255,214,150", "140,180,255", W * (0.04 + 0.12 * a));
       });
     }
+    // (the track's floodlights: each lamp's glare, and its beam, a faint cone of light from it down to its pool)
+    if (trkC) {
+      trkC.towers.forEach(function (t) {
+        var lp = [t.p[0], t.p[1] + 0.2, t.p[2]], v = sub(e, lp), dd = hypot(v[0], v[1], v[2]) || 1; if (dd > 140) { return; }
+        var a = k * clampV(26 / dd, 0.15, 0.85); flare(lp, a, "255,226,170", "150,190,255", W * (0.05 + 0.12 * a));
+        var q1 = toS(lp), q2 = toS([t.aim[0], 0.3, t.aim[2]]); if (!q1 || !q2) { return; }
+        var wx = q2[0] - q1[0], wy = q2[1] - q1[1], wl = hypot(wx, wy) || 1, nx = -wy / wl, ny = wx / wl, hw = 0.24 * wl;
+        var gb = c.createLinearGradient(q1[0], q1[1], q2[0], q2[1]); gb.addColorStop(0, "rgba(255,232,186," + (0.12 * a).toFixed(3) + ")"); gb.addColorStop(1, "rgba(255,232,186,0)");
+        c.fillStyle = gb; c.beginPath(); c.moveTo(q1[0], q1[1]); c.lineTo(q2[0] + nx * hw, q2[1] + ny * hw); c.lineTo(q2[0] - nx * hw, q2[1] - ny * hw); c.closePath(); c.fill();
+      });
+    }
     if (abs(car.x - e[0]) < SEEN) {
       var A = carAxes();
       [-1, 1].forEach(function (s) {
@@ -3493,6 +3718,7 @@
     gl.uniformMatrix4fv(SU.uVP, false, cur.vp); gl.uniform3fv(SU.uEye, e); gl.uniform3fv(SU.uFog, SKY.gnd);
     // the athletes' key held to the view, from over the viewer's left shoulder, as his head's rig is (pearl.js, uRig)
     gl.uniform3fv(SU.uKeyV, norm(add(add(sc(r, -0.5), sc(u, 0.72)), sc(f, -0.5)))); gl.uniform1f(SU.uKMax, courts.length - 1);
+    gl.uniform4f(SU.uGdn, TRK.XL, trkXR(), gdnIn(), gdnZ()); gl.uniform1f(SU.uGdnOn, GINV.u > 0 ? 1 : 0);   // (the garden flagged only while its look is on)
     cur.sun = norm(add(add(sc(r, 0.45), sc(u, 0.8)), sc(f, -0.4))); gl.uniform3fv(SU.uSunG, cur.sun); gl.uniform1f(SU.uGold, 0);
     drawCourts(); drawShadows(shadows); drawRide();
     // the athletes (at the wheel, his head alone)
@@ -3639,7 +3865,9 @@
       if (x < -1.1 || x > 1.1 || y < -1.1 || y > 1.1) { return; }
       var px = round(clampV(f.size * H / (2 * w * T35), 7, 64)), age = (gt - f.t0) / f.life;
       if (px !== lastPx) { c.font = "700 " + px + "px ui-monospace, SFMono-Regular, Menlo, 'DejaVu Sans Mono', monospace"; lastPx = px; }
-      c.globalAlpha = clampV(1 - Math.pow(age, 1.6), 0, 1); c.fillStyle = f.col;
+      var dk = GINV.u > 0.5 && asc && asc.ok && !camPlain && gdnAt(p[0], p[2]);   // (only where the characters' look is drawn)   // (in the garden while its inverse look is on: dark ink on its paper, not light added)
+      c.globalCompositeOperation = dk ? "source-over" : "lighter";
+      c.globalAlpha = clampV(1 - Math.pow(age, 1.6), 0, 1); c.fillStyle = dk ? "rgb(22, 20, 30)" : f.col;
       c.fillText(f.ch, (x * 0.5 + 0.5) * W, (1 - (y * 0.5 + 0.5)) * H);
     });
     c.restore();
@@ -3656,7 +3884,7 @@
     var res = [], st = hudBox.strip, sayE = $("say");
     if (sb.width) { res.push({ x: sb.left - 6, y: sb.top - 6, w: sb.width + 12, h: sb.height + 12, k: 9 }); }   // (k: what meeting it costs a word with no free place; the controls never)
     if (hudBox.lap) { res.push({ x: hudBox.lap.x - 6, y: hudBox.lap.y - 6, w: hudBox.lap.w + 12, h: hudBox.lap.h + 12, k: 9 }); }
-    ["ride", "donut", "drift"].forEach(function (id) { var el = $(id); if (el && !el.hidden) { var q = el.getBoundingClientRect(); if (q.width) { res.push({ x: q.left - 6, y: q.top - 6, w: q.width + 12, h: q.height + 12, k: 9 }); } } });   // (the coupe's buttons too)
+    ["ride", "donut", "drift", "skip"].forEach(function (id) { var el = $(id); if (el && !el.hidden) { var q = el.getBoundingClientRect(); if (q.width) { res.push({ x: q.left - 6, y: q.top - 6, w: q.width + 12, h: q.height + 12, k: 9 }); } } });   // (the coupe's buttons too)
     if (st) { res.push({ x: st.x - 6, y: 0, w: st.w + 12, h: st.y + max(st.h, 42) + 4, k: 9 }); }
     if (hudBox.score) { var hs2 = hudBox.score; res.push({ x: hs2.x - 6, y: 0, w: hs2.w + 12, h: hs2.y + hs2.h + 6, k: 9 }); }
     if (hudBox.banner) { res.push(hudBox.banner); }
@@ -4128,7 +4356,8 @@
       c.font = "700 12px ui-monospace, SFMono-Regular, Menlo, monospace"; var lw2 = c.measureText(l2).width; c.strokeText(l2, lx, lyy + 23); c.fillStyle = "#f3c98b"; c.fillText(l2, lx, lyy + 23);
       hudBox.lap = { x: lx, y: lyy, w: max(lw1, lw2), h: 38, text: [l1, l2] };
     }
-    var ly = max(y0 + max(sz, 26), sb.height ? sb.bottom - 8 : 0, hudBox.lap ? hudBox.lap.y + hudBox.lap.h - 4 : 0);   // (the words under the squares' buttons, and under the Super, and the lap)
+    var kb = TUT.on && $("skip") ? $("skip").getBoundingClientRect() : null;   // (and under the walk-through's Skip)
+    var ly = max(y0 + max(sz, 26), sb.height ? sb.bottom - 8 : 0, hudBox.lap ? hudBox.lap.y + hudBox.lap.h - 4 : 0, kb && kb.height ? kb.bottom : 0);   // (the words under the squares' buttons, and under the Super, and the lap)
     hudLow = ly + 8;
     var sy = round(ly + 16) + "px"; if (sayEl.style.top !== sy) { sayEl.style.top = sy; }
     cueDraw(c, W, H, toS, glyph, m, sb);
@@ -4160,7 +4389,7 @@
     canvas.addEventListener("webglcontextlost", function (e) { e.preventDefault(); stop(); });
     canvas.addEventListener("webglcontextrestored", function () {
       if (!body) { return; }
-      try { trkC = null; sceneInit(); bodyMeshes(body); asc = null; ascInit(); } catch (x) { YT.warn(x); asc = null; }   // (the track's mesh built again on the next draw)
+      try { trkC = null; GDN = {}; PORTAL.mesh = null; sceneInit(); bodyMeshes(body); asc = null; ascInit(); } catch (x) { YT.warn(x); asc = null; }   // (the track's mesh built again on the next draw)
       start();
     });
     // the first frame, before his body is built: black under the loading words (index.html), and told
@@ -4176,7 +4405,8 @@
       return YT.load();
     }).then(function (saved) {
       courtsInit(saved);
-      me = athlete(palMe, 2.2, COURT.L + 5, 0, true);
+      var pa = $("portal"); if (pa) { pa.href = window.PB_PORTAL || PORTAL.SITE; pa.textContent = STR.portal.link; pa.setAttribute("aria-label", STR.portal.linkSr); }   // (the portal's way: the Artifact's, or the site's page)
+      me = athlete(palMe, 2.2, COURT.L + 3, 0, true);   // (on the run-off behind the baseline, out of the garden: its look is for walking onto it)
       bindInput();
       courtWhere();
       if (!TUT.done && wonCount() === 0) { tutStart(); }
@@ -4211,7 +4441,7 @@
                }
                input.stick = null; return !!(court.m && court.m.meterOn);
              },
-             ride: ride, car: car, cur: cur, CAR: CAR, TRK: TRK, trkAt: trkAt, groundAt: groundAt, LAP: LAP, laps: function () { return courts.laps; }, STAIR: STAIR, GLIDE: GLIDE, BOUND: BOUND, DONUT: DONUT, rideToggle: rideToggle, stairAt: stairAt, stairWay: stairWay, topPath: topPath, topAt: topAt, stairEnd: stairEnd, TOP: TOP, carGap: carGap,
+             ride: ride, car: car, cur: cur, CAR: CAR, TRK: TRK, PORTAL: PORTAL, gdnChunk: gdnChunk, gdnAt: gdnAt, gdnKey: gdnKey, GB: GB, GINV: GINV, tutSkip: tutSkip, trkMeshInfo: function () { trkMesh(); return { towers: trkC.towers.length, ledX: trkC.ledX.n, ledZ: trkC.ledZ.n }; }, trkAt: trkAt, groundAt: groundAt, LAP: LAP, laps: function () { return courts.laps; }, STAIR: STAIR, GLIDE: GLIDE, BOUND: BOUND, DONUT: DONUT, rideToggle: rideToggle, stairAt: stairAt, stairWay: stairWay, topPath: topPath, topAt: topAt, stairEnd: stairEnd, TOP: TOP, carGap: carGap,
              hide: function (on) { hideAth = on; }, fx: function () { return fx; }, camNow: function () { return { e: cur.eye.slice(), yaw: cur.yaw, pitch: cur.pitch }; },
              camAt: function (e, yaw, pitch, plain) { camOver = e && { e: e, yaw: yaw, pitch: pitch }; camPlain = !!plain; } };
   } };

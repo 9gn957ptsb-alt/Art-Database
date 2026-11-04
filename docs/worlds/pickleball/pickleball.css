@@ -35,6 +35,10 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 /* (the walk-through's last step waits for it: a steady gold outline; the ripple round it is the HUD's, on the beat) */
 #super.nudge { box-shadow: 0 0 0 3px rgba(243, 201, 139, 0.45); }
 body:not([data-phase]) #super, body[data-phase="walk"] #super { display: none; }
+/* the walk-through's Skip (the artist, 4 Nov 2026: "Add a skip button at the very beginning to skip the tutorial"): top
+   left under the courts' squares, plain (gold is the walk-through's "do this") */
+#skip { left: calc(12px + env(safe-area-inset-left)); top: calc(46px + env(safe-area-inset-top)); min-width: 88px; min-height: 48px; padding: 0 14px; white-space: nowrap; }
+#skip[hidden] { display: none; }
 body[data-phase]:not([data-phase="walk"]) .top { right: calc(118px + env(safe-area-inset-right)); }
 /* the coupe's button (the artist, 29 Oct 2026: "I want you to be able to drive the orange coupe to get to your court
    instead of being able to click on the court number and teleport there"): Drive beside it, Get out in it, low on the
@@ -55,4 +59,11 @@ body[data-phase]:not([data-phase="walk"]) #donut { display: none; }
          padding: 0 16px; border-color: var(--gold); color: var(--gold); font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
 #drift[aria-pressed="true"] { background: var(--gold); color: var(--bg); }
 #drift[hidden] { display: none; }
+/* the portal's way through (the artist, 4 Nov 2026), shown while he is in it, in the middle of the screen */
+#portal { position: fixed; left: 50%; top: 58%; transform: translateX(-50%); min-height: 48px; padding: 0 20px; display: flex; align-items: center;
+          border: 1px solid #9ff3ff; border-radius: 999px; background: var(--pane); color: #9ff3ff; font-weight: 700; letter-spacing: 0.12em;
+          text-transform: uppercase; text-decoration: none; white-space: nowrap; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; }
+#portal[hidden] { display: none; }
+#portal:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+body[data-phase]:not([data-phase="walk"]) #portal { display: none; }
 body[data-phase]:not([data-phase="walk"]) #drift { display: none; }

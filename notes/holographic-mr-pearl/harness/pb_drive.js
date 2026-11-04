@@ -5,12 +5,13 @@
 // jump off at a certain height I want Mr Pearl to use his hat like a paraglider and be able to glide down anywhere
 // below"). With four courts won: the courts' numbers are no longer buttons; beside the coupe its button says Drive, a
 // real tap (the F key on the desk) gets him in; driven by the stick (the keys on the desk) along the courts and then
-// straight at the open court, flat out, it never gets onto it or its run-off (the match is not begun under it); out,
+// straight at the open court, flat out, it drives onto it, nothing stopping it (the artist, 4 Nov 2026: "Make sure that I
+// can drive anywhere in the coupe ... there are no physical barriers"; no match is begun from in it); out,
 // he stands clear of it, runs into the open court's middle (no match: the artist, 4 Nov 2026, "Users need to be able to
 // run anywhere when they are not in a game") and onto its gold circle, its match begun; nothing else stops it (the artist, 30 Oct 2026:
 // "There should be nothing that stops the orange coupe besides the highest court from moving. you should be able to
 // drive around all the courts like a race car track"): through a won court's net, past a pole, round the open court's
-// far end, only the far edge of the ground; a court opened under it puts it off; at the staircase's foot the stick up
+// far end, on past the world's old edge; left on a court as it opens, it stays as it was put; at the staircase's foot the stick up
 // climbs (a step for each court won), level round and out along the board off its top step (the artist, 4 Nov 2026:
 // "lead out like a diving board perpendicular to the courts"), off its end he leaps toward the courts, falling from 1.5 m his hat opens as a canopy, the
 // stick steers it, and he lands; a tap on the stairs jumps off; under his hat down onto the open court, no match, and
@@ -99,12 +100,14 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     };
     drive(k * C.GAP - 9, C.L + 6.5, 12, 3);
     const mid = [c.x, c.z];
-    drive(k * C.GAP, 0, 4);   // (straight at the court)
+    for (let i = 0; i < 240 && c.v > 1; i++) { window.__in(-1, 0); d.run(1 / 60); }   // (slowed, to aim at it: at full speed the turn is wide and nothing now stops it past the court)
+    drive(k * C.GAP, 0, 4, 1.5);   // (straight at the court, onto its middle: nothing stops it)
+    for (let i = 0; i < 180 && c.v > 0.3; i++) { window.__in(-1, 0); d.run(1 / 60); worst = Math.min(worst, gap()); }   // (braked on it: parked on the open court)
     window.__off(); for (let i = 0; i < 120; i++) { d.run(1 / 60); worst = Math.min(worst, gap()); }
     return { mid, worst, began, top, at: [c.x, c.z, c.yaw], k, mode: d.ride.mode };
   });
   check(r3.mid[0] > r3.k * 12 - 14, `driven along the courts to the open one, court ${r3.k + 1} (to x ${r3.mid[0].toFixed(1)}; ${r3.top.toFixed(1)} m/s at most)`);
-  check(r3.worst >= -0.02 && !r3.began, `driven straight at the open court flat out: never onto it or its run-off (its nearest ${r3.worst.toFixed(3)} m clear), no match begun under it`);
+  check(r3.worst < 0 && !r3.began, `driven straight at the open court flat out: onto it, nothing stopping it (${r3.worst.toFixed(3)}), no match begun from in it`);
   await shot("2parked");
   // out: he stands clear of it, runs into the open court's middle (nothing begins), then onto its gold circle: its match
   await press();
@@ -136,21 +139,21 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     // (round the open court's far end: down the street past its end, across, up the far side, never on its run-off)
     const box = [k * C.GAP - 5.5, k * C.GAP + 5.5, -C.L - 3.5, C.L + 3.5], gap = () => Math.min(...[h, -h].map((q) => { const px = c.x + Math.sin(c.yaw) * q, pz = c.z - Math.cos(c.yaw) * q, qx = Math.max(box[0], Math.min(box[1], px)), qz = Math.max(box[2], Math.min(box[3], pz)); return (px > box[0] && px < box[1] && pz > box[2] && pz < box[3]) ? -1 : Math.hypot(px - qx, pz - qz) - R; }));
     c.x = k * C.GAP - 14; c.z = C.L + 9; c.yaw = Math.PI / 2; c.v = 0; let worst = 99;
-    const go = (tx, tz, sec) => { for (let i = 0; i < sec * 60; i++) { const want = Math.atan2(tx - c.x, -(tz - c.z)), err = Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)); if (Math.hypot(tx - c.x, tz - c.z) < 3) { break; } window.__in(Math.abs(err) > 1.2 ? 0.6 : 1, Math.max(-1, Math.min(1, err * 2.5))); d.run(1 / 60); worst = Math.min(worst, gap()); } };
+    const go = (tx, tz, sec) => { for (let i = 0; i < sec * 60; i++) { const want = Math.atan2(tx - c.x, -(tz - c.z)), err = Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)); if (Math.hypot(tx - c.x, tz - c.z) < 3) { break; } window.__in(Math.abs(err) > 0.5 && c.v > 9 ? -0.6 : Math.abs(err) > 1.2 ? 0.6 : 1, Math.max(-1, Math.min(1, err * 2.5))); d.run(1 / 60); worst = Math.min(worst, gap()); } };
     go(k * C.GAP + 14, C.L + 9, 8); go(k * C.GAP + 14, -C.L - 9, 8); go(k * C.GAP - 14, -C.L - 9, 8);
     o.round = c.z < 0 && c.x < k * C.GAP; o.worst = worst;
     c.x = -40; c.z = 0; c.yaw = -Math.PI / 2; c.v = 0;
     for (let i = 0; i < 300; i++) { window.__in(1, 0); d.run(1 / 60); }
     o.edge = c.x; o.x0 = d.BOUND.x0;
-    window.__off(); d.ride.mode = null; c.x = k * C.GAP; c.z = 1; c.yaw = 0; c.v = 0; d.run(0.1);   // (the open court's middle: put off it)
+    window.__off(); d.ride.mode = null; c.x = k * C.GAP; c.z = 1; c.yaw = 0; c.v = 0; d.run(0.1); o.stay = Math.hypot(c.x - k * C.GAP, c.z - 1);   // (the open court's middle: left there)
     o.off = Math.min(...[h, -h].map((q) => { const px = c.x + Math.sin(c.yaw) * q, pz = c.z - Math.cos(c.yaw) * q, qx = Math.max(box[0], Math.min(box[1], px)), qz = Math.max(box[2], Math.min(box[3], pz)); return (px > box[0] && px < box[1] && pz > box[2] && pz < box[3]) ? -1 : Math.hypot(px - qx, pz - qz) - R; }));
     o.R = R; return o;
   });
   check(r5.net < -1, `through a won court's net, nothing stopping it (z ${r5.net.toFixed(2)})`);
   check(r5.pole < -1, `past a floodlight pole, nothing stopping it (${r5.pole.toFixed(2)} m past)`);
-  check(r5.round && r5.worst >= -0.02, `round the open court's far end, a track round all the courts, never on its run-off (${r5.worst.toFixed(3)} m clear)`);
-  check(r5.edge >= r5.x0 + r5.R - 0.03 - 1.3 && r5.edge < r5.x0 + 3, `only the far edge of the ground stops it (x ${r5.edge.toFixed(2)})`);
-  check(r5.off >= -0.02, `left standing on a court as it opened: put off its run-off (${r5.off.toFixed(3)} m clear)`);
+  check(r5.round, `round the open court's far end, a track round all the courts`);
+  check(r5.edge < r5.x0 - 5, `on past the world's old edge, nothing stopping it (x ${r5.edge.toFixed(2)}; the old edge ${r5.x0})`);
+  check(r5.stay < 0.01, `left standing on the open court: it stays as it was put (${r5.stay.toFixed(3)} m)`);
   // the staircase: up from its foot, a step for each court won, on past the top, the hat, steering, down
   await p.evaluate(() => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: 5, rally: 4, tut: 1, tips: 255 })); });
   await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
@@ -253,8 +256,8 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   if (desk) { await p.keyboard.press("f"); } else { const q = await D(() => { const r = document.getElementById("ride").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); await p.touchscreen.tap(q[0], q[1]); }
   const r13 = await D(() => window.Pickleball.debug().ride.mode);
   check(r12.shown && r12.mode === null && r13 === null, `paused, the button does nothing (it showed "Drive" beside the coupe: ${JSON.stringify(r12)})`);
-  // the way out at other counts: one court won (the level way most of a turn round, a low board, the running start held
-  // short of the open court's run-off: no bounce off it in the air) and six (the level way 324 degrees round, widened out
+  // the way out at other counts: one court won (the level way most of a turn round, a low board, off it at any speed:
+  // nothing in the way where it comes down) and six (the level way 324 degrees round, widened out
   // past the lower steps); level all along, off the board's end toward the courts; a tap on the board off its side
   for (const won of [1, 6]) {
     await p.evaluate((w) => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: w, rally: 4, tut: 1, tips: 255 })); }, won);
@@ -288,7 +291,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     });
     check(rw.clash === 0, `${won} won: the level way ${rw.arc.toFixed(1)} m round (${rw.drift ? "widened out past the steps" : "on the steps' circle"}), clear of the steps below`);
     check(Math.abs(rw.lvlMinY - rw.y) < 0.02 && Math.abs(rw.lvlMaxY - rw.y) < 0.02 && rw.travelled > rw.arcLen - 2 && rw.maxTurn < 0.1, `${won} won: level all along it at ${rw.y.toFixed(1)} m (${rw.travelled.toFixed(1)} of ${rw.arcLen.toFixed(1)} m), its turn smooth`);
-    check(rw.off && Math.abs(rw.off.yaw - Math.PI / 2) < 0.02 && !rw.back && rw.landX != null && rw.landX + 2.15 < rw.wall - 0.3, `${won} won: off the board toward the courts at ${rw.off && rw.off.v.toFixed(1)} m/s, down at x ${rw.landX && rw.landX.toFixed(1)}, short of the open court's run-off (${rw.wall.toFixed(1)}), never bounced back`);
+    check(rw.off && Math.abs(rw.off.yaw - Math.PI / 2) < 0.02 && !rw.back && rw.landX != null, `${won} won: off the board toward the courts at ${rw.off && rw.off.v.toFixed(1)} m/s, down at x ${rw.landX && rw.landX.toFixed(1)}, never bounced back`);
     check(rw.tapOff, `${won} won: a tap on the board jumps him off its side, not back onto it`);
   }
   // Mr Plan's donut: a game he wins with the coupe beside the court; and none with it far off
@@ -388,7 +391,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
       await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: q[0], y: q[1], id: 3 }] });
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     }
-    await p.waitForTimeout(60);
+    await p.waitForFunction(() => { const r = window.Pickleball.debug().ride; return !!(r.dn || r.dnQ); }, null, { timeout: 3000 }).catch(() => {});   // (the press taken by a frame: under load one can take a while)
     await D(() => { window.Pickleball.debug().YT.paused = true; });
   }
   const bd = await D(() => {

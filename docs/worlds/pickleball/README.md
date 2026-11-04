@@ -39,8 +39,9 @@ way back (at the screen's edge when it is off it) and the serve begins there. On
 end, holds him to his court (and the walk-through, which keeps him to court one). A Super pressed while he is off his
 court waits till he is back on it; the match's recording keeps him, standing, at his court's edge while he is off it, so
 a won court's replay never sends its Mr Pearl across the others; Mr Plan's donut is seen from the court's middle, not
-from wherever he has gone. The coupe and the staircase's post are
-solid to him wherever he runs. The court tip says it ("Step onto the open
+from wherever he has gone. Nothing is solid to him between games (the artist, 4 Nov 2026: "there are no physical
+barriers"): he walks through the coupe, the staircase's post, the nets and poles, and on past the track as far as he
+goes. The court tip says it ("Step onto the open
 court's gold circle to play Mr Plan, or drive the orange coupe to it"), its ◆ over the circle and its trail to it.
 
 **A first game is walked through** (the artist, 28 Oct 2026: "The first court should be a walk-through, that takes you
@@ -61,7 +62,13 @@ which a golden arrow points to the super button in the top right. This will be a
 the first game because once the user hit the super button Mr Pearl will go on to win the point, but will maintain
 having another super for the first game. Once Mr Pearl wins that first point and returns to the second serve the
 walkthrough is over and the user is winning 1-0 with another super"). With no court won and the walk-through not yet
-done, court one's match begins on the first frame, its gold circle there at once, he three steps from it. On the left half a hand's ghost touches the screen, a gold ring where it lands, and pushes
+done, court one's match begins on the first frame, its gold circle there at once, he three steps from it. From that
+first moment to its end a plain **Skip tutorial** button stands top left under the courts' squares (the artist, 4 Nov
+2026: "Add a skip button at the very beginning to skip the tutorial"): pressed (a tap, a click, or Space or Enter with
+its focus), the walk-through is done and saved, its match gone, and he stands between games three steps from court
+one's gold circle, as after the walk-through and a reload, the welcome said, the first tips to come the usual way
+(`pb_skip.js`: at the very beginning, a finger's size, clear of the Super, the squares and the score; at a step it
+stands still at too; by the keyboard, nothing struck; paused, nothing; after a reload, none). On the left half a hand's ghost touches the screen, a gold ring where it lands, and pushes
 forward along a line of gold dots, then lifts, each 1.6 s (on a desk, with the W key beside it); it gives way while his
 own thumb moves him. Each later time a touch is wanted, its gesture too (the artist, 29 Oct 2026: "There should be touch
 gestures as well for each time the user is supposed to touch the screen during the walkthrough"): the hand's ghost where
@@ -137,14 +144,17 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   desk); in it, Get out (at speed it brakes to a stop for him first). It steers as a car does (a bicycle's model, 2.55 m
   between the axles: the front wheels turned, less the faster it goes, the back following): the stick up or W its
   throttle (24 m/s flat out; eased off, a coast), left and right or A and D its wheel (W and D together both whole), down
-  or S a brake and then reverse; the view comes round behind it and stands back. Only the open court's run-off stops it
-  (two discs, its front and back, pushed out of it with its corners kept off too; head on, a bump back, at a slant a
-  slide), so it is never on the court whose match it would begin; nothing else does (the artist, 30 Oct 2026: "There
-  should be nothing that stops the orange coupe besides the highest court from moving. you should be able to drive
-  around all the courts like a race car track"): through the nets and past the poles of the courts won, round the
-  open court's far end, to the edge of the ground 25 m past the newest court and far round the rest; a court that opens
-  under it puts it off. It moves in steps of at most half a metre, so a slow frame never carries it onto the court. Out
-  by his door, he stands clear of it and walks on. A match begins only on foot, on the open court's gold circle.
+  or S a brake and then reverse; the view comes round behind it and stands back. Nothing stops it (the artist, 4 Nov
+  2026: "Make sure that I can drive anywhere in the coupe, and there are no barriers to where I can get out, even the
+  highest level that I am next to play. Even if I start the game [and] the coupe is on the court, that is my fault and
+  have it be in the way, there are no physical barriers"; it was once kept off the open court): through the nets and
+  past the poles, onto the open court and across it, round the track and on past it as far as it is driven, the ground
+  going on, dark, under it. Out by his door wherever it stands, the open court too, and on the staircase's ramp out
+  onto its steps just behind it, the coupe held there (in again from the steps beside it; a court won keeps it on the
+  ramp, risen with the way out, on the board's tip if it was there). Left on the open court it stays there, in the way
+  (he walks through it): a court won or opened under it leaves it be, Mr Plan's donut goes round a circle at its side (its view's way fixed:
+  no whip round as he runs past the court's middle),
+  and a match begins only on foot, on the open court's gold circle, the coupe or no (`pb_free.js`).
 - *The staircase* is a ramp of steps wound about a post beside the coupe, wide enough to drive (the artist, 30 Oct
   2026: "Have the spiral staircase, be wide enough for the orange coupe to be able to drive on it that way someone can
   drive up in the coop and launch from the top where Mr. Pearl stays in the car, but still uses his hat as a paraglider
@@ -164,9 +174,8 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   comes round more than half a turn, and so over the lower steps, it widens out from the post as it goes (3.6 m, from a
   sixth of a turn in to a half), a lane of its own outside them; nearer the post it hangs from beams, farther out it stands
   on posts. On it the coupe is no longer held to the steps' 14 m/s: flat out to 24, a running start, and off the end it
-  flies on toward the courts (five courts won: off from 3 m at 21 m/s, its hat open over it, down by court three), never
-  so fast that it would come down on the open court's run-off (with one court won, 12.5 m/s at most: a hop onto court
-  one); in the air the run-off stops it, it never bounces back off it. On foot he runs it and leaps off its end straight
+  flies on toward the courts (five courts won: off from 3 m at 21 m/s, its hat open over it, down by court three), at
+  any speed, wherever it comes down. On foot he runs it and leaps off its end straight
   on, or a tap jumps him off its side, away from the post. With ten courts won it is 6 m up after half a turn level, high
   over the first turn's steps, a glide to court five. `pb_drive.js` drives it with one, five and six won.
 - *His hat*: falling from 1.5 m or more, it opens over him as a canopy, three and a half times its size, upright, on
@@ -188,9 +197,10 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   the corners of the tracks like your going up a bowl. Then have it level at the midpoint between the corners. Add a
   drift button that allows you drift when coming up on corners. The car needs to be much easier to control, like your
   play Grand Tarismo. Have a start line on the track that times your lap. Keep track of the top 3"): an oval 8 m wide
-  round every court and the staircase, its straights along the courts 18.5 m out from their middle line, its bends half
-  circles about the staircase (x −15) and about the open court, so every court won makes it 24 m longer (146 m a lap
-  with one court, 218 with four). Across it, from the inner edge, the ground rises as a circle's arc to 1.5 m at the
+  round every court and the staircase, its straights along the courts 25.2 m out from their middle line (18.5 m, then
+  half a court's length further, the artist, 4 Nov 2026: "Make the track a half a court length back"), its bends half
+  circles about the staircase (x −15) and about the open court, so every court won makes it 24 m longer (188 m a lap
+  with one court, 260 with four). Across it, from the inner edge, the ground rises as a circle's arc to 1.5 m at the
   outer edge (a bowl), all round the bends, the rise easing off along each straight to level at its middle; past the
   outer edge a berm runs back down over 4 m. Tarmac in `=`, lit by itself (the floodlights do not reach it), red and
   white kerbs round the bends, a white line along each edge, and a chequered line across the near straight at its
@@ -208,7 +218,8 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   the track, and the lap running is void), to the hundredth; crossed the wrong way,
   out of the coupe, or a court won: no lap. In the coupe the lap runs under the courts' squares (`LAP 0:12.34`), the one
   just done for three seconds (`BEST` or its place), and this track's best three (`TOP`), kept with the save in
-  milliseconds; each lap is said as it ends. A court won makes the track longer, so its best three start again
+  milliseconds; each lap is said as it ends. A court won makes the track longer, so its best three start again;
+  so do times from before the track moved half a court out (its shape is kept with them).
   A tap on the screen or Space starts a donut only when the coupe is nearly stopped, so a stray one mid-lap spoils
   nothing (the Donut button still does one at any speed, a stop first). Hits on the ground's edge are measured along
   the way the coupe goes, so a drift against it is turned along it and slowed, not a rail. Everyone stands on the
@@ -218,6 +229,52 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   (`pb_track.js`, phone and desk: where it lies with one court won, four and twelve, the bowl and no step in the ground,
   a bot's laps timed and saved and back after a reload, the wrong way and a cut, the grip, the Drift by a real finger
   and by Shift, standing on the bowl).
+- *Its lights* (the artist, 4 Nov 2026: "Have spotlight floodlights lights along the corners of the track and accent
+  linear lighting along the edges of the track"): four floodlight towers round the outside of each bend, 13 m up past
+  the berm, each lamp aimed down at the track's middle line, its pool of light baked into the tarmac's and the kerbs'
+  colours, its glare and a faint beam down to its pool drawn over the view; and a light strip along each edge all the
+  way round, cyan along the inner, violet along the outer, glowing strokes in the characters. The Donut button is gone
+  while the coupe is on the track ("Take the donut button off when the coupe is driving on the track"); a tap or Space
+  still does one there when it is nearly stopped.
+- *The garden* (the artist, 4 Nov 2026: "have beautiful plants and flowers fill in the space but in a mix style of a
+  Japanese Gardens and Claude Monet's house garden where he painted his Lillie's", then the same day: "Make the
+  surrounding garden a lot simpler and uniform"): the space between the courts and the track, in characters as
+  everything is, the same all the way round in bands that follow the track's inner edge: a gravel walk by the courts,
+  a lily canal between stone edges (its pads in two even rows, a pink or a white flower on every other one: Monet's),
+  a moss bank of clipped round shrubs every 3 m (a Japanese garden's karikomi), and at the two ends, round the staircase
+  and past the open court, gravel raked in lines along the same curve. Decoration only: he and the coupe pass through
+  it. About 2,000 vertices a court (the first garden's were 15,000 to 18,600), built a court's length at a time, the
+  nearest first and one a frame, freed far off; its ground and water drawn within sight, its shrubs and flowers within
+  66 m, lit quietly. It recedes while he plays a match, fading out over 0.6 s as it begins and back as it ends: in the
+  match's view it lies behind Mr Plan, where the pearls are seen against it, and with it there the pearls measured
+  (`pb_measure.js`, their light over their ground) 11% (phone) and 19% (desk) fainter than before the garden, even dimmed
+  to a third still 6% and 12%; without it in play, 7% and 4% clearer than before it (`pb_garden.js`: nothing of it over
+  a court's block, a pole, the track or the staircase).
+- *The garden's inverse* (the artist, 4 Nov 2026: "When you walk onto the garden area with Mr. Pearl or driving through
+  it in the coupe, I want the aesthetic of everything that falls visually within that region, defining the garden, to
+  be the opposite in presence as far as brightness [and] detail to the current ASCII aesthetic ... but just in the
+  garden area. Areas outside of that garden area remain in the same aesthetic as it currently is"): while he, on foot or
+  in the coupe, is in the garden, everything seen standing in it (its ground, water and plants, the coupe, the
+  staircase, him) is drawn in reverse video, the character terminal's own inverse: each cell's ground light in the
+  cell's own hue (the darker the cell was, the lighter), its character cut in dark ink, the same characters. The courts,
+  the track and the sky stay as they are, and so does all of it while he is off the garden; the change fades in and out
+  over 0.35 s. The region is the ground inside the track's inner edge and outside the courts' block (their run-offs,
+  seams and poles), the same in the game and in the shader that flags it (`pb_inverse.js`: the region holds every part
+  of the garden and none of the courts or the track; from one fixed view the walk and the water 5.6 times lighter with
+  him in it, the court and its run-off the same; a still frame still). He begins a game on the court's run-off behind
+  its baseline, out of the garden, and walks onto it.
+- *The portal* (the artist, 4 Nov 2026: "make an almost invisible tunnel, like the black hole in the movie interstellar
+  and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"): over the lily
+  canal at the staircase's end a black sphere, hardly there but for its rings (the light of a disc round it, tilted and turning, and that
+  light bent round its edge facing the view), faint from afar, brighter close by; no haze lifts its black. In it, on
+  foot, a way through: `Holographic Mr Pearl ↗` (a tap, a click, or Enter), opening the Holographic Mr Pearl Artifact
+  from the Artifact and its page on this site (`../rocket/`) from the site. Inside YouTube none, as a Playable may not
+  lead out ("a way through to another game, soon"): the Playable's bundle carries no link at all, and the build fails
+  if one is left in it. Later (the artist, the same day: "eventually we are going to use holographic Mr. Pearl Pickleball as a
+  framework to develop other games, specifically a quarterback game ... have it be a portal to holographic Mr. Pearl
+  quarterback ... you can actually play both games while being in one playable or app. Implement this when we have
+  holographic Mr. Pearl quarterback set up later"): the portal leads into Holographic Mr Pearl Quarterback inside the
+  same Playable.
 - *Its music* (the artist, 4 Nov 2026: "I want musical notes always coming out of the car when someone is driving it"):
   whenever someone is at the wheel, Mr Pearl (driving, parked in it, on the ramp, in the air) or Mr Plan in his donut,
   notes (♪ ♫ ♬ ♩) come out of its open windows, either side, five a second on any display, in the driver's own colours;
@@ -226,8 +283,7 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   that when I am driving the coupe forward there is a button that says donut and that's the same animation as Mr. plan
   doing it happens to you in the coupe when pushing the button"): in the coupe on the ground a Donut button stands over
   Get out; it (or a tap, Space on the desk) drives the same two turns, its tail out and smoking, round a circle at its side,
-  the side away from the open court first, kept clear of that court's run-off, the ground's edge and the staircase (no
-  room either side: none); at speed, a stop first, braking as for the way out; it parks where it began, him still in
+  the side away from the open court first, only the staircase kept clear (no room either side: none); at speed, a stop first, braking as for the way out; it parks where it began, him still in
   it. The view is Mr Plan's donut's: from outside the circle, on its middle, 5.5 m up and 12.5 m off (or as far as the
   whole circle needs to fit the screen's width: some 22 m on a phone held upright), eased in, and handed back to his own
   as it parks; from behind the coupe the way the view looks, turned round the circle till its eye is clear of the
