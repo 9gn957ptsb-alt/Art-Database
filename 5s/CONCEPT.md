@@ -38,6 +38,7 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Also make the hand gesture in the logo have interesting but simple degrees of transparency"
 - "The two stars like this I like in the logo" (shown: the soft eight-point starburst on the crystal hand's fingertip; the
   hand's own two, at the fingertip and at the glass's foot, stay; the drawn "+" stars stay out)
+- "I’m talking about the ones circled in green, get rid of thise" (circled: the three "+" stars under the hand)
 
 ## The purpose (said after, the same day; it frames everything below)
 
