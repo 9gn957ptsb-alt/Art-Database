@@ -158,7 +158,7 @@
   // each poem's glyph set: the letters of its lines (a frame's poem: its own, a kin frame's the next, the garden's the last)
   const poemText = [];
   story.forEach((s) => { if (s.kind === "line") poemText[s.qi] = (poemText[s.qi] || "") + LINES[s.line]; });
-  const SETS_Q = [...poemText].map((t) => [...new Set((t || "").replace(/\s+/g, ""))].join("")).slice(0, 8);   // (8 at most: glyphlight.js)
+  const SETS_Q = [...poemText].map((t) => [...new Set((t || "").replace(/\s+/g, ""))].join("")).slice(0, 13);   // (13 at most: glyphlight.js)
   const setFor = (s) => SETS_Q[s.qi >= 0 && s.qi < SETS_Q.length ? s.qi : SETS_Q.length - 1] || "";
   /** Frame f's point in Glyph Light's slider space (glyphlight.js's field: a frame's settings, and the motions' terms). */
   function pointOf(f) {

@@ -55,7 +55,7 @@
  *                                // invert, level, seed and text dissolve cell by cell (the golden R2 sequence).
  *     text: (i, j) => ({ text, at }),  // style "text": the stretch of text frame (i, j) writes, from letter `at`, in its
  *                                // own reading order (a string, as before: one text, read across the plane).
- *     sets: [ ... ],             // more glyph sets (glyphs or names in SETS), up to 8 with `set` (index 0); one atlas,
+ *     sets: [ ... ],             // more glyph sets (glyphs or names in SETS), up to 13 with `set` (index 0); one atlas,
  *                                // each its own ink; the cells take the widest set's aspect
  *     ahead: [ ... ],            // sets a field will use, put in the atlas at the start (no rebuild when a frame using
  *                                // one first comes into view), without changing the cells' aspect as `sets` does
@@ -110,7 +110,7 @@
   const STYLES = { ascii: 0, dots: 1, grain: 2, scan: 3, text: 4 };
   const STYLE_NAMES = ["ascii", "dots", "grain", "scan", "text"], MODE_NAMES = ["full", "mono", "gold", "blue"];
   const MAXG = 128;                                     // the most glyphs a text could carry (a string text: as before)
-  const MAXSETS = 8, MAXLETTERS = 1024, TXW = 4096, FW = 5, MAXFRAMES = 64;
+  const MAXSETS = 13, MAXLETTERS = 1024, TXW = 4096, FW = 5, MAXFRAMES = 64;
   const BLENDS = { normal: "source-over", lighten: "lighten", darken: "darken", screen: "screen", multiply: "multiply",
     overlay: "overlay", "color-dodge": "color-dodge", "color-burn": "color-burn", "hard-light": "hard-light",
     "soft-light": "soft-light", difference: "difference", exclusion: "exclusion", plus: "lighter", "plus-lighter": "lighter" };
@@ -198,7 +198,7 @@ uniform vec2 lohi;
 uniform vec3 tone;
 uniform float detail, invert, glowAmt, thresh, under, jitter, dotArea, bayer[16];
 uniform int mode, style, seed, setBase, setN, level, textBase, textStart, textLen, lettersN, useField, maps, hold;
-uniform ivec2 SETB[8];               // each set's first slot and its glyphs
+uniform ivec2 SETB[13];              // each set's first slot and its glyphs (13 sets: 8 until 4 Nov 2026)
 uniform vec2 region, fwo; uniform float seam, gref; uniform ivec2 fwin;
 uniform vec4 mapRect; uniform ivec2 MS[5];
 uniform ivec4 HG;                    // the guard's first block on the plane and its blocks
@@ -1158,7 +1158,7 @@ void main(){
       gl.uniform1i(u.level, fieldOn ? 0 : Math.max(0, Math.min(2, Math.round(+o.level || 0))));
       gl.uniform1i(u.textBase, textSlot); gl.uniform1i(u.textStart, baseText.start); gl.uniform1i(u.textLen, typeof o.text === "string" ? baseText.len : 0);
       gl.uniform1i(u.lettersN, letterArr.length);
-      const sb = new Int32Array(16); setSlots.forEach((s, i) => { if (i < 8) sb.set(s, i * 2); });
+      const sb = new Int32Array(2 * MAXSETS); setSlots.forEach((s, i) => { if (i < MAXSETS) sb.set(s, i * 2); });
       gl.uniform2iv(u.SETB, sb);
       gl.uniform1i(u.useField, fieldOn ? 1 : 0);
       gl.uniform1i(u.maps, mapsOn);
