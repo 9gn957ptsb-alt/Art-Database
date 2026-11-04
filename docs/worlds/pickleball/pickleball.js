@@ -2509,11 +2509,15 @@
   // (then, the artist, 4 Nov 2026: "I dont like how the camera swivels now ... it's too much and makes it harder to keep
   // track of all the balls. Find a middle ground between how it used to be and how it is now": half the turn, half the
   // speed, and it holds until the pearl is nearly at the edge: half the swivel, pb_neck.js, 0.36 rad a second from 0.73)
-  var NECK = { max: 0.45, band: 0.95, rate: 1.0, w: 8 };
+  // (and then, the same day: "when the camera swivels to the left or right it needs to snap back to straight on
+  // quicker": it turns only as far as the pearls need and no longer holds a turn they no longer need, straight on
+  // between his strokes; and back toward straight on it goes NECK.back, on a stiffer spring, NECK.wBack; out as before.
+  // hold: true is the neck before it, kept for pb_neck.js to compare)
+  var NECK = { max: 0.45, band: 0.95, rate: 1.0, w: 8, back: 3.0, wBack: 18, hold: false };
   function neckWant(cm, t) {
     var H = Math.atan(T35 * canvas.clientWidth / max(1, canvas.clientHeight)), h = TP.HEAD * (view.zk || 1) * Math.cos(REST - AIM);
     var coming = live(cm).filter(function (b) { return b.last === "them" && !(b.bounces > 0 && b.z - me.z > 0.3); }).sort(function (a, b) { return ((a.mark && a.mark.t) || 9e9) - ((b.mark && b.mark.t) || 9e9); });
-    if (!coming.length) { return cm.phase === "rally" ? t : 0; }   // (between his strokes it holds; the point over, it comes home)
+    if (!coming.length) { return NECK.hold && cm.phase === "rally" ? t : 0; }   // (nothing coming at him: straight on; the point over, home)
     // (the bearings a point allows the view, its middle turned to: inside K of the half width, the turn about view.s)
     var band = function (K, ps) {
       var lo = -9, hi = 9, ph = K * H;
@@ -2527,8 +2531,8 @@
     var b0 = coming[0], ps = [[[b0.x, b0.z]]]; if (b0.mark && b0.bounces === 0) { ps.push([[b0.mark.x, b0.mark.z]]); }
     coming.slice(1).forEach(function (b) { ps.push([[b.x, b.z]]); }); coming.slice(1).forEach(function (b) { if (b.mark && b.bounces === 0) { ps.push([[b.mark.x, b.mark.z]]); } });
     var fit = function (K) { var want = ps[0], bd = band(K, want); for (var i = 1; i < ps.length; i += 1) { var nb = band(K, want.concat(ps[i])); if (nb[0] <= nb[1]) { want = want.concat(ps[i]); bd = nb; } } return bd; };
-    var o = fit(NECK.band);   // (in it: it holds; out of it, to its edge, so it follows the pearl as it goes)
-    return clampV(o[0] <= o[1] ? clampV(t, o[0], o[1]) : (o[0] + o[1]) / 2, -NECK.max, NECK.max);
+    var o = fit(NECK.band);   // (as near straight on as the band allows: within it, straight; out of it, to its edge, following the pearl)
+    return clampV(o[0] <= o[1] ? clampV(NECK.hold ? t : 0, o[0], o[1]) : (o[0] + o[1]) / 2, -NECK.max, NECK.max);
   }
   function camera(dt) {
     var cm = court.m, lead = cm && cm.meterOn && cm.phase === "serve" && gt < cm.meterT0;   // (on the mark: the view swings round to the net)
@@ -2540,7 +2544,15 @@
     // (the rally over with the neck still turned: it unwinds at its own rate, out of the view's way too, never left in it)
     var nk0 = view.nk;
     view.nt = rally ? neckWant(cm, view.nt) : 0;
-    if (dt > 0) { spring(view, "nk", view.nt, dt, NECK.w); var dn = clampV(view.nk - nk0, -NECK.rate * dt, NECK.rate * dt); view.nk = nk0 + dn; view.nkv = clampV(view.nkv, -NECK.rate, NECK.rate); }
+    if (dt > 0) {
+      // (toward straight on: quicker; to the other side, home to straight on first, slowing into it, then out as from rest
+      // (a turn left of under 0.02 rad is rest). Its cap by the way it goes: out NECK.rate, back NECK.back; a turn out
+      // always begins slow, from straight on or from a reversal, so the cap never brakes it)
+      var other = view.nt * nk0 < 0 && abs(nk0) > 0.02, home = other || abs(view.nt) < abs(nk0) - 1e-4;
+      spring(view, "nk", other ? 0 : view.nt, dt, home ? NECK.wBack : NECK.w);
+      var dn = view.nk - nk0, outw = abs(nk0 + dn) > abs(nk0) && (nk0 + dn) * nk0 >= 0, cap = outw ? NECK.rate : NECK.back;
+      dn = clampV(dn, -cap * dt, cap * dt); view.nk = nk0 + dn; view.nkv = clampV(view.nkv, -cap, cap);
+    }
     if (!rally && !lead) { view.yaw -= nk0 - view.nk; }
     if (!canLook() || lead) {
       var ke = min(1, dt * (lead ? 12 : 4)); if (view.base == null || !view.inRally) { view.base = view.yaw - (rally ? view.nk : 0); }

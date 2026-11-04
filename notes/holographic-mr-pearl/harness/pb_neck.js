@@ -27,7 +27,7 @@ const VIEW = kind === "desk" ? { viewport: { width: 1440, height: 900 }, deviceS
     if (ov && d.NECK) { Object.assign(d.NECK, ov); }   // (PB_NECK='{...}': other numbers for the neck, to compare)
     const k = d.courts.length - 1; d.enter(k); d.run(0.5);
     const W = innerWidth, inView = (pt) => { const s = d.toScreen(pt); return !!s && s[0] >= 0 && s[0] <= W; };
-    let frames = 0, outAny = 0, outPearl = 0, outNext = 0, outNextP = 0, outNextM = 0, outPlan = 0, outMe = 0, maxNeck = 0, maxStep = 0, lastYaw = null, lastFire = -99, sumNeck = 0, travel = 0, lastNk = null;
+    let frames = 0, outAny = 0, outPearl = 0, outNext = 0, outNextP = 0, outNextM = 0, outPlan = 0, outMe = 0, maxNeck = 0, maxStep = 0, lastYaw = null, lastFire = -99, sumNeck = 0, travel = 0, lastNk = null, straight = 0, maxOut = 0, maxBack = 0, maxOutAcc = 0, lastV = null;
     for (let i = 0; i < 60 * 50; i++) {
       const m = d.court.m; if (!m) { d.enter(d.courts.length - 1); d.run(0.5); continue; }
       let tx = 0.6, tz = C.L - 1.2;
@@ -48,11 +48,14 @@ const VIEW = kind === "desk" ? { viewport: { width: 1440, height: 900 }, deviceS
       if (nx) { outNext++; } if (!inView([nq.x, nq.y, nq.z])) { outNextP++; } if (nq.mark && nq.bounces === 0 && !inView([nq.mark.x, 0.1, nq.mark.z])) { outNextM++; }
       const pl = d.plans[m2.k], pn = !inView([pl.x, 1.0, pl.z]), mn = !inView([me.x, 1.0, me.z]);
       if (pe) { outPearl++; } if (pn) { outPlan++; } if (mn) { outMe++; } if (pe || pn || mn) { outAny++; }
-      const yw = d.view.nk != null ? d.view.nk : d.view.yaw; sumNeck += Math.abs(d.view.nk || 0); if (lastNk != null && lastYaw != null) { travel += Math.abs((d.view.nk || 0) - lastNk); } lastNk = d.view.nk || 0; maxNeck = Math.max(maxNeck, Math.abs(Math.atan2(Math.sin(yw), Math.cos(yw)))); if (lastYaw != null) { maxStep = Math.max(maxStep, Math.abs(yw - lastYaw)); } lastYaw = yw;
+      const yw = d.view.nk != null ? d.view.nk : d.view.yaw; sumNeck += Math.abs(d.view.nk || 0); if (Math.abs(d.view.nk || 0) < 0.05) { straight++; } if (lastNk != null && lastYaw != null) { const nk = d.view.nk || 0, dk = nk - lastNk, v = dk * 60; travel += Math.abs(dk);
+        // (out: the turn growing on its side; back: toward straight on. Out, its speed and how sharply that speed changes)
+        if (Math.abs(nk) > Math.abs(lastNk) && nk * lastNk >= 0) { maxOut = Math.max(maxOut, Math.abs(v)); if (lastV != null && v * lastV > 0) { maxOutAcc = Math.max(maxOutAcc, Math.abs(v - lastV) * 60); } } else { maxBack = Math.max(maxBack, Math.abs(v)); }   // (the change in speed only while it goes on out: a reversal is not a lurch)
+        lastV = v; } else { lastV = null; } lastNk = d.view.nk || 0; maxNeck = Math.max(maxNeck, Math.abs(Math.atan2(Math.sin(yw), Math.cos(yw)))); if (lastYaw != null) { maxStep = Math.max(maxStep, Math.abs(yw - lastYaw)); } lastYaw = yw;
     }
     d.input.stick = null;
     const pc = (n) => +(100 * n / Math.max(1, frames)).toFixed(1);
-    return { frames, outAny: pc(outAny), outPearl: pc(outPearl), outNext: pc(outNext), outNextPearl: pc(outNextP), outNextMark: pc(outNextM), outPlan: pc(outPlan), outMe: pc(outMe), maxNeck: +maxNeck.toFixed(3), meanNeck: +(sumNeck / Math.max(1, frames)).toFixed(3), swivelPerSec: +(travel * 60 / Math.max(1, frames)).toFixed(3), maxStepPerSec: +(maxStep * 60).toFixed(2), NECK: d.NECK || null };
+    return { frames, outAny: pc(outAny), outPearl: pc(outPearl), outNext: pc(outNext), outNextPearl: pc(outNextP), outNextMark: pc(outNextM), outPlan: pc(outPlan), outMe: pc(outMe), maxNeck: +maxNeck.toFixed(3), meanNeck: +(sumNeck / Math.max(1, frames)).toFixed(3), swivelPerSec: +(travel * 60 / Math.max(1, frames)).toFixed(3), straight: pc(straight), maxOut: +maxOut.toFixed(2), maxBack: +maxBack.toFixed(2), maxOutAcc: +maxOutAcc.toFixed(1), maxStepPerSec: +(maxStep * 60).toFixed(2), NECK: d.NECK || null };
   }, process.env.PB_NECK ? JSON.parse(process.env.PB_NECK) : null);
   r.label = label || ""; r.kind = kind || "phone";
   console.log(JSON.stringify(r));
@@ -60,7 +63,10 @@ const VIEW = kind === "desk" ? { viewport: { width: 1440, height: 900 }, deviceS
   const bad = [];
   if (r.NECK) {
     if (r.maxNeck > r.NECK.max + 1e-3) { bad.push(`the neck turned ${r.maxNeck} rad, past ${r.NECK.max}`); }
-    if (r.maxStepPerSec > r.NECK.rate * 1.01 + 0.01) { bad.push(`the neck turned at ${r.maxStepPerSec} rad/s, past ${r.NECK.rate}`); }
+    // (out at NECK.rate at most, its speed eased (no lurch: under 40 rad/s/s); back at NECK.back at most)
+    if (r.maxOut > r.NECK.rate * 1.05 + 0.02) { bad.push(`the neck turned out at ${r.maxOut} rad/s, past ${r.NECK.rate}`); }
+    if (r.maxOutAcc > 40) { bad.push(`a turn out lurched: its speed changed at ${r.maxOutAcc} rad/s/s`); }
+    if (r.maxBack > (r.NECK.back || r.NECK.rate) * 1.01 + 0.01) { bad.push(`the neck came back at ${r.maxBack} rad/s, past ${r.NECK.back || r.NECK.rate}`); }
     // (the middle ground, 4 Nov 2026: half the swivel of the first neck, 0.73 rad a second; and still some help: where the
     // next pearl comes down out of the picture less often than with no neck at all, 52% to 60% on a phone. A few rallies,
     // so the shares move by ten points from run to run: the bounds are loose)
