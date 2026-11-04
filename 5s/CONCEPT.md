@@ -13,6 +13,16 @@ The slogan stays the app's slogan; it is no longer shown in the app (28 Oct 2026
   ALL, keep it in your notes as the slogan for the app. Make sure the logo has no background besides the
   colors making it"
 
+## Gestalt (4 Nov 2026)
+
+- "The application of this app is the application of gestalt principles. We are building an app that aims to
+  understand how humans group similar elements, recognizing patterns, in simplify complex images when perceiving
+  objects."
+
+Sent with it: a sheet of ten crystal pointing-hand cursors and a short crystal-hand logo intro on a field of stars,
+the THX 1138 poster ("Stay calm."), a page of Apple's Lisa brochure, Apple's iPod and PowerBook G4 advertisements
+of the early 2000s, and screens of the coupe game.
+
 ## The purpose (said after, the same day; it frames everything below)
 
 "This app really is going to capture any self-reflective process: what I have done so far with you
