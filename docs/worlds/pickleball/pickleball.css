@@ -43,3 +43,9 @@ body[data-phase]:not([data-phase="walk"]) .top { right: calc(118px + env(safe-ar
         padding: 0 16px; border-color: var(--gold); color: var(--gold); font-weight: 700; }
 #ride[hidden] { display: none; }
 body[data-phase]:not([data-phase="walk"]) #ride { display: none; }
+/* in the coupe on the ground, over Get out: Donut (the artist, 4 Nov 2026: "when I am driving the coupe forward there
+   is a button that says donut") */
+#donut { right: calc(14px + env(safe-area-inset-right)); bottom: calc(78px + env(safe-area-inset-bottom)); min-width: 104px; min-height: 48px;
+         padding: 0 16px; border-color: var(--gold); color: var(--gold); font-weight: 700; }
+#donut[hidden] { display: none; }
+body[data-phase]:not([data-phase="walk"]) #donut { display: none; }
