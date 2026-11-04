@@ -50,14 +50,15 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
           for (let j = 0; j <= N; j++) { if (Math.hypot(x - (j - 0.5) * 12, Math.abs(z) - (C.L + 4)) < r + 0.2) { o.bad.push("pole " + where); } }
           const m = /^c(\d+)/.exec(k); if (m && z > 11.3 && z < 14.1 && Math.abs(x - +m[1] * 12) < 2) { o.bad.push("behind the court's middle " + where); }   // (the arch at the walk's end, off the cameras' line)
         });
-        (ch.flats || []).forEach((f) => { [[f[0], f[1]], [f[2], f[1]], [f[2], f[3]], [f[0], f[3]]].forEach((q) => { if (d.trkAt(q[0], q[1]).d > -0.05) { o.bad.push("flat on the track " + k + " " + q.map((v) => v.toFixed(2)).join(",")); } }); });
+        (ch.flats || []).forEach((f) => { f.forEach((q) => { if (d.trkAt(q[0], q[1]).d > -0.05) { o.bad.push("flat on the track " + k + " " + q.map((v) => v.toFixed(2)).join(",")); }   // (each flat's corners: on no track, no court's block)
+          if (q[0] > -C.GAP / 2 + 0.01 && q[0] < xR + C.GAP / 2 - 0.01 && Math.abs(q[1]) < C.L + 3.5 + 0.3) { o.bad.push("flat on a court's block " + k + " " + q.map((v) => v.toFixed(2)).join(",")); } }); });
       });
       o.bad = o.bad.slice(0, 5);
       return o;
     });
     check(Math.abs(g.R - (18.5 + 6.705)) < 1e-6 && g.inner > 21, `${g.N} court(s): the track half a court further out (its middle line ${g.R.toFixed(2)} m out, its inner edge ${g.inner.toFixed(1)} m)`);
     check(g.towers === 8 && !g.towerBad.length && g.led > 0, `eight floodlight towers round the bends, outside the berm and inside the ground ${JSON.stringify(g.towerBad)}; the edges' light strips (${g.led} vertices)`);
-    check(g.plants > 200 * g.N && g.withWater >= g.N, `the gardens: ${g.plants} plants and stones, water in every stretch but none short`);
+    check(g.plants > 20 * g.N && g.plants < 120 * (g.N + 4) && g.withWater >= g.N, `the garden, simple and the same all round: ${g.plants} shrubs and flowers, water in every stretch`);
     check(!g.bad.length, `nothing of them over a court's run-off, a pole, the track (beds and walks too) or the staircase, nor behind a court's middle ${JSON.stringify(g.bad)}`);
     check(won ? g.laps && g.laps.t[0] === 70000 : g.laps === null, `the best laps: ${won ? "this track's kept" : "the shorter track's dropped"} (${JSON.stringify(g.laps)})`);
   }
