@@ -335,7 +335,7 @@ into straight on, then out as from rest, so neither the crossing nor the turn af
 past him, nor anything behind him). It turns about him, so he stays in the middle, and a pearl served while it is
 turned goes where the view's own way aims it, not the neck's. The point over, it comes home, and whatever turn is left when the rally's view ends unwinds at the same rate
 (never left in the serve's view). The stick keeps the court's way while it turns (up is still the net), so a held thumb does not swerve. A
-phone held upright sees only 11 degrees either side of the middle; a shot wide to his side lands level with him, and its
+phone held upright sees only 12.5 degrees either side of the middle; a shot wide to his side lands level with him, and its
 ring would need the view turned three quarters of a right angle, the court gone from it, so the ring is not always shown.
 `pb_neck.js` plays rallies on court ten on a phone (390 by 844), three pearls a serve, and measures how far the view
 swivels a second, how much of the time it is straight on and what goes out of the picture; `PB_NECK` tries other numbers
@@ -347,10 +347,14 @@ in the run before). The middle ground
 swivels half as much as the first neck (0.36 rad a second, from 0.73; 0.9 rad at most and 2 a second, it held to seven
 tenths of the half width), turned 0.25 rad on average (from 0.41): where the next pearl comes down is out of the picture in
 40% of the rally's frames (31% with the first neck, 52% with none), the pearl itself 41% (27%, 38%), Mr Pearl 7% (6%,
-9%). A few rallies a run, so those shares move by ten points from run to run; the swivel holds steady. The lens is about 46 degrees top to bottom (it was 70, then 58), the
-camera a third further back each time (the artist, 28 Oct 2026: "keep the athletes the same size, I want to be a bit
+9%). A few rallies a run, so those shares move by ten points from run to run; the swivel holds steady. The lens was 70 degrees top to bottom, then 58, then 46,
+the camera a third further back each time (the artist, 28 Oct 2026: "keep the athletes the same size, I want to be a bit
 further behind him"): a dolly zoom, his figure held to the same footprint on the screen (pb_define measures it: 147,800
-device px at a phone's rally, 147,600 before), the far court and Mr Plan larger with each step. The Scope, his head the glass, went (the artist, 28 Oct 2026: "Get rid of the scope view").
+device px at a phone's rally, 147,600 before), the far court and Mr Plan larger with each step. Then widened by 5
+degrees, to 51 (the artist, 4 Nov 2026: "Widen the field of view by 5°"), the other way: the camera 11% nearer (6.5 m
+from his middle, 7.4 before), his figure still held (pb_define: 193,700 px at a phone's rally, 180,500 before), the frame
+at his depth as wide as it was, beyond him more of the courts, Mr Plan and the far court about 7% smaller (pb_define:
+14,900 px, 17,200 before). The Scope, his head the glass, went (the artist, 28 Oct 2026: "Get rid of the scope view").
 
 ## The athletes
 
@@ -590,8 +594,8 @@ replays and the paint are measured in software GL only; a real phone's GPU must 
 colours' low bits exactly (the steadiness and the paint ride on them). The effects (bursts, glints, the super return's
 gold, the pearl's glow) are drawn over everything, a figure in front of them included, and
 their cost on a phone (up to 320 characters a frame) is unmeasured; every measurement here is software GL. On a
-portrait phone the narrower lens leaves Mr Plan out of the picture a little more often in a rally (2.3% of the frames
-against 1.4%). The grid of characters is fixed to the screen,
+portrait phone the narrower lens left Mr Plan out of the picture a little more often in a rally (2.3% of the frames
+against 1.4%, measured with the 46-degree lens). The grid of characters is fixed to the screen,
 so what moves fast shimmers cell to cell. The marks outside the monospace font come from whatever font the device
 has, so the order of the set differs a little by device. Drawn at 3 to 1, a phone fills twice the pixels it did at 2:
 the frame rate there is unmeasured. The rest of Holographic Mr Pearl still draws in the impossible triangle; this game

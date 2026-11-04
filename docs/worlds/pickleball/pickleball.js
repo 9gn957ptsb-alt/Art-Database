@@ -952,8 +952,11 @@
   // (the lens: 58 degrees top to bottom, narrower than the 70 it was, so the far court and Mr Plan were a quarter larger
   // on the screen while his own figure kept its quarter of it, the camera standing further back: definition by size;
   // then the artist, 28 Oct 2026: "keep the athletes the same size, I want to be a bit further behind him": the camera a
-  // quarter further back again and the lens narrowed to match (BACK), so his figure keeps its size on the screen)
-  var BACK = 1.3, FOV = 2 * Math.atan(Math.tan(29 * Math.PI / 180) / BACK) * 180 / Math.PI, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
+  // quarter further back again and the lens narrowed to match (BACK), so his figure keeps its size on the screen;
+  // then the artist, 4 Nov 2026: "Widen the field of view by 5°": 46.2 degrees top to bottom to 51.2, WIDEN; measure()
+  // brings the camera 11% nearer to match, his figure still its quarter of the screen's height: the frame at his depth
+  // as wide as it was, beyond him more of the courts, the far court and Mr Plan some 7% smaller)
+  var BACK = 1.3, WIDEN = 5, FOV = 2 * Math.atan(Math.tan(29 * Math.PI / 180) / BACK) * 180 / Math.PI + WIDEN, NEAR = 0.08, FAR = 500, T35 = Math.tan(FOV * PI / 360), KEY = norm([0.3, 0.9, 0.42]);
   var SKY = { zen: [0.012, 0.006, 0.04], hor: [0.05, 0.018, 0.07], gnd: [0.006, 0.01, 0.014] };   // (indigo above, violet at the horizon)
   var RIM = { me: [0.42, 0.38, 0.34], plan: [0.45, 0.95, 1.05], none: [0.08, 0.08, 0.1] }, pixA = 0.001;
   // The floodlights' pools, the one light on the ground: each court in its own light, the night between them.
@@ -2544,7 +2547,7 @@
   // they come down (not a pearl already past him, nor anything behind him: no turn brings those into view). He himself stays in the middle: the view turns about him. (A shot wide to his side
   // lands level with him: its ring would need the view turned three quarters of a right angle, the court gone from it;
   // the pearl itself, farther off, much less.)
-  // A phone held upright sees only 11 degrees either side of the middle: on a desk it hardly ever turns. The stick keeps
+  // A phone held upright sees only 12.5 degrees either side of the middle: on a desk it hardly ever turns. The stick keeps
   // the court's way while it turns (up is still the net), so a held thumb does not swerve.
   // (then, the artist, 4 Nov 2026: "I dont like how the camera swivels now ... it's too much and makes it harder to keep
   // track of all the balls. Find a middle ground between how it used to be and how it is now": half the turn, half the
