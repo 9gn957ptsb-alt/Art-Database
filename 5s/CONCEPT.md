@@ -51,6 +51,7 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Add green and light brown as well to the red layering underneath the name duh making it a block affect"
 - "Have it rise up like you’re in holographic mode and safely land in place, letting out the colors beneath it, as
   clouds of smoke dissipating on the ground from its rocket landing"
+- "Get rid of the backwards tilt in the letters of the name animation" (the letters stand upright and flat throughout)
 
 ## The purpose (said after, the same day; it frames everything below)
 
