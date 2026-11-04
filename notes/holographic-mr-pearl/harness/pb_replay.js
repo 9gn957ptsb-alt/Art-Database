@@ -92,7 +92,10 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
         const e = at(T, 1), ep = at(T, 3); maxE = Math.max(maxE, Math.hypot(st.x - e[0], st.z - e[1]), Math.hypot(pl.x - ep[0], pl.z - ep[1])); n++;
         const [lo, hi] = find(T), mv = st.move ? st.move.kind + "@" + st.move.tc.toFixed(2) : "";
         if (samples[lo][5] || samples[hi][5]) { moves++; if (mv === samples[lo][5] || mv === samples[hi][5]) { same++; } }
-        const sc = cv.you + "-" + cv.them; if (sc !== samples[lo][6] && sc !== samples[hi][6]) { scoreOff++; }
+        // (a score that changed between two of the recording's frames shows from the next, up to 1/REC.HZ, 50 ms, later:
+        // off only if no live sample within that of the replay's time had it)
+        const sc = cv.you + "-" + cv.them, w0 = find(T - 1 / 20 - 1 / 60)[0], w1 = find(T + 1 / 60)[1];
+        let had = false; for (let q = w0; q <= w1; q++) { if (samples[q][6] === sc) { had = true; break; } } if (!had) { scoreOff++; }
       }
       return { rec: true, frames: cv.rec.count, n, maxE: +maxE.toFixed(4), moves, same, scoreOff };
     }, samples);

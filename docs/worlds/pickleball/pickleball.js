@@ -1206,7 +1206,7 @@
   var STR = {
     courts: "The courts", wonN: function (n) { return n + (n === 1 ? " court won" : " courts won"); }, open: function (k) { return "court " + (k + 1) + " open"; },
     welcome: "Mr Pearl vs Mr Plan\nWin 3 points to advance\nHow many courts can you win?",   // (the artist's own three lines, 29 Oct 2026)
-    match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Run to the gold circle behind the baseline to serve."; },
+    match: function (k, l) { return "Court " + k + ", level " + l + " against Mr Plan: first to three. Your serve."; },
     head: function (m) {
       var lv = m.balls.filter(function (q) { return !q.dead; }), r = lv.reduce(function (a, q) { return max(a, q.rally); }, 0);
       return "Court " + (m.k + 1) + " · level " + m.level + " · you " + m.you + " – " + m.them + " Mr Plan" + (lv.length > 1 ? " · " + lv.length + " pearls" : "") + " · rally " + r + " · " + STR.wonN(wonCount());
@@ -1223,13 +1223,13 @@
     rally: function (y, t, r) { return y + " – " + t + ", a rally of " + r + "."; },
     donut: "Mr Plan takes the coupe for a donut.",
     planTakes: function (t, y) { return "Mr Plan takes it, " + t + " – " + y + ". Again from love: run to the gold circle to serve."; },
-    won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder."; },
+    won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder: step onto its gold circle to play."; },
     standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; },
     // the coupe, the stairs, his hat: [a finger, a desk]
     ride: { drive: "Drive", out: "Get out", driveSr: "Drive the orange coupe", outSr: "Get out of the coupe",
             car: ["The coupe: push up to drive, left and right to steer, down to brake. Round all the courts; it parks beside the open one.", "The coupe: W to drive, A and D to steer, S to brake, F to get out. Round all the courts; it parks beside the open one."],
             stairs: ["The staircase: a step for each court won. Push up to climb, tap to jump off.", "The staircase: a step for each court won. W to climb, Space to jump off."],
-            ramp: ["Up the staircase: it steers itself round. Hold on up past the top to launch.", "Up the staircase: it steers itself round. W on up past the top to launch."],
+            ramp: ["Up the staircase: it steers itself round, then level and out along its board. Hold on to launch off the end.", "Up the staircase: it steers itself round, then level and out along its board. W on to launch off the end."],
             carHat: ["His hat opens over the coupe: steer it down anywhere.", "His hat opens over the coupe: A and D steer it down anywhere."],
             hat: ["His hat opens: steer him down anywhere. Pull back to come down steeper.", "His hat opens: A and D steer him down anywhere, S to come down steeper."],
             post: "The staircase's post: a step for each court won." },
@@ -1262,7 +1262,7 @@
     // that happen when you're walking through that are cued by certain moments"): a finger's words and a desk's
     tips: {
       move: ["Move: drag on the left half of the screen.", "Move: W A S D, Shift to sprint (or drag on the left half)."],
-      court: ["Walk onto the open court to play Mr Plan, or drive the orange coupe to it.", "Walk onto the open court to play Mr Plan, or drive the orange coupe to it (F gets in)."],
+      court: ["Step onto the open court's gold circle to play Mr Plan, or drive the orange coupe to it.", "Step onto the open court's gold circle to play Mr Plan, or drive the orange coupe to it (F gets in)."],
       serve: ["Your serve: run to the gold circle behind the baseline.", "Your serve: run to the gold circle behind the baseline."],
       bar: ["Tap to stop the bar: further is harder, ◆ a chance at an ace. Tap again for a 2nd and a 3rd pearl.", "Space stops the bar: further is harder, ◆ a chance at an ace. Again for a 2nd and a 3rd pearl."],
       rally: ["Run to the ○ ring where his shot comes down: your stroke is your own, aimed at the open court.", "Run to the ○ ring where his shot comes down: your stroke is your own, aimed at the open court."],
@@ -1556,6 +1556,11 @@
   }
   // Behind the baseline, the right of the centre mark on even points and the left on odd, as a server stands.
   function serveSpot() { var m = court.m, cc = courtAt(m.k); return [cc[0] + (m.n % 2 ? -0.9 : 0.9), cc[2] + COURT.L + 0.4]; }
+  // (between games, the open court's first circle: stepping onto it, within half as much again as its radius, begins its
+  // match, the serve at once; anywhere else, the open court too, he only runs: the artist, 4 Nov 2026, "Users need to be
+  // able to run anywhere when they are not in a game")
+  function openSpot() { var cc = courtAt(courts.length - 1); return [cc[0] + 0.9, cc[2] + COURT.L + 0.4]; }
+  function onOpenSpot() { var op = openSpot(); return !ride.mode && me.y < 0.05 && !courts[courts.length - 1].up && hypot(me.x - op[0], me.z - op[1]) < SERVE.R * 1.5; }
   function serveFrom() { var f = me.yaw; return [me.x + Math.cos(f) * 0.45 + Math.sin(f) * 0.35, 0.7, me.z + Math.sin(f) * 0.45 - Math.cos(f) * 0.35]; }
   function netH(lx) { return COURT.NET + (COURT.POST - COURT.NET) * min(1, abs(lx) / (COURT.HW + COURT.PO)); }
   function pearlR() { return 3 * body.cell; }
@@ -2030,7 +2035,7 @@
     say(STR.won(m.k, m.you, m.them), true);
     var best = wonCount(); save().then(function () { YT.score(best); }, YT.warn); courtWhere();   // (sent once saved: the best sent must be the save's)
   }
-  // Between matches: walking, and onto a court its match (if it is open and not playing by itself).
+  // Between matches: walking anywhere, across every court, the open one too; onto the open court's gold circle, its match.
   function courtStep(dt, c) {
     courtsSim(dt);
     var m = court.m;
@@ -2040,13 +2045,10 @@
     if (m) { matchStep(dt, c); }
     else {
       var k = round(me.x / COURT.GAP), cc0 = courtAt(clampV(k, 0, courts.length - 1)), lx = me.x - cc0[0], lz = me.z - cc0[2];
-      var on = !ride.mode && me.y < 0.05 && k >= 0 && k < courts.length && abs(lx) < COURT.HW && lz > 0.5 && lz < COURT.L, was = court.on;   // (on foot, on the ground: not in the coupe, nor over it under his hat)
+      var on = !ride.mode && me.y < 0.05 && k >= 0 && k < courts.length && abs(lx) < COURT.HW && lz > 0.5 && lz < COURT.L;   // (on foot, on the ground: not in the coupe, nor over it under his hat)
       court.on = on ? k : -1;
-      if (on) {
-        var cv = courts[k], key = k + (cv.up ? "u" : "o");
-        if (cv.up) { if (court.told[key] !== 1) { court.told[key] = 1; say(STR.standin(k, cv.you, cv.them)); } }
-        else if (was !== k) { court.told = {}; matchOn(k); }
-      }
+      if (on && courts[k].up) { var cv = courts[k], key = k + "u"; if (court.told[key] !== 1) { court.told[key] = 1; say(STR.standin(k, cv.you, cv.them)); } }
+      if (onOpenSpot()) { court.told = {}; matchOn(courts.length - 1); }   // (the open court's match: from its gold circle only)
     }
     // his bounds: his court while he plays it, else the row of them
     m = court.m;
@@ -2098,7 +2100,7 @@
      behind; up climbs, down comes down), or the coupe drives up it, its wheel left to the spiral; a tap jumps him off,
      outward along his way, as the stick up at the top does, and the coupe, on up past the top, launches. Falling from
      GLIDE.OPEN or higher, his hat opens over him as a canopy and he glides (GLIDE.V forward, GLIDE.SINK down; the stick
-     turns him, up a little faster, down slower and so steeper) to land anywhere below: on the open court, its match; on
+     turns him, up a little faster, down slower and so steeper) to land anywhere below: on the open court, nothing begun (its gold circle, on foot, begins its match); on
      the ramp from above, the ramp. In the coupe the hat opens over the coupe, larger, its lines to the roof, and the coupe
      glides as he would (CAR.GLIDE, CAR.SINK), the wheel turning it, down onto the ground or the ramp. */
   var CAR = { L: 4.3, W: 1.7, WB: 2.55, VMAX: 24, VREV: 7, ACC: 10, BRAKE: 22, COAST: 4, STEER: 0.62, R: 0.9, EDGE: 0.4, RAMP: 14, GLIDE: 11, SINK: 1.8, TURN: 1.0,
@@ -2111,15 +2113,70 @@
   var ride = { mode: null, s: -1, off: [0, 0], u: 0, hd: 0, bank: 0, dir: 1, lag: false, out: false, told: {} };   // (mode: "car", "stair", "fly", "glide"; null: on foot)
   function stairsN() { return wonCount(); }
   function boundX1() { return (courts.length - 1) * COURT.GAP + BOUND.past; }
-  // where the way up is at s (the step he is on, counted from 0; -1 the ground at its foot): its middle, 0.6 m a step up
-  function stairAt(s) { var th = STAIR.A0 + s * STAIR.DA; return { x: STAIR.c[0] + STAIR.RW * Math.cos(th), z: STAIR.c[1] + STAIR.RW * Math.sin(th), y: STAIR.RISE * (s + 1), th: th, air: false }; }
+  // The way out from the top (the artist, 4 Nov 2026: "I want the highest step to lead out flat perpendicular to the
+  // courts that way you can get a running start to drive off onto the courts. Wherever the highest step is in relation
+  // to where it is in the sequence of the circle, just have the shape of it continue flat around the spiral until it can
+  // lead out like a diving board perpendicular to the courts"): from the top step, level at its height, on round the
+  // spiral until its way is toward the courts (+x, across their length), then straight out TOP.BOARD, a diving board,
+  // to court one's sideline. Where the level way comes round more than half a turn, so over the lower steps, it widens
+  // out from the post as it goes (TOP.DRIFT, from a sixth of a turn in to a half), a lane of its own outside them.
+  var TOP = { BOARD: 11.4, DRIFT: 3.6, AIM: 1.5 * PI, W: 3.2 }, topC = { n: -1 };   // (11.4: its tip just short of court one's net post)
+  function topR(P, dl) { return STAIR.RW + (P.drift ? TOP.DRIFT * smooth((dl - 0.35 * PI) / (0.6 * PI)) : 0); }
+  function topPath() {
+    var n = stairsN(); if (topC.n === n && topC.k === courts.length) { return topC; }
+    var th0 = STAIR.A0 + (n - 1) * STAIR.DA, d = ((TOP.AIM - th0) % (2 * PI) + 2 * PI) % (2 * PI), P = { n: n, th0: th0, d: d, drift: d > PI, y: STAIR.RISE * n, pts: [] };
+    var N = 96, L = 0, prev = null;
+    for (var i = 0; i <= N; i += 1) {
+      var dl = d * i / N, r = topR(P, dl), x = STAIR.c[0] + r * Math.cos(th0 + dl), z = STAIR.c[1] + r * Math.sin(th0 + dl);
+      if (prev) { L += hypot(x - prev[0], z - prev[1]); } P.pts.push({ dl: dl, u: L, x: x, z: z }); prev = [x, z];
+    }
+    P.arc = L; P.end = P.pts[N]; P.len = L + TOP.BOARD;
+    // (off its end at v, falling from P.y with its lift, it comes down v times the flight on: no faster than lands the
+    // coupe short of the open court's run-off, its front clear; from two courts won it is never reached)
+    var g = CAPS.g, tf = (1.2 + Math.sqrt(1.44 + 2 * g * P.y)) / g, wall = (courts.length - 1) * COURT.GAP - COURT.GAP / 2 + 0.5 - CAR.R - CAR.EDGE - CAR.L / 2;
+    P.vmax = clampV((wall - (P.end.x + TOP.BOARD) - 0.5) / tf, 6, CAR.VMAX); P.k = courts.length;
+    topC = P; return P;
+  }
+  // (the place and the way at u metres along the way out: on the level arc, from its sampled length; then the board)
+  function topAt(u) {
+    var P = topPath(); u = clampV(u, 0, P.len);
+    if (u < P.arc) {
+      var i = 0; while (i < P.pts.length - 2 && P.pts[i + 1].u < u) { i += 1; }
+      var a = P.pts[i], b = P.pts[i + 1], k = (u - a.u) / max(1e-6, b.u - a.u), dl = a.dl + (b.dl - a.dl) * k, th = P.th0 + dl, r = topR(P, dl);
+      var sw = 0.6 * PI, ss = (dl - 0.35 * PI) / sw, dr = P.drift && ss > 0 && ss < 1 ? TOP.DRIFT * 6 * ss * (1 - ss) / sw : 0;
+      var wx = dr * Math.cos(th) - r * Math.sin(th), wz = dr * Math.sin(th) + r * Math.cos(th), wl = hypot(wx, wz) || 1;
+      return { x: STAIR.c[0] + r * Math.cos(th), z: STAIR.c[1] + r * Math.sin(th), y: P.y, way: [wx / wl, wz / wl] };
+    }
+    return { x: P.end.x + (u - P.arc), z: P.end.z, y: P.y, way: [1, 0] };
+  }
+  // (the s where the board ends: past it, off)
+  function stairEnd() { var n = stairsN(); return n < 1 ? -1 : n - 1 + topPath().len / STAIR.LEN; }
+  // where the way up is at s (the step he is on, counted from 0; -1 the ground at its foot): its middle, 0.6 m a step up;
+  // past the top step, the way out, level (top: true)
+  function stairAt(s) {
+    var n = stairsN();
+    if (n >= 1 && s > n - 1) { var q = topAt((s - (n - 1)) * STAIR.LEN); return { x: q.x, z: q.z, y: q.y, th: Math.atan2(-q.way[0], q.way[1]), air: false, top: true }; }
+    var th = STAIR.A0 + s * STAIR.DA; return { x: STAIR.c[0] + STAIR.RW * Math.cos(th), z: STAIR.c[1] + STAIR.RW * Math.sin(th), y: STAIR.RISE * (s + 1), th: th, air: false };
+  }
   // the way up at s, on the ground (unit)
-  function stairWay(s) { var th = STAIR.A0 + s * STAIR.DA; return [-Math.sin(th), Math.cos(th)]; }
+  function stairWay(s) { var n = stairsN(); if (n >= 1 && s > n - 1) { return topAt((s - (n - 1)) * STAIR.LEN).way; } var th = STAIR.A0 + s * STAIR.DA; return [-Math.sin(th), Math.cos(th)]; }
   function wayYaw(s) { var w = stairWay(s); return Math.atan2(w[0], -w[1]); }
   // the highest place on the ramp under (x, z) that a fall from y0 to y1 comes down through, or null
   function rampAt(x, z, y0, y1) {
     var n = stairsN(), dx = x - STAIR.c[0], dz = z - STAIR.c[1], r = hypot(dx, dz);
-    if (n < 1 || r < STAIR.R0 || r > STAIR.R1) { return null; }
+    if (n < 1) { return null; }
+    var P = topPath();
+    if (P.y <= y0 + 0.02 && P.y > y1) {   // (the way out: within half its width of its line)
+      var bu = null, bd = TOP.W / 2, line = P.pts.concat([{ u: P.len, x: P.end.x + TOP.BOARD, z: P.end.z }]);
+      for (var j = 0; j < line.length - 1; j += 1) {
+        var A = line[j], B = line[j + 1], ex = B.x - A.x, ez = B.z - A.z, el = ex * ex + ez * ez; if (el < 1e-9) { continue; }
+        var t0 = ((x - A.x) * ex + (z - A.z) * ez) / el; if (j === line.length - 2 && t0 > 1) { continue; }   // (past the board's free end: off it)
+        var t = clampV(t0, 0, 1), dd = hypot(x - A.x - ex * t, z - A.z - ez * t);
+        if (dd < bd) { bd = dd; bu = A.u + (B.u - A.u) * t; }
+      }
+      if (bu != null) { return n - 1 + max(1e-3, bu) / STAIR.LEN; }
+    }
+    if (r < STAIR.R0 || r > STAIR.R1) { return null; }
     var b = ((Math.atan2(dz, dx) - STAIR.A0) / STAIR.DA) % 10, best = null;
     if (b < 0) { b += 10; }
     for (var s = b - 10; s <= n - 1; s += 10) { var h = STAIR.RISE * (s + 1); if (s >= -1 && h <= y0 + 0.02 && h > y1) { best = s; } }
@@ -2166,7 +2223,7 @@
     var air = car.mode === "fly" || car.mode === "glide", y0 = car.y;
     if (!air) {
       var want = thr > 0 ? thr * CAR.VMAX : thr < 0 ? thr * CAR.VREV : 0;
-      if (car.mode === "ramp") { want = clampV(want, -CAR.RAMP, CAR.RAMP); }
+      if (car.mode === "ramp") { var vmx = car.s <= n - 1 ? CAR.RAMP : topPath().vmax; want = clampV(want, -vmx, vmx); }   // (on the steps 14 m/s; on the level way out and its board flat out, a running start, short of the open court)
       // (the throttle up: its pull; eased off, a coast; against the way it goes, the brake; nobody driving, the brake)
       var acc = !drive ? CAR.BRAKE : want * car.v < 0 ? CAR.BRAKE : thr !== 0 && abs(want) >= abs(car.v) ? CAR.ACC : CAR.COAST;
       car.v += clampV(want - car.v, -acc * dt, acc * dt);
@@ -2174,15 +2231,18 @@
     }
     var A;
     if (car.mode === "ramp") {
-      // (on the ramp the spiral has the wheel: the way up, or down backing; on past the top, a launch)
+      // (on the ramp the spiral has the wheel: the way up, or down backing; level round and out along the board; off its
+      // end, a launch, toward the courts)
       car.s += car.v * dt / STAIR.LEN;
       car.off[0] *= Math.exp(-dt * 4); car.off[1] *= Math.exp(-dt * 4);
+      var sEnd = stairEnd();
       if (car.s < -1 || n < 1) { var F = stairAt(-1); car.mode = "ground"; car.s = -1; car.y = 0; car.pitch = 0; car.x = F.x + car.off[0]; car.z = F.z + car.off[1]; }
-      else if (car.s > n - 1) {
-        var T0 = stairAt(n - 1); car.mode = "fly"; car.x = T0.x; car.z = T0.z; car.y = T0.y; car.yaw = wayYaw(n - 1);
-        car.vy = car.v * Math.sin(STAIR.SLOPE) + 1.2; car.v *= Math.cos(STAIR.SLOPE); ride.launchT = gt;
+      else if (car.s > sEnd) {
+        var T0 = stairAt(sEnd); car.mode = "fly"; car.x = T0.x + car.off[0]; car.z = T0.z + car.off[1]; car.y = T0.y; car.yaw = wayYaw(sEnd);
+        car.vy = 1.2; ride.launchT = gt;   // (off the board flat: its own speed, a lift)
       } else {
-        var p = stairAt(car.s); car.x = p.x + car.off[0]; car.z = p.z + car.off[1]; car.y = p.y; car.yaw = wayYaw(car.s); car.pitch = STAIR.SLOPE; car.steer = 0.3 * car.steer;
+        var p = stairAt(car.s); car.x = p.x + car.off[0]; car.z = p.z + car.off[1]; car.y = p.y; car.yaw = wayYaw(car.s); car.steer = 0.3 * car.steer;
+        car.pitch += ((p.top ? 0 : STAIR.SLOPE) - car.pitch) * min(1, dt * 10);   // (level on the way out)
       }
     } else if (air) {
       if (car.mode === "glide") {
@@ -2196,7 +2256,7 @@
         if (!ride.told.carHat) { ride.told.carHat = 1; say(STR.ride.carHat[deskI()], true); }
       }
       var rs = gt - (ride.launchT || -9) > 0.3 ? rampAt(car.x, car.z, y0, car.y) : null;   // (down onto the ramp from above: on it again)
-      if (rs != null) { car.mode = "ramp"; car.s = rs; car.off = [0, 0]; car.vy = 0; car.y = STAIR.RISE * (rs + 1); car.yaw = wayYaw(rs); car.v = abs(car.v) * 0.6; }
+      if (rs != null) { car.mode = "ramp"; car.s = rs; car.off = [0, 0]; car.vy = 0; car.y = stairAt(rs).y; car.yaw = wayYaw(rs); car.v = abs(car.v) * 0.6; }
       else if (car.y <= 0) { car.mode = "ground"; car.y = 0; car.vy = 0; car.pitch = 0; fxRing([car.x, 0.1, car.z], "me"); }
     } else {
       car.yaw = angle(car.yaw + car.v / CAR.WB * Math.tan(car.steer) * dt);
@@ -2218,7 +2278,8 @@
     var k = courts.length - 1, A = carAxes(), h = CAR.L / 2 - CAR.W / 2, R = CAR.R, hit = false;
     var push = function (dx, dz) {
       car.x += dx; car.z += dz; var l = hypot(dx, dz) || 1, cn = (A.fx * dx + A.fz * dz) / l * (car.v < 0 ? -1 : 1);
-      if (cn < -0.7 && abs(car.v) > 4) { car.v *= -0.15; hit = true; }   // (head on at speed: back)
+      if (cn < -0.7 && abs(car.v) > 4 && car.mode === "ground") { car.v *= -0.15; hit = true; }   // (head on at speed: back)
+      else if (cn <= -0.7 && car.mode !== "ground") { car.v *= max(0, 1 + cn); }   // (in the air: stopped against it, down beside it)
       else if (cn <= -0.7) { car.v *= 1 + 0.5 * cn * min(1, abs(car.v) / 4); }   // (head on, slow: it stops against it)
       else if (cn < 0) {   // (at a slant: turned onto the wall's line, so the next step does not meet it again, the into-wall share of its speed gone once)
         var nx = dx / l, nz = dz / l, fn = A.fx * nx + A.fz * nz, hx = A.fx - fn * nx, hz = A.fz - fn * nz;
@@ -2253,7 +2314,7 @@
   function stairStep(dt, c) {
     // (the stick up climbs and down comes down, the view behind the way up; from the moment he steps on until the stick
     // is first let go, any push climbs: the push that put him on, whichever way the view's turning makes it point)
-    var n = stairsN(), top = n - 1;
+    var n = stairsN(), top = stairEnd();   // (the board's end: up the steps, level round and out along it)
     if (ride.lag && hypot(c.fwd, c.side) < 0.05) { ride.lag = false; }
     var rate = clampV(ride.lag ? hypot(c.fwd, c.side) : c.fwd, -1, 1);
     ride.s += rate * STAIR.CLIMB * dt;
@@ -2268,7 +2329,8 @@
     if (last) { ride.s = top; }
     var p = stairAt(ride.s), up = stairWay(ride.s);
     if (jump || (last && rate > 0.3)) {   // (off: a tap, outward along his way; or on up past the top)
-      var out = [Math.cos(p.th), Math.sin(p.th)], d = jump ? ride.dir : 1;
+      var out = [Math.cos(p.th), Math.sin(p.th)], d = jump ? ride.dir : 1;   // (off the steps outward a little)
+      if (p.top) { var nw = [up[1], -up[0]]; if (nw[0] * (p.x - STAIR.c[0]) + nw[1] * (p.z - STAIR.c[1]) < 0) { nw = [-nw[0], -nw[1]]; } out = jump ? nw : [0, 0]; }   // (on the way out: a tap off its side, away from the post; off its end, straight on)
       ride.mode = "fly"; me.x = p.x + ride.off[0]; me.z = p.z + ride.off[1]; me.y = max(p.y, 0.002);
       me.vx = up[0] * d * (jump ? 4 : 5) + out[0] * (jump ? 2.2 : 1.5); me.vz = up[1] * d * (jump ? 4 : 5) + out[1] * (jump ? 2.2 : 1.5); me.vy = 4.4;
       me.hop = false; me.want = { keep: true }; me.faceTo = Math.atan2(me.vx, -me.vz); ride.stairT = gt;
@@ -2444,7 +2506,10 @@
   // the pearl itself, farther off, much less.)
   // A phone held upright sees only 11 degrees either side of the middle: on a desk it hardly ever turns. The stick keeps
   // the court's way while it turns (up is still the net), so a held thumb does not swerve.
-  var NECK = { max: 0.9, band: 0.7, rate: 2.0, w: 14 };   // (band and spring: the pearl kept inside 0.83 to 0.97 of the half width as it follows, its turn never sudden)
+  // (then, the artist, 4 Nov 2026: "I dont like how the camera swivels now ... it's too much and makes it harder to keep
+  // track of all the balls. Find a middle ground between how it used to be and how it is now": half the turn, half the
+  // speed, and it holds until the pearl is nearly at the edge: half the swivel, pb_neck.js, 0.36 rad a second from 0.73)
+  var NECK = { max: 0.45, band: 0.95, rate: 1.0, w: 8 };
   function neckWant(cm, t) {
     var H = Math.atan(T35 * canvas.clientWidth / max(1, canvas.clientHeight)), h = TP.HEAD * (view.zk || 1) * Math.cos(REST - AIM);
     var coming = live(cm).filter(function (b) { return b.last === "them" && !(b.bounces > 0 && b.z - me.z > 0.3); }).sort(function (a, b) { return ((a.mark && a.mark.t) || 9e9) - ((b.mark && b.mark.t) || 9e9); });
@@ -2995,7 +3060,7 @@
     // the ramp: its post, and each step a slab tilted up to the next, in two halves across (so its inner and outer
     // edges keep to the circle), a beam from the post to each
     var n = stairsN(), c0 = STAIR.c, hP = n * STAIR.RISE + 1.5;
-    if (abs(c0[0] - ex) < SEEN + STAIR.R1) {
+    if (abs(c0[0] - ex) < SEEN + STAIR.R1 + TOP.BOARD) {   // (its board reaching toward the courts)
       paint(MAT.POLE, [1, 0, 1]); cbox([c0[0], hP / 2, c0[1]], [2 * STAIR.POST, hP, 2 * STAIR.POST], CC.post, 0.25);
       var half = (STAIR.R1 - STAIR.R0) / 2;
       for (var i = 0; i < n; i += 1) {
@@ -3007,6 +3072,34 @@
         });
         paint(MAT.POLE, [1, 0, 1]);
         seg([c0[0] + STAIR.POST * Math.cos(th), yc - 0.12, c0[1] + STAIR.POST * Math.sin(th)], [c0[0] + STAIR.R0 * Math.cos(th), yc - 0.12, c0[1] + STAIR.R0 * Math.sin(th)], 0.12, CC.post, 0.2);
+      }
+      // (the way out: level slabs on round the spiral, then the board out toward the courts; under the level way, a beam
+      // to the post where it keeps to the steps' circle, a post to the ground once it has widened out past them; under
+      // the board two posts, its end free, a diving board's)
+      if (n >= 1) {
+        var TP2 = topPath(), slab = function (qa, qb, wd, ring) {
+          var sx = qb.x - qa.x, sz = qb.z - qa.z, sl = hypot(sx, sz); if (sl < 1e-4) { return; }
+          var rm = ring ? hypot((qa.x + qb.x) / 2 - c0[0], (qa.z + qb.z) / 2 - c0[1]) : 0, lk = ring ? sl * (rm + wd / 2) / max(0.5, rm) : sl;   // (long enough at its outer edge: no wedge between pieces)
+          var a2 = Math.atan2(-sx / sl, sz / sl), Sm = [wd, 0, 0, 0, 0, 0.12, 0, 0, 0, 0, lk + 0.05, 0, 0, 0, 0, 1];
+          drawSolid(cube, mul(T((qa.x + qb.x) / 2, TP2.y - 0.06, (qa.z + qb.z) / 2), mul(RY(-a2), Sm)), CC.wood, null, 0.3);
+        };
+        var under = function (q, r2) {   // (a step below it: a post to the ground would pierce it)
+          if (r2 < STAIR.R0 - 0.2 || r2 > STAIR.R1 + 0.2) { return false; }
+          var b2 = ((Math.atan2(q.z - c0[1], q.x - c0[0]) - STAIR.A0) / STAIR.DA) % 10; if (b2 < 0) { b2 += 10; }
+          for (var s3 = b2 - 10; s3 <= n - 1 + 0.5; s3 += 10) { if (s3 >= -0.5 && Math.round(s3) <= n - 1 && Math.round(s3) >= 0) { return true; } } return false;
+        };
+        var post = function (q, ground) {
+          var r2 = hypot(q.x - c0[0], q.z - c0[1]);
+          if (!(ground && !under(q, r2)) && r2 < STAIR.R1 + TOP.W / 2) { var ux = (q.x - c0[0]) / (r2 || 1), uz = (q.z - c0[1]) / (r2 || 1); seg([c0[0] + ux * STAIR.POST, TP2.y - 0.12, c0[1] + uz * STAIR.POST], [q.x - ux * TOP.W / 2, TP2.y - 0.12, q.z - uz * TOP.W / 2], 0.12, CC.post, 0.2); }
+          else { seg([q.x, 0, q.z], [q.x, TP2.y - 0.12, q.z], 0.1, CC.post, 0.2); }
+        };
+        paint(MAT.STEP, null, false, RIM.none, 1);
+        var pieces = max(1, Math.ceil(TP2.arc / 1.6));
+        if (TP2.arc > 1e-3) { for (var j2 = 0; j2 < pieces; j2 += 1) { slab(topAt(j2 * TP2.arc / pieces), topAt((j2 + 1) * TP2.arc / pieces), TOP.W - 0.08, true); } }
+        slab(topAt(TP2.arc), topAt(TP2.len), TOP.W - 0.3, false);   // (the board, a little narrower)
+        paint(MAT.POLE, [1, 0, 1]);
+        for (var u2 = 1.6; u2 < TP2.arc; u2 += 3.2) { post(topAt(u2), false); }
+        post(topAt(TP2.arc + 0.4), true); post(topAt(TP2.arc + 4.5), true);   // (the board on two posts to the ground, its end free)
       }
     }
   }
@@ -3515,9 +3608,9 @@
     }
     else if (key === "move") { ghost([0, -1], hand === 2 ? null : STR.cue.drag, true); ray([0, -1]); }
     else if (key === "court" && !m) {
-      var k = courts.length - 1, cc = courtAt(k), q = toS([cc[0], 2.4, cc[2]]), bob = CUE.rm ? 0 : 3 * Math.sin(rt / CUE_BEAT * 2 * PI);
-      if (q && q[0] > 12 && q[0] < W - 12 && q[1] > hudLow && q[1] < H - 12) { txt("◆", q[0], q[1] + bob, 18, G.gold); lab("play", STR.cue.play, q[0], q[1] - 24, G.gold, 13); }
-      trail([cc[0], cc[2] + COURT.L - 1]);
+      var k = courts.length - 1, cc = courtAt(k), op = openSpot(), q = toS([op[0], 1.2, op[1]]), bob = CUE.rm ? 0 : 3 * Math.sin(rt / CUE_BEAT * 2 * PI);
+      if (q && q[0] > 12 && q[0] < W - 12 && q[1] > hudLow && q[1] < H - 12) { txt("◆", q[0], q[1] + bob, 18, G.gold); lab("play", STR.cue.play, q[0], q[1] - 24, G.gold, 13); }   // (over its gold circle)
+      trail(op);
       // (the coupe, when the open court is a drive away and he is not in it)
       if (ride.mode !== "car" && hypot(cc[0] - me.x, cc[2] + COURT.L - me.z) > 18) {
         var qc = toS([car.x, 1.9, car.z]);
@@ -3552,6 +3645,43 @@
     var toS = function (p) { var q = [0, 0, 0, 0]; for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0.05 ? [(q[0] / q[3] * 0.5 + 0.5) * W, (1 - (q[1] / q[3] * 0.5 + 0.5)) * H] : null; };
     glareDraw(c, W, H, toS);
     var glyph = function (ch, x, y, size, col) { c.font = "700 " + size + "px ui-monospace, SFMono-Regular, Menlo, 'DejaVu Sans Mono', monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.7)"; c.strokeText(ch, x, y); c.fillStyle = col || "#f2efe8"; c.fillText(ch, x, y); };
+    // (the bold gold circle where he serves: in a match before the serve, and between games on the open court, where
+    // stepping onto it begins its match; edge: off the screen, at its edge the way to it, in a match only)
+    var serveRing = function (sp, edge, mark) {
+      // (where he serves from, the artist, 28 Oct 2026: "Make the spot I need to run to to serve more apparent in a quick
+      // golden circle that serves as a strong visual cue of the spot": a bold gold circle on the court, glowing, filled
+      // faintly, and every second a ring running quickly out from it to twice its size, where the lock begins; drawn
+      // over everything, so a mark behind him still shows through; a ring that grows and fades, never a flash)
+      var ring = function (rad) { var pts = []; for (var s2 = 0; s2 <= 32; s2 += 1) { var a2 = s2 / 32 * 2 * PI, q2 = toS([sp[0] + Math.cos(a2) * rad, 0.02, sp[1] + Math.sin(a2) * rad]); if (!q2) { return null; } pts.push(q2); } return pts; };
+      var path = function (pts) { c.beginPath(); pts.forEach(function (q2, i2) { if (i2) { c.lineTo(q2[0], q2[1]); } else { c.moveTo(q2[0], q2[1]); } }); c.closePath(); };
+      var main = ring(SERVE.R);
+      if (main) {
+        c.save(); path(main); c.fillStyle = "rgba(255,209,102,0.22)"; c.fill();
+        c.shadowColor = "#ffd166"; c.shadowBlur = 14; c.lineWidth = 4; c.strokeStyle = "#ffd166"; c.stroke();
+        c.shadowBlur = 0; c.lineWidth = 1.5; c.strokeStyle = "#fff4d6"; c.stroke();
+        var pu = (gt % 1.1) / 0.55, pr = pu < 1 ? ring(SERVE.R * (1 + pu)) : null;   // (the ring running out, half of each second and a tenth)
+        if (pr) { path(pr); c.lineWidth = 3; c.strokeStyle = "rgba(255,209,102," + (0.85 * (1 - pu)).toFixed(3) + ")"; c.stroke(); }
+        c.restore();
+      }
+      var qc = toS([sp[0], 0.02, sp[1]]), inset = 34;
+      if (qc && qc[0] > inset && qc[0] < W - inset && qc[1] > hudLow + inset && qc[1] < H - inset) { glyph("◆", qc[0], qc[1], 18, "#ffd27a"); if (mark) { hudBox.mark = { x: qc[0], y: qc[1] }; } else if (cueKey() !== "court") { c.save(); c.font = "700 13px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#ffd166"; c.fillText(STR.cue.play, qc[0], qc[1] - 26); c.restore(); } }
+      else if (edge) {
+        // (off the screen, behind him or past its edge: at the edge, the way to it, a gold diamond and an arrow)
+        var cq = [0, 0, 0, 0], P = [sp[0], 0.02, sp[1]]; for (var i2 = 0; i2 < 4; i2 += 1) { cq[i2] = vp[i2] * P[0] + vp[4 + i2] * P[1] + vp[8 + i2] * P[2] + vp[12 + i2]; }
+        var ex = cq[0] / Math.abs(cq[3] || 1e-3), ey = -cq[1] / Math.abs(cq[3] || 1e-3); if (cq[3] < 0.05 && ey < 0.2) { ey = 1; }   // (behind: |w| keeps its side; the bottom edge)
+        var an = Math.atan2(ey, ex), hx = (W / 2 - inset), hy = (H / 2 - inset), kk = min(hx / max(1e-3, Math.abs(Math.cos(an))), hy / max(1e-3, Math.abs(Math.sin(an))));
+        var mx2 = W / 2 + Math.cos(an) * kk, my2 = max(hudLow + inset, H / 2 + Math.sin(an) * kk);
+        // (the same bold gold circle, small, at the edge the way to it, its ring running out, and an arrow)
+        c.save(); c.beginPath(); c.arc(mx2, my2, 15, 0, 2 * PI); c.fillStyle = "rgba(255,209,102,0.25)"; c.fill();
+        c.shadowColor = "#ffd166"; c.shadowBlur = 12; c.lineWidth = 4; c.strokeStyle = "#ffd166"; c.stroke(); c.shadowBlur = 0;
+        var eu = (gt % 1.1) / 0.55; if (eu < 1) { c.beginPath(); c.arc(mx2, my2, 15 * (1 + eu), 0, 2 * PI); c.lineWidth = 3; c.strokeStyle = "rgba(255,209,102," + (0.85 * (1 - eu)).toFixed(3) + ")"; c.stroke(); }
+        c.restore();
+        glyph("◆", mx2, my2, 13, "#fff4d6");
+        glyph("→↘↓↙←↖↑↗".charAt(((Math.round(an / (PI / 4)) % 8) + 8) % 8), mx2 - Math.cos(an) * 30, my2 - Math.sin(an) * 30, 20, "#ffd166");
+        if (mark) { hudBox.mark = { x: mx2, y: my2, edge: true }; }
+      }
+    };
+    if (!m && !TUT.on && courts.length && !courts[courts.length - 1].up) { serveRing(openSpot(), !ride.mode || ride.mode === "car", false); }   // (between games: the open court's, where its match begins; off the screen its edge arrow too, on foot or in the coupe)
     if (m) {
       // the pearl in play, easier to see (the artist, 28 Oct 2026: "I need to be able to see the ball 33% better than
       // I do now"; pb_measure.js measures its light against the frame without it): a warm glow round its character,
@@ -3577,40 +3707,7 @@
         for (var s = 0; s < 14; s += 1) { var a = s / 14 * 2 * PI, q = toS([b.mark.x + Math.cos(a) * 0.4, 0.02, b.mark.z + Math.sin(a) * 0.4]); if (q) { if (lit) { glyph(rd ? "◆" : "○", q[0], q[1], rd ? 12 : 13, CUE_COL.gold); } else { glyph("○", q[0], q[1], 11); } } }
         var qm = lit && toS([b.mark.x, 0.02, b.mark.z]); if (qm) { glyph("◆", qm[0], qm[1], 14, CUE_COL.gold); }
       });
-      if (m.phase === "serve" && !m.meterOn) {
-        // (where he serves from, the artist, 28 Oct 2026: "Make the spot I need to run to to serve more apparent in a quick
-        // golden circle that serves as a strong visual cue of the spot": a bold gold circle on the court, glowing, filled
-        // faintly, and every second a ring running quickly out from it to twice its size, where the lock begins; drawn
-        // over everything, so a mark behind him still shows through; a ring that grows and fades, never a flash)
-        var sp = serveSpot(), ring = function (rad) { var pts = []; for (var s2 = 0; s2 <= 32; s2 += 1) { var a2 = s2 / 32 * 2 * PI, q2 = toS([sp[0] + Math.cos(a2) * rad, 0.02, sp[1] + Math.sin(a2) * rad]); if (!q2) { return null; } pts.push(q2); } return pts; };
-        var path = function (pts) { c.beginPath(); pts.forEach(function (q2, i2) { if (i2) { c.lineTo(q2[0], q2[1]); } else { c.moveTo(q2[0], q2[1]); } }); c.closePath(); };
-        var main = ring(SERVE.R);
-        if (main) {
-          c.save(); path(main); c.fillStyle = "rgba(255,209,102,0.22)"; c.fill();
-          c.shadowColor = "#ffd166"; c.shadowBlur = 14; c.lineWidth = 4; c.strokeStyle = "#ffd166"; c.stroke();
-          c.shadowBlur = 0; c.lineWidth = 1.5; c.strokeStyle = "#fff4d6"; c.stroke();
-          var pu = (gt % 1.1) / 0.55, pr = pu < 1 ? ring(SERVE.R * (1 + pu)) : null;   // (the ring running out, half of each second and a tenth)
-          if (pr) { path(pr); c.lineWidth = 3; c.strokeStyle = "rgba(255,209,102," + (0.85 * (1 - pu)).toFixed(3) + ")"; c.stroke(); }
-          c.restore();
-        }
-        var qc = toS([sp[0], 0.02, sp[1]]), inset = 34;
-        if (qc && qc[0] > inset && qc[0] < W - inset && qc[1] > hudLow + inset && qc[1] < H - inset) { glyph("◆", qc[0], qc[1], 18, "#ffd27a"); hudBox.mark = { x: qc[0], y: qc[1] }; }
-        else {
-          // (off the screen, behind him or past its edge: at the edge, the way to it, a gold diamond and an arrow)
-          var cq = [0, 0, 0, 0], P = [sp[0], 0.02, sp[1]]; for (var i2 = 0; i2 < 4; i2 += 1) { cq[i2] = vp[i2] * P[0] + vp[4 + i2] * P[1] + vp[8 + i2] * P[2] + vp[12 + i2]; }
-          var ex = cq[0] / Math.abs(cq[3] || 1e-3), ey = -cq[1] / Math.abs(cq[3] || 1e-3); if (cq[3] < 0.05 && ey < 0.2) { ey = 1; }   // (behind: |w| keeps its side; the bottom edge)
-          var an = Math.atan2(ey, ex), hx = (W / 2 - inset), hy = (H / 2 - inset), kk = min(hx / max(1e-3, Math.abs(Math.cos(an))), hy / max(1e-3, Math.abs(Math.sin(an))));
-          var mx2 = W / 2 + Math.cos(an) * kk, my2 = max(hudLow + inset, H / 2 + Math.sin(an) * kk);
-          // (the same bold gold circle, small, at the edge the way to it, its ring running out, and an arrow)
-          c.save(); c.beginPath(); c.arc(mx2, my2, 15, 0, 2 * PI); c.fillStyle = "rgba(255,209,102,0.25)"; c.fill();
-          c.shadowColor = "#ffd166"; c.shadowBlur = 12; c.lineWidth = 4; c.strokeStyle = "#ffd166"; c.stroke(); c.shadowBlur = 0;
-          var eu = (gt % 1.1) / 0.55; if (eu < 1) { c.beginPath(); c.arc(mx2, my2, 15 * (1 + eu), 0, 2 * PI); c.lineWidth = 3; c.strokeStyle = "rgba(255,209,102," + (0.85 * (1 - eu)).toFixed(3) + ")"; c.stroke(); }
-          c.restore();
-          glyph("◆", mx2, my2, 13, "#fff4d6");
-          glyph("→↘↓↙←↖↑↗".charAt(((Math.round(an / (PI / 4)) % 8) + 8) % 8), mx2 - Math.cos(an) * 30, my2 - Math.sin(an) * 30, 20, "#ffd166");
-          hudBox.mark = { x: mx2, y: my2, edge: true };
-        }
-      }
+      if (m.phase === "serve" && !m.meterOn) { serveRing(serveSpot(), true, true); }
       if (m.meterOn && m.phase !== "super" && m.phase !== "plansuper") { meterDraw(c, m, W, H, glyph); }
       if (m.phase === "plansuper" && m.psup.struck) {
         var ph = gt - m.psup.hitT, qp = toS([m.psup.ball.x, m.psup.ball.y, m.psup.ball.z]) || [W / 2, H / 3];
@@ -3794,7 +3891,7 @@
     // (draw: run() steps the camera once a step, as a frame does; a draw adds no step of its own)
     return { me: me, plans: plans, stands: stands, court: court, courts: courts, view: view, skill: nemSkill, won: wonCount, ASC: ASC, CAM: CAM, NECK: NECK, PSUP: PSUP, HARD: HARD,
              winCourt: function () { if (court.m) { court.m.you = COURT.WIN; levelWon(); } }, CAPS: CAPS, COURT: COURT, YT: YT, STR: STR,
-             glyphs: asc && asc.glyphs, gt: function () { return gt; }, input: input, enter: function (k) { me.x = courtAt(k)[0] + 0.5; me.z = COURT.L - 1; },
+             glyphs: asc && asc.glyphs, gt: function () { return gt; }, input: input, enter: function (k) { me.x = courtAt(k)[0] + 0.5; me.z = COURT.L - 1; if (!court.m && k === courts.length - 1 && !courts[k].up) { court.told = {}; matchOn(k); } },
              run: function (sec, fire) { var n = round(sec * 60); for (var i = 0; i < n; i += 1) { if (fire && i === 0) { input.fire = true; } CUE.rt += 1 / 60; if (tutHeld()) { continue; } gt += 1 / 60; stepAll(1 / 60); camera(1 / 60); } },
              draw: function () { frameDt = 0; draw(); }, pause: function (on) { if (on) { YT.paused = true; stop(); } else { YT.paused = false; start(); } },
              running: function () { return !!raf; }, pose: athPose, planContact: planContact, ascOk: function () { return !!(asc && asc.ok); },
@@ -3814,7 +3911,7 @@
                }
                input.stick = null; return !!(court.m && court.m.meterOn);
              },
-             ride: ride, car: car, CAR: CAR, STAIR: STAIR, GLIDE: GLIDE, BOUND: BOUND, DONUT: DONUT, rideToggle: rideToggle, stairAt: stairAt, stairWay: stairWay, carGap: carGap,
+             ride: ride, car: car, CAR: CAR, STAIR: STAIR, GLIDE: GLIDE, BOUND: BOUND, DONUT: DONUT, rideToggle: rideToggle, stairAt: stairAt, stairWay: stairWay, topPath: topPath, topAt: topAt, stairEnd: stairEnd, TOP: TOP, carGap: carGap,
              hide: function (on) { hideAth = on; }, fx: function () { return fx; }, camNow: function () { return { e: cur.eye.slice(), yaw: cur.yaw, pitch: cur.pitch }; },
              camAt: function (e, yaw, pitch, plain) { camOver = e && { e: e, yaw: yaw, pitch: pitch }; camPlain = !!plain; } };
   } };

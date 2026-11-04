@@ -6,7 +6,8 @@
 // Mr Pearl whether they are on the screen (inside its width, in front of the eye), and counts the frames where one is
 // not (the next pearl and Mr Pearl are what the neck is for; Mr Plan is counted, not chased); and how far the
 // view turned and how fast. Run against the game before (its own port) and now, the share of such frames should fall;
-// the neck stays within 0.9 rad and turns no faster than 2 rad/s (on a spring: NECK.w); on a desk it hardly turns.
+// the neck stays within NECK.max (0.45 rad) and turns no faster than NECK.rate (1 rad/s, on a spring: NECK.w), and swivels
+// half as much as the first neck did (4 Nov 2026); on a desk it hardly turns.
 // node pb_neck.js [port] [phone|desk] [label]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -21,11 +22,12 @@ const VIEW = kind === "desk" ? { viewport: { width: 1440, height: 900 }, deviceS
   await p.evaluate(() => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: 9, rally: 4, tut: 1, tips: 255 })); });
   await p.reload();
   await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
-  const r = await p.evaluate(() => {
+  const r = await p.evaluate((ov) => {
     const d = window.Pickleball.debug(), C = d.COURT, me = d.me; d.pause(true); d.run(0.3);
+    if (ov && d.NECK) { Object.assign(d.NECK, ov); }   // (PB_NECK='{...}': other numbers for the neck, to compare)
     const k = d.courts.length - 1; d.enter(k); d.run(0.5);
     const W = innerWidth, inView = (pt) => { const s = d.toScreen(pt); return !!s && s[0] >= 0 && s[0] <= W; };
-    let frames = 0, outAny = 0, outPearl = 0, outNext = 0, outNextP = 0, outNextM = 0, outPlan = 0, outMe = 0, maxNeck = 0, maxStep = 0, lastYaw = null, lastFire = -99;
+    let frames = 0, outAny = 0, outPearl = 0, outNext = 0, outNextP = 0, outNextM = 0, outPlan = 0, outMe = 0, maxNeck = 0, maxStep = 0, lastYaw = null, lastFire = -99, sumNeck = 0, travel = 0, lastNk = null;
     for (let i = 0; i < 60 * 50; i++) {
       const m = d.court.m; if (!m) { d.enter(d.courts.length - 1); d.run(0.5); continue; }
       let tx = 0.6, tz = C.L - 1.2;
@@ -46,22 +48,24 @@ const VIEW = kind === "desk" ? { viewport: { width: 1440, height: 900 }, deviceS
       if (nx) { outNext++; } if (!inView([nq.x, nq.y, nq.z])) { outNextP++; } if (nq.mark && nq.bounces === 0 && !inView([nq.mark.x, 0.1, nq.mark.z])) { outNextM++; }
       const pl = d.plans[m2.k], pn = !inView([pl.x, 1.0, pl.z]), mn = !inView([me.x, 1.0, me.z]);
       if (pe) { outPearl++; } if (pn) { outPlan++; } if (mn) { outMe++; } if (pe || pn || mn) { outAny++; }
-      const yw = d.view.nk != null ? d.view.nk : d.view.yaw; maxNeck = Math.max(maxNeck, Math.abs(Math.atan2(Math.sin(yw), Math.cos(yw)))); if (lastYaw != null) { maxStep = Math.max(maxStep, Math.abs(yw - lastYaw)); } lastYaw = yw;
+      const yw = d.view.nk != null ? d.view.nk : d.view.yaw; sumNeck += Math.abs(d.view.nk || 0); if (lastNk != null && lastYaw != null) { travel += Math.abs((d.view.nk || 0) - lastNk); } lastNk = d.view.nk || 0; maxNeck = Math.max(maxNeck, Math.abs(Math.atan2(Math.sin(yw), Math.cos(yw)))); if (lastYaw != null) { maxStep = Math.max(maxStep, Math.abs(yw - lastYaw)); } lastYaw = yw;
     }
     d.input.stick = null;
     const pc = (n) => +(100 * n / Math.max(1, frames)).toFixed(1);
-    return { frames, outAny: pc(outAny), outPearl: pc(outPearl), outNext: pc(outNext), outNextPearl: pc(outNextP), outNextMark: pc(outNextM), outPlan: pc(outPlan), outMe: pc(outMe), maxNeck: +maxNeck.toFixed(3), maxStepPerSec: +(maxStep * 60).toFixed(2), NECK: d.NECK || null };
-  });
+    return { frames, outAny: pc(outAny), outPearl: pc(outPearl), outNext: pc(outNext), outNextPearl: pc(outNextP), outNextMark: pc(outNextM), outPlan: pc(outPlan), outMe: pc(outMe), maxNeck: +maxNeck.toFixed(3), meanNeck: +(sumNeck / Math.max(1, frames)).toFixed(3), swivelPerSec: +(travel * 60 / Math.max(1, frames)).toFixed(3), maxStepPerSec: +(maxStep * 60).toFixed(2), NECK: d.NECK || null };
+  }, process.env.PB_NECK ? JSON.parse(process.env.PB_NECK) : null);
   r.label = label || ""; r.kind = kind || "phone";
   console.log(JSON.stringify(r));
-  // (a game with the neck: inside its turn and its rate, and the next pearl out of the picture in at most 40% of the
-  // rally's frames on a phone (the game before: 44%; 28% measured on 3 Nov 2026), 12% on a desk (6% measured); the game
-  // before, without NECK, is only measured)
+  // (a game with the neck: inside its turn and its rate)
   const bad = [];
   if (r.NECK) {
     if (r.maxNeck > r.NECK.max + 1e-3) { bad.push(`the neck turned ${r.maxNeck} rad, past ${r.NECK.max}`); }
     if (r.maxStepPerSec > r.NECK.rate * 1.01 + 0.01) { bad.push(`the neck turned at ${r.maxStepPerSec} rad/s, past ${r.NECK.rate}`); }
-    if (r.outNextPearl > (r.kind === "desk" ? 12 : 40)) { bad.push(`the next pearl out of the picture in ${r.outNextPearl}% of the rally's frames`); }
+    // (the middle ground, 4 Nov 2026: half the swivel of the first neck, 0.73 rad a second; and still some help: where the
+    // next pearl comes down out of the picture less often than with no neck at all, 52% to 60% on a phone. A few rallies,
+    // so the shares move by ten points from run to run: the bounds are loose)
+    if (r.swivelPerSec > (r.kind === "desk" ? 0.3 : 0.5)) { bad.push(`the view swivelled ${r.swivelPerSec} rad a second`); }
+    if (r.outNextPearl > (r.kind === "desk" ? 15 : 50) || (r.kind !== "desk" && r.outNextMark > 50)) { bad.push(`the next pearl out of the picture in ${r.outNextPearl}% of the rally's frames, where it comes down ${r.outNextMark}%`); }
     if (r.frames < 300) { bad.push(`only ${r.frames} rally frames`); }
   }
   bad.forEach((x) => console.log("FAIL " + x));
