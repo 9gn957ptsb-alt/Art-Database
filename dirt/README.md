@@ -813,6 +813,20 @@ the same artist one time in 43), so a swipe plays them as a thumb plays a flip b
 - *Publishing.* `engine/splice.py` now puts this repository's glyphlight.js and the page's glyphs loader in with the
   engine, so a change to either reaches DRIFT without the full rebuild.
 
+**The web** (4 November 2026: "The very shape of the morphology web and how it bounces around when moving words should
+be instituted into the drift artifact"). Morphology Web draws its words as dots joined by their roots, prefixes and
+images, and moves them with d3-force: take up a word and the rest follow it on springs and settle. Here the calm
+regions' seeds are its words, each a frame of the storyboard and its painting's middle, drawn in the same proportions
+at the frames' pitch (377 cells for its 91.7 px): a dot 6.5 px round in the artist's vivid colour, ringed 2 px in the
+wash; across to the next frame of its run a root (2.2 px), to the next run's a prefix (1.4: the chain's next artist,
+who shares a colour), down to the same story a row on an image (1.3, dashed 5 and 4), in the wash darkened as ink in
+water (`webOver`). The thumb takes up the seed nearest it and draws it a little ahead of its place by the hand's speed,
+and the rest follow with d3-force's own numbers (alpha 0.25 while held, cooling by 0.0228 a tick; links at 0.55 by
+70 : 95 : 110; velocity decaying by 0.4), the paintings with their seeds; each link rests at the length it spans and
+each seed is held to its place by d3's forceX and forceY made φ³ as firm, so let go the web rings once and is the
+plane as it was, still, in about a quarter of a second (`webTick`; `GLG.web()` reports it). An artist is chosen by the
+seed at rest, so a bounce never changes one. DRIFT Poetry's seeds rest: its letters are written along the paintings.
+
 **Depth without distance.** DRIFT has no zoom and wants none: nothing on it is understood by coming nearer or going
 farther (the Artist Website's globe is where distance means something). So every scale is on the screen at once.
 Here and there a window opens, one in each 233-cell square where the plane is deep enough, 34 to 144 cells across,
