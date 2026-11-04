@@ -113,7 +113,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(lp.laps.length >= 3 && lp.laps.every((t) => t > lp.len / 24 * 1000 && t < 60000), `a bot round the track: ${lp.laps.length} laps timed (${lp.laps.map((t) => (t / 1000).toFixed(2)).join(", ")} s; ${lp.len.toFixed(0)} m a lap)`);
   const best = [...lp.laps].sort((a, b) => a - b).slice(0, 3);
   check(lp.saved && JSON.stringify(lp.saved.t) === JSON.stringify(best) && lp.saved.n === 4 && JSON.stringify(lp.state) === JSON.stringify(lp.saved), `the best three kept, in order, for this track, and in the save (${JSON.stringify(lp.saved)})`);
-  check(lp.maxY > 0.5 && lp.maxRoll > 0.12 && lp.off < lp.len, `up the bowl round the bends: ${lp.maxY} m up, leaning ${lp.maxRoll} rad with it`);
+  check(lp.maxY > 0.25 && lp.maxRoll > 0.12 && lp.off < lp.len, `up the bowl round the bends: ${lp.maxY} m up, leaning ${lp.maxRoll} rad with it (held to the middle line since 4 Nov 2026: up its bowl as far as the middle)`);
   check(lp.hud && lp.hud.text[1].indexOf("TOP ") === 0 && lp.hud.text[1].split(" ").length === 4, `the lap and the top three on the screen (${JSON.stringify(lp.hud && lp.hud.text)})`);
   check(lp.wrongT0 === null && lp.cut, "the line crossed the wrong way: no lap running; a lap cutting both bends: none");
   check(lp.run1 && lp.infield === null && lp.run2 && lp.beside === null, "a lap running, then across the infield: none; then past the line beside the track: none");

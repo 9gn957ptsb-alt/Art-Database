@@ -2189,7 +2189,10 @@
      glides as he would (CAR.GLIDE, CAR.SINK), the wheel turning it, down onto the ground or the ramp. */
   var CAR = { L: 4.3, W: 1.7, WB: 2.55, VMAX: 24, VREV: 7, ACC: 10, BRAKE: 22, COAST: 4, STEER: 0.62, R: 0.9, EDGE: 0.4, RAMP: 14, GLIDE: 11, SINK: 1.8, TURN: 1.0,
               K: 5.2, LIFT: 3.6, home: [-8.6, COURT.L + 6.2, PI / 2],   // (home: inside the track, its side 0.75 m off the inner edge, room for a donut clear of the staircase)
-              GRIP: 12, ALIGN: 1.6, DRIFT: { GRIP: 1.6, SLIP: 0.55, DRAG: 0.15, MIN: 6 } };   // (GRIP: the tyres' sideways hold, m/s²; the drift's: more round the bend, the nose SLIP into it)
+              GRIP: 12, ALIGN: 1.6, DRIFT: { GRIP: 1.6, SLIP: 0.55, DRAG: 0.15, MIN: 6 },
+              // (the track's lock: held from VOFF up, whole by VFULL; caught only going along it, within ALIGN of its way;
+              // the stick moves it LANE across, the edge EDGE in kept at speed; KP the pull to its line, m/s a metre off)
+              LOCK: { VOFF: 3.5, VFULL: 10, ALIGN: Math.cos(35 * PI / 180), LANE: 2.6, EDGE: 1.1, KP: 1.6, TURN: 6 } };   // (GRIP: the tyres' sideways hold, m/s²; the drift's: more round the bend, the nose SLIP into it)
   var car = { x: CAR.home[0], z: CAR.home[1], yaw: CAR.home[2], v: 0, steer: 0, y: 0, vy: 0, mode: "ground", s: -1, off: [0, 0], pitch: 0 };   // (mode: "ground", "ramp", "fly", "glide")
   var STAIR = { c: [-15, COURT.L - 1.7], RISE: 0.6, DA: PI / 5, A0: PI / 2 + PI / 5, R0: 3.4, R1: 6.6, RW: 5, POST: 0.35, CLIMB: 2.2 };
   STAIR.LEN = hypot(STAIR.RW * STAIR.DA, STAIR.RISE); STAIR.SLOPE = Math.atan2(STAIR.RISE, STAIR.RW * STAIR.DA);   // (a step's length along the way up, and its slope)
@@ -2343,7 +2346,7 @@
   function carGround(k) {
     var A = carAxes(), g = function (f, r) { return groundAt(car.x + A.fx * f + A.rx * r, car.z + A.fz * f + A.rz * r); };
     car.y = groundAt(car.x, car.z);
-    car.pitch += (Math.atan2(g(1.4, 0) - g(-1.4, 0), 2.8) - car.pitch) * k; car.roll = (car.roll || 0) + (Math.atan2(g(0, 0.8) - g(0, -0.8), 1.6) - (car.roll || 0)) * k;
+    car.pitch += (Math.atan2(g(1.8, 0) - g(-1.8, 0), 3.6) - car.pitch) * k; car.roll = (car.roll || 0) + (Math.atan2(g(0, 0.8) - g(0, -0.8), 1.6) - (car.roll || 0)) * k;   // (over the bank's crest, read over its length: no jolt)
   }
   // how far he stands from the coupe's side (0 against it)
   function carGap(x, z) {
@@ -2391,19 +2394,54 @@
   // ("Add a drift button that allows you drift when coming up on corners"): the way it goes turns round the bend at more
   // than the grip (CAR.DRIFT.GRIP), the nose into the bend ahead of it and the tail out, smoke off the back tyres,
   // scrubbing a little speed; let go, the grip back and it straightens.
+  // The track's lock (the artist, 4 Nov 2026: "The coop needs to be a lot easier to drive, have it lock on to the center
+  // of the race car track when you were driving the coupe making it really hard to actually fall off the track. When
+  // slowing down to a very low speed, you are allowed to move more off the track so that when you really slow down,
+  // you're able to get back off the track ... has to be very smooth and non-disruptive to me passing through it or
+  // getting out of it"): on the track, going along it above a crawl, the coupe is caught by its middle line, eased in
+  // over a fraction of a second; held, it follows the track's way by itself and the stick moves it across its lane
+  // (let go, back to the middle); at speed its edges hold it. Slowed to a crawl it lets go. Crossing the track, not
+  // going along it, nothing catches it. lk: how held (0 to 1).
+  function trkLock(dt, drive, sp) {
+    var L = CAR.LOCK, t = trkAt(car.x, car.z), on = t.d > -0.3 && t.d < TRK.W + 0.3, Tv = [Math.sin(t.yaw), -Math.cos(t.yaw)], H = [Math.sin(car.vh), -Math.cos(car.vh)];
+    var al = H[0] * Tv[0] + H[1] * Tv[1], fast = smooth((sp - L.VOFF) / (L.VFULL - L.VOFF)), want = 0;
+    var jump = car.lkP ? hypot(car.x - car.lkP[0], car.z - car.lkP[1]) : 0; car.lkP = [car.x, car.z];
+    if (jump > max(3, sp * dt * 3) || (car.lkDir && al * car.lkDir < 0)) { car.lk = 0; car.lkDir = 0; }   // (put somewhere else, or turned past across its way: let go at once)
+    if (drive && on && car.v > 0 && fast > 0 && (car.lk > 0.05 || abs(al) > L.ALIGN)) { want = fast; }
+    car.lk = (car.lk || 0) + (want - (car.lk || 0)) * min(1, dt * (want > (car.lk || 0) ? 2.5 : 5));
+    if (car.lk < 0.002) { car.lk = 0; car.lkDir = 0; return t; }
+    if (!car.lkDir || car.lk < 0.05) { car.lkDir = al >= 0 ? 1 : -1; }
+    return t;
+  }
+  function trkHold(dt, t, st) {
+    var L = CAR.LOCK, lk = car.lk || 0; if (lk <= 0) { return; }
+    var xR = trkXR(), cx = car.x < TRK.XL ? TRK.XL : car.x > xR ? xR : car.x, nx = car.x - cx, nz = car.z, nl = hypot(nx, nz) || 1; nx /= nl; nz /= nl;   // (out from the track's inside, here)
+    var la = abs(car.v) * 1.2 / L.TURN, tA = trkAt(car.x + Math.sin(car.vh) * la, car.z - Math.cos(car.vh) * la);   // (its way a moment ahead: round a bend the turn is begun in time, not a step behind it)
+    var dir = car.lkDir || 1, T = [Math.sin(tA.yaw) * dir, -Math.cos(tA.yaw) * dir], o = t.d - TRK.W / 2;   // (o: out from the middle line)
+    var side = Math.cos(car.vh) * nx + Math.sin(car.vh) * nz;   // (the coupe's right, outward: + or -)
+    var oT = clampV(st, -1, 1) * L.LANE * (side >= 0 ? 1 : -1), sp = max(abs(car.v), 4);
+    var q = clampV(-L.KP * (o - oT) / sp, -0.4, 0.4), D = [T[0] * Math.sqrt(1 - q * q) + nx * q, T[1] * Math.sqrt(1 - q * q) + nz * q];
+    var dv = angle(Math.atan2(D[0], -D[1]) - car.vh) * min(1, dt * L.TURN) * lk;
+    car.vh = angle(car.vh + dv); car.yaw = angle(car.yaw + dv);
+    // (at speed its edges hold it, faded in with the hold, and only against going further out: never a push across, so
+    // caught by an edge it is not shoved; the steering above brings it in)
+    var lim = TRK.W / 2 - L.EDGE, oc = clampV(o, -lim, lim), kE = min(1, dt * 12) * smooth((lk - 0.5) / 0.5), vo = (Math.sin(car.vh) * nx - Math.cos(car.vh) * nz) * car.v;
+    if (oc !== o && kE > 0 && vo * (o - oc) > 0) { car.x += nx * (oc - o) * kE; car.z += nz * (oc - o) * kE; }
+  }
   function groundDrive(dt, c, drive, st) {
     var v = car.v, sp = abs(v), sg = v < 0 ? -1 : 1, grip = CAR.GRIP + CAPS.g * abs(Math.sin(car.roll || 0));
     var drift = drive && !!c.drift && v > CAR.DRIFT.MIN;
     if (car.vh == null) { car.vh = car.yaw; }
+    var tk = trkLock(dt, !!c, sp), lk = car.lk || 0;   // (held while he is in it, braking for Get out too: not off the bend as it stops)
     var slip = angle(car.yaw - car.vh);
     if (drift) {
-      var wp = car.si * grip * CAR.DRIFT.GRIP / max(1, sp);
+      var wp = car.si * grip * CAR.DRIFT.GRIP / max(1, sp) * (1 - lk);   // (held by the track, its way is the track's; the slide stays)
       car.vh = angle(car.vh + wp * dt); slip += (car.si * CAR.DRIFT.SLIP - slip) * min(1, dt * 5);
       car.yaw = angle(car.vh + slip); car.yr = wp; car.gk = 1.5;
       car.v -= v * CAR.DRIFT.DRAG * dt;
     } else {
-      var wt = car.si * min(sp / CAR.WB * Math.tan(CAR.STEER), grip / max(1, sp)) * sg;
-      if (abs(car.si) < 0.05 && sp > 3) {   // (the wheel let go on the track: lined up with its way, either way round)
+      var wt = car.si * min(sp / CAR.WB * Math.tan(CAR.STEER), grip / max(1, sp)) * sg * (1 - lk);   // (held by the track, the wheel moves it across its lane instead)
+      if (abs(car.si) < 0.05 && sp > 3 && lk < 0.05) {   // (the wheel let go on the track: lined up with its way, either way round)
         var t = trkAt(car.x, car.z);
         if (t.d > -1 && t.d < TRK.W + 1) { var off = angle(t.yaw - car.yaw); if (abs(off) > PI / 2) { off = angle(off + PI); } if (abs(off) < 0.5) { wt += clampV(off * CAR.ALIGN, -0.6, 0.6); } }
       }
@@ -2413,8 +2451,9 @@
       car.vh = angle(car.vh + angle(car.yaw - car.vh) * min(1, dt * car.gk));
     }
     car.drifting = drift;
+    if (c) { trkHold(dt, tk, car.si || 0); }
     car.x += Math.sin(car.vh) * car.v * dt; car.z -= Math.cos(car.vh) * car.v * dt;
-    carGround(min(1, dt * 12));
+    carGround(min(1, dt * 8));
     if ((drive && c.fwd) || sp > 0.5) { car.v -= CAPS.g * Math.sin(car.pitch) * dt; }   // (up the bowl slower, down it quicker; stopped with no throttle it holds, not creeping down)
     // (smoke off the back tyres while it slides, as at 30 Hz on any display)
     if (abs(angle(car.yaw - car.vh)) > 0.15 && sp > 5) {
