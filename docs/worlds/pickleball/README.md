@@ -188,9 +188,10 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   the corners of the tracks like your going up a bowl. Then have it level at the midpoint between the corners. Add a
   drift button that allows you drift when coming up on corners. The car needs to be much easier to control, like your
   play Grand Tarismo. Have a start line on the track that times your lap. Keep track of the top 3"): an oval 8 m wide
-  round every court and the staircase, its straights along the courts 18.5 m out from their middle line, its bends half
-  circles about the staircase (x −15) and about the open court, so every court won makes it 24 m longer (146 m a lap
-  with one court, 218 with four). Across it, from the inner edge, the ground rises as a circle's arc to 1.5 m at the
+  round every court and the staircase, its straights along the courts 25.2 m out from their middle line (18.5 m, then
+  half a court's length further, the artist, 4 Nov 2026: "Make the track a half a court length back"), its bends half
+  circles about the staircase (x −15) and about the open court, so every court won makes it 24 m longer (188 m a lap
+  with one court, 260 with four). Across it, from the inner edge, the ground rises as a circle's arc to 1.5 m at the
   outer edge (a bowl), all round the bends, the rise easing off along each straight to level at its middle; past the
   outer edge a berm runs back down over 4 m. Tarmac in `=`, lit by itself (the floodlights do not reach it), red and
   white kerbs round the bends, a white line along each edge, and a chequered line across the near straight at its
@@ -208,7 +209,8 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   the track, and the lap running is void), to the hundredth; crossed the wrong way,
   out of the coupe, or a court won: no lap. In the coupe the lap runs under the courts' squares (`LAP 0:12.34`), the one
   just done for three seconds (`BEST` or its place), and this track's best three (`TOP`), kept with the save in
-  milliseconds; each lap is said as it ends. A court won makes the track longer, so its best three start again
+  milliseconds; each lap is said as it ends. A court won makes the track longer, so its best three start again;
+  so do times from before the track moved half a court out (its shape is kept with them).
   A tap on the screen or Space starts a donut only when the coupe is nearly stopped, so a stray one mid-lap spoils
   nothing (the Donut button still does one at any speed, a stop first). Hits on the ground's edge are measured along
   the way the coupe goes, so a drift against it is turned along it and slowed, not a rail. Everyone stands on the
@@ -218,6 +220,38 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   (`pb_track.js`, phone and desk: where it lies with one court won, four and twelve, the bowl and no step in the ground,
   a bot's laps timed and saved and back after a reload, the wrong way and a cut, the grip, the Drift by a real finger
   and by Shift, standing on the bowl).
+- *Its lights* (the artist, 4 Nov 2026: "Have spotlight floodlights lights along the corners of the track and accent
+  linear lighting along the edges of the track"): four floodlight towers round the outside of each bend, 13 m up past
+  the berm, each lamp aimed down at the track's middle line, its pool of light baked into the tarmac's and the kerbs'
+  colours, its glare and a faint beam down to its pool drawn over the view; and a light strip along each edge all the
+  way round, cyan along the inner, violet along the outer, glowing strokes in the characters. The Donut button is gone
+  while the coupe is on the track ("Take the donut button off when the coupe is driving on the track"); a tap or Space
+  still does one there when it is nearly stopped.
+- *The gardens* (the artist, 4 Nov 2026: "have beautiful plants and flowers fill in the space but in a mix style of a
+  Japanese Gardens and Claude Monet's house garden where he painted his Lillie's"): the space the track left, between
+  it and the courts, in characters as everything is (gravel and beds in `:`, water in `~`, plants as bodies in their
+  own colours). Along Mr Pearl's side, Monet's Clos Normand: a gravel walk with a rose arch over it between each two courts (off the cameras' line to him), and
+  two rows of beds of tulips, irises, nasturtiums, poppies, roses and lavender. Along Mr Plan's side his water garden:
+  a lily canal with its pads and pink and white flowers, koi, irises along its edge, a weeping willow on its bank at
+  each court, the green Japanese bridge behind court one (and every fifth court after) with wisteria hanging from its
+  arches, and behind the canal bamboo and red maples. Round the staircase a Japanese dry garden: raked gravel, stones
+  in moss, a stone lantern, cloud-pruned pines, bamboo, maples; past the open court a round lily pond, a lantern,
+  maples, a pine and beds. Decoration only: he and the coupe pass through it as through the floodlights' poles. Built a
+  court's length at a time, the nearest first and one a frame (no hitch), freed again far off; its beds, walks and water
+  drawn within sight, its plants within 66 m, past which a flower is smaller than a character (`pb_garden.js`: nothing
+  of it over a run-off, a pole, the track or the staircase, nor behind a court's middle).
+- *The portal* (the artist, 4 Nov 2026: "make an almost invisible tunnel, like the black hole in the movie interstellar
+  and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"): over the dry
+  garden a black sphere, hardly there but for its rings (the light of a disc round it, tilted and turning, and that
+  light bent round its edge facing the view), faint from afar, brighter close by; no haze lifts its black. In it, on
+  foot, a way through: `Holographic Mr Pearl ↗` (a tap, a click, or Enter), opening the Holographic Mr Pearl Artifact
+  from the Artifact and its page on this site (`../rocket/`) from the site. Inside YouTube none, as a Playable may not
+  lead out ("a way through to another game, soon"): the Playable's bundle carries no link at all, and the build fails
+  if one is left in it. Later (the artist, the same day: "eventually we are going to use holographic Mr. Pearl Pickleball as a
+  framework to develop other games, specifically a quarterback game ... have it be a portal to holographic Mr. Pearl
+  quarterback ... you can actually play both games while being in one playable or app. Implement this when we have
+  holographic Mr. Pearl quarterback set up later"): the portal leads into Holographic Mr Pearl Quarterback inside the
+  same Playable.
 - *Its music* (the artist, 4 Nov 2026: "I want musical notes always coming out of the car when someone is driving it"):
   whenever someone is at the wheel, Mr Pearl (driving, parked in it, on the ramp, in the air) or Mr Plan in his donut,
   notes (♪ ♫ ♬ ♩) come out of its open windows, either side, five a second on any display, in the driver's own colours;

@@ -136,7 +136,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     // (round the open court's far end: down the street past its end, across, up the far side, never on its run-off)
     const box = [k * C.GAP - 5.5, k * C.GAP + 5.5, -C.L - 3.5, C.L + 3.5], gap = () => Math.min(...[h, -h].map((q) => { const px = c.x + Math.sin(c.yaw) * q, pz = c.z - Math.cos(c.yaw) * q, qx = Math.max(box[0], Math.min(box[1], px)), qz = Math.max(box[2], Math.min(box[3], pz)); return (px > box[0] && px < box[1] && pz > box[2] && pz < box[3]) ? -1 : Math.hypot(px - qx, pz - qz) - R; }));
     c.x = k * C.GAP - 14; c.z = C.L + 9; c.yaw = Math.PI / 2; c.v = 0; let worst = 99;
-    const go = (tx, tz, sec) => { for (let i = 0; i < sec * 60; i++) { const want = Math.atan2(tx - c.x, -(tz - c.z)), err = Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)); if (Math.hypot(tx - c.x, tz - c.z) < 3) { break; } window.__in(Math.abs(err) > 1.2 ? 0.6 : 1, Math.max(-1, Math.min(1, err * 2.5))); d.run(1 / 60); worst = Math.min(worst, gap()); } };
+    const go = (tx, tz, sec) => { for (let i = 0; i < sec * 60; i++) { const want = Math.atan2(tx - c.x, -(tz - c.z)), err = Math.atan2(Math.sin(want - c.yaw), Math.cos(want - c.yaw)); if (Math.hypot(tx - c.x, tz - c.z) < 3) { break; } window.__in(Math.abs(err) > 0.5 && c.v > 9 ? -0.6 : Math.abs(err) > 1.2 ? 0.6 : 1, Math.max(-1, Math.min(1, err * 2.5))); d.run(1 / 60); worst = Math.min(worst, gap()); } };
     go(k * C.GAP + 14, C.L + 9, 8); go(k * C.GAP + 14, -C.L - 9, 8); go(k * C.GAP - 14, -C.L - 9, 8);
     o.round = c.z < 0 && c.x < k * C.GAP; o.worst = worst;
     c.x = -40; c.z = 0; c.yaw = -Math.PI / 2; c.v = 0;
@@ -388,7 +388,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
       await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: q[0], y: q[1], id: 3 }] });
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     }
-    await p.waitForTimeout(60);
+    await p.waitForFunction(() => { const r = window.Pickleball.debug().ride; return !!(r.dn || r.dnQ); }, null, { timeout: 3000 }).catch(() => {});   // (the press taken by a frame: under load one can take a while)
     await D(() => { window.Pickleball.debug().YT.paused = true; });
   }
   const bd = await D(() => {
