@@ -36,6 +36,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
   make linear perspective apparent in the animation" (the image: the PowerBook G4 with the road on its screen)
 - "Stars in the duh logo*" (the correction: "stats" was "stars")
 - "Also make the hand gesture in the logo have interesting but simple degrees of transparency"
+- "The two stars like this I like in the logo" (shown: the soft eight-point starburst on the crystal hand's fingertip; the
+  hand's own two, at the fingertip and at the glass's foot, stay; the drawn "+" stars stay out)
 
 ## The purpose (said after, the same day; it frames everything below)
 
