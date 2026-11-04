@@ -1896,10 +1896,23 @@ int minimalOf(float cx, int k) {
 // the run keeps its artist but each frame has a composition of its own, unpushed: its letters are written along the
 // paintings' lines at their scale of 0.55 by its own code, which can take up z.)
 struct Region { vec2 C1, C2; uint h1, h2; float d; int k1, k2; float z; vec2 A1, A2; };
-/** The seed of the 377-cell square c. */
-vec2 regionSeed(ivec2 c) {
+/** The seed of the 377-cell square c, where it rests. */
+vec2 regionHome(ivec2 c) {
   uint h = h3(c.x, c.y, 5203u);
   return (vec2(c) + 0.5 + vec2(0.38, 0.8) * (vec2(unit(mixh(h + 1u)), unit(mixh(h + 2u))) - 0.5)) * 377.0;
+}
+// Since 4 Nov 2026 the seeds are the words of a web, Morphology Web's, and bounce as its words do when one is moved
+// (the page's web: webTick in groundGL): each seed of the 7 by 7 squares from uWebAt is off its rest by uWebOff.
+uniform vec2 uWebOff[49];
+uniform ivec2 uWebAt;
+/** The seed of the 377-cell square c, where the web has it now (in DRIFT Poetry, where it rests). */
+vec2 regionSeed(ivec2 c) {
+  vec2 C = regionHome(c);
+#if !WORDS
+  ivec2 w = c - uWebAt;
+  if (w.x >= 0 && w.y >= 0 && w.x < 7 && w.y < 7) C += uWebOff[w.y * 7 + w.x];
+#endif
+  return C;
 }
 Region regionAt(vec2 p) {
   const float RG = 377.0;
@@ -1917,7 +1930,7 @@ Region regionAt(vec2 p) {
   }
   r.d = (d2 - d1) / (2.0 * max(length(r.C1 - r.C2), 1.0));
   int j1 = r.k1 - 3 * storyRun(r.k1), j2 = r.k2 - 3 * storyRun(r.k2);
-  r.A1 = regionSeed(c1 - ivec2(j1, 0)); r.A2 = regionSeed(c2 - ivec2(j2, 0));   // (a run is three squares along a row)
+  r.A1 = regionHome(c1 - ivec2(j1, 0)); r.A2 = regionHome(c2 - ivec2(j2, 0));   // (a run is three squares along a row; at rest, so a bounce never changes an artist)
 #if WORDS
   r.h1 = h3(r.k1, 0, 5204u); r.h2 = h3(r.k2, 0, 5204u);
 #else
@@ -3165,6 +3178,48 @@ layout(location = 0) out vec4 outA;
 layout(location = 1) out vec4 outB;
 ${part("const float PHI", "const float GA")}${part("uint mixh(uint h)", "int fdiv(")}${part("float vnoise(", "vec3 artPaper(")}${part("const vec3 MINI[88]", "\n// ---- the one pixel")}
 const float GA = 2.399963229728653;                                  // the golden angle
+#if !WORDS
+// The web (4 Nov 2026). Aries: "The very shape of the morphology web and how it bounces around when moving words should
+// be instituted into the drift artifact." Morphology Web draws its words as dots 6.5 px round, ringed 2 px in the
+// page's ground, joined by links 70 to 110 px long: a shared root 2.2 px wide, a shared prefix 1.4, a shared image 1.3
+// dashed 5 and 4. Here the calm regions' seeds are its words (each a frame of the storyboard, its painting's middle),
+// at the frames' pitch (377 cells for its 91.7 px, the mean of its links, so every width and dash keeps its share):
+// a frame is joined across to the next of its run by a root (the same painting), to the next run's by a prefix (the
+// chain's next artist, who shares a colour with it), and down to the same story a row on by an image; each dot is its
+// artist's vivid colour, as each word's is its language's; and the links are the wash's own colour darkened, as ink
+// in water. The seeds bounce with the web (regionSeed), and the links and dots with them.
+vec3 webOver(vec3 col, vec2 p) {
+  const float K = 377.0 / 91.67;                                      // cells to one of Morphology Web's pixels
+  ivec2 g = ivec2(floor(p / 377.0));
+  vec2 S[9];
+  for (int j = 0; j < 3; j++) for (int i = 0; i < 3; i++) S[j * 3 + i] = regionSeed(g + ivec2(i - 1, j - 1));
+  float e = 0.0;
+  for (int j = 0; j < 3; j++) for (int i = 0; i < 2; i++) {          // across: a root within a run, a prefix between runs
+    ivec2 c = g + ivec2(i - 1, j - 1);
+    int k = c.x + 13 * c.y;
+    float hw = (storyRun(k) == storyRun(k + 1) ? 2.2 : 1.4) * K * 0.5;
+    e = max(e, 1.0 - smoothstep(hw - 1.0, hw + 1.0, segD(p, S[j * 3 + i], S[j * 3 + i + 1])));
+  }
+  for (int j = 0; j < 2; j++) for (int i = 0; i < 3; i++) {          // down: an image, dashed
+    vec2 a = S[j * 3 + i], ab = S[j * 3 + i + 3] - a;
+    float t = clamp(dot(p - a, ab) / dot(ab, ab), 0.0, 1.0), m = mod(t * length(ab), 9.0 * K), hw = 1.3 * K * 0.5;
+    e = max(e, clamp(min(m, 5.0 * K - m) + 0.5, 0.0, 1.0) * (1.0 - smoothstep(hw - 1.0, hw + 1.0, length(p - a - ab * t))));
+  }
+  col = mix(col, col * P2 + 16.0, e * P1);
+  float dn = 1e9;
+  int ni = 4;
+  for (int n = 0; n < 9; n++) { float d = length(p - S[n]); if (d < dn) { dn = d; ni = n; } }
+  float r = 6.5 * K;
+  if (dn < r + K + 1.0) {
+    ivec2 c = g + ivec2(ni % 3 - 1, ni / 3 - 1);
+    int k = c.x + 13 * c.y, a = minimalOf(min(complexityBare(regionHome(c - ivec2(k - 3 * storyRun(k), 0))), RUNG_C[3] - 0.001), k);
+    vec3 v = a >= 100 ? texelFetch(uRoster, ivec2(3, a - 100), 0).rgb : MINI[a * 4 + 3];
+    col = mix(col, v, 1.0 - smoothstep(r - K - 1.0, r - K + 1.0, dn));                    // the dot
+    col = mix(col, washOf(a), (1.0 - smoothstep(r + K - 1.0, r + K + 1.0, dn)) * smoothstep(r - K - 1.0, r - K + 1.0, dn));   // its ring
+  }
+  return col;
+}
+#endif
 void main() {
 #if WORDS
   gWD0 = mix(1.0, P3, uWordsOn); gWD1 = mix(1.0, P2, uWordsOn); gWD2 = mix(1.0, P1, uWordsOn);
@@ -3196,6 +3251,9 @@ void main() {
   float zone = 1.0 - smoothstep(RUNG_C[3] - 0.16, RUNG_C[3], cx);
   vec3 col = mix(w1, comp, smoothstep(0.0, 144.0, rg.d) * zone);    // the painting, thinning to its wash at the edge
   col = mix(col, mix(w1, w2, 0.5), 1.0 - smoothstep(0.0, 55.0, rg.d));   // and the two washes one at the edge
+#if !WORDS
+  col = webOver(col, p);
+#endif
   outA = outB = vec4(clamp(col, 0.0, 255.0) / 255.0, cover);           // (89 and 34 cells until v80)
 }`;
 })();
@@ -5128,7 +5186,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** Once the shaders are compiled: their uniforms. If they failed, the page paints from the workers' pixels instead. */
   function link() {
     if (parallel && ![pending.a, pending.b, pending.c, pending.d, pending.e, pending.f, pending.g, pending.h, pending.i, pending.j].every((q) => !q || gl.getProgramParameter(q.pr, parallel.COMPLETION_STATUS_KHR))) return false;
-    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uChain", "uTier", "uWordsOn"]);
+    const a = finish(pending.a, ["uCells", "uEnts", "uSlots", "uVivid", "uCell0", "uC0", "uEarth", "uNV", "uTime", "uHold", "uTurnAt", "uTurnO", "uGround", "uArt", "uArtOn", "uGram", "uForce", "uWorks", "uAnom", "uHalf", "uRoster", "uRAt", "uChain", "uTier", "uWordsOn", "uWebOff", "uWebAt"]);
     const b = finish(pending.b, ["uA", "uB", "uOff", "uCell0", "uH", "uEdge", "uWater", "uView", "uSwim", "uWake", "uWM", "uWL", "uWAtlas", "uWText", "uWN", "uWAt", "uWO", "uWOn", "uRoster", "uWTime", "uWSpread", "uWG", "uWS", "uWF", "uTime", "uHold", "uStars", "uStarK", "uCellN"]);
     if (!a || !b) { location.hash = (location.hash ? location.hash + "&" : "#") + "nogl"; location.reload(); return false; }
     [cellProg, U] = a; [pxProg, V] = b;
@@ -5170,7 +5228,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     const forced = /(?:^|&)g([0-9]+)(?:&|$)/.exec(location.hash.slice(1));
     gl.uniform1i(U.uForce, forced ? +forced[1] : -1);
     edgeOn = pending.artOn === 1 && !forced;                         // edges as grey gradients, drawn after the artists
-    const jj = finish(pending.j, ["uRoster", "uRAt", "uChain", "uCell0", "uTime", "uTaps", "uWordsOn"]);   // the minimal areas' pass
+    const jj = finish(pending.j, ["uRoster", "uRAt", "uChain", "uCell0", "uTime", "uTaps", "uWordsOn", "uWebOff", "uWebAt"]);   // the minimal areas' pass
     if (jj) { [minimalProg, Mi] = jj; gl.useProgram(minimalProg); gl.uniform1i(Mi.uRoster, 8); gl.uniform1iv(Mi.uRAt, pending.rAt); gl.uniform4iv(Mi.uChain, pending.chain); }
     gl.useProgram(pxProg);
     gl.uniform1i(V.uA, 4); gl.uniform1i(V.uB, 5);
@@ -5247,6 +5305,82 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     } else { c.was = null; c.glEnd = 0; }
   }
 
+  // ---- the web (4 Nov 2026): Morphology Web's bounce, in the calm regions' seeds ----------------------------------
+  // Aries: "The very shape of the morphology web and how it bounces around when moving words should be instituted
+  // into the drift artifact." The seeds of the 7 by 7 squares round the view are its words, joined as webOver (in the
+  // minimal areas' pass) draws them: across within a run (a root), across between runs (a prefix), down (an image).
+  // Morphology Web moves with d3-force, and so does this, with its numbers: a held word follows the hand (d3's fx, fy),
+  // the web heats to alpha 0.25 while it is held and cools by 0.0228 a tick, links pull with strength 0.55 (scaled
+  // 70 : 95 : 110 for root, prefix and image, its lengths) times alpha, each a half to either end, and velocity decays
+  // by 0.4 a tick. Here a thumb moves the plane, not a word, so the seed nearest it is held and drawn on ahead of its
+  // place by the hand's speed (phi^2 frames of it, at most phi^-3 of a frame), and the rest follow; each link rests at
+  // the length it spans, and each seed is held to its place by d3's forceX and forceY (0.045 across, 0.06 down) made
+  // phi^3 as firm (a plane holds its seeds more firmly than a page its web), so the web always comes back to the plane
+  // as it was, and still. Headless, a swipe of 18 cells a frame drew the held seed 47 cells on, its neighbours 8
+  // behind, and let go it rang once (8 cells back, 1 over) and was still in a quarter of a second.
+  const webMixh = (h) => { h ^= h >>> 16; h = Math.imul(h, 0x7feb352d); h ^= h >>> 15; h = Math.imul(h, 0x846ca68b); h ^= h >>> 16; return h >>> 0; };
+  const webH3 = (x, y, s) => webMixh((Math.imul(x, 0x27d4eb2d) ^ webMixh((Math.imul(y, 0x165667b1) + s) >>> 0)) >>> 0);
+  const webUnit = (h) => (h >>> 8) / 16777216;
+  /** regionHome's twin: the seed of 377-cell square (i, j) at rest. */
+  const webHome = (i, j) => { const h = webH3(i, j, 5203); return [(i + 0.5 + 0.38 * (webUnit(webMixh((h + 1) >>> 0)) - 0.5)) * 377, (j + 0.5 + 0.8 * (webUnit(webMixh((h + 2) >>> 0)) - 0.5)) * 377]; };
+  const webRun = (k) => Math.floor(k / 3), webNodes = new Map(), webOff = new Float32Array(98), webAt = [0, 0];
+  let webAlpha = 0, webLast = null, webPin = null, webStill = true;
+  function webTick() {
+    if (WORDS || typeof vx === "undefined") return;
+    const cx = Math.floor((vx + VW / 2) / 377), cy = Math.floor((vy + VH / 2) / 377);
+    webAt[0] = cx - 3; webAt[1] = cy - 3;
+    const v = webLast ? [vx - webLast[0], vy - webLast[1]] : [0, 0];
+    webLast = [vx, vy];
+    if (Math.abs(v[0]) + Math.abs(v[1]) > 377) { webNodes.clear(); webPin = null; v[0] = v[1] = 0; }   // (a jump: a new place)
+    let hand = null;
+    try { if (down && down.moved) { const r = cv.getBoundingClientRect(); hand = [vx + (down.lx - r.left) * VW / r.width, vy + (down.ly - r.top) * VH / r.height]; } } catch (e) { /* no page hand */ }
+    const win = [];
+    for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) {
+      const key = (webAt[0] + i) + "," + (webAt[1] + j);
+      let n = webNodes.get(key);
+      if (!n) webNodes.set(key, (n = { i: webAt[0] + i, j: webAt[1] + j, h: webHome(webAt[0] + i, webAt[1] + j), o: [0, 0], u: [0, 0] }));
+      win.push(n);
+    }
+    for (const [key, n] of webNodes) if (Math.abs(n.i - cx) > 4 || Math.abs(n.j - cy) > 4) webNodes.delete(key);
+    if (hand && !webPin) {
+      let bd = Infinity;
+      for (const n of win) { const d = Math.hypot(n.h[0] + n.o[0] - hand[0], n.h[1] + n.o[1] - hand[1]); if (d < bd) { bd = d; webPin = n; } }
+      if (webAlpha < 0.25) webAlpha = 0.25;                         // (a word taken up heats the web at once)
+    }
+    if (!hand) webPin = null;
+    if (webStill && !hand) return;                                  // (the web at rest: nothing to do)
+    webAlpha += ((hand ? 0.25 : 0) - webAlpha) * 0.0228;
+    const link = (A, B, st) => {
+      const dx = B.h[0] + B.o[0] - A.h[0] - A.o[0], dy = B.h[1] + B.o[1] - A.h[1] - A.o[1], l = Math.hypot(dx, dy) || 1;
+      const f = ((l - Math.hypot(B.h[0] - A.h[0], B.h[1] - A.h[1])) / l) * Math.max(webAlpha, 0.1) * st * 0.5;
+      B.u[0] -= dx * f; B.u[1] -= dy * f; A.u[0] += dx * f; A.u[1] += dy * f;
+    };
+    for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) {
+      const A = win[j * 7 + i], k = A.i + 13 * A.j;
+      if (i < 6) link(A, win[j * 7 + i + 1], webRun(k) === webRun(k + 1) ? 0.55 : 0.55 * 70 / 95);
+      if (j < 6) link(A, win[j * 7 + i + 7], 0.55 * 70 / 110);
+    }
+    const cap = 377 * PHI ** -3;
+    let busy = false;
+    win.forEach((n, x) => {
+      if (n === webPin) {                                           // the word held, drawn on ahead of its place
+        const L = [-v[0] * PHI * PHI, -v[1] * PHI * PHI], m = Math.hypot(L[0], L[1]), k = m > cap ? cap / m : 1;
+        n.u = [L[0] * k - n.o[0], L[1] * k - n.o[1]]; n.o = [L[0] * k, L[1] * k];
+      } else {
+        n.u[0] -= n.o[0] * 0.045 * PHI ** 3; n.u[1] -= n.o[1] * 0.06 * PHI ** 3;
+        n.u[0] *= 0.6; n.u[1] *= 0.6;
+        n.o[0] += n.u[0]; n.o[1] += n.u[1];
+        const m = Math.hypot(n.o[0], n.o[1]);
+        if (m > cap) { n.o[0] *= cap / m; n.o[1] *= cap / m; }
+        if (!hand && m < 0.05 && Math.hypot(n.u[0], n.u[1]) < 0.01) n.o = [0, 0], n.u = [0, 0];
+      }
+      if (n.o[0] || n.o[1]) busy = true;
+      webOff[x * 2] = n.o[0]; webOff[x * 2 + 1] = n.o[1];
+    });
+    webStill = !busy && !hand;
+    if (webStill) webOff.fill(0);
+  }
+
   function draw(now) {
     if (lost) return;
     const W = cv.width, H = cv.height, t = (now - T0) / 1000;
@@ -5290,8 +5424,10 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     cellTargets(cw, ch);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.viewport(0, 0, cw, ch);
+    webTick();
     gl.useProgram(cellProg);
     gl.uniform2i(U.uCell0, cx0, cy0);
+    if (U.uWebOff) { gl.uniform2fv(U.uWebOff, webOff); gl.uniform2i(U.uWebAt, webAt[0], webAt[1]); }
     gl.uniform2i(U.uC0, i0, j0);
     gl.uniform1i(U.uEarth, earth ? 1 : 0);
     gl.uniform1f(U.uTime, t);
@@ -5309,6 +5445,7 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
     if (minimalProg && !earth && edgeOn && !(anom[2] > 0)) {
       gl.useProgram(minimalProg);
       gl.uniform2i(Mi.uCell0, cx0, cy0);
+      if (Mi.uWebOff) { gl.uniform2fv(Mi.uWebOff, webOff); gl.uniform2i(Mi.uWebAt, webAt[0], webAt[1]); }
       gl.uniform1f(Mi.uTime, t);
       if (WORDS) gl.uniform1f(Mi.uWordsOn, wk);
       gl.uniform1i(Mi.uTaps, tier >= 3 ? 5 : tier === 2 ? 3 : 1);     // looks on a sunflower: Fibonacci numbers
@@ -5538,5 +5675,6 @@ function groundGL(stage, cv, { tokens, ground, reduced, hold, force, art, works,
   /** How much to draw (0 to 3), set by the page as it learns what this device can do smoothly. */
   let tier = 3;
   const setTier = (n) => { tier = n; };
-  return { draw, anomaly, setTier, putIn, setThrust, words, verse: () => ({ begun: verseBegun, letters: verseGlyphs.length }), reflection: () => refl, quilts: () => qn, canvas: glcv, time: () => (performance.now() - T0) / 1000 };
+  return { draw, anomaly, setTier, putIn, setThrust, words, verse: () => ({ begun: verseBegun, letters: verseGlyphs.length }), reflection: () => refl, quilts: () => qn, canvas: glcv,
+    web: () => ({ at: webAt.slice(), alpha: webAlpha, still: webStill, pin: webPin && [webPin.i, webPin.j], off: Array.from(webOff) }), time: () => (performance.now() - T0) / 1000 };
 }
