@@ -103,6 +103,11 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     // (over the line, then straight across the infield past the courts to the far straight and back: both bends cut)
     const before = d.LAP.last && d.LAP.last.at; c.x = xS - 4; c.z = T.R; c.yaw = Math.PI / 2; c.vh = c.yaw; c.v = 14; d.run(0.6); o.started = d.LAP.t0 != null;
     c.x = xS - 4; c.z = T.R; c.yaw = Math.PI / 2; c.vh = c.yaw; c.v = 14; d.run(0.6); o.cut = (d.LAP.last && d.LAP.last.at) === before;
+    // (a lap running, then into the infield across the courts' side: none; a lap running, then past the line beside the
+    // track, not over it: none)
+    o.run1 = d.LAP.t0 != null; c.x = xS + 20; c.z = 5; c.v = 10; d.run(0.1); o.infield = d.LAP.t0;
+    c.x = xS - 4; c.z = T.R; c.yaw = Math.PI / 2; c.vh = c.yaw; c.v = 14; d.run(0.6); o.run2 = d.LAP.t0 != null;
+    c.x = xS - 3; c.z = T.R + T.W / 2 + 3; c.v = 14; d.run(0.5); o.beside = d.LAP.t0;
     return o;
   });
   check(lp.laps.length >= 3 && lp.laps.every((t) => t > lp.len / 24 * 1000 && t < 60000), `a bot round the track: ${lp.laps.length} laps timed (${lp.laps.map((t) => (t / 1000).toFixed(2)).join(", ")} s; ${lp.len.toFixed(0)} m a lap)`);
@@ -111,6 +116,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(lp.maxY > 1.0 && lp.maxRoll > 0.12 && lp.off < lp.len, `up the bowl round the bends: ${lp.maxY} m up, leaning ${lp.maxRoll} rad with it`);
   check(lp.hud && lp.hud.text[1].indexOf("TOP ") === 0 && lp.hud.text[1].split(" ").length === 4, `the lap and the top three on the screen (${JSON.stringify(lp.hud && lp.hud.text)})`);
   check(lp.wrongT0 === null && lp.cut, "the line crossed the wrong way: no lap running; a lap cutting both bends: none");
+  check(lp.run1 && lp.infield === null && lp.run2 && lp.beside === null, "a lap running, then across the infield: none; then past the line beside the track: none");
   await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
   const back = await D(() => window.Pickleball.debug().laps());
   check(back && JSON.stringify(back.t) === JSON.stringify(best), `after a reload the best three are back (${JSON.stringify(back)})`);
