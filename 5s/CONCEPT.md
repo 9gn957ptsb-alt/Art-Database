@@ -23,6 +23,11 @@ Sent with it: a sheet of ten crystal pointing-hand cursors and a short crystal-h
 the THX 1138 poster ("Stay calm."), a page of Apple's Lisa brochure, Apple's iPod and PowerBook G4 advertisements
 of the early 2000s, and screens of the coupe game.
 
+Then, of the crystal-hand intro (4 Nov 2026):
+
+- "Develop a five second animation like this one using the 16 images I provided"
+- "Use the Motion Lab artifact favorites to give the animation very subtle gestures"
+
 ## The purpose (said after, the same day; it frames everything below)
 
 "This app really is going to capture any self-reflective process: what I have done so far with you
