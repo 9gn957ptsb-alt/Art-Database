@@ -454,7 +454,7 @@
               FONT: "ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', 'Roboto Mono', 'Noto Sans Symbols 2', monospace",
               KEYS: " .:-=+*#%@", BODY: " .:+*#%@", PLAN: " ◇◆#%@", EDGES: "'.,-_/\\|()[]", MARKS: "∴∵→○◇△◎¶▢◆" };
   // the materials, written into the picture's alpha as 1 - id / 255 (his head's 0.5 stays apart from them)
-  var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, CAR: 11, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16, GOLD: 17, STEP: 18, TRACK: 19 };   // (a hat its own: from behind, hat and back are two shapes)
+  var MAT = { SKY: 0, GROUND: 1, RUNOFF: 2, COURT: 3, KITCHEN: 4, LINE: 5, NET: 6, POLE: 7, LAMP: 8, PEARL: 9, DUST: 10, CAR: 11, ME: 12, PLAN: 13, LINEZ: 14, HATME: 15, HATPLAN: 16, GOLD: 17, STEP: 18, TRACK: 19, GARDEN: 20, WATER: 21, PLANT: 22 };   // (a hat its own: from behind, hat and back are two shapes)
   // Definition (the artist, 28 Oct 2026: "It's still really hard to see anything, objects need to be three times as
   // defined as they are now"; notes/holographic-mr-pearl/harness/pb_define.js measures it, an athlete's light against
   // the ground round him at a glance): the athletes' fill dense and bright, never faint (fill: the least of its
@@ -472,7 +472,7 @@
     var p = document.createElement("canvas").getContext("2d"); p.font = ascFont(100);
     var bar = p.measureText("|"), adv = p.measureText("M").width / 100;
     var up = (bar.actualBoundingBoxAscent || 76) / 100, dn = (bar.actualBoundingBoxDescent || 24) / 100;
-    var chars = (ASC.KEYS + ASC.EDGES + ASC.MARKS).split("").filter(function (c, i, a) { return a.indexOf(c) === i; });
+    var chars = (ASC.KEYS + ASC.EDGES + ASC.MARKS + "~").split("").filter(function (c, i, a) { return a.indexOf(c) === i; });
     if (chars.length > 31) { throw new Error("pickleball: a cell holds its glyph in five bits (the sixth: heavy)"); }
     var vs = "#version 300 es\nvoid main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }";
     asc = { adv: adv, up: up, dn: dn, chars: chars, N: chars.length, glyphs: chars.join(""), vs: vs, ok: true, w: 0, h: 0, grid: "", fb: null, cfb: null };
@@ -558,7 +558,7 @@
     var EK = ramp(ASC.EDGES), EP = ramp(ASC.EDGES);
     var arr = function (n, a) { return "const int " + n + "[" + a.length + "] = int[" + a.length + "](" + a.join(", ") + ");"; };
     // a material's own glyph where it is one quiet texture (-1: the keyboard's ramp, -2: the marks')
-    var fix = [-3, ix("."), ix("."), ix(":"), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2, -1, -1, ix("=")];   // (the track's tarmac: =)
+    var fix = [-3, ix("."), ix("."), ix(":"), ix("∴"), ix("."), ix("#"), ix("|"), ix("*"), ix("◎"), ix("'"), -1, -1, -2, ix("."), -1, -2, -1, -1, ix("="), ix(":"), ix("~"), -1];   // (the track's tarmac: =; the gardens' gravel and beds :, their water ~, their plants a body's)
     var head = [
       "#version 300 es", "precision highp float; precision highp int;",
       arr("RK", RK), arr("RP", RP), arr("EK", EK), arr("EP", EP), arr("FIX", fix),
@@ -661,7 +661,7 @@
       "    mn = min(mn, v[r]); sum += v[r]; cnt += 1.0;",
       "  }",
       "  float m = sum / max(cnt, 1.0), dz = bayer(ci), mo = ownV / max(own, 1.0);",
-      "  int g = 0, f = FIX[min(mat, 19)], kd = 0; float V = 0.0; vec3 c = hue(col[hiO]);",
+      "  int g = 0, f = FIX[min(mat, 22)], kd = 0; float V = 0.0; vec3 c = hue(col[hiO]);",
       // the moat: a cell that is not a figure, beside one standing in front of it (its four neighbours' middles), is
       // left dark, so every athlete stands in a cell of night
       "  bool moat = false, moat2 = false;",
@@ -674,7 +674,7 @@
       "      if (k >= 12 && k <= 17 && k != 14 && lin(texelFetch(uDepth, pu, 0).r) < dn - 0.2) { if (q < 4) { moat = true; } else { moat2 = true; } }",
       "    }",
       "  }",
-      "  bool surf = mat <= 5 || mat == 14 || mat == 19;",
+      "  bool surf = mat <= 5 || mat == 14 || mat == 19 || mat == 20 || mat == 21;",
       // (the parts on a court's line or within a few pixels of one, and which way it runs: a surface is stroked only
       // there; its boundary with the next zone, or with the net's foot, is a change of texture, never a stroke)
       "  int nx = 0, nz = 0, ra = near;",
@@ -799,9 +799,10 @@
       "    c = fig ? mix(hue(col[hiR]), who == 13 ? vec3(0.3, 0.95, 1.0) : vec3(1.0, 0.72, 0.28), 0.8) : hue(col[hiR]); V = mix(fig ? " + DEF.edgeV.toFixed(3) + " : 0.6, 1.0, smoothstep(0.0, 0.6, mx));",   // (an athlete's outline in his accent: Mr Pearl's gold, Mr Plan's cyan)
       "  } else if (f >= 0) {",
       // a surface: its own glyph, its spacing its light (in Bayer order)
-      "    float lo = mat == 1 || mat == 19 ? 0.1 : mat == 2 ? 0.12 : 0.05, hi = mat == 1 || mat == 19 ? 0.3 : mat == 2 ? 0.4 : 0.2;",
-      "    if (max(smoothstep(lo, hi, m), mat == 1 || mat == 19 ? 0.14 : 0.0) > dz + (pk == K_SURF ? (pg == f ? -0.04 : 0.04) : 0.0)) { g = f; }", "    kd = K_SURF;",   // (the ground off the courts: a faint teal field, never black)
-      "    V = max(mix(0.32, 1.0, smoothstep(0.05, 0.8, m)) * " + DEF.surfV.toFixed(3) + ", mat == 1 || mat == 19 ? 0.12 : 0.0);",
+      "    bool ownS = mat == 1 || mat >= 19;",
+      "    float lo = ownS ? 0.1 : mat == 2 ? 0.12 : 0.05, hi = ownS ? 0.3 : mat == 2 ? 0.4 : 0.2;",
+      "    if (max(smoothstep(lo, hi, m), ownS ? 0.14 : 0.0) > dz + (pk == K_SURF ? (pg == f ? -0.04 : 0.04) : 0.0)) { g = f; }", "    kd = K_SURF;",   // (the ground off the courts: a faint teal field, never black)
+      "    V = max(mix(0.32, 1.0, smoothstep(0.05, 0.8, m)) * " + DEF.surfV.toFixed(3) + ", ownS ? 0.12 : 0.0);",
       "  } else {",
       // a body: its alphabet by its own light, one tone to a band (dithered, a figure was a checkerboard), the light
       // taken half from round the cell (so a tone holds over a part, not flickering cell to cell with the voxels'
@@ -1110,8 +1111,9 @@
     gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 28, 12);
     gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 28, 24);
     gl.bindVertexArray(null);
-    return { vao: vao, n: arr.length / 7 };
+    return { vao: vao, n: arr.length / 7, buf: buf };
   }
+  function unload(m) { if (m && m.buf) { gl.deleteBuffer(m.buf); gl.deleteVertexArray(m.vao); m.buf = null; m.n = 0; } }   // (a mesh no longer drawn, its GPU memory back)
   // cells (x, y, z, id) to their faces open to the air, in cell units; k > 1 merges k³ cells into one (far off)
   function meshCells(blocks, k) {
     var occ = {}, list = [], key = function (x, y, z) { return x + "," + y + "," + z; };
@@ -1244,6 +1246,7 @@
     won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder: step onto its gold circle to play."; },
     standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; },
     // the coupe, the stairs, his hat: [a finger, a desk]
+    portal: { here: "The portal: through it, Holographic Mr Pearl.", soon: "The portal: a way through to another game, soon.", link: "Holographic Mr Pearl \u2197", linkSr: "Through the portal: Holographic Mr Pearl" },
     lap: { now: function (t) { return "LAP " + (t == null ? "-:--.--" : lapFmt(t * 1000)); },
            last: function (ms, r) { return "LAP " + lapFmt(ms) + (r === 0 ? "  BEST" : r > 0 ? "  #" + (r + 1) : ""); },
            top: function (L) { return "TOP " + (L.length ? L.map(lapFmt).join(" ") : "-"); },
@@ -1455,10 +1458,10 @@
     for (var k = 0; k <= min(won, 999); k += 1) { courtAdd(); courts[k].won = courts[k].up = k < won; }
     courts.best = count(saved.rally != null ? saved.rally : saved.best, 0);   // (the longest rally: the first version kept it as "best")
     // (the track's best laps: only for the track as long as it is now, three at most, each a time that could be)
-    var lp = saved.laps; courts.laps = null;
-    if (lp && typeof lp === "object" && count(lp.n, -1) === courts.length && Array.isArray(lp.t)) {
+    var lp = saved.laps; courts.laps = null;   // (w: the track's shape; a time on the shorter track before 4 Nov 2026 is dropped)
+    if (lp && typeof lp === "object" && count(lp.n, -1) === courts.length && lp.w === TRK.V && Array.isArray(lp.t)) {
       var lt = lp.t.map(function (x) { return count(x, -1); }).filter(function (x) { return x > 1000 && x < 3600000; }).sort(function (a, b) { return a - b; }).slice(0, 3);
-      if (lt.length) { courts.laps = { n: courts.length, t: lt }; }
+      if (lt.length) { courts.laps = { n: courts.length, w: TRK.V, t: lt }; }
     }
     // (the matches won, played again: each read back, the newest twelve; one that will not read rallies as before)
     var rs = saved.recs && typeof saved.recs === "object" ? saved.recs : {};
@@ -2152,7 +2155,7 @@
   var STAIR = { c: [-15, COURT.L - 1.7], RISE: 0.6, DA: PI / 5, A0: PI / 2 + PI / 5, R0: 3.4, R1: 6.6, RW: 5, POST: 0.35, CLIMB: 2.2 };
   STAIR.LEN = hypot(STAIR.RW * STAIR.DA, STAIR.RISE); STAIR.SLOPE = Math.atan2(STAIR.RISE, STAIR.RW * STAIR.DA);   // (a step's length along the way up, and its slope)
   var GLIDE = { OPEN: 1.5, V: 7.5, SINK: 1.35, TURN: 1.7, K: 3.4, LIFT: 2.7, TILT: 0.565, BC: [0.003, 1.471, 0.062] };
-  var BOUND = { x0: -45, z0: -COURT.L - 22, z1: COURT.L + 22, past: 29 };   // (the ground, round all the courts, the staircase and the track; past the newest court by BOUND.past)
+  var BOUND = { x0: -55, z0: -COURT.L - 30, z1: COURT.L + 30, past: 37 };   // (the ground, round all the courts, the staircase and the track; past the newest court by BOUND.past)
   var ride = { mode: null, s: -1, off: [0, 0], u: 0, hd: 0, bank: 0, dir: 1, lag: false, out: false, told: {} };   // (mode: "car", "stair", "fly", "glide"; null: on foot)
   function stairsN() { return wonCount(); }
   function boundX1() { return (courts.length - 1) * COURT.GAP + BOUND.past; }
@@ -2162,8 +2165,11 @@
   // (XL, 0), round the staircase, and (the open court's x, 0), so a court won adds its length to both straights. Across
   // it, from its inner edge, it rises as a circle's arc to H at the outer edge (a bowl), all round the bends, the rise
   // easing off along each straight to nothing at its middle; past the outer edge a berm runs down to the ground.
-  var TRK = { R: 18.5, W: 8, H: 1.5, BERM: 4, XL: -15, D: [0, 0.25, 0.4, 0.9, 2.2, 3.5, 4.8, 6.1, 7.1, 7.6, 7.75, 8, 10, 12] };
+  // (the artist, 4 Nov 2026: "Make the track a half a court length back and have beautiful plants and flowers fill in
+  // the space": R 18.5 m out, then half a court's length, COURT.L, further: the gardens between it and the courts)
+  var TRK = { R: 18.5 + COURT.L, W: 8, H: 1.5, BERM: 4, XL: -15, D: [0, 0.25, 0.4, 0.9, 2.2, 3.5, 4.8, 6.1, 7.1, 7.6, 7.75, 8, 10, 12] };
   TRK.RB = (TRK.W * TRK.W + TRK.H * TRK.H) / (2 * TRK.H);   // (the bowl's circle: level at the inner edge, H up at the outer)
+  TRK.V = 2;   // (the track's shape, kept with the best laps: 2 since it moved half a court out, 4 Nov 2026)
   function trkXR() { return (courts.length - 1) * COURT.GAP; }
   // a point's place on it: d across from the inner edge (0..W on it), b how much of the bend's rise it has, s along the
   // centre line from the near straight's start the lap's way (+x along z > 0, round by the open court, back along
@@ -2175,6 +2181,22 @@
     else { r = abs(z); sa = z >= 0 ? x - xL : St + PI * R + (xR - x); b = 1 - smooth(min(x - xL, xR - x) / max(0.5, St / 2 - 2.5)); yw = z >= 0 ? PI / 2 : -PI / 2; }   // (level for 2.5 m either side of the middle: the line on it)
     return { d: r - (R - TRK.W / 2), b: b, s: sa, len: 2 * St + 2 * PI * R, yaw: yw };
   }
+  // The bends' floodlights (the artist, 4 Nov 2026: "Have spotlight floodlights lights along the corners of the track and
+  // accent linear lighting along the edges of the track"): four towers round the outside of each bend, past the berm,
+  // each lamp aimed down at the track's middle line; their pools baked into the tarmac's colours, their glare and beams
+  // drawn over the view. (The edges' light strips are in the track's mesh.)
+  TRK.TOWER = { N: 4, OUT: 1.5, H: 13 };
+  function trkTowers() {
+    var R = TRK.R, rT = R + TRK.W / 2 + TRK.BERM + TRK.TOWER.OUT, xR = trkXR(), out = [];
+    for (var i = 0; i < TRK.TOWER.N; i += 1) {
+      var a = PI * (i + 0.5) / TRK.TOWER.N;
+      out.push({ p: [xR + rT * Math.sin(a), TRK.TOWER.H, rT * Math.cos(a)], aim: [xR + R * Math.sin(a), 0, R * Math.cos(a)] });
+      out.push({ p: [TRK.XL - rT * Math.sin(a), TRK.TOWER.H, -rT * Math.cos(a)], aim: [TRK.XL - R * Math.sin(a), 0, -R * Math.cos(a)] });
+    }
+    return out;
+  }
+  // (how much of a tower's pool falls on a point: whole within 3 m of where it aims, gone by 10 m)
+  function trkLit(x, z, T) { var L = 0; T.forEach(function (t) { L = max(L, 1 - smooth((hypot(x - t.aim[0], z - t.aim[2]) - 3) / 7)); }); return L; }
   function trkRise(d, b) {
     if (d <= 0 || b <= 0 || d >= TRK.W + TRK.BERM) { return 0; }
     return b * (d <= TRK.W ? TRK.RB - Math.sqrt(TRK.RB * TRK.RB - d * d) : TRK.H * (1 - (d - TRK.W) / TRK.BERM));
@@ -2205,7 +2227,7 @@
     L.push(ms); L.sort(function (a, b) { return a - b; }); var r = L.indexOf(ms); r = r < 3 ? r : -1; L = L.slice(0, 3);
     LAP.last = { ms: ms, r: r, at: gt };
     say(STR.lap.done(ms, r, L), true);
-    if (r >= 0) { courts.laps = { n: courts.length, t: L }; save(); }
+    if (r >= 0) { courts.laps = { n: courts.length, w: TRK.V, t: L }; save(); }
   }
   // the ground's height: the track's bowl and berm, the level ground everywhere else
   function groundAt(x, z) { if (!courts) { return 0; } var t = trkAt(x, z); return trkRise(t.d, t.b); }
@@ -2598,9 +2620,10 @@
     var inCar = ride.mode === "car", show = !court.m && !TUT.on && (inCar ? car.mode === "ground" && !ride.dn : carNear()), t = inCar ? STR.ride.out : STR.ride.drive;   // (not in a donut: it could not get him out)
     if (b.hidden === show) { b.hidden = !show; }
     if (show && b.textContent !== t) { b.textContent = t; b.setAttribute("aria-label", inCar ? STR.ride.outSr : STR.ride.driveSr); }
-    var dn = $("donut"), dshow = show && inCar && !ride.out && !ride.dn && !ride.dnQ;   // (gone while it brakes for it and drives it)
+    var tk = inCar ? trkAt(car.x, car.z).d : -9, onTrk = tk > -0.5 && tk < TRK.W + 0.5;   // (on the track: no Donut button, the artist, 4 Nov 2026: "Take the donut button off when the coupe is driving on the track")
+    var dn = $("donut"), dshow = show && inCar && !ride.out && !ride.dn && !ride.dnQ && !onTrk, drs = show && inCar && !ride.out && !ride.dn && !ride.dnQ;   // (gone while it brakes for it and drives it)
     var dr = $("drift");   // (Drift: beside Get out while it is driven, held as a pedal; lit while held)
-    if (dr) { if (dr.hidden === dshow) { dr.hidden = !dshow; } if (!dshow && input.drift != null) { input.drift = null; } var pr = input.drift != null ? "true" : "false"; if (dr.getAttribute("aria-pressed") !== pr) { dr.setAttribute("aria-pressed", pr); } }
+    if (dr) { if (dr.hidden === drs) { dr.hidden = !drs; } if (!drs && input.drift != null) { input.drift = null; } var pr = input.drift != null ? "true" : "false"; if (dr.getAttribute("aria-pressed") !== pr) { dr.setAttribute("aria-pressed", pr); } }
     if (dn && dn.hidden === dshow) { dn.hidden = !dshow; if (dshow && dn.textContent !== STR.ride.donut) { dn.textContent = STR.ride.donut; dn.setAttribute("aria-label", STR.ride.donutSr); } }
   }
   // the Donut button, a tap or Space in the coupe on the ground: at speed a stop first, braking as for the way out, then it
@@ -2623,7 +2646,7 @@
     if (TIPS.from && hypot(me.x - TIPS.from[0], me.z - TIPS.from[1]) > 1.5) { tipDone("move"); TIPS.from = null; }
     if (!court.m && !TIPS.from && gt > 6) { tip("court"); }
     if (court.m && live(court.m).length > 1) { tip("multi"); }
-    tipStep(); tutStep(); rideButton();
+    tipStep(); tutStep(); rideButton(); portalStep();
     input.fire = false;   // (a tap is spent on the frame that reads it)
     // (the words step aside while the serve's bar runs: the bar carries its own, and they would cover it on a short screen)
     var cm = court.m, bar = cm && (cm.meterOn || (cm.phase === "plansuper" && cm.psup.struck && !cm.psup.tapped && !TUT.on));
@@ -3174,7 +3197,7 @@
     canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
     window.addEventListener("keydown", awake(function (e) {
       var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      if ((k === " " || k === "Enter") && e.target && e.target.closest && e.target.closest("#super, #ride, #donut, #drift")) { return; }   // (a button focused: the key presses it)
+      if ((k === " " || k === "Enter") && e.target && e.target.closest && e.target.closest("#super, #ride, #donut, #drift, #portal")) { return; }   // (a button focused: the key presses it)
       if ("wasdteqf ".indexOf(k) >= 0 || k === "Enter" || k === "Shift" || k.indexOf("Arrow") === 0) { CUE.hand = "keys"; if (TUT.on && TUT.stop === "sup" && k !== "e" && k !== "q") { CUE.wrongT = CUE.rt; } }
       if (k === " " || k === "t" || k === "Enter") { if (!e.repeat) { input.fire = true; } e.preventDefault(); }   // (a key held is one tap)
       else if (k === "e" || k === "q") { superPress(); }
@@ -3226,7 +3249,16 @@
       paint(MAT.NET); cbox([x, COURT.NET / 2 + 0.03, 0], [nw, COURT.NET - 0.06, 0.03], CT.net);
       paint(MAT.LINE, [0, 1, 0]); cbox([x, COURT.NET, 0], [nw, 0.07, 0.05], CT.line);   // (its tape)
     }
-    paint(MAT.TRACK, null, true); drawSolid(trkMesh(), T(0, 0, 0), null, TRK.pal, 0.75);   // (lit by itself: the floodlights do not reach it)
+    paint(MAT.TRACK, null, true); drawSolid(trkMesh(), T(0, 0, 0), null, TRK.pal, 0.75);   // (lit by itself: the courts' floodlights do not reach it)
+    paint(MAT.LINE, null, true); drawSolid(trkC.ledX, T(0, 0, 0), null, TRK.ledPal, 2.4);   // (the edges' strips, glowing)
+    paint(MAT.LINEZ, null, true); drawSolid(trkC.ledZ, T(0, 0, 0), null, TRK.ledPal, 2.4);
+    trkC.towers.forEach(function (t) {
+      if (abs(t.p[0] - ex) > SEEN) { return; }
+      var ps = poleSight(t.p[0], t.p[2]), dx = t.aim[0] - t.p[0], dz = t.aim[2] - t.p[2];
+      if (ps.w > 0) { paint(MAT.POLE, [1, 0, 1]); cbox([t.p[0], t.p[1] / 2, t.p[2]], [0.3 * ps.w, t.p[1], 0.3 * ps.w], CT.pole); }
+      if (ps.lamp) { paint(MAT.LAMP); cbox([t.p[0], t.p[1] + 0.2, t.p[2]], [2.2, 0.7, 0.8], CT.lamp, 2.6, [0, 1, 0], Math.atan2(-dx, -dz)); }
+    });
+    gdnDraw(ex); portalDraw();
     paint(MAT.GROUND, null, true);
     var gx0 = min(ex - SEEN - 30, BOUND.x0 - 10), gx1 = max(ex + SEEN + 30, boundX1() + 10);   // (under the whole track too, however long)
     cbox([(gx0 + gx1) / 2, -0.05, 0], [gx1 - gx0, 0.1, 2 * SEEN], CT.ground);
@@ -3243,11 +3275,172 @@
       });
     }
   }
+  // The gardens (the artist, 4 Nov 2026: "have beautiful plants and flowers fill in the space but in a mix style of a
+  // Japanese Gardens and Claude Monet's house garden where he painted his Lillie's"): between the courts and the track,
+  // in characters as everything here is. Along Mr Pearl's side, Monet's Clos Normand: a gravel walk with a rose arch
+  // over it at each court, and beds of tulips, irises, nasturtiums, poppies, roses and lavender; along Mr Plan's side his
+  // water garden: a lily canal, its pads and flowers, koi, irises at its edge, weeping willows, wisteria over the green
+  // Japanese bridge behind court one, and behind it bamboo and red maples; round the staircase a Japanese dry garden of
+  // raked gravel, stones, moss, a stone lantern and cloud-pruned pines (and the portal over it); past the open court a
+  // round lily pond, a lantern, maples and beds. Decoration: he and the coupe pass through it, as through the
+  // floodlights' poles. Built a court's length at a time, each kept, and drawn within sight.
+  var GP = { GRAVEL: 0, SOIL: 1, MOSS: 2, RAKE: 3, WATER: 4, RIPPLE: 5, PAD: 6, LILYP: 7, LILYW: 8, BRIDGE: 9, WIST: 10, WILLOW: 11, TRUNK: 12,
+             MAPLE: 13, MAPLE2: 14, BAMBOO: 15, PINE: 16, STONE: 17, LANTERN: 18, LIGHT: 19, TULIP: 20, TULIP2: 21, IRIS: 22, NAST: 23,
+             POPPY: 24, ROSE: 25, LAV: 26, LEAF: 27, ARCH: 28, ROSE2: 29, KOI: 30, WHITE: 31 };
+  GP.pal = (function (L) { var p = new Float32Array(256); L.forEach(function (c, i) { p[i * 4] = c[0]; p[i * 4 + 1] = c[1]; p[i * 4 + 2] = c[2]; }); return p; })([[104, 98, 88], [70, 50, 44], [52, 120, 70], [128, 122, 110], [34, 92, 170], [96, 160, 226], [74, 150, 84], [244, 150, 196],
+                  [246, 240, 230], [72, 146, 104], [196, 154, 238], [150, 200, 116], [98, 70, 54], [214, 62, 52], [240, 128, 60], [126, 188, 94],
+                  [44, 108, 74], [104, 104, 114], [134, 128, 118], [255, 216, 140], [236, 52, 64], [252, 212, 74], [126, 96, 230], [252, 146, 44],
+                  [244, 74, 44], [246, 134, 176], [176, 146, 236], [76, 138, 74], [64, 136, 94], [224, 44, 84], [255, 144, 62], [246, 246, 236]]);
+  var GDN = {};
+  function gdnRng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6d2b79f5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function gdnBuild(key) {
+    var S = [], Wt = [], Pl = [], rnd = gdnRng(key.split("").reduce(function (h, c) { return h * 31 + c.charCodeAt(0); }, 7)), R = function (a, b) { return a + (b - a) * rnd(); };
+    var flats = [], flat0 = function (o, x0, z0, x1, z1, y, id) { flats.push([x0, z0, x1, z1]); o.push(x0, y, z0, 0, 1, 0, id, x1, y, z0, 0, 1, 0, id, x1, y, z1, 0, 1, 0, id, x0, y, z0, 0, 1, 0, id, x1, y, z1, 0, 1, 0, id, x0, y, z1, 0, 1, 0, id); };
+    var endX = null, rIn = TRK.R - TRK.W / 2 - 0.1, lim = function (z) { var q = rIn * rIn - z * z; return q > 0 ? endX + Math.sqrt(q) : -1e9; };
+    var flat = function (o, x0, z0, x1, z1, y, id) {   // (by the open court, cut in bands to the bend's inner edge: none over its kerb)
+      if (endX === null || x1 <= min(lim(z0), lim(z1))) { flat0(o, x0, z0, x1, z1, y, id); return; }
+      for (var nb = Math.ceil((z1 - z0) / 0.25), i = 0; i < nb; i += 1) { var za = z0 + (z1 - z0) * i / nb, zb = z0 + (z1 - z0) * (i + 1) / nb, xb = min(x1, lim(za), lim(zb)); if (xb > x0) { flat0(o, x0, za, xb, zb, y, id); } }
+    };
+    var disc = function (o, cx, cz, r, y, id) { for (var i = 0; i < 16; i += 1) { var a0 = 2 * PI * i / 16, a1 = 2 * PI * (i + 1) / 16; o.push(cx, y, cz, 0, 1, 0, id, cx + r * Math.cos(a0), y, cz + r * Math.sin(a0), 0, 1, 0, id, cx + r * Math.cos(a1), y, cz + r * Math.sin(a1), 0, 1, 0, id); } };
+    var foot = [];
+    var box = function (cx, cy, cz, sx, sy, sz, id, yaw) {   // (a box into the plants' mesh, turned about its upright)
+      foot.push([cx, cz, max(sx, sz) / 2]);
+      var c = Math.cos(yaw || 0), sn = Math.sin(yaw || 0), P = function (a, b, d) { var x = a * sx / 2, z = d * sz / 2; return [cx + c * x - sn * z, cy + b * sy / 2, cz + sn * x + c * z]; };
+      [[[1, 0, 0], [1, -1, -1], [1, 1, -1], [1, 1, 1], [1, -1, 1]], [[-1, 0, 0], [-1, -1, 1], [-1, 1, 1], [-1, 1, -1], [-1, -1, -1]], [[0, 1, 0], [-1, 1, -1], [-1, 1, 1], [1, 1, 1], [1, 1, -1]],
+       [[0, -1, 0], [-1, -1, 1], [-1, -1, -1], [1, -1, -1], [1, -1, 1]], [[0, 0, 1], [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]], [[0, 0, -1], [1, -1, -1], [-1, -1, -1], [-1, 1, -1], [1, 1, -1]]].forEach(function (f) {
+        var n = [c * f[0][0] - sn * f[0][2], f[0][1], sn * f[0][0] + c * f[0][2]], q = [P.apply(null, f[1]), P.apply(null, f[2]), P.apply(null, f[3]), P.apply(null, f[4])];
+        [0, 1, 2, 0, 2, 3].forEach(function (i) { Pl.push(q[i][0], q[i][1], q[i][2], n[0], n[1], n[2], id); });
+      });
+    };
+    var flower = function (x, z, h, bloom, w) { box(x, h * 0.32, z, 0.2 * (w || 1), h * 0.64, 0.2 * (w || 1), GP.LEAF, R(0, 1.5)); box(x, h, z, 0.19 * (w || 1), 0.16, 0.19 * (w || 1), bloom, R(0, 1.5)); };
+    var bed = function (x0, z0, x1, z1, theme) {   // (a bed of one sort, the soil under it)
+      flat(S, x0, z0, x1, z1, 0.008, GP.SOIL);
+      for (var x = x0 + 0.3; x < x1 - 0.15; x += 0.55) {
+        for (var z = z0 + 0.3; z < z1 - 0.15; z += 0.55) {
+          var px = x + R(-0.12, 0.12), pz = z + R(-0.12, 0.12);
+          if (theme === 0) { flower(px, pz, R(0.45, 0.6), rnd() < 0.5 ? GP.TULIP : GP.TULIP2); }
+          else if (theme === 1) { box(px, 0.4, pz, 0.06, 0.8, 0.16, GP.LEAF, R(0, 3)); flower(px + 0.06, pz, R(0.75, 0.9), rnd() < 0.8 ? GP.IRIS : GP.WHITE, 0.9); }
+          else if (theme === 2) { box(px, 0.12, pz, 0.46, 0.24, 0.46, GP.LEAF, R(0, 1.5)); box(px + R(-0.12, 0.12), 0.27, pz + R(-0.12, 0.12), 0.15, 0.08, 0.15, GP.NAST); }
+          else if (theme === 3) { flower(px, pz, R(0.45, 0.65), GP.POPPY, 1.1); }
+          else if (theme === 4) { box(px, 0.3, pz, 0.48, 0.6, 0.48, GP.LEAF, R(0, 1.5)); box(px + 0.12, 0.62, pz, 0.17, 0.14, 0.17, rnd() < 0.6 ? GP.ROSE : GP.ROSE2); box(px - 0.1, 0.55, pz + 0.1, 0.15, 0.13, 0.15, GP.ROSE); }
+          else { box(px, 0.22, pz, 0.12, 0.44, 0.12, GP.LEAF); box(px, 0.5, pz, 0.1, 0.22, 0.1, GP.LAV); }
+        }
+      }
+    };
+    var willow = function (x, z) { box(x, 1.4, z, 0.36, 2.8, 0.36, GP.TRUNK); box(x, 3.25, z, 2.7, 0.7, 2.7, GP.WILLOW); for (var i = 0; i < 16; i += 1) { var a = 2 * PI * i / 16 + R(0, 0.3), r = R(1.0, 1.4); box(x + r * Math.cos(a), 2.05, z + r * Math.sin(a), 0.11, 2.3, 0.11, GP.WILLOW); } };
+    var maple = function (x, z) { box(x, 0.8, z, 0.26, 1.6, 0.26, GP.TRUNK); box(x, 1.75, z, 2.0, 0.5, 2.0, GP.MAPLE, R(0, 1)); box(x + 0.2, 2.2, z - 0.1, 1.6, 0.45, 1.6, GP.MAPLE2, R(0, 1)); box(x - 0.1, 2.6, z + 0.1, 1.0, 0.4, 1.0, GP.MAPLE, R(0, 1)); };
+    var bamboo = function (x, z) { for (var i = 0; i < 8; i += 1) { var px = x + R(-0.8, 0.8), pz = z + R(-0.35, 0.35), h = R(4.5, 6.5); box(px, h / 2, pz, 0.1, h, 0.1, GP.BAMBOO); for (var j = 0; j < 3; j += 1) { box(px + R(-0.3, 0.3), h - R(0, 1.4), pz + R(-0.2, 0.2), 0.55, 0.1, 0.22, GP.LEAF, R(0, 3)); } } };
+    var pine = function (x, z) { box(x, 1.3, z, 0.3, 2.6, 0.3, GP.TRUNK); [[1.3, 0.6, 0.1], [1.9, -0.5, 0.3], [2.45, 0.4, -0.3], [2.9, 0, 0]].forEach(function (q, i) { box(x + q[1], q[0], z + q[2], 1.5 - 0.2 * i, 0.32, 1.1 - 0.12 * i, GP.PINE, R(0, 1)); }); };
+    var lantern = function (x, z) { box(x, 0.1, z, 0.6, 0.2, 0.6, GP.LANTERN); box(x, 0.65, z, 0.22, 0.9, 0.22, GP.LANTERN); box(x, 1.16, z, 0.56, 0.12, 0.56, GP.LANTERN); box(x, 1.4, z, 0.4, 0.36, 0.4, GP.LIGHT); box(x, 1.66, z, 0.86, 0.16, 0.86, GP.LANTERN); box(x, 1.82, z, 0.16, 0.18, 0.16, GP.LANTERN); };
+    var pads = function (x0, z0, x1, z1, n) { for (var i = 0; i < n; i += 1) { var px = R(x0, x1), pz = R(z0, z1), r = R(0.5, 0.9); box(px, 0.03, pz, r, 0.04, r * 0.9, GP.PAD, R(0, 3)); if (rnd() < 0.35) { box(px + R(-0.1, 0.1), 0.11, pz, 0.2, 0.12, 0.2, rnd() < 0.6 ? GP.LILYP : GP.LILYW); } } };
+    var irises = function (x0, x1, z, n) { for (var i = 0; i < n; i += 1) { var px = R(x0, x1), pz = z + R(-0.15, 0.15); box(px, 0.4, pz, 0.05, 0.8, 0.14, GP.LEAF, R(0, 3)); box(px + 0.08, 0.35, pz, 0.05, 0.7, 0.14, GP.LEAF, R(0, 3)); box(px, 0.86, pz, 0.17, 0.14, 0.17, GP.IRIS); } };
+    var koi = function (x0, z0, x1, z1) { for (var i = 0; i < 3; i += 1) { box(R(x0, x1), 0.016, R(z0, z1), 0.34, 0.03, 0.12, rnd() < 0.7 ? GP.KOI : GP.WHITE, R(0, 3)); } };
+    var canal = function (x0, x1) {   // (Mr Plan's side: the walk, the moss banks, the water)
+      flat(S, x0, -14.0, x1, -11.4, 0.006, GP.GRAVEL); flat(S, x0, -14.9, x1, -14.0, 0.006, GP.MOSS); flat(S, x0, -20.4, x1, -19.4, 0.006, GP.MOSS);
+      flat(Wt, x0, -19.4, x1, -14.9, 0.012, GP.WATER);
+      for (var i = 0; i < 3; i += 1) { var rx = R(x0, x1 - 1.4), zz = R(-19, -15.6); flat(Wt, rx, zz, rx + R(0.8, 1.6), zz + 0.12, 0.014, GP.RIPPLE); }   // (ripples, a lighter blue)
+    };
+    var mt;
+    if ((mt = /^c(\d+)(e?)$/.exec(key))) {   // (e: the open court's, by the right bend)
+      var k = +mt[1], cx = k * COURT.GAP, x0 = cx - COURT.GAP / 2, x1 = cx + COURT.GAP / 2; if (mt[2]) { endX = cx; }
+      // (Mr Pearl's side: the walk and its rose arch, then two rows of three beds)
+      flat(S, x0, 11.4, x1, 14.0, 0.006, GP.GRAVEL);
+      box(x0, 1.3, 11.55, 0.12, 2.6, 0.12, GP.ARCH); box(x0, 1.3, 13.85, 0.12, 2.6, 0.12, GP.ARCH);   // (at the walk's end, between courts: off the line from the cameras to him)
+      for (var t = 0; t < 5; t += 1) { box(x0, 2.6 + 0.5 * Math.sin(PI * (t + 0.5) / 5), 11.55 + (t + 0.5) * 0.46, 0.12, 0.12, 0.5, GP.ARCH); }
+      for (var rr = 0; rr < 16; rr += 1) { var tz = R(11.5, 13.9), ty = abs(tz - 12.7) > 1.05 ? R(0.4, 2.6) : 2.6 + 0.5 * Math.sin(PI * (tz - 11.55) / 2.3); box(x0 + R(-0.12, 0.12), ty, tz, 0.17, 0.15, 0.17, rnd() < 0.6 ? GP.ROSE : GP.ROSE2); }
+      [[x0 + 0.3, x0 + 3.7], [cx - 1.7, cx + 1.7], [x1 - 3.7, x1 - 0.3]].forEach(function (bx, i) { bed(bx[0], 14.8, bx[1], 17.4, (k * 6 + i) % 6); bed(bx[0], 18.0, bx[1], 20.6, (k * 6 + i + 3) % 6); });
+      // (Mr Plan's side: the lily canal, its pads, koi and irises, a willow on its bank, bamboo or a maple behind)
+      canal(x0, x1); pads(x0 + 0.4, -19.0, x1 - 0.4, -15.3, 14); koi(x0, -19, x1, -15.3); irises(x0 + 0.3, x1 - 0.3, -14.55, 6);
+      willow(k % 2 ? cx + 3.5 : cx - 3.5, -14.3);
+      if (k % 2) { maple(cx - 3, -19.5); } else { bamboo(cx + 3, -19.8); }
+      if (k === 0 || k % 5 === 4) {   // (the green Japanese bridge over it, wisteria on its arches)
+        var bx2 = cx + 1.5, deck = function (i) { return 0.25 + 0.75 * Math.sin(PI * (i + 0.5) / 9); };
+        for (var i = 0; i < 9; i += 1) { var z9 = -14.5 - (i + 0.5) * 0.6; box(bx2, deck(i), z9, 1.6, 0.12, 0.62, GP.BRIDGE); if (i % 2 === 0) { [-1, 1].forEach(function (sd) { box(bx2 + sd * 0.78, deck(i) + 0.42, z9, 0.08, 0.8, 0.08, GP.BRIDGE); }); } }
+        [-1, 1].forEach(function (sd) { for (var i2 = 0; i2 < 8; i2 += 1) { var za = -14.5 - (i2 + 1) * 0.6; box(bx2 + sd * 0.78, (deck(i2) + deck(i2 + 1)) / 2 + 0.8, za, 0.07, 0.07, 0.64, GP.BRIDGE); } });
+        [1, 4, 7].forEach(function (i3) { var z3 = -14.5 - (i3 + 0.5) * 0.6, top = deck(i3) + 2.3; [-1, 1].forEach(function (sd) { box(bx2 + sd * 0.9, top / 2, z3, 0.08, top, 0.08, GP.BRIDGE); }); box(bx2, top, z3, 1.9, 0.08, 0.1, GP.BRIDGE); for (var w = 0; w < 7; w += 1) { box(bx2 + R(-0.85, 0.85), top - R(0.3, 0.8), z3 + R(-0.4, 0.4), 0.22, 0.5, 0.22, GP.WIST); } });
+      }
+    } else if (key === "L") {
+      // (round the staircase: the walks' ends, the canal's rounded end, the dry garden, a lantern, pines, bamboo, a maple)
+      flat(S, -11.5, 11.4, -6, 14.0, 0.006, GP.GRAVEL);
+      canal(-12, -6); disc(Wt, -12, -17.15, 2.25, 0.012, GP.WATER); disc(S, -12, -17.15, 3.2, 0.005, GP.MOSS); pads(-13.6, -18.8, -6.5, -15.4, 10);
+      flat(S, -34, -8, -25.5, 7.5, 0.006, GP.RAKE);
+      for (var rk = -7.8; rk < 7.4; rk += 0.5) { flat(S, -33.8, rk, -25.7, rk + 0.07, 0.008, GP.GRAVEL); }
+      [[-31.5, -4, 1.4, 0.9], [-30.6, -3.2, 0.8, 0.6], [-28, 3.5, 1.2, 0.7], [-32.5, 4.5, 0.9, 0.5], [-27, -6, 1.0, 0.8]].forEach(function (q) { disc(S, q[0], q[1], q[2] * 0.9, 0.009, GP.MOSS); box(q[0], q[3] / 2, q[1], q[2], q[3], q[2] * 0.8, GP.STONE, R(0, 1)); });
+      lantern(-26.5, 8.6); pine(-31.5, 10.5); pine(-30, -12); bamboo(-24, 15.5); bamboo(-22, 16.3); maple(-20, -13.5); maple(-34, 1);
+      irises(-11.5, -6.5, -14.55, 4);
+    } else if ((mt = /^R(\d+)$/.exec(key))) {
+      // (past the open court: the walks' ends, a round lily pond, beds, maples, a lantern)
+      var xR = (+mt[1] - 1) * COURT.GAP;
+      flat(S, xR + 6, 11.4, xR + 12, 14.0, 0.006, GP.GRAVEL); flat(S, xR + 6, -14.0, xR + 12, -11.4, 0.006, GP.GRAVEL);
+      disc(S, xR + 13, -6, 3.8, 0.005, GP.MOSS); disc(Wt, xR + 13, -6, 3.2, 0.012, GP.WATER); pads(xR + 11, -8, xR + 15, -4, 9); koi(xR + 11.5, -7.5, xR + 14.5, -4.5);
+      irises(xR + 9.8, xR + 16.2, -9.6, 5);
+      bed(xR + 8.5, 3, xR + 11.5, 6.6, 0); bed(xR + 12.5, 3, xR + 15.5, 6.6, 1); bed(xR + 8.5, 7.4, xR + 11.5, 11, 4); bed(xR + 12.5, 7.4, xR + 15.5, 11, 5);
+      maple(xR + 17, 3); maple(xR + 10, -14); lantern(xR + 16.5, -1.5); pine(xR + 16.5, -8.5);
+    }
+    var up = function (a) { return a.length ? upload(a) : null; };
+    return { surf: up(S), water: up(Wt), plant: up(Pl), foot: foot, flats: flats };   // (foot: each box's middle and half reach; flats: each flat's corners; for the tests)
+  }
+  // The portal (the artist, 4 Nov 2026: "make an almost invisible tunnel, like the black hole in the movie interstellar
+  // and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"): over the dry
+  // garden by the staircase a black sphere, hardly there but for its rings, the light of a disc round it, tilted and
+  // turning, and that light bent round its edge facing the view; faint from afar, brighter close by. In it, a way
+  // through to Holographic Mr Pearl: in the Artifact its Artifact, on the site its page there; inside YouTube none (a
+  // Playable may not lead out). Later (the artist): Holographic Mr Pearl Quarterback, inside the same Playable.
+  var PORTAL = { c: [-30, 2.7, -0.5], r: 1.7, SITE: "../rocket/index.html", mesh: null };   // (in the Artifact the build gives its way: window.PB_PORTAL)
+  function sphereMesh(n, m) {
+    var out = [], P = function (i, j) { var th = PI * j / m, ph = 2 * PI * i / n; return [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)]; };
+    for (var i = 0; i < n; i += 1) { for (var j = 0; j < m; j += 1) { var a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), d = P(i, j + 1); [a, b, c, a, c, d].forEach(function (q) { out.push(q[0], q[1], q[2], q[0], q[1], q[2], 0); }); } }
+    return upload(out);
+  }
+  function portalDraw() {
+    var P = PORTAL, e = cur.eye, dd = hypot(P.c[0] - e[0], P.c[1] - e[1], P.c[2] - e[2]); if (dd > 90) { return; }
+    if (!P.mesh) { P.mesh = sphereMesh(20, 14); }
+    if (dd > P.r + 0.3) {   // (the dark: nothing lit, no rim, no haze; only what it hides shows it. Not with the eye inside it)
+      paint(MAT.PLANT, null, false, [0, 0, 0], 0); gl.uniform3fv(SU.uFog, [0, 0, 0]);
+      drawSolid(P.mesh, mul(T(P.c[0], P.c[1], P.c[2]), S(P.r, P.r, P.r)), [0.002, 0.002, 0.002], null, 0); gl.uniform3fv(SU.uFog, SKY.gnd);
+    }
+    var glow = 0.25 + 1.7 * smooth((26 - dd) / 20), tilt = 0.2, yaw = Math.atan2(P.c[0] - e[0], -(P.c[2] - e[2])), ux = Math.cos(yaw), uz = Math.sin(yaw);
+    paint(MAT.LAMP);
+    for (var i = 0; i < 36; i += 1) {   // (the disc: round it, tilted, turning)
+      var a = 2 * PI * i / 36 + gt * 0.35, rd = P.r * (1.75 + 0.18 * Math.sin(3 * a));
+      cbox([P.c[0] + rd * Math.cos(a), P.c[1] + rd * Math.sin(a) * Math.sin(tilt), P.c[2] + rd * Math.sin(a) * Math.cos(tilt)], [0.13, 0.05, 0.13], [1, 0.8, 0.52], glow);
+    }
+    for (var j = 0; j < 30; j += 1) {   // (its light bent round the edge, facing the view)
+      var b = 2 * PI * j / 30 - gt * 0.2, rr = P.r * 1.12;
+      cbox([P.c[0] + rr * Math.cos(b) * ux, P.c[1] + rr * Math.sin(b), P.c[2] + rr * Math.cos(b) * uz], [0.09, 0.09, 0.09], [1, 0.94, 0.84], glow * 0.8);
+    }
+  }
+  function portalStep() {
+    var a = $("portal"); if (!a) { return; }
+    var near = !court.m && !TUT.on && !ride.mode && hypot(me.x - PORTAL.c[0], me.z - PORTAL.c[2]) < PORTAL.r + 0.9 && me.y < PORTAL.c[1] + PORTAL.r;
+    if (YT.inYT) { if (!a.hidden) { a.hidden = true; } if (near && !ride.told.portal) { ride.told.portal = 1; say(STR.portal.soon, true); } return; }
+    if (a.hidden === near) { a.hidden = !near; }
+    if (near && !ride.told.portal) { ride.told.portal = 1; say(STR.portal.here, true); }
+  }
+  function gdnChunk(key) { if (!GDN[key]) { GDN[key] = gdnBuild(key); } return GDN[key]; }
+  function gdnFree(g) { if (g) { unload(g.surf); unload(g.water); unload(g.plant); } }
+  var GDN_NEAR = 66;   // (the plants drawn within this of the eye, in x: past about 60 m a flower is smaller than a cell)
+  function gdnDraw(ex) {
+    var keys = [], N = courts.length, keep = {}, made = 0;
+    var want = function (key, x, half) { var dx = abs(x - ex) - half; if (dx < SEEN + 24) { keep[key] = 1; } if (dx < SEEN) { keys.push({ k: key, d: max(dx, 0) }); } };
+    for (var k = 0; k < N; k += 1) { want("c" + k + (k === N - 1 ? "e" : ""), k * COURT.GAP, COURT.GAP / 2); }
+    want("L", -20, 14); want("R" + N, (N - 1) * COURT.GAP + 12, 6);
+    Object.keys(GDN).forEach(function (kk) { if (!keep[kk]) { gdnFree(GDN[kk]); delete GDN[kk]; } });   // (far off, or the old far end's: freed; each is built again exactly, from its key)
+    keys.sort(function (a, b) { return a.d - b.d; });
+    var I = T(0, 0, 0), ch = [];
+    keys.forEach(function (q) { if (!GDN[q.k]) { if (made) { return; } made = 1; GDN[q.k] = gdnBuild(q.k); } ch.push({ g: GDN[q.k], near: q.d < GDN_NEAR }); });   // (the nearest first, one new a frame: no hitch)
+    paint(MAT.GARDEN, null, true); ch.forEach(function (c) { if (c.g.surf) { drawSolid(c.g.surf, I, null, GP.pal, 0.55); } });
+    paint(MAT.WATER, null, true); ch.forEach(function (c) { if (c.g.water) { drawSolid(c.g.water, I, null, GP.pal, 0.95); } });
+    paint(MAT.PLANT, null, false, RIM.none, 1); ch.forEach(function (c) { if (c.near && c.g.plant) { drawSolid(c.g.plant, I, null, GP.pal, 0.9); } });   // (the garden lit as for an evening: its own colours, bright)
+  }
   // the track's mesh, for the number of courts (and again after a lost GL context): the centre line the lap's way, across
   // it TRK.D's strips from the inner edge out, its bowl and berm; kerbs striped red and white round the bends, a white
   // line along each edge, a chequered line across the near straight at its middle (the start and the finish)
   var trkC = null;
-  TRK.pal = (function () { var p = new Float32Array(256); [[42, 42, 66], [236, 234, 244], [222, 44, 66], [16, 16, 22], [64, 54, 96]].forEach(function (c, i) { p[i * 4] = c[0]; p[i * 4 + 1] = c[1]; p[i * 4 + 2] = c[2]; }); return p; })();   // (tarmac, white, kerb red, black, the berm)
+  var palOf = function (L) { var p = new Float32Array(256); L.forEach(function (c, i) { p[i * 4] = c[0]; p[i * 4 + 1] = c[1]; p[i * 4 + 2] = c[2]; }); return p; };
+  // (tarmac, white, kerb red, black, the berm; then under the floodlights: tarmac half lit and lit, kerb red lit, berm lit)
+  TRK.pal = palOf([[42, 42, 66], [236, 234, 244], [222, 44, 66], [16, 16, 22], [64, 54, 96], [74, 72, 104], [108, 106, 142], [255, 96, 116], [102, 88, 142]]);
+  TRK.ledPal = palOf([[126, 240, 255], [232, 170, 255]]);   // (the strips: cyan along the inner edge, violet along the outer)
   function trkMesh() {
     if (trkC && trkC.n === courts.length) { return trkC.mesh; }
     var out = [], R = TRK.R, W = TRK.W, xL = TRK.XL, xR = trkXR(), St = xR - xL, P = [], i, j;
@@ -3263,16 +3456,23 @@
       if (n[1] < 0) { n = [-n[0], -n[1], -n[2]]; }
       [a, b2, c].forEach(function (p) { out.push(p[0], p[1], p[2], n[0], n[1], n[2], id); });
     };
-    var sAt = 0;
+    var sAt = 0, TW = trkTowers(), ledX = [], ledZ = [];
+    var strip = function (q0, q1, d0, d1, id) {   // (a light strip along an edge, a touch over the tarmac, its stroke along x or z)
+      var o = abs(q1.x - q0.x) >= abs(q1.z - q0.z) ? ledX : ledZ, sv = out; out = o;
+      var A = at(q0, d0), B = at(q1, d0), C = at(q1, d1), E = at(q0, d1); [A, B, C, E].forEach(function (p) { p[1] += 0.014; });
+      tri(A, B, C, id); tri(A, C, E, id); out = sv;
+    };
     for (i = 0; i < P.length; i += 1) {
       var q0 = P[i], q1 = P[(i + 1) % P.length], seg = hypot(q1.x - q0.x, q1.z - q0.z), bend = q0.bend || q1.bend, stripe = floor(sAt / 1.6) % 2;
       for (j = 0; j < D.length - 1; j += 1) {
         if (j >= 11 && q0.b < 0.01 && q1.b < 0.01) { continue; }   // (no rise, no berm)
         var kerb = bend && (j <= 2 || (j >= 8 && j <= 10)), line = !bend && (j === 1 || j === 9);
         var id = j >= 11 ? 4 : kerb ? (stripe ? 1 : 2) : line ? 1 : 0;
-        var A = at(q0, D[j]), B = at(q1, D[j]), C = at(q1, D[j + 1]), E = at(q0, D[j + 1]);
+        var A = at(q0, D[j]), B = at(q1, D[j]), C = at(q1, D[j + 1]), E = at(q0, D[j + 1]), Lq = trkLit((A[0] + C[0]) / 2, (A[2] + C[2]) / 2, TW);
+        if (id === 0) { id = Lq > 0.66 ? 6 : Lq > 0.3 ? 5 : 0; } else if (id === 2 && Lq > 0.45) { id = 7; } else if (id === 4 && Lq > 0.45) { id = 8; }
         tri(A, B, C, id); tri(A, C, E, id);
       }
+      strip(q0, q1, 0.02, 0.16, 0); strip(q0, q1, W - 0.16, W - 0.02, 1);
       sAt += seg;
     }
     // the line: two rows of eight checks across the near straight's middle, a touch over the tarmac
@@ -3284,7 +3484,8 @@
         tri([x0, y(x0, z0), z0], [x1b, y(x1b, z0), z0], [x1b, y(x1b, z1), z1], id2); tri([x0, y(x0, z0), z0], [x1b, y(x1b, z1), z1], [x0, y(x0, z1), z1], id2);
       }
     }
-    trkC = { n: courts.length, mesh: upload(out), xS: xS };
+    if (trkC) { unload(trkC.mesh); unload(trkC.ledX); unload(trkC.ledZ); }   // (the shorter track's, a court ago)
+    trkC = { n: courts.length, mesh: upload(out), xS: xS, ledX: upload(ledX), ledZ: upload(ledZ), towers: TW };
     return trkC.mesh;
   }
   // how much of a pole is drawn (narrowing over the last metre to the view and the last half metre to the line to him,
@@ -3424,6 +3625,17 @@
       [-1, 1].forEach(function (s) {
         var pz = s * (COURT.L + 4), ps = poleSight(px, pz); if (!ps.lamp || ps.far > 90) { return; }   // (past 90 m, too faint to draw)
         var a = k * clampV(14 / ps.far, 0.15, 0.8); flare([px, 9.1, pz - s * 0.2], a, "255,214,150", "140,180,255", W * (0.04 + 0.12 * a));
+      });
+    }
+    // (the track's floodlights: each lamp's glare, and its beam, a faint cone of light from it down to its pool)
+    if (trkC) {
+      trkC.towers.forEach(function (t) {
+        var lp = [t.p[0], t.p[1] + 0.2, t.p[2]], v = sub(e, lp), dd = hypot(v[0], v[1], v[2]) || 1; if (dd > 140) { return; }
+        var a = k * clampV(26 / dd, 0.15, 0.85); flare(lp, a, "255,226,170", "150,190,255", W * (0.05 + 0.12 * a));
+        var q1 = toS(lp), q2 = toS([t.aim[0], 0.3, t.aim[2]]); if (!q1 || !q2) { return; }
+        var wx = q2[0] - q1[0], wy = q2[1] - q1[1], wl = hypot(wx, wy) || 1, nx = -wy / wl, ny = wx / wl, hw = 0.24 * wl;
+        var gb = c.createLinearGradient(q1[0], q1[1], q2[0], q2[1]); gb.addColorStop(0, "rgba(255,232,186," + (0.12 * a).toFixed(3) + ")"); gb.addColorStop(1, "rgba(255,232,186,0)");
+        c.fillStyle = gb; c.beginPath(); c.moveTo(q1[0], q1[1]); c.lineTo(q2[0] + nx * hw, q2[1] + ny * hw); c.lineTo(q2[0] - nx * hw, q2[1] - ny * hw); c.closePath(); c.fill();
       });
     }
     if (abs(car.x - e[0]) < SEEN) {
@@ -4160,7 +4372,7 @@
     canvas.addEventListener("webglcontextlost", function (e) { e.preventDefault(); stop(); });
     canvas.addEventListener("webglcontextrestored", function () {
       if (!body) { return; }
-      try { trkC = null; sceneInit(); bodyMeshes(body); asc = null; ascInit(); } catch (x) { YT.warn(x); asc = null; }   // (the track's mesh built again on the next draw)
+      try { trkC = null; GDN = {}; PORTAL.mesh = null; sceneInit(); bodyMeshes(body); asc = null; ascInit(); } catch (x) { YT.warn(x); asc = null; }   // (the track's mesh built again on the next draw)
       start();
     });
     // the first frame, before his body is built: black under the loading words (index.html), and told
@@ -4176,6 +4388,7 @@
       return YT.load();
     }).then(function (saved) {
       courtsInit(saved);
+      var pa = $("portal"); if (pa) { pa.href = window.PB_PORTAL || PORTAL.SITE; pa.textContent = STR.portal.link; pa.setAttribute("aria-label", STR.portal.linkSr); }   // (the portal's way: the Artifact's, or the site's page)
       me = athlete(palMe, 2.2, COURT.L + 5, 0, true);
       bindInput();
       courtWhere();
@@ -4211,7 +4424,7 @@
                }
                input.stick = null; return !!(court.m && court.m.meterOn);
              },
-             ride: ride, car: car, cur: cur, CAR: CAR, TRK: TRK, trkAt: trkAt, groundAt: groundAt, LAP: LAP, laps: function () { return courts.laps; }, STAIR: STAIR, GLIDE: GLIDE, BOUND: BOUND, DONUT: DONUT, rideToggle: rideToggle, stairAt: stairAt, stairWay: stairWay, topPath: topPath, topAt: topAt, stairEnd: stairEnd, TOP: TOP, carGap: carGap,
+             ride: ride, car: car, cur: cur, CAR: CAR, TRK: TRK, PORTAL: PORTAL, gdnChunk: gdnChunk, trkMeshInfo: function () { trkMesh(); return { towers: trkC.towers.length, ledX: trkC.ledX.n, ledZ: trkC.ledZ.n }; }, trkAt: trkAt, groundAt: groundAt, LAP: LAP, laps: function () { return courts.laps; }, STAIR: STAIR, GLIDE: GLIDE, BOUND: BOUND, DONUT: DONUT, rideToggle: rideToggle, stairAt: stairAt, stairWay: stairWay, topPath: topPath, topAt: topAt, stairEnd: stairEnd, TOP: TOP, carGap: carGap,
              hide: function (on) { hideAth = on; }, fx: function () { return fx; }, camNow: function () { return { e: cur.eye.slice(), yaw: cur.yaw, pitch: cur.pitch }; },
              camAt: function (e, yaw, pitch, plain) { camOver = e && { e: e, yaw: yaw, pitch: pitch }; camPlain = !!plain; } };
   } };

@@ -32,6 +32,8 @@ html = html.replace('<script src="../rocket/pearl.js"></script>', '<script src="
 if (mode === "--artifact") {
   // (an Artifact's host wraps the page in its own document, charset and viewport: so the title, the style and the
   // page's elements, with no document tags of their own)
+  // (the portal's way in an Artifact: the Holographic Mr Pearl Artifact, not the site's page)
+  html = html.replace('<script src="pickleball.js"></script>', '<script>window.PB_HOST = "artifact"; window.PB_PORTAL = "https://claude.ai/artifact/5yPot5suK22JKCt8svNDGe";</script>\n<script src="pickleball.js"></script>');
   let one = html.replace(/<!doctype html>\n?|<\/?html[^>]*>\n?|<\/?head>\n?|<\/?body>\n?|<meta charset[^>]*>\n?|<meta name="viewport"[^>]*>\n?/gi, "");
   one = one.replace(/<link rel="stylesheet" href="pickleball.css">/, () => "<style>\n" + files["pickleball.css"] + "</style>");
   one = one.replace(/<script src="([^"]+)"><\/script>/g, (m, n) => { if (!files[n]) { fail("unknown script " + n); } return "<script>\n" + files[n].replace(/<\/script/gi, "<\\/script") + "</script>"; });
@@ -42,6 +44,9 @@ if (mode === "--artifact") {
 }
 
 // --playable: the SDK the first script in <head>, after the charset alone
+// (and no portal's way out: a Playable may not link out of the game, so its link is not in the bundle at all)
+html = html.replace(/<a id="portal"[^>]*>.*?<\/a>\n?/, "");
+if (/id="portal"|claude\.ai\/artifact/.test(html + files["pickleball.js"])) { fail("the portal's way out is still in the Playable"); }
 html = html.replace(/<meta charset="utf-8">\n?/i, (m) => m + SDK + "\n");   // (the charset first: it must lie in the first 1024 bytes)
 const first = (html.match(/<script[^>]*>/i) || [""])[0];
 if (first.indexOf("https://www.youtube.com/game_api/") < 0 || /\b(defer|async)\b/.test(first)) { fail("the SDK is not the first plain script"); }
