@@ -312,17 +312,24 @@ the frame rate (they had turned it twice as fast at 120 frames a second).
 ball or barely Mr Pearl like this I want your view to turn like a neck left and right to compensate for keeping the
 pearls in view"; then, 4 Nov 2026: "I dont like how the camera swivels now to compensate for Mr Pearl and or the ball
 going out of view, it's too much and makes it harder to keep track of all the balls. Find a middle ground between how it
-used to be and how it is now"): in a rally the view, held behind him facing across, turns up to 0.45 rad either way (1 rad
-a second at most, on a spring so no start or stop is sudden, and back when it can), as far as the pearl he must play next
-needs to be inside 95% of the half width: it holds while the pearl is, nearly to the edge, and follows that edge once it
-is not, never a hold then a snap; then, as far as each fits too, where it comes down and the other pearls coming to him (not a pearl already
+used to be and how it is now"; and then: "when the camera swivels to the left or right it needs to snap back to straight
+on quicker"): in a rally the view, held behind him facing across, turns up to 0.45 rad either way (1 rad a second at most
+on the way out, on a spring so no start is sudden), only as far as the pearl he must play next needs to be inside 95% of
+the half width, and no further for longer than that: once the pearl is back inside it, or nothing is coming at him, it
+goes back to straight on, quickly (3 rad a second at most, on a stiffer spring); to the other side, home first, slowing
+into straight on, then out as from rest, so neither the crossing nor the turn after it lurches; then, as far as each fits too, where it comes down and the other pearls coming to him (not a pearl already
 past him, nor anything behind him). It turns about him, so he stays in the middle, and a pearl served while it is
 turned goes where the view's own way aims it, not the neck's. The point over, it comes home, and whatever turn is left when the rally's view ends unwinds at the same rate
 (never left in the serve's view). The stick keeps the court's way while it turns (up is still the net), so a held thumb does not swerve. A
 phone held upright sees only 11 degrees either side of the middle; a shot wide to his side lands level with him, and its
 ring would need the view turned three quarters of a right angle, the court gone from it, so the ring is not always shown.
 `pb_neck.js` plays rallies on court ten on a phone (390 by 844), three pearls a serve, and measures how far the view
-swivels a second and what goes out of the picture; `PB_NECK` tries other numbers on the same rallies. The middle ground
+swivels a second, how much of the time it is straight on and what goes out of the picture; `PB_NECK` tries other numbers
+on the same rallies. Snapping back (against the same neck holding its turn, hold: true): straight on in 49% of the rally's
+frames (12%), turned 0.14 rad on average (0.26), back at up to 2.7 rad a second (1), out never past 1 and never with a
+lurch (its speed changing at 35 rad/s/s at most); swivelling 0.34 rad a second (0.36); the next pearl out of the picture
+23% (41%), Mr Plan 12% (38%), Mr Pearl 4% (6%); where it comes down 48% (43%: that share moves most from run to run, 37%
+in the run before). The middle ground
 swivels half as much as the first neck (0.36 rad a second, from 0.73; 0.9 rad at most and 2 a second, it held to seven
 tenths of the half width), turned 0.25 rad on average (from 0.41): where the next pearl comes down is out of the picture in
 40% of the rally's frames (31% with the first neck, 52% with none), the pearl itself 41% (27%, 38%), Mr Pearl 7% (6%,
