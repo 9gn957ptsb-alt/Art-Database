@@ -18,7 +18,8 @@
 // spiral staircase, be wide enough for the orange coupe to be able to drive on it"), launches off its top and glides
 // under his hat, him in it, down to the ground; Mr Plan, winning a game with the coupe beside the court, takes it for a
 // donut and is back at his baseline for the serve, the coupe as it stood (and not with it far off); the court tip
-// marks the coupe; paused, nothing; in it, a tap (Space) does a donut (at speed, a stop first) and parks it as it stood.
+// marks the coupe; paused, nothing; in it, a Donut button over Get out (or a tap, Space) does a donut (at speed, a stop first), seen as Mr Plan's is, and
+// parks it as it stood.
 // node pb_drive.js outdir [port] [phone|desk]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -358,6 +359,53 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   const d2 = await myDn(kx - 8.5, 0, 0);   // (its right toward the open court)
   const d3 = await myDn(H[0], H[1], H[2], 16);
   check(d3.started && d3.stop > 0.4 && d3.stop < 1.0 && d3.slid > 3 && d3.turns > 1.8 && d3.back < 0.01, `a tap at 16 m/s: braked to a stop first (${d3.stop} s, ${d3.slid} m), then the donut, parked where it stopped (${JSON.stringify(d3)})`);
+  // the Donut button (the artist, 4 Nov 2026: "Make sure that when I am driving the coupe forward there is a button that
+  // says donut and that's the same animation as Mr. plan doing it happens to you in the coupe when pushing the button"):
+  // driving forward, it shows over Get out; a real tap on it: a stop, the donut, seen as Mr Plan's is (from outside the
+  // circle, 12.5 m off, 5.5 m up, the coupe in the middle of the picture), the button gone meanwhile and back once parked
+  const bt = await D(([x0, z0, y0, dk]) => {
+    const d = window.Pickleball.debug(), c = d.car; if (d.ride.mode !== "car") { d.me.x = c.x + 1.6; d.me.z = c.z; d.run(0.05); d.rideToggle(); }
+    d.view.pitch = -1.0;   // (the view dragged to look down: the donut's own view is the same)
+    // (forward on the stick, or W held; after the reload above, its own)
+    window.__fwd = (on) => { if (dk) { d.input.stick = null; d.input.keys.w = on; } else { d.input.stick = on ? { id: -1, x: 0, y: 0, dx: 0, dy: -60 } : null; } };
+    c.x = x0; c.z = z0; c.yaw = y0; c.v = 0; d.run(0.2); window.__fwd(true); d.run(0.8); d.draw();
+    const b2 = document.getElementById("donut"), q = b2.getBoundingClientRect(), r2 = document.getElementById("ride").getBoundingClientRect();
+    return { v: +c.v.toFixed(1), shown: !b2.hidden && getComputedStyle(b2).display !== "none", text: b2.textContent, box: [q.left, q.top, q.width, q.height], W: innerWidth, H: innerHeight, rideTop: r2.top, rideShown: !document.getElementById("ride").hidden };
+  }, [H[0], H[1], H[2], desk]);
+  check(bt.shown && bt.text === "Donut" && bt.v > 3 && bt.rideShown, `driving the coupe forward (${bt.v} m/s): a Donut button`);
+  check(bt.box[0] >= 0 && bt.box[1] >= 0 && bt.box[0] + bt.box[2] <= bt.W && bt.box[1] + bt.box[3] <= bt.rideTop && bt.box[3] >= 44, `over Get out, inside the screen, a finger's height ${JSON.stringify(bt.box)}`);
+  {
+    await D(() => { window.Pickleball.debug().YT.paused = false; });
+    const q = await D(() => { const r = document.getElementById("donut").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+    if (desk) { await p.mouse.click(q[0], q[1]); }
+    else {
+      const cdp = await p.context().newCDPSession(p);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: q[0], y: q[1], id: 3 }] });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    }
+    await p.waitForTimeout(60);
+    await D(() => { window.Pickleball.debug().YT.paused = true; });
+  }
+  const bd = await D(() => {
+    const d = window.Pickleball.debug(), c = d.car, b2 = document.getElementById("donut"), o = { hidden: true, cam: [] };
+    const r2 = document.getElementById("ride"); o.outHidden = true;
+    let i = 0; for (; i < 180 && !d.ride.dn; i++) { d.run(1 / 60); o.hidden = o.hidden && b2.hidden; }
+    o.started = !!d.ride.dn; o.stop = +(i / 60).toFixed(2); window.__fwd(false); const P0 = d.ride.dn && d.ride.dn.P0.slice(); let turned = 0, py = c.yaw, j = 0;
+    for (; j < 60 * 4 && d.ride.dn; j++) {
+      d.run(1 / 60); if (d.ride.dn) { o.hidden = o.hidden && b2.hidden; o.outHidden = o.outHidden && r2.hidden; } turned += Math.atan2(Math.sin(c.yaw - py), Math.cos(c.yaw - py)); py = c.yaw;
+      if (d.ride.dn && j >= 160) { d.draw(); o.eyeLast = d.cur.eye.slice(); }   // (its last frames' view)
+      if (j === 50 || j === 70 || j === 85 || j === 100 || j === 115) { d.draw(); const e = d.cur.eye, A = [Math.sin(c.yaw) * 2.15, Math.cos(c.yaw) * -2.15], s = d.toScreen([c.x, 1, c.z]), s1 = d.toScreen([c.x + A[0], 0.6, c.z + A[1]]), s2 = d.toScreen([c.x - A[0], 0.6, c.z - A[1]]);
+        o.cam.push({ y: +e[1].toFixed(2), off: +Math.hypot(e[0] - c.x, e[2] - c.z).toFixed(1), mid: s ? [+(s[0] / innerWidth).toFixed(2), +(s[1] / innerHeight).toFixed(2)] : null, ends: s1 && s2 ? [+(s1[0] / innerWidth).toFixed(2), +(s2[0] / innerWidth).toFixed(2)] : null }); }
+    }
+    d.run(1 / 60); o.secs = +(j / 60).toFixed(2); o.turns = +(Math.abs(turned) / (2 * Math.PI)).toFixed(2);
+    o.back = P0 ? +(Math.hypot(c.x - P0[0], c.z - P0[1]) + Math.abs(Math.atan2(Math.sin(c.yaw - P0[2]), Math.cos(c.yaw - P0[2])))).toFixed(4) : null;
+    o.again = !b2.hidden; d.draw(); const e2 = d.cur.eye; o.handBack = o.eyeLast ? +Math.hypot(e2[0] - o.eyeLast[0], e2[1] - o.eyeLast[1], e2[2] - o.eyeLast[2]).toFixed(3) : null; delete o.eyeLast;
+    return o;
+  });
+  check(bd.outHidden, "and Get out gone while it goes round (it could not get him out)");
+  check(bd.started && bd.hidden && bd.stop < 1 && bd.turns > 1.8 && bd.back < 0.01, `a real tap on it: a stop (${bd.stop} s), then the donut, twice round, parked where it stopped, the button gone meanwhile (${JSON.stringify(bd)})`);
+  check(bd.cam.length === 5 && bd.cam.every((q) => Math.abs(q.y - 5.5) < 0.6 && q.off > 9 && q.ends && q.ends.every((x) => x > 0 && x < 1) && q.mid[1] > 0.2 && q.mid[1] < 0.85), `seen as Mr Plan's is: from outside its circle, 5.5 m up, the coupe nose to tail in the picture all the way round (${JSON.stringify(bd.cam)})`);
+  check(bd.again && bd.handBack != null && bd.handBack < 0.3, `parked, the button back and his own view again, handed back without a jump (${bd.handBack} m in the last frame)`);
   check(d2.started && d2.dir === -1 && d2.back < 0.01 && d2.clear > d2.need, `beside the open court, the circle on the side away from it, clear of its run-off all the way round (${d2.clear} m, ${d2.need} needed; ${JSON.stringify(d2)})`);
   check(errs.length === 0, "no errors: " + errs.slice(0, 3).join(" | "));
   await b.close();

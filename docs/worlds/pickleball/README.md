@@ -184,12 +184,16 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   him and the coupe from the court's side, and back once he is at his baseline, before the serve; the match's recording
   starts after it. His game's line keeps its score with the donut in it ("Mr Plan takes it, 3 – 1, and the coupe for a
   donut."); the coupe turns smoothly however it was parked, and its smoke is the same on any display.
-- *His own donut* (the artist, 4 Nov 2026: "Mr Pearl should be able to do donuts in the coupe as well"): in the coupe on
-  the ground, a tap (Space on the desk) drives the same two turns, its tail out and smoking, round a circle at its side,
+- *His own donut* (the artist, 4 Nov 2026: "Mr Pearl should be able to do donuts in the coupe as well"; then "Make sure
+  that when I am driving the coupe forward there is a button that says donut and that's the same animation as Mr. plan
+  doing it happens to you in the coupe when pushing the button"): in the coupe on the ground a Donut button stands over
+  Get out; it (or a tap, Space on the desk) drives the same two turns, its tail out and smoking, round a circle at its side,
   the side away from the open court first, kept clear of that court's run-off, the ground's edge and the staircase (no
   room either side: none); at speed, a stop first, braking as for the way out; it parks where it began, him still in
-  it. Meanwhile the view is not whirled round with it and the
-  button does nothing.
+  it. The view is Mr Plan's donut's: from outside the circle, on its middle, 5.5 m up and 12.5 m off (or as far as the
+  whole circle needs to fit the screen's width: some 22 m on a phone held upright), eased in, and handed back to his own
+  as it parks; from behind the coupe the way the view looks, turned round the circle till its eye is clear of the
+  staircase. Meanwhile the Donut button and Get out are gone. No room either side: it says so (`pb_drive.js`).
 `pb_drive.js` drives it round the courts, up the ramp and off it, climbs, glides and watches the donut, phone and desk, with real taps and keys. Straight ahead takes him in: at the serve, before he is on the circle, a way within 30
 degrees of it goes straight to it (the view turned off it would otherwise have him walk past, 1.4 m wide). Not the corner behind the circle: a floodlight's pole stood there between the view and him.
 And on any way he goes, no pole is drawn within 2.5 m of the view or within a metre of its line to him: walking into

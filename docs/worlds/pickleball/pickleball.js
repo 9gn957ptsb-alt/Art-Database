@@ -1240,8 +1240,9 @@
     won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder: step onto its gold circle to play."; },
     standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; },
     // the coupe, the stairs, his hat: [a finger, a desk]
-    ride: { drive: "Drive", out: "Get out", driveSr: "Drive the orange coupe", outSr: "Get out of the coupe",
-            car: ["The coupe: push up to drive, left and right to steer, down to brake, tap for a donut. Round all the courts; it parks beside the open one.", "The coupe: W to drive, A and D to steer, S to brake, Space for a donut, F to get out. Round all the courts; it parks beside the open one."],
+    ride: { drive: "Drive", out: "Get out", driveSr: "Drive the orange coupe", outSr: "Get out of the coupe", donut: "Donut", donutSr: "Do a donut in the coupe",
+            room: "No room for a donut here: out in the open, away from the open court.",
+            car: ["The coupe: push up to drive, left and right to steer, down to brake, Donut (or a tap) for a donut. Round all the courts; it parks beside the open one.", "The coupe: W to drive, A and D to steer, S to brake, Space or Donut for a donut, F to get out. Round all the courts; it parks beside the open one."],
             stairs: ["The staircase: a step for each court won. Push up to climb, tap to jump off.", "The staircase: a step for each court won. W to climb, Space to jump off."],
             ramp: ["Up the staircase: it steers itself round, then level and out along its board. Hold on to launch off the end.", "Up the staircase: it steers itself round, then level and out along its board. W on to launch off the end."],
             carHat: ["His hat opens over the coupe: steer it down anywhere.", "His hat opens over the coupe: A and D steer it down anywhere."],
@@ -2395,16 +2396,27 @@
     var w = [1, -1].map(function (s) { return { s: s, C: [car.x + s * A.rx * DONUT.R, car.z + s * A.rz * DONUT.R] }; })
       .sort(function (a, b) { return off(b.C) - off(a.C); }).filter(function (o) { return ok(o.C); })[0];
     // (on its right it goes round forward, ph rising; on its left, ph falling)
-    if (w) { ride.dn = { t1: gt, P0: [car.x, car.z, car.yaw], C: w.C, ph0: Math.atan2(car.z - w.C[1], car.x - w.C[0]), dir: w.s }; }
+    if (!w) { return false; }
+    // (seen as Mr Plan's is, from outside its circle: from behind the coupe the way the view looks, however it is pitched;
+    // turned round the circle, if need be, till the view's eye is clear of the staircase, which nothing hides)
+    var C = w.C, fy = view.yaw, bx = Math.sin(fy), bz = -Math.cos(fy), eyeFar = donutFar(), from = null;
+    [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, 2.4, -2.4, PI].some(function (a) {
+      var ux = bx * Math.cos(a) - bz * Math.sin(a), uz = bx * Math.sin(a) + bz * Math.cos(a);
+      if (hypot(C[0] - ux * eyeFar - STAIR.c[0], C[1] - uz * eyeFar - STAIR.c[1]) > STAIR.R1 + 1.5) { from = [C[0] - ux * 10, C[1] - uz * 10]; return true; } return false;
+    });
+    ride.dn = { t1: gt, P0: [car.x, car.z, car.yaw], C: C, ph0: Math.atan2(car.z - C[1], car.x - C[0]), dir: w.s, from: from || [C[0] - bx * 10, C[1] - bz * 10] };
+    return true;
   }
   // between matches, before his body's step: the coupe (his, or standing where he left it), the stairs, the air
   function rideStep(dt, c) {
     if (court.m || dt <= 0) { return; }
-    // (a tap at speed: a stop first, braking as for the way out, then the donut)
-    if (ride.mode === "car" && !ride.dn && c && c.fire && car.mode === "ground" && !ride.out && !TUT.on) { ride.dnQ = true; }
+    if (c && c.fire) { donutPress(); }
     if (ride.dnQ && (ride.mode !== "car" || car.mode !== "ground" || ride.out)) { ride.dnQ = false; }
-    if (ride.dnQ && abs(car.v) < 0.6) { ride.dnQ = false; myDonut(); }
-    if (ride.dn) { if (donutDrive(ride.dn, dt) >= 1) { var P = ride.dn.P0; car.x = P[0]; car.z = P[1]; car.yaw = P[2]; car.v = 0; car.steer = 0; ride.dn = null; } }
+    if (ride.dnQ && abs(car.v) < 0.6) { ride.dnQ = false; if (!myDonut()) { say(STR.ride.room); } rideButton(); }
+    if (ride.dn) {
+      var dd = ride.dn, ct = [dd.C[0], 1.0, dd.C[1]]; dd.cam = dd.cam ? lerp3(dd.cam, ct, min(1, dt * 3)) : ct;   // (what the view looks at, eased, as for Mr Plan's: the circle's middle)
+      if (donutDrive(dd, dt) >= 1) { var P = dd.P0; car.x = P[0]; car.z = P[1]; car.yaw = P[2]; car.v = 0; car.steer = 0; ride.dn = null; rideButton(); }
+    }
     else { carStep(dt, ride.mode === "car" && !ride.dnQ ? c : null); }
     if (ride.mode === "car") {
       if (ride.out && car.mode !== "ground") { ride.out = false; rideButton(); }   // (never left braking on the ramp with no wheel and no way out)
@@ -2458,10 +2470,14 @@
   // the button: Drive beside the coupe, Get out in it (on the ground; at speed it brakes to a stop for him first)
   function rideButton() {
     var b = $("ride"); if (!b) { return; }
-    var inCar = ride.mode === "car", show = !court.m && !TUT.on && (inCar ? car.mode === "ground" : carNear()), t = inCar ? STR.ride.out : STR.ride.drive;
+    var inCar = ride.mode === "car", show = !court.m && !TUT.on && (inCar ? car.mode === "ground" && !ride.dn : carNear()), t = inCar ? STR.ride.out : STR.ride.drive;   // (not in a donut: it could not get him out)
     if (b.hidden === show) { b.hidden = !show; }
     if (show && b.textContent !== t) { b.textContent = t; b.setAttribute("aria-label", inCar ? STR.ride.outSr : STR.ride.driveSr); }
+    var dn = $("donut"), dshow = show && inCar && !ride.out && !ride.dn && !ride.dnQ;   // (gone while it brakes for it and drives it)
+    if (dn && dn.hidden === dshow) { dn.hidden = !dshow; if (dshow && dn.textContent !== STR.ride.donut) { dn.textContent = STR.ride.donut; dn.setAttribute("aria-label", STR.ride.donutSr); } }
   }
+  // the Donut button, a tap or Space in the coupe on the ground: at speed a stop first, braking as for the way out, then it
+  function donutPress() { if (ride.mode === "car" && !ride.dn && car.mode === "ground" && !ride.out && !court.m && !TUT.on) { ride.dnQ = true; rideButton(); } }
   function stepAll(dt) {
     var c = controls(dt), y0 = me.y;
     courtStep(dt, c);
@@ -2921,7 +2937,7 @@
   }
   function donutStep(m, dt) {
     var d = m.dn, pl = plans[m.k], cc = courtAt(m.k), base = [cc[0], cc[2] - COURT.L - 0.6];
-    var tgt = d.stage === "drive" ? [car.x, 1.0, car.z] : [pl.x, 1.0, pl.z]; d.cam = d.cam ? lerp3(d.cam, tgt, min(1, dt * 3)) : tgt;   // (what the view looks at, eased)
+    var tgt = d.stage === "drive" ? [d.C[0], 1.0, d.C[1]] : [pl.x, 1.0, pl.z]; d.cam = d.cam ? lerp3(d.cam, tgt, min(1, dt * 3)) : tgt;   // (what the view looks at, eased: in the drive the circle's middle)
     if (d.stage === "run") {
       pl.want = { to: d.door }; pl.faceTo = null;
       if (hypot(pl.x - d.door[0], pl.z - d.door[1]) < 0.6 || gt - d.t0 > DONUT.RUN) { d.stage = "drive"; d.t1 = gt; d.inCar = true; pl.want = null; pl.vx = pl.vz = 0; }
@@ -2935,13 +2951,23 @@
       if (d.t3) { pl.faceTo = PI; if (gt - d.t3 >= 0.8) { m.dn = null; m.phase = "serve"; m.rec = recNew(); courtWhere(); } }
     }
   }
-  // the view through it: from the court's side, on the coupe, eased in and out of his own
+  function donutFar() { return max(12.5, (DONUT.R + CAR.L / 2 + 0.6) / (T35 * canvas.clientWidth / max(1, canvas.clientHeight))); }
+  // the view through it, Mr Plan's or his own (the artist, 4 Nov 2026: "the same animation as Mr. Plan doing it happens
+  // to you"): from outside the circle, on its middle, 12.5 m off (further on a narrow screen, the circle all in it) and
+  // 5.5 m up, eased in and out of his own
   function donutCam(e0, yaw0, pitch0) {
-    var m = court.m, d = m && m.dn; if (!m || m.phase !== "donut" || !d) { return null; }
-    var w = smooth((gt - d.t0) / 0.6) * (d.t3 ? 1 - smooth((gt - d.t3) / 0.8) : 1);   // (in, and out once he is at his baseline)
-    if (!d.cam) { return null; }
-    // (from the court's middle: he may be anywhere between games, even by the coupe)
-    var t = d.cam, cc = courtAt(m.k), ox = t[0] - cc[0], oz = t[2] - cc[2], ol = hypot(ox, oz) || 1, e1 = [t[0] - ox / ol * 12.5, 5.5, t[2] - oz / ol * 12.5];
+    var m = court.m, d = null, w = 0, o = null;
+    if (m && m.phase === "donut" && m.dn) {
+      // (in, and out once he is at his baseline; from the court's middle: he may be anywhere between games, even by the coupe)
+      d = m.dn; w = smooth((gt - d.t0) / 0.6) * (d.t3 ? 1 - smooth((gt - d.t3) / 0.8) : 1); var cc = courtAt(m.k); o = [cc[0], cc[2]];
+    } else if (!m && ride.dn) {
+      // (in over 0.6 s, out over its last 0.8, so his own view takes it back as the coupe parks; from where the view stood)
+      d = ride.dn; var s = gt - d.t1; w = smooth(s / 0.6) * (1 - smooth((s - DONUT.T + 0.8) / 0.8)); o = d.from;
+    }
+    if (!d || !d.cam) { return null; }
+    // (12.5 m off, or as far as the whole circle and the coupe on it need to fit the screen's width: on a phone held
+    // upright some 22 m)
+    var far = donutFar(), t = d.cam, ox = t[0] - o[0], oz = t[2] - o[1], ol = hypot(ox, oz) || 1, e1 = [t[0] - ox / ol * far, 5.5, t[2] - oz / ol * far];
     var dx = t[0] - e1[0], dy = t[1] - e1[1], dz = t[2] - e1[2], yaw1 = Math.atan2(dx, -dz), pitch1 = Math.atan2(dy, hypot(dx, dz)) + AIM * 0.4;
     return { e: lerp3(e0, e1, w), yaw: yaw0 + angle(yaw1 - yaw0) * w, pitch: pitch0 + (pitch1 - pitch0) * w };
   }
@@ -3028,7 +3054,8 @@
     window.addEventListener("keyup", function (e) { var k = e.key.length === 1 ? e.key.toLowerCase() : e.key; input.keys[k] = false; if (!e.shiftKey) { input.keys.Shift = false; } });
     window.addEventListener("blur", function () { input.keys = {}; input.stick = null; });
     tapOn($("super"), function (e) { if (e && e.type === "pointerup") { $("super").blur(); } superPress(); });
-    tapOn($("ride"), function (e) { if (e && e.type === "pointerup") { $("ride").blur(); } rideToggle(); });   // (blurred after a finger or a click: Space after it is the bar's)
+    tapOn($("ride"), function (e) { if (e && e.type === "pointerup") { $("ride").blur(); } rideToggle(); });
+    tapOn($("donut"), function (e) { if (e && e.type === "pointerup") { $("donut").blur(); } donutPress(); });   // (blurred after a finger or a click: Space after it is the bar's)
   }
 
   /* ---- drawing a frame ---------------------------------------------------------------------------------------------- */
@@ -3429,6 +3456,7 @@
     // (nothing of the cues on the controls, the squares, the bar but its own, Mr Plan's banner, the words while they show)
     var res = [], st = hudBox.strip, sayE = $("say");
     if (sb.width) { res.push({ x: sb.left - 6, y: sb.top - 6, w: sb.width + 12, h: sb.height + 12, k: 9 }); }   // (k: what meeting it costs a word with no free place; the controls never)
+    ["ride", "donut"].forEach(function (id) { var el = $(id); if (el && !el.hidden) { var q = el.getBoundingClientRect(); if (q.width) { res.push({ x: q.left - 6, y: q.top - 6, w: q.width + 12, h: q.height + 12, k: 9 }); } } });   // (the coupe's buttons too)
     if (st) { res.push({ x: st.x - 6, y: 0, w: st.w + 12, h: st.y + max(st.h, 42) + 4, k: 9 }); }
     if (hudBox.score) { var hs2 = hudBox.score; res.push({ x: hs2.x - 6, y: 0, w: hs2.w + 12, h: hs2.y + hs2.h + 6, k: 9 }); }
     if (hudBox.banner) { res.push(hudBox.banner); }
@@ -3973,7 +4001,7 @@
                }
                input.stick = null; return !!(court.m && court.m.meterOn);
              },
-             ride: ride, car: car, CAR: CAR, STAIR: STAIR, GLIDE: GLIDE, BOUND: BOUND, DONUT: DONUT, rideToggle: rideToggle, stairAt: stairAt, stairWay: stairWay, topPath: topPath, topAt: topAt, stairEnd: stairEnd, TOP: TOP, carGap: carGap,
+             ride: ride, car: car, cur: cur, CAR: CAR, STAIR: STAIR, GLIDE: GLIDE, BOUND: BOUND, DONUT: DONUT, rideToggle: rideToggle, stairAt: stairAt, stairWay: stairWay, topPath: topPath, topAt: topAt, stairEnd: stairEnd, TOP: TOP, carGap: carGap,
              hide: function (on) { hideAth = on; }, fx: function () { return fx; }, camNow: function () { return { e: cur.eye.slice(), yaw: cur.yaw, pitch: cur.pitch }; },
              camAt: function (e, yaw, pitch, plain) { camOver = e && { e: e, yaw: yaw, pitch: pitch }; camPlain = !!plain; } };
   } };
