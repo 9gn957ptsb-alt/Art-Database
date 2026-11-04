@@ -30,6 +30,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Have that be 10 times as fast, increase the complexity to make up for the changes to account for the speed change.
   Still read exactly the 16 images I sent you and use that as a narrative to develop this. It should be extremely
   simple in the end, minimalist."
+- "Take out the 5s logo in the sequence and add the new version of this layout as the final logo that appears" (the
+  crystal hand, its starburst, three sparkles and DUH: the intro ends on DUH, not on the 5s mark)
 
 ## The purpose (said after, the same day; it frames everything below)
 
