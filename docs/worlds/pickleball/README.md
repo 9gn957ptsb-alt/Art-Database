@@ -361,11 +361,12 @@ ground it covers (the feet never slide; the stride lengthens with speed), pumps 
 sprint (dust), turns once round on a planted foot when a sprint reverses, hops a split-step whenever the other strikes,
 and lands low. Every stroke is scheduled: where and when the pearl can be met is found ahead, and the stroke winds up
 so that the paddle is there then (wind-up, contact, follow-through), with the run, the lunge, the dive (flat out,
-landed, a roll, up again) or the leap (a scissor kick at the top, the overhead) that it needs. A point won is a
-standing backflip; a point lost, a shake of the head. Mr Pearl's every win, each point and each court, is a backflip at
-once (the artist, 4 Nov 2026: "he should do a back flip immediately after each win"): a stroke still going is let go;
-in the air, or down in a dive or a lunge, it comes the moment he is up; with a pearl still to be served, when the rally
-is over (`pb_rules.js`). Mr Plan has a showman's streak: on some returns (14% a dive and
+landed, a roll, up again) or the leap (a scissor kick at the top, the overhead) that it needs. Mr Plan's point won is a
+standing backflip; a point lost, a shake of the head. Mr Pearl's point won is a spin, a full turn on the spot in 0.7 s,
+and his game won a backflip (the artist, 4 Nov 2026: "Just do the back flip after each game won, have him do a spin
+after each point won"), at once: a stroke still going is let go; in the air, or down in a dive or a lunge, it comes the
+moment he is up, or his sprint's own turn is over; with several pearls, as the rally ends, if he won any of them,
+whoever took the last (`pb_rules.js`; `pb_moves.js` draws both). Mr Plan has a showman's streak: on some returns (14% a dive and
 14% a lunge at level one, more each level) he goes for the dive or the lunge on purpose, and at the lower levels his
 dives often fall short.
 

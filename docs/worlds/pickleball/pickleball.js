@@ -196,7 +196,7 @@
       if (a.y <= 0) { a.kick = min(0.28, -a.vy * 0.06); a.y = 0; a.vy = 0; a.hop = false; }
     }
     a.air = a.y > 0.002;
-    if (a.flipQ != null && !flipWait(a, gt)) { if (gt - a.flipQ < 2) { athCelebrate(a, true, gt); } a.flipQ = null; }
+    if (a.celebQ && !flipWait(a, gt) && (a.celebQ.game || !spinning(a, gt))) { var cq = a.celebQ; a.celebQ = null; if (gt - cq.t < 2) { athCelebrate(a, true, gt, cq.game); } }
     var ax = (a.vx - ovx) / dt, az = (a.vz - ovz) / dt, q = min(1, dt * 12);
     a.ax += (ax - a.ax) * q; a.az += (az - a.az) * q;
     a.speed = hypot(a.vx, a.vz);
@@ -280,10 +280,16 @@
   function athSplit(a, gt) { if (!a.air && !(a.move && a.move.own)) { a.vy = 1.75; a.y = 0.001; a.hop = true; a.splitT = gt; } }
   // (his body busy: in the air, or down in a dive or a lunge, whose pose a flip would cut off in a frame)
   function flipWait(a, gt) { var m = a.move; return a.air || !!(m && m.own && gt < m.end && (m.reach === "dive" || m.reach === "lunge")); }
-  function athCelebrate(a, won, gt) {
-    // (Mr Pearl's every win a backflip, at once: a stroke let go; in the air, or down in a dive or a lunge, the moment he is up)
-    if (won && a === me) { if (flipWait(a, gt)) { a.flipQ = gt; return; } a.move = null; a.spin = null; a.flipQ = null; }
-    else if (a.move && a.move.own && gt < a.move.end) { return; }
+  // (his own turn still going, a sprint's reversal: a point's spin waits for it, not cut back to the start in a frame)
+  function spinning(a, gt) { return !!(a.spin && gt - a.spin.t0 < a.spin.T); }
+  function athCelebrate(a, won, gt, game) {
+    // (Mr Pearl: a game won, a backflip; a point won, a spin (the artist, 4 Nov 2026). At once, a stroke let go; in the
+    // air, or down in a dive or a lunge, the moment he is up)
+    if (won && a === me) {
+      if (flipWait(a, gt) || (!game && spinning(a, gt))) { a.celebQ = { t: gt, game: !!game }; return; }
+      a.move = null; a.spin = null; a.celebQ = null;
+      if (!game) { a.spin = { t0: gt, T: 0.7 }; return; }
+    } else if (a.move && a.move.own && gt < a.move.end) { return; }
     if (won) { a.celeb = { kind: "flip", t0: gt }; a.vy = 4.6; a.y = 0.001; a.vx *= 0.3; a.vz *= 0.3; }
     else { a.celeb = { kind: "shake", t0: gt }; }
   }
@@ -1699,7 +1705,10 @@
     if (!tut && cueKey() === "multi") { cuePop(STR.cue.pop.plus, [b.x, 0.4, b.z], toYou ? CUE_COL.gold : CUE_COL.ice); }
     var over = m.you >= COURT.WIN || m.them >= COURT.WIN;
     if (over) { m.balls.forEach(function (q) { if (!q.dead) { q.dead = true; q.deadT = gt; q.mark = null; q.cleared = true; } }); m.tosses = []; m.pc = m.nc = null; }
-    if (over || (!live(m).length && !m.tosses.length)) { athCelebrate(toYou ? me : plans[m.k], true, gt); athCelebrate(toYou ? plans[m.k] : me, false, gt); }
+    // (at the rally's end: his spin if he won any of its pearls, whoever took the last; Mr Plan's flip if the last was his;
+    // the game's end, its winner's)
+    if (toYou) { m.rw = (m.rw || 0) + 1; }
+    if (over || (!live(m).length && !m.tosses.length)) { athCelebrate(me, over ? toYou : m.rw > 0, gt, over); athCelebrate(plans[m.k], !toYou, gt); m.rw = 0; }
     courtWhere();
   }
   function matchStep(dt, c) {
@@ -2720,7 +2729,7 @@
     me.move = { kind: "overhead", reach: "super", t0: t0, sw: apex - 0.32, tc: apex, p: C, aim: norm([tx + cc[0] - C[0], -0.6, tz + cc[2] - C[2]]), fore: true,
                 own: [t0, t0 + SUP.T], end: t0 + SUP.T, up: t0 + SUP.GATHER, vy: CAPS.g * tUp, lockYaw: true, yawTo: 0,
                 drop: function (g) { return g < t0 + SUP.GATHER ? 0.12 + 0.3 * smooth((g - t0) / SUP.GATHER) : me.air ? 0.04 : 0.36 - 0.24 * smooth((g - t0 - SUP.GATHER - 2 * tUp) / 0.3); } };
-    me.vx = me.vz = 0; me.celeb = null; me.spin = null; me.flipQ = null;
+    me.vx = me.vz = 0; me.celeb = null; me.spin = null; me.celebQ = null;
     pl.want = { vel: [0, 0] }; pl.faceTo = Math.atan2(me.x - pl.x, -(me.z - pl.z)); pl.move = null;
     b.super = true; b.mark = null; b.bounces = 0; b.net = false;
     m.sup = { avail: false, armed: false, t0: t0, apex: apex, ball: b, p0: [b.x, b.y, b.z], v0: [b.vx * 0.4, b.vy * 0.4 + 2, b.vz * 0.4], C: C, shot: [tx, tz], struck: false, won: false, prev: m.phase, why: why || STR.superWon };
@@ -3945,7 +3954,7 @@
              run: function (sec, fire) { var n = round(sec * 60); for (var i = 0; i < n; i += 1) { if (fire && i === 0) { input.fire = true; } CUE.rt += 1 / 60; if (tutHeld()) { continue; } gt += 1 / 60; stepAll(1 / 60); camera(1 / 60); } },
              draw: function () { frameDt = 0; draw(); }, pause: function (on) { if (on) { YT.paused = true; stop(); } else { YT.paused = false; start(); } },
              running: function () { return !!raf; }, pose: athPose, planContact: planContact, ascOk: function () { return !!(asc && asc.ok); },
-             swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w) { athCelebrate(a, w, gt); }, point: function (b, you) { if (court.m) { pointBall(court.m, b, you, ""); } },
+             swing: function (a, c) { return athSwing(a, c, gt); }, split: function (a) { athSplit(a, gt); }, celebrate: function (a, w, g) { athCelebrate(a, w, gt, g); }, point: function (b, you) { if (court.m) { pointBall(court.m, b, you, ""); } },
              step: function (a, sec) { for (var i = 0; i < round(sec * 60); i += 1) { gt += 1 / 60; athStep(a, 1 / 60, gt); } },
              meter: function () { var m = court.m; return !m ? null : m.phase === "plansuper" ? (m.psup.struck && !m.psup.tapped ? m.psup.uNow : null) : m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
              serveSpot: function () { return court.m ? serveSpot() : null; },
