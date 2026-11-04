@@ -52,6 +52,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Have it rise up like you’re in holographic mode and safely land in place, letting out the colors beneath it, as
   clouds of smoke dissipating on the ground from its rocket landing"
 - "Get rid of the backwards tilt in the letters of the name animation" (the letters stand upright and flat throughout)
+- "This aesthetic for the name duh. Use that font you see in the second image." (two pictures: the classic cartoon studio
+  opening, orange-red rings, a green disc, a gold-and-blue shield, a brown ground of bubbles; and a 1990s cartoon film's
+  logo, heavy hand-cut letters in yellow to lime green with grain and black outlines. That lettering is not a font and
+  has no D, U or H, so DUH's letters are drawn new in its style)
 
 ## The purpose (said after, the same day; it frames everything below)
 
