@@ -27,6 +27,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
 
 - "Develop a five second animation like this one using the 16 images I provided"
 - "Use the Motion Lab artifact favorites to give the animation very subtle gestures"
+- "Have that be 10 times as fast, increase the complexity to make up for the changes to account for the speed change.
+  Still read exactly the 16 images I sent you and use that as a narrative to develop this. It should be extremely
+  simple in the end, minimalist."
 
 ## The purpose (said after, the same day; it frames everything below)
 
