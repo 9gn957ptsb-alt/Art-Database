@@ -4,7 +4,11 @@
 // on the next point, and the match he goes on to win is recorded from its start; a match's recording takes its own
 // court's bursts only; the serve goes where he looked at the tap; on the mark the view swings round to the net, not
 // cut; in a rally the side arrows step him sideways; Mr Plan's super return ends the serve, so the next one starts at
-// the gold circle; the GL context lost and given back, the picture comes back; the serve's bar quicker every court.
+// the gold circle; the GL context lost and given back, the picture comes back; the serve's bar quicker every court;
+// between points he goes anywhere, back to the gold circle to serve, and in a rally is held to his court; and every
+// point and court he wins, a backflip at once (his swing let go; in the air or a dive, as he is up; a pearl still to
+// serve, when the rally is over); roamed off, the recording keeps him at his court's edge and an armed Super waits
+// till he is back.
 // node pb_rules.js [port]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -184,6 +188,82 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(sw.down && sw.above && sw.one > 1.0, `the bar quicker every court, 1 to 200, never at its floor (${sw.one} s a sweep on court one, ${sw.min} on court 200, the floor ${sw.floor})`);
   const tm = sw.timed;
   check(tm.every((x) => x.across != null && Math.abs(x.across - x.sweep) < 0.03) && tm[0].across > tm[1].across && tm[1].across > tm[2].across, "and the dot itself, timed across the bar, quicker on court 10 than 1 and on 20 than 10: " + JSON.stringify(tm));
+  // 11. between points he goes anywhere (the artist, 4 Nov 2026: "Make sure I can still go anywhere in between points in a
+  // game"): two courts won, court three's match begun; before the serve he runs 25 m off, over court two and past it,
+  // the match still on, the gold circle shown at the screen's edge the way back; back on it, the serve; in the rally he
+  // is held to his court
+  await fresh({ v: 2, won: 2, tut: 1, tips: 255 });
+  const rr = await p.evaluate(() => {
+    const d = window.Pickleball.debug(), me = d.me, C = d.COURT, k = d.courts.length - 1, cx = k * C.GAP, o = {};
+    d.enter(k); d.run(0.3); const m = d.court.m; o.k = m && m.k;
+    const go = (tx, tz, secs) => { for (let i = 0; i < secs * 60; i++) { const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz); if (L < 0.3) { break; } d.input.stick = { id: -1, x: 0, y: 0, dx: dx / L * 60, dy: dz / L * 60 }; d.run(1 / 60); } d.input.stick = null; d.run(0.3); };
+    go(cx - 25, C.L + 8, 8); o.far = [+(me.x - cx).toFixed(1), +me.z.toFixed(1)]; o.still = d.court.m === m && m.phase === "serve" && !m.meterOn; d.draw(); o.mark = d.hud().mark;
+    go(d.serveSpot()[0], d.serveSpot()[1], 8); d.run(0.2); o.on = m.meterOn;
+    // the serve, one pearl; in the rally, the stick held off the court: held to it
+    for (let i = 0; i < 300; i++) { const u = d.meter(); if (u != null && u > 0.5 && u < 0.66 && d.gt() >= m.meterT0) { d.run(1 / 60, true); break; } d.run(1 / 60); }
+    d.run(0.6); o.rally = m.phase; d.input.stick = { id: -1, x: 0, y: 0, dx: -60, dy: 0 };
+    let maxOff = 0; for (let i = 0; i < 90 && m.phase === "rally"; i++) { d.run(1 / 60); maxOff = Math.max(maxOff, cx - me.x); } d.input.stick = null; o.heldOff = +maxOff.toFixed(2); o.limit = C.HW + 2.5;
+    return o;
+  });
+  check(rr.k === 2 && rr.far[0] < -20 && rr.still, `between points he runs anywhere: 25 m off, over court two (${rr.far}), the match still on, waiting for his serve`);
+  check(rr.mark && rr.mark.edge, `and the gold circle shows him the way back, at the screen's edge (${JSON.stringify(rr.mark)})`);
+  check(rr.on, "back on the gold circle: the serve");
+  check(rr.rally === "rally" && rr.heldOff <= rr.limit + 0.25, `in the rally he is held to his court (${rr.heldOff} m off its middle at most, ${rr.limit} allowed and a frame's sprint)`);
+  // 12. his backflip (the artist, 4 Nov 2026: "he should do a back flip immediately after each win"): a point won mid
+  // swing, at once, the swing let go; a point won in the air, the moment he lands; the court won, at once
+  await fresh({ v: 2, won: 2, tut: 1, tips: 255 });
+  const fl = await p.evaluate(() => {
+    const d = window.Pickleball.debug(), me = d.me, k = d.courts.length - 1, o = {};
+    d.enter(k); d.run(0.3); const m = d.court.m;
+    const serve = () => {
+      for (let i = 0; i < 600 && m.phase !== "serve"; i++) { d.run(1 / 60); }
+      d.toServe(); d.run(0.2);
+      for (let i = 0; i < 300; i++) { const u = d.meter(); if (u != null && u > 0.5 && u < 0.66 && d.gt() >= m.meterT0) { d.run(1 / 60, true); break; } d.run(1 / 60); }
+      for (let i = 0; i < 180 && !(m.phase === "rally" && m.balls.some((q) => !q.dead)); i++) { d.run(1 / 60); }
+      d.run(0.1); return m.balls.find((q) => !q.dead);
+    };
+    let b = serve(); o.r1 = m.phase;
+    me.move = { kind: "test", own: [d.gt() - 0.1, d.gt() + 0.5], end: d.gt() + 0.6 }; d.point(b, true);
+    o.swing = { flip: !!(me.celeb && me.celeb.kind === "flip"), move: me.move, vy: +me.vy.toFixed(2), score: m.you };
+    d.run(1.3); b = serve(); o.r2 = m.phase;
+    me.celeb = null;   // (the last one's, cleared by its pose's draw, which these steps skip)
+    me.y = 0.6; me.vy = 1.5; me.air = true; d.point(b, true); o.air = { now: !!(me.celeb && me.celeb.kind === "flip") };
+    let landT = null, flipT = null, top = 0; const t0 = d.gt();
+    for (let i = 0; i < 240; i++) { d.run(1 / 60); if (landT == null && me.y <= 0.002) { landT = d.gt(); } if (flipT == null && me.celeb && me.celeb.kind === "flip") { flipT = d.gt(); } if (flipT != null) { top = Math.max(top, me.y); } }
+    o.air.land = landT && +(landT - t0).toFixed(3); o.air.flip = flipT && +(flipT - t0).toFixed(3); o.air.top = +top.toFixed(2);
+    // (a pearl still to be served: the rally not over, no flip yet; down in a dive: the flip once he is up)
+    m.you = 0; b = serve(); me.celeb = null; m.tosses.push({ test: true }); d.point(b, true); o.toss = { flip: !!(me.celeb && me.celeb.kind === "flip"), score: m.you }; m.tosses.length = 0;
+    b = serve(); me.celeb = null; const T = d.gt(); me.move = { reach: "dive", own: [T + 5, T + 6], end: T + 0.5 }; d.point(b, true);
+    o.dive = { now: !!(me.celeb && me.celeb.kind === "flip"), kept: !!me.move };
+    for (let i = 0; i < 60 && o.dive.flip == null; i++) { d.run(1 / 60); if (me.celeb && me.celeb.kind === "flip") { o.dive.flip = +(d.gt() - T).toFixed(3); } }
+    b = serve(); o.r3 = m.phase; o.before = m.you; me.celeb = null; d.point(b, true);
+    o.court = { flip: !!(me.celeb && me.celeb.kind === "flip"), over: m.you, won: d.won() };
+    return o;
+  });
+  check(fl.r1 === "rally" && fl.swing.flip && fl.swing.move === null && fl.swing.vy > 4 && fl.swing.score === 1, `a point won mid swing: the backflip at once, the swing let go (${JSON.stringify(fl.swing)})`);
+  check(fl.r2 === "rally" && !fl.air.now && fl.air.land != null && fl.air.flip != null && fl.air.flip - fl.air.land < 0.02 && fl.air.top > 0.8, `a point won in the air: the backflip the moment he lands (${JSON.stringify(fl.air)})`);
+  check(!fl.toss.flip && fl.toss.score === 1, `a point won with a pearl still to be served: no flip until the rally is over (${JSON.stringify(fl.toss)})`);
+  check(!fl.dive.now && fl.dive.kept && fl.dive.flip != null && Math.abs(fl.dive.flip - 0.5) < 0.04, `a point won down in a dive: the dive kept, the flip the moment it ends (${JSON.stringify(fl.dive)})`);
+  check(fl.r3 === "rally" && fl.before === 2 && fl.court.flip, `the court won: the backflip at once (${JSON.stringify(fl.court)})`);
+  // 13. roamed off between points: the match's recording keeps him at his court's edge, standing (so a won court's
+  // replay keeps him on it), and a Super armed out there waits till he is back on his court, then goes, no jump
+  await fresh({ v: 2, won: 2, tut: 1, tips: 255 });
+  const sr = await p.evaluate(() => {
+    const d = window.Pickleball.debug(), me = d.me, C = d.COURT, k = d.courts.length - 1, cx = k * C.GAP, o = {};
+    d.enter(k); d.run(0.3); const m = d.court.m;
+    const stick = (tx, tz) => { const dx = tx - me.x, dz = tz - me.z, L = Math.hypot(dx, dz) || 1; d.input.stick = { id: -1, x: 0, y: 0, dx: dx / L * 60, dy: dz / L * 60 }; };
+    for (let i = 0; i < 480 && Math.hypot(me.x - (cx - 25), me.z - (C.L + 8)) > 0.3; i++) { stick(cx - 25, C.L + 8); d.run(1 / 60); }
+    d.input.stick = null; d.run(0.3);
+    d.run(1); { const R = m.rec, b0 = ((R.n - 1) % R.cap) * 55 + 3; o.rec = [+(R.f[b0] - cx).toFixed(2), +R.f[b0 + 2].toFixed(2), R.f[b0 + 9]]; o.recHeld = Math.abs(o.rec[0]) <= C.HW + 2.5 + 1e-4 && o.rec[1] <= C.L + 3.5 + 1e-4 && o.rec[2] === 0; }
+    m.sup.avail = true; m.sup.armed = true; d.run(1); o.wait = m.phase === "serve" && m.sup.armed && me.x - cx < -20;
+    const sp = d.serveSpot(); let jump = 0, px = me.x, pz = me.z;
+    for (let i = 0; i < 600 && m.phase !== "super"; i++) { stick(sp[0], sp[1]); d.run(1 / 60); jump = Math.max(jump, Math.hypot(me.x - px, me.z - pz)); px = me.x; pz = me.z; }
+    d.input.stick = null; for (let i = 0; i < 30; i++) { d.run(1 / 60); jump = Math.max(jump, Math.hypot(me.x - px, me.z - pz)); px = me.x; pz = me.z; }
+    o.phase = m.phase; o.jump = +jump.toFixed(3); o.off = +(me.x - cx).toFixed(2); o.recOn = true;
+    return o;
+  });
+  check(sr.recHeld, `roamed off his court, the match's recording keeps him at its edge, standing (${JSON.stringify(sr.rec)})`);
+  check(sr.wait && sr.phase === "super" && sr.jump < 0.3 && Math.abs(sr.off) <= 5.55 + 0.01 && sr.recOn, `a Super armed far off waits till he is back on his court, then goes, no jump (${JSON.stringify(sr)})`);
   check(!errs.length, "no errors: " + errs.slice(0, 2).join(" | "));
   console.log(bad ? bad + " FAILED" : "all ok");
   await b.close(); process.exit(bad ? 1 : 0);

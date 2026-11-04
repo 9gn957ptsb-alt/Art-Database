@@ -18,7 +18,7 @@
 // spiral staircase, be wide enough for the orange coupe to be able to drive on it"), launches off its top and glides
 // under his hat, him in it, down to the ground; Mr Plan, winning a game with the coupe beside the court, takes it for a
 // donut and is back at his baseline for the serve, the coupe as it stood (and not with it far off); the court tip
-// marks the coupe; paused, nothing.
+// marks the coupe; paused, nothing; in it, a tap (Space) does a donut (at speed, a stop first) and parks it as it stood.
 // node pb_drive.js outdir [port] [phone|desk]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -308,6 +308,57 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(dn.near.stages.join(",") === "run,drive,back" && dn.near.inCar && dn.near.phase === "serve" && dn.near.back < 0.01 && dn.near.plan < 0.6 && dn.near.secs < 9,
         `Mr Plan wins a game with the coupe beside the court: he runs to it, drives a donut, and is back at his baseline for the serve in ${dn.near.secs} s, the coupe as it stood (${JSON.stringify(dn.near)})`);
   check(dn.far.stages.length === 0 && dn.far.phase === "serve", `with the coupe far off, no donut (${JSON.stringify(dn.far)})`);
+  // his own donut (the artist, 4 Nov 2026: "Mr Pearl should be able to do donuts in the coupe as well"): in the coupe,
+  // a real tap (Space on the desk): round a circle beside it twice, him in it, the view not whirled round with it, the
+  // button doing nothing meanwhile, and parked again as it stood; beside the open court, the circle on the side away
+  // from it, clear of its run-off all the way round
+  await p.reload(); await p.waitForFunction(() => window.Pickleball && window.Pickleball.debug().me, null, { timeout: 120000 });
+  await D(() => { const d = window.Pickleball.debug(); d.pause(true); d.run(0.3); });
+  const tap = async () => {
+    await D(() => { window.Pickleball.debug().YT.paused = false; });
+    if (desk) { await p.keyboard.press(" "); }
+    else {
+      const cdp = await p.context().newCDPSession(p), q = await D(() => [innerWidth * 0.75, innerHeight * 0.4]);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: q[0], y: q[1], id: 2 }] });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    }
+    await p.waitForTimeout(60);
+    await D(() => { window.Pickleball.debug().YT.paused = true; });
+  };
+  const myDn = async (x, z, yaw, v0) => {
+    await D(([x0, z0, y0, v]) => {
+      const d = window.Pickleball.debug(), c = d.car; if (d.ride.mode !== "car") { d.me.x = c.x + 1.6; d.me.z = c.z; d.run(0.05); d.rideToggle(); }
+      c.x = x0; c.z = z0; c.yaw = y0; c.v = 0; d.run(0.2); c.v = v || 0;
+    }, [x, z, yaw, v0]);
+    await tap();
+    return D(() => {
+      const d = window.Pickleball.debug(), c = d.car, C = d.COURT, k = d.courts.length - 1, cx = k * C.GAP, CR = d.CAR;
+      const S0 = [c.x, c.z]; let stopT = 0; d.run(1 / 60); for (; stopT < 180 && !d.ride.dn; stopT++) { d.run(1 / 60); }   // (at speed: a stop first)
+      const P0 = d.ride.dn ? d.ride.dn.P0 : null, dir = d.ride.dn && d.ride.dn.dir, y0 = d.view.yaw, slid = P0 ? Math.hypot(P0[0] - S0[0], P0[1] - S0[1]) : null;
+      let turned = 0, far = 0, inCar = true, clear = 99, view = 0, py = c.yaw, i = 0, held = false;
+      for (; i < 60 * 5 && d.ride.dn; i++) {
+        if (i === 60) { d.rideToggle(); held = d.ride.mode === "car" && !!d.ride.dn; }
+        d.run(1 / 60); turned += Math.atan2(Math.sin(c.yaw - py), Math.cos(c.yaw - py)); py = c.yaw;
+        if (P0) { far = Math.max(far, Math.hypot(c.x - P0[0], c.z - P0[1])); }
+        inCar = inCar && d.ride.mode === "car" && Math.abs(d.me.x - c.x) < 1e-6 && Math.abs(d.me.z - c.z) < 1e-6;
+        const h = CR.L / 2 - CR.W / 2;
+        [h, -h].forEach((o) => { const px = c.x + Math.sin(c.yaw) * o, pz = c.z - Math.cos(c.yaw) * o; clear = Math.min(clear, Math.hypot(px - Math.max(cx - C.GAP / 2 + 0.5, Math.min(cx + C.GAP / 2 - 0.5, px)), pz - Math.max(-C.L - 3.5, Math.min(C.L + 3.5, pz)))); });
+        view = Math.max(view, Math.abs(Math.atan2(Math.sin(d.view.yaw - y0), Math.cos(d.view.yaw - y0))));
+      }
+      const back = P0 ? Math.hypot(c.x - P0[0], c.z - P0[1]) + Math.abs(Math.atan2(Math.sin(c.yaw - P0[2]), Math.cos(c.yaw - P0[2]))) : null;
+      return { started: !!P0, stop: +(stopT / 60).toFixed(2), slid: slid && +slid.toFixed(2), dir, secs: +(i / 60).toFixed(2), turns: +(Math.abs(turned) / (2 * Math.PI)).toFixed(2), far: +far.toFixed(2), inCar, held, back: back && +back.toFixed(4), v: c.v, view: +view.toFixed(3), clear: +clear.toFixed(2), need: CR.R + CR.EDGE, mode: d.ride.mode };
+    });
+  };
+  const H = await D(() => window.Pickleball.debug().CAR.home);
+  const d1 = await myDn(H[0], H[1], H[2]);
+  check(d1.started && d1.turns > 1.8 && d1.far > 3.5 && d1.inCar && d1.secs < 3.2, `in the coupe, ${desk ? "Space" : "a tap"}: a donut, twice round a circle beside it in ${d1.secs} s, him in it (${JSON.stringify(d1)})`);
+  check(d1.back != null && d1.back < 0.01 && d1.v === 0 && d1.mode === "car", "and parked again as it stood, him still in it");
+  check(d1.held && d1.view < 0.35, `the button does nothing meanwhile, and the view is not whirled round with it (${d1.view} rad)`);
+  const kx = await D(() => { const d = window.Pickleball.debug(); return (d.courts.length - 1) * d.COURT.GAP; });
+  const d2 = await myDn(kx - 8.5, 0, 0);   // (its right toward the open court)
+  const d3 = await myDn(H[0], H[1], H[2], 16);
+  check(d3.started && d3.stop > 0.4 && d3.stop < 1.0 && d3.slid > 3 && d3.turns > 1.8 && d3.back < 0.01, `a tap at 16 m/s: braked to a stop first (${d3.stop} s, ${d3.slid} m), then the donut, parked where it stopped (${JSON.stringify(d3)})`);
+  check(d2.started && d2.dir === -1 && d2.back < 0.01 && d2.clear > d2.need, `beside the open court, the circle on the side away from it, clear of its run-off all the way round (${d2.clear} m, ${d2.need} needed; ${JSON.stringify(d2)})`);
   check(errs.length === 0, "no errors: " + errs.slice(0, 3).join(" | "));
   await b.close();
   console.log(bad ? bad + " FAILED" : "all ok");
