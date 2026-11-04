@@ -3415,9 +3415,24 @@
     if (k > 0.93 && me.glT > 0.05) { me.glT = 0; fxAdd(j(0.18), [0, 0, 0], 0.16, "+", pick(["#fffbe8", "#ffe7a3", "#ffd166"]), 0.2 + 1.2 * (k - 0.93), 0, false); }
     else if (fxR() < dt * 1.6) { fxAdd(j(0.5), [0, 0.1, 0], 0.22, pick(["+", "*", "·"]), pick(["#fff4c2", "#ffd166"]), 0.12, 0, false); }
   }
+  // the coupe's music: notes out of its open windows, either side, whenever someone is at the wheel, him or Mr Plan in
+  // his donut (the artist, 4 Nov 2026: "I want musical notes always coming out of the car when someone is driving it");
+  // they rise, drift out and are left behind as it goes, in the driver's own colours, five a second on any display
+  var NOTES = { RATE: 5, CH: ["\u266a", "\u266b", "\u266c", "\u2669"] };   // (♪ ♫ ♬ ♩)
+  function carNotes(dt) {
+    var dm = court.m, who = ride.mode === "car" ? "me" : dm && dm.phase === "donut" && dm.dn && dm.dn.inCar ? "plan" : null;
+    if (!who) { car.ntT = 0; return; }
+    var A = carAxes(), C = FXC[who];
+    for (car.ntT = (car.ntT || 0) + dt; car.ntT >= 1 / NOTES.RATE; car.ntT -= 1 / NOTES.RATE) {
+      if (fx.length >= 300) { continue; }
+      var sd = fxR() < 0.5 ? -1 : 1, f = (fxR() - 0.3) * 0.8, out = 0.4 + 0.4 * fxR();
+      fxAdd([car.x + A.rx * sd * (CAR.W / 2 + 0.1) + A.fx * f, car.y + 1.05, car.z + A.rz * sd * (CAR.W / 2 + 0.1) + A.fz * f],
+            [A.rx * sd * out, 0.5 + 0.5 * fxR(), A.rz * sd * out], 1.6 + 0.6 * fxR(), pick(NOTES.CH), pick(C.trail.concat(C.swirl)), 0.42, -0.25, false);
+    }
+  }
   function fxStep(dt) {
     var e = cur.eye;
-    fxGlint(dt);
+    fxGlint(dt); carNotes(dt);
     (ride.mode === "car" ? [] : [[me, "me"]]).concat(plans.map(function (p) { return [p, "plan"]; }), stands.map(function (p) { return [p, "me"]; })).forEach(function (w) {   // (in the coupe, none of his)
       var a = w[0]; if (a && hypot(a.x - e[0], a.z - e[2]) < 45) { fxMove(a, w[1], dt); }
     });

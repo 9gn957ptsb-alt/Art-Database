@@ -19,7 +19,7 @@
 // under his hat, him in it, down to the ground; Mr Plan, winning a game with the coupe beside the court, takes it for a
 // donut and is back at his baseline for the serve, the coupe as it stood (and not with it far off); the court tip
 // marks the coupe; paused, nothing; in it, a Donut button over Get out (or a tap, Space) does a donut (at speed, a stop first), seen as Mr Plan's is, and
-// parks it as it stood.
+// parks it as it stood; notes out of its windows whenever someone is at the wheel.
 // node pb_drive.js outdir [port] [phone|desk]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -299,16 +299,20 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
       c.x = cx; c.z = cz; c.yaw = -Math.PI / 2; c.v = 0; const P0 = [c.x, c.z, c.yaw];
       if (!d.court.m) { d.enter(k); d.run(0.5); }
       const m = d.court.m; m.them = C.WIN; m.phase = "point"; m.t = d.gt() - 2; d.run(1 / 60);
-      const stages = []; let inCar = false, i = 0;
-      for (; i < 60 * 20 && m.phase === "donut"; i++) { if (m.dn && stages[stages.length - 1] !== m.dn.stage) { stages.push(m.dn.stage); } inCar = inCar || !!(m.dn && m.dn.inCar); d.run(1 / 60); }
+      const stages = [], isN = (q) => "\u266a\u266b\u266c\u2669".indexOf(q.ch) >= 0; let inCar = false, i = 0, notesDrive = 0, notesRun = 0;
+      for (; i < 60 * 20 && m.phase === "donut"; i++) {
+        if (m.dn && stages[stages.length - 1] !== m.dn.stage) { stages.push(m.dn.stage); } inCar = inCar || !!(m.dn && m.dn.inCar); d.run(1 / 60);
+        const nn = d.fx().filter(isN).length; if (m.dn && m.dn.stage === "drive") { notesDrive = Math.max(notesDrive, nn); } else if (m.dn && m.dn.stage === "run") { notesRun = Math.max(notesRun, nn); }
+      }
       const pl = d.plans[k];
-      return { stages, inCar, secs: +(i / 60).toFixed(1), phase: m.phase, back: Math.hypot(c.x - P0[0], c.z - P0[1]) + Math.abs(Math.atan2(Math.sin(c.yaw - P0[2]), Math.cos(c.yaw - P0[2]))), plan: Math.hypot(pl.x - k * C.GAP, pl.z - (-C.L - 0.6)), score: [m.you, m.them] };
+      return { stages, inCar, notesDrive, notesRun, secs: +(i / 60).toFixed(1), phase: m.phase, back: Math.hypot(c.x - P0[0], c.z - P0[1]) + Math.abs(Math.atan2(Math.sin(c.yaw - P0[2]), Math.cos(c.yaw - P0[2]))), plan: Math.hypot(pl.x - k * C.GAP, pl.z - (-C.L - 0.6)), score: [m.you, m.them] };
     };
     return { near: win(k * C.GAP + 3, C.L + 6.9), far: win(-9.6, C.L + 6.7) };
   });
   check(dn.near.stages.join(",") === "run,drive,back" && dn.near.inCar && dn.near.phase === "serve" && dn.near.back < 0.01 && dn.near.plan < 0.6 && dn.near.secs < 9,
         `Mr Plan wins a game with the coupe beside the court: he runs to it, drives a donut, and is back at his baseline for the serve in ${dn.near.secs} s, the coupe as it stood (${JSON.stringify(dn.near)})`);
   check(dn.far.stages.length === 0 && dn.far.phase === "serve", `with the coupe far off, no donut (${JSON.stringify(dn.far)})`);
+  check(dn.near.notesDrive >= 5 && dn.near.notesRun === 0, `music out of the coupe while Mr Plan drives it (${dn.near.notesDrive} notes in the air), none before he is in it`);
   // his own donut (the artist, 4 Nov 2026: "Mr Pearl should be able to do donuts in the coupe as well"): in the coupe,
   // a real tap (Space on the desk): round a circle beside it twice, him in it, the view not whirled round with it, the
   // button doing nothing meanwhile, and parked again as it stood; beside the open court, the circle on the side away
@@ -406,6 +410,21 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(bd.started && bd.hidden && bd.stop < 1 && bd.turns > 1.8 && bd.back < 0.01, `a real tap on it: a stop (${bd.stop} s), then the donut, twice round, parked where it stopped, the button gone meanwhile (${JSON.stringify(bd)})`);
   check(bd.cam.length === 5 && bd.cam.every((q) => Math.abs(q.y - 5.5) < 0.6 && q.off > 9 && q.ends && q.ends.every((x) => x > 0 && x < 1) && q.mid[1] > 0.2 && q.mid[1] < 0.85), `seen as Mr Plan's is: from outside its circle, 5.5 m up, the coupe nose to tail in the picture all the way round (${JSON.stringify(bd.cam)})`);
   check(bd.again && bd.handBack != null && bd.handBack < 0.3, `parked, the button back and his own view again, handed back without a jump (${bd.handBack} m in the last frame)`);
+  // the coupe's music (the artist, 4 Nov 2026: "I want musical notes always coming out of the car when someone is driving
+  // it"): notes out of its windows as he drives, still as he sits in it parked, none once he is out
+  const mu = await D(() => {
+    const d = window.Pickleball.debug(), c = d.car, isN = (q) => "\u266a\u266b\u266c\u2669".indexOf(q.ch) >= 0, o = {};
+    window.__fwd(true); d.run(1.2); window.__fwd(false); o.v = +c.v.toFixed(1);
+    const ns = d.fx().filter(isN); o.n = ns.length; o.near = ns.every((q) => Math.hypot(q.p[0] - c.x, q.p[2] - c.z) < 30); o.high = ns.every((q) => q.p[1] > 0.9);
+    o.kinds = [...new Set(ns.map((q) => q.ch))].length;
+    for (let i = 0; i < 240 && Math.abs(c.v) > 0.3; i++) { d.input.keys.s = true; d.input.stick = { id: -1, x: 0, y: 0, dx: 0, dy: 60 }; d.run(1 / 60); }
+    d.input.keys.s = false; d.input.stick = null; d.run(1.5); o.parked = Math.abs(c.v) < 0.5 && d.ride.mode === "car"; o.fresh = d.fx().filter(isN).filter((q) => d.gt() - q.t0 < 1).length;
+    d.rideToggle(); d.run(0.1); o.out = d.ride.mode; d.run(2.5); o.after = d.fx().filter(isN).length;
+    return o;
+  });
+  check(mu.n >= 4 && mu.near && mu.high && mu.kinds >= 2, `music out of the coupe as he drives it (${JSON.stringify(mu)})`);
+  check(mu.parked && mu.fresh >= 3, `and still as he sits in it parked (${mu.fresh} new notes a second)`);
+  check(mu.out === null && mu.after === 0, "out of it: no more music");
   check(d2.started && d2.dir === -1 && d2.back < 0.01 && d2.clear > d2.need, `beside the open court, the circle on the side away from it, clear of its run-off all the way round (${d2.clear} m, ${d2.need} needed; ${JSON.stringify(d2)})`);
   check(errs.length === 0, "no errors: " + errs.slice(0, 3).join(" | "));
   await b.close();

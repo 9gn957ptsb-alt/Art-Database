@@ -184,6 +184,10 @@ each court won. The squares' numbers are numbers again (the teleport they were, 
   him and the coupe from the court's side, and back once he is at his baseline, before the serve; the match's recording
   starts after it. His game's line keeps its score with the donut in it ("Mr Plan takes it, 3 – 1, and the coupe for a
   donut."); the coupe turns smoothly however it was parked, and its smoke is the same on any display.
+- *Its music* (the artist, 4 Nov 2026: "I want musical notes always coming out of the car when someone is driving it"):
+  whenever someone is at the wheel, Mr Pearl (driving, parked in it, on the ramp, in the air) or Mr Plan in his donut,
+  notes (♪ ♫ ♬ ♩) come out of its open windows, either side, five a second on any display, in the driver's own colours;
+  they rise, drift out and are left behind as it goes, and fade in two seconds. None once he is out (`pb_drive.js`).
 - *His own donut* (the artist, 4 Nov 2026: "Mr Pearl should be able to do donuts in the coupe as well"; then "Make sure
   that when I am driving the coupe forward there is a button that says donut and that's the same animation as Mr. plan
   doing it happens to you in the coupe when pushing the button"): in the coupe on the ground a Donut button stands over
