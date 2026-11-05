@@ -72,6 +72,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Do research on logo animations for movie production companies that happen before a movie starts. Look at movie
   production companies for critically acclaimed action movies like whoever did the dark knight trilogy or the 2026 film
   The Odyssey."
+- "Implement all the golden ratio bullet points you suggested" (the hand arrives and unfolds in 5 ÷ 1.618 = 3.09 s and
+  is still after; it opens out in steps 1.618 times larger; its arrival sends duh; duh lands within 1.18 s; the last
+  0.73 s is completely still; every flicker stays under three a second)
 
 ## The purpose (said after, the same day; it frames everything below)
 
