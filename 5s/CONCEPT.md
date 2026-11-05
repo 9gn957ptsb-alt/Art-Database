@@ -89,6 +89,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
   animation, I liked how the 16 items were arranged and then consolidated into groups. I want that to happen but to the
   different logo layers that form its blocked text effect." (the video: the first intro, sixteen pictures coming out of
   the stars one by one round the middle, then gathering into three groups by likeness, before the logo forms)
+- "I want a more intentional, initial organization of the 16 layers" (of the intro just made: the logo's sixteen block
+  layers coming out of the stars into a loose ring before they group)
 
 ## The purpose (said after, the same day; it frames everything below)
 
