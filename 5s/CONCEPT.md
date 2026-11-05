@@ -69,6 +69,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Have the logo in duh intro unfold like a tesseract according to the golden ratio. It should come in as if you are
   visually seeing a radio transmission of the logo beaming forward like it’s a hologram. Add a deep purple as one of the
   colors. Have a bit more color contrast overall"
+- "Do research on logo animations for movie production companies that happen before a movie starts. Look at movie
+  production companies for critically acclaimed action movies like whoever did the dark knight trilogy or the 2026 film
+  The Odyssey."
 
 ## The purpose (said after, the same day; it frames everything below)
 
