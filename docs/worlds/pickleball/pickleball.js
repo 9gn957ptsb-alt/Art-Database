@@ -1667,19 +1667,57 @@
     if (cv.up) { court.told[k + "u"] = 1; say(STR.standin(k, cv.you, cv.them)); }
     rideButton(); courtWhere();
   }
-  // the numbers' buttons, over the pearls the HUD draws, made again only when the row changes
-  function courtButtons(n0, sz, gap, x0, y0) {
+  // the numbers' buttons, over the pearls the HUD draws: a row of every court in a window of cnt (the artist, 5 Nov 2026:
+  // "Only 5 levels represented by the Pearl circles should be visible in the top left corner at a time. Make sure I am
+  // able to scroll left and right through the levels that way I am still able to click on level 1 to teleport there"):
+  // the window scrolls as any row does (a swipe, a wheel, a mouse's drag, the keyboard's Tab), coming to rest on whole
+  // pearls; it keeps to the newest unless scrolled back, and to the newest in a match (pin). Its offset back, for the HUD
+  // to draw the pearls under the buttons.
+  function courtStrip(cnt, sz, gap, x0, y0, pin) {
+    var box = $("courts"), step = sz + gap; if (!box) { return 0; }
+    var bs = box.children, N = courts.length, ch = bs.length !== N;
+    while (bs.length > N) { box.removeChild(box.lastChild); }
+    for (var i = bs.length; i < N; i += 1) {   // (a button for each court, made once: a court won adds one, the rest and the scroll kept)
+      (function (k) { var b = document.createElement("button"); b.type = "button"; b.textContent = String(k + 1); b.style.width = step + "px"; tapOn(b, function () { b.blur(); courtGo(k); }); box.appendChild(b); })(i);   // (blurred after any press, a key's too: Space and Enter after it are the game's)
+    }
+    var lay = [cnt, step.toFixed(2), x0.toFixed(1), y0.toFixed(1)].join(",");
+    if (box.dataset.lay !== lay) {   // (its place and size: the same first pearl kept in the window)
+      var first = HUD.step ? box.scrollLeft / HUD.step : 0;
+      box.dataset.lay = lay; HUD.step = step;
+      box.style.left = (x0 - gap / 2) + "px"; box.style.top = round(y0 - 6) + "px"; box.style.width = (cnt * step) + "px"; box.style.height = round(max(48, sz + 12)) + "px";
+      Array.prototype.forEach.call(bs, function (b) { b.style.width = step + "px"; });
+      box.scrollLeft = first * step; ch = true;
+    }
+    var up = courts.map(function (q) { return q.up ? 1 : 0; }).join("");
+    if (box.dataset.up !== up) { box.dataset.up = up; courts.forEach(function (q, k) { bs[k].setAttribute("aria-label", STR.go(q.k, q.up)); }); }   // (the words for a screen reader, in place)
+    var most = max(0, box.scrollWidth - box.clientWidth); HUD.most = most;
+    if ((pin || (ch && HUD.end)) && abs(box.scrollLeft - most) > 0.5) { box.scrollLeft = most; }   // (to the newest as the row changes or in a match; a slow swipe off it is the player's)
+    return box.scrollLeft;
+  }
+  function stripBind() {   // (once: the window's own scroll read; a wheel scrolls it sideways; a mouse drags it)
     var box = $("courts"); if (!box) { return; }
-    var key = [n0, courts.length, sz.toFixed(1), x0.toFixed(1), y0.toFixed(1), courts.slice(n0).map(function (q) { return q.up ? 1 : 0; }).join("")].join(",");
-    if (box.dataset.key === key) { return; }
-    box.dataset.key = key; box.textContent = "";
-    courts.slice(n0).forEach(function (q, j) {
-      var b = document.createElement("button"), x = x0 + j * (sz + gap);
-      b.type = "button"; b.textContent = String(q.k + 1); b.setAttribute("aria-label", STR.go(q.k, q.up));
-      b.style.left = round(x - gap / 2) + "px"; b.style.top = round(y0 - 6) + "px"; b.style.width = round(sz + gap) + "px"; b.style.height = round(max(48, sz + 12)) + "px";
-      tapOn(b, function () { b.blur(); courtGo(q.k); });   // (blurred after any press, a key's too: Space and Enter after it are the game's)
-      box.appendChild(b);
+    var moved = -1, wt = 0;
+    box.addEventListener("scroll", function () { HUD.end = box.scrollLeft >= box.scrollWidth - box.clientWidth - 2; moved = performance.now(); });
+    box.addEventListener("pointerdown", function (e) { var b = e.target.closest && e.target.closest("button"); if (b && performance.now() - moved < 150) { delete b.dataset.down; } });   // (a press that stops a gliding row goes nowhere)
+    box.addEventListener("focusin", function (e) {   // (Tab to a court past the window: brought into it)
+      var b = e.target, l = b.offsetLeft - box.firstElementChild.offsetLeft, r = l + b.offsetWidth;
+      if (l < box.scrollLeft) { box.scrollLeft = l; } else if (r > box.scrollLeft + box.clientWidth) { box.scrollLeft = r - box.clientWidth; }
     });
+    box.addEventListener("wheel", function (e) {   // (sideways, a wheel's or a trackpad's every step, its snap held off while it turns, then on a whole pearl)
+      var d = abs(e.deltaX) > abs(e.deltaY) ? e.deltaX : e.deltaY; if (!d) { return; } e.preventDefault();
+      box.style.scrollSnapType = "none"; box.scrollLeft += d * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? box.clientWidth : 1);
+      clearTimeout(wt); wt = setTimeout(function () { if (!dr || !dr.on) { box.style.scrollSnapType = ""; } }, 150);
+    }, { passive: false });
+    var dr = null;
+    box.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse" && e.button === 0) { dr = { id: e.pointerId, x: e.clientX, s: box.scrollLeft, on: false }; } });
+    window.addEventListener("pointermove", function (e) {
+      if (!dr || e.pointerId !== dr.id) { return; }
+      var dx = e.clientX - dr.x;
+      if (!dr.on && abs(dx) > 6) { dr.on = true; box.style.scrollSnapType = "none"; Array.prototype.forEach.call(box.children, function (b) { delete b.dataset.down; }); }   // (a drag, not a press: no button goes)
+      if (dr.on) { box.scrollLeft = dr.s - dx; }
+    });
+    var end = function (e) { if (!dr || e.pointerId !== dr.id) { return; } if (dr.on) { box.style.scrollSnapType = ""; } dr = null; };   // (let go: it comes to rest on a whole pearl)
+    window.addEventListener("pointerup", end); window.addEventListener("pointercancel", end);
   }
   function courtPlace(k) {
     // (the first point's circle: serveSpot() with n = 0)
@@ -4272,7 +4310,7 @@
       return true;
     });
   }
-  var sayEl = null, hudLow = 0, hudBox = {}, HUD = { score: null, flash: -9, cele: null };   // (hudBox: where the bar was drawn, for the tests)
+  var sayEl = null, hudLow = 0, hudBox = {}, HUD = { score: null, flash: -9, cele: null, end: true };   // (end: the courts' row kept to its newest)   // (hudBox: where the bar was drawn, for the tests)
   function overlay(dpr) {
     sayEl = sayEl || $("say");
     var c = hud.getContext("2d"), W = hud.clientWidth, H = hud.clientHeight;
@@ -4387,10 +4425,12 @@
       sc = right - x0 - ws(full) - 14 >= 20 ? full : full.slice(1, 4);
       sc = { parts: sc, w: ws(sc) }; right -= sc.w + 14; need = max(need, 20);
     }
-    var cnt = min(10, courts.length, max(1, floor((right - x0 + gap) / (need + gap)))), sz = min(28, (right - x0 - 9 * gap) / 10);
-    if (cnt < min(10, courts.length) || sz < need) { sz = min(28, (right - x0 - (cnt - 1) * gap) / cnt); }   // (fewer, or too small at a tenth of the room: the room shared by those shown)
-    var n0 = max(0, courts.length - cnt);
-    hudBox.strip = { x: x0, y: y0, w: cnt * (sz + gap) - gap, h: sz };
+    // (five at a time, the rest a scroll away (the artist, 5 Nov 2026); each the size it was at ten to the row)
+    var cnt = min(5, courts.length, max(1, floor((right - x0 + gap) / (need + gap)))), sz = min(28, (right - x0 - 9 * gap) / 10);
+    if (cnt < min(5, courts.length) || sz < need) { sz = min(28, (right - x0 - (cnt - 1) * gap) / cnt); }   // (fewer, or too small at a tenth of the room: the room shared by those shown)
+    sz = max(4, floor(sz));   // (never a negative radius, however narrow the screen; whole pixels, the buttons' grid the pearls')
+    var step = sz + gap, sx = courtStrip(cnt, sz, gap, x0, y0, !!m), most = HUD.most || 0, wl = x0 - gap / 2, wr = wl + cnt * step;
+    hudBox.strip = { x: x0, y: y0, w: cnt * step - gap, h: sz, cnt: cnt, sx: sx, most: most };
     c.font = "600 " + fs + "px ui-monospace, SFMono-Regular, Menlo, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
     // (each a pearl, not a square (the artist, 29 Oct 2026: "I want the squares that indicate the game number to also
     // be pearls instead of squares"), with his head's shine ("Give the pearls indicating the game number a bit of shine
@@ -4399,13 +4439,12 @@
     // highlight on the right shoulder, clear of the number; a won court's whole, its number dark; the one he plays
     // glass ringed in gold, the open one glass, their numbers light and outlined.)
     hudBox.pearls = [];
-    var cele = HUD.cele && CUE.rt - HUD.cele.t0 < 1.6 ? HUD.cele : null, cj = cele ? cele.k - (courts[n0] ? courts[n0].k : 0) : -1;
-    sz = max(4, sz);   // (never a negative radius, however narrow the screen)
+    var cele = HUD.cele && CUE.rt - HUD.cele.t0 < 1.6 ? HUD.cele : null, cj = cele ? cele.k : -1;
     // (a court just won, every time ("a subtle celebratory animation every time you are victorious"): behind the row, a
     // warm glow fading, and sparks of gold and pearl flying out a little and gone within a second, kept in the row's band;
     // where motion is reduced, the glow alone)
-    if (cele && cj >= 0 && cj < courts.length - n0) {
-      var cr = sz / 2, ccx = x0 + cj * (sz + gap) + cr, ccy = y0 + cr, cu0 = (CUE.rt - cele.t0) / 1.6;
+    if (cele && cj >= 0 && cj < courts.length && x0 + cj * step - sx + sz / 2 > wl && x0 + cj * step - sx + sz / 2 < wr) {
+      var cr = sz / 2, ccx = x0 + cj * step - sx + cr, ccy = y0 + cr, cu0 = (CUE.rt - cele.t0) / 1.6;
       var hg = c.createRadialGradient(ccx, ccy, cr * 0.6, ccx, ccy, cr * 2.2); hg.addColorStop(0, "rgba(255,209,102," + (0.38 * (1 - clampV(cu0 / 0.8, 0, 1))).toFixed(3) + ")"); hg.addColorStop(1, "rgba(255,209,102,0)");
       c.fillStyle = hg; c.fillRect(ccx - 2.2 * cr, ccy - 2.2 * cr, 4.4 * cr, 4.4 * cr);
       if (!CUE.rm) {
@@ -4418,12 +4457,16 @@
         c.restore();
       }
     }
-    courts.slice(n0).forEach(function (q, j) {
-      var x = x0 + j * (sz + gap), on = m && m.k === q.k, r = sz / 2, cx = x + r, cy = y0 + r, cu = cele && cele.k === q.k ? (CUE.rt - cele.t0) / 1.6 : -1;
+    c.save(); c.beginPath(); c.rect(wl, 0, wr - wl, y0 + sz + 24); c.clip();   // (the window: what lies past it a scroll away)
+    courts.forEach(function (q, j) {
+      var x = x0 + j * step - sx, on = m && m.k === q.k, r = sz / 2, cx = x + r, cy = y0 + r, cu = cele && cele.k === q.k ? (CUE.rt - cele.t0) / 1.6 : -1;
+      if (x + sz < wl || x > wr) { return; }
+      // (where more lie past an edge, the pearl at it fading: the row goes on)
+      var ea = m ? 1 : clampV(min(sx > 0.5 ? (cx - wl) / (1.2 * sz) : 1, sx < most - 0.5 ? (wr - cx) / (1.2 * sz) : 1), 0.25, 1);   // (not in a match: the one he plays whole)
       // (just won: it swells and settles, number and all, and a glint sweeps it)
       var pop = cu >= 0 && !CUE.rm ? 1 + 0.28 * Math.sin(PI * clampV(cu / 0.35, 0, 1)) * (1 - clampV(cu / 0.35, 0, 1) * 0.3) : 1;
       var blob = function (bx, by, br, col) { var g3 = c.createRadialGradient(bx, by, 0, bx, by, br); g3.addColorStop(0, col); g3.addColorStop(1, col.replace(/[\d.]+\)$/, "0)")); c.fillStyle = g3; c.fillRect(-r, -r, 2 * r, 2 * r); };
-      c.save(); c.translate(cx, cy); c.scale(pop, pop);
+      c.save(); c.globalAlpha = ea; c.translate(cx, cy); c.scale(pop, pop);
       c.beginPath(); c.arc(0, 0, r - 0.5, 0, 2 * PI);
       if (q.up) {
         var pg = c.createRadialGradient(0.15 * r, -0.15 * r, 0.05 * r, 0, 0, 1.05 * r);
@@ -4453,9 +4496,9 @@
       if (!q.up) { c.lineWidth = 3; c.strokeStyle = "rgba(0,0,0,0.7)"; c.strokeText(String(q.k + 1), 0, 0.5); }
       c.fillStyle = q.up ? "#1c1c1e" : "#f2efe8"; c.fillText(String(q.k + 1), 0, 0.5);
       c.restore();
-      hudBox.pearls.push({ k: q.k, x: cx, y: cy, r: r * pop, up: !!q.up, on: !!on, cele: cu });
+      if (cx >= wl && cx <= wr) { hudBox.pearls.push({ k: q.k, x: cx, y: cy, r: r * pop, up: !!q.up, on: !!on, cele: cu, a: +ea.toFixed(2) }); }
     });
-    courtButtons(n0, sz, gap, x0, y0);   // (each a button too, between matches: a tap goes there)
+    c.restore();
     hudBox.score = null; if (!sc) { HUD.score = null; }   // (a new match's 0 - 0 comes in without a flash)
     if (sc) {
       // (a point won lights its number a moment)
@@ -4529,7 +4572,7 @@
       courtsInit(saved);
       var pa = $("portal"); if (pa) { pa.href = window.PB_PORTAL || PORTAL.SITE; pa.textContent = STR.portal.link; pa.setAttribute("aria-label", STR.portal.linkSr); }   // (the portal's way: the Artifact's, or the site's page)
       me = athlete(palMe, 2.2, COURT.L + 3, 0, true);   // (on the run-off behind the baseline, out of the garden: its look is for walking onto it)
-      bindInput();
+      bindInput(); stripBind();
       courtWhere();
       if (!TUT.done && wonCount() === 0) { tutStart(); }
       else { say(STR.welcome, true); tip("move"); TIPS.from = [me.x, me.z]; }
