@@ -78,6 +78,13 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Implement all the suggested bullets" with two references, https://design.google/library/exploring-color-google-maps
   and https://design.google/library/reimagining-google-fonts, and "Add the logo research to my notes" (the research is
   kept in full in LOGO-RESEARCH.md, beside this file, with the two references)
+- "Get rid of the white dot on top of the pointer finger in the logo and animation. The bottom semicircle line in the
+  provided image is the aesthetic we are after, smooth and light. The cross that forms with the copies of the hand
+  swinging out looks unprofessional, though I like the general points it hits in the animation. Use the animation in the
+  second video as the driving animation for the logo." (the picture: the intro at 3.2 s, the curved pulse below the hand;
+  the video: a screen recording of the Motion Lab playing Echo in its depth style at half a second, a favourite: five
+  copies of the mark step back up and to the right, arriving back to front one a beat, the front one lands solid and
+  the four behind slide forward into it)
 
 ## The purpose (said after, the same day; it frames everything below)
 
