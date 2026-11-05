@@ -3428,15 +3428,17 @@
   // (which chunk a place is in: the left end, a court's length, the open court's (its key with e: the right bend begins
   // in it), the right end)
   function gdnKey(x) { var N = courts.length, xR = (N - 1) * COURT.GAP; if (x < -COURT.GAP / 2) { return "L"; } if (x >= xR + COURT.GAP / 2) { return "R" + N; } var k = clampV(Math.floor((x + COURT.GAP / 2) / COURT.GAP), 0, N - 1); return "c" + k + (k === N - 1 ? "e" : ""); }
+  function blobInto(out, cx, cy, cz, rx, ry, rz, id, nu, nv) {   // (a rounded mound, its normals smooth: a shrub, a flower; the portal's too)
+    nu = nu || 10; nv = nv || 6;
+    var P = function (i, j) { var th = PI * j / nv, ph = 2 * PI * i / nu, sx = Math.sin(th) * Math.cos(ph), sy = Math.cos(th), sz = Math.sin(th) * Math.sin(ph), nx = sx / rx, ny = sy / ry, nz = sz / rz, nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; return [cx + rx * sx, cy + ry * sy, cz + rz * sz, nx / nl, ny / nl, nz / nl]; };
+    for (var i = 0; i < nu; i += 1) { for (var j = 0; j < nv; j += 1) { var a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), d = P(i, j + 1); [a, b, c, a, c, d].forEach(function (q) { out.push(q[0], q[1], q[2], q[3], q[4], q[5], id); }); } }
+  }
+  function shrubInto(out, x, z) { blobInto(out, x, 0.4, z, 0.85, 0.5, 0.85, GP.SHRUB); blobInto(out, x + 0.08, 0.8, z - 0.05, 0.55, 0.38, 0.55, GP.SHRUB2); }   // (the moss bank's shrub: a low round mound and its crown)
   function gdnBuild(key) {
     var S = [], Wt = [], Pl = [], foot = [], flats = [], xL = TRK.XL, xR = trkXR(), Ri = gdnIn();
     var mine = function (x) { return gdnKey(x) === key; };
     var tri = function (o, a, b, c, y, id) { o.push(a[0], y, a[1], 0, 1, 0, id, b[0], y, b[1], 0, 1, 0, id, c[0], y, c[1], 0, 1, 0, id); };
-    var blob = function (cx, cy, cz, rx, ry, rz, id, nu, nv) {   // (a rounded mound, its normals smooth: a shrub, a flower)
-      foot.push([cx, cz, max(rx, rz)]); nu = nu || 10; nv = nv || 6;
-      var P = function (i, j) { var th = PI * j / nv, ph = 2 * PI * i / nu, sx = Math.sin(th) * Math.cos(ph), sy = Math.cos(th), sz = Math.sin(th) * Math.sin(ph), nx = sx / rx, ny = sy / ry, nz = sz / rz, nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; return [cx + rx * sx, cy + ry * sy, cz + rz * sz, nx / nl, ny / nl, nz / nl]; };
-      for (var i = 0; i < nu; i += 1) { for (var j = 0; j < nv; j += 1) { var a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), d = P(i, j + 1); [a, b, c, a, c, d].forEach(function (q) { Pl.push(q[0], q[1], q[2], q[3], q[4], q[5], id); }); } }
-    };
+    var blob = function (cx, cy, cz, rx, ry, rz, id, nu, nv) { foot.push([cx, cz, max(rx, rz)]); blobInto(Pl, cx, cy, cz, rx, ry, rz, id, nu, nv); };
     var quad = function (o, a, b, c, d, y, id) { tri(o, a, b, c, y, id); tri(o, a, c, d, y, id); flats.push([a, b, c, d]); };
     var box = function (cx, cy, cz, sx, sy, sz, id, yaw) {   // (a box into the plants' mesh, turned about its upright)
       foot.push([cx, cz, max(sx, sz) / 2]);
@@ -3507,40 +3509,37 @@
     });
     // the moss bank's clipped shrubs, every SHRUB metres, each the same: a low round mound and its crown
     along((GB.MOSS[0] + GB.MOSS[1]) / 2, GB.SHRUB, function (x, z) {
-      if (!mine(x)) { return; }
+      if (!mine(x) || hypot(x - PORTAL.c[0], z - PORTAL.c[2]) < 0.5) { return; }   // (in the portal's place the portal's own mound)
       blob(x, 0.4, z, 0.85, 0.5, 0.85, GP.SHRUB); blob(x + 0.08, 0.8, z - 0.05, 0.55, 0.38, 0.55, GP.SHRUB2);
     });
     var up = function (a) { return a.length ? upload(a) : null; };
     return { surf: up(S), water: up(Wt), plant: up(Pl), foot: foot, flats: flats };   // (foot: each box's middle and half reach; flats: each flat's corners; for the tests)
   }
   // The portal (the artist, 4 Nov 2026: "make an almost invisible tunnel, like the black hole in the movie interstellar
-  // and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"): over the lily
-  // canal at the staircase's end a black sphere, hardly there but for its rings, the light of a disc round it, tilted and
-  // turning, and that light bent round its edge facing the view; faint from afar, brighter close by. In it, a way
-  // through to Holographic Mr Pearl: in the Artifact its Artifact, on the site its page there; inside YouTube none (a
+  // and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"): a hollow
+  // with rings, the light of a disc round it, tilted and turning, and that light bent round its edge facing the view
+  // (where and how faint: below). In it, a way through to Holographic Mr Pearl: in the Artifact its Artifact, on the site its page there; inside YouTube none (a
   // Playable may not lead out). Later (the artist): Holographic Mr Pearl Quarterback, inside the same Playable.
-  var PORTAL = { c: [-30, 2.7, -0.5], r: 1.7, SITE: "../rocket/index.html", mesh: null };   // (in the Artifact the build gives its way: window.PB_PORTAL)
-  function sphereMesh(n, m) {
-    var out = [], P = function (i, j) { var th = PI * j / m, ph = 2 * PI * i / n; return [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)]; };
-    for (var i = 0; i < n; i += 1) { for (var j = 0; j < m; j += 1) { var a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), d = P(i, j + 1); [a, b, c, a, c, d].forEach(function (q) { out.push(q[0], q[1], q[2], q[0], q[1], q[2], 0); }); } }
-    return upload(out);
-  }
+  // Hidden since 5 Nov 2026 (the artist: "Have the portal be hard to find and barely noticeable"): one of the moss bank's
+  // shrubs, the J-th round the left bend, in its far back corner, off every line he walks; from afar the same as the rest
+  // of its row, from SEE in to NEAR a shade darker, a hollow (DIM); its rings faint, only while he stands at it.
+  var PORTAL = { J: 15, c: null, r: 0.55, DIM: 0.55, SEE: 14, NEAR: 4, SITE: "../rocket/index.html", mesh: null };   // (in the Artifact the build gives its way: window.PB_PORTAL)
+  (function () { var r = gdnIn() - (GB.MOSS[0] + GB.MOSS[1]) / 2, n = max(1, Math.round(PI * r / GB.SHRUB)), a = PI * (PORTAL.J + 0.5) / n; PORTAL.c = [TRK.XL - r * Math.sin(a), 0.4, r * Math.cos(a)]; })();   // (a shrub's own place, as the row's along() puts it: the left end never moves)
   function portalDraw() {
-    var P = PORTAL, e = cur.eye, dd = hypot(P.c[0] - e[0], P.c[1] - e[1], P.c[2] - e[2]); if (dd > 90) { return; }
-    if (!P.mesh) { P.mesh = sphereMesh(20, 14); }
-    if (dd > P.r + 0.3) {   // (the dark: nothing lit, no rim, no haze; only what it hides shows it. Not with the eye inside it)
-      paint(MAT.PLANT, null, false, [0, 0, 0], 0); gl.uniform3fv(SU.uFog, [0, 0, 0]);
-      drawSolid(P.mesh, mul(T(P.c[0], P.c[1], P.c[2]), S(P.r, P.r, P.r)), [0.002, 0.002, 0.002], null, 0); gl.uniform3fv(SU.uFog, SKY.gnd);
+    var P = PORTAL, e = cur.eye, dd = hypot(P.c[0] - e[0], P.c[1] - e[1], P.c[2] - e[2]); if (dd > GDN_NEAR || smooth(GINV.vis) < 0.98) { return; }   // (drawn as far as its row's shrubs are, and not while the garden is away)
+    if (!P.mesh) { var m = []; shrubInto(m, P.c[0], P.c[2]); P.mesh = upload(m); }
+    paint(MAT.PLANT, null, false, RIM.none, 1);
+    drawSolid(P.mesh, T(0, 0, 0), null, GP.pal, P.DIM + (1 - P.DIM) * smooth((dd - P.NEAR) / (P.SEE - P.NEAR)));   // (from afar its row's light exactly; close by dimmer)
+    var dm = ride.mode ? 99 : hypot(me.x - P.c[0], me.z - P.c[2]), glow = 0.35 * smooth((2.5 - dm) / 1.5);   // (its rings: only he, on foot, at it, sees them)
+    if (glow < 0.005) { return; }
+    var tilt = 0.2, yaw = Math.atan2(P.c[0] - e[0], -(P.c[2] - e[2])), ux = Math.cos(yaw), uz = Math.sin(yaw), y = 0.55;
+    for (var i = 0; i < 12; i += 1) {   // (the disc: round it, tilted, turning; in the garden's own light, so as faint as glow)
+      var a = 2 * PI * i / 12 + gt * 0.35, rd = 1.15 * (1 + 0.1 * Math.sin(3 * a));
+      cbox([P.c[0] + rd * Math.cos(a), y + rd * Math.sin(a) * Math.sin(tilt), P.c[2] + rd * Math.sin(a) * Math.cos(tilt)], [0.04, 0.015, 0.04], [1, 0.8, 0.52], glow);
     }
-    var glow = 0.25 + 1.7 * smooth((26 - dd) / 20), tilt = 0.2, yaw = Math.atan2(P.c[0] - e[0], -(P.c[2] - e[2])), ux = Math.cos(yaw), uz = Math.sin(yaw);
-    paint(MAT.LAMP);
-    for (var i = 0; i < 36; i += 1) {   // (the disc: round it, tilted, turning)
-      var a = 2 * PI * i / 36 + gt * 0.35, rd = P.r * (1.75 + 0.18 * Math.sin(3 * a));
-      cbox([P.c[0] + rd * Math.cos(a), P.c[1] + rd * Math.sin(a) * Math.sin(tilt), P.c[2] + rd * Math.sin(a) * Math.cos(tilt)], [0.13, 0.05, 0.13], [1, 0.8, 0.52], glow);
-    }
-    for (var j = 0; j < 30; j += 1) {   // (its light bent round the edge, facing the view)
-      var b = 2 * PI * j / 30 - gt * 0.2, rr = P.r * 1.12;
-      cbox([P.c[0] + rr * Math.cos(b) * ux, P.c[1] + rr * Math.sin(b), P.c[2] + rr * Math.cos(b) * uz], [0.09, 0.09, 0.09], [1, 0.94, 0.84], glow * 0.8);
+    for (var j = 0; j < 10; j += 1) {   // (its light bent round the edge, facing the view)
+      var b = 2 * PI * j / 10 - gt * 0.2, rr = 0.95;
+      cbox([P.c[0] + rr * Math.cos(b) * ux, y + rr * Math.sin(b), P.c[2] + rr * Math.cos(b) * uz], [0.03, 0.03, 0.03], [1, 0.94, 0.84], glow * 0.8);
     }
   }
   function portalStep() {

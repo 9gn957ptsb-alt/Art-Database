@@ -295,9 +295,14 @@ the wheel (`pb_go.js`). The strip shows the last ten courts, so those are the on
   with him in it, 67% of the full inverse's lightening, the court and its run-off the same; a still frame still). He begins a game on the court's run-off behind
   its baseline, out of the garden, and walks onto it.
 - *The portal* (the artist, 4 Nov 2026: "make an almost invisible tunnel, like the black hole in the movie interstellar
-  and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"): over the lily
-  canal at the staircase's end a black sphere, hardly there but for its rings (the light of a disc round it, tilted and turning, and that
-  light bent round its edge facing the view), faint from afar, brighter close by; no haze lifts its black. In it, on
+  and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"), hidden since
+  5 Nov 2026 (the artist: "Have the portal be hard to find and barely noticeable"): a small orb, below his eye, in the
+  left bend's far back corner between the moss bank's shrubs and the canal, off every line he walks; a hollow in the
+  shrubs' own green, dimmer than they are, so in either look a shade of what is round it; not drawn at all from more
+  than 14 m, its rings (a few specks of a disc round it, tilted and turning, and of that light bent round its edge facing
+  the view) faint and only within 7 m. From 38 places round the garden and the courts, turned to it, the old portal
+  showed from all 38 and this from 15, all within 14 m of it, in its corner (`pb_garden.js`: from his start and from
+  20 m off, not a pixel of it). In it, on
   foot, a way through: `Holographic Mr Pearl ↗` (a tap, a click, or Enter), opening the Holographic Mr Pearl Artifact
   from the Artifact and its page on this site (`../rocket/`) from the site. Inside YouTube none, as a Playable may not
   lead out ("a way through to another game, soon"): the Playable's bundle carries no link at all, and the build fails
