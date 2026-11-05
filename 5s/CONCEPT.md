@@ -104,6 +104,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   should manifest from the smaller logos when they come to center. I also want you to inverse all of the colors should
   manifest" (of the golden-spiral intro, with two frames at 2 s: the echo's blue hand in the middle, apart from the
   four small warm clusters of layers)
+  (asked what "inverse" meant, the artist chose: invert the whole intro, every colour flipped, the night sky turning
+  light)
+- "The golden ratio shape is too apparent at first, it's gimmicky, I want you to find a more unknown and powerful shape
+  to arrange the 16 layers on" (of the golden-spiral arrangement)
 
 ## The purpose (said after, the same day; it frames everything below)
 
