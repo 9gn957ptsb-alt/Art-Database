@@ -828,11 +828,18 @@
       "}"].join("\n"));
     A.setP = compile(A.vs, [head,
       "uniform sampler2D uScene; uniform sampler2D uCells; uniform sampler2D uAtlas;",
-      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow, uBg, uInv;",
+      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow, uBg, uInv; uniform int uAtom;",
+      // the garden's atoms (the artist, 5 Nov 2026: "a very fine grain ASCII graphic like atoms"): characters three pixels
+      // by five, a pixel apart (uAtom device pixels to each), by how much light: . : - + * o # @
+      "const int ATOM[9] = int[9](0, 8192, 1040, 448, 1488, 2728, 3960, 24445, 29679);",
+      "float hsh(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }",
       "out vec4 o;",
       "void main() {",
       "  vec4 pic = texelFetch(uScene, ivec2(gl_FragCoord.xy), 0);",
       "  if (pic.a > 0.25 && pic.a < 0.75) { o = vec4(pic.rgb, 1.0); return; }",       // his head, the one thing as it is
+      // the garden: its picture in atoms, each its own colour from the picture (as the light falls, the sheen, the water's
+      // sky), a soft glow of the picture round them and a fine fixed grain; off the garden, bright atoms on a dark of their
+      // own colour; with him in it (its inverse), a pale ground of that colour and the atoms a fine darker weave in it
       "  ivec2 pd = ivec2(int(gl_FragCoord.x), int(uRes.y - gl_FragCoord.y));",
       "  int k = uTop; ivec2 cs = uCell << k, ci = pd / cs; vec4 t = texelFetch(uCells, ci, k);",
       "  while (k > 0 && t.a < 0.5) { k--; cs = uCell << k; ci = pd / cs; t = texelFetch(uCells, ci, k); }",   // the largest cell that is one
@@ -840,6 +847,18 @@
       // the paint under the type: a court's surfaces and its lines (their kind, in the colour's low bits) over the
       // picture itself, the cell's average, dimmed and its colour drawn up; nothing under a figure, a thing or the sky
       "  ivec3 kb = ivec3(t.rgb * 255.0 + 0.5) & 1; int kd = kb.r | (kb.g << 1) | (kb.b << 2); vec3 bg = vec3(0.0);",
+      "  int pm = int(floor((1.0 - pic.a) * 255.0 + 0.5)) & 31;",
+      // (only where the cell is the garden's own: a pearl, a pole or a lamp, a figure and the night round it keep their characters over it)
+      "  if (uAtom > 0 && pm >= 20 && pm <= 22 && (a & 32) == 0 && !(kd == 0 && g > 0) && kd != K_THING && kd != K_LINE && kd != K_MOAT) {",
+      "    ivec2 fp = ivec2(gl_FragCoord.xy), ac = ivec2(4, 6) * uAtom, ai = fp / ac, ag = (fp - ai * ac) / uAtom;",
+      "    vec3 col = textureLod(uScene, (vec2(ai * ac) + 0.5 * vec2(ac)) / uRes, log2(float(ac.x))).rgb, glow = textureLod(uScene, gl_FragCoord.xy / uRes, 3.5).rgb;",   // (its colour over its own footprint: no crawl as the view moves)
+      "    float L = dot(col, vec3(0.299, 0.587, 0.114)), gr = hsh(vec2(ai));",
+      "    int lv = clamp(int((L * 1.7 + (gr - 0.5) * 0.18) * 8.0), 0, 8), bit = ag.x < 3 && ag.y >= 1 ? (ATOM[lv] >> ((5 - ag.y) * 3 + ag.x)) & 1 : 0;",
+      "    vec3 oN = mix(col * 0.3 + glow * 0.22, min(vec3(1.0), col * 1.3 + glow * 0.25 + 0.03), float(bit));",
+      "    float mc = max(max(col.r, col.g), col.b); vec3 hu = mc > 0.02 ? col / mc : vec3(1.0, 0.96, 0.88);",
+      "    vec3 paper = mix(hu, vec3(1.0, 0.98, 0.93), 0.45) * 0.94 + glow * 0.1, oI = mix(paper, paper * 0.4, float(bit));",   // (its paper from its hue, as the cells' inverse is)
+      "    o = vec4(mix(oN, oI, uInv) * (0.96 + 0.08 * hsh(gl_FragCoord.xy)), 1.0); return;",
+      "  }",
       "  if (kd == K_SURF || kd == K_LINE || kd == K_MOAT) {",
       "    vec2 cc = vec2(ci * cs) + 0.5 * vec2(cs);",
       "    vec3 sc = textureLod(uScene, vec2(cc.x, uRes.y - cc.y) / uRes, log2(float(max(cs.x, cs.y)))).rgb, hu = sc / max(max(sc.r, sc.g), max(sc.b, 1e-3));",
@@ -868,7 +887,7 @@
       "}"].join("\n"));
     A.CU = {}; A.SU = {};
     ["uScene", "uDepth", "uGV", "uPrev", "uHold", "uGdOn", "uRes", "uCell", "uLev", "uTop", "uFloor", "uBalls", "uBall", "uNear", "uFar", "uRule", "uExpo", "uGam", "uEdge", "uEdgeMin", "uFocal", "uAsp", "uEye", "uF", "uR", "uU", "uK"].forEach(function (k) { A.CU[k] = gl.getUniformLocation(A.cellP, k); });
-    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow", "uBg", "uInv"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
+    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow", "uBg", "uInv", "uAtom"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
   }
   // the grid for this screen: the type's floor and ceiling (CSS px, a phone's and a desk's), the cell its advance by
   // its bar, in device pixels; an octave under the floor for far athletes where that is still 12 device pixels
@@ -959,7 +978,7 @@
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform2f(SU.uRes, w, h); gl.uniform2i(SU.uCell, G.cw, G.ch); gl.uniform1i(SU.uTop, G.top);
     var at = new Int32Array(8); A.rows.forEach(function (q, i) { at[i * 2] = q.y; at[i * 2 + 1] = q.cols; }); gl.uniform2iv(SU.uAtl, at);
-    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow); gl.uniform1f(SU.uBg, ASC.bg); gl.uniform1f(SU.uInv, smooth(GINV.u));
+    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow); gl.uniform1f(SU.uBg, ASC.bg); gl.uniform1f(SU.uInv, smooth(GINV.u)); gl.uniform1i(SU.uAtom, max(1, round(dpr)));   // (the atoms the same size on every screen: 4 by 6 of its points)
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     A.turn = 1 - A.turn;
   }
@@ -1018,7 +1037,7 @@
       "precision highp float;",
       "uniform vec4 uPal[64]; uniform vec3 uCol; uniform int uUse; uniform vec3 uEye; uniform float uEmit; uniform vec3 uFog;",
       "uniform float uMat, uGround, uAO, uGold; uniform vec4 uCrt; uniform vec3 uLnC, uRim, uKeyV, uSunG;",
-      "uniform vec4 uGdn; uniform float uGdnOn;",   // (the garden: the bends' middles, the inner edge's reach, the courts' block's half depth; on while the inverse look is)
+      "uniform vec4 uGdn; uniform float uGdnOn, uT;",   // (uT: the time, for the garden's water)   // (the garden: the bends' middles, the inner edge's reach, the courts' block's half depth; on while the inverse look is)
       "in vec3 vN; in vec3 vW; flat in int vI; out vec4 o;",
       poolGLSL(),
       // the garden's ground, as gdnAt has it: in from the track's inner edge, out of the courts' block
@@ -1072,12 +1091,35 @@
       "      c = F0 * (0.08 + 0.5 * nl + 0.3 * dif) + Fr * (nl * (6.0 * pow(nh, 90.0) + 0.9 * pow(nh, 10.0)) + 0.55 * env * F0);",
       "    }",
       "  }",
+      // the garden (the artist, 5 Nov 2026: "Have the garden area graphics appear more realistic like these two images
+      // while maintains a very fine grain ASCII graphic like atoms"): lit as at the end of a day, a low warm sun and the
+      // sky's cool from above, the floodlights' pools on it; over it a holographic sheen, a thin film's colours turning
+      // with the angle it is seen at (as on Mr Pearl); its water rippling, holding the sky (a sunset's gradient, whiter at
+      // a grazing look) and the sun's glints; its leaves a soft sheen. uEmit here: how much of it there is (it fades while
+      // a match plays). The final pass draws it in atoms.
+      "  if (mat > 19.5 && mat < 22.5) {",
+      "    bool wat = mat > 20.5 && mat < 21.5, lf = mat > 21.5;",
+      "    vec3 gn = wat ? normalize(vec3(0.07 * sin(vW.x * 2.3 + uT * 1.1) + 0.05 * sin(vW.z * 3.7 - uT * 0.8 + vW.x), 1.0, 0.07 * cos(vW.z * 2.9 + uT * 0.9) + 0.04 * cos(vW.x * 4.1 + uT * 1.3))) : lf ? n : vec3(0.0, 1.0, 0.0);",
+      "    float nv = max(dot(gn, v), 0.0), sky = 0.5 + 0.5 * gn.y;",
+      "    vec3 sunD = normalize(vec3(-0.55, 0.32, -0.75)), sunC = vec3(1.0, 0.64, 0.4), skyC = vec3(0.42, 0.52, 0.86);",
+      "    if (!wat && !lf) { vec2 gq = floor(vW.xz * 7.0); base *= 0.82 + 0.36 * fract(sin(dot(gq, vec2(12.9898, 78.233))) * 43758.5453); }",   // (its gravel and moss speckled, stone by stone)
+      "    vec3 g = base * (0.95 * max(dot(gn, sunD), 0.0) * sunC + 0.5 * sky * skyC + 0.07 + 0.9 * E * vec3(1.05, 0.9, 0.7));",
+      "    float th = 1.4 * nv + 0.05 * (vW.x + vW.z) + 0.2 * sin(vW.x * 0.37 + vW.z * 0.21);",
+      "    vec3 irid = 0.55 + 0.45 * cos(6.2832 * (th + vec3(0.0, 0.33, 0.67)));",
+      "    g = mix(g, (0.35 + 0.65 * sky) * irid * (0.25 + 0.75 * length(base)), lf ? 0.12 : wat ? 0.18 : 0.12);",
+      "    if (lf) { g += sunC * 0.35 * pow(max(dot(gn, normalize(sunD + v)), 0.0), 24.0); }",
+      "    if (wat) {",
+      "      vec3 rf = reflect(-v, gn); float fw = 0.06 + 0.94 * pow(1.0 - nv, 5.0);",
+      "      g = mix(g, mix(vec3(1.0, 0.62, 0.42), vec3(0.16, 0.24, 0.55), smoothstep(-0.05, 0.55, rf.y)), 0.4 + 0.55 * fw) + sunC * 1.6 * pow(max(dot(rf, sunD), 0.0), 120.0);",
+      "    }",
+      "    c = g * uEmit;",
+      "  }",
       "  c = 1.0 - exp(-1.3 * c);",
       "  c = mix(c, uFog, clamp(1.0 - exp(-max(length(vW - uEye) - 50.0, 0.0) * 0.008), 0.0, 0.8));",
       "  float gf = uGdnOn > 0.5 && mat != 9.0 && garden(vW.xz) ? 32.0 : 0.0;",   // (in the garden, while he is: flagged, the pearls aside)
       "  o = vec4(c, 1.0 - (mat + gf) / 255.0);",   // (its material, for the characters; +32 the garden's)
       "}"].join("\n"));
-    ["uVP", "uM", "uWide", "uPal", "uCol", "uUse", "uEye", "uEmit", "uFog", "uMat", "uGround", "uAO", "uCrt", "uLnC", "uRim", "uKeyV", "uKMax", "uGold", "uSunG", "uGdn", "uGdnOn"].forEach(function (k) { SU[k] = gl.getUniformLocation(solid, k); });
+    ["uVP", "uM", "uWide", "uPal", "uCol", "uUse", "uEye", "uEmit", "uFog", "uMat", "uGround", "uAO", "uCrt", "uLnC", "uRim", "uKeyV", "uKMax", "uGold", "uSunG", "uGdn", "uGdnOn", "uT"].forEach(function (k) { SU[k] = gl.getUniformLocation(solid, k); });
     skyP = compile([
       "#version 300 es",
       "uniform vec3 uF; uniform vec3 uR; uniform vec3 uU; uniform vec2 uK;",
@@ -3390,6 +3432,11 @@
     var S = [], Wt = [], Pl = [], foot = [], flats = [], xL = TRK.XL, xR = trkXR(), Ri = gdnIn();
     var mine = function (x) { return gdnKey(x) === key; };
     var tri = function (o, a, b, c, y, id) { o.push(a[0], y, a[1], 0, 1, 0, id, b[0], y, b[1], 0, 1, 0, id, c[0], y, c[1], 0, 1, 0, id); };
+    var blob = function (cx, cy, cz, rx, ry, rz, id, nu, nv) {   // (a rounded mound, its normals smooth: a shrub, a flower)
+      foot.push([cx, cz, max(rx, rz)]); nu = nu || 10; nv = nv || 6;
+      var P = function (i, j) { var th = PI * j / nv, ph = 2 * PI * i / nu, sx = Math.sin(th) * Math.cos(ph), sy = Math.cos(th), sz = Math.sin(th) * Math.sin(ph), nx = sx / rx, ny = sy / ry, nz = sz / rz, nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; return [cx + rx * sx, cy + ry * sy, cz + rz * sz, nx / nl, ny / nl, nz / nl]; };
+      for (var i = 0; i < nu; i += 1) { for (var j = 0; j < nv; j += 1) { var a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), d = P(i, j + 1); [a, b, c, a, c, d].forEach(function (q) { Pl.push(q[0], q[1], q[2], q[3], q[4], q[5], id); }); } }
+    };
     var quad = function (o, a, b, c, d, y, id) { tri(o, a, b, c, y, id); tri(o, a, c, d, y, id); flats.push([a, b, c, d]); };
     var box = function (cx, cy, cz, sx, sy, sz, id, yaw) {   // (a box into the plants' mesh, turned about its upright)
       foot.push([cx, cz, max(sx, sz) / 2]);
@@ -3455,13 +3502,13 @@
         if (!mine(x)) { return; }
         for (var k = 0; k < 8; k += 1) { var a0 = 2 * PI * k / 8, a1 = 2 * PI * (k + 1) / 8; if (k === 1) { continue; }   // (a lily pad's notch)
           tri(S, [x, z], [x + 0.42 * Math.cos(a0), z + 0.42 * Math.sin(a0)], [x + 0.42 * Math.cos(a1), z + 0.42 * Math.sin(a1)], 0.014, GP.PAD); }
-        var q = ((i % 4) + 4) % 4; if (q % 2) { box(x + 0.1, 0.07, z + 0.05, 0.16, 0.1, 0.16, q === 1 ? GP.PINK : GP.WHITE, 0.4); }   // (every other pad by its place, pink and white by turns, both sides alike)
+        var q = ((i % 4) + 4) % 4; if (q % 2) { blob(x + 0.1, 0.07, z + 0.05, 0.11, 0.08, 0.11, q === 1 ? GP.PINK : GP.WHITE, 6, 4); }   // (every other pad by its place, pink and white by turns, both sides alike)
       }, row[1]);
     });
     // the moss bank's clipped shrubs, every SHRUB metres, each the same: a low round mound and its crown
     along((GB.MOSS[0] + GB.MOSS[1]) / 2, GB.SHRUB, function (x, z) {
       if (!mine(x)) { return; }
-      box(x, 0.3, z, 1.5, 0.6, 1.5, GP.SHRUB, PI / 4); box(x, 0.3, z, 1.5, 0.6, 1.5, GP.SHRUB, 0); box(x, 0.72, z, 0.95, 0.42, 0.95, GP.SHRUB2, PI / 8);
+      blob(x, 0.4, z, 0.85, 0.5, 0.85, GP.SHRUB); blob(x + 0.08, 0.8, z - 0.05, 0.55, 0.38, 0.55, GP.SHRUB2);
     });
     var up = function (a) { return a.length ? upload(a) : null; };
     return { surf: up(S), water: up(Wt), plant: up(Pl), foot: foot, flats: flats };   // (foot: each box's middle and half reach; flats: each flat's corners; for the tests)
@@ -3517,9 +3564,9 @@
     var I = T(0, 0, 0), ch = [];
     keys.forEach(function (q) { if (!GDN[q.k]) { if (made) { return; } made = 1; GDN[q.k] = gdnBuild(q.k); } ch.push({ g: GDN[q.k], near: q.d < GDN_NEAR }); });   // (the nearest first, one new a frame: no hitch)
     // (lit as for an evening, quietly: in the match's view it lies behind Mr Plan, and the pearls are seen against it)
-    paint(MAT.GARDEN, null, true); ch.forEach(function (c) { if (c.g.surf) { drawSolid(c.g.surf, I, null, GP.pal, 0.4 * gv); } });
-    paint(MAT.WATER, null, true); ch.forEach(function (c) { if (c.g.water) { drawSolid(c.g.water, I, null, GP.pal, 0.55 * gv); } });
-    paint(MAT.PLANT, null, false, RIM.none, 1); if (gv > 0.98) { ch.forEach(function (c) { if (c.near && c.g.plant) { drawSolid(c.g.plant, I, null, GP.pal, 0.6); } }); }   // (the shrubs and flowers, lit by the key light too, would not fade: gone as the fade begins, back once it is done)
+    paint(MAT.GARDEN, null, true); ch.forEach(function (c) { if (c.g.surf) { drawSolid(c.g.surf, I, null, GP.pal, gv); } });   // (its light its own, in the shader: uEmit how much of it there is)
+    paint(MAT.WATER, null, true); ch.forEach(function (c) { if (c.g.water) { drawSolid(c.g.water, I, null, GP.pal, gv); } });
+    paint(MAT.PLANT, null, false, RIM.none, 1); if (gv > 0.98) { ch.forEach(function (c) { if (c.near && c.g.plant) { drawSolid(c.g.plant, I, null, GP.pal, 1); } }); }   // (the shrubs and flowers, lit by the key light too, would not fade: gone as the fade begins, back once it is done)
   }
   // the track's mesh, for the number of courts (and again after a lost GL context): the centre line the lap's way, across
   // it TRK.D's strips from the inner edge out, its bowl and berm; kerbs striped red and white round the bends, a white
@@ -3793,7 +3840,7 @@
     gl.uniformMatrix4fv(SU.uVP, false, cur.vp); gl.uniform3fv(SU.uEye, e); gl.uniform3fv(SU.uFog, SKY.gnd);
     // the athletes' key held to the view, from over the viewer's left shoulder, as his head's rig is (pearl.js, uRig)
     gl.uniform3fv(SU.uKeyV, norm(add(add(sc(r, -0.5), sc(u, 0.72)), sc(f, -0.5)))); gl.uniform1f(SU.uKMax, courts.length - 1);
-    gl.uniform4f(SU.uGdn, TRK.XL, trkXR(), gdnIn(), gdnZ()); gl.uniform1f(SU.uGdnOn, GINV.u > 0 ? 1 : 0);   // (the garden flagged only while its look is on)
+    gl.uniform1f(SU.uT, gt % (20 * PI)); gl.uniform4f(SU.uGdn, TRK.XL, trkXR(), gdnIn(), gdnZ()); gl.uniform1f(SU.uGdnOn, GINV.u > 0 ? 1 : 0);   // (the garden flagged only while its look is on)
     cur.sun = norm(add(add(sc(r, 0.45), sc(u, 0.8)), sc(f, -0.4))); gl.uniform3fv(SU.uSunG, cur.sun); gl.uniform1f(SU.uGold, 0);
     drawCourts(); drawShadows(shadows); drawRide();
     // the athletes (at the wheel, his head alone)
