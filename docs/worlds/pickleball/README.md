@@ -266,6 +266,19 @@ the wheel (`pb_go.js`). The strip shows the last ten courts, so those are the on
   (`pb_measure.js`, their light over their ground) 11% (phone) and 19% (desk) fainter than before the garden, even dimmed
   to a third still 6% and 12%; without it in play, 7% and 4% clearer than before it (`pb_garden.js`: nothing of it over
   a court's block, a pole, the track or the staircase).
+- *The garden in atoms* (the artist, 5 Nov 2026, with two pictures, a pastel collage of iridescent colour and fine
+  woven texture and the album cover of a holographic Mr Pearl at sunset: "Have the garden area graphics appear more
+  realistic like these two images while maintains a very fine grain ASCII graphic like atoms"): the garden is lit as at
+  the end of a day (a low warm sun, the sky's cool from above, the floodlights' pools), its gravel and moss speckled
+  stone by stone, a holographic sheen over it that turns with the angle it is seen at (a thin film's colours, as on
+  Mr Pearl), its water rippling and holding a sunset's sky with the sun's glints in it, its shrubs and flowers rounded
+  and smooth. Then, where the garden is drawn, its characters are atoms: characters three points by five, a point apart
+  (four by six of the screen's own points each, the same size on every screen), `. : - + * o # @` by how much light,
+  each the colour of the picture under it, with a soft glow of the picture round them and a fine fixed grain. Off the
+  garden they are lit on a dark of their own colour; in it (its inverse, below) dark ink in a pale ground of that colour,
+  a fine weave (`pb_atoms.js`: the grid of characters there, lit against their gaps off the garden and dark in a pale
+  ground in it; many colours; the court beside it as before). Mr Pearl, the coupe and the rest stay in their own
+  characters.
 - *The garden's inverse* (the artist, 4 Nov 2026: "When you walk onto the garden area with Mr. Pearl or driving through
   it in the coupe, I want the aesthetic of everything that falls visually within that region, defining the garden, to
   be the opposite in presence as far as brightness [and] detail to the current ASCII aesthetic ... but just in the
