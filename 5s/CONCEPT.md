@@ -85,6 +85,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   the video: a screen recording of the Motion Lab playing Echo in its depth style at half a second, a favourite: five
   copies of the mark step back up and to the right, arriving back to front one a beat, the front one lands solid and
   the four behind slide forward into it)
+- "Get rid of the first second animation of the logo, I just want the echo animation for it. Reference this original
+  animation, I liked how the 16 items were arranged and then consolidated into groups. I want that to happen but to the
+  different logo layers that form its blocked text effect." (the video: the first intro, sixteen pictures coming out of
+  the stars one by one round the middle, then gathering into three groups by likeness, before the logo forms)
 
 ## The purpose (said after, the same day; it frames everything below)
 
