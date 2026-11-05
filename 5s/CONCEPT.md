@@ -59,6 +59,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Get rid of all straight lines in the duh intro animation" (the perspective lines, the guide lines and the hologram's
   scan lines went; the sheen, the turning-solid edge, the projector's light and the dust's paths became curves; the
   letterforms, their block and the hand's two stars stay as the shapes they are)
+- "Apply the changes you made to the name duh to the logo" (asked which changes, the artist chose "Look and motion": the
+  hand gets DUH's cartoon look and its block layers, and rises from the bottom edge as a hologram and lands like a rocket,
+  instead of dust, water and earth)
+- "Have the puffs of smoke coming off the name duh after it lands be more white and cloud-like"
 
 ## The purpose (said after, the same day; it frames everything below)
 
