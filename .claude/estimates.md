@@ -13,10 +13,10 @@ to get more accurate. Read this before giving one; add a row when the work is do
   | --- | --- |
   | build one take | 35-66 min |
   | judge (all takes) | 9-35 min |
-  | finish (grafts, video, sound) | 32-55 min |
+  | finish (grafts, video, sound) | 22-55 min |
   | check | 20-34 min |
-  | fix round (only if a check blocks) | 16-26 min |
-  | my own review and delivery afterwards | 15-30 min |
+  | fix round (only if a check blocks) | 16-28 min |
+  | my own review and delivery afterwards | 8-30 min |
 
 - So, for the whole job, including my review:
   - 3 takes, judged, finished, checked, maybe fixed: 3.5-4.5 h (measured 3.2 and 3.35 h before my review);
@@ -38,4 +38,4 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 5 Nov | DUH intro: sixteen layers (3 takes) | 1.5-2 h | 3.2 h | 1.6-2x too short: the third take waited for a free slot, the slowest take took 66 min, and a fix round ran |
 | 5 Nov | DUH intro sound: wind and leaf, a preview on the current video (done by me, no workflow) | 30-45 min | 21 min | a little faster than said: one generator, two endings |
 | 5 Nov | DUH intro sound: rework of that preview (keep the logo's sounds), by me | 15-20 min | about 5 min | too long: reusing a finished generator is quick; say 5-10 min for a change like this |
-| 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h | (fill in) | the first figure ignored the 2-at-a-time limit |
+| 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.1 h (20:45-23:52 UTC, ready 6:52 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |
