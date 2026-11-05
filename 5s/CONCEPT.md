@@ -91,6 +91,7 @@ Then, of the crystal-hand intro (4 Nov 2026):
   the stars one by one round the middle, then gathering into three groups by likeness, before the logo forms)
 - "I want a more intentional, initial organization of the 16 layers" (of the intro just made: the logo's sixteen block
   layers coming out of the stars into a loose ring before they group)
+- "Something to do with a golden ratio" (for that first organization of the sixteen layers)
 
 ## The purpose (said after, the same day; it frames everything below)
 
