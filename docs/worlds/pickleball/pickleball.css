@@ -36,10 +36,16 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 #super.nudge { box-shadow: 0 0 0 3px rgba(243, 201, 139, 0.45); }
 body:not([data-phase]) #super, body[data-phase="walk"] #super { display: none; }
 /* the courts' numbers, a button over each pearl the HUD draws (the artist, 5 Nov 2026: "I want to be able to click on any
-   court number and teleport there"): clear, the pearl seen through it; between matches only */
-#courts { position: fixed; inset: 0; pointer-events: none; }
-#courts button { pointer-events: auto; padding: 0; border: 0; border-radius: 6px; background: transparent; color: transparent;
-                 font-size: 1px; letter-spacing: 0; overflow: hidden; }
+   court number and teleport there"): clear, the pearl seen through it; between matches only. A row in a window of five,
+   scrolled sideways (the same day: "Only 5 levels ... visible ... at a time. Make sure I am able to scroll left and
+   right"), coming to rest on whole pearls, no scrollbar; a swipe either way taken by the page (one up or down, nothing to
+   scroll, still no tap); the script sets its place and size */
+#courts { position: fixed; left: 0; top: 0; width: 0; height: 0; display: flex; overflow-x: auto; overflow-y: hidden;
+          scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-x pan-y; }
+#courts::-webkit-scrollbar { display: none; }
+#courts button { position: static; flex: 0 0 auto; height: 100%; scroll-snap-align: start; touch-action: pan-x pan-y; padding: 0;
+                 border: 0; border-radius: 6px; background: transparent; color: transparent; font-size: 1px; letter-spacing: 0;
+                 overflow: hidden; }
 #courts button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 body:not([data-phase="walk"]) #courts { visibility: hidden; }
 /* the walk-through's Skip (the artist, 4 Nov 2026: "Add a skip button at the very beginning to skip the tutorial"): top

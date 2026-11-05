@@ -115,8 +115,15 @@ the newest first, as many as fit with the rest of the save under the 500 KiB You
 2026: "Cap it then at 500 KiB"; some three to nine matches, by their length); read back, each
 plays again within a millimetre of how it played before (`pb_replay.js` reloads and compares). One won before this
 version, or one that will not read, rallies as before. The
-score is the number of courts won; the HUD keeps the last ten as pearls (the artist, 29 Oct 2026: "I want the squares
-that indicate the game number to also be pearls instead of squares"): whole, lit and sheened while they play on by
+score is the number of courts won; the HUD shows them as pearls, **five at a time** (the artist, 5 Nov 2026: "Only 5
+levels represented by the Pearl circles should be visible in the top left corner at a time. Make sure I am able to
+scroll left and right through the levels that way I am still able to click on level 1 to teleport there if need be"):
+a row of every court in a window of five, scrolled sideways as any row is (a swipe, a wheel, a mouse's drag, Tab to a
+court's button), coming to rest on whole pearls; the pearl at an edge fades where more lie past it; the row keeps to
+the newest unless scrolled back, and to the newest in a match; a scroll never teleports, a tap on a pearl does
+(`pb_strip.js`: thirteen courts, back to court 1 by a swipe, the wheel and a mouse's drag, court 1 tapped, the keyboard,
+a match). Each a pearl (the artist, 29 Oct 2026: "I want the squares that indicate the game number to also be pearls
+instead of squares"): whole, lit and sheened while they play on by
 themselves, ringed in gold while he plays one, an outline with a glint while it waits; each with **his head's shine**
 (the artist, 29 Oct 2026: "Give the pearls indicating the game number a bit of shine like Mr Pearl's head and a subtle
 celebratory animation every time you are victorious"): lit as the covers light his head (pearl.js HEAD_FS), his median
@@ -142,7 +149,7 @@ teleport back: "I want to be able to click on any court number and teleport ther
 again, between matches (a tap, a click, or Enter or Space with its focus): the hologram blinks there, to the open
 court's side three steps from its gold circle (its match begins only when he steps on), or behind a won court's
 baseline to watch it play; in the coupe, the coupe goes with him, parked behind that court's run-off facing it, him at
-the wheel (`pb_go.js`). The strip shows the last ten courts, so those are the ones to tap.
+the wheel (`pb_go.js`). Every court has its pearl to tap; the row of five scrolls to the rest (above).
 - *The coupe* is parked on the road behind the baselines, left of court one, nose toward the courts: boxes, as
   everything here is, an eighties coupe's long bonnet, short boot and lip of a spoiler, no badge, its windows open (his
   head shows at the wheel), its lamps lit. Beside it, between matches, a button low on the right says Drive (F on a
