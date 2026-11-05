@@ -35,6 +35,13 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 /* (the walk-through's last step waits for it: a steady gold outline; the ripple round it is the HUD's, on the beat) */
 #super.nudge { box-shadow: 0 0 0 3px rgba(243, 201, 139, 0.45); }
 body:not([data-phase]) #super, body[data-phase="walk"] #super { display: none; }
+/* the courts' numbers, a button over each pearl the HUD draws (the artist, 5 Nov 2026: "I want to be able to click on any
+   court number and teleport there"): clear, the pearl seen through it; between matches only */
+#courts { position: fixed; inset: 0; pointer-events: none; }
+#courts button { pointer-events: auto; padding: 0; border: 0; border-radius: 6px; background: transparent; color: transparent;
+                 font-size: 1px; letter-spacing: 0; overflow: hidden; }
+#courts button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+body:not([data-phase="walk"]) #courts { visibility: hidden; }
 /* the walk-through's Skip (the artist, 4 Nov 2026: "Add a skip button at the very beginning to skip the tutorial"): top
    left under the courts' squares, plain (gold is the walk-through's "do this") */
 #skip { left: calc(12px + env(safe-area-inset-left)); top: calc(46px + env(safe-area-inset-top)); min-width: 88px; min-height: 48px; padding: 0 14px; white-space: nowrap; }

@@ -137,7 +137,12 @@ games. I want you to be able to climb the staircase with Mr Pearl and when you j
 Pearl to use his hat like a paraglider and be able to glide down anywhere below"). Five was night driving: the
 floodlights as a headlight's glare, and an unbranded orange coupe by court one, for the orange BMW on the cover of
 Nostalgia, Ultra (2011). The connection was Endless (2016), the spiral staircase built through it: here a step for
-each court won. The squares' numbers are numbers again (the teleport they were, from 28 Oct 2026, is gone).
+each court won. The squares' numbers were numbers only from then until 5 Nov 2026, when the artist asked for the
+teleport back: "I want to be able to click on any court number and teleport there". Each number's pearl is a button
+again, between matches (a tap, a click, or Enter or Space with its focus): the hologram blinks there, to the open
+court's side three steps from its gold circle (its match begins only when he steps on), or behind a won court's
+baseline to watch it play; in the coupe, the coupe goes with him, parked behind that court's run-off facing it, him at
+the wheel (`pb_go.js`). The strip shows the last ten courts, so those are the ones to tap.
 - *The coupe* is parked on the road behind the baselines, left of court one, nose toward the courts: boxes, as
   everything here is, an eighties coupe's long bonnet, short boot and lip of a spoiler, no badge, its windows open (his
   head shows at the wheel), its lamps lit. Beside it, between matches, a button low on the right says Drive (F on a

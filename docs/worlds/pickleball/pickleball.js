@@ -1264,6 +1264,7 @@
     planTakes: function (t, y) { return "Mr Plan takes it, " + t + " – " + y + ". Again from love: run to the gold circle to serve."; },
     won: function (k, y, t) { return "Court " + (k + 1) + " won, " + y + " – " + t + ". It plays on by itself and keeps winning. Court " + (k + 2) + " is open beside it, harder: step onto its gold circle to play."; },
     standin: function (k, y, t) { return "Your stand-in is playing court " + (k + 1) + ", " + y + " – " + t + ", and keeps winning."; },
+    go: function (k, up) { return "Go to court " + (k + 1) + (up ? ", won: watch it play" : ", the court to win: beside its gold circle"); },
     // the coupe, the stairs, his hat: [a finger, a desk]
     portal: { here: "The portal: through it, Holographic Mr Pearl.", soon: "The portal: a way through to another game, soon.", link: "Holographic Mr Pearl \u2197", linkSr: "Through the portal: Holographic Mr Pearl" },
     lap: { now: function (t) { return "LAP " + (t == null ? "-:--.--" : lapFmt(t * 1000)); },
@@ -1603,6 +1604,41 @@
     tipDone("court"); tip("serve");
     courtWhere();
   }
+  // A court's number tapped (the artist, 28 Oct 2026: "I want you to be able to click on the court number and it
+  // teleport you to that location, I don't want it to automatically put you in the serving position but right beside it
+  // so that you only have to take three steps to be in the Golden Circle"; taken out for the coupe on 29 Oct, back on
+  // 5 Nov 2026: "I want to be able to click on any court number and teleport there"): the hologram blinks there. The
+  // open court: beside its gold circle, three steps from it, its match begun only when he steps on (as anywhere); a won
+  // court: behind its baseline, to watch it play. In the coupe, the coupe goes with him, parked behind that court's
+  // run-off facing it, him at the wheel (a donut under way cut short). Between matches only.
+  function courtGo(k) {
+    var cv = courts[k]; if (!cv || court.m || TUT.on) { return; }
+    var from = [me.x, me.z], inCar = ride.mode === "car";
+    if (inCar) {
+      ride.dn = null; ride.dnQ = false;
+      var cc = courtAt(k); car.mode = "ground"; car.x = cc[0] + (cv.up ? 0 : 3.5); car.z = cc[2] + COURT.L + 6.2; car.yaw = 0; car.vh = 0; car.v = 0; car.yr = 0; car.si = 0; car.steer = 0; car.lk = 0; car.lkDir = 0; car.s = -1; car.vy = 0; ride.out = false;
+      carGround(1); me.x = car.x; me.z = car.z; view.yaw = 0; view.pitch = REST; view.s = null; view.e = null; if (asc) { asc.last = null; }
+    } else { courtPlace(k); }
+    fxBlink([from[0], 1.0, from[1]], [me.x, 1.0, me.z], "me");
+    if (TIPS.from) { TIPS.from = [me.x, me.z]; }   // (a jump is not a walk: the move tip stays until he moves)
+    court.on = -1;
+    if (cv.up) { court.told[k + "u"] = 1; say(STR.standin(k, cv.you, cv.them)); }
+    rideButton(); courtWhere();
+  }
+  // the numbers' buttons, over the pearls the HUD draws, made again only when the row changes
+  function courtButtons(n0, sz, gap, x0, y0) {
+    var box = $("courts"); if (!box) { return; }
+    var key = [n0, courts.length, sz.toFixed(1), x0.toFixed(1), y0.toFixed(1), courts.slice(n0).map(function (q) { return q.up ? 1 : 0; }).join("")].join(",");
+    if (box.dataset.key === key) { return; }
+    box.dataset.key = key; box.textContent = "";
+    courts.slice(n0).forEach(function (q, j) {
+      var b = document.createElement("button"), x = x0 + j * (sz + gap);
+      b.type = "button"; b.textContent = String(q.k + 1); b.setAttribute("aria-label", STR.go(q.k, q.up));
+      b.style.left = round(x - gap / 2) + "px"; b.style.top = round(y0 - 6) + "px"; b.style.width = round(sz + gap) + "px"; b.style.height = round(max(48, sz + 12)) + "px";
+      tapOn(b, function () { b.blur(); courtGo(q.k); });   // (blurred after any press, a key's too: Space and Enter after it are the game's)
+      box.appendChild(b);
+    });
+  }
   function courtPlace(k) {
     // (the first point's circle: serveSpot() with n = 0)
     var cv = courts[k], cc = courtAt(k), sp = [cc[0] + 0.9, cc[2] + COURT.L + 0.4], to = cv.up ? [cc[0], cc[2] + COURT.L + 3.0] : [sp[0] + 4.5, sp[1] + 1.5];
@@ -1618,7 +1654,7 @@
   function tapOn(el, f) {
     var go = awake(f);
     el.addEventListener("mousedown", function (e) { e.preventDefault(); });   // (a mouse press never focuses it: Space after a cancelled press is still the bar's)
-    el.addEventListener("pointerdown", function (e) { if (e.button === 0) { el.dataset.down = e.pointerId; } });
+    el.addEventListener("pointerdown", function (e) { if (!document.hasFocus()) { try { window.focus(); } catch (x) { /* fine */ } } if (e.button === 0) { el.dataset.down = e.pointerId; } });   // (embedded, as on YouTube: the keys come here after a press, as after one on the view)
     el.addEventListener("pointerleave", function () { delete el.dataset.down; });
     el.addEventListener("pointercancel", function () { delete el.dataset.down; });
     el.addEventListener("pointerup", function (e) { if (el.dataset.down === String(e.pointerId)) { delete el.dataset.down; go(e); } });
@@ -3243,7 +3279,7 @@
     canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
     window.addEventListener("keydown", awake(function (e) {
       var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      if ((k === " " || k === "Enter") && e.target && e.target.closest && e.target.closest("#super, #ride, #donut, #drift, #portal, #skip")) { return; }   // (a button focused: the key presses it)
+      if ((k === " " || k === "Enter") && e.target && e.target.closest && e.target.closest("#super, #ride, #donut, #drift, #portal, #skip, #courts")) { return; }   // (a button focused: the key presses it)
       if ("wasdteqf ".indexOf(k) >= 0 || k === "Enter" || k === "Shift" || k.indexOf("Arrow") === 0) { CUE.hand = "keys"; if (TUT.on && TUT.stop === "sup" && k !== "e" && k !== "q") { CUE.wrongT = CUE.rt; } }
       if (k === " " || k === "t" || k === "Enter") { if (!e.repeat) { input.fire = true; } e.preventDefault(); }   // (a key held is one tap)
       else if (k === "e" || k === "q") { superPress(); }
@@ -4373,6 +4409,7 @@
       c.restore();
       hudBox.pearls.push({ k: q.k, x: cx, y: cy, r: r * pop, up: !!q.up, on: !!on, cele: cu });
     });
+    courtButtons(n0, sz, gap, x0, y0);   // (each a button too, between matches: a tap goes there)
     hudBox.score = null; if (!sc) { HUD.score = null; }   // (a new match's 0 - 0 comes in without a flash)
     if (sc) {
       // (a point won lights its number a moment)
@@ -4468,7 +4505,7 @@
              step: function (a, sec) { for (var i = 0; i < round(sec * 60); i += 1) { gt += 1 / 60; athStep(a, 1 / 60, gt); } },
              meter: function () { var m = court.m; return !m ? null : m.phase === "plansuper" ? (m.psup.struck && !m.psup.tapped ? m.psup.uNow : null) : m.meterOn ? meterAt(m) : null; }, SERVE: SERVE, hud: function () { return hudBox; },
              serveSpot: function () { return court.m ? serveSpot() : null; },
-             tipsSeen: function () { return TIPS.seen; }, tut: function () { return TUT; }, state: function () { return stateOf(); }, cue: function () { return CUE; },
+             tipsSeen: function () { return TIPS.seen; }, courtGo: courtGo, tut: function () { return TUT; }, state: function () { return stateOf(); }, cue: function () { return CUE; },
              toScreen: function (p) { var vp = cur.vp, q = [0, 0, 0, 0]; for (var i = 0; i < 4; i += 1) { q[i] = vp[i] * p[0] + vp[4 + i] * p[1] + vp[8 + i] * p[2] + vp[12 + i]; } return q[3] > 0.05 ? [(q[0] / q[3] * 0.5 + 0.5) * canvas.clientWidth, (0.5 - q[1] / q[3] * 0.5) * canvas.clientHeight] : null; },
              newSuper: function () { if (court.m) { court.m.sup = { avail: true, armed: false }; superButton(); } },   // (a new game's, for the tests)
              // (the tests: run him to the serve's mark by the stick, as a player does, until the bar runs)
