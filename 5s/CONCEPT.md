@@ -63,6 +63,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   hand gets DUH's cartoon look and its block layers, and rises from the bottom edge as a hologram and lands like a rocket,
   instead of dust, water and earth)
 - "Have the puffs of smoke coming off the name duh after it lands be more white and cloud-like"
+- "Have the name duh font be less grunge looking and more like the Blond font on the cover of Frank Ocean’s album" (the
+  cover's "blond" is heavy, clean, tightly spaced lowercase; it is lettering made for the cover, not a font, so duh is
+  drawn new in that manner, in lowercase, with the same colours and block, and the hand follows in the same clean style)
 
 ## The purpose (said after, the same day; it frames everything below)
 
