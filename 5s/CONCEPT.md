@@ -97,6 +97,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Take out the horns with the intro and just use the sound that happens at the end. Have the horn section of the sound
   composition be the sound of a sweet wind blowing and the end sound is like a leaf blowing into your face" (the horns:
   the swelling chord of the intro's sound)
+- "When I say sound that happens at then end I am referring to the sound specifically in accordance with the logo and
+  on" (the sound from the moment the logo lands: the soft hit as the hand settles, duh's airy rise, the thumps as the
+  letters land, the clouds)
 
 ## The purpose (said after, the same day; it frames everything below)
 
