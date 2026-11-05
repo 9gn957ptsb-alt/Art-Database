@@ -56,7 +56,7 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   }, desk);
   // the numbers are not buttons now; the button hidden away from the coupe
   const r0 = await D(() => { const d = window.Pickleball.debug(), b2 = document.getElementById("ride"); return { courts: !!document.getElementById("courts"), go: "courtGo" in d, hidden: b2.hidden || getComputedStyle(b2).display === "none", won: d.won() }; });
-  check(!r0.courts && !r0.go, "the courts' numbers are not buttons, no teleport");
+  check(r0.courts && r0.go, "the courts' numbers are buttons again, a teleport each (the artist, 5 Nov 2026; pb_go.js tests them)");
   check(r0.hidden, "away from the coupe, no Drive button");
   // walk to the coupe's side: Drive
   const r1 = await D(() => {
