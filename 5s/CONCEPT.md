@@ -94,6 +94,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Something to do with a golden ratio" (for that first organization of the sixteen layers)
 - "The directions in which the 16 layers move to consolidate and come to form the identifiable logo should also be in
   the golden ratio form"
+- "Take out the horns with the intro and just use the sound that happens at the end. Have the horn section of the sound
+  composition be the sound of a sweet wind blowing and the end sound is like a leaf blowing into your face" (the horns:
+  the swelling chord of the intro's sound)
 
 ## The purpose (said after, the same day; it frames everything below)
 
