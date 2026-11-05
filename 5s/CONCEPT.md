@@ -56,6 +56,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   opening, orange-red rings, a green disc, a gold-and-blue shield, a brown ground of bubbles; and a 1990s cartoon film's
   logo, heavy hand-cut letters in yellow to lime green with grain and black outlines. That lettering is not a font and
   has no D, U or H, so DUH's letters are drawn new in its style)
+- "Get rid of all straight lines in the duh intro animation" (the perspective lines, the guide lines and the hologram's
+  scan lines went; the sheen, the turning-solid edge, the projector's light and the dust's paths became curves; the
+  letterforms, their block and the hand's two stars stay as the shapes they are)
 
 ## The purpose (said after, the same day; it frames everything below)
 
