@@ -21,7 +21,8 @@ to get more accurate. Read this before giving one; add a row when the work is do
 - So, for the whole job, including my review:
   - 3 takes, judged, finished, checked, maybe fixed: 3.5-4.5 h (measured 3.2 and 3.35 h before my review);
   - 2 takes: about 2-2.5 h (measured 1.9 h);
-  - a single finish-and-check: about 1 h.
+  - a single finish-and-check: about 1 h;
+  - a new sound made by me and put on an existing video: 20-30 min.
 - Add 20-30% when the brief is new or harder than the last one.
 - Give a range and the time it should be ready ("in about 4 to 5 hours"). When a phase ends or the scope changes,
   give the updated estimate.
@@ -35,4 +36,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 5 Nov | DUH intro: finish, sound, checks, fixes | about 2-2.4 h, stage by stage | 2.1 h | right |
 | 5 Nov | DUH intro: echo entrance (2 takes) | 1.5-2 h | 1.9 h | right, at the top of the range |
 | 5 Nov | DUH intro: sixteen layers (3 takes) | 1.5-2 h | 3.2 h | 1.6-2x too short: the third take waited for a free slot, the slowest take took 66 min, and a fix round ran |
+| 5 Nov | DUH intro sound: wind and leaf, a preview on the current video (done by me, no workflow) | 30-45 min | 21 min | a little faster than said: one generator, two endings |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h | (fill in) | the first figure ignored the 2-at-a-time limit |
