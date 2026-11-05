@@ -100,6 +100,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "When I say sound that happens at then end I am referring to the sound specifically in accordance with the logo and
   on" (the sound from the moment the logo lands: the soft hit as the hand settles, duh's airy rise, the thumps as the
   letters land, the clouds)
+- "Instead of having the blue portion of the logo appear separate from the smaller warm color logos, all of the colors
+  should manifest from the smaller logos when they come to center. I also want you to inverse all of the colors should
+  manifest" (of the golden-spiral intro, with two frames at 2 s: the echo's blue hand in the middle, apart from the
+  four small warm clusters of layers)
 
 ## The purpose (said after, the same day; it frames everything below)
 
