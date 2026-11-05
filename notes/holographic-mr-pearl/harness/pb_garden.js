@@ -98,6 +98,23 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
   check(pt.box[0] >= 8 && pt.box[0] + pt.box[2] <= pt.W - 8 && pt.box[3] >= 44 && /portal/i.test(pt.say), `the way through inside the screen, a finger's height ${JSON.stringify(pt.box)}, and said ("${pt.say}")`);
   check(pt.enter, "the way through by the keyboard: focused, Enter opens it");
   check(!pt.after && !pt.match, "left behind: gone; in a match: gone");
+
+  // hidden (5 Nov 2026: "Have the portal be hard to find and barely noticeable"): one of the moss bank's shrubs, in its
+  // row's place (the row's shrubs 3 m on either side, none in its own), low, off the line between the bends' middles;
+  // from his start and from 20 m off, turned to it, not a pixel of it apart from an ordinary shrub of its row
+  const hd = await p.evaluate(() => {
+    const d = window.Pickleball.debug(), P = d.PORTAL, cv = document.getElementById("view"), g = cv.getContext("webgl2"), o = {};
+    const ft = d.gdnChunk("L").foot.filter((f) => f[2] > 0.8).map((f) => Math.hypot(f[0] - P.c[0], f[1] - P.c[2])).sort((x, y) => x - y);
+    o.pos = { z: +P.c[2].toFixed(2), top: +(P.c[1] + P.r).toFixed(2), garden: d.gdnAt(P.c[0], P.c[2]), own: +ft[0].toFixed(2), next: +ft[1].toFixed(2) };
+    const read = () => { for (let i = 0; i < 5; i++) { d.draw(); } const w = g.drawingBufferWidth, h = g.drawingBufferHeight, px = new Uint8Array(w * h * 4); g.readPixels(0, 0, w, h, g.RGBA, g.UNSIGNED_BYTE, px); return px; };
+    const diff = () => { const a = read(), dm = P.DIM; P.DIM = 1; const n = read(); P.DIM = dm; let k = 0; for (let i = 0; i < a.length; i += 4) { if (a[i] !== n[i] || a[i + 1] !== n[i + 1] || a[i + 2] !== n[i + 2]) { k++; } } return k; };
+    d.pause(true); d.me.x = 2.2; d.me.z = d.COURT.L + 3; d.run(0.6); o.start = diff();
+    const ux = -15 - P.c[0], uz = -P.c[2], ul = Math.hypot(ux, uz), e = [P.c[0] + ux / ul * 20, 1.7, P.c[2] + uz / ul * 20];
+    d.me.x = e[0] + ux / ul; d.me.z = e[2] + uz / ul; d.run(0.5); d.camAt(e, Math.atan2(P.c[0] - e[0], -(P.c[2] - e[2])), Math.atan2(P.c[1] - 1.7, 20)); o.far = diff(); d.camAt(null);
+    return o;
+  });
+  check(Math.abs(hd.pos.z) > 8 && hd.pos.top < 1.5 && hd.pos.garden && hd.pos.own > 2.5 && hd.pos.next < 3.5, `hidden: a shrub of the moss bank's row in its place, low and off the middle line ${JSON.stringify(hd.pos)}`);
+  check(hd.start === 0 && hd.far === 0, `not a pixel apart from an ordinary shrub, from his start (${hd.start}) or from 20 m off turned to it (${hd.far})`);
   check(errs.length === 0, "no errors: " + errs.slice(0, 3).join(" | "));
   await b.close();
   console.log(bad ? bad + " FAILED" : "all ok");
