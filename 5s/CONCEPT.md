@@ -66,6 +66,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Have the name duh font be less grunge looking and more like the Blond font on the cover of Frank Ocean’s album" (the
   cover's "blond" is heavy, clean, tightly spaced lowercase; it is lettering made for the cover, not a font, so duh is
   drawn new in that manner, in lowercase, with the same colours and block, and the hand follows in the same clean style)
+- "Have the logo in duh intro unfold like a tesseract according to the golden ratio. It should come in as if you are
+  visually seeing a radio transmission of the logo beaming forward like it’s a hologram. Add a deep purple as one of the
+  colors. Have a bit more color contrast overall"
 
 ## The purpose (said after, the same day; it frames everything below)
 
