@@ -828,7 +828,7 @@
       "}"].join("\n"));
     A.setP = compile(A.vs, [head,
       "uniform sampler2D uScene; uniform sampler2D uCells; uniform sampler2D uAtlas;",
-      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow, uBg, uInv; uniform int uAtom;",
+      "uniform vec2 uRes; uniform ivec2 uCell; uniform int uTop; uniform ivec2 uAtl[4]; uniform float uLit, uGlow, uBg, uInv, uInvA; uniform int uAtom;",
       // the garden's atoms (the artist, 5 Nov 2026: "a very fine grain ASCII graphic like atoms"): characters three pixels
       // by five, a pixel apart (uAtom device pixels to each), by how much light: . : - + * o # @
       "const int ATOM[9] = int[9](0, 8192, 1040, 448, 1488, 2728, 3960, 24445, 29679);",
@@ -856,7 +856,7 @@
       "    int lv = clamp(int((L * 1.7 + (gr - 0.5) * 0.18) * 8.0), 0, 8), bit = ag.x < 3 && ag.y >= 1 ? (ATOM[lv] >> ((5 - ag.y) * 3 + ag.x)) & 1 : 0;",
       "    vec3 oN = mix(col * 0.3 + glow * 0.22, min(vec3(1.0), col * 1.3 + glow * 0.25 + 0.03), float(bit));",
       "    float mc = max(max(col.r, col.g), col.b); vec3 hu = mc > 0.02 ? col / mc : vec3(1.0, 0.96, 0.88);",
-      "    vec3 paper = mix(hu, vec3(1.0, 0.98, 0.93), 0.45) * 0.94 + glow * 0.1, oI = mix(paper, paper * 0.4, float(bit));",   // (its paper from its hue, as the cells' inverse is)
+      "    vec3 paper = mix(col * 0.3 + glow * 0.22, mix(hu, vec3(1.0, 0.98, 0.93), 0.45) * 0.94 + glow * 0.1, uInvA), oI = mix(paper, paper * 0.4, float(bit));",   // (its paper from its hue, as the cells' inverse is)
       "    o = vec4(mix(oN, oI, uInv) * (0.96 + 0.08 * hsh(gl_FragCoord.xy)), 1.0); return;",
       "  }",
       "  if (kd == K_SURF || kd == K_LINE || kd == K_MOAT) {",
@@ -881,13 +881,13 @@
       "    float mc = max(max(cl.r, cl.g), cl.b); vec3 hu = mc > 0.02 ? cl / mc : vec3(1.0, 0.96, 0.88);",
       "    float lv = max(max(oN.r, oN.g), oN.b);",
       "    vec3 paper = mix(hu, vec3(1.0, 0.98, 0.93), 0.45) * mix(0.96, 0.74, clamp(lv * 1.6, 0.0, 1.0)), dark = hu * 0.1;",
-      "    o = vec4(mix(oN, mix(paper, dark, clamp(ik + 0.35 * gw * ik, 0.0, 1.0)), inv), 1.0); return;",
+      "    o = vec4(mix(oN, mix(mix(bg, paper, uInvA), dark, clamp(ik + 0.35 * gw * ik, 0.0, 1.0)), inv), 1.0); return;",   // (its paper lit uInvA of the way, a glow; its ink as dark)
       "  }",
       "  o = vec4(oN, 1.0);",
       "}"].join("\n"));
     A.CU = {}; A.SU = {};
     ["uScene", "uDepth", "uGV", "uPrev", "uHold", "uGdOn", "uRes", "uCell", "uLev", "uTop", "uFloor", "uBalls", "uBall", "uNear", "uFar", "uRule", "uExpo", "uGam", "uEdge", "uEdgeMin", "uFocal", "uAsp", "uEye", "uF", "uR", "uU", "uK"].forEach(function (k) { A.CU[k] = gl.getUniformLocation(A.cellP, k); });
-    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow", "uBg", "uInv", "uAtom"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
+    ["uScene", "uCells", "uAtlas", "uRes", "uCell", "uTop", "uAtl", "uLit", "uGlow", "uBg", "uInv", "uInvA", "uAtom"].forEach(function (k) { A.SU[k] = gl.getUniformLocation(A.setP, k); });
   }
   // the grid for this screen: the type's floor and ceiling (CSS px, a phone's and a desk's), the cell its advance by
   // its bar, in device pixels; an octave under the floor for far athletes where that is still 12 device pixels
@@ -978,7 +978,7 @@
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform2f(SU.uRes, w, h); gl.uniform2i(SU.uCell, G.cw, G.ch); gl.uniform1i(SU.uTop, G.top);
     var at = new Int32Array(8); A.rows.forEach(function (q, i) { at[i * 2] = q.y; at[i * 2 + 1] = q.cols; }); gl.uniform2iv(SU.uAtl, at);
-    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow); gl.uniform1f(SU.uBg, ASC.bg); gl.uniform1f(SU.uInv, smooth(GINV.u)); gl.uniform1i(SU.uAtom, max(1, round(dpr)));   // (the atoms the same size on every screen: 4 by 6 of its points)
+    gl.uniform1f(SU.uLit, ASC.lit); gl.uniform1f(SU.uGlow, md.glow != null ? md.glow : ASC.glow); gl.uniform1f(SU.uBg, ASC.bg); gl.uniform1f(SU.uInv, smooth(GINV.u)); gl.uniform1f(SU.uInvA, GINV.AMT); gl.uniform1i(SU.uAtom, max(1, round(dpr)));   // (the atoms the same size on every screen: 4 by 6 of its points)
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     A.turn = 1 - A.turn;
   }
@@ -2742,7 +2742,7 @@
   // the Donut button, a tap or Space in the coupe on the ground: at speed a stop first, braking as for the way out, then it
   function donutPress() { if (ride.mode === "car" && !ride.dn && car.mode === "ground" && !ride.out && !court.m && !TUT.on) { ride.dnQ = true; rideButton(); } }
   // the garden's inverse look: on while he (on foot, or in the coupe) is in the garden, faded in and out
-  var GINV = { on: false, u: 0, FADE: 0.35, vis: 1 };
+  var GINV = { on: false, u: 0, FADE: 0.35, vis: 1, AMT: 0.7 };   // (AMT: how far its paper lightens: the garden lit a third less than the full inverse, a glow, its ink as dark; the artist, 5 Nov 2026)
   function ginvStep(dt) {
     var px = ride.mode === "car" ? car.x : me.x, pz = ride.mode === "car" ? car.z : me.z; GINV.on = !!courts && gdnAt(px, pz); GINV.u = clampV(GINV.u + (GINV.on ? dt : -dt) / GINV.FADE, 0, 1);
     // (the garden recedes while he plays a match: behind Mr Plan it is what the pearls are seen against, and with it there
