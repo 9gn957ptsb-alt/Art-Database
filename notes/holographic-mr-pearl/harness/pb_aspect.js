@@ -62,7 +62,7 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
     }
     if (where !== "plansuper") { await p.evaluate(() => window.Pickleball.debug().pause(false)); }
   }
-  // ten squares, twenty courts won: in a match on the phones where a row of 28 px squares reached the Super (430 wide)
+  // five squares (since 5 Nov 2026: five at a time, the rest a scroll away), twenty courts won: in a match on the phones where a row of 28 px squares reached the Super (430 wide)
   // and the narrowest (9:32), the squares short of the Super and the words under it; between matches the words under
   // the squares, on every phone
   await p.evaluate(() => { localStorage.setItem("pickleball-save-v1", JSON.stringify({ v: 2, won: 20, tut: 1 })); });
@@ -81,7 +81,7 @@ const check = (ok, what) => { if (!ok) { bad.push(what); console.log("FAIL " + w
       });
       const tag = `${match ? "in a match" : "between matches"} ${w}x${h}`;
       // (between matches ten; in a match beside the Super as many as fit, each wide enough for its two digits)
-      check((match ? r.squares >= 1 && r.squares <= 10 && r.strip.h >= 20 : r.squares === 10) && r.strip.x + r.strip.w <= r.W, `${tag}: ${r.squares} squares of ${Math.round(r.strip.h)} px inside the screen ${JSON.stringify(r.strip)}`);
+      check((match ? r.squares >= 1 && r.squares <= 5 && r.strip.h >= 20 : r.squares === 5) && r.strip.x + r.strip.w <= r.W, `${tag}: ${r.squares} squares of ${Math.round(r.strip.h)} px inside the screen ${JSON.stringify(r.strip)}`);
       if (match) { check(!!r.sup && r.strip.x + r.strip.w <= r.sup.x && r.sayTop >= r.sup.bottom, `${tag}: the squares short of the Super, the words under it ${JSON.stringify(r)}`); }
       else { check(r.btnBottom > 0 && r.sayTop >= r.btnBottom, `${tag}: the words under the squares ${JSON.stringify(r)}`); }
       // (in a match its score always there, right of the squares, short of the Super (the artist, 29 Oct 2026); between, none)
