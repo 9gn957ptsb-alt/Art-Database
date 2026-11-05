@@ -6,6 +6,8 @@
 // and seams, the track or his starting place; off at the start, on as he walks onto it (faded in, steadily, within its
 // time), off as he leaves, on in the coupe driven through it; from one fixed view, with him in it the garden's ground
 // many times lighter than with him out of it, the courts' just as they were, and a still frame still. No errors.
+// Then (5 Nov 2026: "Diminish the amount the garden area inverses to a glow when occupying the area by 33%"): the
+// lightening two thirds of the full inverse's, measured against it from the same view.
 // node pb_inverse.js [port] [phone|desk]
 const { chromium } = require("playwright");
 const seed = require("./pb_seed");
@@ -72,13 +74,16 @@ let bad = 0; const check = (ok, what) => { console.log((ok ? "ok   " : "FAIL ") 
     };
     d.me.x = X - 4.5; d.me.z = C.L + 2.5; d.run(0.6); const out = read();
     d.me.x = X - 9; d.me.z = C.L + 11; d.run(0.6); const inn = read(), inn2 = read();   // (in the canal, off to the side of the view's line)
+    const amt = d.GINV.AMT; d.GINV.AMT = 1; const full = read(); d.GINV.AMT = amt;   // (the full inverse, for the measure)
     d.camAt(null); d.me.x = 2.2; d.me.z = C.L + 3; d.run(0.6);
-    return { out, inn, still: inn.sum === inn2.sum };
+    return { out, inn, full, amt, still: inn.sum === inn2.sum };
   });
   const r = (k) => lk.inn[k] / Math.max(1, lk.out[k]);
   check(lk.out.walk != null && r("walk") > 2.5 && r("water") > 2.5 && lk.inn.walk > 110, `from one view, him in the garden: its walk ${r("walk").toFixed(1)}x and its water ${r("water").toFixed(1)}x lighter (${JSON.stringify(lk.out)} -> ${JSON.stringify(lk.inn)})`);
   check(Math.abs(lk.inn.court - lk.out.court) < 6 && Math.abs(lk.inn.runoff - lk.out.runoff) < 6, `and the court and its run-off as they were (${lk.out.court} / ${lk.inn.court}, ${lk.out.runoff} / ${lk.inn.runoff})`);
   check(lk.still, "in the garden, a still frame still");
+  const part = (k) => (lk.inn[k] - lk.out[k]) / Math.max(1, lk.full[k] - lk.out[k]);
+  check(Math.abs(part("walk") - 0.67) < 0.04 && Math.abs(part("water") - 0.67) < 0.04, `a glow, a third less than the full inverse: the walk lightened ${(part("walk") * 100).toFixed(1)}% and the water ${(part("water") * 100).toFixed(1)}% as much (${lk.full.walk} / ${lk.full.water} full)`);
 
   check(errs.length === 0, "no errors: " + errs.slice(0, 3).join(" | "));
   await b.close();

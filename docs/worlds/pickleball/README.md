@@ -285,12 +285,14 @@ the wheel (`pb_go.js`). The strip shows the last ten courts, so those are the on
   garden area. Areas outside of that garden area remain in the same aesthetic as it currently is"): while he, on foot or
   in the coupe, is in the garden, everything seen standing in it (its ground, water and plants, the coupe, the
   staircase, him) is drawn in reverse video, the character terminal's own inverse: each cell's ground light in the
-  cell's own hue (the darker the cell was, the lighter), its character cut in dark ink, the same characters. The courts,
+  cell's own hue (the darker the cell was, the lighter), its character cut in dark ink, the same characters. Since
+  5 Nov 2026 a glow (the artist: "Diminish the amount the garden area inverses to a glow when occupying the area by
+  33%"): its paper lit 0.7 of the way (`GINV.AMT`), its ink as dark, so the garden lightens a third less. The courts,
   the track and the sky stay as they are, and so does all of it while he is off the garden; the change fades in and out
   over 0.35 s. The region is the ground inside the track's inner edge and outside the courts' block (their run-offs,
   seams and poles), the same in the game and in the shader that flags it (`pb_inverse.js`: the region holds every part
-  of the garden and none of the courts or the track; from one fixed view the walk and the water 5.6 times lighter with
-  him in it, the court and its run-off the same; a still frame still). He begins a game on the court's run-off behind
+  of the garden and none of the courts or the track; from one fixed view the walk and the water about 3 times lighter
+  with him in it, 67% of the full inverse's lightening, the court and its run-off the same; a still frame still). He begins a game on the court's run-off behind
   its baseline, out of the garden, and walks onto it.
 - *The portal* (the artist, 4 Nov 2026: "make an almost invisible tunnel, like the black hole in the movie interstellar
   and have it be a portal ... For now have the portal lead to the other holographic, Mr. Pearl artifact"): over the lily
