@@ -75,6 +75,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Implement all the golden ratio bullet points you suggested" (the hand arrives and unfolds in 5 ÷ 1.618 = 3.09 s and
   is still after; it opens out in steps 1.618 times larger; its arrival sends duh; duh lands within 1.18 s; the last
   0.73 s is completely still; every flicker stays under three a second)
+- "Implement all the suggested bullets" with two references, https://design.google/library/exploring-color-google-maps
+  and https://design.google/library/reimagining-google-fonts, and "Add the logo research to my notes" (the research is
+  kept in full in LOGO-RESEARCH.md, beside this file, with the two references)
 
 ## The purpose (said after, the same day; it frames everything below)
 
