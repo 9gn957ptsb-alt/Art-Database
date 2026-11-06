@@ -157,6 +157,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
   stars; a cratered moon curves under the word; the star is a white-hot sun in an orange glow; its light runs along the
   hand's edge like the crescent's rim; and the day, the blue kept before, comes in behind the pulse while the moon sinks
   away, so it still ends on the kept colours)
+- "Try new colors the aqua was horrible" (eight systems tried, in space and in daylight. Chosen: the picture's own
+  colours, which are sun-white, the original mauve, the sun's orange and the moon's slate, each layer at least 3:1 from its neighbour)
 
 ## The purpose (said after, the same day; it frames everything below)
 

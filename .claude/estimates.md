@@ -73,4 +73,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: one colour system (double complementary), the mauve moved down (by me) | (not given; 3-10 by the table) | about 5 min | |
 | 6 Nov | DUH intro: new colours besides the kept ones, four systems, the aqua one applied (by me) | 5-10 min | about 4 min | under the range |
 | 6 Nov | DUH intro: the space look from the artist's picture (black space, sun, moon, rim light, dawn), in two steps (by me) | 10-20 min | about 7 min (02:16-02:23 UTC) | under the range: four new effects on the existing machinery |
+| 6 Nov | DUH intro: new colours after the aqua, eight systems, the picture's colours applied (by me) | 3-10 min | about 3 min | at the bottom of the range |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |
