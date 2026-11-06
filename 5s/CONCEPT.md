@@ -183,6 +183,11 @@ Then, of the crystal-hand intro (4 Nov 2026):
   grand/epic sense and make the background shift twice as intense" (the colours went back to the ones before silver
   and slate. The turn is now 12 degrees, one long sweep on the smoothest ease, still at the start and still on
   arriving, and the stars open out a little as it goes, as if moving forward through space)
+- "I don't like that dark color adjacent to the orange color in the logo and name, the orange and the rest of the
+  color are fine" (the deep indigo is now the sun's pale gold, #ffd6a0, its inner glow, so the last two layers run
+  gold into orange like the sun. No colour lighter than near-black can make 3:1 with both the mauve and the orange;
+  the gold makes 4.2:1 with the mauve and 1.7:1 with the orange, the best of the four tried, and the dark line drawn
+  between the layers keeps them apart)
 
 ## The purpose (said after, the same day; it frames everything below)
 
