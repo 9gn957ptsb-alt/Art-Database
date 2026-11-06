@@ -255,6 +255,12 @@ Then, of the crystal-hand intro (4 Nov 2026):
   trail behind the sun. Each orbits it once, flat to us: out from under it, round its side, turning with the orbit so
   it passes over its top upside down, behind its glow, then flipping back upright as it comes down the other side, and
   on into its place in the stack under the hand)
+- "The pink still doesn't work as the second color in the layering, it doesn't make the first layer look three
+  dimensional like a block effect. I need the right color that will make that first layer really look like a block
+  effect that is in Harmony with the rest of the colors as well" (a block's side is its face's own colour in shadow:
+  the layer under the ivory face is now a warm caramel, #ac7548, the face's sand deepened and warmed, so the face reads
+  as a solid block, and it leads into the gold and the orange below. Tried against it: the gold-to-orange step taken
+  from the ivory (too light), a cooler caramel (greyed by the sky in its far edge), a bronze (too heavy), a tan)
 
 ## The purpose (said after, the same day; it frames everything below)
 
