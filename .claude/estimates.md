@@ -14,7 +14,7 @@ to get more accurate. Read this before giving one; add a row when the work is do
   | a colour study (several colourways rendered side by side) and applying one | 3-10 min |
   | a change to my sound generator, on a video | 3-8 min |
   | a new behaviour in the animation (the echo grown from the layers, the negative) | 2-10 min |
-  | a new arrangement or shape for the sixteen | 10-20 min |
+  | a new arrangement or shape for the sixteen | 2-15 min (the tesseract took 8, the card deck 2) |
   | a brand-new sound from scratch | 15-25 min |
 
 - Count the agents and how many run at once. Workflow agents run at most `nproc - 2` at a time (this container has
@@ -58,4 +58,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: study of six iconic main colours, the orange applied (by me) | 5-10 min | about 2 min | in range, at its low end |
 | 6 Nov | DUH intro: the seven colours, orange on top (by me) | (not given: asked a question first) | about 2 min | |
 | 6 Nov | DUH intro: purple in place of the pink (by me) | (not given) | about 1 min | |
+| 6 Nov | DUH intro: a new opening, the card deck flourish (by me) | 10-20 min | about 2 min | under the range: a new arrangement on the existing machinery is 2-10 min |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |
