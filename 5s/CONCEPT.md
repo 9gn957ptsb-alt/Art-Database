@@ -133,6 +133,7 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "https://design.google/library/exploring-color-google-maps / Use this link to figure out the right colors, I feel like
   they're close but still not quite right" (now: every colour on a ladder of tones as in Google Maps' system, a Grey 50
   ground, the mark all at the 600 step, a Grey 900 ink, soft tints for the pulse and the hologram)
+- "The background is white..." (now the map's deepest water blue, Blue 800: a deep sky)
 
 ## The purpose (said after, the same day; it frames everything below)
 
