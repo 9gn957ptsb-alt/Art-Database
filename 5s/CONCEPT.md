@@ -123,6 +123,7 @@ Then, of the crystal-hand intro (4 Nov 2026):
   (now a deck of cards: dropped onto one pile, fanned into an arc, a ripple across it, dealt into four piles)
 - "Put the star in the bottom left corner of the logo on the top of the raised finger of the logo and keep a highlight
   glimmer along the edge shape of the logo in the stars current position"
+- "Have the star be bigger to in proportion to the rest"
 
 ## The purpose (said after, the same day; it frames everything below)
 
