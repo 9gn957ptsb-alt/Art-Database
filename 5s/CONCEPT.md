@@ -212,6 +212,11 @@ Then, of the crystal-hand intro (4 Nov 2026):
   before" (sent with a picture of the deep ivory layer marked in red. Under the face, the ivory, the gold and the
   orange are each a third of the block's depth again, evenly spaced; the joined ivory's two parts share its third, so
   the sixteen pieces still come in as before)
+- "Have the moon and earth be a bit higher in the frame, its highest point of its edge should land somewhere that has
+  something to do with the golden ratio. Raise the name and logo to account for this change" (the edge now crests on
+  the golden section of the frame, 720 / phi = 445 from the top, so the sky above is phi times the ground below, 103
+  points higher than before. The hand and duh are raised by the same 103 and keep their place on it; the sun, its
+  turn, its pulse and the clouds move with them)
 
 ## The purpose (said after, the same day; it frames everything below)
 
