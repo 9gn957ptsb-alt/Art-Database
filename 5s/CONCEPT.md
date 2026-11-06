@@ -119,6 +119,7 @@ Then, of the crystal-hand intro (4 Nov 2026):
   red, pink, lime, green, yellow; asked which way, the artist chose: an orange face, its 4 layers below in red, pink,
   yellow and blue, and lime and green for the curved pulse and duh's rising hologram)
 - "Use another color instead of the pink" (now royal purple)
+- "Find another more interesting shape and animation sequence for the beginning before the logo goes to the center"
 
 ## The purpose (said after, the same day; it frames everything below)
 
