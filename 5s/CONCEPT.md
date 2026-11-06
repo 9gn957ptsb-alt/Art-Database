@@ -118,6 +118,7 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Use those 7 colors for all the colors with the orange on top" (the seven main colours of the study: orange, blue,
   red, pink, lime, green, yellow; asked which way, the artist chose: an orange face, its 4 layers below in red, pink,
   yellow and blue, and lime and green for the curved pulse and duh's rising hologram)
+- "Use another color instead of the pink" (now royal purple)
 
 ## The purpose (said after, the same day; it frames everything below)
 

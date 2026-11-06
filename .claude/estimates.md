@@ -57,4 +57,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: halos off, colour study of five colourways, the chosen one applied (by me) | 30-45 min | about 3 min | 10-15x too long; the artist: "It shouldn't take you 30-45 min to remove the green halo". The halo alone is about 1 min. Hence the direct-work table above |
 | 6 Nov | DUH intro: study of six iconic main colours, the orange applied (by me) | 5-10 min | about 2 min | in range, at its low end |
 | 6 Nov | DUH intro: the seven colours, orange on top (by me) | (not given: asked a question first) | about 2 min | |
+| 6 Nov | DUH intro: purple in place of the pink (by me) | (not given) | about 1 min | |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |
