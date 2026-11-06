@@ -124,6 +124,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Put the star in the bottom left corner of the logo on the top of the raised finger of the logo and keep a highlight
   glimmer along the edge shape of the logo in the stars current position"
 - "Have the star be bigger to in proportion to the rest"
+- "Replace the part where they split into four groups with another interesting shape that corresponds to the golden
+  ratio and the beginning animation" (now a sunflower of cards round the hand: each a golden angle from the last)
 
 ## The purpose (said after, the same day; it frames everything below)
 
