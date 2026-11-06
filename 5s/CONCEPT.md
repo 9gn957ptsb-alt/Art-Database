@@ -275,6 +275,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   over the orange. They come out of the sun, the back one first, orbit it flipping like cards, and settle one in front
   of the other into the finished mark. The flat copies stacked under the hand are gone, so the same colours run
   through the whole piece)
+- "Make the sun in the ASCII aesthetic" (the sun is now drawn in Glyph Light's atoms on the moon's grid: its white-hot
+  disc as white @, its corona orange # o + - thinning to faint : . at its edge, each atom its colour, with a soft glow
+  in the gaps, added as light; upright and the same size on every screen, so it lights the atoms up as it rises)
 
 ## The purpose (said after, the same day; it frames everything below)
 
