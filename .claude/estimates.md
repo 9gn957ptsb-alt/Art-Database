@@ -5,6 +5,18 @@ to get more accurate. Read this before giving one; add a row when the work is do
 
 ## How to estimate
 
+- DIRECT WORK FIRST (measured 5-6 Nov; every hand estimate before this was 5-15x too long, and the artist said so):
+  quote these, not more. They include rendering the video and adding the sound (about 1 min).
+
+  | change, done by me | takes |
+  | --- | --- |
+  | remove or tweak one effect (a glow, a halo, a colour, a timing) | 1-3 min |
+  | a colour study (several colourways rendered side by side) and applying one | 3-10 min |
+  | a change to my sound generator, on a video | 3-8 min |
+  | a new behaviour in the animation (the echo grown from the layers, the negative) | 2-10 min |
+  | a new arrangement or shape for the sixteen | 10-20 min |
+  | a brand-new sound from scratch | 15-25 min |
+
 - Count the agents and how many run at once. Workflow agents run at most `nproc - 2` at a time (this container has
   4 CPUs, so 2). A phase with 3 agents takes two rounds, not one.
 - Use these measured times per agent (DUH intro workflows, Nov 2026):
@@ -18,8 +30,7 @@ to get more accurate. Read this before giving one; add a row when the work is do
   | fix round (only if a check blocks) | 16-28 min |
   | my own review and delivery afterwards | 8-30 min |
 
-- First choice: do a well-defined change directly, by hand, step by step, sending each step (a few minutes to half an
-  hour each). A workflow of takes, judges and checks is for when the artist asks for options.
+- A workflow of takes, judges and checks is only for when the artist asks for options. Its times:
 - So, for a workflow job, including my review:
   - 3 takes, judged, finished, checked, maybe fixed: 3.5-4.5 h (measured 3.2 and 3.35 h before my review);
   - 2 takes: about 2-2.5 h (measured 1.9 h);
@@ -43,5 +54,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 5 Nov | DUH intro sound: rework of that preview (keep the logo's sounds), by me | 15-20 min | about 5 min | too long: reusing a finished generator is quick; say 5-10 min for a change like this |
 | 6 Nov | DUH intro sound: golden rise, opening strum, bigger hall (by me) | 20-35 min | about 5 min | too long again: a change to my own generator is 5-10 min; say so |
 | 6 Nov | DUH intro: inverted, echo from the layers, new shape, done directly by me in 3 steps (after the artist asked "are you being as efficient as possible?") | 2.5-3.5 h by workflow; then 10-15, 30-45 and 45-60 min by hand | 4, 2 and 8 min; 18 min in all (23:56-00:14 UTC) | direct work is many times faster than a workflow for a well-defined change; use workflows only when the artist asks for options |
-| 6 Nov | DUH intro: halos off, colour study of five colourways, the chosen one applied (by me) | 30-45 min | about 3 min | still too long for direct work: a study like this is 5-15 min |
+| 6 Nov | DUH intro: halos off, colour study of five colourways, the chosen one applied (by me) | 30-45 min | about 3 min | 10-15x too long; the artist: "It shouldn't take you 30-45 min to remove the green halo". The halo alone is about 1 min. Hence the direct-work table above |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |
