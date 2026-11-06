@@ -220,6 +220,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Flip the top pink color in the logo and name with the second color in the layering sequence" (the face is now the
   ivory, shaded as the pink was, from white at the top to a soft sand at its foot; the pink, #f0b0f0, is the first
   layer under it, then the gold and the orange)
+- "Instead of the layering of the logo leading from right to left in how it comes forward, have it lead from downwards
+  upwards, just how it is arranged in the end" (the hand's copies stepped back up and to the right; now the hand stays
+  in its place and its copies sit straight below it, a step apart, as the finished layers are. Each rises into its
+  step and they all fold up into the hand, so the sun stays on the fingertip)
 
 ## The purpose (said after, the same day; it frames everything below)
 
