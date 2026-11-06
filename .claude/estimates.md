@@ -83,4 +83,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: the turn settling at the sun's peak; the moon and earth in Glyph Light's atoms (by me) | 10-15 min | about 14 min (02:56-03:10 UTC) | in range, at the top: finding the ASCII look on another branch, then timing it on five screen sizes |
 | 6 Nov | DUH intro: the mauve layer taken out, the mark as its block lettering twice (by me) | (not given; 2-10 by the table) | about 4 min | |
 | 6 Nov | DUH intro: a lighter earth, its ocean stepped from the sky as the picture's red from its purple (by me) | 3-8 min | about 4 min | in range |
+| 6 Nov | DUH intro: the layers made even again (by me) | 2-3 min | about 3 min | in range |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |

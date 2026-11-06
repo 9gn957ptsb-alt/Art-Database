@@ -208,6 +208,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   #3d3dfd gives the ocean #0073a8; the hue is turned toward blue-green, as the other way would make it purple, and its
   lightness is nearly the sky's. The earth is lit evenly and its atoms are a light weave round their own colour, so it
   is light and the ocean keeps that blue)
+- "There a gap now in the layering of the name that a highlighted in red. Make sure the layering is even like it was
+  before" (sent with a picture of the deep ivory layer marked in red. Under the face, the ivory, the gold and the
+  orange are each a third of the block's depth again, evenly spaced; the joined ivory's two parts share its third, so
+  the sixteen pieces still come in as before)
 
 ## The purpose (said after, the same day; it frames everything below)
 
