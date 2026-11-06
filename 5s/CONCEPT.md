@@ -195,6 +195,13 @@ Then, of the crystal-hand intro (4 Nov 2026):
   grid, . : - + * o # @ by light, each the colour of the picture under it, lit on a dark of its own colour with a
   soft glow and a fine fixed grain. They are the same size on every screen and stay upright while the moon turns
   under them)
+- "The sun's glow now happens twice with very subtle difference. I don't mind it because it looks like the duh name
+  is written twice in block lettering with a purple silhouette in between. Get rid of that purple layer in between the
+  gold colors in the logo and name so there's just 4 layers including the top one for each. Have it look like it's
+  the logo and name in block lettering twice, one behind the other" (sent with a picture of the last frame. The mauve
+  layer is gone: the ivory takes its place and the two join into one deep ivory layer, with one shading and no line
+  between. So each has four: the face over a deep ivory, and behind it the gold over the orange, as deep together as
+  the ivory, the block lettering twice. The sixteen pieces still come in as before)
 
 ## The purpose (said after, the same day; it frames everything below)
 
