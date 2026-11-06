@@ -52,9 +52,16 @@ command to the next.
 
    Any other sentence in the section: check it against the report, change a number the report gives, and if a
    claim no longer holds, say so in one plain sentence instead of keeping it. Nothing outside the section changes,
-   except "The plan as a script" when `git -C /home/user/Art-Database log --since="3 days ago"
+   except the catalog (below) and "The plan as a script" when `git -C /home/user/Art-Database log --since="3 days ago"
    origin/claude/art-database-photos-ilnaf7 -- 5s/gameplan/reflect.mjs 5s/test/reflect.test.mjs` shows commits:
    then update the sentences there that describe what changed (the test count among them).
+
+   The catalog, the section headed "The catalog", shelves every session in `list_sessions.txt` by five facets (its
+   second paragraph lists the words each facet may take). For each session it lacks, add a row in call-number
+   order, its facets read from the session's title and last status line (`post_turn_summary`, `task_summary`),
+   leaving out any facet that does not show; set every row's Now from the session's status (archived, done,
+   working, waiting on you, failed); then update the count and dates in its first sentence and the counts in its
+   last paragraph. A row never carries a transcript's words.
 6. Delete every copy, and check:
 
    ```
