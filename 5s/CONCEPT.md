@@ -228,6 +228,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   word on the moon: there it showed its front piece's pink on top, the joined pink split by a line, and thicker lines
   between the layers. Now, as each letter's pieces finish rising, they become the whole block letter as it ends: the
   ivory face, then the pink, the gold and the orange, evenly)
+- "Replace the curve pattern inside the name with the pattern in the second image" (sent with a picture of duh's
+  hologram and its round scan rings, and the artist's own pattern of chevrons, < > ^ v in a lattice, thin black lines
+  on white. One repeat of the pattern, shrunk so four of its rows span 60 points, now runs through the hologram in
+  place of the rings, taking light away along its lines as the rings did and drifting slowly up as it rises)
 
 ## The purpose (said after, the same day; it frames everything below)
 
