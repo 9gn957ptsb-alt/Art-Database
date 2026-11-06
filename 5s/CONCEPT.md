@@ -108,6 +108,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   light)
 - "The golden ratio shape is too apparent at first, it's gimmicky, I want you to find a more unknown and powerful shape
   to arrange the 16 layers on" (of the golden-spiral arrangement)
+- "The sound volume need to start lower and rise exponentially according to the golden ratio. I also like how the wind
+  sounds like waves and then blowing air, make it a bit more majestic like Van Morrison's song Into the Mystic, which
+  has a very quick guitar strum that commences the song"
 
 ## The purpose (said after, the same day; it frames everything below)
 
