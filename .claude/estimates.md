@@ -92,4 +92,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: the moon turning on its own middle as it shifts (by me) | 10-15 min | about 6 min | under the range |
 | 6 Nov | DUH intro: the first duh taken out; the moon rising into view from below (by me) | 5-10 min | about 4 min | under the range |
 | 6 Nov | DUH intro: the moon's turn made plain again as it rises (by me) | 3-5 min | about 5 min | at the top of the range: measuring the turn took two tries |
+| 6 Nov | DUH intro: the sun in a straight line, slower (by me) | about 3 min | about 4 min | a little over: a second step to make it truly slower |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |

@@ -246,6 +246,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   but rising from below it was hidden for its first second and the rise drew the eye. Its turn is now twice that, 28.8
   degrees on its own middle, so its craters plainly roll across as it comes up, settling with the rise at the sun's
   peak)
+- "The sun movement should be in a straight line, not a wave and it should be slower" (no more sway: it is lit low
+  in the frame, at 600, and rises straight up in one line, slowing all the way, past the fingertip to its peak as the
+  hand settles. At its fastest it now goes 236 points a second, not 391, and half as fast as before mid-climb. It
+  still sends the pulse at its peak and comes back down onto the fingertip)
 
 ## The purpose (said after, the same day; it frames everything below)
 
