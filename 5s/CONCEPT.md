@@ -120,6 +120,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   yellow and blue, and lime and green for the curved pulse and duh's rising hologram)
 - "Use another color instead of the pink" (now royal purple)
 - "Find another more interesting shape and animation sequence for the beginning before the logo goes to the center"
+  (now a deck of cards: dropped onto one pile, fanned into an arc, a ripple across it, dealt into four piles)
+- "Put the star in the bottom left corner of the logo on the top of the raised finger of the logo and keep a highlight
+  glimmer along the edge shape of the logo in the stars current position"
 
 ## The purpose (said after, the same day; it frames everything below)
 
