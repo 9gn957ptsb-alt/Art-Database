@@ -282,6 +282,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
   stronger and reaches further, with a soft bloom under its atoms; its core is a solid disc of white @ on cream, drawn
   over everything, so it reads on the black and on the blue. At rest it is a little bigger and sits on the fingertip,
   just above it, rather than centred on it, where the finger showed through its light)
+- "Get rid of that bottom left highlight in the logo on the edge" (the glint along the hand's edge at its foot, where
+  the star once sat, is gone; the sun's rim light along the top of the hand stays)
 
 ## The purpose (said after, the same day; it frames everything below)
 
