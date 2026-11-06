@@ -78,4 +78,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: only the sky changed, the moon turning into the earth, the sun's orange in the logo (by me) | 10-15 min | about 5 min (02:28-02:33 UTC) | under the range: the earth from noise was quicker to draw than said |
 | 6 Nov | DUH intro: the earth kept at the moon's edge, a study of mature palettes, silver and slate applied (by me) | 5-10 min | about 6 min | in range; one re-render, as four new names clashed with old ones |
 | 6 Nov | DUH intro: the background turning into alignment (by me) | about 5 min | about 3 min | in range |
+| 6 Nov | DUH intro: the turn doubled and smoothed, the stars opening out, colours reverted (by me) | 5-10 min | about 5 min | in range |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |

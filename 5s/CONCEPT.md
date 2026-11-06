@@ -179,6 +179,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   movement happening in the background" (the stars and the moon start turned 6 degrees about the point where the sun
   comes to rest, the moon's crest off to the right. They turn back against the sun's first sway as it climbs and come
   into line, moon under sun, as it reaches the fingertip; then the moon becomes the earth in that line)
+- "Colors are worse, I like the alignment of the background you put in, refine it more so it's much smoother in a
+  grand/epic sense and make the background shift twice as intense" (the colours went back to the ones before silver
+  and slate. The turn is now 12 degrees, one long sweep on the smoothest ease, still at the start and still on
+  arriving, and the stars open out a little as it goes, as if moving forward through space)
 
 ## The purpose (said after, the same day; it frames everything below)
 
