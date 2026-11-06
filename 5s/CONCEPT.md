@@ -126,6 +126,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Have the star be bigger to in proportion to the rest"
 - "Replace the part where they split into four groups with another interesting shape that corresponds to the golden
   ratio and the beginning animation" (now a sunflower of cards round the hand: each a golden angle from the last)
+- "Have the star guide the overall animation and raise up towards the end and emit a pulse / A pulse that corresponds
+  with the semicircle line"
 
 ## The purpose (said after, the same day; it frames everything below)
 
