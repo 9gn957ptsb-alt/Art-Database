@@ -111,6 +111,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "The sound volume need to start lower and rise exponentially according to the golden ratio. I also like how the wind
   sounds like waves and then blowing air, make it a bit more majestic like Van Morrison's song Into the Mystic, which
   has a very quick guitar strum that commences the song"
+- "Get rid of the subtle green halos around the logo / I like the blue of the logo and name, but all the other colors
+  need improvement do a color study to figure out the best color way given that blue" (of the inverted tesseract intro)
 
 ## The purpose (said after, the same day; it frames everything below)
 
