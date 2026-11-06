@@ -130,6 +130,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   with the semicircle line"
 - "The animations don't go together, I feel like I'm watching a bunch of different animations happen one after another.
   They need to be succinct like an opera and convey and overall feeling of ascension"
+- "https://design.google/library/exploring-color-google-maps / Use this link to figure out the right colors, I feel like
+  they're close but still not quite right" (now: every colour on a ladder of tones as in Google Maps' system, a Grey 50
+  ground, the mark all at the 600 step, a Grey 900 ink, soft tints for the pulse and the hologram)
 
 ## The purpose (said after, the same day; it frames everything below)
 
