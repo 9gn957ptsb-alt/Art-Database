@@ -250,6 +250,11 @@ Then, of the crystal-hand intro (4 Nov 2026):
   in the frame, at 600, and rises straight up in one line, slowing all the way, past the fingertip to its peak as the
   hand settles. At its fastest it now goes 236 points a second, not 391, and half as fast as before mid-climb. It
   still sends the pulse at its peak and comes back down onto the fingertip)
+- "Have the layers of the logo flip in orbit under and around the far side of the sun coming over top of it upside
+  down and then flipping back to the correct orientation all completely straight on" (the hand's four layers no longer
+  trail behind the sun. Each orbits it once, flat to us: out from under it, round its side, turning with the orbit so
+  it passes over its top upside down, behind its glow, then flipping back upright as it comes down the other side, and
+  on into its place in the stack under the hand)
 
 ## The purpose (said after, the same day; it frames everything below)
 
