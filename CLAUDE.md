@@ -18,3 +18,6 @@ are not shown); each agent row is its label ("check:frames · about 30 min"); a 
 description. Plan these from the start: renaming a phase or label later re-runs the agents already done under it.
 To change only meta.name or meta.description, stop the workflow between agents and relaunch it with resumeFromRunId
 (finished agents are kept; a running one starts over).
+
+Efficiency (the artist asked, 6 Nov 2026: "are you being as efficient as possible?"): make a well-defined change directly
+and send it step by step; run a workflow of several versions, judges and checks only when the artist asks for options.

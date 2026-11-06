@@ -18,7 +18,9 @@ to get more accurate. Read this before giving one; add a row when the work is do
   | fix round (only if a check blocks) | 16-28 min |
   | my own review and delivery afterwards | 8-30 min |
 
-- So, for the whole job, including my review:
+- First choice: do a well-defined change directly, by hand, step by step, sending each step (a few minutes to half an
+  hour each). A workflow of takes, judges and checks is for when the artist asks for options.
+- So, for a workflow job, including my review:
   - 3 takes, judged, finished, checked, maybe fixed: 3.5-4.5 h (measured 3.2 and 3.35 h before my review);
   - 2 takes: about 2-2.5 h (measured 1.9 h);
   - a single finish-and-check: about 1 h;
@@ -40,4 +42,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 5 Nov | DUH intro sound: wind and leaf, a preview on the current video (done by me, no workflow) | 30-45 min | 21 min | a little faster than said: one generator, two endings |
 | 5 Nov | DUH intro sound: rework of that preview (keep the logo's sounds), by me | 15-20 min | about 5 min | too long: reusing a finished generator is quick; say 5-10 min for a change like this |
 | 6 Nov | DUH intro sound: golden rise, opening strum, bigger hall (by me) | 20-35 min | about 5 min | too long again: a change to my own generator is 5-10 min; say so |
+| 6 Nov | DUH intro: inverted, echo from the layers, new shape, done directly by me in 3 steps (after the artist asked "are you being as efficient as possible?") | 2.5-3.5 h by workflow; then 10-15, 30-45 and 45-60 min by hand | 4, 2 and 8 min; 18 min in all (23:56-00:14 UTC) | direct work is many times faster than a workflow for a well-defined change; use workflows only when the artist asks for options |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |
