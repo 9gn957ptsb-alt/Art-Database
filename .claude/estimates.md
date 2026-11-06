@@ -80,4 +80,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: the background turning into alignment (by me) | about 5 min | about 3 min | in range |
 | 6 Nov | DUH intro: the turn doubled and smoothed, the stars opening out, colours reverted (by me) | 5-10 min | about 5 min | in range |
 | 6 Nov | DUH intro: the sun's pale gold in place of the dark layer, four tried (by me) | 3-10 min | about 2 min | under the range |
+| 6 Nov | DUH intro: the turn settling at the sun's peak; the moon and earth in Glyph Light's atoms (by me) | 10-15 min | about 14 min (02:56-03:10 UTC) | in range, at the top: finding the ASCII look on another branch, then timing it on five screen sizes |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |

@@ -188,6 +188,13 @@ Then, of the crystal-hand intro (4 Nov 2026):
   gold into orange like the sun. No colour lighter than near-black can make 3:1 with both the mauve and the orange;
   the gold makes 4.2:1 with the mauve and 1.7:1 with the orange, the best of the four tried, and the dark line drawn
   between the layers keeps them apart)
+- "Make sure the moon stabilizes from the background shift at the same time the sun reaches its peak
+  Make the earth and moon in the ASCII aesthetic we developed" (the turn now keeps moving plainly into its last moments
+  and settles just as the sun reaches its peak. The moon and the earth are drawn in Glyph Light's atoms, the
+  Pickleball garden's "very fine grain ASCII graphic like atoms": characters three points by five on a four by six
+  grid, . : - + * o # @ by light, each the colour of the picture under it, lit on a dark of its own colour with a
+  soft glow and a fine fixed grain. They are the same size on every screen and stay upright while the moon turns
+  under them)
 
 ## The purpose (said after, the same day; it frames everything below)
 
