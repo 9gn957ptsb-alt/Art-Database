@@ -62,6 +62,13 @@ command to the next.
    leaving out any facet that does not show; set every row's Now from the session's status (archived, done,
    working, waiting on you, failed); then update the count and dates in its first sentence and the counts in its
    last paragraph. A row never carries a transcript's words.
+
+   The galaxy draws the same rows: https://claude.ai/artifact/2AbsMtu2yhqFWC14EtQvWT. Read its `sessions.json`
+   (Artifact, action "read", that url, path "sessions.json"), add a row for each new catalog row and bring every
+   `now` and `asOf` up to date, in the same shape (`k` unique; `core` only on the row already marked so;
+   `p` the `k` of the session that started it, when list_sessions gives a parent), save it as
+   `/tmp/gameplan-refresh/sessions.json`, read the page (action "read", that url, no path), and publish the saved
+   page unchanged to that url with files `{"sessions.json": "/tmp/gameplan-refresh/sessions.json"}`.
 6. Delete every copy, and check:
 
    ```
