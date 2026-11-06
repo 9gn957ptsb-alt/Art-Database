@@ -136,6 +136,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "The background is white..." (now the map's deepest water blue, Blue 800: a deep sky)
 - "The color are the same / The accent of the logo needs to be more interesting, it needs to be confident and insistent
   upon itself" (now an acid chartreuse face on the deep sky)
+- "This should be the blue background color, the colors should read like these colors do, glowing as if made of light.
+  Use the other color in the image besides the blue and use them two to finish the rest of the palette" (with an image:
+  an electric blue, #1a1af3, with mauve shapes, #8a538a; now the sky is that blue and every other colour a tint, shade
+  or mix of the two)
 
 ## The purpose (said after, the same day; it frames everything below)
 
