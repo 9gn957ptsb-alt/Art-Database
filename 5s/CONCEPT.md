@@ -140,6 +140,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   Use the other color in the image besides the blue and use them two to finish the rest of the palette" (with an image:
   an electric blue, #1a1af3, with mauve shapes, #8a538a; now the sky is that blue and every other colour a tint, shade
   or mix of the two)
+- "Does this color change completely contradict the Google article I sent you" / "Fix the two broken rules, keep the two
+  original colors and the mauve of 1 and introduce other hues for the rest" (now a near-white outline of light, 7.8:1 on
+  the sky; the layers mauve, lemon, vermilion and mint, each a clear step from the next)
 
 ## The purpose (said after, the same day; it frames everything below)
 
