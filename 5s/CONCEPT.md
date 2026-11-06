@@ -261,6 +261,12 @@ Then, of the crystal-hand intro (4 Nov 2026):
   the layer under the ivory face is now a warm caramel, #ac7548, the face's sand deepened and warmed, so the face reads
   as a solid block, and it leads into the gold and the orange below. Tried against it: the gold-to-orange step taken
   from the ivory (too light), a cooler caramel (greyed by the sky in its far edge), a bronze (too heavy), a tan)
+- "I want The layers of the logo to go backwards in space around the sun and flip around, not flip around it right to
+  left. The layer should disappear from being flattened for a second and flip around like a deck of cards" (the orbit
+  now goes into depth. Each layer comes out from under the sun, goes back and up behind it, smaller and further off,
+  over its top, then forward in front of it, nearer, and down. It turns end over end as a card does: it flattens to
+  nothing behind the sun, shows upside down over the top, flattens again in front, and is upright again below, then
+  goes into its place under the hand. It stays straight on to us, with no sideways tilt)
 
 ## The purpose (said after, the same day; it frames everything below)
 
