@@ -232,6 +232,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   hologram and its round scan rings, and the artist's own pattern of chevrons, < > ^ v in a lattice, thin black lines
   on white. One repeat of the pattern, shrunk so four of its rows span 60 points, now runs through the hologram in
   place of the rings, taking light away along its lines as the rings did and drifting slowly up as it rises)
+- "I want the moon to be turning as it shifts" (it swung with the background as one rigid picture. Now it also
+  turns on its own middle as it goes: its craters and seas lie all round it, and as it swings into line its surface
+  rolls across the other way, under sunlight that stays fixed from above. It settles with the swing at the sun's peak)
 
 ## The purpose (said after, the same day; it frames everything below)
 
