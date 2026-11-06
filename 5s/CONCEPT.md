@@ -175,6 +175,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   moon's stood, and the earth is quieter, as a photograph from orbit. The palette is silver and slate: a silver face,
   then a pale silver layer, slate, near-black and the sun's orange, one quiet family and one accent. The front layer
   stays light so the word reads in black space)
+- "Have it feel like the background is rotating into alignment of the moon earth and sun so there's a slight counter
+  movement happening in the background" (the stars and the moon start turned 6 degrees about the point where the sun
+  comes to rest, the moon's crest off to the right. They turn back against the sun's first sway as it climbs and come
+  into line, moon under sun, as it reaches the fingertip; then the moon becomes the earth in that line)
 
 ## The purpose (said after, the same day; it frames everything below)
 
