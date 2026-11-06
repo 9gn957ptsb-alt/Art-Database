@@ -152,6 +152,11 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Try new colors besides the ones I said to keep" (four new systems tried: lavender, gold and teal, sunset, aqua.
   Chosen: the aqua system, where every layer is a blue or an aqua and the mauve is the only warm colour. The layers are
   pale aqua, the original mauve, bright aqua and deep blue, each at least 3:1 from its neighbour)
+- "It’s gotta have more of this aesthetic in it" (sent with a picture of a sun rising over the rim of a crescent planet,
+  above the curve of a cratered moon, in black space full of stars. The intro now opens in black space with fine white
+  stars; a cratered moon curves under the word; the star is a white-hot sun in an orange glow; its light runs along the
+  hand's edge like the crescent's rim; and the day, the blue kept before, comes in behind the pulse while the moon sinks
+  away, so it still ends on the kept colours)
 
 ## The purpose (said after, the same day; it frames everything below)
 
