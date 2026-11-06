@@ -217,6 +217,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   the golden section of the frame, 720 / phi = 445 from the top, so the sky above is phi times the ground below, 103
   points higher than before. The hand and duh are raised by the same 103 and keep their place on it; the sun, its
   turn, its pulse and the clouds move with them)
+- "Flip the top pink color in the logo and name with the second color in the layering sequence" (the face is now the
+  ivory, shaded as the pink was, from white at the top to a soft sand at its foot; the pink, #f0b0f0, is the first
+  layer under it, then the gold and the orange)
 
 ## The purpose (said after, the same day; it frames everything below)
 
