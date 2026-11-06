@@ -235,6 +235,13 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "I want the moon to be turning as it shifts" (it swung with the background as one rigid picture. Now it also
   turns on its own middle as it goes: its craters and seas lie all round it, and as it swings into line its surface
   rolls across the other way, under sunlight that stays fixed from above. It settles with the swing at the sun's peak)
+- "Get rid of the first duh in the sequence and just have it come in when it comes in the second time
+  https://youtu.be/e-QFj59PON4?is=BL0lmi9hO-Zca_b2
+  Refer to this video to watch the direction of how the sun and earth come into view over the moon. I want the same
+  motion for the moon, bottom to top, not right to left" (the word no longer rises out of the moon at the start and
+  waits; it comes only as the hologram that rises and lands. The moon no longer swings in from the right: it rises
+  into view from just below the frame, its edge from 765 up to its place at 445, turning on its own middle as it
+  comes, the stars drifting up a quarter as far, and settles as the sun reaches its peak)
 
 ## The purpose (said after, the same day; it frames everything below)
 
