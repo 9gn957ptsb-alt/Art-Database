@@ -159,6 +159,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   away, so it still ends on the kept colours)
 - "Try new colors the aqua was horrible" (eight systems tried, in space and in daylight. Chosen: the picture's own
   colours, which are sun-white, the original mauve, the sun's orange and the moon's slate, each layer at least 3:1 from its neighbour)
+- "Set this blue as the background and compensate all color changes accordingly" (sent with the picture of mauve shapes
+  on electric blue; its blue measured #3d3dfd. Every other colour was given the same shift the sky took, in OKLCH:
+  lightness -0.21, chroma x1.9, hue +5 degrees. The face is now a deep magenta like the picture's shapes. The outline
+  became a near-black indigo, #06003d, to keep 3:1 against the sky. The lights (sun, stars, rim) stay white)
 
 ## The purpose (said after, the same day; it frames everything below)
 
