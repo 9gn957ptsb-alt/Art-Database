@@ -128,6 +128,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
   ratio and the beginning animation" (now a sunflower of cards round the hand: each a golden angle from the last)
 - "Have the star guide the overall animation and raise up towards the end and emit a pulse / A pulse that corresponds
   with the semicircle line"
+- "The animations don't go together, I feel like I'm watching a bunch of different animations happen one after another.
+  They need to be succinct like an opera and convey and overall feeling of ascension"
 
 ## The purpose (said after, the same day; it frames everything below)
 

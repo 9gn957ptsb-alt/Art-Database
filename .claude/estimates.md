@@ -63,4 +63,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: a bigger star (by me) | (not given; 1-3 min by the table) | about 1 min | |
 | 6 Nov | DUH intro: the sunflower of cards in place of the four groups (by me) | 5-15 min | about 8 min | in range; two fixes after the first look (upright cards, paths round the echo) |
 | 6 Nov | DUH intro: the star guides it all, rises and sends the pulse (by me) | 5-15 min | about 9 min | in range; two fixes after the first look (its colour on the light sky, its size) |
+| 6 Nov | DUH intro: the opening rebuilt as one rising movement led by the star (by me) | 10-20 min | about 6 min | under the range |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |
