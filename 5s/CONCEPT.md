@@ -242,6 +242,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   waits; it comes only as the hologram that rises and lands. The moon no longer swings in from the right: it rises
   into view from just below the frame, its edge from 765 up to its place at 445, turning on its own middle as it
   comes, the stars drifting up a quarter as far, and settles as the sun reaches its peak)
+- "I really like the moon turning, make sure it still happens with the new changes" (it still turned, 14.4 degrees,
+  but rising from below it was hidden for its first second and the rise drew the eye. Its turn is now twice that, 28.8
+  degrees on its own middle, so its craters plainly roll across as it comes up, settling with the rise at the sun's
+  peak)
 
 ## The purpose (said after, the same day; it frames everything below)
 
