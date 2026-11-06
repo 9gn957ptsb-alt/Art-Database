@@ -267,6 +267,14 @@ Then, of the crystal-hand intro (4 Nov 2026):
   over its top, then forward in front of it, nearer, and down. It turns end over end as a card does: it flattens to
   nothing behind the sun, shows upside down over the top, flattens again in front, and is upright again below, then
   goes into its place under the hand. It stays straight on to us, with no sideways tilt)
+- "The orange and white gold logo layers are three-dimensional block looking, and the other two are not, I want you
+  to think about there being two instances of three-dimensional block layers for the logo and the name, instead of
+  looking at it as four separate layers. Make sure that the colors are consistent in the logo and name throughout the
+  animation." (sent with a picture of the four layers round the sun: the two caramel halves thin and in two shades.
+  The hand now comes as two blocks, each exactly as in the finished mark: the ivory face over the caramel, and the gold
+  over the orange. They come out of the sun, the back one first, orbit it flipping like cards, and settle one in front
+  of the other into the finished mark. The flat copies stacked under the hand are gone, so the same colours run
+  through the whole piece)
 
 ## The purpose (said after, the same day; it frames everything below)
 
