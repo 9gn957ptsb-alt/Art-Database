@@ -163,6 +163,13 @@ Then, of the crystal-hand intro (4 Nov 2026):
   on electric blue; its blue measured #3d3dfd. Every other colour was given the same shift the sky took, in OKLCH:
   lightness -0.21, chroma x1.9, hue +5 degrees. The face is now a deep magenta like the picture's shapes. The outline
   became a near-black indigo, #06003d, to keep 3:1 against the sky. The lights (sun, stars, rim) stay white)
+- "Better, just change the background blue and keep the fade from black to blue in background
+  Have the moon change to the earth as the black background changes to blue
+  Have the orange color in logo and name be the same orange color of the sun leading the animation" (only the sky is
+  the new blue; the other colours went back to the picture's colours, with the near-black indigo outline for 3:1. The
+  moon turns into the earth, with oceans, land, clouds and a thin bright atmosphere, as the sky turns blue, and the
+  earth stays under duh. The sun's orange, #ff8a3c, is now the back layer: next to the mauve or the slate it only made
+  2.4:1, so the deep indigo of space, #05006c, sits between it and the mauve, and every step is at least 3:1)
 
 ## The purpose (said after, the same day; it frames everything below)
 
