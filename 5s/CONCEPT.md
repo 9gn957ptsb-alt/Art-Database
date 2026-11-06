@@ -145,6 +145,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   the sky; the layers mauve, lemon, vermilion and mint, each a clear step from the next)
 - "Change the background the same degree to which you changed the original mauve of 2 to 1s" (the sky lightened as the
   mauve was, by the same step in OKLCH: #7ca2ff; the outline now the original blue, 3.4:1 against it)
+- "I don't like that top color of the word in that sequence, but I like the color, so change its place in the sequence.
+  Make sure that all the colors go together harmoniously in some color system. Find new colors besides the background, 1s
+  mauve and the previous dark blue background for the outline" (now a double complementary on the OKLCH wheel: blue and
+  gold, mauve and green; the layers pale green, the original mauve, pale gold, cornflower)
 
 ## The purpose (said after, the same day; it frames everything below)
 
