@@ -170,6 +170,11 @@ Then, of the crystal-hand intro (4 Nov 2026):
   moon turns into the earth, with oceans, land, clouds and a thin bright atmosphere, as the sky turns blue, and the
   earth stays under duh. The sun's orange, #ff8a3c, is now the back layer: next to the mauve or the slate it only made
   2.4:1, so the deep indigo of space, #05006c, sits between it and the mauve, and every step is at least 3:1)
+- "The earth edge should not lower from where the moons edge stands. The colors still aren't right, they're too
+  childish, I need something mature that is professional and respectable" (the earth's edge now stays where the
+  moon's stood, and the earth is quieter, as a photograph from orbit. The palette is silver and slate: a silver face,
+  then a pale silver layer, slate, near-black and the sun's orange, one quiet family and one accent. The front layer
+  stays light so the word reads in black space)
 
 ## The purpose (said after, the same day; it frames everything below)
 
