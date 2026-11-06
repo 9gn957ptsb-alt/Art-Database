@@ -202,6 +202,12 @@ Then, of the crystal-hand intro (4 Nov 2026):
   layer is gone: the ivory takes its place and the two join into one deep ivory layer, with one shading and no line
   between. So each has four: the face over a deep ivory, and behind it the gold over the orange, as deep together as
   the ivory, the block lettering twice. The sixteen pieces still come in as before)
+- "The earth is too dark, make it lighter and have the blue of ocean be proximate to the blue background exactly how
+  the red/purple are adjacent in the provided image" (sent with a picture of dark red shapes on a purple ground,
+  measured #661038 on #4e1b51: lightness +0.018, chroma x1.15, the hue turned 33 degrees. The same step from the sky's
+  #3d3dfd gives the ocean #0073a8; the hue is turned toward blue-green, as the other way would make it purple, and its
+  lightness is nearly the sky's. The earth is lit evenly and its atoms are a light weave round their own colour, so it
+  is light and the ocean keeps that blue)
 
 ## The purpose (said after, the same day; it frames everything below)
 
