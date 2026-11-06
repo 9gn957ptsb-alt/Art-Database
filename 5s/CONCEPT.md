@@ -278,6 +278,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
 - "Make the sun in the ASCII aesthetic" (the sun is now drawn in Glyph Light's atoms on the moon's grid: its white-hot
   disc as white @, its corona orange # o + - thinning to faint : . at its edge, each atom its colour, with a soft glow
   in the gaps, added as light; upright and the same size on every screen, so it lights the atoms up as it rises)
+- "The sun needs to be brighter and sit on top of the pointing finger of the logo, not behind iy" (its light is
+  stronger and reaches further, with a soft bloom under its atoms; its core is a solid disc of white @ on cream, drawn
+  over everything, so it reads on the black and on the blue. At rest it is a little bigger and sits on the fingertip,
+  just above it, rather than centred on it, where the finger showed through its light)
 
 ## The purpose (said after, the same day; it frames everything below)
 
