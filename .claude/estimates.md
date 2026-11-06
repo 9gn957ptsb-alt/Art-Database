@@ -87,4 +87,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: the edge on the golden section, the hand and duh raised with it (by me) | (not given; 2-10 by the table) | about 4 min | |
 | 6 Nov | DUH intro: the face's pink and the first layer's ivory swapped (by me) | about 2 min | about 2 min | right |
 | 6 Nov | DUH intro: the hand's layers coming forward from below, not from the right (by me) | 3-5 min | about 3 min | in range |
+| 6 Nov | DUH intro: the name's layering the same at the start as at the end (by me) | 3-5 min | about 5 min | at the top of the range |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |

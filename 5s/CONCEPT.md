@@ -224,6 +224,10 @@ Then, of the crystal-hand intro (4 Nov 2026):
   upwards, just how it is arranged in the end" (the hand's copies stepped back up and to the right; now the hand stays
   in its place and its copies sit straight below it, a step apart, as the finished layers are. Each rises into its
   step and they all fold up into the hand, so the sun stays on the fingertip)
+- "The layering of the name is different in the beginning sequence than it is in the end" (sent with a picture of the
+  word on the moon: there it showed its front piece's pink on top, the joined pink split by a line, and thicker lines
+  between the layers. Now, as each letter's pieces finish rising, they become the whole block letter as it ends: the
+  ivory face, then the pink, the gold and the orange, evenly)
 
 ## The purpose (said after, the same day; it frames everything below)
 
