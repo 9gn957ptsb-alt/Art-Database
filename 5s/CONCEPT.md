@@ -134,6 +134,8 @@ Then, of the crystal-hand intro (4 Nov 2026):
   they're close but still not quite right" (now: every colour on a ladder of tones as in Google Maps' system, a Grey 50
   ground, the mark all at the 600 step, a Grey 900 ink, soft tints for the pulse and the hologram)
 - "The background is white..." (now the map's deepest water blue, Blue 800: a deep sky)
+- "The color are the same / The accent of the logo needs to be more interesting, it needs to be confident and insistent
+  upon itself" (now an acid chartreuse face on the deep sky)
 
 ## The purpose (said after, the same day; it frames everything below)
 

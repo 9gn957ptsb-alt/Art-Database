@@ -66,4 +66,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 6 Nov | DUH intro: the opening rebuilt as one rising movement led by the star (by me) | 10-20 min | about 6 min | under the range |
 | 6 Nov | DUH intro: colours on Google Maps' colour system, from the article (by me) | about 5 min (once the site was allowed) | about 4 min | in range |
 | 6 Nov | DUH intro: a background study and the deep sky blue, with the light effects made to work on it (by me) | (not given; 3-10 by the table) | about 6 min | |
+| 6 Nov | DUH intro: accent study of six, chartreuse applied (by me) | about 5 min | about 4 min | in range |
 | 5 Nov | DUH intro: golden organization and paths (3 takes) | 2 h at first, corrected to 4-5 h, then by stage to ready 6:45-7:15 pm | 3.0 h (20:45-23:45 UTC, ready 6:45 pm), with a container restart and three relaunches to retitle | the first figure ignored the 2-at-a-time limit; the corrected 4-5 h was 1 h long because the finish took 22 min, not 45-60; the stage-by-stage estimate was right |
