@@ -149,6 +149,9 @@ Then, of the crystal-hand intro (4 Nov 2026):
   Make sure that all the colors go together harmoniously in some color system. Find new colors besides the background, 1s
   mauve and the previous dark blue background for the outline" (now a double complementary on the OKLCH wheel: blue and
   gold, mauve and green; the layers pale green, the original mauve, pale gold, cornflower)
+- "Try new colors besides the ones I said to keep" (four new systems tried: lavender, gold and teal, sunset, aqua.
+  Chosen: the aqua system, where every layer is a blue or an aqua and the mauve is the only warm colour. The layers are
+  pale aqua, the original mauve, bright aqua and deep blue, each at least 3:1 from its neighbour)
 
 ## The purpose (said after, the same day; it frames everything below)
 
