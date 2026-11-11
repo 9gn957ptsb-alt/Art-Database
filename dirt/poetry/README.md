@@ -14,13 +14,18 @@ the poems a line at a time into DRIFT's moving parts, the photographs into its c
 each plot a book that opens. Since 27 October the pieces lie on the plane as a storyboard, side by side in reading
 order, a frame to each line (below).
 It is built from the two artifacts as they stand and built again whenever either is republished:
-[UPDATE.md](UPDATE.md) says how, and who does it. DRIFT stays a separate artifact, without any of it.
+[UPDATE.md](UPDATE.md) says how, and who does it. DRIFT stays a separate artifact, without any of it. Since 11 Nov
+2026 the 5s Game Plan's writing is in it too: the first paragraph of each section of GamePlan's `plan.html`, each a poem
+of its own signed —GamePlan, after Picture Poetry's pages, its lines laid on the plane as theirs are (a frame to a line;
+no plot, photograph or book, and no column of text to read), and taken again whenever `plan.html` changes.
 
 It began on 10 October 2026 as *DIRT Poetry*, the pages on a plane of their own painted after four stills of DRIFT
 (v80); renamed *DRIFT Poetry* on 14 October and made of DRIFT itself, the six pages laid on it whole, their buildings
 turning and some of DRIFT's lines written in the poems' letters; and on 15 October the pages came apart into DRIFT.
 
-Published as its own artifact, https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp (who can open it is set by its owner, from its Share menu). The poems,
+Published as GamePlan, https://claude.ai/artifact/2AbsMtu2yhqFWC14EtQvWT (until 11 Nov 2026 an artifact of its own; who can open it is set by its owner, from
+its Share menu), beside GamePlan's `sessions.json`, `plan.html` and `loop.png`, which a routine keeps up to date and
+the page must keep (UPDATE.md, step 9). The poems,
 the photographs and the creatures are not in this repository: they come from Picture Poetry's published files and
 `dirt/private/poetry/` (ignored), and are published only with the artifact.
 

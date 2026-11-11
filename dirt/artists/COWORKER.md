@@ -115,7 +115,7 @@ but 4b's: the images and their JSON already there are kept). If the rebuild or t
 roster is still committed and the next rebuild picks it up.
 
 Then bring DRIFT Poetry into step: it is DRIFT's page with the pages of Picture Poetry laid on it, built from DRIFT
-as just published, so follow `dirt/poetry/UPDATE.md` (https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp). If it
+as just published, so follow `dirt/poetry/UPDATE.md` (published as GamePlan, https://claude.ai/artifact/2AbsMtu2yhqFWC14EtQvWT). If it
 cannot be done, DRIFT Poetry stays a version behind until the next session that can; say so.
 
 Finish with one short line: which artists were added, their grammar and rung (from `roster.py`'s output), their plants and characters, how many

@@ -1,10 +1,19 @@
 # Keeping DRIFT Poetry in step with DRIFT and Picture Poetry
 
-DRIFT Poetry (https://claude.ai/artifact/SkC8TxFP9ayxPk7DGyugdp) is made of two other artifacts: DRIFT
+DRIFT Poetry, published as GamePlan (https://claude.ai/artifact/2AbsMtu2yhqFWC14EtQvWT), is made of two other artifacts: DRIFT
 (https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k), whose page it is, and Picture Poetry
 (https://claude.ai/artifact/GK14x2YbV1T7rMDtpnmhQE), which is taken into it in pieces (README.md says how). Whenever either is published again,
 DRIFT Poetry is built again from both, as they now stand, and republished. Aries, 14 Oct 2026: "Make sure that it
 updates anytime either of the other artifacts are updated."
+
+Since 11 Nov 2026 it also holds the 5s Game Plan's writing and is published to GamePlan's url, not to an artifact of its
+own (Aries asked for it there). GamePlan also holds `sessions.json`, `plan.html` and `loop.png`, which a routine keeps
+up to date: every publish must keep them (never map them to `null`). The Game Plan poems come from GamePlan's
+`plan.html` and are rebuilt with the rest: the first paragraph of each of its `<h2>` sections is a poem of its own,
+titled with the section's heading, signed `—GamePlan`, broken into lines of about 6 to 12 words at natural pauses,
+not a word changed. In `poems.json` they follow Picture Poetry's pages, each with `"from": "GamePlan"` and an `n` of
+`gameplan-1`, `gameplan-2` and so on (never a number: those are Picture Poetry's pages): they have no page image, so the
+build lays only their lines on the plane, a frame to a line, with no plot, photograph or book (`build_poetry.py`).
 
 Who does it:
 
@@ -14,14 +23,16 @@ Who does it:
 - **Any session that republishes DRIFT or Picture Poetry itself** follows them straight after: no wake comes for a
   session's own publish.
 
-A session coming to it fresh has nothing private on disk: everything it needs is in the three artifacts and this
+A session coming to it fresh has nothing private on disk: everything it needs is in DRIFT, Picture Poetry, GamePlan and this
 repository.
 
 ## Steps
 
-0. **Is it needed?** Read DRIFT Poetry's `poetry/sources.json` (the Artifact tool, `action: "read"`, its url and
-   `path`): it names the versions of DRIFT and Picture Poetry it was built from. Read DRIFT and Picture Poetry (`read`
-   with each url; the result's first line names the version). If both versions match, stop: it is already in step.
+0. **Is it needed?** Read GamePlan's `poetry/sources.json` (the Artifact tool, `action: "read"`, its url and
+   `path`): it names the versions of DRIFT and Picture Poetry it was built from, and the sha256 of GamePlan's
+   `plan.html`. Read DRIFT and Picture Poetry (`read` with each url; the result's first line names the version) and
+   GamePlan's `plan.html` (`read` with `path`; the result gives its sha256). If all three match, stop: it is already in
+   step. (GamePlan's own version changes whenever its routine updates `sessions.json`: compare `plan.html`'s sha256.)
 
 1. **The branch and the tools.**
 
@@ -37,7 +48,7 @@ repository.
    `index.html`, every `page-N.jpg` and `photo-N.jpg`. They are saved under one folder of the scratchpad; note it,
    and Picture Poetry's version.
 
-4. **What the last build kept.** Read DRIFT Poetry's `poetry/poems.json` and `poetry/sources.json` (`read` with
+4. **What the last build kept.** Read GamePlan's `poetry/poems.json` and `poetry/sources.json` (`read` with
    `paths`) and copy both into `dirt/private/poetry/` (ignored, never committed).
 
 5. **Capture the pages.**
@@ -62,7 +73,9 @@ repository.
    one), its `lines` (an empty line between stanzas, the words exactly as printed, curly quotes and dashes as they
    are) and `"prose": true` for prose. The build also says which pages have changed since the last one: check each
    one's poem against its image, line by line (on 14 Oct page 4 was redesigned, and one word of its poem changed with
-   it).
+   it). A page that prints no poem (page 10, a message thread) has an entry with no `lines`. If `plan.html` has changed
+   (step 0), take the Game Plan poems again from it (above): a section's first paragraph, its words exactly, the line
+   breaks yours; check that the lines joined with spaces give the paragraph back.
 
 7. **Build it.** Write the versions read in step 0 to a small file, then build:
 
@@ -70,6 +83,7 @@ repository.
    cat > <scratch>/sources.json <<'EOF'
    {"drift": {"url": "https://claude.ai/artifact/BnUEaZBUoGZ31uGoF6d82k", "version": "<DRIFT's version>"},
     "picturePoetry": {"url": "https://claude.ai/artifact/GK14x2YbV1T7rMDtpnmhQE", "version": "<Picture Poetry's version>"},
+    "gamePlan": {"url": "https://claude.ai/artifact/2AbsMtu2yhqFWC14EtQvWT", "file": "plan.html", "sha256": "<plan.html's sha256>"},
     "built": "<today>"}
    EOF
    curl -sSL -o <scratch>/MorphoLEX_en.xlsx https://raw.githubusercontent.com/hugomailhot/MorphoLex-en/master/MorphoLEX_en.xlsx
@@ -122,16 +136,18 @@ repository.
    --enable-unsafe-swiftshader`, as `dirt/engine/check_kaleidoscope.js` launches it) the page takes minutes to load:
    keep the views few and small.
 
-9. **Publish it** to DRIFT Poetry's url with the Artifact tool: `file_path` `<scratch>/drift-poetry/index.html`, and
+9. **Publish it** to GamePlan's url with the Artifact tool: `file_path` `<scratch>/drift-poetry/index.html`, and
    `files` mapping every `poetry/...` file of the build to its path (`photo-N.jpg`, `creatures.png`, `poems.json`,
-   `sources.json`) and every `poetry/...` file DRIFT Poetry already has that the build does not to `null`, so it goes.
-   List DRIFT Poetry's files first (`list`, `scope: "files"`): the tool will not replace a file the session has not
-   seen. DRIFT's own files (its `quilts/`, `antiquity/` and `faces/`; not `index.html` or `plane/...`) are already in
-   DRIFT Poetry and are kept when left out: map only those whose size differs between the two listings, or that DRIFT
-   Poetry lacks, to `{"artifact": DRIFT's url, "path": the same path}`, copied server side. Leave `capabilities` out (they carry forward: DRIFT's own, `sample`,
-   `assets`, `db` and `downloads`, which its page uses); if DRIFT's declaration has changed, declare the same set.
+   `sources.json`) and every `poetry/...` file GamePlan already has that the build does not to `null`, so it goes.
+   Never map GamePlan's `sessions.json`, `plan.html` or `loop.png` to `null`: they are its routine's, and are kept
+   when left out. List GamePlan's files first (`list`, `scope: "files"`): the tool will not replace a file the session
+   has not seen. DRIFT's own files (its `quilts/`, `antiquity/` and `faces/`; not `index.html`, `plane/...` or
+   `screens/...`) are already in GamePlan and are kept when left out: map only those whose size differs between the
+   two listings, or that GamePlan lacks, to `{"artifact": DRIFT's url, "path": the same path}`, copied server side.
+   The page's title is GamePlan (the build sets it). Leave `capabilities` out (they carry forward: DRIFT's own,
+   `sample`, `assets`, `db` and `downloads`, which its page uses); if DRIFT's declaration has changed, declare the same set.
 
 10. **Commit** whatever changed in `dirt/poetry/` (a fix to the cutting or the capture) and push to
     `claude/digital-dirt-layers-paiial`. Nothing from `dirt/private/` is ever committed.
 
-If a step fails, leave DRIFT Poetry as it was (it still works, a version behind), and say which step failed and why.
+If a step fails, leave GamePlan as it was (it still works, a version behind), and say which step failed and why.

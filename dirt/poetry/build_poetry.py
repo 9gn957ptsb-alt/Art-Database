@@ -16,7 +16,9 @@ and models.js (its buildings and the code that draws them, which layer.js draws 
 poems, transcribed from the page images). OUT gets index.html (DRIFT's page with Picture Poetry in it) and poetry/:
 each page's photograph, the creatures' sheet, poems.json, and sources.json (the versions of DRIFT and Picture Poetry
 it was built from, from SOURCES.json, and a fingerprint of each page image), so the next build can begin from the
-artifact alone and say which pages are new or changed.
+artifact alone and say which pages are new or changed. A poem in poems.json with a "from" (the 5s Game Plan's, from
+GamePlan's plan.html) has no page image: it comes after the pages, its lines drawn on the plane as theirs are, with no
+plot, photograph or book. The page is published as GamePlan (UPDATE.md).
 
 Each page's photograph is found from its data (or, where the data does not set it, as the largest patch of the page
 unlike its paper) and cut from the page image upright, at most 1024 pixels on its long side, for DRIFT's collage to
@@ -202,7 +204,7 @@ def photo_rect(page, entry):
 
 
 def hexof(c):
-    return "#%02x%02x%02x" % tuple(int(round(v)) for v in c)
+    return "#%02x%02x%02x" % tuple(min(255, max(0, int(round(v)))) for v in c)   # (a float mean can round to 256)
 
 
 def typeset(page, entry, rect, poem):
@@ -329,9 +331,16 @@ def build(drift, out, sources, morpholex=None):
         body = html.escape(" ".join(p["lines"])) if p.get("prose") else "<br>".join(html.escape(line) for line in p["lines"])
         sign = "<br><br>" + html.escape(p["signature"]) if p.get("signature") else ""
         sr.append("<h2>%s</h2><p>%s%s</p>" % (html.escape(name), body, sign))
+    # poems of their own, with no page image (the Game Plan's, "from": "GamePlan"): after the pages, a frame to each of
+    # their lines in the storyboard as the pages' have (layer.js), but no plot, photograph or book, and no reading column
+    alone = [p for p in poems.values() if p.get("from")]
+    pages += [{"n": p["n"], "name": name_of(p), "title": p.get("title"), "signature": p.get("signature"),
+               "prose": bool(p.get("prose")), "lines": p["lines"], "from": p["from"]} for p in alone]
+    if alone:
+        print(f"{len(alone)} poems of their own, from {sorted({p['from'] for p in alone})}: their lines only")
     # the poems themselves, for the letters (layer.js breaks them into lines; WORDS in ground-gl.js writes them)
-    verse = [{"name": name_of(poems[e["n"]]), "n": e["n"], "lines": [l for l in poems[e["n"]]["lines"] if l.strip()],
-              "prose": bool(poems[e["n"]].get("prose"))} for e in book]
+    verse = [{"name": name_of(P), "n": P["n"], "lines": [l for l in P["lines"] if l.strip()], "prose": bool(P.get("prose")),
+              **({"from": P["from"]} if P.get("from") else {})} for P in [poems[e["n"]] for e in book] + alone]
     spec = {"pages": pages, "poems": verse}
     if morpholex:
         spec.update(spirits(verse, morpholex))
@@ -374,7 +383,7 @@ def build(drift, out, sources, morpholex=None):
     # the new title; before any of DRIFT's scripts, the letters asked of its engine (WORDS in ground-gl.js); and the
     # type: Picture Poetry's own (its capitals, and the light italic of its poems), and DRIFT's serif upright too, for
     # the books' notes
-    page = page.replace("<title>DRIFT</title>", "<title>DRIFT Poetry</title>\n<script>window.DRIFT_WORDS = true;</script>\n"
+    page = page.replace("<title>DRIFT</title>", "<title>GamePlan</title>\n<script>window.DRIFT_WORDS = true;</script>\n"
                         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400'
                         '&family=Poppins:ital,wght@0,500;1,300&display=swap">', 1)
     if page.index("<script") != page.index("<script>window.DRIFT_WORDS"):

@@ -483,7 +483,7 @@
       if (bk || Math.abs(b.x - (vx + VW / 2)) > VW * 0.3 || Math.abs(b.y - (vy + VH / 2)) > VH * 0.3) continue;
       const P = SPEC.poems[linePoem[b.line]], y = why.get(whyKey(b.line, b.x, b.y)) || null;
       if (!P) continue;
-      show(P.name, "Picture Poetry, page " + P.n + (!y ? "" : y.s ? whyOf(y.s)
+      show(P.name, whence(P) + (!y ? "" : y.s ? whyOf(y.s)
         : " · its root " + y.root + ", in " + [PL.works[y.work].title || "Untitled", PL.works[y.work].artist].filter(Boolean).join(", ")));
       clearTimeout(poemTimer);
       poemTimer = setTimeout(() => label.classList.remove("on"), 6854);
@@ -555,7 +555,7 @@
       if (!r) return;
       const li = [...lineRoots.get(r)][0], [a, z] = lineText[li] || [];
       capKin.append(el("b", "", r), "“" + (a != null ? letterText.slice(a, z) : "") + "”");
-      capKin.title = "Its root, shared with a line of " + SPEC.poems[linePoem[li]].name + " (Picture Poetry, page " + SPEC.poems[linePoem[li]].n + ")";
+      capKin.title = "Its root, shared with a line of " + SPEC.poems[linePoem[li]].name + " (" + whence(SPEC.poems[linePoem[li]]) + ")";
     }).observe(capTitle, { childList: true, characterData: true, subtree: true });
   }
   let letterText = "", lineText = [];                                  // (the poems' text and each line's span in it, from letters())
@@ -675,7 +675,8 @@
   function contents(t) {
     const pi = t.b.page, P = SPEC.pages[pi], out = [{ kind: "model", b: t.b, note: t.b.note, turn: { heading: t.heading } }];
     if (P.scenes) return out.concat(P.scenes.map((s) => ({ kind: "scene", s })), [{ kind: "wall" }]);   // (a chronicle)
-    out.push({ kind: "poem" }, { kind: "photo", note: P.photoNote });
+    if (P.lines.some((l) => l.trim())) out.push({ kind: "poem" });   // (page 10 prints no poem)
+    out.push({ kind: "photo", note: P.photoNote });
     for (const c of SPEC.chars || []) if (c.page === pi) out.push({ kind: "char", note: c.note, r: c.sheet });
     for (const o of BLD) if (o.page === pi && o !== t.b) out.push({ kind: "model", b: o, note: o.note, turn: { heading: REST } });
     return out;
