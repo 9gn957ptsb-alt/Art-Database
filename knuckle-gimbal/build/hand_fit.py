@@ -373,7 +373,7 @@ def open_pinky(base, closed, mm, near=None):
     # angles straight) keeps the finger out of the grip and 1 mm off the phone at the hold; where the closed finger curls
     # through the open well, the open one may already reach into it
     best = None; keys = sorted(set(base) | set(closed))
-    for mcp in range(0, 61, 5):
+    for mcp in range(0, 71, 5):
         for abd in np.arange(-10, 36, 2.5):
             for pip in range(0, 91, 10):
                 for dip in range(0, 61, 15):
