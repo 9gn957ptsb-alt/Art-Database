@@ -65,3 +65,7 @@ a model's judgment: a smaller model can run a script it could not have written.
 - **11 Nov 2026** — The soft look is in js/viewer.js of both model pages (sky light, a warm sun with soft-edged
   shadows, edges at 55%; `#flat` brings back the flat look). It changes drawing only: a tool or landing that
   republishes js/viewer.js reads the live one first, or the look is lost.
+- **11 Nov 2026** — The first soft look's PCF shadows showed the shadow map's square texels. Now VSM shadows (smooth),
+  the shadow camera fitted to what is in view, and each face casting from its far side (else a lit roof shades
+  itself). Screen-space ambient occlusion (three's SAOPass and SSAOPass) was tried and left out: the page's long depth
+  range blotched flat roofs, and translucent roofs let interiors ghost through. Real corner shading needs a bake.
