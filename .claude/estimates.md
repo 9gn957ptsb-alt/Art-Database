@@ -53,6 +53,12 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 10 Nov | 3D house page: a change that builds new walls or cuts an existing one, found from a drawn-on screenshot (one helper), three jobs | 18-28 min | 31, 33, 39 min | over every time: quote 30-40 min |
 | 10 Nov | 3D house page: a room fitted out with a new tool (one helper), eight jobs | 15-28 min | 17, 19, 20, 22, 23, 25, 27, 30 min | mostly in range: quote 20-30 min |
 | 10 Nov | 3D house page: a small edit to one room's existing tool (one helper), six jobs | 6-15 min | 3, 4, 4, 8, 8, 14 min | in range |
+| 11 Nov | 3D house page: one material changed everywhere, done by me | 3-15 min | about 6 min | in range |
+| 11 Nov | 3D house page: a room extended to a line drawn on a screenshot (one helper) | 30-40 min | 47 min | over again: quote 40-50 min |
+| 11 Nov | 3D house page: two fit-outs in one helper (an outdoor grill station copied from another page, a window over the sink) | 40-50 min | 34 min | under the range |
+| 11 Nov | 3D house page: an existing kitchen tool reshaped (one helper) | 30-40 min | 25 min | under: quote 20-30 min |
+| 11 Nov | design engines with tests, no page change (one helper each): plan solvers; a drawing engine and the first four sheets | 30-40 min; 50-65 min | 18 min; 31 min | well under: quote engines at about half |
+| 11 Nov | 3D house page: every wall moved to sit centred on the plan's lines (one helper) | 45-60 min | about 50 min | in time, but it fell short of its own check and was not put live |
 | 5 Nov | DUH intro: a fix round | about 1 h | 0.9 h | right |
 | 5 Nov | DUH intro: a check | 20-30 min | about 15 min | right |
 | 5 Nov | DUH intro: finish, sound, checks, fixes | about 2-2.4 h, stage by stage | 2.1 h | right |
