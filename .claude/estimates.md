@@ -45,6 +45,13 @@ to get more accurate. Read this before giving one; add a row when the work is do
 
 | date | work | estimate given | actual | note |
 | --- | --- | --- | --- | --- |
+| 10 Nov | 3D house page: nine jobs at once | (each given its own) | the 5-hour usage window ran out after about 100 min; eight jobs stopped part-way and were run again | run fewer at once; put related edits for one room in one helper |
+| 10 Nov | 3D house page: a second 3D page for another project from PDF drawings (measure, page, model and join; three helpers) | 50-70 min | 56 min (22 + 23 in parallel, then 33) | in range |
+| 10 Nov | 3D house page: a thickness for every wall and a wall types sheet (survey, then model and sheet) | 50-65 min | survey 37 min, then model 55 min and sheet about 25 min after a restart | over: the model moved under the survey three times; the tool re-surveys on every run |
+| 10 Nov | 3D house page: page code change with a browser test (one helper), four jobs | 12-30 min | 11, 16, 22, 25 min | in range |
+| 10 Nov | 3D house page: a change that builds new walls or cuts an existing one, found from a drawn-on screenshot (one helper), three jobs | 18-28 min | 31, 33, 39 min | over every time: quote 30-40 min |
+| 10 Nov | 3D house page: a room fitted out with a new tool (one helper), eight jobs | 15-28 min | 17, 19, 20, 22, 23, 25, 27, 30 min | mostly in range: quote 20-30 min |
+| 10 Nov | 3D house page: a small edit to one room's existing tool (one helper), six jobs | 6-15 min | 3, 4, 4, 8, 8, 14 min | in range |
 | 5 Nov | DUH intro: a fix round | about 1 h | 0.9 h | right |
 | 5 Nov | DUH intro: a check | 20-30 min | about 15 min | right |
 | 5 Nov | DUH intro: finish, sound, checks, fixes | about 2-2.4 h, stage by stage | 2.1 h | right |
