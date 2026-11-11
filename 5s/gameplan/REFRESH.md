@@ -18,6 +18,7 @@ command to the next.
    rm -rf /tmp/gameplan-refresh && mkdir -p /tmp/gameplan-refresh/pages
    git -C /home/user/Art-Database fetch origin claude/art-database-photos-ilnaf7
    git -C /home/user/Art-Database show origin/claude/art-database-photos-ilnaf7:5s/gameplan/reflect.mjs > /tmp/gameplan-refresh/reflect.mjs
+   git -C /home/user/Art-Database show origin/claude/art-database-photos-ilnaf7:5s/gameplan/galaxy.mjs > /tmp/gameplan-refresh/galaxy.mjs
    ```
 
 2. Sessions: `list_sessions` (claude-code-remote, `mine: true`, `limit: 100`). Its result is saved to a file; copy
@@ -63,12 +64,16 @@ command to the next.
    working, waiting on you, failed); then update the count and dates in its first sentence and the counts in its
    last paragraph. A row never carries a transcript's words.
 
-   The galaxy draws the same rows: https://claude.ai/artifact/2AbsMtu2yhqFWC14EtQvWT. Read its `sessions.json`
-   (Artifact, action "read", that url, path "sessions.json"), add a row for each new catalog row and bring every
-   `now` and `asOf` up to date, in the same shape (`k` unique; `core` only on the row already marked so;
-   `p` the `k` of the session that started it, when list_sessions gives a parent), save it as
-   `/tmp/gameplan-refresh/sessions.json`, read the page (action "read", that url, no path), and publish the saved
-   page unchanged to that url with files `{"sessions.json": "/tmp/gameplan-refresh/sessions.json"}`.
+   The galaxy is the drawing under the catalog (widget `ee86f694-3064`): the same rows as a knowledge graph, after
+   Graphify. Read it (`read`, engine "widget") and take the `sessions` rows from its code. Add a row for each new
+   catalog row and bring every `now` up to date (`k` unique; `callno` its call number; `core` only on the row
+   already marked so; `p` the `k` of the session that started it, when list_sessions gives a parent). Save
+   `{"works": {"<w>": "<name>"}, "sessions": [...]}` as `/tmp/gameplan-refresh/rows.json`, then run
+   `node /tmp/gameplan-refresh/galaxy.mjs /tmp/gameplan-refresh/rows.json > /tmp/gameplan-refresh/galaxy.json`.
+   Put its `sessions`, `works` and `communities` in place of the widget's three data arrays (only the arrays
+   change: a redraw from the code you read, with `basePub`), look at it (`screenshot`), and `publish` if it reads
+   clearly. Then bring the two paragraphs under it in line with that output: the node and link counts from its
+   `graph`, EXTRACTED and INFERRED, the communities, the best-connected node (`gods`) and the bridges.
 6. Delete every copy, and check:
 
    ```
