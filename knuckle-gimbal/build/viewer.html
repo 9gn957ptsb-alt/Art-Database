@@ -78,9 +78,8 @@ body {
 @media (max-width: 860px) {
   .dock { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; }
 }
-/* narrow phones: the switch alone; short screens (a phone on its side): the switch shares a row instead of taking one */
+/* narrow phones: the switch without its label, so it fits the dock */
 @media (max-width: 359px) { #versionLbl { display: none; } #versionCtl { justify-content: center; } }
-@media (max-height: 480px) { #versionCtl { grid-column: auto; } #versionLbl { display: none; } }
 .ctl { display: grid; gap: 4px; min-width: 0; }
 .ctl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .ctl label, .ctl .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; white-space: nowrap; }
