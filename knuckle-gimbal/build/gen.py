@@ -2,7 +2,7 @@
 def plate_mesh(math, outline, holes, R, RH, wbot, wt0, wt1, nq):
     # outline counter-clockwise, holes clockwise, points (s, y) in mm.
     # Bottom face flat at w = wbot, top face the plane w = wt0 + wt1 * s.
-    # R, RH: edge radii of the outline and the holes; nq: segments per quarter round.
+    # R, RH: edge radii of the outline and the holes (R, and RH for a single hole, may also be lists: one radius per point); nq: segments per quarter round.
     hyp = math.hypot
     def left_normals(base):
         out = []
@@ -19,21 +19,24 @@ def plate_mesh(math, outline, holes, R, RH, wbot, wt0, wt1, nq):
         return wt0 + wt1 * s
     def rings(base, rad):
         nrm = left_normals(base)
+        rv = rad if isinstance(rad, list) else [rad] * len(base)
         def ring(delta, wf):
-            r = []
+            # delta(r): inward offset and wf(s, r): height, for a point whose edge radius is r
+            out = []
             for j in range(len(base)):
-                s = base[j][0] + nrm[j][0] * delta; y = base[j][1] + nrm[j][1] * delta
-                r.append((s, y, wf(s)))
-            return r
-        if rad <= 0:
-            return [ring(0.0, lambda s: wbot), ring(0.0, top)]
-        rs = [ring(rad, lambda s: wbot)]
+                r = rv[j]; d = delta(r)
+                s = base[j][0] + nrm[j][0] * d; y = base[j][1] + nrm[j][1] * d
+                out.append((s, y, wf(s, r)))
+            return out
+        if max(rv) <= 0:
+            return [ring(lambda r: 0.0, lambda s, r: wbot), ring(lambda r: 0.0, lambda s, r: top(s))]
+        rs = [ring(lambda r: r, lambda s, r: wbot)]
         for k in range(1, nq + 1):
             a = math.radians(270.0 - 90.0 * k / nq)
-            rs.append(ring(rad + rad * math.cos(a), lambda s, a=a: wbot + rad + rad * math.sin(a)))
+            rs.append(ring(lambda r, a=a: r + r * math.cos(a), lambda s, r, a=a: wbot + r + r * math.sin(a)))
         for k in range(0, nq + 1):
             a = math.radians(180.0 - 90.0 * k / nq)
-            rs.append(ring(rad + rad * math.cos(a), lambda s, a=a: top(s) - rad + rad * math.sin(a)))
+            rs.append(ring(lambda r, a=a: r + r * math.cos(a), lambda s, r, a=a: top(s) - r + r * math.sin(a)))
         return rs
     groups = [rings(outline, R)]
     for h in holes:

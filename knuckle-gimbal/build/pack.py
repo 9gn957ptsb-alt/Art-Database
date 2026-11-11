@@ -8,7 +8,8 @@ GROUP = {"MagSafe Face":"rotor","Motor Rotor Can":"rotor","Motor Stator":"stator
          "Arm Stage 1":"stage1","Arm Stage 2":"stage2","End Block":"stage2","Hinge Lug Top":"stage2","Hinge Lug Bottom":"stage2",
          "Hinge Bolt M2":"stage2","Bolt Head":"stage2","Nyloc Nut":"stage2","Grip Body":"knuckle","Grip Core Tab":"knuckle","Hinge Barrel":"knuckle",
          "Track Frame":"knuckle","Ring Slider Bottom":"ringB","Ring Liner Bottom":"ringB","Ring Slider Top":"ringT","Ring Liner Top":"ringT",
-         "Ring Fin Root Bottom":"ringB","Ring Fin Bottom":"ringB","Ring Fin Root Top":"ringT","Ring Fin Top":"ringT"}
+         "Tang Strap Bottom":"ringB","Tang Nose Bottom":"ringB","Tang Strap Top":"ringT","Tang Nose Top":"ringT"}
+VARIANT = {"Open Well": "well", "Sliding Tang": "tang"}   # the grip's versions: a part in one of these groups shows only with it
 def tri_face(outer, inners, n):
     n = np.array(n, float); n /= np.linalg.norm(n)
     a = np.array([1.0, 0, 0]) if abs(n[0]) < 0.9 else np.array([0, 1.0, 0])
@@ -38,7 +39,8 @@ for p in r["parts"]:
     m = trimesh.Trimesh(vertices=T.reshape(-1, 3), faces=np.arange(len(T) * 3).reshape(-1, 3), process=True)
     assert m.is_watertight, name
     q = np.round(T * 100).astype(np.int16).reshape(-1)
-    chunks.append(q); parts.append({"name": name, "group": GROUP[name], "mat": MAT[p["material"]], "start": off, "count": int(q.size)})
+    v = [VARIANT[g] for g in p["path"] if g in VARIANT]
+    chunks.append(q); parts.append({"name": name, "group": GROUP[name], "mat": MAT[p["material"]], "start": off, "count": int(q.size), **({"variant": v[0]} if v else {})})
     off += q.size; tot += len(T)
 allq = np.concatenate(chunks)
 lo, hi = allq.reshape(-1, 3).min(0) / 100, allq.reshape(-1, 3).max(0) / 100

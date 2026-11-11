@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: one screen. The product fills the stage; a small dock at the bottom slides the arm, turns the grip, slides the ring, opens the inside view, and shows a hand holding it and the phone on it. */
+/* Layout: one screen. The product fills the stage; a small dock at the bottom picks the grip's little-finger version, slides the arm, turns the grip, slides the ring, opens the inside view, and shows a hand holding it and the phone on it. */
 :root {
   --bg: #e4e6e9;
   --bg-2: #f6f7f8;
@@ -71,12 +71,16 @@ body {
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
 }
 #clenchCtl { grid-column: 1 / -1; }
+#versionCtl { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.seg { display: inline-flex; gap: 3px; padding: 3px; border-radius: 10px; border: 1px solid var(--line); }
+.seg button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 7px; border: 0; background: transparent; color: var(--ink); cursor: pointer; white-space: nowrap; }
+.seg button[aria-checked="true"] { background: var(--ink); color: var(--bg); }
 @media (max-width: 860px) {
   .dock { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; }
 }
 .ctl { display: grid; gap: 4px; min-width: 0; }
 .ctl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.ctl label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.ctl label, .ctl .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; white-space: nowrap; }
 .ctl output { font-family: var(--f-data); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 input[type="range"] { width: 100%; margin: 4px 0 0; accent-color: var(--accent); }
 .tgl {
@@ -96,7 +100,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 </style>
 
 <div class="app">
-  <div class="stage" id="stage" tabindex="0" role="img" aria-label="Knuckle: a round carbon fiber MagSafe puck with a telescoping arm and a mirror-image silicone grip that turns down beside the phone. Two carbon rings for the index and ring fingers ride in a carbon track, and the ring finger's ring slides down in clicks, carrying a silicone fin on the palm side that sits between the ring and little fingers. Drag to orbit, pinch or scroll to zoom, arrow keys also orbit.">
+  <div class="stage" id="stage" tabindex="0" role="img" aria-label="Knuckle: a round carbon fiber MagSafe puck with a telescoping arm and a mirror-image silicone grip that turns down beside the phone. Two carbon rings for the index and ring fingers ride in a carbon track, and the ring finger's ring slides down in clicks. The grip's ends come in two versions for the little finger: an open well through the grip beside the ring, closed by a bar at the end, or a sliding tang, a soft nose on a carbon strap that rides with the ring. Drag to orbit, pinch or scroll to zoom, arrow keys also orbit.">
     <canvas id="c2d" aria-hidden="true"></canvas>
     <canvas id="cgl" aria-hidden="true" hidden></canvas>
   </div>
@@ -108,6 +112,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     <div class="bottom">
       <span class="hint" id="hint">Drag to orbit · pinch or scroll to zoom · two fingers to move</span>
       <div class="dock" role="group" aria-label="Product controls">
+        <div class="ctl" id="versionCtl">
+          <span class="lbl" id="versionLbl">Little finger</span>
+          <div class="seg" id="version" role="radiogroup" aria-labelledby="versionLbl">
+            <button type="button" role="radio" aria-checked="true" tabindex="0" data-v="well">Open well</button>
+            <button type="button" role="radio" aria-checked="false" tabindex="-1" data-v="tang">Sliding tang</button>
+          </div>
+        </div>
         <div class="ctl" id="clenchCtl" hidden>
           <div class="ctl-top"><label for="clench">Fingers</label><output id="clenchOut" for="clench">closed</output></div>
           <input id="clench" type="range" min="0" max="100" step="1" value="100">
@@ -142,6 +153,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   const Q = new Int16Array(bytes.buffer);
   const PARTS = META.parts.map(p => ({ ...p, q: Q.subarray(p.start, p.start + p.count) }));
+  // the grip's little-finger versions (Open well, Sliding tang): a part with a variant shows only with its version
+  const VERSION0 = "well";
 
   // ---------- phone: an orange iPhone 17 Pro Max on the MagSafe face, drawn from published dimensions by phone.py ----------
   const PHONE = /*PHONE_META*/null;
@@ -171,7 +184,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
                       m[2], m[6], m[10], -(m[2] * m[3] + m[6] * m[7] + m[10] * m[11]), 0, 0, 0, 1];
     const B = HAND.bones, REST = B.map(b => b.rest), IBM = REST.map(inv);
     const LOC = B.map((b, i) => b.parent < 0 ? REST[i] : mul(inv(REST[b.parent]), REST[i]));
-    const ANG = B.map(b => [HAND.open[b.name], HAND.fist[b.name], HAND.slideOpen[b.name], HAND.slideFist[b.name]]);
+    // each version of the grip has its own fit: where the wrist sits, and every joint open, closed and at each ring click
+    let HV, ANG;
+    function use(v) { HV = HAND.variants[v]; ANG = B.map(b => [HV.open[b.name], HV.fist[b.name], HV.slideOpen[b.name], HV.slideFist[b.name]]); }
+    use(VERSION0);
     // a joint rolls about its bone, swings sideways, then curls toward the palm (degrees), as joint() in hand_fit.py
     function joint(f, a, r) {
       const R = Math.PI / 180, cf = Math.cos(-f * R), sf = Math.sin(-f * R), ca = Math.cos(a * R), sa = Math.sin(a * R), cr = Math.cos(r * R), sr = Math.sin(r * R);
@@ -183,7 +199,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       const W = [], S = [], t = Math.max(0, Math.min(4, slide / 2)), n0 = Math.min(3, Math.floor(t)), fr = t - n0;
       const at = (tab, j) => tab[n0][j] + (tab[n0 + 1][j] - tab[n0][j]) * fr;
       for (let i = 0; i < B.length; i++) {
-        let m = B[i].parent < 0 ? mul(HAND.root, REST[i]) : mul(W[B[i].parent], LOC[i]);
+        let m = B[i].parent < 0 ? mul(HV.root, REST[i]) : mul(W[B[i].parent], LOC[i]);
         const [o, f, so, sf] = ANG[i];
         if (o) {
           const d = so ? [0, 1].map(j => at(so, j) + (at(sf, j) - at(so, j)) * c) : [0, 0];
@@ -205,7 +221,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       }
     }
     pose(1, 0);
-    return { pos, nor, index, pose };
+    return { pos, nor, index, pose, use };
   })() : null;
 
   // ---------- articulation (SketchUp pose: arm out 45 mm, grip turned 90° toward the phone, hinge axis at x 79.25, z 16.5) ----------
@@ -213,7 +229,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   const POSE_E = 45, POSE_AX = 79.25, AXIS_Z = 16.5, POSE_GRIP = 90;
   const LIFT = { rotor: 0, phone: 0, stator: 10, battery: 20, board: 30, shell: 44, stage1: 44, stage2: 44, knuckle: 44, ringT: 44, ringB: 44, hand: 44 };
   const RING_OUT = 16;   // inside view: the rings lift out of the track by this much
-  const state = { E: 45, grip: 90, ring: 0, inside: 0, insideTarget: 0, hand: false, clench: 1, phone: false };
+  const state = { E: 45, grip: 90, ring: 0, inside: 0, insideTarget: 0, hand: false, clench: 1, phone: false, variant: VERSION0 };
+  const inVersion = p => !p.variant || p.variant === state.variant;
+  const HV = () => HAND.variants[state.variant];
   // the hand turns with the grip (the Grip slider stops where it would run into the puck or phone); the inside view pulls the rings out of it
   const handShown = () => !!hand && state.hand && state.inside === 0;
   // 3×4 row-major transform per group
@@ -258,7 +276,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         if (X > hi[0]) hi[0] = X; if (Y > hi[1]) hi[1] = Y; if (Z > hi[2]) hi[2] = Z;
       }
     };
-    for (const p of PARTS) if (withPhone || p.group !== "phone") add(groupMatrix(p.group), p.q, 100);
+    for (const p of PARTS) if ((withPhone || p.group !== "phone") && inVersion(p)) add(groupMatrix(p.group), p.q, 100);
     if (withHand) add(groupMatrix("hand"), hand.pos, 1);
     const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2], corners = [];
     for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) corners.push([x, y, z]);
@@ -279,8 +297,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   }
   // what the home view fits: the product, with the hand and the phone when they are shown
   const FRAMES = {};
-  for (const h of hand ? [0, 1] : [0]) for (const ph of PHONE ? [0, 1] : [0]) FRAMES[h + "" + ph] = span(!!h, !!ph);
-  const frame = () => FRAMES[(state.hand ? 1 : 0) + "" + (state.phone ? 1 : 0)];
+  for (const v of ["well", "tang"]) {
+    state.variant = v; if (hand) hand.use(v);
+    for (const h of hand ? [0, 1] : [0]) for (const ph of PHONE ? [0, 1] : [0]) FRAMES[v + h + ph] = span(!!h, !!ph);
+  }
+  state.variant = VERSION0; if (hand) hand.use(VERSION0);
+  const frame = () => FRAMES[state.variant + (state.hand ? 1 : 0) + (state.phone ? 1 : 0)];
   // screen layout: the product is framed in the space between the top bar and the dock
   const layout = { w: 1, h: 1, cx: 0.5, cy: 0.5, f: 1 };
   function measure() {
@@ -381,7 +403,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   function gripLabel(a) { return a === 90 ? "90° hold" : a === 0 ? "0° flat" : a === -180 ? "stowed" : (a < 0 ? "−" + -a : a) + "°"; }
   // turned toward the phone, the grip needs the arm out far enough to clear the phone's edge; with a hand in it,
   // as far as hand_range.py found the hand needs at that angle
-  const eMin = a => state.hand ? HAND.eHand[a - HAND.gripMin] : a <= 30 ? 0 : Math.ceil(20 * (a - 30) / 60);
+  const eMin = a => state.hand ? HV().eHand[a - HV().gripMin] : a <= 30 ? 0 : Math.ceil(20 * (a - 30) / 60);
   function setE(v) { state.E = Math.max(v, eMin(state.grip)); $("slide").value = state.E; $("slideOut").textContent = state.E + " mm"; }
   $("slide").addEventListener("input", e => { setE(+e.target.value); applyPose(); invalidate(); });
   $("fold").addEventListener("input", e => {
@@ -396,8 +418,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     let more = state.phone ? " An orange iPhone 17 Pro Max is clipped to the MagSafe face." : "";
     if (hand && state.hand) {
       const grip = state.clench === 1 ? "fingers closed around its lower half" : state.clench === 0 ? "fingers open" : "fingers partly closed";
-      more += ` A left hand holds it: index and ring fingers through the rings, middle finger in the gap over the hinge, the palm's little-finger edge on the grip, ${grip}, the fin between the ring and little fingers, the little finger straight along the grip.`;
+      const little = state.variant === "tang" ? "the little finger resting on the sliding tang's soft nose and the relieved corner at the grip's end"
+        : state.ring === 0 ? "the little finger curled down through the open well at the grip's end"
+        : "the little finger out of the open well, resting on the grip, since the slid ring leaves the well too short for it";
+      more += ` A left hand holds it: index and ring fingers through the rings, middle finger in the gap over the hinge, the palm's little-finger edge on the grip, ${grip}, ${little}.`;
     }
+    more = (state.variant === "well" ? " Shown: the open well." : " Shown: the sliding tang.") + more;
     $("stage").setAttribute("aria-label", DESC.replace(" Drag to orbit", more + " Drag to orbit"));
   }
   function poseHand() {
@@ -417,10 +443,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     $("handBox").hidden = false;
     $("hand").addEventListener("change", e => {
       state.hand = e.target.checked; $("clenchCtl").hidden = !state.hand;
-      $("fold").min = state.hand ? HAND.gripMin : -180;
+      $("fold").min = state.hand ? HV().gripMin : -180;
       if (state.hand) {
         // the hand needs the rings in the track; folded back further than a hand fits, the grip returns to the hold
-        if (state.grip < HAND.gripMin) { state.grip = POSE_GRIP; $("fold").value = POSE_GRIP; $("foldOut").textContent = gripLabel(POSE_GRIP); }
+        if (state.grip < HV().gripMin) { state.grip = POSE_GRIP; $("fold").value = POSE_GRIP; $("foldOut").textContent = gripLabel(POSE_GRIP); }
         state.insideTarget = 0; $("inside").setAttribute("aria-pressed", "false"); if (reduce) state.inside = 0;
       }
       if (state.E < eMin(state.grip)) setE(state.E);
@@ -434,6 +460,29 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
       poseHand(); applyPose(); invalidate();
     });
   }
+  // the version switch: a radio group, arrow keys move between its two buttons
+  const VBTN = [...document.querySelectorAll("#version button")];
+  function setVersion(v) {
+    state.variant = v;
+    for (const btn of VBTN) { const on = btn.dataset.v === v; btn.setAttribute("aria-checked", String(on)); btn.tabIndex = on ? 0 : -1; }
+    if (hand) {
+      hand.use(v);
+      if (state.hand) {
+        $("fold").min = HV().gripMin;
+        if (state.grip < HV().gripMin) { state.grip = HV().gripMin; $("fold").value = state.grip; $("foldOut").textContent = gripLabel(state.grip); }
+        if (state.E < eMin(state.grip)) setE(state.E);
+      }
+    }
+    poseHand(); describe(); applyPose(); invalidate();
+  }
+  for (const btn of VBTN) {
+    btn.addEventListener("click", () => setVersion(btn.dataset.v));
+    btn.addEventListener("keydown", e => {
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+      e.preventDefault(); const next = VBTN[(VBTN.indexOf(btn) + 1) % VBTN.length]; setVersion(next.dataset.v); next.focus();
+    });
+  }
+  describe();
   $("inside").addEventListener("click", e => {
     state.insideTarget = state.insideTarget ? 0 : 1; e.currentTarget.setAttribute("aria-pressed", String(!!state.insideTarget));
     if (reduce) state.inside = state.insideTarget;
@@ -486,6 +535,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     PARTS.forEach((p, pi) => {
       if (state.inside === 0 && HIDDEN.has(p.name)) return;          // sealed inside the shell
       if (p.group === "phone" && !state.phone) return;
+      if (!inVersion(p)) return;
       const bias = DEPTH_BIAS[p.group] || 0;                            // nested arm stages draw before the rail around them
       const m = groupMatrix(p.group), q = SUB[pi].pos, n = SUB[pi].n, col = COLOR2D[p.mat];
       for (let i = 0, t = 0; i < q.length; i += 9, t += 3) {
@@ -628,7 +678,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     const groups = {};
     for (const p of PARTS) {
       if (!groups[p.group]) { const grp = new T.Group(); grp.matrixAutoUpdate = false; groups[p.group] = grp; scene.add(grp); }
-      const mesh = new T.Mesh(geometry(p.q), MAT[p.mat]); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = p.name;
+      const mesh = new T.Mesh(geometry(p.q), MAT[p.mat]); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = p.name; mesh.userData.part = p;
       groups[p.group].add(mesh);
     }
     let handGeo = null;
@@ -645,6 +695,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   }
   function poseThree() {
     if (gl.groups.phone) gl.groups.phone.visible = state.phone;
+    for (const grp of Object.values(gl.groups)) for (const ch of grp.children) if (ch.userData.part) ch.visible = inVersion(ch.userData.part);
     if (gl.groups.hand) {
       gl.groups.hand.visible = handShown();
       if (handDirty) { gl.handGeo.attributes.position.needsUpdate = true; gl.handGeo.attributes.normal.needsUpdate = true; handDirty = false; }

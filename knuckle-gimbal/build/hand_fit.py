@@ -1,19 +1,22 @@
-# Fits the WebXR generic left hand (hand/left.glb, MIT licence in hand/LICENSE.md) to the grip in the SketchUp pose
-# and writes hand_meta.json and hand_b64.txt into the current folder for build_page.py.
+# Fits the WebXR generic left hand (hand/left.glb, MIT licence in hand/LICENSE.md) to each version of the grip (variants.py,
+# Open well and Sliding tang) in the SketchUp pose and writes hand_meta.json and hand_b64.txt into the current folder for build_page.py.
 # Index and ring fingers go through the rings, the middle finger through the gap over the hinge, the palm faces the phone,
-# and the fingers close around the lower half of the grip. Poses: open, fist, and the ring finger's ring slid 8 mm.
-# Every skin vertex is checked against a distance field of the grip parts (and boxes for the phone, puck and arm).
-# Needs numpy, scipy, shapely, pygltflib.
+# and the fingers close around the lower half of the grip; the little finger rests the way its version is meant for.
+# Poses: open, fist, and the ring finger's ring slid in 2 mm clicks to 8 mm. Every skin vertex is checked against a distance
+# field of the version's parts (and boxes for the phone, puck and arm). `python3 hand_fit.py well` fits one version only.
+# Needs numpy, scipy, shapely, trimesh, triangle, pygltflib.
 import base64, json, math, os, sys
 import numpy as np
-import shapely
 from pygltflib import GLTF2
 from scipy.ndimage import distance_transform_edt, map_coordinates
 from scipy.optimize import least_squares
-from shapely.geometry import Polygon
+import shapely, trimesh
+from shapely.geometry import MultiLineString, Polygon
+from shapely.ops import polygonize
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 exec(open(os.path.join(HERE, "gen.py")).read()); exec(open(os.path.join(HERE, "outlines.py")).read())
+sys.path.insert(0, HERE); import meshes
 AX, AZ = 34.25 + 45.0, 16.5                     # hinge axis in the SketchUp pose; viewer coords are mm with z from the phone back
 ZR = AZ - SC                                    # height of the ring axes (s = SC)
 YR = -Y_HOME                                    # ring centres at y = +-YR
@@ -90,12 +93,14 @@ def world(G, rots):
         Wp[i] = M
     return Wp
 VH = np.c_[V, np.ones(len(V))]
-def skinned(Wp, normals=False):
-    S = Wp @ IBM
-    out = np.zeros((len(V), 3))
+def skinned(Wp, normals=False, sel=None):
+    # sel: skin only these vertices (the rest stay at 0), for the little finger's grid searches
+    S = Wp @ IBM; r = slice(None) if sel is None else sel
+    out = np.zeros((len(V), 3)); o = 0
     for k in range(4):
-        Sk = S[J[:, k]]
-        out += WS[:, k, None] * np.einsum("vab,vb->va", Sk[:, :3, :], VH)
+        Sk = S[J[r, k]]
+        o = o + WS[r, k, None] * np.einsum("vab,vb->va", Sk[:, :3, :], VH[r])
+    out[r] = o
     if not normals: return out
     nr = np.zeros((len(V), 3))
     for k in range(4):
@@ -104,26 +109,54 @@ def skinned(Wp, normals=False):
 def G_of(x6):
     G = np.eye(4); G[:3, :3] = rvec(np.array(x6[:3])); G[:3, 3] = x6[3:6]; return G
 
-# ---------- grip distance field (grip frame s, y, w; viewer x = AX - w, z = AZ - s) ----------
+# ---------- grip distance fields, one set per version of the grip (grip frame s, y, w; viewer x = AX - w, z = AZ - s) ----------
 H = 0.4
 S_AX = np.arange(-4.0, 64.0 + 1e-9, H); Y_AX = np.arange(-64.0, 64.0 + 1e-9, H); W_AX = np.arange(-24.0, 20.0 + 1e-9, H)
-def grip_sdf(slide):
-    occ = np.zeros((len(S_AX), len(Y_AX), len(W_AX)), bool)
-    SS, YY = np.meshgrid(S_AX, Y_AX, indexing="ij"); SW, WW = np.meshgrid(S_AX, W_AX, indexing="ij")
+SHAPE = (len(S_AX), len(Y_AX), len(W_AX)); LO3 = np.array([S_AX[0], Y_AX[0], W_AX[0]])
+_S3, _Y3, _W3 = np.meshgrid(S_AX, Y_AX, W_AX, indexing="ij")
+FIXED = ((np.hypot(_S3, _W3) <= 2.2) & (np.abs(_Y3) <= 7.5)) | ((_S3 >= 1.9) & (_S3 <= 8.8) & (np.abs(_W3) <= 1.6) & (np.abs(_Y3) <= 7.5))   # hinge barrel, core tab
+del _S3, _Y3, _W3
+def plate_sdf(slide):
+    # today's grip without the fins, from its plate outlines (exact edges, no rounds): what the shared part of the hand is fitted to
+    occ = FIXED.copy(); SS, YY = np.meshgrid(S_AX, Y_AX, indexing="ij")
     for name, (mat, grp, outline, holes, R, RH, wbot, wt0, wt1, nq, swap) in grip_parts().items():
         dy = -slide if grp == "ringB" else 0.0
-        if swap:
-            m2 = shapely.contains_xy(Polygon(outline), SW, WW)
-            occ |= m2[:, None, :] & ((Y_AX >= wbot + dy) & (Y_AX <= wt0 + dy))[None, :, None]
-        else:
-            poly = Polygon([(a, b + dy) for a, b in outline], [[(a, b + dy) for a, b in h] for h in holes])
-            m2 = shapely.contains_xy(poly, SS, YY)
-            occ |= m2[:, :, None] & ((W_AX[None, :] >= wbot) & (W_AX[None, :] <= wt0 + wt1 * S_AX[:, None]))[:, None, :]
-    # hinge barrel (r 2.2 about s = w = 0) and core tab (s 1.9..8.8, |w| <= 1.6), both |y| <= 7.5
-    S3, Y3, W3 = np.meshgrid(S_AX, Y_AX, W_AX, indexing="ij")
-    occ |= (np.hypot(S3, W3) <= 2.2) & (np.abs(Y3) <= 7.5)
-    occ |= (S3 >= 1.9) & (S3 <= 8.8) & (np.abs(W3) <= 1.6) & (np.abs(Y3) <= 7.5)
+        poly = Polygon([(a, b + dy) for a, b in outline], [[(a, b + dy) for a, b in h] for h in holes])
+        occ |= shapely.contains_xy(poly, SS, YY)[:, :, None] & ((W_AX[None, :] >= wbot) & (W_AX[None, :] <= wt0 + wt1 * S_AX[:, None]))[:, None, :]
     return (distance_transform_edt(~occ) - distance_transform_edt(occ)) * H
+def voxels(m):
+    # grid points inside the mesh, as plate_sdf samples the plates: slice it at each w, and test the points in each section
+    SS, YY = np.meshgrid(S_AX, Y_AX, indexing="ij"); out = []
+    ks = [k for k in range(len(W_AX)) if m.bounds[0][2] < W_AX[k] < m.bounds[1][2]]
+    lines, to3d, _ = trimesh.intersections.mesh_multiplane(m, plane_origin=[0, 0, 0], plane_normal=[0, 0, 1], heights=[W_AX[k] for k in ks])
+    for k, segs, T3 in zip(ks, lines, to3d):
+        if not len(segs): continue
+        T = np.linalg.inv(T3)                                        # grid points into the section's own 2D frame
+        u = T[0, 0] * SS + T[0, 1] * YY + T[0, 2] * W_AX[k] + T[0, 3]; v = T[1, 0] * SS + T[1, 1] * YY + T[1, 2] * W_AX[k] + T[1, 3]
+        inside = np.zeros(SS.shape, bool); segs = np.round(segs, 5)          # adjacent triangles' cuts meet exactly
+        faces = list(polygonize(MultiLineString([tuple(map(tuple, sg)) for sg in segs])))
+        rings = [Polygon(f.exterior) for f in faces]
+        for f in faces:                                              # a face inside an odd number of loops is material
+            if sum(r.contains(f.representative_point()) for r in rings) % 2: inside |= shapely.contains_xy(f, u, v)
+        i, j = np.nonzero(inside); out.append(np.c_[i, j, np.full(len(i), k)])
+    return np.vstack(out) if out else np.zeros((0, 3), int)
+def grip_sdfs(parts, fill=False):
+    # a field per 2 mm click of the ring slide (the ring finger's carriage moves -y). fill: the ring liners solid, to measure
+    # the little finger from its own side (the ring finger fills the bore; through a thin wall the field reads from the bore side)
+    vox = []
+    for n, (mat, grp, m) in parts.items():
+        if fill and n.startswith("Ring Liner"):
+            cy = Y_HOME if n.endswith("Bottom") else -Y_HOME
+            m = meshes.mesh(meshes.NS["plate_part"]("si", grp, ccw(circle(cy, LO)), [], 0.3, 0.3, WMIN - 0.6, WT0 + 0.6, WT1, 2))
+        vox.append((grp, voxels(m)))
+    out = {}
+    for mm in range(0, int(TRAVEL) + 1, 2):
+        occ = FIXED.copy()
+        for grp, i in vox:
+            k = i - np.array([0, round(mm / H), 0]) if grp == "ringB" else i
+            k = k[(k >= 0).all(1) & (k < SHAPE).all(1)]; occ[k[:, 0], k[:, 1], k[:, 2]] = True
+        out[mm] = (distance_transform_edt(~occ) - distance_transform_edt(occ)) * H
+    return out
 def box_sdf(p, lo, hi):
     c = (np.array(lo) + np.array(hi)) / 2; e = (np.array(hi) - np.array(lo)) / 2
     q = np.abs(p - c) - e
@@ -137,7 +170,7 @@ def scene_sdf(p, sdf):
     puck = np.where((p[:, 2] >= 0) & (p[:, 2] <= 11.5), rp - 28.0, np.hypot(np.maximum(rp - 28.0, 0), p[:, 2] - zc))
     d = np.minimum(d, puck)
     return np.minimum(d, box_sdf(p, (-24, -12.8, 11.5), (AX + 2.6, 12.8, AZ + 2.4)))     # rail, arm and hinge fork
-SDF = {mm: grip_sdf(float(mm)) for mm in range(0, int(TRAVEL) + 1, 2)}     # the ring slide's 2 mm clicks
+SDF, FILL = None, None             # the current version's fields, set in the loop at the end
 
 # ---------- pose parameters ----------
 OPEN_PIP, OPEN_DIP = 30.0, 15.0
@@ -224,19 +257,22 @@ def kabsch(A_, B_):
 def rotvec_of(R):
     q = mquat(R); th = 2 * math.acos(max(-1, min(1, q[3])))
     return np.zeros(3) if th < 1e-9 else q[:3] / math.sin(th / 2) * th
-x0 = np.zeros(6 + len(KA)); x0[6:] = [NAT.get(k, 0.0) for k in KA]
-x0[6 + KA.index("index-finger.abd")], x0[6 + KA.index("ring-finger.abd")] = -10.0, 10.0     # start spread, inside the bores
-Wr = world(np.eye(4), rots_from(qA(x0))); src, dst = [], []
-for f, yc in (("index-finger", YR), ("middle-finger", 0.0), ("ring-finger", -YR)):
-    a, b = bone(Wr, f + "-phalanx-proximal"), bone(Wr, f + "-phalanx-intermediate"); L = np.linalg.norm(b - a)
-    src += [a, b]; dst += [(RING_MID + L / 2, yc, ZR), (RING_MID - L / 2, yc, ZR)]
-R0, t0 = kabsch(np.array(src), np.array(dst)); x0[:3] = rotvec_of(R0); x0[3:6] = t0
-LB = np.r_[[-10] * 3, [-400] * 3, [60, -25, -25] * 3]; UB = np.r_[[10] * 3, [400] * 3, [100, 25, 25] * 3]
-XS = np.r_[[0.05] * 3, [2.0] * 3, [3.0] * len(KA)]
-# thread the fingers first, then let the grip push the skin out: thin walls would otherwise trap a finger half in a bore
-xa = solve(lambda x: resA(x, 0.0), x0, LB, UB, XS)
-xa = solve(resA, xa, LB, UB, XS)
-GA = G_of(xa[:6]); QA = qA(xa)
+def place():
+    # the wrist and the three threaded knuckles, as GA and QA
+    global GA, QA
+    x0 = np.zeros(6 + len(KA)); x0[6:] = [NAT.get(k, 0.0) for k in KA]
+    x0[6 + KA.index("index-finger.abd")], x0[6 + KA.index("ring-finger.abd")] = -10.0, 10.0     # start spread, inside the bores
+    Wr = world(np.eye(4), rots_from(qA(x0))); src, dst = [], []
+    for f, yc in (("index-finger", YR), ("middle-finger", 0.0), ("ring-finger", -YR)):
+        a, b = bone(Wr, f + "-phalanx-proximal"), bone(Wr, f + "-phalanx-intermediate"); L = np.linalg.norm(b - a)
+        src += [a, b]; dst += [(RING_MID + L / 2, yc, ZR), (RING_MID - L / 2, yc, ZR)]
+    R0, t0 = kabsch(np.array(src), np.array(dst)); x0[:3] = rotvec_of(R0); x0[3:6] = t0
+    LB = np.r_[[-10] * 3, [-400] * 3, [60, -25, -25] * 3]; UB = np.r_[[10] * 3, [400] * 3, [100, 25, 25] * 3]
+    XS = np.r_[[0.05] * 3, [2.0] * 3, [3.0] * len(KA)]
+    # thread the fingers first, then let the grip push the skin out: thin walls would otherwise trap a finger half in a bore
+    xa = solve(lambda x: resA(x, 0.0), x0, LB, UB, XS)
+    xa = solve(resA, xa, LB, UB, XS)
+    GA = G_of(xa[:6]); QA = qA(xa)
 
 # 2. each pose, part by part: the three threaded fingers, then the little finger, then the thumb
 def fingers_pose(base, pip_target, dip_ratio):
@@ -249,23 +285,95 @@ def fingers_pose(base, pip_target, dip_ratio):
         return np.r_[r, apart_of(Wp, PAIRS[:2]), 4.0 * pen(P, SDF[0], sel, 0.5)]
     x = solve(res, [pip_target, dip_ratio * pip_target] * 3, [0, 0] * 3, [105, 80] * 3)
     q = dict(base); q.update(zip(K, x)); return q
-# The little finger has no hole, and its knuckle sits too close to the grip's palm face to curl past it, so it can only lie
-# along that face. Contact is too abrupt for a local solver here, so its pose is picked from a grid: least collision first,
-# then the most natural curl.
+# The little finger has no hole. Closed, it rests the way each version is meant for (see PINKY_RULE); open, it lies along the
+# grip's palm face, posed so that the viewer's straight blend from open to closed stays out of the grip too. Contact is too
+# abrupt for a local solver here, so its poses are picked from grids.
 PK = ["pinky-finger." + j for j in ("mcp", "abd", "pip", "dip")]
 PINKY_SEL = FINGER_V["pinky-finger"] | BONES_V(["pinky-finger-metacarpal"])
-def pinky_pose(base, pip_want, sdf=SDF[0], near=None):
-    best = None
-    for mcp in range(0, 31, 5):
+PINKY_V = FINGER_V["pinky-finger"]
+_ring = sum(WS[:, k] * np.isin(J[:, k], [BI[b] for b in ORDER if b.startswith("ring-finger")]) for k in range(4))
+CORE, WEB = PINKY_V & (_ring < 0.2), PINKY_V & (_ring >= 0.2)       # its own skin, and the web it shares with the ring finger
+PHONE = ((-39, -81.7, -8.75), (39, 81.7, 0.0))
+E_SHORT = 35.0                                                       # the arm extension the hand needs today
+def pinky_state(base, a, mm):
+    q = dict(base); q.update(zip(PK, a)); q["pinky-finger.roll"] = 0.0
+    Wp = world(GA, rots_from(q)); return q, Wp, skinned(Wp, sel=PINKY_SEL)
+def honest(P, mm):
+    # how deep the little finger is in the grip, from its own side: its own skin against the grip with the bores filled, the web
+    # (which may dip toward the ring finger) against the real grip
+    return max(0.0, -scene_sdf(P[CORE], FILL[mm]).min(), -scene_sdf(P[WEB], SDF[mm]).min())
+def pinky_ok(Wp, P, mm, give=0.6):
+    if honest(P, mm) > give or max(apart_of(Wp, PAIRS[2:3])) > 0: return False
+    if box_sdf(P[PINKY_V] + np.array([E_SHORT - 45.0, 0, 0]), *PHONE).min() < 1.0: return False      # 1 mm off the phone at 35 mm
+    return (scene_sdf(P[PINKY_V], SDF[mm]) < 1.0).any()                                          # and it touches the grip
+def pads(Wp, mm):
+    # skin on the pad side of each phalanx within 1 mm of the grip: {bone: count}
+    P, N = skinned(Wp, True); d = scene_sdf(P[PINKY_V], SDF[mm]); dom = DOM[PINKY_V]
+    palmar = np.einsum("ij,ij->i", N[PINKY_V], Wp[dom, :3, 1]) < -0.2
+    out = {}
+    for b in dom[(d < 1.0) & palmar]: out[ORDER[b]] = out.get(ORDER[b], 0) + 1
+    return out
+def flex(a): return a[0] + a[2] + a[3]
+def well_rule(base, mm):
+    # 3. Open well: the finger is placed curled through the well (it won't find it by itself). Least spread, then most curl,
+    # then most pad-side contact, of the poses within 0.6 mm of skin give, clear of the ring finger, the phone and touching the grip
+    def admissible(grid):
+        return [a for a in grid if a[3] <= a[2] + 10 and pinky_ok(*pinky_state(base, a, mm)[1:], mm)]
+    coarse = admissible([(m, b, p, d) for m in range(40, 91, 10) for b in range(0, 51, 5) for p in range(60, 106, 15) for d in range(40, 81, 20)])
+    if not coarse: return None
+    b0 = min(a[1] for a in coarse)
+    fine = admissible(sorted({(m, b, p, d) for a in coarse if a[1] <= b0 + 5 for m in range(max(40, a[0] - 10), min(90, a[0] + 10) + 1, 5)
+                              for b in range(max(0, a[1] - 5), a[1] + 1) for p in range(max(60, a[2] - 15), min(105, a[2] + 15) + 1, 5)
+                              for d in range(max(40, a[3] - 20), min(80, a[3] + 20) + 1, 10)}))
+    b1 = min(a[1] for a in fine); top = sorted((a for a in fine if a[1] == b1), key=lambda a: -flex(a))[:6]
+    return max(top, key=lambda a: (flex(a), sum(pads(pinky_state(base, a, mm)[1], mm).values())))
+def settle(base, abd, mm, give=0.5):
+    # resting flexor tone: from straight (or bent back at the knuckle as far as it must be to clear the grip, at most 20
+    # degrees), curl the end, middle and knuckle joints in 2 degree steps while the skin gives no more than `give` mm and the
+    # finger stays clear of the ring finger
+    lim = (90, None, 105, 80)
+    def clear(a):
+        _, Wp, P = pinky_state(base, a, mm); return honest(P, mm) <= give and max(apart_of(Wp, PAIRS[2:3])) <= 0
+    a = next(([float(m), float(abd), 0.0, 0.0] for m in (0, -5, -10, -15, -20) if clear((m, abd, 0.0, 0.0))), None)
+    if a is None: return None
+    moved = True
+    while moved:
+        moved = False
+        for j in (3, 2, 0):
+            t = list(a); t[j] += 2.0
+            if t[j] > lim[j] or (j == 3 and t[3] > t[2] + 10): continue
+            if clear(t): a = t; moved = True
+    return tuple(a)
+def tang_rule(base, mm):
+    # 4. Sliding tang: the finger left to settle on the nose and the relieved corner at a few spreads; the most curled of the
+    # rests with pad-side contact on at least two phalanges (ties: more contact)
+    rests = []
+    for abd in (0, 4, 8, 12, 16):
+        a = settle(base, abd, mm)
+        if a is None: continue
+        q, Wp, P = pinky_state(base, a, mm); pd = pads(Wp, mm)
+        rests.append((len(pd) >= 2 and pinky_ok(Wp, P, mm), flex(a), sum(pd.values()), a))
+    return max(rests)[3] if rests else None
+# Open well: once the ring finger's ring slides out, the carriage narrows the well and no curled pose fits past the bar,
+# so the little finger comes out of the well and rests like a relaxed finger on the grip
+PINKY_RULE = {"well": lambda base, mm: well_rule(base, mm) or tang_rule(base, mm), "tang": tang_rule}
+def open_pinky(base, closed, mm, near=None):
+    # open hand: preferring a gentle curl, and chosen so that every quarter of the blend to `closed` (the viewer blends the
+    # angles straight) keeps the finger out of the grip; where the closed finger curls through the open well, the open one
+    # may already reach into it
+    best = None; keys = sorted(set(base) | set(closed))
+    for mcp in range(0, 61, 5):
         for abd in np.arange(-10, 36, 2.5):
             for pip in range(0, 91, 10):
                 for dip in range(0, 61, 15):
-                    q = dict(base); q.update(zip(PK, (mcp, abd, pip, dip))); q["pinky-finger.roll"] = 0.0
-                    Wp = world(GA, rots_from(q)); P = skinned(Wp)
-                    worst = max([0.0, -scene_sdf(P[PINKY_SEL], sdf).min(), keep_palm_side(P, PINKY_SEL, 0.0).max()] + [v / 2 for v in apart_of(Wp, PAIRS[2:3])])
-                    cost = max(worst - 0.5, 0) * 10 + 0.01 * abs(pip - pip_want) + 0.005 * abs(dip - 0.6 * pip) + 0.004 * abs(abd - 5) + 0.004 * mcp
-                    if near: cost += 0.004 * sum(abs(v - n) for v, n in zip((mcp, abd, pip, dip), near))   # small steps between clicks
-                    if best is None or cost < best[0]: best = (cost, q)
+                    a = (mcp, abd, pip, dip); q, Wp, P = pinky_state(base, a, mm)
+                    worst = max([0.0, honest(P, mm)] + [v / 2 for v in apart_of(Wp, PAIRS[2:3])])
+                    for c in (0.25, 0.5, 0.75):
+                        qc = {k: q.get(k, 0.0) + (closed.get(k, 0.0) - q.get(k, 0.0)) * c for k in keys}
+                        Wc = world(GA, rots_from(qc)); worst = max([worst, honest(skinned(Wc, sel=PINKY_SEL), mm)] + [v / 2 for v in apart_of(Wc, PAIRS[2:3])])
+                    cost = max(worst - 0.5, 0) * 10 + 0.01 * abs(pip - 20) + 0.005 * abs(dip - 0.6 * pip) + 0.004 * abs(abd - 5) + 0.004 * mcp
+                    if near: cost += 0.004 * sum(abs(v - n) for v, n in zip(a, near))   # small steps between clicks
+                    if best is None or cost < best[0]: best = (cost, a)
     return best[1]
 THUMB_K = ["thumb." + j for j in ("cmc", "cmca", "cmcr", "mcp", "ip")]
 def thumb_pose(base, rest_on_grip):
@@ -280,10 +388,8 @@ def thumb_pose(base, rest_on_grip):
         x = solve(res, start, [-40, -40, -45, -10, -10], [60, 40, 45, 70, 85]); c = float((res(x) ** 2).sum())
         if best is None or c < best[0]: best = (c, x)
     q = dict(base); q.update(zip(THUMB_K, best[1])); return q
-QO = thumb_pose(pinky_pose(fingers_pose(QA, OPEN_PIP, 0.5), 20), False)
-QB = thumb_pose(pinky_pose(fingers_pose(QA, 95.0, 0.7), 60), True)
 
-# 3. the ring finger's ring slid in its 2 mm clicks: the ring finger swings with it, and the fin pushes the little finger along.
+# 3. the ring finger's ring slid in its 2 mm clicks: the ring finger swings with it and the little finger settles again.
 # Fitted from both the open and the closed hand; the viewer blends them like the poses.
 KC = ["ring-finger.abd", "ring-finger.mcp"]
 KS = KC + PK
@@ -294,50 +400,71 @@ def resC(x, base, mm, wpen=4.0):
     r = list(l) + [0.01 * (x[0] - base[KC[0]]), 0.03 * (x[1] - base[KC[1]])]
     return np.r_[r, [v * wpen / 4.0 for v in apart_of(Wp, PAIRS[1:2])], wpen * pen(P, SDF[mm], END_V["ring-finger"] | BONES_V(["ring-finger-phalanx-proximal"]), 0.3)]
 CLB, CUB = [-25, 55], [50, 100]
-def slid(base, pip_want):
-    # angle changes at each click, measured from this pose; each click starts from the one before
-    out, prev = {}, dict(base)
-    for mm in STEPS:
-        xc = solve(lambda x: resC(x, base, mm, 0.0), [prev[k] for k in KC], CLB, CUB)    # follow the ring first, then settle
-        xc = solve(lambda x: resC(x, base, mm), xc, CLB, CUB)
-        q = dict(prev); q.update(zip(KC, xc)); q = pinky_pose(q, pip_want, SDF[mm], near=[prev[k] for k in PK])
-        out[mm] = {k: float(q[k] - base[k]) for k in KS}; prev = q
-    return out
-DO, DB = slid(QO, 20), slid(QB, 60)
-
-# ---------- report: every pose the viewer can show (Fingers 0, 50, 100 %, every click) ----------
-KEYS = sorted(set(QO) | set(QB))
-def blend(c, mm):
-    # as the viewer does it: angles straight between open and closed, plus the click's change
-    q = {k: QO.get(k, 0.0) + (QB.get(k, 0.0) - QO.get(k, 0.0)) * c for k in KEYS}
-    if mm:
-        for k in KS: q[k] += DO[mm][k] + (DB[mm][k] - DO[mm][k]) * c
+def ring_at(base, prev, mm):
+    xc = solve(lambda x: resC(x, base, mm, 0.0), [prev[k] for k in KC], CLB, CUB)    # follow the ring first, then settle
+    xc = solve(lambda x: resC(x, base, mm), xc, CLB, CUB)
+    q = dict(prev); q.update(zip(KC, xc)); return q
+def blend(QO, QB, DO, DB, c, mm):
+    # as the viewer does it: angles straight between open and closed, plus the click's change (straight between clicks)
+    keys = sorted(set(QO) | set(QB)); q = {k: QO.get(k, 0.0) + (QB.get(k, 0.0) - QO.get(k, 0.0)) * c for k in keys}
+    t = min(3, int(mm // 2)); fr = mm / 2 - t
+    at = lambda D, k, n: D[2 * n][k] if n else 0.0
+    for k in KS:
+        o = at(DO, k, t) + (at(DO, k, t + 1) - at(DO, k, t)) * fr; f = at(DB, k, t) + (at(DB, k, t + 1) - at(DB, k, t)) * fr
+        q[k] += o + (f - o) * c
     return q
-def state(c, mm):
-    Wp = world(GA, rots_from(blend(c, mm))); P = skinned(Wp); return Wp, P, scene_sdf(P, SDF[mm])
-worst = 0.0
-for c in (0.0, 0.5, 1.0):
-    for mm in [0] + STEPS:
-        Wp, P, d = state(c, mm)
-        l, _ = ring_line(Wp, "ring-finger", -YR - mm); li, _ = ring_line(Wp, "index-finger", YR)
-        deep = {}
-        for i in np.where(d < 0)[0]: deep[ORDER[DOM[i]]] = round(max(deep.get(ORDER[DOM[i]], 0), -float(d[i])), 2)
-        cross = [round(v / 2.0 + 1.0, 1) for v in apart_of(Wp, PAIRS) if v > 0]
-        worst = max(worst, max(0, -d.min()))
-        print(f"fingers {c * 100:3.0f}% ring {mm} mm: skin into grip or phone {max(0, -d.min()):.2f} mm {deep} | finger overlap mm {cross} | "
-              f"ring finger off its ring {max(abs(v) for v in l):.2f} mm, index {max(abs(v) for v in li):.2f} mm")
-for nm, q in (("open", QO), ("closed", QB)):
-    print(nm, {k: round(float(v), 1) for k, v in q.items()})
-print("full slide adds (open / closed):", {k: (round(DO[STEPS[-1]][k], 1), round(DB[STEPS[-1]][k], 1)) for k in KS})
-Wp, P, d = state(1.0, 0)
-print("wrist", bone(Wp, "wrist").round(1), "| fingertips", {f: bone(Wp, f + "-tip").round(1).tolist() for f in FINGERS + ["thumb"]})
-assert worst < 1.0, worst
-# with a hand in it the grip needs the arm out further: the fingers must clear the phone's edge in every pose
-PHONE = ((-39, -81.7, -8.75), (39, 81.7, 0.0))
-def phone_gap(E):
-    return min(box_sdf(state(c, mm)[1] + np.array([E - 45.0, 0, 0]), *PHONE).min() for c in (0.0, 0.5, 1.0) for mm in [0] + STEPS)
-MIN_E = next(E for E in range(20, 51) if phone_gap(E) >= 1.0)
-print("arm extension needed with the hand: %d mm (fingers %.1f mm off the phone there)" % (MIN_E, phone_gap(MIN_E)))
+
+def fit_base():
+    # what both versions share (they differ only at the little finger's end): the wrist, the three threaded fingers and the
+    # thumb open and closed, and the ring finger at each click, all against today's grip without the fins
+    place()
+    QB, QO = thumb_pose(fingers_pose(QA, 95.0, 0.7), True), thumb_pose(fingers_pose(QA, OPEN_PIP, 0.5), False)
+    RB, RO_, pb, po = {}, {}, dict(QB), dict(QO)
+    for mm in STEPS:
+        pb = ring_at(QB, pb, mm); po = ring_at(QO, po, mm); RB[mm] = {k: pb[k] for k in KC}; RO_[mm] = {k: po[k] for k in KC}
+    return QB, QO, RB, RO_
+def fit(key, base):
+    # the little finger against one version; returns its entry in hand_meta.json
+    QB, QO, RB, RO_ = dict(base[0]), dict(base[1]), base[2], base[3]
+    a = PINKY_RULE[key](QB, 0)
+    assert a is not None, (key, "no resting pose for the little finger")
+    QB.update(zip(PK, a)); QB["pinky-finger.roll"] = 0.0
+    QO.update(zip(PK, open_pinky(QO, QB, 0))); QO["pinky-finger.roll"] = 0.0
+    DO, DB, po, pb = {}, {}, dict(QO), dict(QB)
+    for mm in STEPS:
+        pb.update(RB[mm]); a = PINKY_RULE[key](pb, mm)
+        if a is None: a = [pb[k] for k in PK]; print(key, mm, "mm: no rest found, the little finger keeps its last pose")
+        pb.update(zip(PK, a))
+        po.update(RO_[mm]); po.update(zip(PK, open_pinky(po, pb, mm, near=[po[k] for k in PK])))
+        DB[mm] = {k: float(pb[k] - QB[k]) for k in KS}; DO[mm] = {k: float(po[k] - QO[k]) for k in KS}
+    # report: every pose the viewer can show (Fingers 0-100 % in quarters, every 2 mm click of the Ring slide)
+    worst, worst_pinky = 0.0, 0.0
+    for c in (0.0, 0.25, 0.5, 0.75, 1.0):
+        for mm in [0] + STEPS:
+            Wp = world(GA, rots_from(blend(QO, QB, DO, DB, c, mm))); P = skinned(Wp); f = mm
+            d = scene_sdf(P, SDF[f]); hp = honest(P, f)
+            rest = d[~PINKY_V]; worst = max(worst, max(0, -rest.min())); worst_pinky = max(worst_pinky, hp)
+            if c in (0.0, 0.5, 1.0):
+                l, _ = ring_line(Wp, "ring-finger", -YR - mm); li, _ = ring_line(Wp, "index-finger", YR)
+                deep = {}
+                for i in np.where(d < 0)[0]: deep[ORDER[DOM[i]]] = round(max(deep.get(ORDER[DOM[i]], 0), -float(d[i])), 2)
+                cross = [round(v / 2.0 + 1.0, 1) for v in apart_of(Wp, PAIRS) if v > 0]
+                print(f"{key} fingers {c * 100:3.0f}% ring {mm} mm: skin into grip or phone {max(0, -rest.min()):.2f} mm, little finger {hp:.2f} mm "
+                      f"{deep} | finger overlap mm {cross} | ring finger off its ring {max(abs(v) for v in l):.2f} mm, index {max(abs(v) for v in li):.2f} mm")
+    for nm, q in (("open", QO), ("closed", QB)):
+        print(key, nm, {k: round(float(v), 1) for k, v in q.items()})
+    print(key, "little finger closed at each click (mcp, abd, pip, dip):", {mm: [round(QB[k] + (DB[mm][k] if mm else 0.0), 1) for k in PK] for mm in [0] + STEPS},
+          "| pad contacts at 0 mm:", pads(world(GA, rots_from(QB)), 0))
+    print(key, "worst: rest of the hand %.2f mm, little finger %.2f mm (from its own side), in every blend and click" % (worst, worst_pinky))
+    assert worst < 1.0 and worst_pinky < 1.0, (key, worst, worst_pinky)
+    # with a hand in it the grip needs the arm out further: the fingers must clear the phone's edge in every pose
+    def phone_gap(E):
+        return min(box_sdf(skinned(world(GA, rots_from(blend(QO, QB, DO, DB, c, mm)))) + np.array([E - 45.0, 0, 0]), *PHONE).min()
+                   for c in (0.0, 0.5, 1.0) for mm in [0] + STEPS)
+    MIN_E = next(E for E in range(20, 51) if phone_gap(E) >= 1.0)
+    print(key, "arm extension needed with the hand: %d mm (fingers %.1f mm off the phone there)" % (MIN_E, phone_gap(MIN_E)))
+    return {"root": [round(float(v), 6) for v in GA.reshape(-1)], "open": angles(QO), "fist": angles(QB),
+            "slideOpen": slide_table(DO), "slideFist": slide_table(DB), "minE": int(MIN_E)}
 
 # ---------- output ----------
 def angles(q):
@@ -361,10 +488,13 @@ def slide_table(D):
     return t
 meta = {"source": "WebXR generic-hand left.glb (@webxr-input-profiles/assets 1.0.20), MIT licence, Copyright (c) 2019 Amazon",
         "bones": [{"name": b, "parent": -1 if PARENT[b] is None else BI[PARENT[b]], "rest": [round(float(v), 5) for v in RW[i].reshape(-1)]} for i, b in enumerate(ORDER)],
-        "root": [round(float(v), 6) for v in GA.reshape(-1)],
-        "open": angles(QO), "fist": angles(QB),
-        "slideOpen": slide_table(DO), "slideFist": slide_table(DB),
-        "minE": int(MIN_E), "verts": int(len(V)), "tris": int(len(TRI))}
+        "verts": int(len(V)), "tris": int(len(TRI)), "variants": {}}
+only = sys.argv[1:] or [k for k, _, _ in meshes.VARIANTS]
+SDF = {mm: plate_sdf(float(mm)) for mm in range(0, int(TRAVEL) + 1, 2)}; BASE = fit_base()
+for key, parts in meshes.variant_meshes().items():
+    if key not in only: continue
+    SDF, FILL = grip_sdfs(parts), grip_sdfs(parts, fill=True)
+    meta["variants"][key] = fit(key, BASE)
 assert np.abs(V).max() * 100 < 32767
 pos = np.round(V * 100).astype("<i2"); idx = TRI.astype("<u2")
 nrm = np.round(NRM * 127).astype("i1"); jj = J.astype("u1"); ww = np.round(WS * 255).astype(int)
