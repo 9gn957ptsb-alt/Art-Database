@@ -71,11 +71,14 @@ def gap(HAND, grip, E):
     P = np.c_[c * x + s * z + 34.25 + E, HAND[:, 1], -s * x + c * z + AXIS_Z]
     return min(STATIC(P).min(), STAGE1(P - [(E - POSE_E) / 2, 0, 0]).min(), STAGE2(P - [E - POSE_E, 0, 0]).min(), phone.sdf(P).min())
 for key, hv in hm["variants"].items():
-    HAND = np.vstack([dense(pose(hv, c, s)) for c in (0.0, 0.25, 0.5, 0.75, 1.0) for s in (0, 2, 4, 6, 8)])
+    poses = [pose(hv, c, s) for c in (0.0, 0.25, 0.5, 0.75, 1.0) for s in (0, 2, 4, 6, 8)]
+    HAND, DENSE = np.vstack(poses), np.vstack([dense(P) for P in poses])
     need = {}
     for grip in range(90, -181, -1):
         e0 = 0 if grip <= 30 else math.ceil(20 * (grip - 30) / 60)       # the grip's own clearance, as the viewer's eMin()
+        # scan on the vertices first (quick), then go on out until the triangles' points clear too (they can only be closer)
         E = next((E for E in range(e0, 51) if gap(HAND, grip, E) >= CLEAR), None)
+        while E is not None and gap(DENSE, grip, E) < CLEAR: E = E + 1 if E < 50 else None
         if E is None: break
         need[grip] = E
     GRIP_MIN = min(need)

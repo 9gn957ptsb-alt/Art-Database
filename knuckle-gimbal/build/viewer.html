@@ -421,7 +421,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     let more = state.phone ? " An orange iPhone 17 Pro Max is clipped to the MagSafe face." : "";
     if (hand && state.hand) {
       const grip = state.clench === 1 ? "fingers closed around its lower half" : state.clench === 0 ? "fingers open" : "fingers partly closed";
-      const little = state.variant === "tang" ? "the little finger resting on the sliding tang's soft nose and the relieved corner at the grip's end"
+      const little = state.variant === "tang" ? (state.ring === 4 || state.ring === 6 ? "the little finger curled round the relieved corner at the grip's end, clear of the sliding tang's nose at this click"
+          : "the little finger resting on the sliding tang's soft nose and the relieved corner at the grip's end")
         : state.ring === 0 ? "the little finger curled down through the open well at the grip's end"
         : "the little finger out of the open well, resting on the grip, since the slid ring leaves the well too short for it";
       more += ` A left hand holds it: index and ring fingers through the rings, middle finger in the gap over the hinge, the palm's little-finger edge on the grip, ${grip}, ${little}.`;
