@@ -62,3 +62,6 @@ a model's judgment: a smaller model can run a script it could not have written.
   was mid-edit. Prefer additive tools; save a copy of a tool before editing it.
 - **11 Nov 2026** — A whole-model change (every wall moved onto the plan's lines) fell short of its own check and was
   not put live. Give a change that touches every element its own check, and land it only when the check passes.
+- **11 Nov 2026** — The soft look is in js/viewer.js of both model pages (sky light, a warm sun with soft-edged
+  shadows, edges at 55%; `#flat` brings back the flat look). It changes drawing only: a tool or landing that
+  republishes js/viewer.js reads the live one first, or the look is lost.
