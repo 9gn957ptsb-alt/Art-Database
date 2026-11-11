@@ -370,8 +370,8 @@ def tang_rule(base, mm):
 PINKY_RULE = {"well": lambda base, mm: well_rule(base, mm) or tang_rule(base, mm), "tang": tang_rule}
 def open_pinky(base, closed, mm, near=None):
     # open hand: preferring a gentle curl, and chosen so that every quarter of the blend to `closed` (the viewer blends the
-    # angles straight) keeps the finger out of the grip; where the closed finger curls through the open well, the open one
-    # may already reach into it
+    # angles straight) keeps the finger out of the grip and 1 mm off the phone at the hold; where the closed finger curls
+    # through the open well, the open one may already reach into it
     best = None; keys = sorted(set(base) | set(closed))
     for mcp in range(0, 61, 5):
         for abd in np.arange(-10, 36, 2.5):
@@ -379,10 +379,12 @@ def open_pinky(base, closed, mm, near=None):
                 for dip in range(0, 61, 15):
                     a = (mcp, abd, pip, dip); q, Wp, P = pinky_state(base, a, mm)
                     worst = max([0.0, honest(P, mm)] + [v / 2 for v in apart_of(Wp, PAIRS[2:3])])
+                    gap = box_sdf(faces(P, PTRI).reshape(-1, 3), *PHONE).min()          # 1 mm off the phone at the 45 mm hold
                     for c in (0.25, 0.5, 0.75):
                         qc = {k: q.get(k, 0.0) + (closed.get(k, 0.0) - q.get(k, 0.0)) * c for k in keys}
-                        Wc = world(GA, rots_from(qc)); worst = max([worst, honest(skinned(Wc, sel=PINKY_SKIN), mm)] + [v / 2 for v in apart_of(Wc, PAIRS[2:3])])
-                    cost = max(worst - 0.5, 0) * 10 + 0.01 * abs(pip - 20) + 0.005 * abs(dip - 0.6 * pip) + 0.004 * abs(abd - 5) + 0.004 * mcp
+                        Wc = world(GA, rots_from(qc)); Pc = skinned(Wc, sel=PINKY_SKIN)
+                        worst = max([worst, honest(Pc, mm)] + [v / 2 for v in apart_of(Wc, PAIRS[2:3])]); gap = min(gap, box_sdf(faces(Pc, PTRI).reshape(-1, 3), *PHONE).min())
+                    cost = max(worst - 0.5, 0) * 10 + max(1.0 - gap, 0) * 10 + 0.01 * abs(pip - 20) + 0.005 * abs(dip - 0.6 * pip) + 0.004 * abs(abd - 5) + 0.004 * mcp
                     if near: cost += 0.004 * sum(abs(v - n) for v, n in zip(a, near))   # small steps between clicks
                     if best is None or cost < best[0]: best = (cost, a)
     return best[1]
