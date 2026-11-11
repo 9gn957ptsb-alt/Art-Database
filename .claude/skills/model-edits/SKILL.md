@@ -65,7 +65,14 @@ a model's judgment: a smaller model can run a script it could not have written.
 - **11 Nov 2026** — The soft look is in js/viewer.js of both model pages (sky light, a warm sun with soft-edged
   shadows, edges at 55%; `#flat` brings back the flat look). It changes drawing only: a tool or landing that
   republishes js/viewer.js reads the live one first, or the look is lost.
-- **11 Nov 2026** — The first soft look's PCF shadows showed the shadow map's square texels. Now VSM shadows (smooth),
-  the shadow camera fitted to what is in view, and each face casting from its far side (else a lit roof shades
-  itself). Screen-space ambient occlusion (three's SAOPass and SSAOPass) was tried and left out: the page's long depth
-  range blotched flat roofs, and translucent roofs let interiors ghost through. Real corner shading needs a bake.
+- **11 Nov 2026** — Shadows, as they stand: soft PCF on a 2048 map with a 6 x 6 texel tent filter patched into three's
+  shader text, the map 32 m across with most of it ahead of the eye, snapped to its texel grid (no shimmer), faded out
+  at its edge, a normal bias of three texels, each face casting from its far side, and faces under 1 cm wide (cables)
+  casting none. What failed on the way: a wide plain PCF filter showed square texels; VSM smudged (pale blotches,
+  scratchy streaks; three r147 also draws every receiver, glass included, into a VSM map); a map 20 m round the walk
+  target left far rooms sunlit behind a straight line; thin cables' shadows broke into dots. Screen-space ambient
+  occlusion (SAOPass, SSAOPass) blotched flat roofs and let interiors ghost through translucent roofs. Real corner
+  shading needs a bake.
+- **11 Nov 2026** — Check any change to drawing at the artist's own view tags (the comments carry them), in walk as
+  well as 3D, near and far, at phone size, before and after side by side, and have someone else look: one look at one
+  view passed the first two shadow versions, and the artist found what it missed.
