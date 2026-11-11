@@ -1,6 +1,6 @@
 # Checks the grip parts before they go to SketchUp: every offset ring simple, holes inside the outline, each part a closed
 # solid, both rings inside the track at every click; then both little-finger versions (variants.py): closed, no edge SketchUp
-# would merge, the open well's end bar and the stops on its cut rails, the sliding tang clear of the body at every click.
+# would merge, the open well's end bar and the stop on its cut rails, the sliding tang clear of the body at every click.
 # Needs numpy, shapely, trimesh (with manifold3d), triangle, scipy.
 import math, os, numpy as np, trimesh, triangle as tr
 from shapely.geometry import Polygon
@@ -68,10 +68,11 @@ assert body.exterior.distance(hole) > W["bridge"] - 0.1 and len(meshes.mesh(VP["
 rails = [Polygon(NS["pairs"](f)) for f in (NS["WELL_TRACK_HINGE"], NS["WELL_TRACK_FREE"])]
 for slide in (0, 2, 4, 6, 8, 8.6):
     for tag, cy, flip in (("Bottom", Y_HOME - slide, False), ("Top", -Y_HOME + slide, True)):
-        c = Polygon(NS["carriage_trimmed"](cy, flip)[0]); hit = max(c.intersection(r).area for r in rails)
-        if slide <= TRAVEL: assert hit == 0, (slide, tag, hit)
-        print(f"  slide {slide} {tag:6s} carriage overlaps the rails {hit:.2f} mm2, nearest {min(c.distance(r) for r in rails):.2f} mm" + (" (past the travel: the stops hold it)" if slide > TRAVEL else ""))
-    if slide > TRAVEL: assert hit > 0, "the carriage could slide out of the rails"
+        c = Polygon(NS["carriage_trimmed"](cy, flip)[0]); hits = [c.intersection(r).area for r in rails]
+        if slide <= TRAVEL: assert max(hits) == 0, (slide, tag, hits)
+        else: assert hits[0] > 0, (tag, "the hinge-side rail no longer stops the carriage")     # what is left of its end arc
+        print(f"  slide {slide} {tag:6s} carriage overlaps the hinge-side / free-side rail {hits[0]:.2f} / {hits[1]:.2f} mm2, nearest {min(c.distance(r) for r in rails):.2f} mm"
+              + (" (past the travel: the hinge-side rail stops it)" if slide > TRAVEL else ""))
 # Sliding tang: the nose and strap ride with the carriage; at every click they clear the fixed body and track
 from scipy.spatial import cKDTree
 fixed = [meshes.mesh(VP["tang"][n]) for n in ("Grip Body", "Track Frame")]

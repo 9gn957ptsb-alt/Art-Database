@@ -4,7 +4,7 @@
 # the corner radius and the colour are estimates from photos. Apple doesn't publish where the MagSafe ring sits, so the
 # phone is centred on the puck.
 # As a script it writes phone_meta.json and phone_b64.txt (packed like pack.py's mesh) into the current folder;
-# hand_fit.py imports it for sdf(). Needs numpy, trimesh, triangle, networkx.
+# hand_range.py imports it for sdf(). Needs numpy, trimesh, triangle, networkx.
 import base64, json, math, os
 import numpy as np
 

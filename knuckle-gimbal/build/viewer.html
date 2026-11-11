@@ -71,13 +71,16 @@ body {
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
 }
 #clenchCtl { grid-column: 1 / -1; }
-#versionCtl { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#versionCtl { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
 .seg { display: inline-flex; gap: 3px; padding: 3px; border-radius: 10px; border: 1px solid var(--line); }
 .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 7px; border: 0; background: transparent; color: var(--ink); cursor: pointer; white-space: nowrap; }
 .seg button[aria-checked="true"] { background: var(--ink); color: var(--bg); }
 @media (max-width: 860px) {
   .dock { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; }
 }
+/* narrow phones: the switch alone; short screens (a phone on its side): the switch shares a row instead of taking one */
+@media (max-width: 359px) { #versionLbl { display: none; } #versionCtl { justify-content: center; } }
+@media (max-height: 480px) { #versionCtl { grid-column: auto; } #versionLbl { display: none; } }
 .ctl { display: grid; gap: 4px; min-width: 0; }
 .ctl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .ctl label, .ctl .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; white-space: nowrap; }
@@ -473,7 +476,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
         if (state.E < eMin(state.grip)) setE(state.E);
       }
     }
-    poseHand(); describe(); applyPose(); invalidate();
+    poseHand(); describe(); applyPose();
+    const before = fitDist; measure(); view.dist *= fitDist / before; invalidate();     // Reset view then frames this version
   }
   for (const btn of VBTN) {
     btn.addEventListener("click", () => setVersion(btn.dataset.v));

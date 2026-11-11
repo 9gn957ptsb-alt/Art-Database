@@ -285,26 +285,37 @@ def fingers_pose(base, pip_target, dip_ratio):
         return np.r_[r, apart_of(Wp, PAIRS[:2]), 4.0 * pen(P, SDF[0], sel, 0.5)]
     x = solve(res, [pip_target, dip_ratio * pip_target] * 3, [0, 0] * 3, [105, 80] * 3)
     q = dict(base); q.update(zip(K, x)); return q
-# The little finger has no hole. Closed, it rests the way each version is meant for (see PINKY_RULE); open, it lies along the
-# grip's palm face, posed so that the viewer's straight blend from open to closed stays out of the grip too. Contact is too
-# abrupt for a local solver here, so its poses are picked from grids.
+# The little finger has no ring. Closed, it rests the way each version is meant for (see PINKY_RULE); open, it is posed so that
+# the viewer's straight blend from open to closed stays out of the grip too. Contact is too abrupt for a local solver here,
+# so its poses are picked from grids.
 PK = ["pinky-finger." + j for j in ("mcp", "abd", "pip", "dip")]
 PINKY_SEL = FINGER_V["pinky-finger"] | BONES_V(["pinky-finger-metacarpal"])
 PINKY_V = FINGER_V["pinky-finger"]
 _ring = sum(WS[:, k] * np.isin(J[:, k], [BI[b] for b in ORDER if b.startswith("ring-finger")]) for k in range(4))
 CORE, WEB = PINKY_V & (_ring < 0.2), PINKY_V & (_ring >= 0.2)       # its own skin, and the web it shares with the ring finger
+# The skin's triangles are large (5 to 9 mm), so a corner of the grip can poke between vertices: the little finger is checked on
+# points spread over each triangle it is part of, its own triangles against the bores filled, the rest against the real grip
+PTRI = TRI[np.isin(TRI, np.nonzero(PINKY_V)[0]).any(1)]; PTRI_CORE = CORE[PTRI].all(1)
+PINKY_SKIN = PINKY_SEL.copy(); PINKY_SKIN[PTRI.reshape(-1)] = True
+BARY = np.array([(i / 4, j / 4, 1 - i / 4 - j / 4) for i in range(5) for j in range(5 - i)])
+def faces(P, tri):
+    return np.einsum("bk,tkd->tbd", BARY, P[tri])
+def dense(P):
+    # vertices plus the middle of every skin triangle and of its edges, for the phone clearance
+    T = P[TRI]; return np.vstack([P, T.mean(1), (T[:, 0] + T[:, 1]) / 2, (T[:, 1] + T[:, 2]) / 2, (T[:, 2] + T[:, 0]) / 2])
 PHONE = ((-39, -81.7, -8.75), (39, 81.7, 0.0))
 E_SHORT = 35.0                                                       # the arm extension the hand needs today
 def pinky_state(base, a, mm):
     q = dict(base); q.update(zip(PK, a)); q["pinky-finger.roll"] = 0.0
-    Wp = world(GA, rots_from(q)); return q, Wp, skinned(Wp, sel=PINKY_SEL)
+    Wp = world(GA, rots_from(q)); return q, Wp, skinned(Wp, sel=PINKY_SKIN)
 def honest(P, mm):
     # how deep the little finger is in the grip, from its own side: its own skin against the grip with the bores filled, the web
-    # (which may dip toward the ring finger) against the real grip
-    return max(0.0, -scene_sdf(P[CORE], FILL[mm]).min(), -scene_sdf(P[WEB], SDF[mm]).min())
+    # (which may dip toward the ring finger) against the real grip; over its triangles, not only at its vertices
+    X = faces(P, PTRI)
+    return max(0.0, -scene_sdf(X[PTRI_CORE].reshape(-1, 3), FILL[mm]).min(), -scene_sdf(X[~PTRI_CORE].reshape(-1, 3), SDF[mm]).min())
 def pinky_ok(Wp, P, mm, give=0.6):
     if honest(P, mm) > give or max(apart_of(Wp, PAIRS[2:3])) > 0: return False
-    if box_sdf(P[PINKY_V] + np.array([E_SHORT - 45.0, 0, 0]), *PHONE).min() < 1.0: return False      # 1 mm off the phone at 35 mm
+    if box_sdf(faces(P, PTRI).reshape(-1, 3) + np.array([E_SHORT - 45.0, 0, 0]), *PHONE).min() < 1.0: return False   # 1 mm off the phone at 35 mm
     return (scene_sdf(P[PINKY_V], SDF[mm]) < 1.0).any()                                          # and it touches the grip
 def pads(Wp, mm):
     # skin on the pad side of each phalanx within 1 mm of the grip: {bone: count}
@@ -315,7 +326,7 @@ def pads(Wp, mm):
     return out
 def flex(a): return a[0] + a[2] + a[3]
 def well_rule(base, mm):
-    # 3. Open well: the finger is placed curled through the well (it won't find it by itself). Least spread, then most curl,
+    # Open well: the finger is placed curled through the well (it won't find it by itself). Least spread, then most curl,
     # then most pad-side contact, of the poses within 0.6 mm of skin give, clear of the ring finger, the phone and touching the grip
     def admissible(grid):
         return [a for a in grid if a[3] <= a[2] + 10 and pinky_ok(*pinky_state(base, a, mm)[1:], mm)]
@@ -345,7 +356,7 @@ def settle(base, abd, mm, give=0.5):
             if clear(t): a = t; moved = True
     return tuple(a)
 def tang_rule(base, mm):
-    # 4. Sliding tang: the finger left to settle on the nose and the relieved corner at a few spreads; the most curled of the
+    # Sliding tang: the finger left to settle on the nose and the relieved corner at a few spreads; the most curled of the
     # rests with pad-side contact on at least two phalanges (ties: more contact)
     rests = []
     for abd in (0, 4, 8, 12, 16):
@@ -370,7 +381,7 @@ def open_pinky(base, closed, mm, near=None):
                     worst = max([0.0, honest(P, mm)] + [v / 2 for v in apart_of(Wp, PAIRS[2:3])])
                     for c in (0.25, 0.5, 0.75):
                         qc = {k: q.get(k, 0.0) + (closed.get(k, 0.0) - q.get(k, 0.0)) * c for k in keys}
-                        Wc = world(GA, rots_from(qc)); worst = max([worst, honest(skinned(Wc, sel=PINKY_SEL), mm)] + [v / 2 for v in apart_of(Wc, PAIRS[2:3])])
+                        Wc = world(GA, rots_from(qc)); worst = max([worst, honest(skinned(Wc, sel=PINKY_SKIN), mm)] + [v / 2 for v in apart_of(Wc, PAIRS[2:3])])
                     cost = max(worst - 0.5, 0) * 10 + 0.01 * abs(pip - 20) + 0.005 * abs(dip - 0.6 * pip) + 0.004 * abs(abd - 5) + 0.004 * mcp
                     if near: cost += 0.004 * sum(abs(v - n) for v, n in zip(a, near))   # small steps between clicks
                     if best is None or cost < best[0]: best = (cost, a)
@@ -438,12 +449,13 @@ def fit(key, base):
         po.update(RO_[mm]); po.update(zip(PK, open_pinky(po, pb, mm, near=[po[k] for k in PK])))
         DB[mm] = {k: float(pb[k] - QB[k]) for k in KS}; DO[mm] = {k: float(po[k] - QO[k]) for k in KS}
     # report: every pose the viewer can show (Fingers 0-100 % in quarters, every 2 mm click of the Ring slide)
-    worst, worst_pinky = 0.0, 0.0
+    worst, worst_pinky, worst_faces = 0.0, 0.0, 0.0
     for c in (0.0, 0.25, 0.5, 0.75, 1.0):
         for mm in [0] + STEPS:
             Wp = world(GA, rots_from(blend(QO, QB, DO, DB, c, mm))); P = skinned(Wp); f = mm
             d = scene_sdf(P, SDF[f]); hp = honest(P, f)
             rest = d[~PINKY_V]; worst = max(worst, max(0, -rest.min())); worst_pinky = max(worst_pinky, hp)
+            other = TRI[~np.isin(TRI, np.nonzero(PINKY_V)[0]).any(1)]; worst_faces = max(worst_faces, -scene_sdf(faces(P, other).reshape(-1, 3), SDF[f]).min())
             if c in (0.0, 0.5, 1.0):
                 l, _ = ring_line(Wp, "ring-finger", -YR - mm); li, _ = ring_line(Wp, "index-finger", YR)
                 deep = {}
@@ -455,11 +467,12 @@ def fit(key, base):
         print(key, nm, {k: round(float(v), 1) for k, v in q.items()})
     print(key, "little finger closed at each click (mcp, abd, pip, dip):", {mm: [round(QB[k] + (DB[mm][k] if mm else 0.0), 1) for k in PK] for mm in [0] + STEPS},
           "| pad contacts at 0 mm:", pads(world(GA, rots_from(QB)), 0))
-    print(key, "worst: rest of the hand %.2f mm, little finger %.2f mm (from its own side), in every blend and click" % (worst, worst_pinky))
+    print(key, "worst: rest of the hand %.2f mm at its vertices (%.2f mm between them), little finger %.2f mm over its triangles (from its own side), "
+          "in every blend and click" % (worst, worst_faces, worst_pinky))
     assert worst < 1.0 and worst_pinky < 1.0, (key, worst, worst_pinky)
     # with a hand in it the grip needs the arm out further: the fingers must clear the phone's edge in every pose
     def phone_gap(E):
-        return min(box_sdf(skinned(world(GA, rots_from(blend(QO, QB, DO, DB, c, mm)))) + np.array([E - 45.0, 0, 0]), *PHONE).min()
+        return min(box_sdf(dense(skinned(world(GA, rots_from(blend(QO, QB, DO, DB, c, mm))))) + np.array([E - 45.0, 0, 0]), *PHONE).min()
                    for c in (0.0, 0.5, 1.0) for mm in [0] + STEPS)
     MIN_E = next(E for E in range(20, 51) if phone_gap(E) >= 1.0)
     print(key, "arm extension needed with the hand: %d mm (fingers %.1f mm off the phone there)" % (MIN_E, phone_gap(MIN_E)))

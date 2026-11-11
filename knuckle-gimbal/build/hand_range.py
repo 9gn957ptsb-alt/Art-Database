@@ -1,6 +1,6 @@
 # Where the grip can turn with the hand in it. The hand turns with the grip; the puck, arm and phone stay put.
 # For every grip angle (1° steps) it finds the shortest arm extension at which every hand pose the viewer can show
-# (fingers 0 to 100 % in quarters, every ring click) stays 1 mm clear of the phone (phone.py) and of the puck and arm (voxel
+# (fingers 0 to 100 % in quarters, every ring click; its skin's vertices and the middles of its triangles and edges) stays 1 mm clear of the phone (phone.py) and of the puck and arm (voxel
 # distance fields of the packed SketchUp mesh). It adds gripMin (the furthest the grip folds back with a hand in it) and
 # eHand (the arm extension needed at each angle from gripMin to 90°) to each version's entry in hand_meta.json.
 # Run after pack.py and hand_fit.py, in the folder holding their output. Needs numpy, scipy, trimesh.
@@ -59,6 +59,11 @@ def pose(hv, c, slide):
     S = np.array(S)
     return sum(wt[:, k, None] * np.einsum("vab,vb->va", S[jt[:, k]], rest)[:, :3] for k in range(4))
 
+TRI = np.frombuffer(raw, "<u2", nt * 3, n * 6).reshape(-1, 3).astype(int)
+def dense(P):
+    # the skin's triangles are 5 to 9 mm across: add the middle of each and of its edges, so a face can't pass the phone unseen
+    T = P[TRI]; return np.vstack([P, T.mean(1), (T[:, 0] + T[:, 1]) / 2, (T[:, 1] + T[:, 2]) / 2, (T[:, 2] + T[:, 0]) / 2])
+
 # ---------- sweep: the viewer's knuckleMatrix, every angle the Grip slider has ----------
 def gap(HAND, grip, E):
     d = math.radians(grip - 90); c, s = math.cos(d), math.sin(d)
@@ -66,7 +71,7 @@ def gap(HAND, grip, E):
     P = np.c_[c * x + s * z + 34.25 + E, HAND[:, 1], -s * x + c * z + AXIS_Z]
     return min(STATIC(P).min(), STAGE1(P - [(E - POSE_E) / 2, 0, 0]).min(), STAGE2(P - [E - POSE_E, 0, 0]).min(), phone.sdf(P).min())
 for key, hv in hm["variants"].items():
-    HAND = np.vstack([pose(hv, c, s) for c in (0.0, 0.25, 0.5, 0.75, 1.0) for s in (0, 2, 4, 6, 8)])
+    HAND = np.vstack([dense(pose(hv, c, s)) for c in (0.0, 0.25, 0.5, 0.75, 1.0) for s in (0, 2, 4, 6, 8)])
     need = {}
     for grip in range(90, -181, -1):
         e0 = 0 if grip <= 30 else math.ceil(20 * (grip - 30) / 60)       # the grip's own clearance, as the viewer's eMin()

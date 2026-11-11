@@ -22,7 +22,7 @@ def loop(geom, tol=0.01, min_edge=0.15):
 def mirror(g):
     return Polygon([(a, -b) for a, b in g.exterior.coords])
 
-# ---------- 3. Open well: a well beside the ring carriage at each end, bridged at the end face ----------
+# ---------- Open well: a well beside the ring carriage at each end, bridged at the end face ----------
 W = WELL
 body = Polygon(body_outline(y_end=Y_END + W["longer"]))
 slot = Polygon(stadium(SC - WALL + 1.4, 132))
@@ -49,7 +49,7 @@ cut = unary_union([cut] + [t.intersection(track.buffer(0.6)) for t in teeth])
 pieces = sorted((g.buffer(-0.5, 32).buffer(0.5, 32).buffer(0.5, 32).buffer(-0.5, 32) for g in cut.geoms), key=lambda g: g.centroid.x)
 assert len(pieces) == 2 and not any(g.interiors for g in pieces)
 
-# ---------- 4. Sliding tang: the relieved hinge-end corner and the strap's plan ----------
+# ---------- Sliding tang: the relieved hinge-end corner and the strap's plan ----------
 T = TANG
 big = Polygon(body_outline(600))
 R_CUT = RHOLE + T["wall"]

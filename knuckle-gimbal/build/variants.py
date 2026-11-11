@@ -1,8 +1,8 @@
 # The grip's two little-finger versions, both built from today's parts (outlines.py) without the fins.
-# 3. Open well: a well through each end of the grip beside the ring carriage, so the little finger curls through the grip.
+# Open well: a well through each end of the grip beside the ring carriage, so the little finger curls through the grip.
 #    A bar across each well's end holds the grip's outer half on; the ends are 4 mm longer so the bar sits past the curled
 #    finger. The carriages get a saddle across their palm-side rim and a thinner outer wall there.
-# 4. Sliding tang: the hinge-end corner relieved, and a soft nose on a carbon strap that rides with the ring carriage.
+# Sliding tang: the hinge-end corner relieved, and a soft nose on a carbon strap that rides with the ring carriage.
 # Pure Python (math only): the same text runs in the SketchUp build (su2_grip.py) and in the local checks. The outlines
 # that need polygon booleans come from pinky.py (pinky_data.py). Each part: name -> (material, group, verts, tris, faces),
 # verts (s, y, w) in the grip frame, tris index triples, faces planar polygons (outer loop, [inner loops]) of indices.
@@ -24,7 +24,7 @@ def plate_part(mat, grp, outline, holes, R, RH, wbot, wt0, wt1, nq):
     verts, tris, bottom, top, groups = plate_mesh(math, outline, holes, R, RH, wbot, wt0, wt1, nq)
     return (mat, grp, verts, tris, [bottom, top])
 
-# ---------- 3. Open well ----------
+# ---------- Open well ----------
 def notch_lift(cy, sg, wbot):
     # the saddle: a cylinder (radius Rc) whose axis runs radially at theta about the ring centre, dipping `depth` below the
     # liner's palm face; it lifts the palm face of the carriage and the liner where it passes
@@ -71,8 +71,8 @@ def notched_part(mat, grp, outline, hole, R, RH, wbot, wt0, wt1, nq, cy, sg):
     tris = list(tris) + [(a, c, b) for a, b, c in zipper(out_loop[::-1], in_loops[0], verts, SC, cy)]
     return (mat, grp, verts, tris, [top])
 def carriage_trimmed(cy, flip):
-    # carriage() with its outer wall cut back by d over the angles a0..a1 (about the ring centre, y measured away from the
-    # grip's middle), where the little finger leans on it. Returns the outline and its edge radii (smaller where it is thin).
+    # carriage() with its outer wall cut back by d over the angles a0..a1 (about the ring centre, y measured toward the grip's
+    # middle, so 250-325 degrees is the outer side), where the little finger leans on it. Returns the outline and its edge radii (smaller where it is thin).
     t = WELL["trim"]; sg = -1.0 if flip else 1.0; a0, a1, r1 = math.radians(t["a0"]), math.radians(t["a1"]), RO - t["d"]
     arc = lambda r, b0, b1, n: [(SC + r * math.cos(b0 + (b1 - b0) * k / n), r * math.sin(b0 + (b1 - b0) * k / n)) for k in range(n)]
     e = math.radians(1.5)          # the steps lean 1.5 degrees each way, so every point is further round than the one before
@@ -88,7 +88,8 @@ def sector_radii(pts, cy, sg, r_in, r_out):
 def well_parts():
     hole = cw(pairs(WELL_HOLE)); rad = [r / 10.0 for r in WELL_BODY_R]
     P = {"Grip Body": plate_part("si", "knuckle", body_outline(y_end=Y_END + WELL["longer"]), [hole], rad, 2.0, WMIN, WT0, WT1, 4)}
-    # the well cuts the carbon track's end arcs, so the track is two rails; stop teeth on each keep the carriages' end stop
+    # the well cuts the carbon track's end arcs, so the track is two rails; what is left of the arc on the hinge-side rail still
+    # stops each carriage past its travel (the stop teeth from the concept add almost nothing)
     trk = [plate_part("cf", "knuckle", pairs(f), [], 0.3, 0.3, WMIN + 0.3, WT0 - 0.3, WT1, 2) for f in (WELL_TRACK_HINGE, WELL_TRACK_FREE)]
     n0 = len(trk[0][2])
     P["Track Frame"] = ("cf", "knuckle", trk[0][2] + trk[1][2], trk[0][3] + [(a + n0, b + n0, c + n0) for a, b, c in trk[1][3]],
@@ -102,13 +103,14 @@ def well_parts():
                                               WMIN - 0.6, WT0 + 0.6, WT1, 2, cy, sg)
     return P
 
-# ---------- 4. Sliding tang ----------
+# ---------- Sliding tang ----------
 def nose_y_in(s):
     # the nose's inboard end: the relieved wall grown by the running clearance (from pinky.py), bottom end
     k = (s - TANG_YIN_S0) / TANG_YIN_DS; i = max(0, min(len(TANG_YIN) - 2, int(math.floor(k)))); f = k - i
     return (TANG_YIN[i] + (TANG_YIN[i + 1] - TANG_YIN[i]) * f) / 100.0
 def nose_section():
-    # (s, w) teardrop: hull of the nose circle and a neck reaching `into` mm into the strap; returned as outward half-planes
+    # (s, w) teardrop: hull of the nose circle and a neck reaching `into` mm into the strap (the strap's end is moulded into the
+    # silicone nose, so the two solids overlap there); returned as outward half-planes
     t = TANG; ns, nr, nk = t["ns"], t["nr"], t["nk"]; wm = (WMIN + FACE(ns)) / 2
     pts = [(ns + nr * math.cos(2 * math.pi * k / 512), wm + nr * math.sin(2 * math.pi * k / 512)) for k in range(512)]
     pts += [(ns - nk, FACE(ns - nk) + t["strap"][0] + t["into"]), (ns + nk, FACE(ns + nk) + t["strap"][0] + t["into"])]
