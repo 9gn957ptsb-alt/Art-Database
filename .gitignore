@@ -5,3 +5,6 @@ data/
 5s/dist/
 node_modules/
 5s/motion/dist/
+
+# helpers' git worktrees (scratch checkouts, never committed)
+.claude/worktrees/
