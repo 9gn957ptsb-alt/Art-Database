@@ -16,18 +16,21 @@ const FACETS = [['matter', 'handles'], ['energy', 'did'], ['space', 'lands_in']]
 
 export function graph({ works = {}, sessions }) {
   const nodes = new Map(), edges = [];
-  const node = (id, label, source_file = '') => nodes.has(id) || nodes.set(id, { id, label, source_file });
+  // Graphify's schema: a real entity names the file it was read from; a concept has none, so it is never a hub.
+  const SRC = 'list_sessions.json';
+  const node = (id, label, real) => nodes.has(id) || nodes.set(id, { id, label, file_type: real ? 'document' : 'concept', source_file: real ? SRC : '' });
+  const edge = (source, target, relation, confidence) => edges.push({ source, target, relation, confidence, source_file: SRC });
   const keys = new Set(sessions.map(s => s.k));
   for (const s of sessions) {
     const f = facets(s.callno), id = `session:${s.k}`;
-    node(id, s.t, 'list_sessions');
-    node(`work:${f.work}`, works[f.work] || f.work, 'list_sessions');
-    edges.push({ source: id, target: `work:${f.work}`, relation: 'serves', confidence: 'EXTRACTED' });
-    if (keys.has(s.p)) edges.push({ source: `session:${s.p}`, target: id, relation: 'started', confidence: 'EXTRACTED' });
+    node(id, s.t, true);
+    node(`work:${f.work}`, works[f.work] || f.work, true);
+    edge(id, `work:${f.work}`, 'serves', 'EXTRACTED');
+    if (keys.has(s.p)) edge(`session:${s.p}`, id, 'started', 'EXTRACTED');
     for (const [kind, relation] of FACETS) {
       if (!f[kind]) continue; // a facet not known yet is left out, as in the catalog
-      node(`${kind}:${f[kind]}`, f[kind]); // a concept: no source file, so never a hub (Graphify's rule)
-      edges.push({ source: id, target: `${kind}:${f[kind]}`, relation, confidence: 'INFERRED' });
+      node(`${kind}:${f[kind]}`, f[kind], false);
+      edge(id, `${kind}:${f[kind]}`, relation, 'INFERRED');
     }
   }
   return { nodes: [...nodes.values()], edges };
@@ -101,7 +104,7 @@ export function galaxy(rows) {
     c: of.get(`session:${s.k}`), deg: degree.get(`session:${s.k}`),
   }));
   const works = [...new Set(sessions.map(s => s.w))].map(w => ({ w, label: rows.works?.[w] || w }));
-  return { sessions, works, communities: communities.filter(c => c.n), gods, bridges, graph: g };
+  return { asOf: rows.asOf, engine: 'galaxy.mjs · Louvain', sessions, works, communities: communities.filter(c => c.n), gods, bridges, graph: g };
 }
 
 if (process.argv[1]?.endsWith('galaxy.mjs')) {

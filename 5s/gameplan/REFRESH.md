@@ -1,7 +1,7 @@
 # Refreshing the Game Plan reflection
 
 Every other day a routine in the artist's "SOA -- Routines" conversation redoes the section "The first reflection"
-of the artist's Game Plan doc from `reflect.mjs`. The routine names the doc; this file is the procedure, and it
+of the artist's GamePlan page (https://claude.ai/artifact/2AbsMtu2yhqFWC14EtQvWT; the old doc it replaced is gone) from `reflect.mjs`. The routine may still name the doc: use the page; this file is the procedure, and it
 changes.
 
 Rules. Transcripts are the artist's private data: they are never committed (this repository is public) and never
@@ -19,6 +19,7 @@ command to the next.
    git -C /home/user/Art-Database fetch origin claude/art-database-photos-ilnaf7
    git -C /home/user/Art-Database show origin/claude/art-database-photos-ilnaf7:5s/gameplan/reflect.mjs > /tmp/gameplan-refresh/reflect.mjs
    git -C /home/user/Art-Database show origin/claude/art-database-photos-ilnaf7:5s/gameplan/galaxy.mjs > /tmp/gameplan-refresh/galaxy.mjs
+   git -C /home/user/Art-Database show origin/claude/art-database-photos-ilnaf7:5s/gameplan/galaxy_graphify.py > /tmp/gameplan-refresh/galaxy_graphify.py
    ```
 
 2. Sessions: `list_sessions` (claude-code-remote, `mine: true`, `limit: 100`). Its result is saved to a file; copy
@@ -41,39 +42,26 @@ command to the next.
 4. Reflect: `node /tmp/gameplan-refresh/reflect.mjs /tmp/gameplan-refresh/pages > /tmp/gameplan-refresh/report.md`
    (add `--json` for the per-session rows). Its header counts only the sessions read, with their date range. Add
    up the pages saved and skipped from the helpers' reports.
-5. The doc. Read it with `sinceRev` if you hold a bookmark, else its outline; the section is the one headed "The
-   first reflection". From `report.md`, update in place, with guards (`ifHash`, `ifRev`) from your read:
-   - the lead paragraph: sessions read, their date range, the most met trap and its count, and the next;
-   - the chart widget's inline rows (sessions placed, and sessions that met the trap, per stage) by `draft-edit`,
-     its title and `aria-label` if the finding changed, then look at it (screenshot) and `publish`; the embed's
-     caption (sessions, date range);
-   - the law table's Broken column, and the turn count in the sentence above it;
-   - the before and after table, with the code-turn share written as "67% (10 of 15)";
-   - the sentence on gaps: pages skipped out of pages fetched.
+5. The page. Its plan lives in the file `plan.html` and its galaxy in `sessions.json` (Artifact, action "read",
+   url https://claude.ai/artifact/2AbsMtu2yhqFWC14EtQvWT, path "plan.html" and path "sessions.json"). In `plan.html`,
+   under the heading "The first reflection", bring up to date from `report.md`: the lead paragraph (sessions read,
+   date range, the most met trap and its count), the stage table (sessions placed and sessions that met each trap),
+   the law table's Broken column and the turn count above it, the before and after table (code-turn share written as
+   "67% (10 of 15)"), and the sentence on gaps. Change only numbers and claims the report gives; say plainly when a
+   claim no longer holds. Under "The catalog", add a table row for each session `list_sessions.txt` has and the table
+   lacks (facets from the title and last status line, `post_turn_summary`, `task_summary`; leave out a facet that does
+   not show), set every row's Now from its status, and update the counts in its first and last paragraphs. A row
+   never carries a transcript's words. When `git -C /home/user/Art-Database log --since="3 days ago"
+   origin/claude/art-database-photos-ilnaf7 -- 5s/gameplan` shows commits, update "The plan as a script" to match.
 
-   Any other sentence in the section: check it against the report, change a number the report gives, and if a
-   claim no longer holds, say so in one plain sentence instead of keeping it. Nothing outside the section changes,
-   except the catalog (below) and "The plan as a script" when `git -C /home/user/Art-Database log --since="3 days ago"
-   origin/claude/art-database-photos-ilnaf7 -- 5s/gameplan/reflect.mjs 5s/test/reflect.test.mjs` shows commits:
-   then update the sentences there that describe what changed (the test count among them).
-
-   The catalog, the section headed "The catalog", shelves every session in `list_sessions.txt` by five facets (its
-   second paragraph lists the words each facet may take). For each session it lacks, add a row in call-number
-   order, its facets read from the session's title and last status line (`post_turn_summary`, `task_summary`),
-   leaving out any facet that does not show; set every row's Now from the session's status (archived, done,
-   working, waiting on you, failed); then update the count and dates in its first sentence and the counts in its
-   last paragraph. A row never carries a transcript's words.
-
-   The galaxy is the drawing under the catalog (widget `ee86f694-3064`): the same rows as a knowledge graph, after
-   Graphify. Read it (`read`, engine "widget") and take the `sessions` rows from its code. Add a row for each new
-   catalog row and bring every `now` up to date (`k` unique; `callno` its call number; `core` only on the row
-   already marked so; `p` the `k` of the session that started it, when list_sessions gives a parent). Save
-   `{"works": {"<w>": "<name>"}, "sessions": [...]}` as `/tmp/gameplan-refresh/rows.json`, then run
-   `node /tmp/gameplan-refresh/galaxy.mjs /tmp/gameplan-refresh/rows.json > /tmp/gameplan-refresh/galaxy.json`.
-   Put its `sessions`, `works` and `communities` in place of the widget's three data arrays (only the arrays
-   change: a redraw from the code you read, with `basePub`), look at it (`screenshot`), and `publish` if it reads
-   clearly. Then bring the two paragraphs under it in line with that output: the node and link counts from its
-   `graph`, EXTRACTED and INFERRED, the communities, the best-connected node (`gods`) and the bridges.
+   The galaxy: in `sessions.json` add the same new sessions (`k` unique, `t` title, `call` call number, `d` date,
+   `now`, `p` the `k` of the session that started it; `core` stays on its one row), save it as
+   `/tmp/gameplan-refresh/rows.json` with `callno` for `call`, run
+   `node /tmp/gameplan-refresh/galaxy.mjs /tmp/gameplan-refresh/rows.json > /tmp/gameplan-refresh/galaxy.json`, then
+   `uv run --no-project --with graphifyy==0.9.106 python /tmp/gameplan-refresh/galaxy_graphify.py /tmp/gameplan-refresh/galaxy.json`
+   (Graphify's own communities, hubs and surprising links), and copy its `engine`, `asOf`, `communities`, `gods`,
+   `bridges`, `graph` and each session's `c`, `deg`, `now` into `sessions.json`. Publish both files to that url with
+   `files` (the saved page unchanged as `file_path`).
 6. Delete every copy, and check:
 
    ```
@@ -82,4 +70,4 @@ command to the next.
    ```
 
    Then tell the artist in two or three short lines what moved (the most met trap, the laws, before and after) and
-   give the doc's link.
+   give the page's link.
