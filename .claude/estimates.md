@@ -45,6 +45,7 @@ to get more accurate. Read this before giving one; add a row when the work is do
 
 | date | work | estimate given | actual | note |
 | --- | --- | --- | --- | --- |
+| 10 Nov | 3D house page: a thickness for every floor, ceiling and roof, a duct concept and two detail sheets (survey, then model and sheets) | 50-70 min | 25 min survey, 14 min model, then 17 min for a correction and the sheets side by side: 56 min of work; over two hours on the clock with a usage limit and a machine restart between | in range for the work itself |
 | 10 Nov | 3D house page: nine jobs at once | (each given its own) | the 5-hour usage window ran out after about 100 min; eight jobs stopped part-way and were run again | run fewer at once; put related edits for one room in one helper |
 | 10 Nov | 3D house page: a second 3D page for another project from PDF drawings (measure, page, model and join; three helpers) | 50-70 min | 56 min (22 + 23 in parallel, then 33) | in range |
 | 10 Nov | 3D house page: a thickness for every wall and a wall types sheet (survey, then model and sheet) | 50-65 min | survey 37 min, then model 55 min and sheet about 25 min after a restart | over: the model moved under the survey three times; the tool re-surveys on every run |
