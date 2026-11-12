@@ -79,7 +79,7 @@ body {
   .dock { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; }
 }
 /* narrow phones: the switch without its label, so it fits the dock */
-@media (max-width: 359px) { #versionLbl { display: none; } #versionCtl { justify-content: center; } }
+@media (max-width: 359px) { #versionLbl { display: none; } #versionCtl { justify-content: center; } #phoneBox { grid-column: 1 / -1; } }
 .ctl { display: grid; gap: 4px; min-width: 0; }
 .ctl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .ctl label, .ctl .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; white-space: nowrap; }
@@ -107,6 +107,7 @@ input[type="range"] { width: 100%; margin: 4px 0 0; accent-color: var(--accent);
   .bottom { grid-column: 2; grid-row: 1 / 3; min-height: 0; display: flex; flex-direction: column; }
   .dock { width: 100%; margin-block: auto; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 12px; padding: 10px 12px; }
   .tgl, .chk, .pick select { padding: 7px 10px; gap: 8px; }
+  #phoneBox { grid-column: 1 / -1; }                 /* its labels need the full width */
   .hint { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); right: calc(var(--side) + var(--pad-r) + 16px); bottom: 12px; }
 }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -438,7 +439,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const DESC = $("stage").getAttribute("aria-label");
   function describe() {
     let more = { none: "", promax: " An orange iPhone 17 Pro Max is clipped to the MagSafe face.", duo: " A folded iPhone Duo is clipped to the MagSafe face.",
-                 duoOpen: " An open iPhone Duo sits on the Duo plate, its fold across the arm, so the arm reaches out past its short side." }[state.phone];
+                 duoOpen: " An open iPhone Duo sits on the Duo plate, its fold along the arm, so the arm reaches past its long bottom edge." }[state.phone];
     if (hand && state.hand) {
       const grip = state.clench === 1 ? "fingers closed around its lower half" : state.clench === 0 ? "fingers open" : "fingers partly closed";
       const little = state.variant === "tang" ? (state.ring === 4 || state.ring === 6 ? "the little finger curled round the relieved corner at the grip's end, clear of the sliding tang's nose at this click"
@@ -563,7 +564,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (state.inside === 0 && HIDDEN.has(p.name)) return;          // sealed inside the shell
       if (!shows(p, state.phone)) return;
       if (!inVersion(p)) return;
-      const bias = DEPTH_BIAS[p.group] || 0;                            // nested arm stages draw before the rail around them
+      // nested arm stages draw before the rail around them; a phone's screens over the body they sit on, the Duo's hinge band under its halves
+      const bias = DEPTH_BIAS[p.group] || (p.mat === "sc" ? -1.5 : p.name === "Hinge Band" ? 1.5 : 0);
       const m = groupMatrix(p.group), q = SUB[pi].pos, n = SUB[pi].n, col = COLOR2D[p.mat];
       for (let i = 0, t = 0; i < q.length; i += 9, t += 3) {
         const nx = m[0] * n[t] + m[1] * n[t + 1] + m[2] * n[t + 2], ny = m[4] * n[t] + m[5] * n[t + 1] + m[6] * n[t + 2], nz = m[8] * n[t] + m[9] * n[t + 1] + m[10] * n[t + 2];

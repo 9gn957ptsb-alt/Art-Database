@@ -8,17 +8,19 @@
 # the camera half only, so open it is 40.9 mm from the fold and the phone's weight would hang that far off the puck's roll
 # axis (Apple's Accessory Design Guidelines, 23.1.3: the ring alone does not hold the open Duo). The Duo plate snaps onto
 # that ring and onto the alignment magnet below it, grips the camera half's back with a silicone pad, and carries a second
-# ring for the puck where the phone and the plate balance. It stands 1.2 mm off the hinge and the cover screen, which the
-# guidelines say a mount must not press on. Open, the phone goes on the plate with its fold across the arm, so the arm
-# reaches past its 117.8 mm side. Apple publishes no centre of mass: the open Duo's is taken 2.5 mm from the fold toward
-# the camera half at mid-height (an estimate from the parts each half carries, +-4 mm across and +-3 mm along).
+# ring for the puck where the phone and the plate balance. It stands 1.2 mm off the hinge and the cover screen: the
+# guidelines say a mount must not press on the hinge, and must not cover the cover screen's active area either, which the
+# plate and the puck still do over about 21 x 55 mm beside the fold. Open, the phone goes on the plate with its fold along
+# the arm, so the arm reaches across its 117.8 mm height, past its long bottom edge. Apple publishes no centre of mass: the
+# open Duo's is taken 2.5 mm from the fold toward the camera half at mid-height (an estimate from the parts each half
+# carries, +-4 mm across and +-3 mm along).
 # The Pro Max's camera bar height (about 2.5 mm, lenses about 4.2 mm) comes from measurements of dummy units; its other
 # camera, button and corner details and both phones' colours are estimates (the Duo is Apple's Night Sky swatch).
 # As a script it writes phone_meta.json and phone_b64.txt (packed like pack.py's mesh) into the current folder;
 # hand_range.py imports it for sdf(). Needs numpy, shapely, trimesh, triangle, networkx.
 import base64, json, math, os
 import numpy as np
-from shapely.geometry import Point, Polygon, box
+from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -48,8 +50,8 @@ DHINGE = 2.73                                     # the hinge band, either side 
 RING = (41.30, 61.31)                             # the MagSafe ring's centre (its 61.50 mm keepout circle)
 CLOCK = (38.30, 92.49, 44.30, 111.80)             # the alignment magnet: Apple's 6.00 mm clocking magnet, 31.18-50.49 mm below the ring
 DCAM_TOP = (4.94, 4.70, 60.56, 25.80, 10.55, 3.64)  # camera plateau's flat top: u0, v0, u1, v1, end radius; its height
-DCAM_FOOT = (3.0, 0.0, 69.37, 34.62, 14.0, 4.0)   # where its fillet meets the glass; its corners at the hinge and free-edge side
-                                                  # (the fillet's profile and these two radii are guesses)
+DCAM_FOOT = 8.81                                  # its fillet meets the glass 8.81 mm out from the flat top all round (R 19.36 ends,
+                                                  # Detail D), cut off by the top and free-edge rolls; the fillet's profile is a guess
 DLENSES, DLENS_D, DLENS_H = [(15.25, 15.25), (32.98, 15.25)], 16.20, 5.72
 DFLASH, DFLASH_H = (49.58, 19.70, 3.75), 4.73
 # buttons, all on the camera half: (name, edge, centre, span, proud); "free" the free edge (centre from the top), "top" the
@@ -66,14 +68,19 @@ CF_DENSITY, SI_DENSITY, MAG_DENSITY = 1.55e-3, 1.12e-3, 7.5e-3       # g/mm3: ca
 ARRAY_G = math.pi * (ARRAY_R ** 2 - 23.0 ** 2) * 0.8 * MAG_DENSITY   # 3.8 g each
 CLOCK_G = 6.0 * 19.31 * 0.8 * MAG_DENSITY                            # 0.7 g
 ZB = -(PLATE_T + PAD_T)                   # the open Duo's back
+def cam_outline(t):
+    # the camera plateau's outline a fraction t of the way from the fillet's foot (0) to the flat top (1), drawing coordinates
+    u0, v0, u1, v1, r, h = DCAM_TOP; vc = (v0 + v1) / 2       # the flat top is a pill: its ends are semicircles
+    return LineString([(u0 + r, vc), (u1 - r, vc)]).buffer(r + (1 - t) * DCAM_FOOT, 64).intersection(box(3.0, 1.0, DU_AX, DH))
 def foot():
-    u0, v0, u1, v1, r1, r0 = DCAM_FOOT
-    return Polygon(fillet([(u0, v0 - 20), (u1, v0 - 20), (u1, v1), (u0, v1)], [0, 0, r1, r0], 0.4))
+    return cam_outline(0.0)
 def plate_shapes(C):
     # in drawing coordinates, with the puck's ring at C: the carbon (round both rings and the alignment magnet, kept off the
     # camera fillet where it rises over 1 mm) and the pad (the camera half only, 4 mm short of the fold, off the fillet)
     body = unary_union([Point(RING).buffer(28.0, 128), Point(C).buffer(28.0, 128)]).convex_hull
-    tab = box(CLOCK[0] - 3.0, RING[1], CLOCK[2] + 0.5, CLOCK[3] + 2.0)          # kept off the Taptic Engine's keepout (u from 44.05)
+    # the tab round Apple's clocking magnet crosses the Taptic Engine keepout's edge (u 44.05) by 0.75 mm: allowed, since
+    # that keepout is for magnetic material and the magnet itself runs to u 44.30
+    tab = box(CLOCK[0] - 3.0, RING[1], CLOCK[2] + 0.8, CLOCK[3] + 1.0)
     carbon = unary_union([body, tab]).difference(foot().buffer(-2.1, 64)).buffer(-2.0, 64).buffer(2.0, 64)
     pad = carbon.intersection(box(-50, -50, DU_AX - 4.0, 250)).difference(foot().buffer(0.5, 64)).buffer(-0.6, 64)
     return carbon, pad
@@ -82,17 +89,19 @@ def balance():
     C = DCG
     for _ in range(40):
         carbon, pad = plate_shapes(C)
-        m = [(DUO_G, DCG), (carbon.area * PLATE_T * CF_DENSITY, carbon.centroid.coords[0]), (pad.area * PAD_T * SI_DENSITY, pad.centroid.coords[0]),
+        # the magnets take 0.8 mm of the carbon's 1.5 mm where they sit
+        cf = (carbon.area * PLATE_T - (2 * math.pi * (ARRAY_R ** 2 - 23.0 ** 2) + 6.0 * 19.31) * 0.8) * CF_DENSITY
+        m = [(DUO_G, DCG), (cf, carbon.centroid.coords[0]), (pad.area * PAD_T * SI_DENSITY, pad.centroid.coords[0]),
              (ARRAY_G, RING), (ARRAY_G, C), (CLOCK_G, ((CLOCK[0] + CLOCK[2]) / 2, (CLOCK[1] + CLOCK[3]) / 2))]
         M = sum(a for a, _ in m); C = (sum(a * p[0] for a, p in m) / M, sum(a * p[1] for a, p in m) / M)
     carbon, pad = plate_shapes(C)
     assert carbon.geom_type == "Polygon" and pad.geom_type == "Polygon" and carbon.contains(Point(C).buffer(ARRAY_R + 0.5)) \
-        and carbon.contains(Point(RING).buffer(ARRAY_R - 0.4)), "the plate must hold both arrays"
+        and carbon.contains(Point(RING).buffer(ARRAY_R + 0.5)) and carbon.contains(box(*CLOCK).buffer(0.2)), "the plate must hold its magnets"
     return C, M - DUO_G, carbon, pad
 PUCK, PLATE_G, PLATE_C, PLATE_P = balance()
 
 # drawing coordinates to the viewer, seen from behind (+z): folded, the ring on the puck's axis and the spine toward the grip;
-# open on the plate, the puck's ring on the axis, the fold across the arm and the camera half below it (a rotation, not a mirror)
+# open on the plate, the puck's ring on the axis, the fold along the arm and the camera half below it (a rotation, not a mirror)
 fold_xy = lambda u, v: (u - RING[0], RING[1] - v)
 open_xy = lambda u, v: (v - PUCK[1], u - PUCK[0])
 
@@ -159,16 +168,13 @@ def half_outline(u_hinge):
     o = fillet([(0, 0), (0, DH), (u_hinge, DH), (u_hinge, 0)], [DR_OUT, DR_OUT, DR_HINGE, DR_HINGE], 0.5)
     return o, [DROLL if u < u_hinge - DR_HINGE - 0.5 else 0.8 for u, v in o]
 def duo_camera(P, xy, zb):
-    # the plateau: a loft from the fillet's foot up to the flat top (smoothstep profile), then the lenses and the flash
-    u0, v0, u1, v1, r, h = DCAM_TOP; f = DCAM_FOOT
-    top = fillet([(u0, v0), (u1, v0), (u1, v1), (u0, v1)], [r] * 4, 0.4)
-    loops, hs = [], []
-    for k in range(7):
-        t = k / 6; a = lambda p, q: p + (q - p) * t
-        out = fillet([(a(f[0], u0), a(1.0, v0)), (a(f[2], u1), a(1.0, v0)), (a(f[2], u1), a(f[3], v1)), (a(f[0], u0), a(f[3], v1))],
-                     [a(6.0, r), a(6.0, r), a(f[4], r), a(f[5], r)], 0.4)
-        loops.append(start_at(mapped(resample(ccw(out) if area(out) > 0 else out[::-1], 200), xy)))
-        hs.append(zb + (h * (3 * t * t - 2 * t ** 3) if k else -0.3))
+    # the plateau: a loft from the fillet's foot on the glass up to the flat top (a concave fillet, height ~ t squared), then
+    # the lenses and the flash
+    h = DCAM_TOP[5]; loops, hs = [], []
+    for k in range(9):
+        t = k / 8; o = list(cam_outline(t).exterior.coords)[:-1]
+        loops.append(start_at(mapped(resample(ccw(o), 200), xy)))
+        hs.append(zb + h * t * t)
     P["Camera Plateau"] = ("du", *loft(loops, hs))
     for i, (u, v) in enumerate(DLENSES):
         c = xy(u, v); R_ = DLENS_D / 2
@@ -249,7 +255,7 @@ def sdf(p, model="promax"):
             x0, x1 = sorted((side * (W / 2 - 0.2), side * (W / 2 + 0.6)))
             d = np.minimum(d, rbox(p[:, [1, 2, 0]], y0, -D / 2 - 1.6, y1, -D / 2 + 1.6, 1.5, x0, x1))
         return d
-    f = DCAM_FOOT
+    f = foot().bounds
     if model == "duo":
         x0, y0, x1, y1 = box_of([fold_xy(0, 0), fold_xy(DW, DH)])
         d = rbox(p, x0, y0, x1, y1, DR_HINGE, -DT, 0.0)

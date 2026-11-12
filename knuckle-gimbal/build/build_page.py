@@ -13,11 +13,14 @@ out = out.replace("/*PHONE_META*/null", open("phone_meta.json").read()).replace(
 HM = json.load(open("hand_meta.json")); HV = HM["variants"]["well"]     # the version the page opens with
 R, RD = HV["reach"]["promax"], HV["reach"]["duoOpen"]                    # its limits with no phone or the Pro Max, and with the open Duo
 open("index.html", "w").write(out)
+# a copy without the Duo plate, so the test can tell that the plate is drawn
+PM = json.load(open("phone_meta.json")); PM["parts"] = [q for q in PM["parts"] if q["group"] != "plate"]
+noplate = out.replace(open("phone_meta.json").read(), json.dumps(PM, separators=(",", ":")))
 open("chk.js", "w").write(out[out.index("<script>") + 8: out.rindex("</script>")])
 subprocess.run(["node", "--check", "chk.js"], check=True)
 if len(sys.argv) < 2: print("index.html written"); sys.exit(0)
 head = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}[hidden]{display:none!important}</style></head><body>'
-open("_test.html", "w").write(head + out + "</body></html>")
+open("_test.html", "w").write(head + out + "</body></html>"); open("_test_noplate.html", "w").write(head + noplate + "</body></html>")
 from playwright.sync_api import sync_playwright
 from PIL import Image, ImageChops
 THREE = open(os.environ.get('THREE_JS', 'package/build/three.min.js'), 'rb').read()
@@ -95,12 +98,15 @@ with sync_playwright() as p:
         print("folded Duo shows:", duo("v_duo.png") - duo("v_reset.png") > 0.015, round(duo("v_duo.png"), 3), "| no orange:", orange("v_duo.png") < 0.001, "| said:", "folded iPhone Duo" in d.get_attribute("#stage", "aria-label"))
         d.select_option("#phone", "duoOpen"); d.wait_for_timeout(6000); d.screenshot(path="v_duo_open.png")
         print("open Duo on the plate:", duo("v_duo_open.png") - duo("v_reset.png") > 0.006, diff("v_duo.png", "v_duo_open.png"), "Duo plate" in d.get_attribute("#stage", "aria-label"), "| arm:", d.inner_text("#slideOut"))
+        q = b.new_page(viewport={"width": 1280, "height": 860}); q.route("**/three.min.js", serve); q.goto("file://" + os.path.abspath("_test_noplate.html")); q.wait_for_timeout(6000)
+        q.select_option("#phone", "duoOpen"); q.wait_for_timeout(6000); q.screenshot(path="v_duo_open_noplate.png"); q.close()
+        print("the Duo plate is drawn:", diff("v_duo_open.png", "v_duo_open_noplate.png"))
         d.check("#hand"); d.wait_for_timeout(6000); d.screenshot(path="v_duo_open_hand.png")
         print("with the hand the arm goes out to %d mm for the open Duo:" % RD["eHand"][-1], d.inner_text("#slideOut") == "%d mm" % RD["eHand"][-1], "| hand drawn:", skin("v_duo_open_hand.png") > 0.02)
         setv(d, "fold", -180); d.wait_for_timeout(600); print("and the grip stops at %d°:" % RD["gripMin"], d.input_value("#fold") == str(RD["gripMin"]))
         setv(d, "fold", 90); setv(d, "slide", 0); d.wait_for_timeout(300); print("arm kept out for the open Duo:", d.inner_text("#slideOut") == "%d mm" % RD["eHand"][-1])
         d.uncheck("#hand"); setv(d, "fold", -180); setv(d, "slide", 0); d.wait_for_timeout(800); d.screenshot(path="v_duo_open_stowed.png"); print("open Duo stowed:", d.inner_text("#slideOut"), d.inner_text("#foldOut"))
-        setv(d, "fold", 90); d.wait_for_timeout(300); print("arm pushed out for the open Duo without the hand: %s (needs %d)" % (d.inner_text("#slideOut"), RD["eGrip"][-1]))
+        setv(d, "fold", 90); d.wait_for_timeout(300); print("arm pushed out for the open Duo without the hand:", d.inner_text("#slideOut") == "%d mm" % RD["eGrip"][-1], d.inner_text("#slideOut"))
         setv(d, "slide", 45); d.select_option("#phone", "none"); d.wait_for_timeout(6000); d.screenshot(path="v_phone_off.png"); print("phone hides:", same("v_reset.png", "v_phone_off.png"), "| arm:", d.inner_text("#slideOut"))
         ctx = b.new_context(viewport={"width": 400, "height": 860}, has_touch=True, is_mobile=True, color_scheme="dark"); m = ctx.new_page()
         m.on("pageerror", lambda e: errs.append(str(e))); m.route("**/three.min.js", serve)
@@ -120,4 +126,4 @@ with sync_playwright() as p:
         f.select_option("#phone", "promax"); f.wait_for_timeout(1500)
         f.click("#version [data-v=tang]"); f.wait_for_timeout(2500); f.screenshot(path="v_basic_tang.png"); print("fallback version switch:", diff("v_basic_phone.png", "v_basic_tang.png"))
     print("errors:", errs)
-os.remove("_test.html")
+os.remove("_test.html"); os.remove("_test_noplate.html")

@@ -7,7 +7,7 @@
 # the phone. It writes reach[phone] = {gripMin (the furthest the grip folds back with a hand in it), eHand (the arm
 # extension needed with the hand at each angle from gripMin to 90°), eGrip (without the hand, at each angle from -180°
 # to 90°)} into each version's entry in hand_meta.json.
-# Run after pack.py and hand_fit.py, in the folder holding their output. Needs numpy, scipy, trimesh.
+# Run after pack.py and hand_fit.py, in the folder holding their output. Needs numpy, scipy, shapely (for phone.py), trimesh.
 import base64, json, math, os
 import numpy as np, trimesh
 from scipy.ndimage import distance_transform_edt, map_coordinates
