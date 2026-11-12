@@ -35,10 +35,17 @@ a model's judgment: a smaller model can run a script it could not have written.
 5. **Dispatch.** model-locate first when the target is not already known in world space; then model-edit with the
    spec and the locate result; then model-land. Prefer an additive tool (a new tool that adds or cuts) over editing
    a tool in place: an in-place edit forces a full rebuild and blocks landing while another tool is mid-edit.
-6. **Reply.** What changed, where (room and wall), the sizes in ft-in, the version published, and one closing line
+6. **Sheets follow the model** (the artist, 12 Nov 2026: "make sure that the construction documents are updating as
+   changes are being made to architectural models"). Every model that has a construction set has one command per
+   sheet in its set's `RUN.tsv` (sheet, command with the word MODEL, model-driven yes/no). At every landing, before
+   publishing, run the set's `redraw.py` on the model about to go live: it runs every model-driven line again on that
+   model, copies the sheets into the page's `data/sheets` and rewrites the drawer's index. Publish the sheets in the
+   same publish as the model, so the page never shows a model and sheets of two different versions. A sheet that
+   fails to redraw is said in the reply, with its number.
+7. **Reply.** What changed, where (room and wall), the sizes in ft-in, the version published, and one closing line
    on what was not checked. A picture only when there is a choice between options to show; the artist looks at the
    live model.
-7. **Improve.** After the round, add one dated line per lesson to the log below (what slowed, what failed, what to
+8. **Improve.** After the round, add one dated line per lesson to the log below (what slowed, what failed, what to
    do instead, in general terms), add the measured times to `.claude/estimates.md`, and change the role or step
    the lesson is about, so the next round starts better. Remove a lesson once a role or a tool makes it automatic.
 
@@ -90,3 +97,10 @@ a model's judgment: a smaller model can run a script it could not have written.
   cameras twice on a loaded machine. Quote them at 60-100 minutes.
 - **12 Nov 2026** — After a container restart, background results are on disk but are not delivered; read their output
   files before going on.
+- **12 Nov 2026** — Helpers of one run finish at different times; waiting for the last one before landing held finished
+  fixes back half an hour or more. Read a finished helper's return from the run's journal and land its part at once,
+  when its tools are not being edited by a helper still running.
+- **12 Nov 2026** — Two rounds of fixing a checker's long list (150 small wall and fit-out records) closed few of them for
+  3-4 helper-hours each; the artist points at the ones that matter faster. Fix what the artist points at and what a
+  new request breaks; run the full list and the independent pass every other day, not after every round.
+- **12 Nov 2026** — A drawer step that only copies files and rewrites an index is a script (a minute), not a helper.

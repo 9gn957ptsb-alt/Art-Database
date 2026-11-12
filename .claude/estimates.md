@@ -134,3 +134,7 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 11 Nov | Deck: Sit button on both model pages (page code + seat data + house tool) | 60-90 min | about 65 min | in range |
 | 12 Nov | Deck: screen buttons + fixed-step walk tests + rail check | 60-80 min | about 83 min | just over |
 | 11 Nov | Deck: small direct edits (pergola maker's sizes and colours; fire pit turn/scoot; board direction and colour) | 5-15 min each | 8-15 min each | in range |
+| 12 Nov | Deck: an edge turned to a rail post, two posts made one, a gap under the step's lip closed (direct edit, tests, publish) | 20-30 min | about 27 min | in range |
+| 12 Nov | House model: five wall and railing requests from the page (one helper, two existing tools) | about 55 min | about 65 min | just over |
+| 12 Nov | House model: two leaders moved to marked corners, a wall made flat (one helper, one existing tool) | about 50 min | about 45 min | in range |
+| 12 Nov | Drawing set: round 1, two helpers (2 annotated plans; 5 elevations and sections + an unrolled elevation), each with a new engine module | 50-60 min each | 53 and 35 min | in range and under; putting a round in the drawer took 1 min |
