@@ -3,8 +3,9 @@
 # 5.4 mm short of the track and left the grip hanging on silicone (the check of 12 Nov 2026).
 # Grip frame (outlines.py): s from the hinge axis, y along it, w through the thickness (palm face w = -1.75).
 # Between the barrel and the body (s 1.9 to 5.5) it stays inside the old tab's outline (w -1.6 to 1.6), so the arm's end
-# block and the fitted hand meet nothing new. It enters the body 1.7 mm thick (w -0.1 to 1.6), steeply through the body's
-# palm-side round, thickens to 3.5 mm (w -0.75 to 2.75) under at least 0.5 mm of silicone (1 mm from s 7), and runs 1.3 mm into
+# block and the fitted hand meet nothing new. It enters the body through its hinge-end face and the palm-side round below
+# it, 2.0 mm thick at its thinnest, thickens to 3.5 mm (w -0.75 to 2.75) under about 1 mm of silicone (thinning to nothing
+# where it enters the body and where it meets the track), and runs 1.3 mm into
 # the track's wall (s 14.2 to 15.5, where the wall is 3.8 mm thick behind its stop bumps); the two are meant as one part.
 # Two 2.4 mm holes through it key the silicone. Its edges are rounded 0.5 mm.
 # As a script, run after pack.py in the same folder: swaps the Grip Core Tab in mesh_meta.json and mesh_b64.txt for the
@@ -20,15 +21,17 @@ fillet, ccw, plate_mesh = _ns["fillet"], _ns["ccw"], _ns["plate_mesh"]
 
 HALF_Y = 7.5                                  # half its width along the hinge axis: the barrel's length between the lugs
 # its side profile (s, w), corner radii
-PROFILE = [(1.9, -1.6), (3.5, -1.6), (5.8, -0.1), (8.5, -0.75), (15.5, -0.75), (15.5, 2.75), (7.5, 2.75), (6.0, 1.6), (1.9, 1.6)]
-RADII = [0.0, 1.0, 0.4, 1.5, 0.5, 0.5, 1.5, 0.8, 0.0]
+# (it starts at s 1.5, where the barrel's 2.2 mm radius still covers w +-1.6, so its end sits wholly inside the barrel; the
+# 2.5 and 1.4 mm radii either side of its thinnest section keep the bending stress there down)
+PROFILE = [(1.5, -1.6), (3.0, -1.6), (5.8, -0.2), (8.5, -0.75), (15.5, -0.75), (15.5, 2.75), (7.5, 2.75), (6.0, 1.6), (1.5, 1.6)]
+RADII = [0.0, 1.0, 2.5, 1.5, 0.5, 0.5, 1.5, 1.4, 0.0]
 HOLES, HOLE_R = [(11.3, -3.5), (11.3, 3.5)], 1.2     # keying holes through the thickness: (s, y), radius
 POSE_AX, AXIS_Z = 79.25, 16.5                  # the packed mesh's pose: grip frame (s, y, w) -> viewer (AX - w, y, AXIS_Z - s)
 
 def palm_top(s):
     # the profile's w range at s, corners ignored (for voxel masks)
-    lo = np.interp(s, [1.9, 3.5, 5.8, 8.5, 15.5], [-1.6, -1.6, -0.1, -0.75, -0.75])
-    hi = np.interp(s, [1.9, 6.0, 7.5, 15.5], [1.6, 1.6, 2.75, 2.75])
+    lo = np.interp(s, [1.5, 3.0, 5.8, 8.5, 15.5], [-1.6, -1.6, -0.2, -0.75, -0.75])
+    hi = np.interp(s, [1.5, 6.0, 7.5, 15.5], [1.6, 1.6, 2.75, 2.75])
     return lo, hi
 def inside(S, Y, W):
     # boolean mask of grid points inside the spine (corners and holes ignored)

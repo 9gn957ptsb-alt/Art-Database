@@ -93,6 +93,7 @@ pts = trimesh.sample.sample_surface_even(sp, 60000, seed=1)[0]
 for key in ("well", "tang"):
     body, trk = meshes.mesh(VP[key]["Grip Body"]), meshes.mesh(VP[key]["Track Frame"])
     inb = body.contains(pts); d = np.abs(trimesh.proximity.signed_distance(body, pts))
-    cover = {f"s {a}-{b}": round(float(d[inb & (pts[:, 0] >= a) & (pts[:, 0] < b)].min()), 2) for a, b in ((6.3, 7.0), (7.0, 12.0), (12.0, 13.5))}
+    cover = {f"s {a}-{b}": round(float(d[inb & (pts[:, 0] >= a) & (pts[:, 0] < b)].min()), 2) for a, b in ((6.0, 7.0), (7.0, 8.0), (8.0, 12.0), (12.0, 13.0), (13.0, 14.2))}
+    assert cover["s 8.0-12.0"] >= 0.9, (key, "the spine's silicone cover", cover)
     into = sp.intersection(trk).volume; assert into > 30, (key, "spine not joined to the track", into)
     print(f"  carbon spine ({key}): {sp.volume:.0f} mm3, {into:.0f} mm3 into the track's hinge-side wall, silicone over it (mm) {cover}")
