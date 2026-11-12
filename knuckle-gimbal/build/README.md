@@ -4,7 +4,7 @@ How `../sketchup/knuckle.skp` and the web viewer (https://claude.ai/artifact/USq
 
 ## SketchUp model
 
-The SketchUp file is no longer kept in step with the rest: it has both grip versions but not the phones or the Duo plate, which `phone.py` builds straight into the viewer.
+The SketchUp file is no longer kept in step with the rest: it has both grip versions but not the phones, the Duo plate or the carbon spine, which `phone.py` and `spine.py` build straight into the viewer.
 
 Run these with the Trimble SketchUp connector's `build_model` tool, pasting each file's text as the code, in order. Sessions come back empty after about 30 minutes idle, so run the steps back to back.
 
@@ -23,12 +23,19 @@ The fins are gone. The grip's ends come in two versions, built the same at both 
 - **Open well**: a well through the grip beside the ring finger's carriage (s 24 to 44.5 mm, from y 37 mm outward), so the little finger curls through the grip. The well cuts the carbon track's end arcs, so the track is two rails. What is left of the arc on the hinge-side rail still stops each carriage about 0.2 mm past its 8 mm of travel; the stop teeth `pinky.py` adds come out of its rounding as 0.07-0.09 mm bumps and change that by under 0.05 mm. A 4 mm silicone bar across each well's end holds the grip's outer half on. The ends are 4 mm longer than today's (the grip is 115 mm long instead of 107) so the bar sits past the curled finger. Each carriage has a 3 mm saddle across its palm-side rim and its outer wall thinned to 1 mm of carbon where the little finger leans on it.
 - **Sliding tang**: the hinge-end corner is relieved, leaving 4.1 mm of silicone round the track. A soft nose on a 1.5 mm carbon strap rides with the ring finger's carriage, 0.6 mm off the relieved wall at home (2.5 mm at the 4 mm click, 5 mm at 8 mm). The nose's top is sunk 0.7 mm into the strap's underside, so in the model the two solids overlap there (12.7 mm³); the silicone meets the carbon only on that underside, about 23 mm², not round the strap's end.
 
+## Carbon spine
+
+`spine.py` builds one carbon part from the hinge barrel, inside the silicone body, 1.3 mm into the track's hinge-side wall (s 14.2-15.5, where the wall is 3.8 mm thick behind its stop bumps), 15 mm wide along the hinge axis. It replaces the SketchUp model's core tab, which stopped 5.4 mm short of the track, so the grip hung from the hinge on silicone alone. Between the barrel and the body it keeps inside the old tab's outline, so the arm's end block and the fitted hand meet nothing new; it enters the body 1.7 mm thick through the body's palm-side round and thickens to 3.5 mm. Silicone covers it by 0.3-0.6 mm where it enters and leaves the body and 0.75-1 mm elsewhere, and two 2.4 mm holes through it key the silicone. The barrel, spine and track are meant as one carbon part.
+
+The same finite-element model that found the problem (voxel hexahedra at 0.75 mm, silicone 1.7 MPa bonded to carbon 40 GPa, the track held by the hand as a rigid body, the phone, puck and arm, 308 g, at the hold) gives, with the old tab and then the spine: the phone tilts 18.8-20.6° and then 0.05° held upright, 12.0-12.6° and 0.03° sideways, and 69-75° and 0.15° held flat (0.44° at three times its weight); the grip's first sways move from 1.6 and 2.5 Hz, walking pace, to 35 and 52 Hz. The highest carbon stress is 34 MPa at three times the weight, against 300-600 MPa for chopped or woven carbon. The model treats the track as rigid and the spine's corners at 0.75 mm, so it doesn't show the Open well's loose outer half (below) or a stress peak at the spine's thinnest point.
+
 ## Web viewer
 
 Work in a scratch copy of this folder:
 
 ```
 python3 pack.py <export tool-results file>   # writes mesh_meta.json and mesh_b64.txt
+python3 spine.py                              # swaps the SketchUp core tab for the carbon spine in them
 python3 hand_fit.py                           # writes hand_meta.json and hand_b64.txt
 python3 phone.py                              # writes phone_meta.json and phone_b64.txt
 python3 hand_range.py                         # adds the arm extension each grip angle needs, per phone, to hand_meta.json (about 35 minutes)
@@ -44,13 +51,12 @@ The iPhone Duo follows Apple's iPhone Duo Dimensional Drawings (developer.apple.
 
 ## Known problems (check of 12 Nov 2026)
 
-A check of the grip's strength and how its parts could be made found these; none is fixed yet.
+A check of the grip's strength and how its parts could be made found these. The first it found, the grip hanging from the hinge on silicone, is fixed by the carbon spine (above); the rest are not fixed yet.
 
-- **The grip hangs on silicone.** The carbon core tab stops 5.4 mm short of the carbon track, so the phone, puck and arm (308 g) tilt the grip about 20° upright, 10-13° sideways and 45-60° held flat, and it sways at about 1.5 and 2.5 Hz. This is in every version, today's too. Fix: one carbon spine from the hinge barrel into the track.
 - **The Open well's outer half hangs on two 4 mm silicone bars**: about 10-21 mm of movement per newton, against about 0.1-0.2 mm today. Fix: carry carbon across each well's end inside the bar.
 - **No clicks.** Nothing on a carriage engages the track's wavy walls, so a ring is held only by friction, and the carriages aren't held in the track along the finger's axis either.
 - **The track is too thin to make.** Its walls narrow to about 0.8 mm at the wave troughs (about 0.7 mm in the Open well, where `pinky.py`'s rounding also thins the rails), on walls up to 11.7 mm tall with no draft. That is too thin for forged carbon or carbon-filled powder printing.
-- **The silicone can't be moulded round the carbon as drawn.** The core tab's palm face is bare or under 0.15 mm of silicone, and there is no land for the tool to seal on the track.
+- **The silicone can't be moulded round the track as drawn**: there is no land for the tool to seal on. (The old core tab's bare palm face is gone with the spine.)
 - **The Sliding tang's strap** is a 1.5 mm cantilever whose joint to the carriage isn't defined; it may break at 40-160 N pushed toward the phone, depending on its root. The nose is held only by its underside contact, which could peel at anywhere from a few newtons to about 25 N; no bond data exists for silicone on epoxy carbon.
 - **The hinge**: the 15.0 mm barrel sits in a 15.6 mm fork, and tightening the M2 to close the gaps may bend the carbon end block near its strength (one analysis, not yet repeated). Fit 0.3 mm friction or wave washers. Arm stage 2's 0.8 mm steel strip needs a hard temper (17-4 PH H900, or full-hard 301).
 - **The hand fit** has the overlaps listed under the web viewer.
@@ -60,6 +66,7 @@ Each script has its own requirements:
 
 - `pack.py` also needs mapbox_earcut.
 - `hand_fit.py` needs scipy, trimesh, triangle and pygltflib as well.
+- `spine.py` needs numpy, trimesh with manifold3d, and triangle.
 - `phone.py` needs numpy, shapely, trimesh and triangle; `hand_range.py` needs numpy, scipy, shapely and trimesh.
 - `build_page.py` needs Node (it syntax-checks the page's script).
 - The browser test needs Playwright with Chromium at `/opt/pw-browsers/chromium-1194`, plus three.js r128. Put three.js at `./package/build/three.min.js` (`npm pack three@0.128.0 && tar xzf three-0.128.0.tgz`) or point `THREE_JS` to it.

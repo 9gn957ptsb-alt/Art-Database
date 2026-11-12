@@ -114,7 +114,10 @@ H = 0.4
 S_AX = np.arange(-4.0, 64.0 + 1e-9, H); Y_AX = np.arange(-64.0, 64.0 + 1e-9, H); W_AX = np.arange(-24.0, 20.0 + 1e-9, H)
 SHAPE = (len(S_AX), len(Y_AX), len(W_AX)); LO3 = np.array([S_AX[0], Y_AX[0], W_AX[0]])
 _S3, _Y3, _W3 = np.meshgrid(S_AX, Y_AX, W_AX, indexing="ij")
-FIXED = ((np.hypot(_S3, _W3) <= 2.2) & (np.abs(_Y3) <= 7.5)) | ((_S3 >= 1.9) & (_S3 <= 8.8) & (np.abs(_W3) <= 1.6) & (np.abs(_Y3) <= 7.5))   # hinge barrel, core tab
+# hinge barrel and carbon spine (spine.py); outside the body the spine keeps inside the old core tab's outline, so fits made
+# with that tab still hold
+import spine
+FIXED = ((np.hypot(_S3, _W3) <= 2.2) & (np.abs(_Y3) <= 7.5)) | spine.inside(_S3, _Y3, _W3)
 del _S3, _Y3, _W3
 def plate_sdf(slide):
     # today's grip without the fins, from its plate outlines (exact edges, no rounds): what the shared part of the hand is fitted to

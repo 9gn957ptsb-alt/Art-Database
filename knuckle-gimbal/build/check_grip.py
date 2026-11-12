@@ -1,4 +1,4 @@
-# Checks the grip parts before they go to SketchUp: every offset ring simple, holes inside the outline, each part a closed
+# Checks the grip parts: every offset ring simple, holes inside the outline, each part a closed
 # solid, both rings inside the track at every click; then both little-finger versions (variants.py): closed, no edge SketchUp
 # would merge, the open well's end bar and the stop on its cut rails, the sliding tang clear of the body at every click.
 # Needs numpy, shapely, trimesh (with manifold3d), triangle, scipy.
@@ -84,3 +84,15 @@ for n in ("Tang Nose Bottom", "Tang Strap Bottom"):
         inter = sum(a.intersection(f).volume for f in fixed); gap = min(t.query(pts - [0, slide, 0])[0].min() for t in trees)
         assert inter < 0.01, (n, slide, inter)
         print(f"  sliding tang {n:18s} slide {slide}: inside the body or track {inter:.3f} mm3, nearest {gap:.2f} mm")
+# The carbon spine (spine.py) from the hinge barrel into the track: closed, inside the old core tab's outline outside the
+# body (so the arm and the fitted hand meet nothing new), joined to the track, and how much silicone covers it
+import spine
+sp = spine.mesh(); assert sp.is_watertight and sp.volume > 0
+V = sp.vertices; assert (np.abs(V[V[:, 0] < 5.5][:, 2]) <= 1.6 + 1e-6).all(), "spine outside the old tab's outline before the body"
+pts = trimesh.sample.sample_surface_even(sp, 60000, seed=1)[0]
+for key in ("well", "tang"):
+    body, trk = meshes.mesh(VP[key]["Grip Body"]), meshes.mesh(VP[key]["Track Frame"])
+    inb = body.contains(pts); d = np.abs(trimesh.proximity.signed_distance(body, pts))
+    cover = {f"s {a}-{b}": round(float(d[inb & (pts[:, 0] >= a) & (pts[:, 0] < b)].min()), 2) for a, b in ((6.3, 7.0), (7.0, 12.0), (12.0, 13.5))}
+    into = sp.intersection(trk).volume; assert into > 30, (key, "spine not joined to the track", into)
+    print(f"  carbon spine ({key}): {sp.volume:.0f} mm3, {into:.0f} mm3 into the track's hinge-side wall, silicone over it (mm) {cover}")
