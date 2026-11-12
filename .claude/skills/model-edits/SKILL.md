@@ -104,3 +104,7 @@ a model's judgment: a smaller model can run a script it could not have written.
   3-4 helper-hours each; the artist points at the ones that matter faster. Fix what the artist points at and what a
   new request breaks; run the full list and the independent pass every other day, not after every round.
 - **12 Nov 2026** — A drawer step that only copies files and rewrites an index is a script (a minute), not a helper.
+- **12 Nov 2026** — A sheet on a page anyone can open prints nothing that places the artist: a helper's change sheet quoted
+  each request with its time and time zone. Before a first publish, search the sheets for the zone, the address words
+  and names, not only the words the sheet's own check knows. And read the brief's code citations twice: the lead's brief
+  put the model code's riser limit under the state code's name, and the helpers printed it on three sheets.

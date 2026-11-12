@@ -138,3 +138,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 12 Nov | House model: five wall and railing requests from the page (one helper, two existing tools) | about 55 min | about 65 min | just over |
 | 12 Nov | House model: two leaders moved to marked corners, a wall made flat (one helper, one existing tool) | about 50 min | about 45 min | in range |
 | 12 Nov | Drawing set: round 1, two helpers (2 annotated plans; 5 elevations and sections + an unrolled elevation), each with a new engine module | 50-60 min each | 53 and 35 min | in range and under; putting a round in the drawer took 1 min |
+| 12 Nov | Deck: five requests from the page in one helper (a fence door that opens in Walk, three edge changes, floor colours and borders) | about 95 min | 59 min (a cut-off first helper had spent 33) | under |
+| 12 Nov | Deck drawing set: 12 sheets, two helpers one after the other on the house set's engine (plans, elevations, sections, schedules, the change sheet; then cover, details, structure, the drawer) | 80-110 min | 40 and 36 min; the lead's look, two wording fixes, publish and the change document 15 min | under |
