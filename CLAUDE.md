@@ -21,3 +21,6 @@ To change only meta.name or meta.description, stop the workflow between agents a
 
 Efficiency (the artist asked, 6 Nov 2026: "are you being as efficient as possible?"): make a well-defined change directly
 and send it step by step; run a workflow of several versions, judges and checks only when the artist asks for options.
+Never relay another session's work to the artist (12 Nov 2026: "Do not waste usage sending me play by plays of other
+sessions"): a comment or event meant for another session gets no reply here, and a session stops watching pages it
+is done with.
