@@ -76,3 +76,17 @@ a model's judgment: a smaller model can run a script it could not have written.
 - **11 Nov 2026** — Check any change to drawing at the artist's own view tags (the comments carry them), in walk as
   well as 3D, near and far, at phone size, before and after side by side, and have someone else look: one look at one
   view passed the first two shadow versions, and the artist found what it missed.
+- **12 Nov 2026** — A pass that "fixes white patches" repainted whole white walls, soffits and risers the artist had
+  lived with; clay pictures hid it. Limit such passes by size (patches and strips only) and check every camera in colour
+  as well as in clay before publishing.
+- **12 Nov 2026** — A helper that edits page code or a shared build file in place makes everyone else's tests on those
+  files unreliable while it works. Test against routed, fixed copies; save a copy of each file before editing it.
+- **12 Nov 2026** — Walk tests timed by the wall clock measured the renderer's speed, not the walker (the walker's step
+  is capped per frame). Drive page tests in fixed simulated steps.
+- **12 Nov 2026** — A tool that adds a second copy of something a later tool expects once (a second ground face) made the
+  later tool refuse. Make tools find what they need by name and shape and accept extra copies; when two tools both run
+  after the same step, try both orders and keep the one that composes.
+- **12 Nov 2026** — Independent checks of a whole composed version took 60-100 minutes, not 35-55: rendering 50+
+  cameras twice on a loaded machine. Quote them at 60-100 minutes.
+- **12 Nov 2026** — After a container restart, background results are on disk but are not delivered; read their output
+  files before going on.

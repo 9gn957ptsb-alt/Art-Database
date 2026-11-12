@@ -121,3 +121,16 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 11 Nov | Model pages: the soft look (soft sun shadows, sky light, lighter edges) in both pages' viewer, from a Blender reference render, checked before and after locally (by me) | 30-45 min | about 35 min | in range |
 | 11 Nov | Model pages: square shadow pattern removed (VSM, view-fitted shadow camera, far-side casting), light rebalanced; two ambient-occlusion passes tried and dropped (by me) | 40-70 min | about 45 min | in range |
 | 11 Nov | Model pages: the shadow smudges removed (VSM replaced by soft PCF with a B-spline filter, a finer map reaching about 28 m ahead and fading at its edge, no shadows from cables), checked at 26 of the artist's views on desktop and phone, with two independent checks (by me + 14 helpers) | 45-75 min, then +25-40 min for the reach | about 62 min (22:42-23:44 UTC) | in range: the first check found the 10 m reach and the cable speckle, both fixed before publishing |
+| 11 Nov | House model: problem audit, then fix round 1 (3 fixers, one tool each) | 75-105 min | about 97 min | in range |
+| 11 Nov | House model: independent check of a composed version (counts + the artist's cameras + walk + page) | 35-55 min | 59, 98 and 98 min (three rounds) | over every time: rendering 50+ cameras in clay and colour on a loaded 4-CPU machine; quote 60-100 min |
+| 11 Nov | House model: four requests in two jobs (structure under a cantilever + column move; window wall + garage doors) | 60-90 min | about 77 min | in range |
+| 11 Nov | House model: room regrouping (hallway split three ways, skylight to the stair room) | 50-75 min | about 70 min | in range |
+| 11 Nov | House model: bathroom re-layout from a marked picture | 40-55 min | about 38 min | under the range |
+| 12 Nov | House model: mullions on every window and skylight (new tool) | 60-90 min | about 93 min | just over |
+| 12 Nov | House model: all loose furniture replaced by a real maker's catalogue pieces (new tool) | 90-150 min | about 95 min | in range |
+| 12 Nov | House model: fix round 2 (3 fixers) | 75-105 min | 70-93 min | in range |
+| 12 Nov | House model: colour-only fix round (3 small fixes) | 35-50 min | about 40 min | in range |
+| 11 Nov | Deck: height change + extension + louver button + flat louvers + fan + screens + table (one helper) | 90-120 min | about 49 min | under: one build file, clear spec |
+| 11 Nov | Deck: Sit button on both model pages (page code + seat data + house tool) | 60-90 min | about 65 min | in range |
+| 12 Nov | Deck: screen buttons + fixed-step walk tests + rail check | 60-80 min | about 83 min | just over |
+| 11 Nov | Deck: small direct edits (pergola maker's sizes and colours; fire pit turn/scoot; board direction and colour) | 5-15 min each | 8-15 min each | in range |
