@@ -11,6 +11,7 @@ out = out.replace("/*HAND_META*/null", open("hand_meta.json").read()).replace("/
 # the phone (phone.py writes these two)
 out = out.replace("/*PHONE_META*/null", open("phone_meta.json").read()).replace("/*PHONE_DATA*/", open("phone_b64.txt").read())
 HM = json.load(open("hand_meta.json")); HV = HM["variants"]["well"]     # the version the page opens with
+R, RD = HV["reach"]["promax"], HV["reach"]["duoOpen"]                    # its limits with no phone or the Pro Max, and with the open Duo
 open("index.html", "w").write(out)
 open("chk.js", "w").write(out[out.index("<script>") + 8: out.rindex("</script>")])
 subprocess.run(["node", "--check", "chk.js"], check=True)
@@ -37,6 +38,11 @@ def orange(path):
     import numpy as np
     a = np.asarray(Image.open(path).convert('RGB'), dtype=int)[60:-150]
     return float(((a[..., 0] - a[..., 2] > 70) & (a[..., 0] > 100) & (a[..., 1] < 0.75 * a[..., 0])).mean())
+def duo(path):
+    # share of the stage in the iPhone Duo's blue-grey
+    import numpy as np
+    a = np.asarray(Image.open(path).convert('RGB'), dtype=int)[60:-150]
+    return float(((a[..., 2] - a[..., 0] > 12) & (a[..., 2] > 40) & (a[..., 2] < 150) & (a[..., 1] > a[..., 0])).mean())
 def setv(pg, id_, v): pg.evaluate(f"s=document.getElementById('{id_}'); s.value={v}; s.dispatchEvent(new Event('input'))")
 mode = sys.argv[1]
 with sync_playwright() as p:
@@ -72,25 +78,35 @@ with sync_playwright() as p:
         print("hand drawn:", round(skin("v_hand.png"), 3) > 0.03)
         setv(d, "fold", 45); d.wait_for_timeout(800); d.screenshot(path="v_hand_fold.png"); print("hand stays on the grip as it turns:", skin("v_hand_fold.png") > 0.03, diff("v_hand.png", "v_hand_fold.png"))
         setv(d, "fold", -180); d.wait_for_timeout(800); d.screenshot(path="v_hand_fold2.png")
-        print("with the hand the grip stops at %d°:" % HV["gripMin"], d.input_value("#fold") == str(HV["gripMin"]), d.inner_text("#foldOut"), "| arm:", d.inner_text("#slideOut"), "| hand drawn:", skin("v_hand_fold2.png") > 0.01)
-        setv(d, "slide", 0); setv(d, "fold", 0); d.wait_for_timeout(300); print("arm pushed out for the hand at 0°:", d.inner_text("#slideOut") == "%d mm" % HV["eHand"][-HV["gripMin"]])
+        print("with the hand the grip stops at %d°:" % R["gripMin"], d.input_value("#fold") == str(R["gripMin"]), d.inner_text("#foldOut"), "| arm:", d.inner_text("#slideOut"), "| hand drawn:", skin("v_hand_fold2.png") > 0.01)
+        setv(d, "slide", 0); setv(d, "fold", 0); d.wait_for_timeout(300); print("arm pushed out for the hand at 0°:", d.inner_text("#slideOut") == "%d mm" % R["eHand"][-R["gripMin"]])
         setv(d, "fold", 90); d.click("#inside"); d.wait_for_timeout(1500); d.screenshot(path="v_hand_inside.png"); print("hand hidden in the inside view:", skin("v_hand_inside.png") < 0.002)
         d.uncheck("#hand"); setv(d, "fold", -180); d.check("#hand"); d.wait_for_timeout(6000); d.screenshot(path="v_hand_back.png")
         print("checking Hand turns the grip back to the hold and closes the inside view:", d.input_value("#fold") == "90", d.get_attribute("#inside", "aria-pressed") == "false", skin("v_hand_back.png") > 0.03)
         d.uncheck("#hand"); setv(d, "fold", 0); d.check("#hand"); d.wait_for_timeout(1500); print("checking Hand keeps a grip angle the hand fits:", d.input_value("#fold") == "0"); setv(d, "fold", 90)
         setv(d, "slide", 45); d.uncheck("#hand"); d.wait_for_timeout(6000); d.screenshot(path="v_hand_off.png"); print("hand hides:", same("v_reset.png", "v_hand_off.png"), "| fingers slider hidden:", not d.is_visible("#clench"), "| grip goes to -180 again:", d.get_attribute("#fold", "min") == "-180")
-        print("phone hidden at first:", orange("v_reset.png") < 0.001, "| box shown:", d.is_visible("#phone"))
-        d.check("#phone"); d.wait_for_timeout(6000); d.screenshot(path="v_phone_on.png"); print("phone shows:", orange("v_phone_on.png") > 0.03, round(orange("v_phone_on.png"), 3))
+        print("phone hidden at first:", orange("v_reset.png") < 0.001, "| picker shown:", d.is_visible("#phone"), d.eval_on_selector_all("#phone option", "o => o.map(x => x.value)"))
+        d.select_option("#phone", "promax"); d.wait_for_timeout(6000); d.screenshot(path="v_phone_on.png"); print("phone shows:", orange("v_phone_on.png") > 0.03, round(orange("v_phone_on.png"), 3))
         d.check("#hand"); d.wait_for_timeout(6000); d.screenshot(path="v_phone_hand_on.png"); print("phone and hand:", orange("v_phone_hand_on.png") > 0.01, skin("v_phone_hand_on.png") > 0.02)
         setv(d, "fold", -60); d.wait_for_timeout(800); d.screenshot(path="v_phone_hand_fold.png")
         d.uncheck("#hand"); setv(d, "fold", -180); setv(d, "slide", 0); d.wait_for_timeout(800); d.screenshot(path="v_phone_stowed.png")
         setv(d, "fold", 90); setv(d, "slide", 45); d.click("#inside"); d.wait_for_timeout(1500); d.screenshot(path="v_phone_inside.png"); d.click("#inside"); d.wait_for_timeout(1500)
-        d.uncheck("#phone"); d.wait_for_timeout(6000); d.screenshot(path="v_phone_off.png"); print("phone hides:", same("v_reset.png", "v_phone_off.png"))
+        d.select_option("#phone", "duo"); d.wait_for_timeout(6000); d.screenshot(path="v_duo.png")
+        print("folded Duo shows:", duo("v_duo.png") - duo("v_reset.png") > 0.015, round(duo("v_duo.png"), 3), "| no orange:", orange("v_duo.png") < 0.001, "| said:", "folded iPhone Duo" in d.get_attribute("#stage", "aria-label"))
+        d.select_option("#phone", "duoOpen"); d.wait_for_timeout(6000); d.screenshot(path="v_duo_open.png")
+        print("open Duo on the plate:", duo("v_duo_open.png") - duo("v_reset.png") > 0.006, diff("v_duo.png", "v_duo_open.png"), "Duo plate" in d.get_attribute("#stage", "aria-label"), "| arm:", d.inner_text("#slideOut"))
+        d.check("#hand"); d.wait_for_timeout(6000); d.screenshot(path="v_duo_open_hand.png")
+        print("with the hand the arm goes out to %d mm for the open Duo:" % RD["eHand"][-1], d.inner_text("#slideOut") == "%d mm" % RD["eHand"][-1], "| hand drawn:", skin("v_duo_open_hand.png") > 0.02)
+        setv(d, "fold", -180); d.wait_for_timeout(600); print("and the grip stops at %d°:" % RD["gripMin"], d.input_value("#fold") == str(RD["gripMin"]))
+        setv(d, "fold", 90); setv(d, "slide", 0); d.wait_for_timeout(300); print("arm kept out for the open Duo:", d.inner_text("#slideOut") == "%d mm" % RD["eHand"][-1])
+        d.uncheck("#hand"); setv(d, "fold", -180); setv(d, "slide", 0); d.wait_for_timeout(800); d.screenshot(path="v_duo_open_stowed.png"); print("open Duo stowed:", d.inner_text("#slideOut"), d.inner_text("#foldOut"))
+        setv(d, "fold", 90); d.wait_for_timeout(300); print("arm pushed out for the open Duo without the hand: %s (needs %d)" % (d.inner_text("#slideOut"), RD["eGrip"][-1]))
+        setv(d, "slide", 45); d.select_option("#phone", "none"); d.wait_for_timeout(6000); d.screenshot(path="v_phone_off.png"); print("phone hides:", same("v_reset.png", "v_phone_off.png"), "| arm:", d.inner_text("#slideOut"))
         ctx = b.new_context(viewport={"width": 400, "height": 860}, has_touch=True, is_mobile=True, color_scheme="dark"); m = ctx.new_page()
         m.on("pageerror", lambda e: errs.append(str(e))); m.route("**/three.min.js", serve)
         m.goto(url); m.wait_for_timeout(6000); m.screenshot(path="v_phone.png"); print("phone scrollW:", m.evaluate("document.documentElement.scrollWidth"))
-        m.check("#hand"); m.check("#phone"); m.wait_for_timeout(6000); m.screenshot(path="v_phone_hand.png"); print("phone with hand and iPhone scrollW:", m.evaluate("document.documentElement.scrollWidth"))
-        m.uncheck("#hand"); m.uncheck("#phone"); m.wait_for_timeout(6000)
+        m.check("#hand"); m.select_option("#phone", "duoOpen"); m.wait_for_timeout(6000); m.screenshot(path="v_phone_hand.png"); print("phone with hand and iPhone scrollW:", m.evaluate("document.documentElement.scrollWidth"))
+        m.uncheck("#hand"); m.select_option("#phone", "none"); m.wait_for_timeout(6000)
         cdp = ctx.new_cdp_session(m)
         def t(typ, pts): cdp.send("Input.dispatchTouchEvent", {"type": typ, "touchPoints": [{"x": a, "y": c, "id": i} for i, (a, c) in enumerate(pts)]})
         t("touchStart", [(170, 400), (230, 400)])
@@ -99,7 +115,9 @@ with sync_playwright() as p:
         f = b.new_page(viewport={"width": 1280, "height": 860}); f.on("pageerror", lambda e: errs.append(str(e))); f.route("**/three.min.js", lambda r: r.abort())
         f.goto(url); f.wait_for_timeout(4000); f.screenshot(path="v_basic.png"); print("fallback:", f.inner_text("#sub"))
         f.check("#hand"); f.wait_for_timeout(2500); f.screenshot(path="v_basic_hand.png"); print("fallback hand:", diff("v_basic.png", "v_basic_hand.png"))
-        f.check("#phone"); f.wait_for_timeout(2500); f.screenshot(path="v_basic_phone.png"); print("fallback phone:", orange("v_basic_phone.png") > 0.01)
+        f.select_option("#phone", "promax"); f.wait_for_timeout(2500); f.screenshot(path="v_basic_phone.png"); print("fallback phone:", orange("v_basic_phone.png") > 0.01)
+        f.select_option("#phone", "duoOpen"); f.wait_for_timeout(2500); f.screenshot(path="v_basic_duo.png"); print("fallback open Duo:", duo("v_basic_duo.png") - duo("v_basic.png") > 0.004, diff("v_basic_phone.png", "v_basic_duo.png"))
+        f.select_option("#phone", "promax"); f.wait_for_timeout(1500)
         f.click("#version [data-v=tang]"); f.wait_for_timeout(2500); f.screenshot(path="v_basic_tang.png"); print("fallback version switch:", diff("v_basic_phone.png", "v_basic_tang.png"))
     print("errors:", errs)
 os.remove("_test.html")

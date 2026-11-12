@@ -1,8 +1,12 @@
-# Where the grip can turn with the hand in it. The hand turns with the grip; the puck, arm and phone stay put.
-# For every grip angle (1° steps) it finds the shortest arm extension at which every hand pose the viewer can show
-# (fingers 0 to 100 % in quarters, every ring click; its skin's vertices and the middles of its triangles and edges) stays 1 mm clear of the phone (phone.py) and of the puck and arm (voxel
-# distance fields of the packed SketchUp mesh). It adds gripMin (the furthest the grip folds back with a hand in it) and
-# eHand (the arm extension needed at each angle from gripMin to 90°) to each version's entry in hand_meta.json.
+# Where the grip can turn, with and without the hand in it, for each phone the holder is set up for (phone.py: the
+# iPhone 17 Pro Max, the iPhone Duo folded, the iPhone Duo open on the Duo plate). The hand turns with the grip; the puck,
+# arm and phone stay put. For every grip angle (1° steps) it finds the shortest arm extension at which every hand pose the
+# viewer can show (fingers 0 to 100 % in quarters, every ring click; its skin's vertices and the middles of its triangles
+# and edges) stays 1 mm clear of the phone and of the puck and arm (voxel distance fields of the packed mesh), and the
+# shortest at which the grip alone (its vertices, triangle and edge middles, the ring at every click) stays 1 mm clear of
+# the phone. It writes reach[phone] = {gripMin (the furthest the grip folds back with a hand in it), eHand (the arm
+# extension needed with the hand at each angle from gripMin to 90°), eGrip (without the hand, at each angle from -180°
+# to 90°)} into each version's entry in hand_meta.json.
 # Run after pack.py and hand_fit.py, in the folder holding their output. Needs numpy, scipy, trimesh.
 import base64, json, math, os
 import numpy as np, trimesh
@@ -12,6 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 import importlib.util
 spec = importlib.util.spec_from_file_location("phone", os.path.join(HERE, "phone.py")); phone = importlib.util.module_from_spec(spec); spec.loader.exec_module(phone)
 POSE_E, POSE_AX, AXIS_Z, CLEAR = 45.0, 79.25, 16.5, 1.0
+E_MAX = 60                                   # the arm's longest extension, mm (viewer.html's Slide arm slider)
 
 # ---------- the packed mesh, by viewer group ----------
 mm = json.load(open("mesh_meta.json")); q = np.frombuffer(base64.b64decode(open("mesh_b64.txt").read()), "<i2").astype(float) / 100
@@ -65,23 +70,39 @@ def dense(P):
     T = P[TRI]; return np.vstack([P, T.mean(1), (T[:, 0] + T[:, 1]) / 2, (T[:, 1] + T[:, 2]) / 2, (T[:, 2] + T[:, 0]) / 2])
 
 # ---------- sweep: the viewer's knuckleMatrix, every angle the Grip slider has ----------
-def gap(HAND, grip, E):
+def turned(P, grip, E):
     d = math.radians(grip - 90); c, s = math.cos(d), math.sin(d)
-    x, z = HAND[:, 0] - POSE_AX, HAND[:, 2] - AXIS_Z
-    P = np.c_[c * x + s * z + 34.25 + E, HAND[:, 1], -s * x + c * z + AXIS_Z]
-    return min(STATIC(P).min(), STAGE1(P - [(E - POSE_E) / 2, 0, 0]).min(), STAGE2(P - [E - POSE_E, 0, 0]).min(), phone.sdf(P).min())
+    x, z = P[:, 0] - POSE_AX, P[:, 2] - AXIS_Z
+    return np.c_[c * x + s * z + 34.25 + E, P[:, 1], -s * x + c * z + AXIS_Z]
+def gap(HAND, grip, E, model):
+    P = turned(HAND, grip, E)
+    return min(STATIC(P).min(), STAGE1(P - [(E - POSE_E) / 2, 0, 0]).min(), STAGE2(P - [E - POSE_E, 0, 0]).min(), phone.sdf(P, model).min())
+def grip_points(key):
+    # one version's grip: its parts' vertices and the middles of their triangles and edges, the slid ring at every click
+    out = []
+    for p in mm["parts"]:
+        if p["group"] not in ("knuckle", "ringB", "ringT") or p.get("variant", key) != key: continue
+        T = q[p["start"]:p["start"] + p["count"]].reshape(-1, 3, 3)
+        P = np.vstack([T.reshape(-1, 3), T.mean(1), (T[:, 0] + T[:, 1]) / 2, (T[:, 1] + T[:, 2]) / 2, (T[:, 2] + T[:, 0]) / 2])
+        out += [P - [0, s, 0] for s in (0, 2, 4, 6, 8)] if p["group"] == "ringB" else [P]
+    return np.unique(np.round(np.vstack(out), 2), axis=0)
 for key, hv in hm["variants"].items():
     poses = [pose(hv, c, s) for c in (0.0, 0.25, 0.5, 0.75, 1.0) for s in (0, 2, 4, 6, 8)]
-    HAND, DENSE = np.vstack(poses), np.vstack([dense(P) for P in poses])
-    need = {}
-    for grip in range(90, -181, -1):
-        e0 = 0 if grip <= 30 else math.ceil(20 * (grip - 30) / 60)       # the grip's own clearance, as the viewer's eMin()
-        # scan on the vertices first (quick), then go on out until the triangles' points clear too (they can only be closer)
-        E = next((E for E in range(e0, 51) if gap(HAND, grip, E) >= CLEAR), None)
-        while E is not None and gap(DENSE, grip, E) < CLEAR: E = E + 1 if E < 50 else None
-        if E is None: break
-        need[grip] = E
-    GRIP_MIN = min(need)
-    print(key, "with the hand the grip turns from %d° to 90°; arm extension needed (mm):" % GRIP_MIN, {a: need[a] for a in need if a % 15 == 0 or a == GRIP_MIN})
-    hv["gripMin"] = GRIP_MIN; hv["eHand"] = [need[a] for a in range(GRIP_MIN, 91)]
+    HAND, DENSE, GRIP = np.vstack(poses), np.vstack([dense(P) for P in poses]), grip_points(key)
+    hv.pop("gripMin", None); hv.pop("eHand", None); reach = {}
+    for model in phone.MODELS:
+        eg = [next((E for E in range(0, E_MAX + 1) if phone.sdf(turned(GRIP, a, E), model).min() >= CLEAR), None) for a in range(-180, 91)]
+        assert None not in eg, (key, model, "the grip alone can't clear the phone at", [a for a, e in zip(range(-180, 91), eg) if e is None][:5])
+        need = {}
+        for grip in range(90, -181, -1):
+            # scan on the vertices first (quick), then go on out until the triangles' points clear too (they can only be closer)
+            E = next((E for E in range(eg[grip + 180], E_MAX + 1) if gap(HAND, grip, E, model) >= CLEAR), None)
+            while E is not None and gap(DENSE, grip, E, model) < CLEAR: E = E + 1 if E < E_MAX else None
+            if E is None: break
+            need[grip] = E
+        assert 90 in need, (key, model, "the hand can't clear the phone at the hold within", E_MAX, "mm")
+        g0 = min(need); reach[model] = {"gripMin": g0, "eHand": [need[a] for a in range(g0, 91)], "eGrip": eg}
+        print(key, model, "with the hand the grip turns from %d° to 90°; arm extension needed (mm):" % g0, {a: need[a] for a in need if a % 30 == 0 or a == g0},
+              "| the grip alone:", {a: eg[a + 180] for a in range(-180, 91, 30)}, flush=True)
+    hv["reach"] = reach
 json.dump(hm, open("hand_meta.json", "w"), separators=(",", ":"))
