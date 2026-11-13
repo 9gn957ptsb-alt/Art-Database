@@ -141,3 +141,12 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 12 Nov | Deck: five requests from the page in one helper (a fence door that opens in Walk, three edge changes, floor colours and borders) | about 95 min | 59 min (a cut-off first helper had spent 33) | under |
 | 12 Nov | Deck drawing set: 12 sheets, two helpers one after the other on the house set's engine (plans, elevations, sections, schedules, the change sheet; then cover, details, structure, the drawer) | 80-110 min | 40 and 36 min; the lead's look, two wording fixes, publish and the change document 15 min | under |
 | 13 Nov | Kitchen study: traced plan, ten plans on a new plan engine, appliance research, matrix, recommended set, 37-page PDF (10 helpers in one workflow) | 3.5-4.5 h | about 4 h 40 min to v1; label polish, sources appendix and a small fix round 1 h 5 min more (39 pages) | just over |
+| 13 Nov | Question answered by a small workflow: inventory from the model, construction research, answer, skeptical check (4 helpers) | 50-70 min | 62 min; the lead fixed the answer for the check's 9 points in 10 min | in range |
+| 13 Nov | House model: a corner repainted and a recessed window bay made flush (one helper, check) | 45-65 min | 36 min | under |
+| 13 Nov | House model: a glass door in an existing doorway, opening in Walk (one helper, check) | 40-60 min | 43 min | in range |
+| 13 Nov | House model: a kitchen rebuilt from a study option with four changes (one helper, check) | 90-120 min | 75 min; then 10 min to land and redraw | under |
+| 13 Nov | Drawing sheets: two engine fixes after a kitchen change (one helper, check) | 35-55 min | 25 min | under |
+| 13 Nov | Kitchen round 2: a wall turned and a bathroom redesigned, a window filled, linear lights, stools (two helpers in parallel, compose, check, fix) | 2.5-3.5 h | 2 h 2 min | under |
+| 13 Nov | House model: a wall made flush over a hall (one helper, check; the lead fixed a hairline) | 70-110 min | 70 min + 10 min | in range |
+| 13 Nov | Page feature: red-line mode in the drawings drawer, both pages (build, test, fix, two retests, fix) | 2.5-3.5 h | about 4 h | over: two independent retests found 7 defects |
+| 13 Nov | Deck model: one material changed, sheets redrawn (the lead, directly) | (none quoted) | 15 min | |

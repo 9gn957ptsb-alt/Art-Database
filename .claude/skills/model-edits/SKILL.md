@@ -108,3 +108,10 @@ a model's judgment: a smaller model can run a script it could not have written.
   each request with its time and time zone. Before a first publish, search the sheets for the zone, the address words
   and names, not only the words the sheet's own check knows. And read the brief's code citations twice: the lead's brief
   put the model code's riser limit under the state code's name, and the helpers printed it on three sheets.
+- **13 Nov 2026** — Four requests about one kitchen arrived within minutes; a helper already started on the first was stopped after 3
+  minutes and one brief went to two helpers (one per area, a third pass composing them). Batch every same-room request that arrives before
+  a helper has built anything, even if one has started.
+- **13 Nov 2026** — Page code passed its builder's own tests twice and still failed two independent retests (crowding on a phone, stale
+  drafts). Publish page code only after an independent retest of the final files, phone size first.
+- **13 Nov 2026** — After a context reset the publish tool refused files it had not seen this session; a files listing of the artifact
+  first is enough. List before the first publish of a session.
