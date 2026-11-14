@@ -157,3 +157,5 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 14 Nov | Study: a reference building's curved facades and materials for the house's (research + model inventory in parallel, write, skeptical check, fix: 5 helpers) | 75-100 min | 44 min | under |
 | 14 Nov | Page feature: drawer swipe-down to the 3D view + reshaping red clouds (build, retest, fix, retest 2, both pages) | 60-120 min quoted | about 3 h | over: the first retest found 2 defects |
 | 14 Nov | House model: three kitchen asks by the lead (bookshelf flush and down to the floor, two stools moved, the spare out) plus Bath 1's new wall, landed together | 30-45 min | about 50 min, with two sync refusals fixed | just over |
+| 14 Nov | House model: a library nook (bookshelf on a radial, a lounge chair and ottoman, a rug), one helper, the lead landed | (not recorded) | 23 min build, then landed with the redraw | |
+| 14 Nov | Portfolio PDF of both models in the style of two references (assets, compose, independent check, fix: 4 helpers; the lead looked at every spread and ran a privacy scan) | 3-3.5 h | about 1 h 5 min | under: rendering reused existing views |
