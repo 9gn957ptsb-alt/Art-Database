@@ -115,3 +115,8 @@ a model's judgment: a smaller model can run a script it could not have written.
   drafts). Publish page code only after an independent retest of the final files, phone size first.
 - **13 Nov 2026** — After a context reset the publish tool refused files it had not seen this session; a files listing of the artifact
   first is enough. List before the first publish of a session.
+- **14 Nov 2026** — The session's disk filled (250 MB free) because every landing kept a full model copy and old build trees kept
+  their test output. After each landing keep only the base and the last three versions in compose, and delete a finished
+  milestone's test output and snapshots; check `df` before a landing.
+- **14 Nov 2026** — The artist found a 2.5-3.5 h build-check-fix workflow too slow for a bathroom change. For one room's change,
+  build the tool, look from their camera and land it; run a separate check only on request or for page code.
