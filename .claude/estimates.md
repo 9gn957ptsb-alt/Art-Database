@@ -151,3 +151,6 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 13 Nov | Page feature: red-line mode in the drawings drawer, both pages (build, test, fix, two retests, fix) | 2.5-3.5 h | about 4 h | over: two independent retests found 7 defects |
 | 13 Nov | Deck model: one material changed, sheets redrawn (the lead, directly) | (none quoted) | 15 min | |
 | 14 Nov | House model: a corner made flush over a door (one helper, check; the lead landed and redrew) | 70-110 min | 35 min build + 13 min check + 10 min to land | under |
+| 14 Nov | House model: red lines on a plan (column square, wall straight, shower out, a corner filled), first as a build-check-fix workflow, then landed by the lead | 2.5-3.5 h quoted | about 1 h 35 min from the mark to live (8:34-10:09 am); the artist found the quote too long | the workflow was stopped after its build; the lead landed it |
+| 14 Nov | House model: counter to a wall's end + a see-through bookshelf in the wall (the lead, directly, one tool) | 25-35 min | about 30 min to live, with two drawing-check fixes | in range |
+| 14 Nov | House model: a door mullion and a ceiling opening's band (two helpers in parallel, no check stage; the lead looked and landed) | 35-60 min + landing | 24 and 34 min build; live 49 min after launch | in range |
