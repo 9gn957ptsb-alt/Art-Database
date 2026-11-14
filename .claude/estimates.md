@@ -150,3 +150,4 @@ to get more accurate. Read this before giving one; add a row when the work is do
 | 13 Nov | House model: a wall made flush over a hall (one helper, check; the lead fixed a hairline) | 70-110 min | 70 min + 10 min | in range |
 | 13 Nov | Page feature: red-line mode in the drawings drawer, both pages (build, test, fix, two retests, fix) | 2.5-3.5 h | about 4 h | over: two independent retests found 7 defects |
 | 13 Nov | Deck model: one material changed, sheets redrawn (the lead, directly) | (none quoted) | 15 min | |
+| 14 Nov | House model: a corner made flush over a door (one helper, check; the lead landed and redrew) | 70-110 min | 35 min build + 13 min check + 10 min to land | under |
